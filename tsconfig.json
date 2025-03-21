@@ -5,7 +5,7 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "strict": true,
-    "module": "ESNext",
+    "module": "CommonJS",
     "outDir": "./lib"
   },
   "include": [
