@@ -187,69 +187,69 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
 
 Vision Mode provides tools for visual-based interactions using screenshots. Here are all available tools:
 
--**Navigation Commands**
+**Navigation Commands**
 
-  - **browser_navigate**
-    - Description: Navigate to a URL
-    - Parameters:
-      - `url` (string): The URL to navigate to
+- **browser_navigate**
+  - Description: Navigate to a URL
+  - Parameters:
+    - `url` (string): The URL to navigate to
 
-  - **browser_go_back**
-    - Description: Go back to the previous page
-    - Parameters: None
+- **browser_go_back**
+  - Description: Go back to the previous page
+  - Parameters: None
 
-  - **browser_go_forward**
-    - Description: Go forward to the next page
-    - Parameters: None
+- **browser_go_forward**
+  - Description: Go forward to the next page
+  - Parameters: None
 
--**Interaction Commands**
+**Interaction Commands**
 
-  - **browser_move_mouse**
-    - Description: Move mouse to specified coordinates
-    - Parameters:
-      - `x` (number): X coordinate
-      - `y` (number): Y coordinate
+- **browser_move_mouse**
+  - Description: Move mouse to specified coordinates
+  - Parameters:
+    - `x` (number): X coordinate
+    - `y` (number): Y coordinate
 
-  - **browser_click**
-    - Description: Click at specified coordinates
-    - Parameters:
-      - `x` (number): X coordinate to click at
-      - `y` (number): Y coordinate to click at
+- **browser_click**
+  - Description: Click at specified coordinates
+  - Parameters:
+    - `x` (number): X coordinate to click at
+    - `y` (number): Y coordinate to click at
 
-  - **browser_drag**
-    - Description: Perform drag and drop operation
-    - Parameters:
-      - `startX` (number): Start X coordinate
-      - `startY` (number): Start Y coordinate
-      - `endX` (number): End X coordinate
-      - `endY` (number): End Y coordinate
+- **browser_drag**
+  - Description: Perform drag and drop operation
+  - Parameters:
+    - `startX` (number): Start X coordinate
+    - `startY` (number): Start Y coordinate
+    - `endX` (number): End X coordinate
+    - `endY` (number): End Y coordinate
 
-  - **browser_type**
-    - Description: Type text at specified coordinates
-    - Parameters:
-      - `text` (string): Text to type
-      - `submit` (boolean): Whether to submit entered text (press Enter after)
+- **browser_type**
+  - Description: Type text at specified coordinates
+  - Parameters:
+    - `text` (string): Text to type
+    - `submit` (boolean): Whether to submit entered text (press Enter after)
 
-  - **browser_press_key**
-    - Description: Press a key on the keyboard
-    - Parameters:
-      - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
+- **browser_press_key**
+  - Description: Press a key on the keyboard
+  - Parameters:
+    - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
 
-  - **browser_close**
-    - Description: Close the page
-    - Parameters: None
+- **browser_close**
+  - Description: Close the page
+  - Parameters: None
 
-- **Utility Commands**
+**Utility Commands**
 
-  - **browser_screenshot**
-    - Description: Capture screenshot of the current page
-    - Parameters: None
+- **browser_screenshot**
+  - Description: Capture screenshot of the current page
+  - Parameters: None
 
-  - **browser_save_as_pdf**
-    - Description: Save page as PDF
-    - Parameters: None
+- **browser_save_as_pdf**
+  - Description: Save page as PDF
+  - Parameters: None
 
-  - **browser_wait**
-    - Description: Wait for a specified time in seconds
-    - Parameters:
+- **browser_wait**
+  - Description: Wait for a specified time in seconds
+  - Parameters:
       - `time` (number): The time to wait in seconds (capped at 10 seconds)
