@@ -198,7 +198,7 @@ Vision Mode provides tools for visual-based interactions using screenshots. Here
     - Description: Go forward to the next page
     - Parameters: None
 
-- **Interaction Commands**
+-**Interaction Commands**
 
   - **browser_move_mouse**
     - Description: Move mouse to specified coordinates
