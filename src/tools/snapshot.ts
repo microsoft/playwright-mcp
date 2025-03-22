@@ -112,6 +112,20 @@ export const type: Tool = {
   },
 };
 
+export const doubleClick: Tool = {
+  schema: {
+    name: 'browser_double_click',
+    description: 'Perform double click on a web page element',
+    inputSchema: zodToJsonSchema(elementSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = elementSchema.parse(params);
+    return runAndWait(context, `"${validatedParams.element}" double clicked`, page => 
+      refLocator(page, validatedParams.ref).dblclick(), true);
+  },
+};
+
 function refLocator(page: playwright.Page, ref: string): playwright.Locator {
   return page.locator(`aria-ref=${ref}`);
 }

@@ -84,7 +84,10 @@ export const goForward: ToolFactory = snapshot => ({
 });
 
 const waitSchema = z.object({
-  time: z.number().describe('The time to wait in seconds'),
+  time: z.number().describe('Time to wait in seconds'),
+  maxTime: z.number()
+    .optional()
+    .describe('Maximum allowed wait time in seconds (defaults to 10)')
 });
 
 export const wait: Tool = {
@@ -95,8 +98,9 @@ export const wait: Tool = {
   },
   handle: async (context, params) => {
     const validatedParams = waitSchema.parse(params);
+    const maxTimeMs = (validatedParams.maxTime || 10) * 1000;
     const page = await context.ensurePage();
-    await page.waitForTimeout(Math.min(10000, validatedParams.time * 1000));
+    await page.waitForTimeout(Math.min(maxTimeMs, validatedParams.time * 1000));
     return {
       content: [{
         type: 'text',
