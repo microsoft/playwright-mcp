@@ -107,8 +107,6 @@ X Y coordinate space, based on the provided screenshot.
 
 The Playwright MCP provides a set of tools for browser automation. Here are all available tools:
 
-**Navigation Commands**
-
 - **browser_navigate**
   - Description: Navigate to a URL
   - Parameters:
@@ -121,8 +119,6 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
 - **browser_go_forward**
   - Description: Go forward to the next page
   - Parameters: None
-
-**Interaction Commands**
 
 - **browser_click**
   - Description: Perform click on a web page
@@ -156,12 +152,6 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
   - Description: Press a key on the keyboard
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
-  
-- **browser_close**
-  - Description: Close the page
-  - Parameters: None
-
-**Utility Commands**
 
 - **browser_snapshot**
   - Description: Capture accessibility snapshot of the current page (better than screenshot)
@@ -174,14 +164,16 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
 - **browser_wait**
   - Description: Wait for a specified time in seconds
   - Parameters:
-    - `time` (number): The time to wait in seconds
-    - `maxTime` (number, optional): Maximum allowed wait time in seconds (defaults to 10)
+    - `time` (number): The time to wait in seconds (capped at 10 seconds)
+
+- **browser_close**
+  - Description: Close the page
+  - Parameters: None
+
 
 ### Vision Mode
 
 Vision Mode provides tools for visual-based interactions using screenshots. Here are all available tools:
-
-**Navigation Commands**
 
 - **browser_navigate**
   - Description: Navigate to a URL
@@ -196,7 +188,9 @@ Vision Mode provides tools for visual-based interactions using screenshots. Here
   - Description: Go forward to the next page
   - Parameters: None
 
-**Interaction Commands**
+- **browser_screenshot**
+  - Description: Capture screenshot of the current page
+  - Parameters: None
 
 - **browser_move_mouse**
   - Description: Move mouse to specified coordinates
@@ -229,16 +223,6 @@ Vision Mode provides tools for visual-based interactions using screenshots. Here
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
 
-- **browser_close**
-  - Description: Close the page
-  - Parameters: None
-
-**Utility Commands**
-
-- **browser_screenshot**
-  - Description: Capture screenshot of the current page
-  - Parameters: None
-
 - **browser_save_as_pdf**
   - Description: Save page as PDF
   - Parameters: None
@@ -246,4 +230,8 @@ Vision Mode provides tools for visual-based interactions using screenshots. Here
 - **browser_wait**
   - Description: Wait for a specified time in seconds
   - Parameters:
-      - `time` (number): The time to wait in seconds (capped at 10 seconds)
+    - `time` (number): The time to wait in seconds (capped at 10 seconds)
+
+- **browser_close**
+  - Description: Close the page
+  - Parameters: None
