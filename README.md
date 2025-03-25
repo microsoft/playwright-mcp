@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Key Features
 
-- **Fast and lightweight**: Uses Playwright’s accessibility tree, not pixel-based input.
+- **Fast and lightweight**: Uses Playwright's accessibility tree, not pixel-based input.
 - **LLM-friendly**: No vision models needed, operates purely on structured data.
 - **Deterministic tool application**: Avoids ambiguity common with screenshot-based approaches.
 
@@ -29,6 +29,26 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
   }
 }
 ```
+
+
+#### Installation in VS Code
+
+Install the Playwright MCP server in VS Code:
+
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](vscode:mcp/install?%7B%22name%22%3A%22playwright%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22%40playwright%2Fmcp%40latest%22%5D%7D), or [VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22playwright%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22%40playwright%2Fmcp%40latest%22%5D%7D)
+
+You can also install the Playwright MCP server using the VS Code CLI:
+
+```bash
+# For VS Code
+code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
+
+# For VS Code Insiders
+code-insiders --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
+```
+
+After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
+
 
 ### Running headless browser (Browser without GUI).
 
