@@ -23,7 +23,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
     "playwright": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest",
+        "@playwright/mcp@latest"
       ]
     }
   }
