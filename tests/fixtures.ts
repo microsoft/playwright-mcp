@@ -17,6 +17,7 @@
 import path from 'path';
 import { spawn } from 'child_process';
 import EventEmitter from 'events';
+import { chromium } from 'playwright';
 
 import { test as baseTest, expect } from '@playwright/test';
 
@@ -30,10 +31,11 @@ class MCPServer extends EventEmitter {
   private _messageResolvers: ((value: any) => void)[] = [];
   private _buffer: string = '';
 
-  constructor(command: string, args: string[]) {
+  constructor(command: string, args: string[], options?: { env?: NodeJS.ProcessEnv }) {
     super();
     this._child = spawn(command, args, {
       stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, ...options?.env },
     });
 
     this._child.stdout?.on('data', data => {
@@ -108,44 +110,64 @@ class MCPServer extends EventEmitter {
   }
 }
 
-export const test = baseTest.extend<{ server: MCPServer }>({
-  server: async ({}, use) => {
-    const server = new MCPServer('node', [path.join(__dirname, '../cli.js'), '--headless']);
-    const initialize = await server.send({
-      jsonrpc: '2.0',
-      id: 0,
-      method: 'initialize',
-      params: {
-        protocolVersion: '2024-11-05',
-        capabilities: {},
-        clientInfo: {
-          name: 'Playwright Test',
-          version: '0.0.0',
-        },
-      },
-    });
+type Fixtures = {
+  server: MCPServer;
+  startServer: (options?: { env?: NodeJS.ProcessEnv }) => Promise<MCPServer>;
+  wsEndpoint: string;
+};
 
-    expect(initialize).toEqual(expect.objectContaining({
-      id: 0,
-      result: expect.objectContaining({
-        protocolVersion: '2024-11-05',
-        capabilities: {
-          tools: {},
-          resources: {},
+export const test = baseTest.extend<Fixtures>({
+  server: async ({ startServer }, use) => {
+    await use(await startServer());
+  },
+
+  startServer: async ({ }, use) => {
+    let server: MCPServer | undefined;
+
+    use(async options => {
+      server = new MCPServer('node', [path.join(__dirname, '../cli.js'), '--headless'], options);
+      const initialize = await server.send({
+        jsonrpc: '2.0',
+        id: 0,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: {
+            name: 'Playwright Test',
+            version: '0.0.0',
+          },
         },
-        serverInfo: expect.objectContaining({
-          name: 'Playwright',
-          version: expect.any(String),
+      });
+
+      expect(initialize).toEqual(expect.objectContaining({
+        id: 0,
+        result: expect.objectContaining({
+          protocolVersion: '2024-11-05',
+          capabilities: {
+            tools: {},
+            resources: {},
+          },
+          serverInfo: expect.objectContaining({
+            name: 'Playwright',
+            version: expect.any(String),
+          }),
         }),
-      }),
-    }));
+      }));
 
-    await server.sendNoReply({
-      jsonrpc: '2.0',
-      method: 'notifications/initialized',
+      await server.sendNoReply({
+        jsonrpc: '2.0',
+        method: 'notifications/initialized',
+      });
+      return server;
     });
 
-    await use(server);
-    await server.close();
+    await server?.close();
+  },
+
+  wsEndpoint: async ({ }, use) => {
+    const browserServer = await chromium.launchServer();
+    await use(browserServer.wsEndpoint());
+    await browserServer.close();
   },
 });

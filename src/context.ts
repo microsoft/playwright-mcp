@@ -18,6 +18,7 @@ import * as playwright from 'playwright';
 
 export class Context {
   private _launchOptions: playwright.LaunchOptions;
+  private _browser: playwright.Browser | undefined;
   private _page: playwright.Page | undefined;
   private _console: playwright.ConsoleMessage[] = [];
   private _initializePromise: Promise<void> | undefined;
@@ -39,30 +40,39 @@ export class Context {
   async close() {
     const page = await this.ensurePage();
     await page.close();
-    this._initializePromise = undefined;
   }
 
   private async _initialize() {
     if (this._initializePromise)
       return this._initializePromise;
     this._initializePromise = (async () => {
-      const browser = await this._createBrowser();
-      this._page = await browser.newPage();
+      this._browser = await createBrowser(this._launchOptions);
+      this._page = await this._browser.newPage();
       this._page.on('console', event => this._console.push(event));
       this._page.on('framenavigated', frame => {
         if (!frame.parentFrame())
           this._console.length = 0;
       });
+      this._page.on('close', () => this._reset());
     })();
     return this._initializePromise;
   }
 
-  private async _createBrowser(): Promise<playwright.Browser> {
-    if (process.env.PLAYWRIGHT_WS_ENDPOINT) {
-      const url = new URL(process.env.PLAYWRIGHT_WS_ENDPOINT);
-      url.searchParams.set('launch-options', JSON.stringify(this._launchOptions));
-      return await playwright.chromium.connect(String(url));
-    }
-    return await playwright.chromium.launch({ channel: 'chrome', ...this._launchOptions });
+  private _reset() {
+    const browser = this._browser;
+    this._initializePromise = undefined;
+    this._browser = undefined;
+    this._page = undefined;
+    this._console.length = 0;
+    void browser?.close();
   }
+}
+
+async function createBrowser(launchOptions: playwright.LaunchOptions): Promise<playwright.Browser> {
+  if (process.env.PLAYWRIGHT_WS_ENDPOINT) {
+    const url = new URL(process.env.PLAYWRIGHT_WS_ENDPOINT);
+    url.searchParams.set('launch-options', JSON.stringify(launchOptions));
+    return await playwright.chromium.connect(String(url));
+  }
+  return await playwright.chromium.launch({ channel: 'chrome', ...launchOptions });
 }

@@ -161,3 +161,69 @@ test('test browser_click', async ({ server }) => {
     },
   }));
 });
+
+test('test reopen browser', async ({ server }) => {
+  const response2 = await server.send({
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'tools/call',
+    params: {
+      name: 'browser_navigate',
+      arguments: {
+        url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+      },
+    },
+  });
+
+  expect(response2).toEqual(expect.objectContaining({
+    id: 2,
+  }));
+
+  const response3 = await server.send({
+    jsonrpc: '2.0',
+    id: 3,
+    method: 'tools/call',
+    params: {
+      name: 'browser_close',
+    },
+  });
+
+  expect(response3).toEqual(expect.objectContaining({
+    id: 3,
+    result: {
+      content: [{
+        text: 'Page closed',
+        type: 'text',
+      }],
+    },
+  }));
+
+  const response4 = await server.send({
+    jsonrpc: '2.0',
+    id: 4,
+    method: 'tools/call',
+    params: {
+      name: 'browser_navigate',
+      arguments: {
+        url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+      },
+    },
+  });
+
+  expect(response4).toEqual(expect.objectContaining({
+    id: 4,
+    result: {
+      content: [{
+        type: 'text',
+        text: `
+- Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+- Page Title: Title
+- Page Snapshot
+\`\`\`yaml
+- document [ref=s1e2]: Hello, world!
+\`\`\`
+`,
+      }],
+    },
+  }));
+});

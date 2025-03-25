@@ -17,7 +17,6 @@
 import { Server as MCPServer } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListResourcesRequestSchema, ListToolsRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import * as playwright from 'playwright';
 
 import { Context } from './context';
 
@@ -31,7 +30,6 @@ export type LaunchOptions = {
 export class Server {
   private _server: MCPServer;
   private _tools: Tool[];
-  private _page: playwright.Page | undefined;
   private _context: Context;
 
   constructor(options: { name: string, version: string, tools: Tool[], resources: Resource[] }, launchOptions: LaunchOptions) {
@@ -90,6 +88,6 @@ export class Server {
 
   async stop() {
     await this._server.close();
-    await this._page?.context()?.browser()?.close();
+    await this._context.close();
   }
 }
