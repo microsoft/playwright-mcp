@@ -121,6 +121,20 @@ To use Vision Mode, add the `--vision` flag when starting the server:
 Vision Mode works best with the computer use models that are able to interact with elements using
 X Y coordinate space, based on the provided screenshot.
 
+### Programmatic usage with custom transports
+
+```js
+import { createServer } from '@playwright/mcp';
+
+// ...
+
+const server = createServer({
+  launchOptions: { headless: true }
+});
+transport = new SSEServerTransport("/messages", res);
+server.connect(transport);
+```
+
 ### Snapshot Mode
 
 The Playwright MCP provides a set of tools for browser automation. Here are all available tools:

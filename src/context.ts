@@ -17,13 +17,13 @@
 import * as playwright from 'playwright';
 
 export class Context {
-  private _launchOptions: playwright.LaunchOptions;
+  private _launchOptions: playwright.LaunchOptions | undefined;
   private _browser: playwright.Browser | undefined;
   private _page: playwright.Page | undefined;
   private _console: playwright.ConsoleMessage[] = [];
   private _initializePromise: Promise<void> | undefined;
 
-  constructor(launchOptions: playwright.LaunchOptions) {
+  constructor(launchOptions?: playwright.LaunchOptions) {
     this._launchOptions = launchOptions;
   }
 
@@ -68,7 +68,7 @@ export class Context {
   }
 }
 
-async function createBrowser(launchOptions: playwright.LaunchOptions): Promise<playwright.Browser> {
+async function createBrowser(launchOptions?: playwright.LaunchOptions): Promise<playwright.Browser> {
   if (process.env.PLAYWRIGHT_WS_ENDPOINT) {
     const url = new URL(process.env.PLAYWRIGHT_WS_ENDPOINT);
     url.searchParams.set('launch-options', JSON.stringify(launchOptions));

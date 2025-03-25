@@ -14,80 +14,65 @@
  * limitations under the License.
  */
 
-import { Server as MCPServer } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListResourcesRequestSchema, ListToolsRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { Context } from './context';
 
 import type { Tool } from './tools/tool';
 import type { Resource } from './resources/resource';
+import type { LaunchOptions } from 'playwright';
 
-export type LaunchOptions = {
-  headless?: boolean;
-};
+export function createServerWithTools(name: string, version: string, tools: Tool[], resources: Resource[], launchOption?: LaunchOptions): Server {
+  const context = new Context(launchOption);
+  const server = new Server({ name, version }, {
+    capabilities: {
+      tools: {},
+      resources: {},
+    }
+  });
 
-export class Server {
-  private _server: MCPServer;
-  private _tools: Tool[];
-  private _context: Context;
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return { tools: tools.map(tool => tool.schema) };
+  });
 
-  constructor(options: { name: string, version: string, tools: Tool[], resources: Resource[] }, launchOptions: LaunchOptions) {
-    const { name, version, tools, resources } = options;
-    this._context = new Context(launchOptions);
-    this._server = new MCPServer({ name, version }, {
-      capabilities: {
-        tools: {},
-        resources: {},
-      }
-    });
-    this._tools = tools;
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return { resources: resources.map(resource => resource.schema) };
+  });
 
-    this._server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return { tools: tools.map(tool => tool.schema) };
-    });
+  server.setRequestHandler(CallToolRequestSchema, async request => {
+    const tool = tools.find(tool => tool.schema.name === request.params.name);
+    if (!tool) {
+      return {
+        content: [{ type: 'text', text: `Tool "${request.params.name}" not found` }],
+        isError: true,
+      };
+    }
 
-    this._server.setRequestHandler(ListResourcesRequestSchema, async () => {
-      return { resources: resources.map(resource => resource.schema) };
-    });
+    try {
+      const result = await tool.handle(context, request.params.arguments);
+      return result;
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: String(error) }],
+        isError: true,
+      };
+    }
+  });
 
-    this._server.setRequestHandler(CallToolRequestSchema, async request => {
-      const tool = this._tools.find(tool => tool.schema.name === request.params.name);
-      if (!tool) {
-        return {
-          content: [{ type: 'text', text: `Tool "${request.params.name}" not found` }],
-          isError: true,
-        };
-      }
+  server.setRequestHandler(ReadResourceRequestSchema, async request => {
+    const resource = resources.find(resource => resource.schema.uri === request.params.uri);
+    if (!resource)
+      return { contents: [] };
 
-      try {
-        const result = await tool.handle(this._context, request.params.arguments);
-        return result;
-      } catch (error) {
-        return {
-          content: [{ type: 'text', text: String(error) }],
-          isError: true,
-        };
-      }
-    });
+    const contents = await resource.read(context, request.params.uri);
+    return { contents };
+  });
 
-    this._server.setRequestHandler(ReadResourceRequestSchema, async request => {
-      const resource = resources.find(resource => resource.schema.uri === request.params.uri);
-      if (!resource)
-        return { contents: [] };
+  server.close = async () => {
+    await server.close();
+    await context.close();
+  };
 
-      const contents = await resource.read(this._context, request.params.uri);
-      return { contents };
-    });
-  }
-
-  async start() {
-    const transport = new StdioServerTransport();
-    await this._server.connect(transport);
-  }
-
-  async stop() {
-    await this._server.close();
-    await this._context.close();
-  }
+  return server;
 }

@@ -15,16 +15,12 @@
  */
 
 import { program } from 'commander';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-import { Server } from './server';
-import * as snapshot from './tools/snapshot';
-import * as common from './tools/common';
-import * as screenshot from './tools/screenshot';
-import { console } from './resources/console';
+import { createServer } from './index';
 
-import type { LaunchOptions } from './server';
-import type { Tool } from './tools/tool';
-import type { Resource } from './resources/resource';
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import type { LaunchOptions } from 'playwright';
 
 const packageJSON = require('../package.json');
 
@@ -37,57 +33,19 @@ program
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
       };
-      const tools = options.vision ? screenshotTools : snapshotTools;
-      const server = new Server({
-        name: 'Playwright',
-        version: packageJSON.version,
-        tools,
-        resources,
-      }, launchOptions);
+      const server = createServer({ launchOptions });
       setupExitWatchdog(server);
-      await server.start();
+
+      const transport = new StdioServerTransport();
+      await server.connect(transport);
     });
 
 function setupExitWatchdog(server: Server) {
   process.stdin.on('close', async () => {
     setTimeout(() => process.exit(0), 15000);
-    await server?.stop();
+    await server.close();
     process.exit(0);
   });
 }
-
-const commonTools: Tool[] = [
-  common.pressKey,
-  common.wait,
-  common.pdf,
-  common.close,
-];
-
-const snapshotTools: Tool[] = [
-  common.navigate(true),
-  common.goBack(true),
-  common.goForward(true),
-  snapshot.snapshot,
-  snapshot.click,
-  snapshot.hover,
-  snapshot.type,
-  ...commonTools,
-];
-
-const screenshotTools: Tool[] = [
-  common.navigate(false),
-  common.goBack(false),
-  common.goForward(false),
-  screenshot.screenshot,
-  screenshot.moveMouse,
-  screenshot.click,
-  screenshot.drag,
-  screenshot.type,
-  ...commonTools,
-];
-
-const resources: Resource[] = [
-  console,
-];
 
 program.parse(process.argv);
