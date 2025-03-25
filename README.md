@@ -126,6 +126,12 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
 
+- **browser_double_click**
+  - Description: Perform double click on a web page element
+  - Parameters:
+    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `ref` (string): Exact target element reference from the page snapshot
+
 - **browser_hover**
   - Description: Hover over element on page
   - Parameters:
