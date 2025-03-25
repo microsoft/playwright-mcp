@@ -15,25 +15,32 @@
  */
 
 import { program } from 'commander';
+import type { Command } from 'commander';
 
 import { Server } from './server';
 import * as snapshot from './tools/snapshot';
 import * as common from './tools/common';
 import * as screenshot from './tools/screenshot';
+import * as localStorage from './tools/localStorage';
 import { console } from './resources/console';
 
 import type { LaunchOptions } from './server';
 import type { Tool } from './tools/tool';
 import type { Resource } from './resources/resource';
 
-const packageJSON = require('../package.json');
+interface PackageJson {
+  version: string;
+  name: string;
+}
+
+const packageJSON: PackageJson = require('../package.json');
 
 program
     .version('Version ' + packageJSON.version)
     .name(packageJSON.name)
     .option('--headless', 'Run browser in headless mode, headed by default')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
-    .action(async options => {
+    .action(async (options: { headless?: boolean; vision?: boolean }) => {
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
       };
@@ -48,11 +55,14 @@ program
       await server.start();
     });
 
+program.parse(process.argv);
+
 function setupExitWatchdog(server: Server) {
-  process.stdin.on('close', async () => {
-    setTimeout(() => process.exit(0), 15000);
-    await server?.stop();
-    process.exit(0);
+  process.on('SIGINT', () => {
+    void server.stop();
+  });
+  process.on('SIGTERM', () => {
+    void server.stop();
   });
 }
 
@@ -61,6 +71,11 @@ const commonTools: Tool[] = [
   common.wait,
   common.pdf,
   common.close,
+  localStorage.getItem,
+  localStorage.setItem,
+  localStorage.removeItem,
+  localStorage.clear,
+  localStorage.getAll,
 ];
 
 const snapshotTools: Tool[] = [
@@ -89,5 +104,3 @@ const screenshotTools: Tool[] = [
 const resources: Resource[] = [
   console,
 ];
-
-program.parse(process.argv);

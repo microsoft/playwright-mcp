@@ -60,6 +60,21 @@ test('test tool list', async ({ server }) => {
         expect.objectContaining({
           name: 'browser_close',
         }),
+        expect.objectContaining({
+          name: 'browser_localStorage_get',
+        }),
+        expect.objectContaining({
+          name: 'browser_localStorage_set',
+        }),
+        expect.objectContaining({
+          name: 'browser_localStorage_remove',
+        }),
+        expect.objectContaining({
+          name: 'browser_localStorage_clear',
+        }),
+        expect.objectContaining({
+          name: 'browser_localStorage_getAll',
+        }),
       ],
     }),
   }));
@@ -157,6 +172,132 @@ test('test browser_click', async ({ server }) => {
   - button \"Submit\" [ref=s2e4]
 \`\`\`
 `,
+      }],
+    },
+  }));
+});
+
+test('test localStorage tools', async ({ server }) => {
+  await server.send({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: {
+      name: 'browser_navigate',
+      arguments: {
+        url: 'data:text/html,<html><title>Title</title><body>Test localStorage</body></html>',
+      },
+    },
+  });
+
+  // Test setItem
+  const setResponse = await server.send({
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'tools/call',
+    params: {
+      name: 'browser_localStorage_set',
+      arguments: {
+        key: 'testKey',
+        value: 'testValue',
+      },
+    },
+  });
+
+  expect(setResponse).toEqual(expect.objectContaining({
+    id: 2,
+    result: {
+      content: [{
+        type: 'text',
+        text: 'Set localStorage key "testKey" to "testValue"',
+      }],
+    },
+  }));
+
+  // Test getItem
+  const getResponse = await server.send({
+    jsonrpc: '2.0',
+    id: 3,
+    method: 'tools/call',
+    params: {
+      name: 'browser_localStorage_get',
+      arguments: {
+        key: 'testKey',
+      },
+    },
+  });
+
+  expect(getResponse).toEqual(expect.objectContaining({
+    id: 3,
+    result: {
+      content: [{
+        type: 'text',
+        text: 'Retrieved "testKey" from localStorage: "testValue"',
+      }],
+    },
+  }));
+
+  // Test getAll
+  const getAllResponse = await server.send({
+    jsonrpc: '2.0',
+    id: 4,
+    method: 'tools/call',
+    params: {
+      name: 'browser_localStorage_getAll',
+      arguments: {},
+    },
+  });
+
+  expect(getAllResponse).toEqual(expect.objectContaining({
+    id: 4,
+    result: {
+      content: [{
+        type: 'text',
+        text: 'localStorage contents:\n{\n  "testKey": "testValue"\n}',
+      }],
+    },
+  }));
+
+  // Test removeItem
+  const removeResponse = await server.send({
+    jsonrpc: '2.0',
+    id: 5,
+    method: 'tools/call',
+    params: {
+      name: 'browser_localStorage_remove',
+      arguments: {
+        key: 'testKey',
+      },
+    },
+  });
+
+  expect(removeResponse).toEqual(expect.objectContaining({
+    id: 5,
+    result: {
+      content: [{
+        type: 'text',
+        text: 'Removed "testKey" from localStorage',
+      }],
+    },
+  }));
+
+  // Test clear
+  const clearResponse = await server.send({
+    jsonrpc: '2.0',
+    id: 6,
+    method: 'tools/call',
+    params: {
+      name: 'browser_localStorage_clear',
+      arguments: {},
+    },
+  });
+
+  expect(clearResponse).toEqual(expect.objectContaining({
+    id: 6,
+    result: {
+      content: [{
+        type: 'text',
+        text: 'Cleared all items from localStorage',
       }],
     },
   }));
