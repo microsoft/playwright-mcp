@@ -26,6 +26,7 @@ import type { ToolFactory, Tool } from './tool';
 
 const navigateSchema = z.object({
   url: z.string().describe('The URL to navigate to'),
+  restoreState: z.boolean().optional().describe('Whether to restore the saved state of the page'),
 });
 
 export const navigate: ToolFactory = snapshot => ({
@@ -36,10 +37,7 @@ export const navigate: ToolFactory = snapshot => ({
   },
   handle: async (context, params) => {
     const validatedParams = navigateSchema.parse(params);
-    const page = await context.ensurePage();
-    await page.goto(validatedParams.url, { waitUntil: 'domcontentloaded' });
-    // Cap load event to 5 seconds, the page is operational at this point.
-    await page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
+    const page = await context.navigate(validatedParams.url, validatedParams.restoreState);
     if (snapshot)
       return captureAriaSnapshot(page);
     return {
@@ -60,10 +58,7 @@ export const goBack: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goBackSchema),
   },
   handle: async context => {
-    return await runAndWait(context, 'Navigated back', async () => {
-      const page = await context.ensurePage();
-      await page.goBack();
-    }, snapshot);
+    return await runAndWait(context, 'Navigated back', page => page.goBack(), snapshot);
   },
 });
 
@@ -76,10 +71,7 @@ export const goForward: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goForwardSchema),
   },
   handle: async context => {
-    return await runAndWait(context, 'Navigated forward', async () => {
-      const page = await context.ensurePage();
-      await page.goForward();
-    }, snapshot);
+    return await runAndWait(context, 'Navigated forward', page => page.goForward(), snapshot);
   },
 });
 
@@ -95,7 +87,7 @@ export const wait: Tool = {
   },
   handle: async (context, params) => {
     const validatedParams = waitSchema.parse(params);
-    const page = await context.ensurePage();
+    const page = await context.existingPage();
     await page.waitForTimeout(Math.min(10000, validatedParams.time * 1000));
     return {
       content: [{
@@ -133,7 +125,7 @@ export const pdf: Tool = {
     inputSchema: zodToJsonSchema(pdfSchema),
   },
   handle: async context => {
-    const page = await context.ensurePage();
+    const page = await context.existingPage();
     const fileName = path.join(os.tmpdir(), `/page-${new Date().toISOString()}.pdf`);
     await page.pdf({ path: fileName });
     return {
@@ -159,6 +151,47 @@ export const close: Tool = {
       content: [{
         type: 'text',
         text: `Page closed`,
+      }],
+    };
+  },
+};
+
+const saveStateSchema = z.object({});
+
+export const saveState: Tool = {
+  schema: {
+    name: 'browser_save_state',
+    description: 'Save cookies and local storage to reuse logged in state in the future',
+    inputSchema: zodToJsonSchema(saveStateSchema),
+  },
+  handle: async context => {
+    const { origin, filename } = await context.saveState();
+    return {
+      content: [{
+        type: 'text',
+        text: `Storage state for ${origin} saved as ${filename}`,
+      }],
+    };
+  },
+};
+
+const clearSavedStateSchema = z.object({
+  origin: z.string().optional().describe('The origin to clear the saved state for. Erases all saved states if not provided'),
+});
+
+export const clearSavedState: Tool = {
+  schema: {
+    name: 'browser_clear_saved_state',
+    description: 'Clear cookies and local storage for a specific origin',
+    inputSchema: zodToJsonSchema(clearSavedStateSchema),
+  },
+  handle: async (context, params) => {
+    const validatedParams = clearSavedStateSchema.parse(params);
+    await context.clearSavedState(validatedParams.origin);
+    return {
+      content: [{
+        type: 'text',
+        text: `Storage state cleared`,
       }],
     };
   },

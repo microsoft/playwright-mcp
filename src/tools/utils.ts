@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+
 import type * as playwright from 'playwright';
 import type { ToolResult } from './tool';
 import type { Context } from '../context';
@@ -72,7 +76,7 @@ async function waitForCompletion<R>(page: playwright.Page, callback: () => Promi
 }
 
 export async function runAndWait(context: Context, status: string, callback: (page: playwright.Page) => Promise<any>, snapshot: boolean = false): Promise<ToolResult> {
-  const page = await context.ensurePage();
+  const page = await context.existingPage();
   await waitForCompletion(page, () => callback(page));
   return snapshot ? captureAriaSnapshot(page, status) : {
     content: [{ type: 'text', text: status }],
@@ -92,4 +96,35 @@ ${snapshot}
 `
     }],
   };
+}
+
+export async function storageStateFolder() {
+  let cacheDirectory: string;
+  if (process.platform === 'linux')
+    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+  else if (process.platform === 'darwin')
+    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
+  else if (process.platform === 'win32')
+    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+  else
+    throw new Error('Unsupported platform: ' + process.platform);
+  const result = path.join(cacheDirectory, 'ms-playwright', 'mcp-storage');
+  await fs.promises.mkdir(result, { recursive: true });
+  return result;
+}
+
+export async function storageStatePath(origin: string): Promise<string> {
+  const folder = await storageStateFolder();
+  return path.join(folder, `${safeFilename(origin)}.json`);
+}
+
+export async function storageStatePathIfExists(origin: string): Promise<string | undefined> {
+  const file = await storageStatePath(origin);
+  if (!fs.existsSync(file))
+    return undefined;
+  return file;
+}
+
+function safeFilename(alias: string) {
+  return alias.replace(/[^a-zA-Z0-9]/g, '_');
 }

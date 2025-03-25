@@ -63,6 +63,12 @@ test('test tool list', async ({ server }) => {
         expect.objectContaining({
           name: 'browser_close',
         }),
+        expect.objectContaining({
+          name: 'browser_save_state',
+        }),
+        expect.objectContaining({
+          name: 'browser_clear_saved_state',
+        }),
       ],
     }),
   }));

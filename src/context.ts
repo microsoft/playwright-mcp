@@ -14,57 +14,91 @@
  * limitations under the License.
  */
 
-import * as playwright from 'playwright';
+import fs from 'fs';
+import playwright from 'playwright';
+
+import { storageStateFolder, storageStatePath, storageStatePathIfExists } from './tools/utils';
 
 export class Context {
   private _launchOptions: playwright.LaunchOptions | undefined;
   private _browser: playwright.Browser | undefined;
   private _page: playwright.Page | undefined;
   private _console: playwright.ConsoleMessage[] = [];
-  private _initializePromise: Promise<void> | undefined;
 
   constructor(launchOptions?: playwright.LaunchOptions) {
     this._launchOptions = launchOptions;
   }
 
-  async ensurePage(): Promise<playwright.Page> {
-    await this._initialize();
-    return this._page!;
+  async existingPage(): Promise<playwright.Page> {
+    if (!this._page)
+      throw new Error('Start with navigating to a page');
+    return this._page;
   }
 
-  async ensureConsole(): Promise<playwright.ConsoleMessage[]> {
-    await this._initialize();
-    return this._console;
-  }
+  async navigate(url: string, restoreState: boolean = false): Promise<playwright.Page> {
+    if (restoreState && this._page) {
+      await this._page.close();
+      this._page = undefined;
+    }
 
-  async close() {
-    const page = await this.ensurePage();
-    await page.close();
-  }
-
-  private async _initialize() {
-    if (this._initializePromise)
-      return this._initializePromise;
-    this._initializePromise = (async () => {
+    if (!this._browser) {
       this._browser = await createBrowser(this._launchOptions);
-      this._page = await this._browser.newPage();
+      this._browser.on('disconnected', () => {
+        this._browser = undefined;
+        this._reset();
+      });
+    }
+
+    if (!this._page) {
+      const newOrigin = new URL(url).origin;
+      this._page = await this._browser.newPage({
+        storageState: restoreState ? await storageStatePathIfExists(newOrigin) : undefined,
+      });
       this._page.on('console', event => this._console.push(event));
       this._page.on('framenavigated', frame => {
         if (!frame.parentFrame())
           this._console.length = 0;
       });
       this._page.on('close', () => this._reset());
-    })();
-    return this._initializePromise;
+    }
+
+    await this._page.goto(url, { waitUntil: 'domcontentloaded' });
+    await this._page.waitForLoadState('load', { timeout: 5000 }).catch(() => { });
+    return this._page;
+  }
+
+  async saveState(): Promise<{ origin: string; filename: string }> {
+    const page = await this.existingPage();
+    const origin = new URL(page.url()).origin;
+    const filename = await storageStatePath(origin);
+    await page.context().storageState({ path: filename });
+    return { origin, filename };
+  }
+
+  async clearSavedState(origin: string | undefined) {
+    if (origin) {
+      const filename = await storageStatePath(origin);
+      await fs.promises.unlink(filename).catch(() => { });
+    } else {
+      const folder = await storageStateFolder();
+      await fs.promises.rm(folder, { recursive: true, force: true }).catch(() => { });
+    }
+  }
+
+  async console(): Promise<playwright.ConsoleMessage[]> {
+    if (!this._page)
+      return [];
+    return this._console;
+  }
+
+  async close() {
+    if (this._page)
+      await this._page.close();
   }
 
   private _reset() {
-    const browser = this._browser;
-    this._initializePromise = undefined;
-    this._browser = undefined;
     this._page = undefined;
     this._console.length = 0;
-    void browser?.close();
   }
 }
 

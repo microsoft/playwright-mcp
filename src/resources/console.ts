@@ -25,7 +25,7 @@ export const console: Resource = {
 
   read: async (context, uri) => {
     const result: ResourceResult[] = [];
-    for (const message of await context.ensureConsole()) {
+    for (const message of await context.console()) {
       result.push({
         uri,
         mimeType: 'text/plain',
