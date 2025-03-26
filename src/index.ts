@@ -61,18 +61,21 @@ const resources: Resource[] = [
 ];
 
 type Options = {
-  vision?: boolean;
+  userDataDir?: string;
   launchOptions?: LaunchOptions;
+  vision?: boolean;
 };
 
 const packageJSON = require('../package.json');
 
 export function createServer(options?: Options): Server {
   const tools = options?.vision ? screenshotTools : snapshotTools;
-  return createServerWithTools(
-      'Playwright',
-      packageJSON.version,
-      tools,
-      resources,
-      options?.launchOptions);
+  return createServerWithTools({
+    name: 'Playwright',
+    version: packageJSON.version,
+    tools,
+    resources,
+    userDataDir: options?.userDataDir ?? '',
+    launchOptions: options?.launchOptions,
+  });
 }

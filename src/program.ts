@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+
 import { program } from 'commander';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
@@ -28,12 +32,17 @@ program
     .version('Version ' + packageJSON.version)
     .name(packageJSON.name)
     .option('--headless', 'Run browser in headless mode, headed by default')
+    .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .action(async options => {
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
+        channel: 'chrome',
       };
-      const server = createServer({ launchOptions });
+      const server = createServer({
+        userDataDir: options.userDataDir ?? await userDataDir(),
+        launchOptions,
+      });
       setupExitWatchdog(server);
 
       const transport = new StdioServerTransport();
@@ -49,3 +58,18 @@ function setupExitWatchdog(server: Server) {
 }
 
 program.parse(process.argv);
+
+async function userDataDir() {
+  let cacheDirectory: string;
+  if (process.platform === 'linux')
+    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+  else if (process.platform === 'darwin')
+    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
+  else if (process.platform === 'win32')
+    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+  else
+    throw new Error('Unsupported platform: ' + process.platform);
+  const result = path.join(cacheDirectory, 'ms-playwright', 'mcp-chromium-profile');
+  await fs.promises.mkdir(result, { recursive: true });
+  return result;
+}

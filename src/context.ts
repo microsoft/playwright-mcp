@@ -17,62 +17,75 @@
 import * as playwright from 'playwright';
 
 export class Context {
+  private _userDataDir: string;
   private _launchOptions: playwright.LaunchOptions | undefined;
   private _browser: playwright.Browser | undefined;
   private _page: playwright.Page | undefined;
   private _console: playwright.ConsoleMessage[] = [];
-  private _initializePromise: Promise<void> | undefined;
+  private _createPagePromise: Promise<playwright.Page> | undefined;
 
-  constructor(launchOptions?: playwright.LaunchOptions) {
+  constructor(userDataDir: string, launchOptions?: playwright.LaunchOptions) {
+    this._userDataDir = userDataDir;
     this._launchOptions = launchOptions;
   }
 
-  async ensurePage(): Promise<playwright.Page> {
-    await this._initialize();
-    return this._page!;
+  async createPage(): Promise<playwright.Page> {
+    if (this._createPagePromise)
+      return this._createPagePromise;
+    this._createPagePromise = (async () => {
+      const { browser, page } = await this._createPage();
+      page.on('console', event => this._console.push(event));
+      page.on('framenavigated', frame => {
+        if (!frame.parentFrame())
+          this._console.length = 0;
+      });
+      page.on('close', () => this._onPageClose());
+      this._page = page;
+      this._browser = browser;
+      return page;
+    })();
+    return this._createPagePromise;
   }
 
-  async ensureConsole(): Promise<playwright.ConsoleMessage[]> {
-    await this._initialize();
+  private _onPageClose() {
+    const browser = this._browser;
+    const page = this._page;
+    void page?.context()?.close().then(() => browser?.close()).catch(() => {});
+
+    this._createPagePromise = undefined;
+    this._browser = undefined;
+    this._page = undefined;
+    this._console.length = 0;
+  }
+
+  async existingPage(): Promise<playwright.Page> {
+    if (!this._page)
+      throw new Error('Navigate to a location to create a page');
+    return this._page;
+  }
+
+  async console(): Promise<playwright.ConsoleMessage[]> {
     return this._console;
   }
 
   async close() {
-    const page = await this.ensurePage();
-    await page.close();
+    if (!this._page)
+      return;
+    await this._page.close();
   }
 
-  private async _initialize() {
-    if (this._initializePromise)
-      return this._initializePromise;
-    this._initializePromise = (async () => {
-      this._browser = await createBrowser(this._launchOptions);
-      this._page = await this._browser.newPage();
-      this._page.on('console', event => this._console.push(event));
-      this._page.on('framenavigated', frame => {
-        if (!frame.parentFrame())
-          this._console.length = 0;
-      });
-      this._page.on('close', () => this._reset());
-    })();
-    return this._initializePromise;
-  }
+  private async _createPage(): Promise<{ browser?: playwright.Browser, page: playwright.Page }> {
+    if (process.env.PLAYWRIGHT_WS_ENDPOINT) {
+      const url = new URL(process.env.PLAYWRIGHT_WS_ENDPOINT);
+      if (this._launchOptions)
+        url.searchParams.set('launch-options', JSON.stringify(this._launchOptions));
+      const browser = await playwright.chromium.connect(String(url));
+      const page = await browser.newPage();
+      return { browser, page };
+    }
 
-  private _reset() {
-    const browser = this._browser;
-    this._initializePromise = undefined;
-    this._browser = undefined;
-    this._page = undefined;
-    this._console.length = 0;
-    void browser?.close();
+    const context = await playwright.chromium.launchPersistentContext(this._userDataDir, this._launchOptions);
+    const [page] = context.pages();
+    return { page };
   }
-}
-
-async function createBrowser(launchOptions?: playwright.LaunchOptions): Promise<playwright.Browser> {
-  if (process.env.PLAYWRIGHT_WS_ENDPOINT) {
-    const url = new URL(process.env.PLAYWRIGHT_WS_ENDPOINT);
-    url.searchParams.set('launch-options', JSON.stringify(launchOptions));
-    return await playwright.chromium.connect(String(url));
-  }
-  return await playwright.chromium.launch({ channel: 'chrome', ...launchOptions });
 }

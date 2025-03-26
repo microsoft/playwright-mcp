@@ -23,8 +23,18 @@ import type { Tool } from './tools/tool';
 import type { Resource } from './resources/resource';
 import type { LaunchOptions } from 'playwright';
 
-export function createServerWithTools(name: string, version: string, tools: Tool[], resources: Resource[], launchOption?: LaunchOptions): Server {
-  const context = new Context(launchOption);
+type Options = {
+  name: string;
+  version: string;
+  tools: Tool[];
+  resources: Resource[],
+  userDataDir: string;
+  launchOptions?: LaunchOptions;
+};
+
+export function createServerWithTools(options: Options): Server {
+  const { name, version, tools, resources, userDataDir, launchOptions } = options;
+  const context = new Context(userDataDir, launchOptions);
   const server = new Server({ name, version }, {
     capabilities: {
       tools: {},

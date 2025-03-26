@@ -36,7 +36,7 @@ export const navigate: ToolFactory = snapshot => ({
   },
   handle: async (context, params) => {
     const validatedParams = navigateSchema.parse(params);
-    const page = await context.ensurePage();
+    const page = await context.createPage();
     await page.goto(validatedParams.url, { waitUntil: 'domcontentloaded' });
     // Cap load event to 5 seconds, the page is operational at this point.
     await page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
@@ -60,10 +60,7 @@ export const goBack: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goBackSchema),
   },
   handle: async context => {
-    return await runAndWait(context, 'Navigated back', async () => {
-      const page = await context.ensurePage();
-      await page.goBack();
-    }, snapshot);
+    return await runAndWait(context, 'Navigated back', async page => page.goBack(), snapshot);
   },
 });
 
@@ -76,10 +73,7 @@ export const goForward: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goForwardSchema),
   },
   handle: async context => {
-    return await runAndWait(context, 'Navigated forward', async () => {
-      const page = await context.ensurePage();
-      await page.goForward();
-    }, snapshot);
+    return await runAndWait(context, 'Navigated forward', async page => page.goForward(), snapshot);
   },
 });
 
@@ -95,8 +89,7 @@ export const wait: Tool = {
   },
   handle: async (context, params) => {
     const validatedParams = waitSchema.parse(params);
-    const page = await context.ensurePage();
-    await page.waitForTimeout(Math.min(10000, validatedParams.time * 1000));
+    await new Promise(f => setTimeout(f, Math.min(10000, validatedParams.time * 1000)));
     return {
       content: [{
         type: 'text',
@@ -133,7 +126,7 @@ export const pdf: Tool = {
     inputSchema: zodToJsonSchema(pdfSchema),
   },
   handle: async context => {
-    const page = await context.ensurePage();
+    const page = await context.existingPage();
     const fileName = path.join(os.tmpdir(), `/page-${new Date().toISOString()}.pdf`);
     await page.pdf({ path: fileName });
     return {

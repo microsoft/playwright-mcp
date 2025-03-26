@@ -19,7 +19,16 @@ import type { LaunchOptions } from 'playwright';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 type Options = {
+  /**
+   * Path to the user data directory.
+   */
+  userDataDir?: string;
+
+  /**
+   * Launch options for the browser.
+   */
   launchOptions?: LaunchOptions;
+
   /**
    * Use screenshots instead of snapshots. Less accurate, reliable and overall
    * slower, but contains visual representation of the page.

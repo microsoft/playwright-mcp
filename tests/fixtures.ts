@@ -121,11 +121,12 @@ export const test = baseTest.extend<Fixtures>({
     await use(await startServer());
   },
 
-  startServer: async ({ }, use) => {
+  startServer: async ({ }, use, testInfo) => {
     let server: MCPServer | undefined;
+    const userDataDir = testInfo.outputPath('user-data-dir');
 
     use(async options => {
-      server = new MCPServer('node', [path.join(__dirname, '../cli.js'), '--headless'], options);
+      server = new MCPServer('node', [path.join(__dirname, '../cli.js'), '--headless', '--user-data-dir', userDataDir], options);
       const initialize = await server.send({
         jsonrpc: '2.0',
         id: 0,
