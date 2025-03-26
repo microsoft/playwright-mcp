@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,22 +15,17 @@
  * limitations under the License.
  */
 
-import type { Resource } from './resource';
+import type { LaunchOptions } from 'playwright';
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
-export const console: Resource = {
-  schema: {
-    uri: 'browser://console',
-    name: 'Page console',
-    mimeType: 'text/plain',
-  },
-
-  read: async (context, uri) => {
-    const messages = await context.ensureConsole();
-    const log = messages.map(message => `[${message.type().toUpperCase()}] ${message.text()}`).join('\n');
-    return [{
-      uri,
-      mimeType: 'text/plain',
-      text: log
-    }];
-  },
+type Options = {
+  launchOptions?: LaunchOptions;
+  /**
+   * Use screenshots instead of snapshots. Less accurate, reliable and overall
+   * slower, but contains visual representation of the page.
+   * @default false
+   */
+  vision?: boolean;
 };
+
+export function createServer(options?: Options): Server;

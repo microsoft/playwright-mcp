@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Key Features
 
-- **Fast and lightweight**: Uses Playwright’s accessibility tree, not pixel-based input.
+- **Fast and lightweight**: Uses Playwright's accessibility tree, not pixel-based input.
 - **LLM-friendly**: No vision models needed, operates purely on structured data.
 - **Deterministic tool application**: Avoids ambiguity common with screenshot-based approaches.
 
@@ -29,6 +29,24 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
   }
 }
 ```
+
+
+#### Installation in VS Code
+
+Install the Playwright MCP server using the VS Code CLI:
+
+```bash
+# For VS Code
+code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
+```
+
+```bash
+# For VS Code Insiders
+code-insiders --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
+```
+
+After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
+
 
 ### Running headless browser (Browser without GUI).
 
@@ -103,6 +121,20 @@ To use Vision Mode, add the `--vision` flag when starting the server:
 Vision Mode works best with the computer use models that are able to interact with elements using
 X Y coordinate space, based on the provided screenshot.
 
+### Programmatic usage with custom transports
+
+```js
+import { createServer } from '@playwright/mcp';
+
+// ...
+
+const server = createServer({
+  launchOptions: { headless: true }
+});
+transport = new SSEServerTransport("/messages", res);
+server.connect(transport);
+```
+
 ### Snapshot Mode
 
 The Playwright MCP provides a set of tools for browser automation. Here are all available tools:
@@ -153,6 +185,13 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
     - `ref` (string): Exact target element reference from the page snapshot
     - `text` (string): Text to type into the element
     - `submit` (boolean): Whether to submit entered text (press Enter after)
+
+- **browser_select_option**
+  - Description: Select option in a dropdown
+  - Parameters:
+    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `ref` (string): Exact target element reference from the page snapshot
+    - `values` (array): Array of values to select in the dropdown.
 
 - **browser_press_key**
   - Description: Press a key on the keyboard

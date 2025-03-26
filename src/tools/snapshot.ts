@@ -126,6 +126,26 @@ export const doubleClick: Tool = {
   },
 };
 
+const selectOptionSchema = elementSchema.extend({
+  values: z.array(z.string()).describe('Array of values to select in the dropdown. This can be a single value or multiple values.'),
+});
+
+export const selectOption: Tool = {
+  schema: {
+    name: 'browser_select_option',
+    description: 'Select an option in a dropdown',
+    inputSchema: zodToJsonSchema(selectOptionSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = selectOptionSchema.parse(params);
+    return await runAndWait(context, `Selected option in "${validatedParams.element}"`, async page => {
+      const locator = refLocator(page, validatedParams.ref);
+      await locator.selectOption(validatedParams.values);
+    }, true);
+  },
+};
+
 function refLocator(page: playwright.Page, ref: string): playwright.Locator {
   return page.locator(`aria-ref=${ref}`);
 }
