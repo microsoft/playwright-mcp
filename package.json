@@ -48,6 +48,6 @@
     "typescript": "^5.8.2"
   },
   "bin": {
-    "mcp": "cli.js"
+    "mcp-server-playwright": "cli.js"
   }
 }
