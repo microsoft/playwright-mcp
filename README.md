@@ -35,6 +35,8 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 Install the Playwright MCP server using the VS Code CLI:
 
+# Add the Playwright MCP server configuration to your VS Code settings
+
 ```bash
 # For VS Code
 code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
