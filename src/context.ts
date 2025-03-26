@@ -58,7 +58,7 @@ export class Context {
     this._console.length = 0;
   }
 
-  async existingPage(): Promise<playwright.Page> {
+  existingPage(): playwright.Page {
     if (!this._page)
       throw new Error('Navigate to a location to create a page');
     return this._page;
