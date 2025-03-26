@@ -121,7 +121,7 @@ export const doubleClick: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `"${validatedParams.element}" double clicked`, page => 
+    return runAndWait(context, `"${validatedParams.element}" double clicked`, page =>
       refLocator(page, validatedParams.ref).dblclick(), true);
   },
 };
