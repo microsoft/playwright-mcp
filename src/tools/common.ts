@@ -26,6 +26,7 @@ import type { ToolFactory, Tool } from './tool';
 
 const navigateSchema = z.object({
   url: z.string().describe('The URL to navigate to'),
+  userAgent: z.string().optional().describe('Optional custom user agent string'),
 });
 
 export const navigate: ToolFactory = snapshot => ({
@@ -36,7 +37,8 @@ export const navigate: ToolFactory = snapshot => ({
   },
   handle: async (context, params) => {
     const validatedParams = navigateSchema.parse(params);
-    const page = await context.ensurePage();
+    const page = await context.ensurePage({ userAgent: validatedParams.userAgent });
+
     await page.goto(validatedParams.url, { waitUntil: 'domcontentloaded' });
     // Cap load event to 5 seconds, the page is operational at this point.
     await page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
@@ -45,7 +47,7 @@ export const navigate: ToolFactory = snapshot => ({
     return {
       content: [{
         type: 'text',
-        text: `Navigated to ${validatedParams.url}`,
+        text: `Navigated to ${validatedParams.url}${validatedParams.userAgent ? ` with user agent: ${validatedParams.userAgent}` : ''}`,
       }],
     };
   },

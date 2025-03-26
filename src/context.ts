@@ -22,12 +22,15 @@ export class Context {
   private _page: playwright.Page | undefined;
   private _console: playwright.ConsoleMessage[] = [];
   private _initializePromise: Promise<void> | undefined;
+  private _context: playwright.BrowserContext | undefined;
+  private _contextOptions: playwright.BrowserContextOptions|undefined;
 
   constructor(launchOptions?: playwright.LaunchOptions) {
     this._launchOptions = launchOptions;
   }
 
-  async ensurePage(): Promise<playwright.Page> {
+  async ensurePage(options?: playwright.BrowserContextOptions): Promise<playwright.Page> {
+    this._contextOptions = options;
     await this._initialize();
     return this._page!;
   }
@@ -47,7 +50,8 @@ export class Context {
       return this._initializePromise;
     this._initializePromise = (async () => {
       this._browser = await createBrowser(this._launchOptions);
-      this._page = await this._browser.newPage();
+      this._context = await this._browser.newContext(this._contextOptions);
+      this._page = await this._context.newPage();
       this._page.on('console', event => this._console.push(event));
       this._page.on('framenavigated', frame => {
         if (!frame.parentFrame())
