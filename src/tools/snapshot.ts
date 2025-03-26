@@ -112,6 +112,35 @@ export const type: Tool = {
   },
 };
 
+const selectOptionSchema = z.union([
+  elementSchema.extend({
+    value: z.string().describe('Value of the option to select'),
+  }),
+  elementSchema.extend({
+    values: z.array(z.string()).describe('Values of the options to select'),
+  }),
+]);
+
+export const selectOption: Tool = {
+  schema: {
+    name: 'browser_select_option',
+    description: 'Select an option in a dropdown',
+    inputSchema: zodToJsonSchema(selectOptionSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = selectOptionSchema.parse(params);
+    return await runAndWait(context, `Selected option in "${validatedParams.element}"`, async page => {
+      const locator = refLocator(page, validatedParams.ref);
+      if ('value' in validatedParams)
+        await locator.selectOption({ value: validatedParams.value });
+      else
+        await locator.selectOption(validatedParams.values);
+
+    }, true);
+  },
+};
+
 function refLocator(page: playwright.Page, ref: string): playwright.Locator {
   return page.locator(`aria-ref=${ref}`);
 }
