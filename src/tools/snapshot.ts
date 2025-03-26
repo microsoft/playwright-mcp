@@ -135,3 +135,20 @@ export const selectOption: Tool = {
 function refLocator(page: playwright.Page, ref: string): playwright.Locator {
   return page.locator(`aria-ref=${ref}`);
 }
+
+const setInputFilesSchema = elementSchema.extend({
+  files: z.array(z.string()).describe('Array of absolute file paths to set in the input element.'),
+});
+
+export const setInputFiles: Tool = {
+  schema: {
+    name: 'browser_set_input_files',
+    description: 'Set input files in the input element',
+    inputSchema: zodToJsonSchema(setInputFilesSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = setInputFilesSchema.parse(params);
+    return runAndWait(context, `Set input files in "${validatedParams.element}"`, page => refLocator(page, validatedParams.ref).setInputFiles(validatedParams.files), true);
+  },
+};
