@@ -52,6 +52,9 @@ test('test tool list', async ({ server }) => {
           name: 'browser_select_option',
         }),
         expect.objectContaining({
+          name: 'browser_set_input_files',
+        }),
+        expect.objectContaining({
           name: 'browser_press_key',
         }),
         expect.objectContaining({
