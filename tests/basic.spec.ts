@@ -331,3 +331,35 @@ test.describe('test browser_select_option', () => {
     }));
   });
 });
+
+test('browser://console', async ({ server }) => {
+  await server.send({
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'tools/call',
+    params: {
+      name: 'browser_navigate',
+      arguments: {
+        url: 'data:text/html,<html><script>console.log("Hello, world!");console.error("Error"); </script></html>',
+      },
+    },
+  });
+
+  const response = await server.send({
+    jsonrpc: '2.0',
+    id: 3,
+    method: 'resources/read',
+    params: {
+      uri: 'browser://console',
+    },
+  });
+  expect(response).toEqual(expect.objectContaining({
+    result: expect.objectContaining({
+      contents: [{
+        uri: 'browser://console',
+        mimeType: 'text/plain',
+        text: '[LOG] Hello, world!\n[ERROR] Error',
+      }],
+    }),
+  }));
+});
