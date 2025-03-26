@@ -180,6 +180,13 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
     - `text` (string): Text to type into the element
     - `submit` (boolean): Whether to submit entered text (press Enter after)
 
+- **browser_select_option**
+  - Description: Select option in a dropdown
+  - Parameters:
+    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `ref` (string): Exact target element reference from the page snapshot
+    - `values` (array): Array of values to select in the dropdown.
+
 - **browser_press_key**
   - Description: Press a key on the keyboard
   - Parameters:

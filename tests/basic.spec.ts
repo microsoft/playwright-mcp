@@ -254,7 +254,7 @@ test.describe('test browser_select_option', () => {
         arguments: {
           element: 'Select',
           ref: 's1e4',
-          value: 'bar',
+          values: ['bar'],
         },
       },
     });
