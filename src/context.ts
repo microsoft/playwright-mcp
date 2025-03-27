@@ -101,7 +101,14 @@ export class Context {
       page.locator('html').ariaSnapshot({ ref: true }),
       ...this._lastSnapshotFrames.map(async (frame, index) => {
         const snapshot = await frame.locator('html').ariaSnapshot({ ref: true });
-        return snapshot.replaceAll('[ref=', `[ref=f${index}`);
+        const args = [];
+        const src = await frame.owner().getAttribute('src');
+        if (src)
+          args.push(`src=${src}`);
+        const name = await frame.owner().getAttribute('name');
+        if (name)
+          args.push(`name=${name}`);
+        return `\n# iframe ${args.join(' ')}\n` + snapshot.replaceAll('[ref=', `[ref=f${index}`);
       })
     ]);
 

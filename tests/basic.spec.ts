@@ -444,6 +444,8 @@ test('stitched aria frames', async ({ server }) => {
 \`\`\`yaml
 - document [ref=s1e2]:
   - heading \"Hello\" [level=1] [ref=s1e4]
+
+# iframe src=data:text/html,<h1>World</h1>
 - document [ref=f0s1e2]:
   - heading \"World\" [level=1] [ref=f0s1e4]
 \`\`\`
