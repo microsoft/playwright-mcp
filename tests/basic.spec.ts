@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { spawn } from 'node:child_process';
+import path from 'node:path';
 import { test, expect } from './fixtures';
 
 test('test tool list', async ({ server, visionServer }) => {
@@ -449,4 +451,20 @@ test('stitched aria frames', async ({ server }) => {
       }],
     },
   }));
+});
+
+test('sse transport', async () => {
+  const port = 53828 + test.info().parallelIndex;
+  const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '' + port]);
+  try {
+    // need dynamic import b/c of some ESM nonsense
+    const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
+    const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+    const transport = new SSEClientTransport(new URL(`http://localhost:${port}/sse`));
+    const client = new Client({ name: 'test', version: '1.0.0' });
+    await client.connect(transport);
+    await client.ping();
+  } finally {
+    cp.kill();
+  }
 });
