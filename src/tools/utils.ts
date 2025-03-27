@@ -74,6 +74,7 @@ async function waitForCompletion<R>(page: playwright.Page, callback: () => Promi
 export async function runAndWait(context: Context, status: string, callback: (page: playwright.Page) => Promise<any>, snapshot: boolean = false): Promise<ToolResult> {
   const page = context.existingPage();
   await waitForCompletion(page, () => callback(page));
+  context.clearFileChooser();
   return snapshot ? captureAriaSnapshot(context, page, status) : {
     content: [{ type: 'text', text: status }],
   };
