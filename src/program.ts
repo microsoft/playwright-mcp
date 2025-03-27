@@ -97,7 +97,7 @@ program
               resolvedHost = 'localhost';
             urlPrefixHumanReadable = `http://${resolvedHost}:${port}`;
           }
-          console.log(`Server listening on ${urlPrefixHumanReadable}`);
+          console.log(`Listening on ${urlPrefixHumanReadable}`);
           console.log('Put this in your client config:');
           console.log(JSON.stringify({
             'mcpServers': {
