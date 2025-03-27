@@ -28,6 +28,7 @@ import { createServer } from './index';
 
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
+import assert from 'assert';
 
 const packageJSON = require('../package.json');
 
@@ -71,7 +72,7 @@ program
             await transport.handlePostMessage(req, res);
             return;
           } else if (req.method === 'GET') {
-            const transport = new SSEServerTransport('/', res);
+            const transport = new SSEServerTransport('/sse', res);
             sessions.set(transport.sessionId, transport);
             res.on('close', () => {
               sessions.delete(transport.sessionId);
@@ -83,13 +84,25 @@ program
             res.end('Method not allowed');
           }
         });
-        httpServer.listen(options.port, () => {
-          console.log(`Server listening on port ${options.port}.`);
+        httpServer.listen(+options.port, () => {
+          const address = httpServer.address();
+          assert(address, 'Could not bind server socket');
+          let urlPrefixHumanReadable: string;
+          if (typeof address === 'string') {
+            urlPrefixHumanReadable = address;
+          } else {
+            const port = address.port;
+            let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
+            if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
+              resolvedHost = 'localhost';
+            urlPrefixHumanReadable = `http://${resolvedHost}:${port}`;
+          }
+          console.log(`Server listening on ${urlPrefixHumanReadable}`);
           console.log('Put this in your client config:');
           console.log(JSON.stringify({
             'mcpServers': {
               'playwright': {
-                'url': `http://localhost:${options.port}/sse`
+                'url': `${urlPrefixHumanReadable}/sse`
               }
             }
           }, undefined, 2));
