@@ -93,27 +93,19 @@ This mode is useful for background or batch operations.
 ### Running headed browser on Linux w/o DISPLAY
 
 When running headed browser on system w/o display or from worker processes of the IDEs,
-you can run Playwright in a client-server manner. You'll run the Playwright server
-from environment with the DISPLAY
+run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
 
-```sh
-npx playwright run-server
+```bash
+npx @playwright/mcp@latest --port 8931
 ```
 
-And then in MCP config, add following to the `env`:
+And then in MCP client config, set the `url` to the SSE endpoint:
 
 ```js
 {
   "mcpServers": {
     "playwright": {
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ],
-      "env": {
-        // Use the endpoint from the output of the server above.
-        "PLAYWRIGHT_WS_ENDPOINT": "ws://localhost:<port>/"
-      }
+      "url": "http://localhost:8931/sse"
     }
   }
 }

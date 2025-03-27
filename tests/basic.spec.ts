@@ -15,6 +15,8 @@
  */
 
 import fs from 'fs/promises';
+import { spawn } from 'node:child_process';
+import path from 'node:path';
 import { test, expect } from './fixtures';
 
 test('test tool list', async ({ server, visionServer }) => {
@@ -501,4 +503,27 @@ test('browser_choose_file', async ({ server }) => {
 
   expect(response.result.content[0].text).not.toContain('There is a file chooser visible that requires browser_choose_file to be called');
   expect(response.result.content[0].text).toContain('textbox [ref=s3e4]: C:\\fakepath\\test.txt');
+});
+
+test('sse transport', async () => {
+  const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '0'], { stdio: 'pipe' });
+  try {
+    let stdout = '';
+    const url = await new Promise<string>(resolve => cp.stdout?.on('data', data => {
+      stdout += data.toString();
+      const match = stdout.match(/Listening on (http:\/\/.*)/);
+      if (match)
+        resolve(match[1]);
+    }));
+
+    // need dynamic import b/c of some ESM nonsense
+    const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
+    const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+    const transport = new SSEClientTransport(new URL(url));
+    const client = new Client({ name: 'test', version: '1.0.0' });
+    await client.connect(transport);
+    await client.ping();
+  } finally {
+    cp.kill();
+  }
 });

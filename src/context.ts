@@ -42,6 +42,8 @@ export class Context {
       });
       page.on('close', () => this._onPageClose());
       page.on('filechooser', chooser => this._fileChooser = chooser);
+      page.setDefaultNavigationTimeout(60000);
+      page.setDefaultTimeout(5000);
       this._page = page;
       this._browser = browser;
       return page;
