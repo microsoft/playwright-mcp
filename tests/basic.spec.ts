@@ -16,7 +16,7 @@
 
 import { test, expect } from './fixtures';
 
-test('test tool list', async ({ server }) => {
+test('test tool list', async ({ server, visionServer }) => {
   const list = await server.send({
     jsonrpc: '2.0',
     id: 1,
@@ -67,6 +67,56 @@ test('test tool list', async ({ server }) => {
           name: 'browser_close',
         }),
       ],
+    }),
+  }));
+
+  const visionList = await visionServer.send({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/list',
+  });
+
+  expect(visionList).toEqual(expect.objectContaining({
+    id: 1,
+    result: expect.objectContaining({
+      tools: expect.arrayContaining([
+        expect.objectContaining({
+          name: 'browser_navigate',
+        }),
+        expect.objectContaining({
+          name: 'browser_go_back',
+        }),
+        expect.objectContaining({
+          name: 'browser_go_forward',
+        }),
+        expect.objectContaining({
+          name: 'browser_screenshot',
+        }),
+        expect.objectContaining({
+          name: 'browser_move_mouse',
+        }),
+        expect.objectContaining({
+          name: 'browser_click',
+        }),
+        expect.objectContaining({
+          name: 'browser_drag',
+        }),
+        expect.objectContaining({
+          name: 'browser_type',
+        }),
+        expect.objectContaining({
+          name: 'browser_press_key',
+        }),
+        expect.objectContaining({
+          name: 'browser_wait',
+        }),
+        expect.objectContaining({
+          name: 'browser_save_as_pdf',
+        }),
+        expect.objectContaining({
+          name: 'browser_close',
+        }),
+      ]),
     }),
   }));
 });
