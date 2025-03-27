@@ -454,13 +454,20 @@ test('stitched aria frames', async ({ server }) => {
 });
 
 test('sse transport', async () => {
-  const port = 53828 + test.info().parallelIndex;
-  const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '' + port], { stdio: 'inherit' });
+  const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '0'], { stdio: 'pipe' });
   try {
+    let stdout = '';
+    const url = await new Promise<string>(resolve => cp.stdout?.on('data', data => {
+      stdout += data.toString();
+      const match = stdout.match(/Listening on (http:\/\/.*)/);
+      if (match)
+        resolve(match[1]);
+    }));
+
     // need dynamic import b/c of some ESM nonsense
     const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
     const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
-    const transport = new SSEClientTransport(new URL(`http://localhost:${port}/sse`));
+    const transport = new SSEClientTransport(new URL(url));
     const client = new Client({ name: 'test', version: '1.0.0' });
     await client.connect(transport);
     await client.ping();
