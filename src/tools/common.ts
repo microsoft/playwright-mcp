@@ -41,7 +41,7 @@ export const navigate: ToolFactory = snapshot => ({
     // Cap load event to 5 seconds, the page is operational at this point.
     await page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
     if (snapshot)
-      return captureAriaSnapshot(page);
+      return captureAriaSnapshot(context);
     return {
       content: [{
         type: 'text',

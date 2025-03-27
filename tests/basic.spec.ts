@@ -427,7 +427,7 @@ test('stitched aria frames', async ({ server }) => {
     params: {
       name: 'browser_navigate',
       arguments: {
-        url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe>',
+        url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>',
       },
     },
   });
@@ -438,14 +438,14 @@ test('stitched aria frames', async ({ server }) => {
       content: [{
         type: 'text',
         text: `
-- Page URL: data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe>
+- Page URL: data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>
 - Page Title: 
 - Page Snapshot
 \`\`\`yaml
 - document [ref=s1e2]:
   - heading \"Hello\" [level=1] [ref=s1e4]
-- document [ref=f1s1e2]:
-  - heading \"World\" [level=1] [ref=f1s1e4]
+- document [ref=f0s1e2]:
+  - heading \"World\" [level=1] [ref=f0s1e4]
 \`\`\`
 `,
       }],

@@ -30,7 +30,7 @@ export const snapshot: Tool = {
   },
 
   handle: async context => {
-    return await captureAriaSnapshot(context.existingPage());
+    return await captureAriaSnapshot(context);
   },
 };
 
@@ -48,7 +48,7 @@ export const click: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `"${validatedParams.element}" clicked`, page => refLocator(page, validatedParams.ref).click(), true);
+    return runAndWait(context, `"${validatedParams.element}" clicked`, page => context.refLocator(validatedParams.ref).click(), true);
   },
 };
 
@@ -69,8 +69,8 @@ export const drag: Tool = {
   handle: async (context, params) => {
     const validatedParams = dragSchema.parse(params);
     return runAndWait(context, `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`, async page => {
-      const startLocator = refLocator(page, validatedParams.startRef);
-      const endLocator = refLocator(page, validatedParams.endRef);
+      const startLocator = context.refLocator(validatedParams.startRef);
+      const endLocator = context.refLocator(validatedParams.endRef);
       await startLocator.dragTo(endLocator);
     }, true);
   },
@@ -85,7 +85,7 @@ export const hover: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `Hovered over "${validatedParams.element}"`, page => refLocator(page, validatedParams.ref).hover(), true);
+    return runAndWait(context, `Hovered over "${validatedParams.element}"`, page => context.refLocator(validatedParams.ref).hover(), true);
   },
 };
 
@@ -104,7 +104,7 @@ export const type: Tool = {
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
     return await runAndWait(context, `Typed "${validatedParams.text}" into "${validatedParams.element}"`, async page => {
-      const locator = refLocator(page, validatedParams.ref);
+      const locator = context.refLocator(validatedParams.ref);
       await locator.fill(validatedParams.text);
       if (validatedParams.submit)
         await locator.press('Enter');
@@ -126,7 +126,7 @@ export const selectOption: Tool = {
   handle: async (context, params) => {
     const validatedParams = selectOptionSchema.parse(params);
     return await runAndWait(context, `Selected option in "${validatedParams.element}"`, async page => {
-      const locator = refLocator(page, validatedParams.ref);
+      const locator = context.refLocator(validatedParams.ref);
       await locator.selectOption(validatedParams.values);
     }, true);
   },
@@ -153,15 +153,3 @@ export const screenshot: Tool = {
     };
   },
 };
-
-function refLocator(page: playwright.Page, ref: string): playwright.Locator {
-  let frame = page.frames()[0];
-  const match = ref.match(/^f(\d+)(.*)/);
-  if (match) {
-    const frameIndex = parseInt(match[1], 10);
-    frame = page.frames()[frameIndex];
-    ref = match[2];
-  }
-
-  return frame.locator(`aria-ref=${ref}`);
-}

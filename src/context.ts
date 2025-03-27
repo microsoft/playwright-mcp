@@ -23,6 +23,7 @@ export class Context {
   private _page: playwright.Page | undefined;
   private _console: playwright.ConsoleMessage[] = [];
   private _createPagePromise: Promise<playwright.Page> | undefined;
+  private _lastSnapshotFrames: playwright.FrameLocator[] = [];
 
   constructor(userDataDir: string, launchOptions?: playwright.LaunchOptions) {
     this._userDataDir = userDataDir;
@@ -89,5 +90,36 @@ export class Context {
     const context = await playwright.chromium.launchPersistentContext(this._userDataDir, this._launchOptions);
     const [page] = context.pages();
     return { page };
+  }
+
+  async allFrameSnapshot() {
+    const page = this.existingPage();
+    const visibleFrames = await page.locator('iframe').filter({ visible: true }).all();
+    this._lastSnapshotFrames = visibleFrames.map(frame => frame.contentFrame());
+
+    const snapshots = await Promise.all([
+      page.locator('html').ariaSnapshot({ ref: true }),
+      ...this._lastSnapshotFrames.map(async (frame, index) => {
+        const snapshot = await frame.locator('html').ariaSnapshot({ ref: true });
+        return snapshot.replaceAll('[ref=', `[ref=f${index}`);
+      })
+    ]);
+
+    return snapshots.join('\n');
+  }
+
+  refLocator(ref: string): playwright.Locator {
+    const page = this.existingPage();
+    let frame: playwright.Frame | playwright.FrameLocator = page.mainFrame();
+    const match = ref.match(/^f(\d+)(.*)/);
+    if (match) {
+      const frameIndex = parseInt(match[1], 10);
+      if (!this._lastSnapshotFrames[frameIndex])
+        throw new Error(`Frame does not exist. Provide ref from the most current snapshot.`);
+      frame = this._lastSnapshotFrames[frameIndex];
+      ref = match[2];
+    }
+
+    return frame.locator(`aria-ref=${ref}`);
   }
 }
