@@ -93,8 +93,9 @@ export async function captureAllFrameSnapshot(page: playwright.Page): Promise<st
 export async function captureAriaSnapshot(context: Context, page: playwright.Page, status: string = ''): Promise<ToolResult> {
   const lines = [];
   if (status)
-    lines.push(`${status}\n`);
+    lines.push(`${status}`);
   lines.push(
+      '',
       `- Page URL: ${page.url()}`,
       `- Page Title: ${await page.title()}`
   );
@@ -105,6 +106,7 @@ export async function captureAriaSnapshot(context: Context, page: playwright.Pag
       '```yaml',
       await captureAllFrameSnapshot(page),
       '```',
+      ''
   );
   return {
     content: [{ type: 'text', text: lines.join('\n') }],
