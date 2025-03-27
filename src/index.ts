@@ -41,6 +41,7 @@ const snapshotTools: Tool[] = [
   snapshot.hover,
   snapshot.type,
   snapshot.selectOption,
+  snapshot.batch,
   ...commonTools,
 ];
 
@@ -53,6 +54,7 @@ const screenshotTools: Tool[] = [
   screenshot.click,
   screenshot.drag,
   screenshot.type,
+  screenshot.batch,
   ...commonTools,
 ];
 
