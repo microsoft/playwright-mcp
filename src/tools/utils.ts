@@ -79,15 +79,24 @@ export async function runAndWait(context: Context, status: string, callback: (pa
   };
 }
 
+export async function captureAllFrameSnapshot(page: playwright.Page): Promise<string> {
+  const snapshots = await Promise.all(page.frames().map(frame => frame.locator('html').ariaSnapshot({ ref: true })));
+  const scopedSnapshots = snapshots.map((snapshot, frameIndex) => {
+    if (frameIndex === 0)
+      return snapshot;
+    return snapshot.replaceAll('[ref=', `[ref=f${frameIndex}`);
+  });
+  return scopedSnapshots.join('\n');
+}
+
 export async function captureAriaSnapshot(page: playwright.Page, status: string = ''): Promise<ToolResult> {
-  const snapshot = await page.locator('html').ariaSnapshot({ ref: true });
   return {
     content: [{ type: 'text', text: `${status ? `${status}\n` : ''}
 - Page URL: ${page.url()}
 - Page Title: ${await page.title()}
 - Page Snapshot
 \`\`\`yaml
-${snapshot}
+${await captureAllFrameSnapshot(page)}
 \`\`\`
 `
     }],

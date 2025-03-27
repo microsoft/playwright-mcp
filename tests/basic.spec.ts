@@ -363,3 +363,37 @@ test('browser://console', async ({ server }) => {
     }),
   }));
 });
+
+test('stitched aria frames', async ({ server }) => {
+  const response = await server.send({
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'tools/call',
+    params: {
+      name: 'browser_navigate',
+      arguments: {
+        url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe>',
+      },
+    },
+  });
+
+  expect(response).toEqual(expect.objectContaining({
+    id: 2,
+    result: {
+      content: [{
+        type: 'text',
+        text: `
+- Page URL: data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe>
+- Page Title: 
+- Page Snapshot
+\`\`\`yaml
+- document [ref=s1e2]:
+  - heading \"Hello\" [level=1] [ref=s1e4]
+- document [ref=f1s1e2]:
+  - heading \"World\" [level=1] [ref=f1s1e4]
+\`\`\`
+`,
+      }],
+    },
+  }));
+});

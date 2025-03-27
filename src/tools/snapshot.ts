@@ -133,5 +133,13 @@ export const selectOption: Tool = {
 };
 
 function refLocator(page: playwright.Page, ref: string): playwright.Locator {
-  return page.locator(`aria-ref=${ref}`);
+  let frame = page.frames()[0];
+  const match = ref.match(/^f(\d+)(.*)/);
+  if (match) {
+    const frameIndex = parseInt(match[1], 10);
+    frame = page.frames()[frameIndex];
+    ref = match[2];
+  }
+
+  return frame.locator(`aria-ref=${ref}`);
 }
