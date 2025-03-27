@@ -34,14 +34,35 @@ program
     .option('--headless', 'Run browser in headless mode, headed by default')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--cdp <url>', 'Connect to an existing Chrome instance using CDP (Chrome DevTools Protocol)')
+    .option('--reuse-session', 'Reuse existing Chrome session when using CDP')
     .action(async options => {
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
         channel: 'chrome',
       };
+
+      // Format CDP URL if provided
+      let cdpEndpoint = options.cdp;
+      if (cdpEndpoint) {
+        try {
+          // If URL doesn't have a protocol, add http://
+          if (!cdpEndpoint.startsWith('http://') && !cdpEndpoint.startsWith('https://')) {
+            cdpEndpoint = `http://${cdpEndpoint}`;
+          }
+          // Validate URL
+          new URL(cdpEndpoint);
+        } catch (e) {
+          console.error('Invalid CDP URL:', options.cdp);
+          process.exit(1);
+        }
+      }
+
       const server = createServer({
         userDataDir: options.userDataDir ?? await userDataDir(),
         launchOptions,
+        cdpEndpoint,
+        reuseSession: options.reuseSession
       });
       setupExitWatchdog(server);
 

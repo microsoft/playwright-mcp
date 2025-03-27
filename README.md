@@ -30,7 +30,6 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 }
 ```
 
-
 #### Installation in VS Code
 
 Install the Playwright MCP server in VS Code using one of these buttons:
@@ -145,6 +144,29 @@ To use Vision Mode, add the `--vision` flag when starting the server:
 Vision Mode works best with the computer use models that are able to interact with elements using
 X Y coordinate space, based on the provided screenshot.
 
+### Connecting to existing Chrome instance via CDP
+
+These command line options are available:
+
+- `--cdp <url>`: Connect to an existing Chrome instance using CDP (Chrome DevTools Protocol).
+- `--reuse-session`: When using CDP, reuse the existing browser context and its first page instead of creating a new one
+
+In MCP config:
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--cdp", "http://localhost:9222",
+        "--reuse-session"
+      ]
+    }
+  }
+}
+```
+
 ### Programmatic usage with custom transports
 
 ```js
@@ -232,7 +254,6 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
 - **browser_close**
   - Description: Close the page
   - Parameters: None
-
 
 ### Vision Mode
 

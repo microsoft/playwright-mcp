@@ -27,13 +27,23 @@ type Options = {
   name: string;
   version: string;
   tools: Tool[];
-  resources: Resource[],
+  resources: Resource[];
   userDataDir: string;
   launchOptions?: LaunchOptions;
+  cdpEndpoint?: string;
+  reuseSession?: boolean;
 };
 
 export function createServerWithTools(options: Options): Server {
-  const { name, version, tools, resources, userDataDir, launchOptions } = options;
+  const { name, version, tools, resources, userDataDir, launchOptions, cdpEndpoint, reuseSession } = options;
+  
+  if (cdpEndpoint) {
+    process.env.PLAYWRIGHT_CDP_ENDPOINT = cdpEndpoint;
+  }
+  if (reuseSession) {
+    process.env.PLAYWRIGHT_REUSE_SESSION = 'true';
+  }
+  
   const context = new Context(userDataDir, launchOptions);
   const server = new Server({ name, version }, {
     capabilities: {

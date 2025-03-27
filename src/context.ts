@@ -75,6 +75,7 @@ export class Context {
   }
 
   private async _createPage(): Promise<{ browser?: playwright.Browser, page: playwright.Page }> {
+    // Handle WebSocket endpoint case
     if (process.env.PLAYWRIGHT_WS_ENDPOINT) {
       const url = new URL(process.env.PLAYWRIGHT_WS_ENDPOINT);
       if (this._launchOptions)
@@ -84,8 +85,34 @@ export class Context {
       return { browser, page };
     }
 
+    // Handle CDP endpoint case
+    if (process.env.PLAYWRIGHT_CDP_ENDPOINT) {
+      const browser = await createBrowser(this._launchOptions);
+      
+      // If reusing session and we have an existing page, use it
+      if (process.env.PLAYWRIGHT_REUSE_SESSION === 'true') {
+        const defaultContext = browser.contexts()[0];
+        const pages = defaultContext.pages();
+        if (pages.length > 0) {
+          return { browser, page: pages[0] };
+        }
+      }
+      
+      const page = await browser.newPage();
+      return { browser, page };
+    }
+
+    // Default case: launch persistent context
     const context = await playwright.chromium.launchPersistentContext(this._userDataDir, this._launchOptions);
     const [page] = context.pages();
     return { page };
   }
+}
+
+async function createBrowser(launchOptions?: playwright.LaunchOptions): Promise<playwright.Browser> {
+  if (process.env.PLAYWRIGHT_CDP_ENDPOINT) {
+    const options: playwright.ConnectOverCDPOptions = { ...launchOptions };
+    return await playwright.chromium.connectOverCDP(process.env.PLAYWRIGHT_CDP_ENDPOINT, options);
+  }
+  return await playwright.chromium.launch({ channel: 'chrome', ...launchOptions });
 }
