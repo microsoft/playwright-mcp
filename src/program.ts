@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
+import http from 'http';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
 import { program } from 'commander';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+
 
 import { createServer } from './index';
 
@@ -34,6 +37,7 @@ program
     .option('--headless', 'Run browser in headless mode, headed by default')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--port <port>', 'Port to listen on for SSE transport.')
     .action(async options => {
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
@@ -46,8 +50,54 @@ program
       });
       setupExitWatchdog(server);
 
-      const transport = new StdioServerTransport();
-      await server.connect(transport);
+      if (options.port) {
+        const sessions = new Map<string, SSEServerTransport>();
+        const httpServer = http.createServer(async (req, res) => {
+          if (req.method === 'POST') {
+            const host = req.headers.host ?? 'http://unknown';
+            const sessionId = new URL(host + req.url!).searchParams.get('sessionId');
+            if (!sessionId) {
+              res.statusCode = 400;
+              res.end('Missing sessionId');
+              return;
+            }
+            const transport = sessions.get(sessionId);
+            if (!transport) {
+              res.statusCode = 404;
+              res.end('Session not found');
+              return;
+            }
+
+            await transport.handlePostMessage(req, res);
+            return;
+          } else if (req.method === 'GET') {
+            const transport = new SSEServerTransport('/', res);
+            sessions.set(transport.sessionId, transport);
+            res.on('close', () => {
+              sessions.delete(transport.sessionId);
+            });
+            await server.connect(transport);
+            return;
+          } else {
+            res.statusCode = 405;
+            res.end('Method not allowed');
+          }
+        });
+        httpServer.listen(options.port, () => {
+          console.log(`Server listening on port ${options.port}.`);
+          console.log('Put this in your client config:');
+          console.log(JSON.stringify({
+            'mcpServers': {
+              'playwright': {
+                'url': `http://localhost:${options.port}/sse`
+              }
+            }
+          }, undefined, 2));
+        });
+      } else {
+        const transport = new StdioServerTransport();
+        await server.connect(transport);
+      }
     });
 
 function setupExitWatchdog(server: Server) {
