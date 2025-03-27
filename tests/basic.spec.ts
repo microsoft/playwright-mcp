@@ -37,6 +37,9 @@ test('test tool list', async ({ server, visionServer }) => {
           name: 'browser_go_forward',
         }),
         expect.objectContaining({
+          name: 'browser_choose_file',
+        }),
+        expect.objectContaining({
           name: 'browser_snapshot',
         }),
         expect.objectContaining({
