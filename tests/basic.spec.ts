@@ -19,85 +19,37 @@ import path from 'node:path';
 import { test, expect } from './fixtures';
 
 test('test tool list', async ({ server, visionServer }) => {
-  expect(await server.listTools()).toEqual([
-    expect.objectContaining({
-      name: 'browser_navigate',
-    }),
-    expect.objectContaining({
-      name: 'browser_go_back',
-    }),
-    expect.objectContaining({
-      name: 'browser_go_forward',
-    }),
-    expect.objectContaining({
-      name: 'browser_snapshot',
-    }),
-    expect.objectContaining({
-      name: 'browser_click',
-    }),
-    expect.objectContaining({
-      name: 'browser_hover',
-    }),
-    expect.objectContaining({
-      name: 'browser_type',
-    }),
-    expect.objectContaining({
-      name: 'browser_select_option',
-    }),
-    expect.objectContaining({
-      name: 'browser_take_screenshot',
-    }),
-    expect.objectContaining({
-      name: 'browser_press_key',
-    }),
-    expect.objectContaining({
-      name: 'browser_wait',
-    }),
-    expect.objectContaining({
-      name: 'browser_save_as_pdf',
-    }),
-    expect.objectContaining({
-      name: 'browser_close',
-    }),
+  const tools = await server.listTools();
+  expect(tools.map(t => t.name)).toEqual([
+    'browser_navigate',
+    'browser_go_back',
+    'browser_go_forward',
+    'browser_snapshot',
+    'browser_click',
+    'browser_hover',
+    'browser_type',
+    'browser_select_option',
+    'browser_take_screenshot',
+    'browser_press_key',
+    'browser_wait',
+    'browser_save_as_pdf',
+    'browser_close',
   ]);
 
-  expect(await visionServer.listTools()).toEqual([
-    expect.objectContaining({
-      name: 'browser_navigate',
-    }),
-    expect.objectContaining({
-      name: 'browser_go_back',
-    }),
-    expect.objectContaining({
-      name: 'browser_go_forward',
-    }),
-    expect.objectContaining({
-      name: 'browser_screenshot',
-    }),
-    expect.objectContaining({
-      name: 'browser_move_mouse',
-    }),
-    expect.objectContaining({
-      name: 'browser_click',
-    }),
-    expect.objectContaining({
-      name: 'browser_drag',
-    }),
-    expect.objectContaining({
-      name: 'browser_type',
-    }),
-    expect.objectContaining({
-      name: 'browser_press_key',
-    }),
-    expect.objectContaining({
-      name: 'browser_wait',
-    }),
-    expect.objectContaining({
-      name: 'browser_save_as_pdf',
-    }),
-    expect.objectContaining({
-      name: 'browser_close',
-    }),
+  const visionTools = await visionServer.listTools();
+  expect(visionTools.map(t => t.name)).toEqual([
+    'browser_navigate',
+    'browser_go_back',
+    'browser_go_forward',
+    'browser_screenshot',
+    'browser_move_mouse',
+    'browser_click',
+    'browser_drag',
+    'browser_type',
+    'browser_press_key',
+    'browser_wait',
+    'browser_save_as_pdf',
+    'browser_close',
   ]);
 });
 
