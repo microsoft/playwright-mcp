@@ -363,3 +363,61 @@ test('browser://console', async ({ server }) => {
     }),
   }));
 });
+
+test('test batch processing in screenshot mode', async ({ server }) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  const testData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/screenshot_test.json'), 'utf8'));
+  
+  const response = await server.send({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: {
+      name: 'batch_process',
+      arguments: {
+        input: testData
+      }
+    }
+  });
+
+  expect(response).toEqual(expect.objectContaining({
+    id: 1,
+    result: expect.objectContaining({
+      content: [{
+        type: 'text',
+        text: expect.stringContaining('Successfully executed')
+      }]
+    })
+  }));
+});
+
+test('test batch processing in snapshot mode', async ({ server }) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  const testData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/snapshot_test.json'), 'utf8'));
+  
+  const response = await server.send({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: {
+      name: 'batch_process',
+      arguments: {
+        input: testData
+      }
+    }
+  });
+
+  expect(response).toEqual(expect.objectContaining({
+    id: 1,
+    result: expect.objectContaining({
+      content: [{
+        type: 'text',
+        text: expect.stringContaining('Successfully executed')
+      }]
+    })
+  }));
+});
