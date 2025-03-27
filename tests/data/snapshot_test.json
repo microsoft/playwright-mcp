@@ -1,0 +1,47 @@
+{
+  "test_cases": [
+    {
+      "definition": "Snapshot mode test - basic interactions",
+      "steps": [
+        {
+          "name": "browser_navigate",
+          "params": {
+            "url": "data:text/html,<html><title>Snapshot Test</title><select><option value='1'>One</option><option value='2'>Two</option></select><button>Submit</button><input type='text'/></html>"
+          }
+        },
+        {
+          "name": "browser_snapshot",
+          "params": {}
+        },
+        {
+          "name": "browser_select_option",
+          "params": {
+            "element": "Select dropdown",
+            "ref": "s1e4",
+            "values": ["2"]
+          }
+        },
+        {
+          "name": "browser_type",
+          "params": {
+            "element": "Text input",
+            "ref": "s1e6",
+            "text": "Hello from snapshot mode",
+            "submit": true
+          }
+        },
+        {
+          "name": "browser_click",
+          "params": {
+            "element": "Submit button",
+            "ref": "s1e5"
+          }
+        },
+        {
+          "name": "browser_snapshot",
+          "params": {}
+        }
+      ]
+    }
+  ]
+} 
