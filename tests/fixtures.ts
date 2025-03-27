@@ -108,6 +108,49 @@ class MCPServer extends EventEmitter {
       this._child.stdin?.end();
     });
   }
+
+  async listTools() {
+    const list = await this.send({
+      jsonrpc: '2.0',
+      id: 0,
+      method: 'tools/list',
+    });
+    return list.result.tools;
+  }
+
+  async listResources() {
+    const list = await this.send({
+      jsonrpc: '2.0',
+      id: 0,
+      method: 'resources/list',
+    });
+    return list.result.resources;
+  }
+
+  async callTool(name: string, args?: any) {
+    const result = await this.send({
+      jsonrpc: '2.0',
+      id: 0,
+      method: 'tools/call',
+      params: {
+        name,
+        arguments: args,
+      }
+    });
+    return result.result.content.map(c => c.text);
+  }
+
+  async readResource(uri: string) {
+    const result = await this.send({
+      jsonrpc: '2.0',
+      id: 0,
+      method: 'resources/read',
+      params: {
+        uri,
+      },
+    });
+    return result.result.contents;
+  }
 }
 
 type Fixtures = {
