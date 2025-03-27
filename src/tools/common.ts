@@ -156,3 +156,21 @@ export const close: Tool = {
     };
   },
 };
+
+const chooseFileSchema = z.object({
+  paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
+});
+
+export const chooseFile: ToolFactory = snapshot => ({
+  schema: {
+    name: 'browser_choose_file',
+    description: 'Choose one or multiple files to upload',
+    inputSchema: zodToJsonSchema(chooseFileSchema),
+  },
+  handle: async (context, params) => {
+    const validatedParams = chooseFileSchema.parse(params);
+    return await runAndWait(context, `Chose files ${validatedParams.paths.join(', ')}`, async () => {
+      await context.submitFileChooser(validatedParams.paths);
+    }, snapshot);
+  },
+});

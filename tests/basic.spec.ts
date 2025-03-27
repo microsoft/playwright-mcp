@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import fs from 'fs/promises';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { test, expect } from './fixtures';
@@ -24,6 +25,7 @@ test('test tool list', async ({ server, visionServer }) => {
     'browser_navigate',
     'browser_go_back',
     'browser_go_forward',
+    'browser_choose_file',
     'browser_snapshot',
     'browser_click',
     'browser_hover',
@@ -41,6 +43,7 @@ test('test tool list', async ({ server, visionServer }) => {
     'browser_navigate',
     'browser_go_back',
     'browser_go_forward',
+    'browser_choose_file',
     'browser_screenshot',
     'browser_move_mouse',
     'browser_click',
@@ -189,6 +192,45 @@ test('stitched aria frames', async ({ server }) => {
 \`\`\`
 `
   ]);
+});
+
+test('browser_choose_file', async ({ server }) => {
+  let response = await server.callTool('browser_navigate', {
+    url: 'data:text/html,<html><title>Title</title><input type="file" /><button>Button</button></html>',
+  });
+
+  expect(response[0]).toContain('- textbox [ref=s1e4]');
+
+  response = await server.callTool('browser_click', {
+    element: 'Textbox',
+    ref: 's1e4',
+  });
+
+  expect(response[0]).toContain('There is a file chooser visible that requires browser_choose_file to be called');
+
+  const filePath = test.info().outputPath('test.txt');
+  await fs.writeFile(filePath, 'Hello, world!');
+  response = await server.callTool('browser_choose_file', {
+    paths: [filePath],
+  });
+
+  expect(response[0]).not.toContain('There is a file chooser visible that requires browser_choose_file to be called');
+  expect(response[0]).toContain('textbox [ref=s3e4]: C:\\fakepath\\test.txt');
+
+  response = await server.callTool('browser_click', {
+    element: 'Textbox',
+    ref: 's3e4',
+  });
+
+  expect(response[0]).toContain('There is a file chooser visible that requires browser_choose_file to be called');
+  expect(response[0]).toContain('button "Button" [ref=s4e5]');
+
+  response = await server.callTool('browser_click', {
+    element: 'Button',
+    ref: 's4e5',
+  });
+
+  expect(response[0], 'not submitting browser_choose_file dismisses file chooser').not.toContain('There is a file chooser visible that requires browser_choose_file to be called');
 });
 
 test('sse transport', async () => {

@@ -203,6 +203,11 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
     - `ref` (string): Exact target element reference from the page snapshot
     - `values` (array): Array of values to select in the dropdown.
 
+- **browser_choose_file**
+  - Description: Choose one or multiple files to upload
+  - Parameters:
+    - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
+
 - **browser_press_key**
   - Description: Press a key on the keyboard
   - Parameters:
@@ -282,6 +287,11 @@ Vision Mode provides tools for visual-based interactions using screenshots. Here
   - Description: Press a key on the keyboard
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
+
+- **browser_choose_file**
+  - Description: Choose one or multiple files to upload
+  - Parameters:
+    - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
 
 - **browser_save_as_pdf**
   - Description: Save page as PDF

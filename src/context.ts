@@ -23,6 +23,7 @@ export class Context {
   private _page: playwright.Page | undefined;
   private _console: playwright.ConsoleMessage[] = [];
   private _createPagePromise: Promise<playwright.Page> | undefined;
+  private _fileChooser: playwright.FileChooser | undefined;
   private _lastSnapshotFrames: playwright.FrameLocator[] = [];
 
   constructor(userDataDir: string, launchOptions?: playwright.LaunchOptions) {
@@ -41,6 +42,7 @@ export class Context {
           this._console.length = 0;
       });
       page.on('close', () => this._onPageClose());
+      page.on('filechooser', chooser => this._fileChooser = chooser);
       page.setDefaultNavigationTimeout(60000);
       page.setDefaultTimeout(5000);
       this._page = page;
@@ -58,6 +60,7 @@ export class Context {
     this._createPagePromise = undefined;
     this._browser = undefined;
     this._page = undefined;
+    this._fileChooser = undefined;
     this._console.length = 0;
   }
 
@@ -75,6 +78,21 @@ export class Context {
     if (!this._page)
       return;
     await this._page.close();
+  }
+
+  async submitFileChooser(paths: string[]) {
+    if (!this._fileChooser)
+      throw new Error('No file chooser visible');
+    await this._fileChooser.setFiles(paths);
+    this._fileChooser = undefined;
+  }
+
+  hasFileChooser() {
+    return !!this._fileChooser;
+  }
+
+  clearFileChooser() {
+    this._fileChooser = undefined;
   }
 
   private async _createPage(): Promise<{ browser?: playwright.Browser, page: playwright.Page }> {
