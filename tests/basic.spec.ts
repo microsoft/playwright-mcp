@@ -465,7 +465,7 @@ test('browser_choose_file', async ({ server }) => {
     params: {
       name: 'browser_navigate',
       arguments: {
-        url: 'data:text/html,<html><title>Title</title><input type="file" /></html>',
+        url: 'data:text/html,<html><title>Title</title><input type="file" /><button>Button</button></html>',
       },
     },
   });
@@ -503,6 +503,21 @@ test('browser_choose_file', async ({ server }) => {
 
   expect(response.result.content[0].text).not.toContain('There is a file chooser visible that requires browser_choose_file to be called');
   expect(response.result.content[0].text).toContain('textbox [ref=s3e4]: C:\\fakepath\\test.txt');
+  expect(response.result.content[0].text).toContain('button "Button" [ref=s3e5]');
+
+  response = await server.send({
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'tools/call',
+    params: {
+      name: 'browser_click',
+      arguments: {
+        element: 'Textbox',
+        ref: 's3e5',
+      },
+    },
+  });
+  expect(response.result.content[0].text, 'not submitting browser_choose_file dismisses file chooser').not.toContain('There is a file chooser visible that requires browser_choose_file to be called');
 });
 
 test('sse transport', async () => {
