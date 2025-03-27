@@ -87,7 +87,7 @@ export async function captureAriaSnapshot(context: Context, status: string = '')
 - Page Title: ${await page.title()}
 - Page Snapshot
 \`\`\`yaml
-${await context.allFrameSnapshot()}
+${await context.allFramesSnapshot()}
 \`\`\`
 `
     }],

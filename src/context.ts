@@ -92,7 +92,7 @@ export class Context {
     return { page };
   }
 
-  async allFrameSnapshot() {
+  async allFramesSnapshot() {
     const page = this.existingPage();
     const visibleFrames = await page.locator('iframe').filter({ visible: true }).all();
     this._lastSnapshotFrames = visibleFrames.map(frame => frame.contentFrame());
