@@ -77,23 +77,14 @@ export async function runAndWait(context: Context, status: string, callback: (pa
   await waitForCompletion(page, () => callback(page));
   if (dismissFileChooser)
     context.clearFileChooser();
-  const result: ToolResult = snapshot ? await captureAriaSnapshot(context, page, status) : {
+  const result: ToolResult = snapshot ? await captureAriaSnapshot(context, status) : {
     content: [{ type: 'text', text: status }],
   };
   return result;
 }
 
-export async function captureAllFrameSnapshot(page: playwright.Page): Promise<string> {
-  const snapshots = await Promise.all(page.frames().map(frame => frame.locator('html').ariaSnapshot({ ref: true })));
-  const scopedSnapshots = snapshots.map((snapshot, frameIndex) => {
-    if (frameIndex === 0)
-      return snapshot;
-    return snapshot.replaceAll('[ref=', `[ref=f${frameIndex}`);
-  });
-  return scopedSnapshots.join('\n');
-}
-
-export async function captureAriaSnapshot(context: Context, page: playwright.Page, status: string = ''): Promise<ToolResult> {
+export async function captureAriaSnapshot(context: Context, status: string = ''): Promise<ToolResult> {
+  const page = context.existingPage();
   const lines = [];
   if (status)
     lines.push(`${status}`);
@@ -107,7 +98,7 @@ export async function captureAriaSnapshot(context: Context, page: playwright.Pag
   lines.push(
       `- Page Snapshot`,
       '```yaml',
-      await captureAllFrameSnapshot(page),
+      await context.allFramesSnapshot(),
       '```',
       ''
   );
