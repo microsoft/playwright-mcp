@@ -42,6 +42,7 @@ program
       const server = createServer({
         userDataDir: options.userDataDir ?? await userDataDir(),
         launchOptions,
+        vision: !!options.vision,
       });
       setupExitWatchdog(server);
 

@@ -42,6 +42,7 @@ const snapshotTools: Tool[] = [
   snapshot.hover,
   snapshot.type,
   snapshot.selectOption,
+  snapshot.screenshot,
   ...commonTools,
 ];
 

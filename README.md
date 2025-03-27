@@ -229,6 +229,11 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
   - Description: Save page as PDF
   - Parameters: None
 
+- **browser_take_screenshot**
+  - Description: Capture screenshot of the page
+  - Parameters:
+    - `raw` (string): Optionally returns lossless PNG screenshot. JPEG by default.
+
 - **browser_wait**
   - Description: Wait for a specified time in seconds
   - Parameters:

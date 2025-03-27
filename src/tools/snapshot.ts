@@ -30,7 +30,7 @@ export const snapshot: Tool = {
   },
 
   handle: async context => {
-    return await captureAriaSnapshot(await context.existingPage());
+    return await captureAriaSnapshot(context.existingPage());
   },
 };
 
@@ -132,6 +132,36 @@ export const selectOption: Tool = {
   },
 };
 
+const screenshotSchema = z.object({
+  raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
+});
+
+export const screenshot: Tool = {
+  schema: {
+    name: 'browser_take_screenshot',
+    description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
+    inputSchema: zodToJsonSchema(screenshotSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = screenshotSchema.parse(params);
+    const page = context.existingPage();
+    const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css' } : { type: 'jpeg', quality: 50, scale: 'css' };
+    const screenshot = await page.screenshot(options);
+    return {
+      content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: validatedParams.raw ? 'image/png' : 'image/jpeg' }],
+    };
+  },
+};
+
 function refLocator(page: playwright.Page, ref: string): playwright.Locator {
-  return page.locator(`aria-ref=${ref}`);
+  let frame = page.frames()[0];
+  const match = ref.match(/^f(\d+)(.*)/);
+  if (match) {
+    const frameIndex = parseInt(match[1], 10);
+    frame = page.frames()[frameIndex];
+    ref = match[2];
+  }
+
+  return frame.locator(`aria-ref=${ref}`);
 }

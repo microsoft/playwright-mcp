@@ -69,7 +69,7 @@ class MCPServer extends EventEmitter {
     });
   }
 
-  async send(message: any, options?: { timeout?: number }): Promise<void> {
+  async send(message: any, options?: { timeout?: number }): Promise<any> {
     await this.sendNoReply(message);
     return this._waitForResponse(options || {});
   }
@@ -112,7 +112,8 @@ class MCPServer extends EventEmitter {
 
 type Fixtures = {
   server: MCPServer;
-  startServer: (options?: { env?: NodeJS.ProcessEnv }) => Promise<MCPServer>;
+  visionServer: MCPServer;
+  startServer: (options?: { env?: NodeJS.ProcessEnv, vision?: boolean }) => Promise<MCPServer>;
   wsEndpoint: string;
 };
 
@@ -121,12 +122,19 @@ export const test = baseTest.extend<Fixtures>({
     await use(await startServer());
   },
 
+  visionServer: async ({ startServer }, use) => {
+    await use(await startServer({ vision: true }));
+  },
+
   startServer: async ({ }, use, testInfo) => {
     let server: MCPServer | undefined;
     const userDataDir = testInfo.outputPath('user-data-dir');
 
     use(async options => {
-      server = new MCPServer('node', [path.join(__dirname, '../cli.js'), '--headless', '--user-data-dir', userDataDir], options);
+      const args = ['--headless', '--user-data-dir', userDataDir];
+      if (options?.vision)
+        args.push('--vision');
+      server = new MCPServer('node', [path.join(__dirname, '../cli.js'), ...args], options);
       const initialize = await server.send({
         jsonrpc: '2.0',
         id: 0,

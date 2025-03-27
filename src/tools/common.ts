@@ -126,7 +126,7 @@ export const pdf: Tool = {
     inputSchema: zodToJsonSchema(pdfSchema),
   },
   handle: async context => {
-    const page = await context.existingPage();
+    const page = context.existingPage();
     const fileName = path.join(os.tmpdir(), `/page-${new Date().toISOString()}.pdf`);
     await page.pdf({ path: fileName });
     return {

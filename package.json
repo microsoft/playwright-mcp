@@ -1,6 +1,6 @@
 {
   "name": "@playwright/mcp",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Playwright Tools for MCP",
   "repository": {
     "type": "git",
@@ -18,7 +18,9 @@
     "build": "tsc",
     "lint": "eslint .",
     "watch": "tsc --watch",
-    "test": "playwright test"
+    "test": "playwright test",
+    "clean": "rm -rf lib",
+    "publish": "npm run clean && npm run build && npm run test && npm publish"
   },
   "exports": {
     "./package.json": "./package.json",

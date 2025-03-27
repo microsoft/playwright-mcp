@@ -16,7 +16,7 @@
 
 import { test, expect } from './fixtures';
 
-test('test tool list', async ({ server }) => {
+test('test tool list', async ({ server, visionServer }) => {
   const list = await server.send({
     jsonrpc: '2.0',
     id: 1,
@@ -52,6 +52,9 @@ test('test tool list', async ({ server }) => {
           name: 'browser_select_option',
         }),
         expect.objectContaining({
+          name: 'browser_take_screenshot',
+        }),
+        expect.objectContaining({
           name: 'browser_press_key',
         }),
         expect.objectContaining({
@@ -64,6 +67,56 @@ test('test tool list', async ({ server }) => {
           name: 'browser_close',
         }),
       ],
+    }),
+  }));
+
+  const visionList = await visionServer.send({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/list',
+  });
+
+  expect(visionList).toEqual(expect.objectContaining({
+    id: 1,
+    result: expect.objectContaining({
+      tools: expect.arrayContaining([
+        expect.objectContaining({
+          name: 'browser_navigate',
+        }),
+        expect.objectContaining({
+          name: 'browser_go_back',
+        }),
+        expect.objectContaining({
+          name: 'browser_go_forward',
+        }),
+        expect.objectContaining({
+          name: 'browser_screenshot',
+        }),
+        expect.objectContaining({
+          name: 'browser_move_mouse',
+        }),
+        expect.objectContaining({
+          name: 'browser_click',
+        }),
+        expect.objectContaining({
+          name: 'browser_drag',
+        }),
+        expect.objectContaining({
+          name: 'browser_type',
+        }),
+        expect.objectContaining({
+          name: 'browser_press_key',
+        }),
+        expect.objectContaining({
+          name: 'browser_wait',
+        }),
+        expect.objectContaining({
+          name: 'browser_save_as_pdf',
+        }),
+        expect.objectContaining({
+          name: 'browser_close',
+        }),
+      ]),
     }),
   }));
 });
@@ -361,5 +414,39 @@ test('browser://console', async ({ server }) => {
         text: '[LOG] Hello, world!\n[ERROR] Error',
       }],
     }),
+  }));
+});
+
+test('stitched aria frames', async ({ server }) => {
+  const response = await server.send({
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'tools/call',
+    params: {
+      name: 'browser_navigate',
+      arguments: {
+        url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe>',
+      },
+    },
+  });
+
+  expect(response).toEqual(expect.objectContaining({
+    id: 2,
+    result: {
+      content: [{
+        type: 'text',
+        text: `
+- Page URL: data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe>
+- Page Title: 
+- Page Snapshot
+\`\`\`yaml
+- document [ref=s1e2]:
+  - heading \"Hello\" [level=1] [ref=s1e4]
+- document [ref=f1s1e2]:
+  - heading \"World\" [level=1] [ref=f1s1e4]
+\`\`\`
+`,
+      }],
+    },
   }));
 });
