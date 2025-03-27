@@ -52,6 +52,9 @@ test('test tool list', async ({ server }) => {
           name: 'browser_select_option',
         }),
         expect.objectContaining({
+          name: 'batch_process_snapshot',
+        }),
+        expect.objectContaining({
           name: 'browser_press_key',
         }),
         expect.objectContaining({
@@ -364,35 +367,6 @@ test('browser://console', async ({ server }) => {
   }));
 });
 
-test('test batch processing in screenshot mode', async ({ server }) => {
-  const fs = require('fs');
-  const path = require('path');
-  
-  const testData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/screenshot_test.json'), 'utf8'));
-  
-  const response = await server.send({
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'tools/call',
-    params: {
-      name: 'batch_process',
-      arguments: {
-        input: testData
-      }
-    }
-  });
-
-  expect(response).toEqual(expect.objectContaining({
-    id: 1,
-    result: expect.objectContaining({
-      content: [{
-        type: 'text',
-        text: expect.stringContaining('Successfully executed')
-      }]
-    })
-  }));
-});
-
 test('test batch processing in snapshot mode', async ({ server }) => {
   const fs = require('fs');
   const path = require('path');
@@ -404,7 +378,7 @@ test('test batch processing in snapshot mode', async ({ server }) => {
     id: 1,
     method: 'tools/call',
     params: {
-      name: 'batch_process',
+      name: 'batch_process_snapshot',
       arguments: {
         input: testData
       }

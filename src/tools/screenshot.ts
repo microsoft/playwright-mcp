@@ -172,7 +172,7 @@ const screenshotBatchSchema = batchSchema.extend({
 
 export const batch: Tool = {
   schema: {
-    name: 'batch_process',
+    name: 'batch_process_screenshot',
     description: 'Run a bunch of steps in vision mode',
     inputSchema: zodToJsonSchema(screenshotBatchSchema)
   },
