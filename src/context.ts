@@ -84,6 +84,10 @@ export class Context {
     this._fileChooser = undefined;
   }
 
+  hasFileChooser() {
+    return !!this._fileChooser;
+  }
+
   private async _createPage(): Promise<{ browser?: playwright.Browser, page: playwright.Page }> {
     if (process.env.PLAYWRIGHT_WS_ENDPOINT) {
       const url = new URL(process.env.PLAYWRIGHT_WS_ENDPOINT);

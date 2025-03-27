@@ -74,7 +74,7 @@ async function waitForCompletion<R>(page: playwright.Page, callback: () => Promi
 export async function runAndWait(context: Context, status: string, callback: (page: playwright.Page) => Promise<any>, snapshot: boolean = false): Promise<ToolResult> {
   const page = context.existingPage();
   await waitForCompletion(page, () => callback(page));
-  return snapshot ? captureAriaSnapshot(page, status) : {
+  return snapshot ? captureAriaSnapshot(context, page, status) : {
     content: [{ type: 'text', text: status }],
   };
 }
@@ -89,16 +89,23 @@ export async function captureAllFrameSnapshot(page: playwright.Page): Promise<st
   return scopedSnapshots.join('\n');
 }
 
-export async function captureAriaSnapshot(page: playwright.Page, status: string = ''): Promise<ToolResult> {
+export async function captureAriaSnapshot(context: Context, page: playwright.Page, status: string = ''): Promise<ToolResult> {
+  const lines = [];
+  if (status)
+    lines.push(`${status}\n`);
+  lines.push(
+      `- Page URL: ${page.url()}`,
+      `- Page Title: ${await page.title()}`
+  );
+  if (context.hasFileChooser())
+    lines.push(`- There is a file chooser visible that requires browser_choose_file to be called`);
+  lines.push(
+      `- Page Snapshot`,
+      '```yaml',
+      await captureAllFrameSnapshot(page),
+      '```',
+  );
   return {
-    content: [{ type: 'text', text: `${status ? `${status}\n` : ''}
-- Page URL: ${page.url()}
-- Page Title: ${await page.title()}
-- Page Snapshot
-\`\`\`yaml
-${await captureAllFrameSnapshot(page)}
-\`\`\`
-`
-    }],
+    content: [{ type: 'text', text: lines.join('\n') }],
   };
 }

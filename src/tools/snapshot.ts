@@ -30,7 +30,7 @@ export const snapshot: Tool = {
   },
 
   handle: async context => {
-    return await captureAriaSnapshot(context.existingPage());
+    return await captureAriaSnapshot(context, context.existingPage());
   },
 };
 
