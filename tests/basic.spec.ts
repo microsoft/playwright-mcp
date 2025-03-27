@@ -455,7 +455,7 @@ test('stitched aria frames', async ({ server }) => {
 
 test('sse transport', async () => {
   const port = 53828 + test.info().parallelIndex;
-  const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '' + port]);
+  const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '' + port], { stdio: 'inherit' });
   try {
     // need dynamic import b/c of some ESM nonsense
     const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
