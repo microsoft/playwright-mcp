@@ -40,6 +40,8 @@ export class Context {
           this._console.length = 0;
       });
       page.on('close', () => this._onPageClose());
+      page.setDefaultNavigationTimeout(60000);
+      page.setDefaultTimeout(5000);
       this._page = page;
       this._browser = browser;
       return page;
