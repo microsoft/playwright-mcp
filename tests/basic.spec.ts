@@ -217,21 +217,26 @@ test('stitched aria frames', async ({ client }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: {
-      url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>',
+      url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>',
     },
   })).toHaveTextContent(`
-- Page URL: data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>
+- Page URL: data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>
 - Page Title: 
 - Page Snapshot
 \`\`\`yaml
-- document [ref=s1e2]:
-  - heading "Hello" [level=1] [ref=s1e4]
-
-# iframe src=data:text/html,<h1>World</h1>
-- document [ref=f0s1e2]:
-  - heading "World" [level=1] [ref=f0s1e4]
+- heading "Hello" [level=1] [ref=s1e3]
+- iframe [ref=s1e4]:
+  - button "World" [ref=f1s1e3]
 \`\`\`
 `);
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'World',
+      ref: 'f1s1e3',
+    },
+  })).toContainTextContent('"World" clicked');
 });
 
 test('browser_choose_file', async ({ client }) => {
