@@ -89,8 +89,8 @@ async function startSSEServer(port: number, serverList: ServerList) {
   const sessions = new Map<string, SSEServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
     if (req.method === 'POST') {
-      const host = req.headers.host ?? 'http://unknown';
-      const sessionId = new URL(host + req.url!).searchParams.get('sessionId');
+      const searchParams = new URL(`http://localhost${req.url}`).searchParams;
+      const sessionId = searchParams.get('sessionId');
       if (!sessionId) {
         res.statusCode = 400;
         res.end('Missing sessionId');
