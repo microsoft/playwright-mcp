@@ -1,12 +1,12 @@
 {
   "test_cases": [
     {
-      "definition": "Snapshot mode test - basic interactions",
+      "definition": "Simplified batch test with key tools",
       "steps": [
         {
           "name": "browser_navigate",
           "params": {
-            "url": "data:text/html,<html><title>Snapshot Test</title><select><option value='1'>One</option><option value='2'>Two</option></select><button>Submit</button><input type='text'/></html>"
+            "url": "data:text/html,<html><title>Simple Batch Test</title><button id='btn1'>Click Me</button><select id='sel1'><option value='1'>One</option><option value='2'>Two</option></select><input type='text' id='input1' value='Initial text'/></html>"
           }
         },
         {
@@ -14,27 +14,18 @@
           "params": {}
         },
         {
-          "name": "browser_select_option",
-          "params": {
-            "element": "Select dropdown",
-            "ref": "s1e4",
-            "values": ["2"]
-          }
-        },
-        {
-          "name": "browser_type",
-          "params": {
-            "element": "Text input",
-            "ref": "s1e6",
-            "text": "Hello from snapshot mode",
-            "submit": true
-          }
-        },
-        {
           "name": "browser_click",
           "params": {
-            "element": "Submit button",
-            "ref": "s1e5"
+            "element": "Button",
+            "ref": "s2e4"
+          }
+        },
+        {
+          "name": "browser_select_option",
+          "params": {
+            "element": "Dropdown",
+            "ref": "s3e5",
+            "values": ["2"]
           }
         },
         {
@@ -44,4 +35,4 @@
       ]
     }
   ]
-} 
+}
