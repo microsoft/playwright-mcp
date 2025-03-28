@@ -248,7 +248,10 @@ export const batch: Tool = {
     }
 
     return {
-      content: [{ type: 'text', text: `Successfully executed ${results.length} snapshot steps` }]
+      content: [{ 
+        type: 'text', 
+        text: `Successfully executed snapshot steps:\n${JSON.stringify(results, null, 2)}` 
+      }]
     };
   }
 };
