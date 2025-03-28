@@ -54,9 +54,9 @@ program
       if (options.port) {
         const sessions = new Map<string, SSEServerTransport>();
         const httpServer = http.createServer(async (req, res) => {
+          const url = new URL(req.url ?? '', `http://${req.headers.host}`);
           if (req.method === 'POST') {
-            const host = req.headers.host ?? 'http://unknown';
-            const sessionId = new URL(host + req.url!).searchParams.get('sessionId');
+            const sessionId = url.searchParams.get('sessionId');
             if (!sessionId) {
               res.statusCode = 400;
               res.end('Missing sessionId');
