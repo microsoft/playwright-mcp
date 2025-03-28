@@ -118,24 +118,18 @@ export class Context {
   private async _allFramesSnapshot(frame: playwright.Page | playwright.FrameLocator): Promise<string> {
     const frameIndex = this._lastSnapshotFrames.push(frame) - 1;
     const snapshot = await frame.locator('body').ariaSnapshot({ ref: true });
-    const lines = snapshot.split('\n');
-    const result = [];
-    for (let line of lines) {
+    const result = await Promise.all(snapshot.split('\n').map(async line => {
+      const scopedLine = frameIndex > 0 ? line.replace('[ref=', `[ref=f${frameIndex}`) : line;
       const match = line.match(/^(\s*)- iframe \[ref=(.*)\]/);
-      if (frameIndex > 0)
-        line = line.replace('[ref=', `[ref=f${frameIndex}`);
-      if (!match) {
-        result.push(line);
-        continue;
-      }
-
-      const leadingSpace = match[1];
-      const ref = match[2];
-      const childFrame = frame.frameLocator(`aria-ref=${ref}`);
-      const childSnapshot = await this._allFramesSnapshot(childFrame);
-      result.push(line + ':', childSnapshot.split('\n').map(l => leadingSpace + '  ' + l).join('\n'));
-    }
-    return result.join('\n');
+      if (!match)
+        return [scopedLine];
+      const [, leadingSpace, ref] = match;
+      const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
+      const indentedChildSnapshot = childSnapshot.split('\n').map(l => leadingSpace + '  ' + l);
+      indentedChildSnapshot.unshift(scopedLine + ':');
+      return indentedChildSnapshot;
+    }));
+    return result.flat().join('\n');
   }
 
   refLocator(ref: string): playwright.Locator {
