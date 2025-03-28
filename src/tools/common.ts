@@ -31,7 +31,7 @@ const navigateSchema = z.object({
 export const navigate: ToolFactory = snapshot => ({
   schema: {
     name: 'browser_navigate',
-    description: 'Navigate to a URL',
+    description: 'This tool allows direct web navigation by providing a URL. When instructed to go to, navigate to, or get content from a website, use this tool to load the page and retrieve its contents. The tool creates a browser page, loads the specified URL, and can capture the pages accessibility snapshot for further analysis."',
     inputSchema: zodToJsonSchema(navigateSchema),
   },
   handle: async (context, params) => {
