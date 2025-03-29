@@ -15,160 +15,101 @@
  */
 
 import path from 'path';
-import { spawn } from 'child_process';
-import EventEmitter from 'events';
 import { chromium } from 'playwright';
 
-import { test as baseTest, expect } from '@playwright/test';
-
-import type { ChildProcess } from 'child_process';
-
-export { expect } from '@playwright/test';
-
-class MCPServer extends EventEmitter {
-  private _child: ChildProcess;
-  private _messageQueue: any[] = [];
-  private _messageResolvers: ((value: any) => void)[] = [];
-  private _buffer: string = '';
-
-  constructor(command: string, args: string[], options?: { env?: NodeJS.ProcessEnv }) {
-    super();
-    this._child = spawn(command, args, {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, ...options?.env },
-    });
-
-    this._child.stdout?.on('data', data => {
-      this._buffer += data.toString();
-      let newlineIndex: number;
-
-      while ((newlineIndex = this._buffer.indexOf('\n')) !== -1) {
-        const message = this._buffer.slice(0, newlineIndex).trim();
-        this._buffer = this._buffer.slice(newlineIndex + 1);
-
-        if (!message)
-          continue;
-
-        const parsed = JSON.parse(message);
-        if (this._messageResolvers.length > 0) {
-          const resolve = this._messageResolvers.shift();
-          resolve!(parsed);
-        } else {
-          this._messageQueue.push(parsed);
-        }
-      }
-    });
-
-    this._child.stderr?.on('data', data => {
-      throw new Error('Server stderr:', data.toString());
-    });
-
-    this._child.on('exit', code => {
-      if (code !== 0)
-        throw new Error(`Server exited with code ${code}`);
-    });
-  }
-
-  async send(message: any, options?: { timeout?: number }): Promise<void> {
-    await this.sendNoReply(message);
-    return this._waitForResponse(options || {});
-  }
-
-  async sendNoReply(message: any): Promise<void> {
-    const jsonMessage = JSON.stringify(message) + '\n';
-    await new Promise<void>((resolve, reject) => {
-      this._child.stdin?.write(jsonMessage, err => {
-        if (err)
-          reject(err);
-        else
-          resolve();
-      });
-    });
-  }
-
-  private async _waitForResponse(options: { timeout?: number }): Promise<any> {
-    if (this._messageQueue.length > 0)
-      return this._messageQueue.shift();
-
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error('Timeout waiting for message'));
-      }, options.timeout || 15000);
-
-      this._messageResolvers.push(message => {
-        clearTimeout(timeoutId);
-        resolve(message);
-      });
-    });
-  }
-
-  async close(): Promise<void> {
-    return new Promise(resolve => {
-      this._child.on('exit', () => resolve());
-      this._child.stdin?.end();
-    });
-  }
-}
+import { test as baseTest, expect as baseExpect } from '@playwright/test';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 type Fixtures = {
-  server: MCPServer;
-  startServer: (options?: { env?: NodeJS.ProcessEnv }) => Promise<MCPServer>;
+  client: Client;
+  visionClient: Client;
+  startClient: (options?: { env?: NodeJS.ProcessEnv, vision?: boolean }) => Promise<Client>;
   wsEndpoint: string;
 };
 
 export const test = baseTest.extend<Fixtures>({
-  server: async ({ startServer }, use) => {
-    await use(await startServer());
+
+  client: async ({ startClient }, use) => {
+    await use(await startClient());
   },
 
-  startServer: async ({ }, use, testInfo) => {
-    let server: MCPServer | undefined;
+  visionClient: async ({ startClient }, use) => {
+    await use(await startClient({ vision: true }));
+  },
+
+  startClient: async ({ }, use, testInfo) => {
     const userDataDir = testInfo.outputPath('user-data-dir');
+    let client: StdioClientTransport | undefined;
 
     use(async options => {
-      server = new MCPServer('node', [path.join(__dirname, '../cli.js'), '--headless', '--user-data-dir', userDataDir], options);
-      const initialize = await server.send({
-        jsonrpc: '2.0',
-        id: 0,
-        method: 'initialize',
-        params: {
-          protocolVersion: '2024-11-05',
-          capabilities: {},
-          clientInfo: {
-            name: 'Playwright Test',
-            version: '0.0.0',
-          },
-        },
+      const args = ['--headless', '--user-data-dir', userDataDir];
+      if (options?.vision)
+        args.push('--vision');
+      const transport = new StdioClientTransport({
+        command: 'node',
+        args: [path.join(__dirname, '../cli.js'), ...args],
       });
-
-      expect(initialize).toEqual(expect.objectContaining({
-        id: 0,
-        result: expect.objectContaining({
-          protocolVersion: '2024-11-05',
-          capabilities: {
-            tools: {},
-            resources: {},
-          },
-          serverInfo: expect.objectContaining({
-            name: 'Playwright',
-            version: expect.any(String),
-          }),
-        }),
-      }));
-
-      await server.sendNoReply({
-        jsonrpc: '2.0',
-        method: 'notifications/initialized',
-      });
-      return server;
+      const client = new Client({ name: 'test', version: '1.0.0' });
+      await client.connect(transport);
+      await client.ping();
+      return client;
     });
 
-    await server?.close();
+    await client?.close();
   },
 
   wsEndpoint: async ({ }, use) => {
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
+  },
+});
+
+type Response = Awaited<ReturnType<Client['callTool']>>;
+
+export const expect = baseExpect.extend({
+  toHaveTextContent(response: Response, content: string | string[]) {
+    const isNot = this.isNot;
+    try {
+      content = Array.isArray(content) ? content : [content];
+      const texts = (response.content as any).map(c => c.text);
+      if (isNot)
+        baseExpect(texts).not.toEqual(content);
+      else
+        baseExpect(texts).toEqual(content);
+    } catch (e) {
+      return {
+        pass: isNot,
+        message: () => e.message,
+      };
+    }
+    return {
+      pass: !isNot,
+      message: () => ``,
+    };
+  },
+
+  toContainTextContent(response: Response, content: string | string[]) {
+    const isNot = this.isNot;
+    try {
+      content = Array.isArray(content) ? content : [content];
+      const texts = (response.content as any).map(c => c.text);
+      for (let i = 0; i < texts.length; i++) {
+        if (isNot)
+          expect(texts[i]).not.toContain(content[i]);
+        else
+          expect(texts[i]).toContain(content[i]);
+      }
+    } catch (e) {
+      return {
+        pass: isNot,
+        message: () => e.message,
+      };
+    }
+    return {
+      pass: !isNot,
+      message: () => ``,
+    };
   },
 });

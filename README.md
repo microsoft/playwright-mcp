@@ -93,27 +93,19 @@ This mode is useful for background or batch operations.
 ### Running headed browser on Linux w/o DISPLAY
 
 When running headed browser on system w/o display or from worker processes of the IDEs,
-you can run Playwright in a client-server manner. You'll run the Playwright server
-from environment with the DISPLAY
+run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
 
-```sh
-npx playwright run-server
+```bash
+npx @playwright/mcp@latest --port 8931
 ```
 
-And then in MCP config, add following to the `env`:
+And then in MCP client config, set the `url` to the SSE endpoint:
 
 ```js
 {
   "mcpServers": {
     "playwright": {
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ],
-      "env": {
-        // Use the endpoint from the output of the server above.
-        "PLAYWRIGHT_WS_ENDPOINT": "ws://localhost:<port>/"
-      }
+      "url": "http://localhost:8931/sse"
     }
   }
 }
@@ -211,6 +203,11 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
     - `ref` (string): Exact target element reference from the page snapshot
     - `values` (array): Array of values to select in the dropdown.
 
+- **browser_choose_file**
+  - Description: Choose one or multiple files to upload
+  - Parameters:
+    - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
+
 - **browser_press_key**
   - Description: Press a key on the keyboard
   - Parameters:
@@ -223,6 +220,11 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
 - **browser_save_as_pdf**
   - Description: Save page as PDF
   - Parameters: None
+
+- **browser_take_screenshot**
+  - Description: Capture screenshot of the page
+  - Parameters:
+    - `raw` (string): Optionally returns lossless PNG screenshot. JPEG by default.
 
 - **browser_wait**
   - Description: Wait for a specified time in seconds
@@ -285,6 +287,11 @@ Vision Mode provides tools for visual-based interactions using screenshots. Here
   - Description: Press a key on the keyboard
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
+
+- **browser_choose_file**
+  - Description: Choose one or multiple files to upload
+  - Parameters:
+    - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
 
 - **browser_save_as_pdf**
   - Description: Save page as PDF

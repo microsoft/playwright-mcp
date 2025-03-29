@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
+import http from 'http';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
 import { program } from 'commander';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+
 
 import { createServer } from './index';
+import { ServerList } from './server';
 
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
+import assert from 'assert';
 
 const packageJSON = require('../package.json');
 
@@ -34,32 +38,39 @@ program
     .option('--headless', 'Run browser in headless mode, headed by default')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--port <port>', 'Port to listen on for SSE transport.')
     .action(async options => {
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
         channel: 'chrome',
       };
-      const server = createServer({
-        userDataDir: options.userDataDir ?? await userDataDir(),
+      const userDataDir = options.userDataDir ?? await createUserDataDir();
+      const serverList = new ServerList(() => createServer({
+        userDataDir,
         launchOptions,
-      });
-      setupExitWatchdog(server);
+        vision: !!options.vision,
+      }));
+      setupExitWatchdog(serverList);
 
-      const transport = new StdioServerTransport();
-      await server.connect(transport);
+      if (options.port) {
+        startSSEServer(+options.port, serverList);
+      } else {
+        const server = await serverList.create();
+        await server.connect(new StdioServerTransport());
+      }
     });
 
-function setupExitWatchdog(server: Server) {
+function setupExitWatchdog(serverList: ServerList) {
   process.stdin.on('close', async () => {
     setTimeout(() => process.exit(0), 15000);
-    await server.close();
+    await serverList.closeAll();
     process.exit(0);
   });
 }
 
 program.parse(process.argv);
 
-async function userDataDir() {
+async function createUserDataDir() {
   let cacheDirectory: string;
   if (process.platform === 'linux')
     cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
@@ -72,4 +83,65 @@ async function userDataDir() {
   const result = path.join(cacheDirectory, 'ms-playwright', 'mcp-chrome-profile');
   await fs.promises.mkdir(result, { recursive: true });
   return result;
+}
+
+async function startSSEServer(port: number, serverList: ServerList) {
+  const sessions = new Map<string, SSEServerTransport>();
+  const httpServer = http.createServer(async (req, res) => {
+    if (req.method === 'POST') {
+      const searchParams = new URL(`http://localhost${req.url}`).searchParams;
+      const sessionId = searchParams.get('sessionId');
+      if (!sessionId) {
+        res.statusCode = 400;
+        res.end('Missing sessionId');
+        return;
+      }
+      const transport = sessions.get(sessionId);
+      if (!transport) {
+        res.statusCode = 404;
+        res.end('Session not found');
+        return;
+      }
+
+      await transport.handlePostMessage(req, res);
+      return;
+    } else if (req.method === 'GET') {
+      const transport = new SSEServerTransport('/sse', res);
+      sessions.set(transport.sessionId, transport);
+      const server = await serverList.create();
+      res.on('close', () => {
+        sessions.delete(transport.sessionId);
+        serverList.close(server).catch(e => console.error(e));
+      });
+      await server.connect(transport);
+      return;
+    } else {
+      res.statusCode = 405;
+      res.end('Method not allowed');
+    }
+  });
+
+  httpServer.listen(port, () => {
+    const address = httpServer.address();
+    assert(address, 'Could not bind server socket');
+    let url: string;
+    if (typeof address === 'string') {
+      url = address;
+    } else {
+      const resolvedPort = address.port;
+      let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
+      if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
+        resolvedHost = 'localhost';
+      url = `http://${resolvedHost}:${resolvedPort}`;
+    }
+    console.log(`Listening on ${url}`);
+    console.log('Put this in your client config:');
+    console.log(JSON.stringify({
+      'mcpServers': {
+        'playwright': {
+          'url': `${url}/sse`
+        }
+      }
+    }, undefined, 2));
+  });
 }

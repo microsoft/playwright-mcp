@@ -79,10 +79,38 @@ export function createServerWithTools(options: Options): Server {
     return { contents };
   });
 
+  const oldClose = server.close.bind(server);
+
   server.close = async () => {
-    await server.close();
+    await oldClose();
     await context.close();
   };
 
   return server;
+}
+
+export class ServerList {
+  private _servers: Server[] = [];
+  private _serverFactory: () => Server;
+
+  constructor(serverFactory: () => Server) {
+    this._serverFactory = serverFactory;
+  }
+
+  async create() {
+    const server = this._serverFactory();
+    this._servers.push(server);
+    return server;
+  }
+
+  async close(server: Server) {
+    const index = this._servers.indexOf(server);
+    if (index !== -1)
+      this._servers.splice(index, 1);
+    await server.close();
+  }
+
+  async closeAll() {
+    await Promise.all(this._servers.map(server => server.close()));
+  }
 }

@@ -31,7 +31,7 @@ export const screenshot: Tool = {
   },
 
   handle: async context => {
-    const page = await context.existingPage();
+    const page = context.existingPage();
     const screenshot = await page.screenshot({ type: 'jpeg', quality: 50, scale: 'css' });
     return {
       content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: 'image/jpeg' }],
@@ -57,7 +57,7 @@ export const moveMouse: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = moveMouseSchema.parse(params);
-    const page = await context.existingPage();
+    const page = context.existingPage();
     await page.mouse.move(validatedParams.x, validatedParams.y);
     return {
       content: [{ type: 'text', text: `Moved mouse to (${validatedParams.x}, ${validatedParams.y})` }],

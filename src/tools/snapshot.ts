@@ -32,7 +32,7 @@ export const snapshot: Tool = {
   },
 
   handle: async context => {
-    return await captureAriaSnapshot(await context.existingPage());
+    return await captureAriaSnapshot(context);
   },
 };
 
@@ -50,7 +50,7 @@ export const click: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `"${validatedParams.element}" clicked`, page => refLocator(page, validatedParams.ref).click(), true);
+    return runAndWait(context, `"${validatedParams.element}" clicked`, () => context.refLocator(validatedParams.ref).click(), true);
   },
 };
 
@@ -70,9 +70,9 @@ export const drag: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = dragSchema.parse(params);
-    return runAndWait(context, `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`, async page => {
-      const startLocator = refLocator(page, validatedParams.startRef);
-      const endLocator = refLocator(page, validatedParams.endRef);
+    return runAndWait(context, `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`, async () => {
+      const startLocator = context.refLocator(validatedParams.startRef);
+      const endLocator = context.refLocator(validatedParams.endRef);
       await startLocator.dragTo(endLocator);
     }, true);
   },
@@ -87,7 +87,7 @@ export const hover: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `Hovered over "${validatedParams.element}"`, page => refLocator(page, validatedParams.ref).hover(), true);
+    return runAndWait(context, `Hovered over "${validatedParams.element}"`, () => context.refLocator(validatedParams.ref).hover(), true);
   },
 };
 
@@ -105,8 +105,8 @@ export const type: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
-    return await runAndWait(context, `Typed "${validatedParams.text}" into "${validatedParams.element}"`, async page => {
-      const locator = refLocator(page, validatedParams.ref);
+    return await runAndWait(context, `Typed "${validatedParams.text}" into "${validatedParams.element}"`, async () => {
+      const locator = context.refLocator(validatedParams.ref);
       await locator.fill(validatedParams.text);
       if (validatedParams.submit)
         await locator.press('Enter');
@@ -127,8 +127,8 @@ export const selectOption: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = selectOptionSchema.parse(params);
-    return await runAndWait(context, `Selected option in "${validatedParams.element}"`, async page => {
-      const locator = refLocator(page, validatedParams.ref);
+    return await runAndWait(context, `Selected option in "${validatedParams.element}"`, async () => {
+      const locator = context.refLocator(validatedParams.ref);
       await locator.selectOption(validatedParams.values);
     }, true);
   },
@@ -254,4 +254,26 @@ export const batch: Tool = {
       }]
     };
   }
+};
+
+const screenshotSchema = z.object({
+  raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
+});
+
+export const screenshot: Tool = {
+  schema: {
+    name: 'browser_take_screenshot',
+    description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
+    inputSchema: zodToJsonSchema(screenshotSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = screenshotSchema.parse(params);
+    const page = context.existingPage();
+    const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css' } : { type: 'jpeg', quality: 50, scale: 'css' };
+    const screenshot = await page.screenshot(options);
+    return {
+      content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: validatedParams.raw ? 'image/png' : 'image/jpeg' }],
+    };
+  },
 };

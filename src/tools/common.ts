@@ -41,7 +41,7 @@ export const navigate: ToolFactory = snapshot => ({
     // Cap load event to 5 seconds, the page is operational at this point.
     await page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
     if (snapshot)
-      return captureAriaSnapshot(page);
+      return captureAriaSnapshot(context);
     return {
       content: [{
         type: 'text',
@@ -126,7 +126,7 @@ export const pdf: Tool = {
     inputSchema: zodToJsonSchema(pdfSchema),
   },
   handle: async context => {
-    const page = await context.existingPage();
+    const page = context.existingPage();
     const fileName = path.join(os.tmpdir(), `/page-${new Date().toISOString()}.pdf`);
     await page.pdf({ path: fileName });
     return {
@@ -156,3 +156,21 @@ export const close: Tool = {
     };
   },
 };
+
+const chooseFileSchema = z.object({
+  paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
+});
+
+export const chooseFile: ToolFactory = snapshot => ({
+  schema: {
+    name: 'browser_choose_file',
+    description: 'Choose one or multiple files to upload',
+    inputSchema: zodToJsonSchema(chooseFileSchema),
+  },
+  handle: async (context, params) => {
+    const validatedParams = chooseFileSchema.parse(params);
+    return await runAndWait(context, `Chose files ${validatedParams.paths.join(', ')}`, async () => {
+      await context.submitFileChooser(validatedParams.paths);
+    }, snapshot);
+  },
+});
