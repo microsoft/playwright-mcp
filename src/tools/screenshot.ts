@@ -232,7 +232,7 @@ export const batch: Tool = {
           return {
             content: [{ 
               type: 'text', 
-              text: `Failed to execute vision step "${step.name}": ${error}` 
+              text: `Failed to execute snapshot step "${step.name}": ${error}. Here is the batch tool result: \n${JSON.stringify(results, null, 2)}` 
             }],
             isError: true
           };
@@ -241,7 +241,10 @@ export const batch: Tool = {
     }
 
     return {
-      content: [{ type: 'text', text: `Successfully executed ${results.length} vision steps` }]
+      content: [{ 
+        type: 'text', 
+        text: `Successfully executed snapshot steps:\n${JSON.stringify(results, null, 2)}` 
+      }]
     };
   }
 };
