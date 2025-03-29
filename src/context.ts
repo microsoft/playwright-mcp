@@ -24,7 +24,7 @@ export class Context {
   private _console: playwright.ConsoleMessage[] = [];
   private _createPagePromise: Promise<playwright.Page> | undefined;
   private _fileChooser: playwright.FileChooser | undefined;
-  private _lastSnapshotFrames: playwright.FrameLocator[] = [];
+  private _lastSnapshotFrames: (playwright.Page | playwright.FrameLocator)[] = [];
 
   constructor(userDataDir: string, launchOptions?: playwright.LaunchOptions) {
     this._userDataDir = userDataDir;
@@ -111,39 +111,38 @@ export class Context {
   }
 
   async allFramesSnapshot() {
-    const page = this.existingPage();
-    const visibleFrames = await page.locator('iframe').filter({ visible: true }).all();
-    this._lastSnapshotFrames = visibleFrames.map(frame => frame.contentFrame());
+    this._lastSnapshotFrames = [];
+    return await this._allFramesSnapshot(this.existingPage());
+  }
 
-    const snapshots = await Promise.all([
-      page.locator('html').ariaSnapshot({ ref: true }),
-      ...this._lastSnapshotFrames.map(async (frame, index) => {
-        const snapshot = await frame.locator('html').ariaSnapshot({ ref: true });
-        const args = [];
-        const src = await frame.owner().getAttribute('src');
-        if (src)
-          args.push(`src=${src}`);
-        const name = await frame.owner().getAttribute('name');
-        if (name)
-          args.push(`name=${name}`);
-        return `\n# iframe ${args.join(' ')}\n` + snapshot.replaceAll('[ref=', `[ref=f${index}`);
-      })
-    ]);
-
-    return snapshots.join('\n');
+  private async _allFramesSnapshot(frame: playwright.Page | playwright.FrameLocator): Promise<string> {
+    const frameIndex = this._lastSnapshotFrames.push(frame) - 1;
+    const snapshot = await frame.locator('body').ariaSnapshot({ ref: true });
+    const result = await Promise.all(snapshot.split('\n').map(async line => {
+      const scopedLine = frameIndex > 0 ? line.replace('[ref=', `[ref=f${frameIndex}`) : line;
+      const match = line.match(/^(\s*)- iframe \[ref=(.*)\]/);
+      if (!match)
+        return [scopedLine];
+      const [, leadingSpace, ref] = match;
+      const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
+      const indentedChildSnapshot = childSnapshot.split('\n').map(l => leadingSpace + '  ' + l);
+      indentedChildSnapshot.unshift(scopedLine + ':');
+      return indentedChildSnapshot;
+    }));
+    return result.flat().join('\n');
   }
 
   refLocator(ref: string): playwright.Locator {
-    const page = this.existingPage();
-    let frame: playwright.Frame | playwright.FrameLocator = page.mainFrame();
+    let frame = this._lastSnapshotFrames[0];
     const match = ref.match(/^f(\d+)(.*)/);
     if (match) {
       const frameIndex = parseInt(match[1], 10);
-      if (!this._lastSnapshotFrames[frameIndex])
-        throw new Error(`Frame does not exist. Provide ref from the most current snapshot.`);
       frame = this._lastSnapshotFrames[frameIndex];
       ref = match[2];
     }
+
+    if (!frame)
+      throw new Error(`Frame does not exist. Provide ref from the most current snapshot.`);
 
     return frame.locator(`aria-ref=${ref}`);
   }
