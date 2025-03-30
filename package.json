@@ -1,5 +1,5 @@
 {
-  "name": "@playwright/mcp",
+  "name": "@e2e/mcp",
   "version": "0.0.7",
   "description": "Playwright Tools for MCP",
   "repository": {
