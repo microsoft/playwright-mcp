@@ -145,6 +145,10 @@ export const snapshotParams = z.discriminatedUnion('name', [
     params: z.object({})
   }),
   z.object({
+    name: z.literal('browser_drag'),
+    params: dragSchema
+  }),
+  z.object({
     name: z.literal('browser_click'),
     params: elementSchema
   }),
@@ -197,6 +201,9 @@ export const batch: Tool = {
             break;
           case 'browser_snapshot':
             tool = snapshot;
+            break;
+          case 'browser_drag': 
+            tool = drag;
             break;
           case 'browser_click':
             tool = click;
