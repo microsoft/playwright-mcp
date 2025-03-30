@@ -32,6 +32,7 @@ test('test tool list', async ({ client, visionClient }) => {
     'browser_type',
     'browser_select_option',
     'browser_take_screenshot',
+    'browser_expect_text',
     'browser_press_key',
     'browser_wait',
     'browser_save_as_pdf',
@@ -312,4 +313,36 @@ test('sse transport', async () => {
   } finally {
     cp.kill();
   }
+});
+
+test('test browser_expect_text', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><div>Hello World</div></html>',
+    },
+  });
+
+
+  expect(await client.callTool({
+    name: 'browser_expect_text',
+    arguments: {
+      element: 'Div element',
+      ref: 's1e4',
+      expected: 'Hello World',
+    },
+  })).toHaveTextContent('Successfully verified text "Hello World" in element "Div element"');
+
+  
+  const response = await client.callTool({
+    name: 'browser_expect_text',
+    arguments: {
+      element: 'Div element',
+      ref: 's1e4',
+      expected: 'Wrong Text',
+    },
+  });
+  
+  expect(response.content[0].text).toContain('Assertion failed');
+  expect(response.isError).toBe(true);
 });

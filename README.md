@@ -235,6 +235,13 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
   - Description: Close the page
   - Parameters: None
 
+- **browser_expect_text**
+  - Description: Assert that an element contains specific text content
+  - Parameters:
+    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `ref` (string): Exact target element reference from the page snapshot
+    - `expected` (string): Expected text content of the element
+
 
 ### Vision Mode
 

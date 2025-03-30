@@ -153,3 +153,38 @@ export const screenshot: Tool = {
     };
   },
 };
+
+const expectTextSchema = elementSchema.extend({
+  expected: z.string().describe('Expected text content of the element'),
+});
+
+export const expectText: Tool = {
+  schema: {
+    name: 'browser_expect_text',
+    description: 'Assert that an element contains specific text content',
+    inputSchema: zodToJsonSchema(expectTextSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = expectTextSchema.parse(params);
+    const locator = context.refLocator(validatedParams.ref);
+    const actualText = await locator.textContent();
+    
+    if (actualText !== validatedParams.expected) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Assertion failed: Expected text "${validatedParams.expected}" but found "${actualText}" in element "${validatedParams.element}"`,
+        }],
+        isError: true,
+      };
+    }
+
+    return {
+      content: [{
+        type: 'text',
+        text: `Successfully verified text "${validatedParams.expected}" in element "${validatedParams.element}"`,
+      }],
+    };
+  },
+};
