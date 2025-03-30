@@ -31,7 +31,7 @@ export type ToolResult = {
 
 export type Tool = {
   schema: ToolSchema;
-  handle: (context: Context, params?: Record<string, any>) => Promise<ToolResult>;
+  handle: (context: Context, params?: Record<string, any>, batchMode?: boolean) => Promise<ToolResult>;
 };
 
 export type ToolFactory = (snapshot: boolean) => Tool;

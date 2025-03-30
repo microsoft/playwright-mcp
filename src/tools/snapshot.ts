@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { z } from 'zod';
+import { boolean, z } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
 import { CommonToolParams, batchSchema } from './schemas';
 import * as common from './common';
@@ -48,9 +48,9 @@ export const click: Tool = {
     inputSchema: zodToJsonSchema(elementSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `"${validatedParams.element}" clicked`, () => context.refLocator(validatedParams.ref).click(), true);
+    return runAndWait(context, `"${validatedParams.element}" clicked`, () => context.refLocator(validatedParams.ref).click(), batchMode);
   },
 };
 
@@ -68,13 +68,13 @@ export const drag: Tool = {
     inputSchema: zodToJsonSchema(dragSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = dragSchema.parse(params);
     return runAndWait(context, `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`, async () => {
       const startLocator = context.refLocator(validatedParams.startRef);
       const endLocator = context.refLocator(validatedParams.endRef);
       await startLocator.dragTo(endLocator);
-    }, true);
+    }, batchMode);
   },
 };
 
@@ -85,9 +85,9 @@ export const hover: Tool = {
     inputSchema: zodToJsonSchema(elementSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `Hovered over "${validatedParams.element}"`, () => context.refLocator(validatedParams.ref).hover(), true);
+    return runAndWait(context, `Hovered over "${validatedParams.element}"`, () => context.refLocator(validatedParams.ref).hover(), batchMode);
   },
 };
 
@@ -103,14 +103,14 @@ export const type: Tool = {
     inputSchema: zodToJsonSchema(typeSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = typeSchema.parse(params);
     return await runAndWait(context, `Typed "${validatedParams.text}" into "${validatedParams.element}"`, async () => {
       const locator = context.refLocator(validatedParams.ref);
       await locator.fill(validatedParams.text);
       if (validatedParams.submit)
         await locator.press('Enter');
-    }, true);
+    }, batchMode);
   },
 };
 
@@ -125,12 +125,12 @@ export const selectOption: Tool = {
     inputSchema: zodToJsonSchema(selectOptionSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = selectOptionSchema.parse(params);
     return await runAndWait(context, `Selected option in "${validatedParams.element}"`, async () => {
       const locator = context.refLocator(validatedParams.ref);
       await locator.selectOption(validatedParams.values);
-    }, true);
+    }, batchMode);
   },
 };
 
@@ -181,6 +181,28 @@ const snapshotBatchSchema = batchSchema.extend({
   })
 });
 
+const screenshotSchema = z.object({
+  raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
+});
+
+export const screenshot: Tool = {
+  schema: {
+    name: 'browser_take_screenshot',
+    description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
+    inputSchema: zodToJsonSchema(screenshotSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = screenshotSchema.parse(params);
+    const page = context.existingPage();
+    const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css' } : { type: 'jpeg', quality: 50, scale: 'css' };
+    const screenshot = await page.screenshot(options);
+    return {
+      content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: validatedParams.raw ? 'image/png' : 'image/jpeg' }],
+    };
+  },
+};
+
 export const batch: Tool = {
   schema: {
     name: 'browser_batch_snapshot',
@@ -196,8 +218,8 @@ export const batch: Tool = {
         let tool: Tool;
         
         switch (step.name) {
-          case 'browser_navigate':
-            tool = common.navigate(true);
+          case 'browser_screenshot':
+            tool = screenshot;
             break;
           case 'browser_snapshot':
             tool = snapshot;
@@ -229,6 +251,9 @@ export const batch: Tool = {
           case 'browser_close':
             tool = common.close;
             break;
+          case 'browser_navigate':
+              tool = common.navigate(true);
+              break;  
           case 'browser_go_back':
             tool = common.goBack(true);
             break;
@@ -240,7 +265,7 @@ export const batch: Tool = {
         }
 
         try {
-          const result = await tool.handle(context, step.params);
+          const result = await tool.handle(context, step.params, true);
           results.push({ definition: testCase.definition, step: step.name, result });
         } catch (error) {
           return {
@@ -261,26 +286,4 @@ export const batch: Tool = {
       }]
     };
   }
-};
-
-const screenshotSchema = z.object({
-  raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
-});
-
-export const screenshot: Tool = {
-  schema: {
-    name: 'browser_take_screenshot',
-    description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
-    inputSchema: zodToJsonSchema(screenshotSchema),
-  },
-
-  handle: async (context, params) => {
-    const validatedParams = screenshotSchema.parse(params);
-    const page = context.existingPage();
-    const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css' } : { type: 'jpeg', quality: 50, scale: 'css' };
-    const screenshot = await page.screenshot(options);
-    return {
-      content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: validatedParams.raw ? 'image/png' : 'image/jpeg' }],
-    };
-  },
 };
