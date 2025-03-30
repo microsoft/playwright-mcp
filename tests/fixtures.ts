@@ -71,6 +71,7 @@ export const test = baseTest.extend<Fixtures>({
   cdpEndpoint: async ({ }, use, testInfo) => {
     const port = 3200 + (+process.env.TEST_PARALLEL_INDEX!);
     const browser = await chromium.launchPersistentContext(testInfo.outputPath('user-data-dir'), {
+      channel: 'chrome',
       args: [`--remote-debugging-port=${port}`],
     });
     await use(`http://localhost:${port}`);

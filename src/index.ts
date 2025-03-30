@@ -30,6 +30,7 @@ const commonTools: Tool[] = [
   common.wait,
   common.pdf,
   common.close,
+  common.install,
 ];
 
 const snapshotTools: Tool[] = [

@@ -174,3 +174,20 @@ export const chooseFile: ToolFactory = snapshot => ({
     }, snapshot);
   },
 });
+
+export const install: Tool = {
+  schema: {
+    name: 'browser_install',
+    description: 'Install the browser specified in the config. Call this if you get an error about the browser not being installed.',
+    inputSchema: zodToJsonSchema(z.object({})),
+  },
+  handle: async context => {
+    const channel = await context.install();
+    return {
+      content: [{
+        type: 'text',
+        text: `Browser ${channel} installed`,
+      }],
+    };
+  },
+};

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import { fork } from 'child_process';
+import path from 'path';
+
 import * as playwright from 'playwright';
 
 export type ContextOptions = {
@@ -69,6 +72,25 @@ export class Context {
     this._console.length = 0;
   }
 
+  async install(): Promise<string> {
+    const channel = this._options.launchOptions?.channel || 'chrome';
+    const cli = path.join(require.resolve('playwright/package.json'), '..', 'cli.js');
+    const child = fork(cli, ['install', channel], {
+      stdio: 'pipe',
+    });
+    const output: string[] = [];
+    child.stdout?.on('data', data => output.push(data.toString()));
+    child.stderr?.on('data', data => output.push(data.toString()));
+    return new Promise((resolve, reject) => {
+      child.on('close', code => {
+        if (code === 0)
+          resolve(channel);
+        else
+          reject(new Error(`Failed to install browser: ${output.join('')}`));
+      });
+    });
+  }
+
   existingPage(): playwright.Page {
     if (!this._page)
       throw new Error('Navigate to a location to create a page');
@@ -119,9 +141,19 @@ export class Context {
       return { browser, page };
     }
 
-    const context = await playwright.chromium.launchPersistentContext(this._options.userDataDir, this._options.launchOptions);
+    const context = await this._launchPersistentContext();
     const [page] = context.pages();
     return { page };
+  }
+
+  private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
+    try {
+      return await playwright.chromium.launchPersistentContext(this._options.userDataDir, this._options.launchOptions);
+    } catch (error: any) {
+      if (error.message.includes('Executable doesn\'t exist'))
+        throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
+      throw error;
+    }
   }
 
   async allFramesSnapshot() {

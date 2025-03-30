@@ -40,10 +40,13 @@ program
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
+    .option('--channel <channel>', 'Channel to use for browser, possible values: chrome, msedge, chromium. Default: chrome')
+    .option('--executable-path <path>', 'Path to the browser executable.')
     .action(async options => {
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
-        channel: 'chrome',
+        channel: options.channel ?? 'chrome',
+        executablePath: options.executablePath,
       };
       const userDataDir = options.userDataDir ?? await createUserDataDir();
       const serverList = new ServerList(() => createServer({
