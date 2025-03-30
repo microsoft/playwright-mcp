@@ -58,7 +58,7 @@ export function createServerWithTools(options: Options): Server {
     }
 
     try {
-      const result = await tool.handle(context, request.params.arguments);
+      const result = await tool.handle(context, request.params.arguments, true);
       return result;
     } catch (error) {
       return {

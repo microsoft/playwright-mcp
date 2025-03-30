@@ -24,7 +24,7 @@ import { captureAriaSnapshot, runAndWait } from './utils';
 
 import type { ToolFactory, Tool } from './tool';
 
-const navigateSchema = z.object({
+export const navigateSchema = z.object({
   url: z.string().describe('The URL to navigate to'),
 });
 
@@ -51,7 +51,7 @@ export const navigate: ToolFactory = snapshot => ({
   },
 });
 
-const goBackSchema = z.object({});
+export const goBackSchema = z.object({});
 
 export const goBack: ToolFactory = snapshot => ({
   schema: {
@@ -64,7 +64,7 @@ export const goBack: ToolFactory = snapshot => ({
   },
 });
 
-const goForwardSchema = z.object({});
+export const goForwardSchema = z.object({});
 
 export const goForward: ToolFactory = snapshot => ({
   schema: {
@@ -77,7 +77,7 @@ export const goForward: ToolFactory = snapshot => ({
   },
 });
 
-const waitSchema = z.object({
+export const waitSchema = z.object({
   time: z.number().describe('The time to wait in seconds'),
 });
 
@@ -99,7 +99,7 @@ export const wait: Tool = {
   },
 };
 
-const pressKeySchema = z.object({
+export const pressKeySchema = z.object({
   key: z.string().describe('Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'),
 });
 
@@ -117,7 +117,7 @@ export const pressKey: Tool = {
   },
 };
 
-const pdfSchema = z.object({});
+export const pdfSchema = z.object({});
 
 export const pdf: Tool = {
   schema: {
@@ -138,7 +138,7 @@ export const pdf: Tool = {
   },
 };
 
-const closeSchema = z.object({});
+export const closeSchema = z.object({});
 
 export const close: Tool = {
   schema: {

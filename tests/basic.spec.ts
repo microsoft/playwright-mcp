@@ -31,6 +31,7 @@ test('test tool list', async ({ client, visionClient }) => {
     'browser_hover',
     'browser_type',
     'browser_select_option',
+    'browser_batch_snapshot',
     'browser_take_screenshot',
     'browser_press_key',
     'browser_wait',

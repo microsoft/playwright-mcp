@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-import { z } from 'zod';
+import { boolean, z } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
+import { CommonToolParams, batchSchema } from './schemas';
+import * as common from './common';
 
 import { captureAriaSnapshot, runAndWait } from './utils';
 
@@ -46,9 +48,9 @@ export const click: Tool = {
     inputSchema: zodToJsonSchema(elementSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `"${validatedParams.element}" clicked`, () => context.refLocator(validatedParams.ref).click(), true);
+    return runAndWait(context, `"${validatedParams.element}" clicked`, () => context.refLocator(validatedParams.ref).click(), batchMode);
   },
 };
 
@@ -66,13 +68,13 @@ export const drag: Tool = {
     inputSchema: zodToJsonSchema(dragSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = dragSchema.parse(params);
     return runAndWait(context, `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`, async () => {
       const startLocator = context.refLocator(validatedParams.startRef);
       const endLocator = context.refLocator(validatedParams.endRef);
       await startLocator.dragTo(endLocator);
-    }, true);
+    }, batchMode);
   },
 };
 
@@ -83,9 +85,9 @@ export const hover: Tool = {
     inputSchema: zodToJsonSchema(elementSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `Hovered over "${validatedParams.element}"`, () => context.refLocator(validatedParams.ref).hover(), true);
+    return runAndWait(context, `Hovered over "${validatedParams.element}"`, () => context.refLocator(validatedParams.ref).hover(), batchMode);
   },
 };
 
@@ -101,14 +103,14 @@ export const type: Tool = {
     inputSchema: zodToJsonSchema(typeSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = typeSchema.parse(params);
     return await runAndWait(context, `Typed "${validatedParams.text}" into "${validatedParams.element}"`, async () => {
       const locator = context.refLocator(validatedParams.ref);
       await locator.fill(validatedParams.text);
       if (validatedParams.submit)
         await locator.press('Enter');
-    }, true);
+    }, batchMode);
   },
 };
 
@@ -123,12 +125,12 @@ export const selectOption: Tool = {
     inputSchema: zodToJsonSchema(selectOptionSchema),
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, batchMode) => {
     const validatedParams = selectOptionSchema.parse(params);
     return await runAndWait(context, `Selected option in "${validatedParams.element}"`, async () => {
       const locator = context.refLocator(validatedParams.ref);
       await locator.selectOption(validatedParams.values);
-    }, true);
+    }, batchMode);
   },
 };
 
@@ -152,4 +154,144 @@ export const screenshot: Tool = {
       content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: validatedParams.raw ? 'image/png' : 'image/jpeg' }],
     };
   },
+};
+
+function refLocator(page: playwright.Page, ref: string): playwright.Locator {
+  return page.locator(`aria-ref=${ref}`);
+}
+
+// Define snapshot-specific tool params
+export const snapshotParams = z.discriminatedUnion('name', [
+  // z.object({
+  //   name: z.literal('browser_snapshot'),
+  //   params: z.object({})
+  // }),
+  z.object({
+    name: z.literal('browser_drag'),
+    params: dragSchema
+  }),
+  z.object({
+    name: z.literal('browser_click'),
+    params: elementSchema
+  }),
+  z.object({
+    name: z.literal('browser_hover'),
+    params: elementSchema
+  }),
+  z.object({
+    name: z.literal('browser_type'),
+    params: typeSchema.extend({
+      element: z.string(),
+      ref: z.string()
+    })
+  }),
+  z.object({
+    name: z.literal('browser_select_option'),
+    params: selectOptionSchema
+  }),
+  z.object({
+    name: z.literal('browser_take_screenshot'),
+    params: screenshotSchema
+  }),
+]);
+
+// Combine with common tools
+const SnapshotStepSchema = z.union([CommonToolParams, snapshotParams]);
+
+const snapshotBatchSchema = batchSchema.extend({
+  input: z.object({
+    test_cases: z.array(z.object({
+      definition: z.string(),
+      steps: z.array(SnapshotStepSchema)
+    }))
+  })
+});
+
+export const batch: Tool = {
+  schema: {
+    name: 'browser_batch_snapshot',
+    description: 'TOOL CALL REQUIREMENT: MUST CALL browser_navigate TOOL FIRST IN THE TARGET URLS BEFORE CALLING THIS TOOL TO GET THE CORRECT ARIA REFS. This tool runs a bunch of steps at once.',
+    inputSchema: zodToJsonSchema(snapshotBatchSchema)
+  },
+  handle: async (context, params) => {
+    const validatedParams = snapshotBatchSchema.parse(params);
+    const results = [];
+
+    for (const testCase of validatedParams.input.test_cases) {
+      for (const step of testCase.steps as Array<{ name: string; params: any }>) {
+        let tool: Tool;
+        
+        switch (step.name) {
+          case 'browser_take_screenshot':
+            tool = screenshot;
+            break;
+          // case 'browser_snapshot':
+          //   tool = snapshot;
+          //   break;
+          case 'browser_drag': 
+            tool = drag;
+            break;
+          case 'browser_click':
+            tool = click;
+            break;
+          case 'browser_hover':
+            tool = hover;
+            break;
+          case 'browser_type':
+            tool = type;
+            break;
+          case 'browser_select_option':
+            tool = selectOption;
+            break;
+          case 'browser_press_key':
+            tool = common.pressKey;
+            break;
+          case 'browser_wait':
+            tool = common.wait;
+            break;
+          case 'browser_save_as_pdf':
+            tool = common.pdf;
+            break;
+          case 'browser_close':
+            tool = common.close;
+            break;
+          case 'browser_navigate':
+            tool = common.navigate(true);
+            break;  
+          case 'browser_go_back':
+            tool = common.goBack(true);
+            break;
+          case 'browser_go_forward':
+            tool = common.goForward(true);
+            break;
+          default:
+            throw new Error(`Unknown tool for snapshot mode: ${step.name}`);
+        }
+
+        try {
+          let result = await tool.handle(context, step.params, false);
+          result = {
+            content: [...result.content, ...(await captureAriaSnapshot(context)).content],
+            isError: result.isError
+          };
+          results.push({ definition: testCase.definition, step: step.name, result });
+        } catch (error) {
+          return {
+            content: [{ 
+              type: 'text', 
+              text: `Failed to execute snapshot step "${step.name}": ${error}. Here is the batch tool result: \n${JSON.stringify(results, null, 2)}` 
+            }],
+            isError: true
+          };
+        }
+      }
+    }
+
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Successfully executed snapshot steps:\n${JSON.stringify(results, null, 2)}` 
+      }]
+    };
+  }
 };

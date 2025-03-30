@@ -1,0 +1,38 @@
+{
+  "test_cases": [
+    {
+      "definition": "Simplified batch test with key tools",
+      "steps": [
+        {
+          "name": "browser_navigate",
+          "params": {
+            "url": "data:text/html,<html><title>Simple Batch Test</title><button id='btn1'>Click Me</button><select id='sel1'><option value='1'>One</option><option value='2'>Two</option></select><input type='text' id='input1' value='Initial text'/></html>"
+          }
+        },
+        {
+          "name": "browser_snapshot",
+          "params": {}
+        },
+        {
+          "name": "browser_click",
+          "params": {
+            "element": "Button",
+            "ref": "s2e4"
+          }
+        },
+        {
+          "name": "browser_select_option",
+          "params": {
+            "element": "Dropdown",
+            "ref": "s3e5",
+            "values": ["2"]
+          }
+        },
+        {
+          "name": "browser_snapshot",
+          "params": {}
+        }
+      ]
+    }
+  ]
+}

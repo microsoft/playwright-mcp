@@ -33,17 +33,18 @@ const commonTools: Tool[] = [
 ];
 
 const snapshotTools: Tool[] = [
-  common.navigate(true),
-  common.goBack(true),
-  common.goForward(true),
-  common.chooseFile(true),
   snapshot.snapshot,
-  snapshot.click,
-  snapshot.hover,
-  snapshot.type,
-  snapshot.selectOption,
+  snapshot.batch,
   snapshot.screenshot,
-  ...commonTools,
+  common.navigate(true),
+  // common.goBack(true),
+  // common.goForward(true),
+  // common.chooseFile(true),
+  // snapshot.click,
+  // snapshot.hover,
+  // snapshot.type,
+  // snapshot.selectOption,
+  // ...commonTools,
 ];
 
 const screenshotTools: Tool[] = [

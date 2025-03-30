@@ -1,0 +1,38 @@
+{
+  "test_cases": [
+    {
+      "definition": "Screenshot mode test - basic interactions",
+      "steps": [
+        {
+          "name": "browser_navigate",
+          "params": {
+            "url": "data:text/html,<html><title>Screenshot Test</title><button onclick='this.textContent=\"Clicked\"'>Click me</button><input type='text'/></html>"
+          }
+        },
+        {
+          "name": "browser_screenshot",
+          "params": {}
+        },
+        {
+          "name": "browser_click",
+          "params": {
+            "element": "Click me button",
+            "x": 100,
+            "y": 50
+          }
+        },
+        {
+          "name": "browser_type",
+          "params": {
+            "text": "Hello from screenshot mode",
+            "submit": true
+          }
+        },
+        {
+          "name": "browser_screenshot",
+          "params": {}
+        }
+      ]
+    }
+  ]
+} 
