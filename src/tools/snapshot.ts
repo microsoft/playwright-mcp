@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { boolean, z } from 'zod';
+import { z } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
 import { CommonToolParams, batchSchema } from './schemas';
 import * as common from './common';
