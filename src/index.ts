@@ -66,6 +66,7 @@ const resources: Resource[] = [
 type Options = {
   userDataDir?: string;
   launchOptions?: LaunchOptions;
+  cdpEndpoint?: string;
   vision?: boolean;
 };
 
@@ -80,5 +81,6 @@ export function createServer(options?: Options): Server {
     resources,
     userDataDir: options?.userDataDir ?? '',
     launchOptions: options?.launchOptions,
+    cdpEndpoint: options?.cdpEndpoint,
   });
 }

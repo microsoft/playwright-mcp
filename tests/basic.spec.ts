@@ -313,3 +313,21 @@ test('sse transport', async () => {
     cp.kill();
   }
 });
+
+test('cdp server', async ({ cdpEndpoint, startClient }) => {
+  const client = await startClient({ args: [`--cdp-endpoint=${cdpEndpoint}`] });
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toHaveTextContent(`
+- Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+- Page Title: Title
+- Page Snapshot
+\`\`\`yaml
+- document [ref=s1e2]: Hello, world!
+\`\`\`
+`
+  );
+});

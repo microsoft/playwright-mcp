@@ -24,8 +24,9 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 type Fixtures = {
   client: Client;
   visionClient: Client;
-  startClient: (options?: { env?: NodeJS.ProcessEnv, vision?: boolean }) => Promise<Client>;
+  startClient: (options?: { args?: string[], vision?: boolean }) => Promise<Client>;
   wsEndpoint: string;
+  cdpEndpoint: string;
 };
 
 export const test = baseTest.extend<Fixtures>({
@@ -46,6 +47,8 @@ export const test = baseTest.extend<Fixtures>({
       const args = ['--headless', '--user-data-dir', userDataDir];
       if (options?.vision)
         args.push('--vision');
+      if (options?.args)
+        args.push(...options.args);
       const transport = new StdioClientTransport({
         command: 'node',
         args: [path.join(__dirname, '../cli.js'), ...args],
@@ -63,6 +66,15 @@ export const test = baseTest.extend<Fixtures>({
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
+  },
+
+  cdpEndpoint: async ({ }, use, testInfo) => {
+    const port = 3200 + (+process.env.TEST_PARALLEL_INDEX!);
+    const browser = await chromium.launchPersistentContext(testInfo.outputPath('user-data-dir'), {
+      args: [`--remote-debugging-port=${port}`],
+    });
+    await use(`http://localhost:${port}`);
+    await browser.close();
   },
 });
 

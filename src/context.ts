@@ -16,9 +16,15 @@
 
 import * as playwright from 'playwright';
 
+export type ContextOptions = {
+  userDataDir: string;
+  launchOptions?: playwright.LaunchOptions;
+  cdpEndpoint?: string;
+  remoteEndpoint?: string;
+};
+
 export class Context {
-  private _userDataDir: string;
-  private _launchOptions: playwright.LaunchOptions | undefined;
+  private _options: ContextOptions;
   private _browser: playwright.Browser | undefined;
   private _page: playwright.Page | undefined;
   private _console: playwright.ConsoleMessage[] = [];
@@ -26,9 +32,8 @@ export class Context {
   private _fileChooser: playwright.FileChooser | undefined;
   private _lastSnapshotFrames: playwright.FrameLocator[] = [];
 
-  constructor(userDataDir: string, launchOptions?: playwright.LaunchOptions) {
-    this._userDataDir = userDataDir;
-    this._launchOptions = launchOptions;
+  constructor(options: ContextOptions) {
+    this._options = options;
   }
 
   async createPage(): Promise<playwright.Page> {
@@ -96,16 +101,25 @@ export class Context {
   }
 
   private async _createPage(): Promise<{ browser?: playwright.Browser, page: playwright.Page }> {
-    if (process.env.PLAYWRIGHT_WS_ENDPOINT) {
-      const url = new URL(process.env.PLAYWRIGHT_WS_ENDPOINT);
-      if (this._launchOptions)
-        url.searchParams.set('launch-options', JSON.stringify(this._launchOptions));
+    if (this._options.remoteEndpoint) {
+      const url = new URL(this._options.remoteEndpoint);
+      if (this._options.launchOptions)
+        url.searchParams.set('launch-options', JSON.stringify(this._options.launchOptions));
       const browser = await playwright.chromium.connect(String(url));
       const page = await browser.newPage();
       return { browser, page };
     }
 
-    const context = await playwright.chromium.launchPersistentContext(this._userDataDir, this._launchOptions);
+    if (this._options.cdpEndpoint) {
+      const browser = await playwright.chromium.connectOverCDP(this._options.cdpEndpoint);
+      const browserContext = browser.contexts()[0];
+      let [page] = browserContext.pages();
+      if (!page)
+        page = await browserContext.newPage();
+      return { browser, page };
+    }
+
+    const context = await playwright.chromium.launchPersistentContext(this._options.userDataDir, this._options.launchOptions);
     const [page] = context.pages();
     return { page };
   }

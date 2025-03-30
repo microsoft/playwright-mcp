@@ -39,6 +39,7 @@ program
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .option('--port <port>', 'Port to listen on for SSE transport.')
+    .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .action(async options => {
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
@@ -49,6 +50,7 @@ program
         userDataDir,
         launchOptions,
         vision: !!options.vision,
+        cdpEndpoint: options.cdpEndpoint,
       }));
       setupExitWatchdog(serverList);
 
