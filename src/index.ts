@@ -57,7 +57,6 @@ const screenshotTools: Tool[] = [
   screenshot.click,
   screenshot.drag,
   screenshot.type,
-  screenshot.batch,
   ...commonTools,
 ];
 

@@ -179,7 +179,7 @@ const snapshotBatchSchema = batchSchema.extend({
 
 export const batch: Tool = {
   schema: {
-    name: 'batch_process_snapshot',
+    name: 'browser_batch_snapshot',
     description: 'Run a bunch of steps in snapshot mode',
     inputSchema: zodToJsonSchema(snapshotBatchSchema)
   },
