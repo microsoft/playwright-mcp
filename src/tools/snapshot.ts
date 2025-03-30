@@ -134,53 +134,6 @@ export const selectOption: Tool = {
   },
 };
 
-function refLocator(page: playwright.Page, ref: string): playwright.Locator {
-  return page.locator(`aria-ref=${ref}`);
-}
-
-// Define snapshot-specific tool params
-export const snapshotParams = z.discriminatedUnion('name', [
-  z.object({
-    name: z.literal('browser_snapshot'),
-    params: z.object({})
-  }),
-  z.object({
-    name: z.literal('browser_drag'),
-    params: dragSchema
-  }),
-  z.object({
-    name: z.literal('browser_click'),
-    params: elementSchema
-  }),
-  z.object({
-    name: z.literal('browser_hover'),
-    params: elementSchema
-  }),
-  z.object({
-    name: z.literal('browser_type'),
-    params: typeSchema.extend({
-      element: z.string(),
-      ref: z.string()
-    })
-  }),
-  z.object({
-    name: z.literal('browser_select_option'),
-    params: selectOptionSchema
-  })
-]);
-
-// Combine with common tools
-const SnapshotStepSchema = z.union([CommonToolParams, snapshotParams]);
-
-const snapshotBatchSchema = batchSchema.extend({
-  input: z.object({
-    test_cases: z.array(z.object({
-      definition: z.string(),
-      steps: z.array(SnapshotStepSchema)
-    }))
-  })
-});
-
 const screenshotSchema = z.object({
   raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
 });
@@ -203,10 +156,61 @@ export const screenshot: Tool = {
   },
 };
 
+function refLocator(page: playwright.Page, ref: string): playwright.Locator {
+  return page.locator(`aria-ref=${ref}`);
+}
+
+// Define snapshot-specific tool params
+export const snapshotParams = z.discriminatedUnion('name', [
+  // z.object({
+  //   name: z.literal('browser_snapshot'),
+  //   params: z.object({})
+  // }),
+  z.object({
+    name: z.literal('browser_drag'),
+    params: dragSchema
+  }),
+  z.object({
+    name: z.literal('browser_click'),
+    params: elementSchema
+  }),
+  z.object({
+    name: z.literal('browser_hover'),
+    params: elementSchema
+  }),
+  z.object({
+    name: z.literal('browser_type'),
+    params: typeSchema.extend({
+      element: z.string(),
+      ref: z.string()
+    })
+  }),
+  z.object({
+    name: z.literal('browser_select_option'),
+    params: selectOptionSchema
+  }),
+  z.object({
+    name: z.literal('browser_take_screenshot'),
+    params: screenshotSchema
+  }),
+]);
+
+// Combine with common tools
+const SnapshotStepSchema = z.union([CommonToolParams, snapshotParams]);
+
+const snapshotBatchSchema = batchSchema.extend({
+  input: z.object({
+    test_cases: z.array(z.object({
+      definition: z.string(),
+      steps: z.array(SnapshotStepSchema)
+    }))
+  })
+});
+
 export const batch: Tool = {
   schema: {
     name: 'browser_batch_snapshot',
-    description: 'Run a bunch of steps in snapshot mode',
+    description: 'TOOL CALL REQUIREMENT: MUST CALL browser_navigate TOOL FIRST IN THE TARGET URLS BEFORE CALLING THIS TOOL TO GET THE CORRECT ARIA REFS. This tool runs a bunch of steps at once.',
     inputSchema: zodToJsonSchema(snapshotBatchSchema)
   },
   handle: async (context, params) => {
@@ -218,12 +222,12 @@ export const batch: Tool = {
         let tool: Tool;
         
         switch (step.name) {
-          case 'browser_screenshot':
+          case 'browser_take_screenshot':
             tool = screenshot;
             break;
-          case 'browser_snapshot':
-            tool = snapshot;
-            break;
+          // case 'browser_snapshot':
+          //   tool = snapshot;
+          //   break;
           case 'browser_drag': 
             tool = drag;
             break;
@@ -252,8 +256,8 @@ export const batch: Tool = {
             tool = common.close;
             break;
           case 'browser_navigate':
-              tool = common.navigate(true);
-              break;  
+            tool = common.navigate(true);
+            break;  
           case 'browser_go_back':
             tool = common.goBack(true);
             break;
@@ -265,7 +269,11 @@ export const batch: Tool = {
         }
 
         try {
-          const result = await tool.handle(context, step.params, true);
+          let result = await tool.handle(context, step.params, false);
+          result = {
+            content: [...result.content, ...(await captureAriaSnapshot(context)).content],
+            isError: result.isError
+          };
           results.push({ definition: testCase.definition, step: step.name, result });
         } catch (error) {
           return {
