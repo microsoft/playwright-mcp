@@ -69,7 +69,7 @@ Playwright MCP will launch Chrome browser with the new profile, located at
 - `~/.cache/ms-playwright/mcp-chrome-profile` on Linux
 ```
 
-All the logged in information will be stored in that profile, you can delete it between sessions if you'dlike to clear the offline state.
+All the logged in information will be stored in that profile, you can delete it between sessions if you'd like to clear the offline state.
 
 
 ### Running headless browser (Browser without GUI).
