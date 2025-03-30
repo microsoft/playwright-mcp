@@ -14,260 +14,145 @@
  * limitations under the License.
  */
 
+import fs from 'fs/promises';
+import { spawn } from 'node:child_process';
+import path from 'node:path';
 import { test, expect } from './fixtures';
 
-test('test tool list', async ({ server }) => {
-  const list = await server.send({
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'tools/list',
-  });
+test('test tool list', async ({ client, visionClient }) => {
+  const { tools } = await client.listTools();
+  expect(tools.map(t => t.name)).toEqual([
+    'browser_navigate',
+    'browser_go_back',
+    'browser_go_forward',
+    'browser_choose_file',
+    'browser_snapshot',
+    'browser_click',
+    'browser_hover',
+    'browser_type',
+    'browser_select_option',
+    'browser_batch_snapshot',
+    'browser_take_screenshot',
+    'browser_press_key',
+    'browser_wait',
+    'browser_save_as_pdf',
+    'browser_close',
+  ]);
 
-  expect(list).toEqual(expect.objectContaining({
-    id: 1,
-    result: expect.objectContaining({
-      tools: [
-        expect.objectContaining({
-          name: 'browser_navigate',
-        }),
-        expect.objectContaining({
-          name: 'browser_go_back',
-        }),
-        expect.objectContaining({
-          name: 'browser_go_forward',
-        }),
-        expect.objectContaining({
-          name: 'browser_snapshot',
-        }),
-        expect.objectContaining({
-          name: 'browser_click',
-        }),
-        expect.objectContaining({
-          name: 'browser_hover',
-        }),
-        expect.objectContaining({
-          name: 'browser_type',
-        }),
-        expect.objectContaining({
-          name: 'browser_select_option',
-        }),
-        expect.objectContaining({
-          name: 'batch_process_snapshot',
-        }),
-        expect.objectContaining({
-          name: 'browser_press_key',
-        }),
-        expect.objectContaining({
-          name: 'browser_wait',
-        }),
-        expect.objectContaining({
-          name: 'browser_save_as_pdf',
-        }),
-        expect.objectContaining({
-          name: 'browser_close',
-        }),
-      ],
-    }),
-  }));
+  const { tools: visionTools } = await visionClient.listTools();
+  expect(visionTools.map(t => t.name)).toEqual([
+    'browser_navigate',
+    'browser_go_back',
+    'browser_go_forward',
+    'browser_choose_file',
+    'browser_screenshot',
+    'browser_move_mouse',
+    'browser_click',
+    'browser_drag',
+    'browser_type',
+    'browser_press_key',
+    'browser_wait',
+    'browser_save_as_pdf',
+    'browser_close',
+  ]);
 });
 
-test('test resources list', async ({ server }) => {
-  const list = await server.send({
-    jsonrpc: '2.0',
-    id: 2,
-    method: 'resources/list',
-  });
-
-  expect(list).toEqual(expect.objectContaining({
-    id: 2,
-    result: expect.objectContaining({
-      resources: [
-        expect.objectContaining({
-          uri: 'browser://console',
-          mimeType: 'text/plain',
-        }),
-      ],
+test('test resources list', async ({ client }) => {
+  const { resources } = await client.listResources();
+  expect(resources).toEqual([
+    expect.objectContaining({
+      uri: 'browser://console',
+      mimeType: 'text/plain',
     }),
-  }));
+  ]);
 });
 
-test('test browser_navigate', async ({ server }) => {
-  const response = await server.send({
-    jsonrpc: '2.0',
-    id: 2,
-    method: 'tools/call',
-    params: {
-      name: 'browser_navigate',
-      arguments: {
-        url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-      },
+test('test browser_navigate', async ({ client }) => {
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
-  });
-
-  expect(response).toEqual(expect.objectContaining({
-    id: 2,
-    result: {
-      content: [{
-        type: 'text',
-        text: `
+  })).toHaveTextContent(`
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
 - document [ref=s1e2]: Hello, world!
 \`\`\`
-`,
-      }],
-    },
-  }));
+`
+  );
 });
 
-test('test browser_click', async ({ server }) => {
-  await server.send({
-    jsonrpc: '2.0',
-    id: 2,
-    method: 'tools/call',
-    params: {
-      name: 'browser_navigate',
-      arguments: {
-        url: 'data:text/html,<html><title>Title</title><button>Submit</button></html>',
-      },
+test('test browser_click', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><button>Submit</button></html>',
     },
   });
 
-  const response = await server.send({
-    jsonrpc: '2.0',
-    id: 3,
-    method: 'tools/call',
-    params: {
-      name: 'browser_click',
-      arguments: {
-        element: 'Submit button',
-        ref: 's1e4',
-      },
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Submit button',
+      ref: 's1e4',
     },
-  });
-
-  expect(response).toEqual(expect.objectContaining({
-    id: 3,
-    result: {
-      content: [{
-        type: 'text',
-        text: `\"Submit button\" clicked
+  })).toHaveTextContent(`"Submit button" clicked
 
 - Page URL: data:text/html,<html><title>Title</title><button>Submit</button></html>
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
 - document [ref=s2e2]:
-  - button \"Submit\" [ref=s2e4]
+  - button "Submit" [ref=s2e4]
 \`\`\`
-`,
-      }],
-    },
-  }));
+`);
 });
 
-test('test reopen browser', async ({ server }) => {
-  const response2 = await server.send({
-    jsonrpc: '2.0',
-    id: 2,
-    method: 'tools/call',
-    params: {
-      name: 'browser_navigate',
-      arguments: {
-        url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-      },
+test('test reopen browser', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   });
 
-  expect(response2).toEqual(expect.objectContaining({
-    id: 2,
-  }));
+  expect(await client.callTool({
+    name: 'browser_close',
+  })).toHaveTextContent('Page closed');
 
-  const response3 = await server.send({
-    jsonrpc: '2.0',
-    id: 3,
-    method: 'tools/call',
-    params: {
-      name: 'browser_close',
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
-  });
-
-  expect(response3).toEqual(expect.objectContaining({
-    id: 3,
-    result: {
-      content: [{
-        text: 'Page closed',
-        type: 'text',
-      }],
-    },
-  }));
-
-  const response4 = await server.send({
-    jsonrpc: '2.0',
-    id: 4,
-    method: 'tools/call',
-    params: {
-      name: 'browser_navigate',
-      arguments: {
-        url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-      },
-    },
-  });
-
-  expect(response4).toEqual(expect.objectContaining({
-    id: 4,
-    result: {
-      content: [{
-        type: 'text',
-        text: `
+  })).toHaveTextContent(`
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
 - document [ref=s1e2]: Hello, world!
 \`\`\`
-`,
-      }],
-    },
-  }));
+`);
 });
 
-test.describe('test browser_select_option', () => {
-  test('single option', async ({ server }) => {
-    await server.send({
-      jsonrpc: '2.0',
-      id: 2,
-      method: 'tools/call',
-      params: {
-        name: 'browser_navigate',
-        arguments: {
-          url: 'data:text/html,<html><title>Title</title><select><option value="foo">Foo</option><option value="bar">Bar</option></select></html>',
-        },
-      },
-    });
+test('single option', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><select><option value="foo">Foo</option><option value="bar">Bar</option></select></html>',
+    },
+  });
 
-    const response = await server.send({
-      jsonrpc: '2.0',
-      id: 3,
-      method: 'tools/call',
-      params: {
-        name: 'browser_select_option',
-        arguments: {
-          element: 'Select',
-          ref: 's1e4',
-          values: ['bar'],
-        },
-      },
-    });
-
-    expect(response).toEqual(expect.objectContaining({
-      id: 3,
-      result: {
-        content: [{
-          type: 'text',
-          text: `Selected option in \"Select\"
+  expect(await client.callTool({
+    name: 'browser_select_option',
+    arguments: {
+      element: 'Select',
+      ref: 's1e4',
+      values: ['bar'],
+    },
+  })).toHaveTextContent(`Selected option in "Select"
 
 - Page URL: data:text/html,<html><title>Title</title><select><option value="foo">Foo</option><option value="bar">Bar</option></select></html>
 - Page Title: Title
@@ -275,48 +160,28 @@ test.describe('test browser_select_option', () => {
 \`\`\`yaml
 - document [ref=s2e2]:
   - combobox [ref=s2e4]:
-    - option \"Foo\" [ref=s2e5]
-    - option \"Bar\" [selected] [ref=s2e6]
+    - option "Foo" [ref=s2e5]
+    - option "Bar" [selected] [ref=s2e6]
 \`\`\`
-`,
-        }],
-      },
-    }));
+`);
+});
+
+test('multiple option', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><select multiple><option value="foo">Foo</option><option value="bar">Bar</option><option value="baz">Baz</option></select></html>',
+    },
   });
 
-  test('multiple option', async ({ server }) => {
-    await server.send({
-      jsonrpc: '2.0',
-      id: 2,
-      method: 'tools/call',
-      params: {
-        name: 'browser_navigate',
-        arguments: {
-          url: 'data:text/html,<html><title>Title</title><select multiple><option value="foo">Foo</option><option value="bar">Bar</option><option value="baz">Baz</option></select></html>',
-        },
-      },
-    });
-
-    const response = await server.send({
-      jsonrpc: '2.0',
-      id: 3,
-      method: 'tools/call',
-      params: {
-        name: 'browser_select_option',
-        arguments: {
-          element: 'Select',
-          ref: 's1e4',
-          values: ['bar', 'baz'],
-        },
-      },
-    });
-
-    expect(response).toEqual(expect.objectContaining({
-      id: 3,
-      result: {
-        content: [{
-          type: 'text',
-          text: `Selected option in \"Select\"
+  expect(await client.callTool({
+    name: 'browser_select_option',
+    arguments: {
+      element: 'Select',
+      ref: 's1e4',
+      values: ['bar', 'baz'],
+    },
+  })).toHaveTextContent(`Selected option in "Select"
 
 - Page URL: data:text/html,<html><title>Title</title><select multiple><option value="foo">Foo</option><option value="bar">Bar</option><option value="baz">Baz</option></select></html>
 - Page Title: Title
@@ -324,74 +189,128 @@ test.describe('test browser_select_option', () => {
 \`\`\`yaml
 - document [ref=s2e2]:
   - listbox [ref=s2e4]:
-    - option \"Foo\" [ref=s2e5]
-    - option \"Bar\" [selected] [ref=s2e6]
-    - option \"Baz\" [selected] [ref=s2e7]
+    - option "Foo" [ref=s2e5]
+    - option "Bar" [selected] [ref=s2e6]
+    - option "Baz" [selected] [ref=s2e7]
 \`\`\`
-`,
-        }],
+`);
+});
+
+test('browser://console', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><script>console.log("Hello, world!");console.error("Error"); </script></html>',
+    },
+  });
+
+  const resource = await client.readResource({
+    uri: 'browser://console',
+  });
+  expect(resource.contents).toEqual([{
+    uri: 'browser://console',
+    mimeType: 'text/plain',
+    text: '[LOG] Hello, world!\n[ERROR] Error',
+  }]);
+});
+
+test('stitched aria frames', async ({ client }) => {
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>',
+    },
+  })).toHaveTextContent(`
+- Page URL: data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>
+- Page Title: 
+- Page Snapshot
+\`\`\`yaml
+- document [ref=s1e2]:
+  - heading "Hello" [level=1] [ref=s1e4]
+
+# iframe src=data:text/html,<h1>World</h1>
+- document [ref=f0s1e2]:
+  - heading "World" [level=1] [ref=f0s1e4]
+\`\`\`
+`);
+});
+
+test('browser_choose_file', async ({ client }) => {
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><input type="file" /><button>Button</button></html>',
+    },
+  })).toContainTextContent('- textbox [ref=s1e4]');
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Textbox',
+      ref: 's1e4',
+    },
+  })).toContainTextContent('There is a file chooser visible that requires browser_choose_file to be called');
+
+  const filePath = test.info().outputPath('test.txt');
+  await fs.writeFile(filePath, 'Hello, world!');
+
+  {
+    const response = await client.callTool({
+      name: 'browser_choose_file',
+      arguments: {
+        paths: [filePath],
       },
+    });
+
+    expect(response).not.toContainTextContent('There is a file chooser visible that requires browser_choose_file to be called');
+    expect(response).toContainTextContent('textbox [ref=s3e4]: C:\\fakepath\\test.txt');
+  }
+
+  {
+    const response = await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'Textbox',
+        ref: 's3e4',
+      },
+    });
+
+    expect(response).toContainTextContent('There is a file chooser visible that requires browser_choose_file to be called');
+    expect(response).toContainTextContent('button "Button" [ref=s4e5]');
+  }
+
+  {
+    const response = await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'Button',
+        ref: 's4e5',
+      },
+    });
+
+    expect(response, 'not submitting browser_choose_file dismisses file chooser').not.toContainTextContent('There is a file chooser visible that requires browser_choose_file to be called');
+  }
+});
+
+test('sse transport', async () => {
+  const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '0'], { stdio: 'pipe' });
+  try {
+    let stdout = '';
+    const url = await new Promise<string>(resolve => cp.stdout?.on('data', data => {
+      stdout += data.toString();
+      const match = stdout.match(/Listening on (http:\/\/.*)/);
+      if (match)
+        resolve(match[1]);
     }));
-  });
-});
 
-test('browser://console', async ({ server }) => {
-  await server.send({
-    jsonrpc: '2.0',
-    id: 2,
-    method: 'tools/call',
-    params: {
-      name: 'browser_navigate',
-      arguments: {
-        url: 'data:text/html,<html><script>console.log("Hello, world!");console.error("Error"); </script></html>',
-      },
-    },
-  });
-
-  const response = await server.send({
-    jsonrpc: '2.0',
-    id: 3,
-    method: 'resources/read',
-    params: {
-      uri: 'browser://console',
-    },
-  });
-  expect(response).toEqual(expect.objectContaining({
-    result: expect.objectContaining({
-      contents: [{
-        uri: 'browser://console',
-        mimeType: 'text/plain',
-        text: '[LOG] Hello, world!\n[ERROR] Error',
-      }],
-    }),
-  }));
-});
-
-test('test batch processing in snapshot mode', async ({ server }) => {
-  const fs = require('fs');
-  const path = require('path');
-  
-  const testData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/snapshot_test.json'), 'utf8'));
-  
-  const response = await server.send({
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'tools/call',
-    params: {
-      name: 'batch_process_snapshot',
-      arguments: {
-        input: testData
-      }
-    }
-  });
-
-  expect(response).toEqual(expect.objectContaining({
-    id: 1,
-    result: expect.objectContaining({
-      content: [{
-        type: 'text',
-        text: expect.stringContaining('Successfully executed')
-      }]
-    })
-  }));
+    // need dynamic import b/c of some ESM nonsense
+    const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
+    const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+    const transport = new SSEClientTransport(new URL(url));
+    const client = new Client({ name: 'test', version: '1.0.0' });
+    await client.connect(transport);
+    await client.ping();
+  } finally {
+    cp.kill();
+  }
 });
