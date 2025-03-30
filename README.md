@@ -1,6 +1,8 @@
 ## Playwright MCP
 
-A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
+A Model Context Protocol (MCP) server that provides End to End test automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
+
+Note: This MCP is forked from Microsoft's [Playwright MCP](https://github.com/microsoft/playwright-mcp). We optimized Playwright MCP for automated end to end testing.
 
 ### Key Features
 
@@ -10,58 +12,28 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Use Cases
 
-- Web navigation and form-filling
-- Data extraction from structured content
 - Automated testing driven by LLMs
-- General-purpose browser interaction for agents
 
 ### Example config
 
+After cloning this repo, add the E2E MCP server to your MCP Client as such:
+
 ```js
 {
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ]
+    "mcpServers": {
+        "EndToEnd": {
+            "command": "node",
+            "args": [
+                "/Users/Documents/projects/e2e-mcp/lib/program.js"
+            ]
+        }
     }
-  }
 }
 ```
 
-
-#### Installation in VS Code
-
-Install the Playwright MCP server in VS Code using one of these buttons:
-
-<!--
-// Generate using?:
-const config = JSON.stringify({ name: 'playwright', command: 'npx', args: ["-y", "@playwright/mcp@latest"] });
-const urlForWebsites = `vscode:mcp/install?${encodeURIComponent(config)}`;
-// Github markdown does not allow linking to `vscode:` directly, so you can use our redirect:
-const urlForGithub = `https://insiders.vscode.dev/redirect?url=${encodeURIComponent(urlForWebsites)}`;
--->
-
-[<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)
-
-Alternatively, you can install the Playwright MCP server using the VS Code CLI:
-
-```bash
-# For VS Code
-code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
-```
-
-```bash
-# For VS Code Insiders
-code-insiders --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
-```
-
-After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
-
 ### User data directory
 
-Playwright MCP will launch Chrome browser with the new profile, located at
+E2E MCP will launch Chrome browser with the new profile, located at
 
 ```
 - `%USERPROFILE%\AppData\Local\ms-playwright\mcp-chrome-profile` on Windows
@@ -80,9 +52,9 @@ This mode is useful for background or batch operations.
 {
   "mcpServers": {
     "playwright": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "@playwright/mcp@latest",
+        "/Users/Documents/projects/e2e-mcp/lib/program.js",
         "--headless"
       ]
     }
@@ -96,7 +68,7 @@ When running headed browser on system w/o display or from worker processes of th
 run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
 
 ```bash
-npx @playwright/mcp@latest --port 8931
+npx /Users/Documents/projects/e2e-mcp/lib/program.js --port 8931
 ```
 
 And then in MCP client config, set the `url` to the SSE endpoint:
@@ -104,7 +76,7 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 ```js
 {
   "mcpServers": {
-    "playwright": {
+    "e2e": {
       "url": "http://localhost:8931/sse"
     }
   }
@@ -124,9 +96,9 @@ To use Vision Mode, add the `--vision` flag when starting the server:
 {
   "mcpServers": {
     "playwright": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "@playwright/mcp@latest",
+        "/Users/Documents/projects/e2e-mcp/lib/program.js",
         "--vision"
       ]
     }
@@ -150,6 +122,34 @@ const server = createServer({
 transport = new SSEServerTransport("/messages", res);
 server.connect(transport);
 ```
+
+#### Installation in VS Code, 
+
+Install the E2E MCP server in VS Code using one of these buttons:
+
+<!--
+// Generate using?:
+const config = JSON.stringify({ name: 'playwright', command: 'npx', args: ["-y", "/Users/Documents/projects/e2e-mcp/lib/program.js"] });
+const urlForWebsites = `vscode:mcp/install?${encodeURIComponent(config)}`;
+// Github markdown does not allow linking to `vscode:` directly, so you can use our redirect:
+const urlForGithub = `https://insiders.vscode.dev/redirect?url=${encodeURIComponent(urlForWebsites)}`;
+-->
+
+[<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)
+
+Alternatively, you can install the Playwright MCP server using the VS Code CLI:
+
+```bash
+# For VS Code
+code --add-mcp '{"name":"playwright","command":"node","args":["/Users/Documents/projects/e2e-mcp/lib/program.js"]}'
+```
+
+```bash
+# For VS Code Insiders
+code-insiders --add-mcp '{"name":"playwright","command":"node","args":["/Users/Documents/projects/e2e-mcp/lib/program.js"]}'
+```
+
+After installation, E2E MCP will become available for your Github Copilot in VS Code.
 
 ### Snapshot Mode
 
