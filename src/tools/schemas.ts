@@ -71,7 +71,7 @@ export const BatchToolSchema: Tool['schema'] = {
   }
 };
 
-export const batchSchema = z.object({
+export const snapshotBatchSchema = z.object({
   input: z.object({
     test_cases: z.array(z.object({
       definition: z.string(),
