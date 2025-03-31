@@ -111,6 +111,26 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 }
 ```
 
+### Saving Screenshots to Disk
+
+By default, screenshots are returned as base64-encoded images in the response. If you want to save screenshots to disk instead, use the `--save-screenshots` option with a path to the directory where screenshots should be saved:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--save-screenshots", "./screenshots"
+      ]
+    }
+  }
+}
+```
+
+This will save screenshots to the specified directory and return the absolute path to the saved file in the response instead of the base64-encoded image data.
+
 ### Tool Modes
 
 The tools are available in two modes:

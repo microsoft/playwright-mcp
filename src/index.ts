@@ -68,6 +68,7 @@ type Options = {
   launchOptions?: LaunchOptions;
   cdpEndpoint?: string;
   vision?: boolean;
+  saveScreenshotsDir?: string;
 };
 
 const packageJSON = require('../package.json');
@@ -82,5 +83,6 @@ export function createServer(options?: Options): Server {
     userDataDir: options?.userDataDir ?? '',
     launchOptions: options?.launchOptions,
     cdpEndpoint: options?.cdpEndpoint,
+    saveScreenshotsDir: options?.saveScreenshotsDir,
   });
 }

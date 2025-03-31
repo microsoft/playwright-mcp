@@ -17,6 +17,8 @@
 import type * as playwright from 'playwright';
 import type { ToolResult } from './tool';
 import type { Context } from '../context';
+import path from 'path';
+import fs from 'fs';
 
 async function waitForCompletion<R>(page: playwright.Page, callback: () => Promise<R>): Promise<R> {
   const requests = new Set<playwright.Request>();
@@ -105,4 +107,27 @@ export async function captureAriaSnapshot(context: Context, status: string = '')
   return {
     content: [{ type: 'text', text: lines.join('\n') }],
   };
+}
+
+export async function saveScreenshot(
+  buffer: Buffer,
+  directory: string,
+  type: 'jpeg' | 'png'
+): Promise<string> {
+  // Ensure directory exists
+  await fs.promises.mkdir(directory, { recursive: true });
+
+  // Generate unique filename with timestamp
+  const timestamp = new Date()
+      .toISOString()
+      .replace(/:/g, '-')
+      .replace(/\./g, '-');
+  const filename = `screenshot-${timestamp}.${type}`;
+  const filepath = path.join(directory, filename);
+
+  // Save the file
+  await fs.promises.writeFile(filepath, buffer);
+
+  // Return absolute path
+  return path.resolve(filepath);
 }

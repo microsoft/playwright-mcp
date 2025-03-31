@@ -40,6 +40,7 @@ program
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
+    .option('--save-screenshots <directory>', 'Save screenshots to the specified directory instead of returning base64 data')
     .action(async options => {
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
@@ -51,6 +52,7 @@ program
         launchOptions,
         vision: !!options.vision,
         cdpEndpoint: options.cdpEndpoint,
+        saveScreenshotsDir: options.saveScreenshots,
       }));
       setupExitWatchdog(serverList);
 
