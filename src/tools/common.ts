@@ -20,7 +20,7 @@ import path from 'path';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { captureAriaSnapshot, runAndWait } from './utils';
+import { captureAriaSnapshot, runAndWait, sanitizeForFilePath } from './utils';
 
 import type { ToolFactory, Tool } from './tool';
 
@@ -127,7 +127,7 @@ export const pdf: Tool = {
   },
   handle: async context => {
     const page = context.existingPage();
-    const fileName = path.join(os.tmpdir(), `/page-${new Date().toISOString()}.pdf`);
+    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + '.pdf';
     await page.pdf({ path: fileName });
     return {
       content: [{

@@ -81,15 +81,14 @@ export const test = baseTest.extend<Fixtures>({
 type Response = Awaited<ReturnType<Client['callTool']>>;
 
 export const expect = baseExpect.extend({
-  toHaveTextContent(response: Response, content: string | string[]) {
+  toHaveTextContent(response: Response, content: string | RegExp) {
     const isNot = this.isNot;
     try {
-      content = Array.isArray(content) ? content : [content];
-      const texts = (response.content as any).map(c => c.text);
+      const text = (response.content as any)[0].text;
       if (isNot)
-        baseExpect(texts).not.toEqual(content);
+        baseExpect(text).not.toMatch(content);
       else
-        baseExpect(texts).toEqual(content);
+        baseExpect(text).toMatch(content);
     } catch (e) {
       return {
         pass: isNot,

@@ -331,3 +331,25 @@ test('cdp server', async ({ cdpEndpoint, startClient }) => {
 `
   );
 });
+
+test('save as pdf', async ({ client }) => {
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toHaveTextContent(`
+- Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+- Page Title: Title
+- Page Snapshot
+\`\`\`yaml
+- document [ref=s1e2]: Hello, world!
+\`\`\`
+`
+  );
+
+  const response = await client.callTool({
+    name: 'browser_save_as_pdf',
+  });
+  expect(response).toHaveTextContent(/^Saved as.*page-[^:]+.pdf$/);
+});
