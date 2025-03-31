@@ -17,7 +17,7 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import type { Tool } from './tool';
+import type { Tool, ToolFactory } from './tool';
 
 const waitSchema = z.object({
   time: z.number().describe('The time to wait in seconds'),
@@ -62,7 +62,36 @@ const close: Tool = {
   },
 };
 
-export default [
+const resizeSchema = z.object({
+  format: z.enum(['desktop', 'mobile']).describe('The format to resize to - "desktop" for 16:9 (1280x720) or "mobile" for 2:1 (390x780)'),
+});
+
+const resize: ToolFactory = captureSnapshot => ({
+  capability: 'core',
+  schema: {
+    name: 'browser_resize',
+    description: 'Resize the browser window',
+    inputSchema: zodToJsonSchema(resizeSchema),
+  },
+  handle: async (context, params) => {
+    const validatedParams = resizeSchema.parse(params);
+    const dimensions = validatedParams.format === 'desktop'
+      ? { width: 1280, height: 720, text: 'desktop format (1280x720)' }
+      : { width: 390, height: 780, text: 'mobile format (390x780)' };
+
+    const tab = context.currentTab();
+    return await tab.run(
+        tab => tab.page.setViewportSize({ width: dimensions.width, height: dimensions.height }),
+        {
+          status: `Resized browser to ${dimensions.text}`,
+          captureSnapshot,
+        }
+    );
+  },
+});
+
+export default (captureSnapshot: boolean) => [
   close,
   wait,
+  resize(captureSnapshot)
 ];

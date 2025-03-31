@@ -233,3 +233,30 @@ test('browser_type (slowly)', async ({ client }) => {
     ].join('\n'),
   }]);
 });
+
+test('browser_resize', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Resize Test</title><body><div id="size">Waiting for resize...</div><script>new ResizeObserver(() => { document.getElementById("size").textContent = `Window size: ${window.innerWidth}x${window.innerHeight}`; }).observe(document.body);</script></body></html>',
+    },
+  });
+
+  const desktopResponse = await client.callTool({
+    name: 'browser_resize',
+    arguments: {
+      format: 'desktop',
+    },
+  });
+  expect(desktopResponse).toContainTextContent('Resized browser to desktop format (1280x720)');
+  expect(desktopResponse).toContainTextContent('Window size: 1280x720');
+
+  const mobileResponse = await client.callTool({
+    name: 'browser_resize',
+    arguments: {
+      format: 'mobile',
+    },
+  });
+  expect(mobileResponse).toContainTextContent('Resized browser to mobile format (390x780)');
+  expect(mobileResponse).toContainTextContent('Window size: 390x780');
+});
