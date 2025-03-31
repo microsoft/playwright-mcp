@@ -214,13 +214,15 @@ test('stitched aria frames', async ({ client }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: {
-      url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>',
+      url: `data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button><iframe src='data:text/html,<p>Nested</p>'></iframe>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>`,
     },
   })).toContainTextContent(`
 \`\`\`yaml
 - heading "Hello" [level=1] [ref=s1e3]
 - iframe [ref=s1e4]:
     - button "World" [ref=f1s1e3]
+    - iframe [ref=f1s1e4]:
+        - paragraph [ref=f2s1e3]: Nested
 
 \`\`\`
 `);

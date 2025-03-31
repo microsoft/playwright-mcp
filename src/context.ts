@@ -132,7 +132,7 @@ export class Context {
           const ref = node.value.match(/\[ref=(.*)\]/)?.[1];
           if (!ref)
             return;
-          iframes.push([ref, [...path, key]]);
+          iframes.push([ref, [key]]);
         }
 
         if (frameIndex > 0)
@@ -142,7 +142,7 @@ export class Context {
 
     await Promise.all(iframes.map(async ([ref, path]) => {
       const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
-      snapshot.setIn(path, snapshot.createPair(snapshot.getIn(path.slice(2)), childSnapshot));
+      snapshot.setIn(path, snapshot.createPair(snapshot.getIn(path), childSnapshot));
     }));
 
     return snapshot;
