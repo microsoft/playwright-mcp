@@ -118,32 +118,52 @@ export class Context {
   }
 
   private async _allFramesSnapshot(frame: playwright.Page | playwright.FrameLocator): Promise<yaml.Document> {
-    const frameIndex = this._lastSnapshotFrames.push(frame) - 1;
     const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true });
     const snapshot = yaml.parseDocument(snapshotString);
 
-    const iframes: [ref: string, path: unknown[]][] = [];
-    yaml.visit(snapshot, {
-      Scalar: (key, node, path) => {
+    const skip = new Set<yaml.Node>();
+    const locators = new Map<yaml.Node | yaml.Document | yaml.Pair, playwright.FrameLocator>();
+    await yaml.visitAsync(snapshot, {
+      Scalar: async (key, node, path) => {
+        if (skip.has(node))
+          return;
+
         if (typeof node.value !== 'string')
           return;
 
-        if (node.value.startsWith('iframe ')) {
-          const ref = node.value.match(/\[ref=(.*)\]/)?.[1];
-          if (!ref)
-            return;
-          iframes.push([ref, [key]]);
+        let parentFrame: playwright.Page | playwright.FrameLocator = frame;
+        for (const node of path.toReversed()) {
+          if (locators.has(node)) {
+            parentFrame = locators.get(node)!;
+            break;
+          }
         }
 
-        if (frameIndex > 0)
-          node.value = node.value.replace('[ref=', `[ref=f${frameIndex}`);
+        const value = node.value;
+        const frameIndex = this._lastSnapshotFrames.indexOf(parentFrame);
+        if (frameIndex !== -1)
+          node.value = value.replace('[ref=', `[ref=f${frameIndex + 1}`);
+
+        if (value.startsWith('iframe ')) {
+          const ref = value.match(/\[ref=(.*)\]/)?.[1];
+          if (!ref)
+            return;
+
+          const frameLocator = parentFrame.frameLocator(`aria-ref=${ref}`);
+          this._lastSnapshotFrames.push(frameLocator);
+
+          const iframeSnapshot = await frameLocator.locator('body').ariaSnapshot({ ref: true });
+
+          const document = yaml.parseDocument(iframeSnapshot);
+          const newNode = snapshot.createPair(node.value, document);
+
+          skip.add(newNode.key);
+          locators.set(newNode.value!, frameLocator);
+
+          return newNode;
+        }
       },
     });
-
-    await Promise.all(iframes.map(async ([ref, path]) => {
-      const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
-      snapshot.setIn(path, snapshot.createPair(snapshot.getIn(path), childSnapshot));
-    }));
 
     return snapshot;
   }
