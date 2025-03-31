@@ -176,7 +176,7 @@ export const chooseFile: ToolFactory = snapshot => ({
 });
 
 const resizeSchema = z.object({
-  format: z.enum(['desktop', 'mobile']).describe('The format to resize to - "desktop" for 16:9 (1280x720) or "mobile" for 2:1 (390x780)'),
+  format: z.enum(['desktop', 'mobile']).describe('The format to resize to - "desktop" for 16:9 (1280x720) or "mobile" for 1:2 (390x780)'),
 });
 
 export const resize: ToolFactory = snapshot => ({
