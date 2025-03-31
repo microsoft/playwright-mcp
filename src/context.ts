@@ -15,6 +15,7 @@
  */
 
 import * as playwright from 'playwright';
+import yaml from 'yaml';
 
 export class Context {
   private _userDataDir: string;
@@ -112,24 +113,39 @@ export class Context {
 
   async allFramesSnapshot() {
     this._lastSnapshotFrames = [];
-    return await this._allFramesSnapshot(this.existingPage());
+    const yaml = await this._allFramesSnapshot(this.existingPage());
+    return yaml.toString();
   }
 
-  private async _allFramesSnapshot(frame: playwright.Page | playwright.FrameLocator): Promise<string> {
+  private async _allFramesSnapshot(frame: playwright.Page | playwright.FrameLocator): Promise<yaml.Document> {
     const frameIndex = this._lastSnapshotFrames.push(frame) - 1;
-    const snapshot = await frame.locator('body').ariaSnapshot({ ref: true });
-    const result = await Promise.all(snapshot.split('\n').map(async line => {
-      const scopedLine = frameIndex > 0 ? line.replace('[ref=', `[ref=f${frameIndex}`) : line;
-      const match = line.match(/^(\s*)- iframe \[ref=(.*)\]/);
-      if (!match)
-        return [scopedLine];
-      const [, leadingSpace, ref] = match;
+    const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true });
+    const snapshot = yaml.parseDocument(snapshotString);
+
+    const iframes: [ref: string, path: unknown[]][] = [];
+    yaml.visit(snapshot, {
+      Scalar: (key, node, path) => {
+        if (typeof node.value !== 'string')
+          return;
+
+        if (node.value.startsWith('iframe ')) {
+          const ref = node.value.match(/\[ref=(.*)\]/)?.[1];
+          if (!ref)
+            return;
+          iframes.push([ref, [...path, key]]);
+        }
+
+        if (frameIndex > 0)
+          node.value = node.value.replace('[ref=', `[ref=f${frameIndex}`);
+      },
+    });
+
+    await Promise.all(iframes.map(async ([ref, path]) => {
       const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
-      const indentedChildSnapshot = childSnapshot.split('\n').map(l => leadingSpace + '  ' + l);
-      indentedChildSnapshot.unshift(scopedLine + ':');
-      return indentedChildSnapshot;
+      snapshot.setIn(path, snapshot.createPair(snapshot.getIn(path.slice(2)), childSnapshot));
     }));
-    return result.flat().join('\n');
+
+    return snapshot;
   }
 
   refLocator(ref: string): playwright.Locator {

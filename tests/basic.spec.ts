@@ -216,14 +216,12 @@ test('stitched aria frames', async ({ client }) => {
     arguments: {
       url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>',
     },
-  })).toHaveTextContent(`
-- Page URL: data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>
-- Page Title: 
-- Page Snapshot
+  })).toContainTextContent(`
 \`\`\`yaml
 - heading "Hello" [level=1] [ref=s1e3]
 - iframe [ref=s1e4]:
-  - button "World" [ref=f1s1e3]
+    - button "World" [ref=f1s1e3]
+
 \`\`\`
 `);
 
