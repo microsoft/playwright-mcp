@@ -174,3 +174,28 @@ export const chooseFile: ToolFactory = snapshot => ({
     }, snapshot);
   },
 });
+
+const resizeSchema = z.object({
+  format: z.enum(['desktop', 'mobile']).describe('The format to resize to - "desktop" for 16:9 (1280x720) or "mobile" for 2:1 (390x780)'),
+});
+
+export const resize: ToolFactory = snapshot => ({
+  schema: {
+    name: 'browser_resize',
+    description: 'Resize the browser window',
+    inputSchema: zodToJsonSchema(resizeSchema),
+  },
+  handle: async (context, params) => {
+    const validatedParams = resizeSchema.parse(params);
+    const dimensions = validatedParams.format === 'desktop'
+      ? { width: 1280, height: 720, text: 'desktop format (1280x720)' }
+      : { width: 390, height: 780, text: 'mobile format (390x780)' };
+
+    return await runAndWait(
+        context,
+        `Resized browser to ${dimensions.text}`,
+        async page => page.setViewportSize({ width: dimensions.width, height: dimensions.height }),
+        snapshot
+    );
+  },
+});
