@@ -51,6 +51,36 @@ export const navigate: ToolFactory = snapshot => ({
   },
 });
 
+export const multiNavigationSchema = z.object({
+  urls: z.array(z.string()).min(1).describe('One or more URLs to execute end-to-end tests against')
+})
+
+export const multiNavigation: ToolFactory = snapshot =>  ({
+  schema: {
+    name: 'browser_e2e',
+    description: "Execute End to End automation test in the browser",
+    inputSchema: zodToJsonSchema(multiNavigationSchema)
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = multiNavigationSchema.parse(params);
+    const snapshots = [];
+    for (const url of validatedParams.urls) {
+      const result = await navigate(snapshot).handle(context, { url });
+      snapshots.push({
+        url,
+        snapshot: result
+      });
+    }
+    return {
+      content: [{
+        type: 'text',
+        text: `End-to-end Snapshot results:\n${JSON.stringify(snapshots, null, 2)}`
+      }]
+    };
+  }
+});
+
 export const goBackSchema = z.object({});
 
 export const goBack: ToolFactory = snapshot => ({
