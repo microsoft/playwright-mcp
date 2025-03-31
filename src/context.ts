@@ -20,6 +20,7 @@ import path from 'path';
 import * as playwright from 'playwright';
 
 export type ContextOptions = {
+  browserName?: 'chromium' | 'firefox' | 'webkit';
   userDataDir: string;
   launchOptions?: playwright.LaunchOptions;
   cdpEndpoint?: string;
@@ -73,7 +74,7 @@ export class Context {
   }
 
   async install(): Promise<string> {
-    const channel = this._options.launchOptions?.channel || 'chrome';
+    const channel = this._options.launchOptions?.channel ?? this._options.browserName ?? 'chrome';
     const cli = path.join(require.resolve('playwright/package.json'), '..', 'cli.js');
     const child = fork(cli, ['install', channel], {
       stdio: 'pipe',
@@ -125,9 +126,11 @@ export class Context {
   private async _createPage(): Promise<{ browser?: playwright.Browser, page: playwright.Page }> {
     if (this._options.remoteEndpoint) {
       const url = new URL(this._options.remoteEndpoint);
+      if (this._options.browserName)
+        url.searchParams.set('browser', this._options.browserName);
       if (this._options.launchOptions)
         url.searchParams.set('launch-options', JSON.stringify(this._options.launchOptions));
-      const browser = await playwright.chromium.connect(String(url));
+      const browser = await playwright[this._options.browserName ?? 'chromium'].connect(String(url));
       const page = await browser.newPage();
       return { browser, page };
     }
@@ -148,7 +151,8 @@ export class Context {
 
   private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
     try {
-      return await playwright.chromium.launchPersistentContext(this._options.userDataDir, this._options.launchOptions);
+      const browserType = this._options.browserName ? playwright[this._options.browserName] : playwright.chromium;
+      return await browserType.launchPersistentContext(this._options.userDataDir, this._options.launchOptions);
     } catch (error: any) {
       if (error.message.includes('Executable doesn\'t exist'))
         throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);

@@ -65,6 +65,7 @@ const resources: Resource[] = [
 ];
 
 type Options = {
+  browserName?: 'chromium' | 'firefox' | 'webkit';
   userDataDir?: string;
   launchOptions?: LaunchOptions;
   cdpEndpoint?: string;
@@ -80,6 +81,7 @@ export function createServer(options?: Options): Server {
     version: packageJSON.version,
     tools,
     resources,
+    browserName: options?.browserName,
     userDataDir: options?.userDataDir ?? '',
     launchOptions: options?.launchOptions,
     cdpEndpoint: options?.cdpEndpoint,

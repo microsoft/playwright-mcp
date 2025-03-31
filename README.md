@@ -59,9 +59,25 @@ code-insiders --add-mcp '{"name":"playwright","command":"npx","args":["@playwrig
 
 After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
 
+### CLI Options
+
+The Playwright MCP server supports the following command-line options:
+
+- `--browser <browser>`: Browser or chrome channel to use. Possible values:
+  - `chrome`, `firefox`, `webkit`, `msedge`
+  - Chrome channels: `chrome-beta`, `chrome-canary`, `chrome-dev`
+  - Edge channels: `msedge-beta`, `msedge-canary`, `msedge-dev`
+  - Default: `chrome`
+- `--cdp-endpoint <endpoint>`: CDP endpoint to connect to
+- `--executable-path <path>`: Path to the browser executable
+- `--headless`: Run browser in headless mode (headed by default)
+- `--port <port>`: Port to listen on for SSE transport
+- `--user-data-dir <path>`: Path to the user data directory
+- `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
+
 ### User data directory
 
-Playwright MCP will launch Chrome browser with the new profile, located at
+Playwright MCP will launch the browser with the new profile, located at
 
 ```
 - `%USERPROFILE%\AppData\Local\ms-playwright\mcp-chrome-profile` on Windows
