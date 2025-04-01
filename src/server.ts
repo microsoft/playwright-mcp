@@ -21,20 +21,18 @@ import { Context } from './context';
 
 import type { Tool } from './tools/tool';
 import type { Resource } from './resources/resource';
-import type { LaunchOptions } from 'playwright';
+import type { ContextOptions } from './context';
 
-type Options = {
+type Options = ContextOptions & {
   name: string;
   version: string;
   tools: Tool[];
   resources: Resource[],
-  userDataDir: string;
-  launchOptions?: LaunchOptions;
 };
 
 export function createServerWithTools(options: Options): Server {
-  const { name, version, tools, resources, userDataDir, launchOptions } = options;
-  const context = new Context(userDataDir, launchOptions);
+  const { name, version, tools, resources } = options;
+  const context = new Context(options);
   const server = new Server({ name, version }, {
     capabilities: {
       tools: {},
@@ -87,4 +85,30 @@ export function createServerWithTools(options: Options): Server {
   };
 
   return server;
+}
+
+export class ServerList {
+  private _servers: Server[] = [];
+  private _serverFactory: () => Server;
+
+  constructor(serverFactory: () => Server) {
+    this._serverFactory = serverFactory;
+  }
+
+  async create() {
+    const server = this._serverFactory();
+    this._servers.push(server);
+    return server;
+  }
+
+  async close(server: Server) {
+    const index = this._servers.indexOf(server);
+    if (index !== -1)
+      this._servers.splice(index, 1);
+    await server.close();
+  }
+
+  async closeAll() {
+    await Promise.all(this._servers.map(server => server.close()));
+  }
 }
