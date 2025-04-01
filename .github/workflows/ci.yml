@@ -13,10 +13,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Use Node.js 18
+    - name: Use Node.js 22
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
         cache: 'npm'
 
     - name: Install dependencies
