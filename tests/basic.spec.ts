@@ -347,7 +347,7 @@ test('save as pdf', async ({ client }) => {
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- document [ref=s1e2]: Hello, world!
+- text: Hello, world!
 \`\`\`
 `
   );

@@ -188,8 +188,12 @@ export class Context {
           if (value.startsWith('iframe ')) {
             const ref = value.match(/\[ref=(.*)\]/)?.[1];
             if (ref) {
-              const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
-              return snapshot.createPair(node.value, childSnapshot);
+              try {
+                const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
+                return snapshot.createPair(node.value, childSnapshot);
+              } catch (error) {
+                return snapshot.createPair(node.value, '<could not take iframe snapshot>');
+              }
             }
           }
         }
