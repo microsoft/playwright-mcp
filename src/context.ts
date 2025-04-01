@@ -128,7 +128,7 @@ export class Context {
   async allFramesSnapshot() {
     this._lastSnapshotFrames = [];
     const yaml = await this._allFramesSnapshot(this.existingPage());
-    return yaml.toString();
+    return yaml.toString().trim();
   }
 
   private async _allFramesSnapshot(frame: playwright.Page | playwright.FrameLocator): Promise<yaml.Document> {

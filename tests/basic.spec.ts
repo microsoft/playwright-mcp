@@ -157,8 +157,8 @@ test('single option', async ({ client }) => {
 - Page Snapshot
 \`\`\`yaml
 - combobox [ref=s2e3]:
-  - option "Foo" [ref=s2e4]
-  - option "Bar" [selected] [ref=s2e5]
+    - option "Foo" [ref=s2e4]
+    - option "Bar" [selected] [ref=s2e5]
 \`\`\`
 `);
 });
@@ -185,9 +185,9 @@ test('multiple option', async ({ client }) => {
 - Page Snapshot
 \`\`\`yaml
 - listbox [ref=s2e3]:
-  - option "Foo" [ref=s2e4]
-  - option "Bar" [selected] [ref=s2e5]
-  - option "Baz" [selected] [ref=s2e6]
+    - option "Foo" [ref=s2e4]
+    - option "Bar" [selected] [ref=s2e5]
+    - option "Baz" [selected] [ref=s2e6]
 \`\`\`
 `);
 });
@@ -224,7 +224,6 @@ test('stitched aria frames', async ({ client }) => {
     - main [ref=f1s1e4]:
         - iframe [ref=f1s1e5]:
             - paragraph [ref=f2s1e3]: Nested
-
 \`\`\`
 `);
 
@@ -329,7 +328,7 @@ test('cdp server', async ({ cdpEndpoint, startClient }) => {
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- document [ref=s1e2]: Hello, world!
+- text: Hello, world!
 \`\`\`
 `
   );
