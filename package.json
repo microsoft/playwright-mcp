@@ -1,6 +1,6 @@
 {
   "name": "@playwright/mcp",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Playwright Tools for MCP",
   "repository": {
     "type": "git",
