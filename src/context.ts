@@ -124,8 +124,10 @@ export class Context {
 
     const visit = async (node: any): Promise<unknown> => {
       if (yaml.isPair(node)) {
-        node.key = await visit(node.key);
-        node.value = await visit(node.value);
+        await Promise.all([
+          visit(node.key).then(k => node.key = k),
+          visit(node.value).then(v => node.value = v)
+        ]);
       } else if (yaml.isSeq(node) || yaml.isMap(node)) {
         node.items = await Promise.all(node.items.map(visit));
       } else if (yaml.isScalar(node)) {
