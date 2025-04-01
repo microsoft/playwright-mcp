@@ -118,53 +118,34 @@ export class Context {
   }
 
   private async _allFramesSnapshot(frame: playwright.Page | playwright.FrameLocator): Promise<yaml.Document> {
+    const frameIndex = this._lastSnapshotFrames.push(frame) - 1;
     const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true });
     const snapshot = yaml.parseDocument(snapshotString);
 
-    const skip = new Set<yaml.Node>();
-    const locators = new Map<yaml.Node | yaml.Document | yaml.Pair, playwright.FrameLocator>();
-    await yaml.visitAsync(snapshot, {
-      Scalar: async (key, node, path) => {
-        if (skip.has(node))
-          return;
-
-        if (typeof node.value !== 'string')
-          return;
-
-        let parentFrame: playwright.Page | playwright.FrameLocator = frame;
-        for (const node of path.toReversed()) {
-          if (locators.has(node)) {
-            parentFrame = locators.get(node)!;
-            break;
+    const visit = async (node: any): Promise<unknown> => {
+      if (yaml.isPair(node)) {
+        node.key = await visit(node.key);
+        node.value = await visit(node.value);
+      } else if (yaml.isSeq(node) || yaml.isMap(node)) {
+        node.items = await Promise.all(node.items.map(visit));
+      } else if (yaml.isScalar(node)) {
+        if (typeof node.value === 'string') {
+          const value = node.value;
+          if (frameIndex > 0)
+            node.value = value.replace('[ref=', `[ref=f${frameIndex}`);
+          if (value.startsWith('iframe ')) {
+            const ref = value.match(/\[ref=(.*)\]/)?.[1];
+            if (ref) {
+              const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
+              return snapshot.createPair(node.value, childSnapshot);
+            }
           }
         }
+      }
 
-        const value = node.value;
-        const frameIndex = this._lastSnapshotFrames.indexOf(parentFrame);
-        if (frameIndex !== -1)
-          node.value = value.replace('[ref=', `[ref=f${frameIndex + 1}`);
-
-        if (value.startsWith('iframe ')) {
-          const ref = value.match(/\[ref=(.*)\]/)?.[1];
-          if (!ref)
-            return;
-
-          const frameLocator = parentFrame.frameLocator(`aria-ref=${ref}`);
-          this._lastSnapshotFrames.push(frameLocator);
-
-          const iframeSnapshot = await frameLocator.locator('body').ariaSnapshot({ ref: true });
-
-          const document = yaml.parseDocument(iframeSnapshot);
-          const newNode = snapshot.createPair(node.value, document);
-
-          skip.add(newNode.key);
-          locators.set(newNode.value!, frameLocator);
-
-          return newNode;
-        }
-      },
-    });
-
+      return node;
+    };
+    await visit(snapshot.contents);
     return snapshot;
   }
 
