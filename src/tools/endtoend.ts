@@ -32,6 +32,10 @@ const systemMessage = `
     It is very important to know the refs before calling batch tool in order to prevent reporting a bug where it was just a mismatch between 
     refs. Therefore, be sure to always call the snapshot tool once before calling the batch tool.
 
+    You will be provided a list of test cases to run as your test suite and the urls for path finding. 
+    You can use the snapshot tool to find the correct refs for each web page given, and using the test cases provided 
+    to you, generate test steps that validates the test cases given to you on the web.
+
     IMPORTANT: When using the batch tool, make sure each step name starts with 'browser_'. For example:
     - Use 'browser_navigate' (not 'navigate')
     - Use 'browser_click' (not 'click')
@@ -53,15 +57,24 @@ const systemMessage = `
     'browser_choose_file': 
 `;
 
+const testCaseSchema = z.object({
+  definition: z.string().describe("The test case definitions")
+})
+
+const endtoendSchema = z.object({
+  testCases: z.array(z.string()).describe("The list of test case definitions to execute on the web"),
+  urls: z.array(z.string()).min(1).describe("One or more URLs to execute end-to-end tests against")
+});
+
 export const endtoend: Tool = {
   schema: {
     name: "browser_endtoend",
     description: "Run an end to end test suit in the browser",
-    inputSchema: zodToJsonSchema(common.multiNavigationSchema)
+    inputSchema: zodToJsonSchema(endtoendSchema)
    },
 
   handle: async (context, params) => { 
-    const validatedParams = common.multiNavigationSchema.parse(params);
+    const validatedParams = endtoendSchema.parse(params);
     const content = `${systemMessage} - List of Urls in target for end to end testing : ${JSON.stringify(validatedParams)}`
     const result = generateText({
         model: openai('gpt-4o'),
@@ -70,8 +83,8 @@ export const endtoend: Tool = {
         snapshot: tool({
             description: 'Provided urls, get the snapshot of the pages that need validation',
             parameters: common.multiNavigationSchema,
-            execute: async (params: z.infer<typeof common.multiNavigationSchema>) => {
-                return await common.multiNavigation(true).handle(context, params);
+            execute: async () => {
+                return await common.multiNavigation(true).handle(context, { urls: validatedParams.urls });
             }
         }),
         batch: tool ({
