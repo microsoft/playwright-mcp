@@ -113,7 +113,7 @@ const batchSchema = snapshotBatchSchema.extend({
   })
 });
 
-const batch: Tool = {
+export const batch: Tool = {
   schema: {
     name: 'browser_batch',
     description: 'TOOL CALL REQUIREMENT: MUST CALL browser_navigate TOOL FIRST IN THE TARGET URLS BEFORE CALLING THIS TOOL TO GET THE CORRECT ARIA REFS. This tool runs a bunch of steps at once.',
