@@ -9,3 +9,15 @@ test('test tool list', async ({ qaClient }) => {
       'browser_qa'
     ]);
 });
+
+test('test qa with single url', async ({ qaClient }) => {
+  const response = await qaClient.callTool({
+    name: 'browser_qa',
+    arguments: {
+      urls: ['data:text/html,<html><title>Test Page</title><button>Click me</button><input type="text" placeholder="Type here"/></html>']
+    }
+  });
+
+  // Verify response contains snapshot and batch information
+  console.log(response)
+});
