@@ -26,7 +26,6 @@ import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
 const commonTools: Tool[] = [
-  common.pressKey,
   common.wait,
   common.pdf,
   common.close,
@@ -35,28 +34,30 @@ const commonTools: Tool[] = [
 
 const snapshotTools: Tool[] = [
   common.navigate(true),
-  common.goBack(true),
-  common.goForward(true),
-  common.chooseFile(true),
   snapshot.snapshot,
   snapshot.click,
   snapshot.hover,
   snapshot.type,
   snapshot.selectOption,
   snapshot.screenshot,
+  common.goBack(true),
+  common.goForward(true),
+  common.chooseFile(true),
+  common.pressKey(true),
   ...commonTools,
 ];
 
 const screenshotTools: Tool[] = [
   common.navigate(false),
-  common.goBack(false),
-  common.goForward(false),
-  common.chooseFile(false),
   screenshot.screenshot,
   screenshot.moveMouse,
   screenshot.click,
   screenshot.drag,
   screenshot.type,
+  common.goBack(false),
+  common.goForward(false),
+  common.chooseFile(false),
+  common.pressKey(false),
   ...commonTools,
 ];
 

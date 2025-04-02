@@ -23,15 +23,15 @@ test('test tool list', async ({ client, visionClient }) => {
   const { tools } = await client.listTools();
   expect(tools.map(t => t.name)).toEqual([
     'browser_navigate',
-    'browser_go_back',
-    'browser_go_forward',
-    'browser_choose_file',
     'browser_snapshot',
     'browser_click',
     'browser_hover',
     'browser_type',
     'browser_select_option',
     'browser_take_screenshot',
+    'browser_go_back',
+    'browser_go_forward',
+    'browser_choose_file',
     'browser_press_key',
     'browser_wait',
     'browser_save_as_pdf',
@@ -42,14 +42,14 @@ test('test tool list', async ({ client, visionClient }) => {
   const { tools: visionTools } = await visionClient.listTools();
   expect(visionTools.map(t => t.name)).toEqual([
     'browser_navigate',
-    'browser_go_back',
-    'browser_go_forward',
-    'browser_choose_file',
     'browser_screenshot',
     'browser_move_mouse',
     'browser_click',
     'browser_drag',
     'browser_type',
+    'browser_go_back',
+    'browser_go_forward',
+    'browser_choose_file',
     'browser_press_key',
     'browser_wait',
     'browser_save_as_pdf',
@@ -99,7 +99,7 @@ test('test browser_click', async ({ client }) => {
       element: 'Submit button',
       ref: 's1e3',
     },
-  })).toHaveTextContent(`"Submit button" clicked
+  })).toHaveTextContent(`Clicked "Submit button"
 
 - Page URL: data:text/html,<html><title>Title</title><button>Submit</button></html>
 - Page Title: Title
@@ -235,7 +235,7 @@ test('stitched aria frames', async ({ client }) => {
       element: 'World',
       ref: 'f1s1e3',
     },
-  })).toContainTextContent('"World" clicked');
+  })).toContainTextContent('Clicked "World"');
 });
 
 test('browser_choose_file', async ({ client }) => {

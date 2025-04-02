@@ -17,8 +17,6 @@
 import { z } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
 
-import { captureAriaSnapshot, runAndWait } from './utils';
-
 import type * as playwright from 'playwright';
 import type { Tool } from './tool';
 
@@ -30,7 +28,7 @@ export const snapshot: Tool = {
   },
 
   handle: async context => {
-    return await captureAriaSnapshot(context);
+    return await context.run(async () => {}, { captureSnapshot: true });
   },
 };
 
@@ -48,7 +46,12 @@ export const click: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `"${validatedParams.element}" clicked`, () => context.refLocator(validatedParams.ref).click(), true);
+    return await context.runAndWaitWithSnapshot(async () => {
+      const locator = context.lastSnapshot().refLocator(validatedParams.ref);
+      await locator.click();
+    }, {
+      status: `Clicked "${validatedParams.element}"`,
+    });
   },
 };
 
@@ -68,11 +71,13 @@ export const drag: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = dragSchema.parse(params);
-    return runAndWait(context, `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`, async () => {
-      const startLocator = context.refLocator(validatedParams.startRef);
-      const endLocator = context.refLocator(validatedParams.endRef);
+    return await context.runAndWaitWithSnapshot(async () => {
+      const startLocator = context.lastSnapshot().refLocator(validatedParams.startRef);
+      const endLocator = context.lastSnapshot().refLocator(validatedParams.endRef);
       await startLocator.dragTo(endLocator);
-    }, true);
+    }, {
+      status: `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`,
+    });
   },
 };
 
@@ -85,7 +90,12 @@ export const hover: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `Hovered over "${validatedParams.element}"`, () => context.refLocator(validatedParams.ref).hover(), true);
+    return context.runAndWaitWithSnapshot(async () => {
+      const locator = context.lastSnapshot().refLocator(validatedParams.ref);
+      await locator.hover();
+    }, {
+      status: `Hovered over "${validatedParams.element}"`,
+    });
   },
 };
 
@@ -103,12 +113,14 @@ export const type: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
-    return await runAndWait(context, `Typed "${validatedParams.text}" into "${validatedParams.element}"`, async () => {
-      const locator = context.refLocator(validatedParams.ref);
+    return await context.runAndWaitWithSnapshot(async () => {
+      const locator = context.lastSnapshot().refLocator(validatedParams.ref);
       await locator.fill(validatedParams.text);
       if (validatedParams.submit)
         await locator.press('Enter');
-    }, true);
+    }, {
+      status: `Typed "${validatedParams.text}" into "${validatedParams.element}"`,
+    });
   },
 };
 
@@ -125,10 +137,12 @@ export const selectOption: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = selectOptionSchema.parse(params);
-    return await runAndWait(context, `Selected option in "${validatedParams.element}"`, async () => {
-      const locator = context.refLocator(validatedParams.ref);
+    return await context.runAndWaitWithSnapshot(async () => {
+      const locator = context.lastSnapshot().refLocator(validatedParams.ref);
       await locator.selectOption(validatedParams.values);
-    }, true);
+    }, {
+      status: `Selected option in "${validatedParams.element}"`,
+    });
   },
 };
 

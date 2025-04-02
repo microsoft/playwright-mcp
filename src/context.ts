@@ -20,12 +20,24 @@ import path from 'path';
 import * as playwright from 'playwright';
 import yaml from 'yaml';
 
+import { waitForCompletion } from './tools/utils';
+import { ToolResult } from './tools/tool';
+
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
   userDataDir: string;
   launchOptions?: playwright.LaunchOptions;
   cdpEndpoint?: string;
   remoteEndpoint?: string;
+};
+
+type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
+
+type RunOptions = {
+  captureSnapshot?: boolean;
+  waitForCompletion?: boolean;
+  status?: string;
+  noClearFileChooser?: boolean;
 };
 
 export class Context {
@@ -35,7 +47,7 @@ export class Context {
   private _console: playwright.ConsoleMessage[] = [];
   private _createPagePromise: Promise<playwright.Page> | undefined;
   private _fileChooser: playwright.FileChooser | undefined;
-  private _lastSnapshotFrames: (playwright.Page | playwright.FrameLocator)[] = [];
+  private _snapshot: PageSnapshot | undefined;
 
   constructor(options: ContextOptions) {
     this._options = options;
@@ -99,6 +111,48 @@ export class Context {
     return this._page;
   }
 
+  async run(callback: (page: playwright.Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+    const page = this.existingPage();
+    try {
+      if (!options?.noClearFileChooser)
+        this._fileChooser = undefined;
+      if (options?.waitForCompletion)
+        await waitForCompletion(page, () => callback(page));
+      else
+        await callback(page);
+    } finally {
+      if (options?.captureSnapshot)
+        this._snapshot = await PageSnapshot.create(page);
+    }
+    return {
+      content: [{
+        type: 'text',
+        text: this._snapshot?.text({ status: options?.status, hasFileChooser: !!this._fileChooser }) ?? options?.status ?? '',
+      }],
+    };
+  }
+
+  async runAndWait(callback: (page: playwright.Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+    return await this.run(callback, {
+      waitForCompletion: true,
+      ...options,
+    });
+  }
+
+  async runAndWaitWithSnapshot(callback: (page: playwright.Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+    return await this.run(callback, {
+      captureSnapshot: true,
+      waitForCompletion: true,
+      ...options,
+    });
+  }
+
+  lastSnapshot(): PageSnapshot {
+    if (!this._snapshot)
+      throw new Error('No snapshot available');
+    return this._snapshot;
+  }
+
   async console(): Promise<playwright.ConsoleMessage[]> {
     return this._console;
   }
@@ -113,14 +167,6 @@ export class Context {
     if (!this._fileChooser)
       throw new Error('No file chooser visible');
     await this._fileChooser.setFiles(paths);
-    this._fileChooser = undefined;
-  }
-
-  hasFileChooser() {
-    return !!this._fileChooser;
-  }
-
-  clearFileChooser() {
     this._fileChooser = undefined;
   }
 
@@ -160,15 +206,54 @@ export class Context {
       throw error;
     }
   }
+}
 
-  async allFramesSnapshot() {
-    this._lastSnapshotFrames = [];
-    const yaml = await this._allFramesSnapshot(this.existingPage());
-    return yaml.toString().trim();
+class PageSnapshot {
+  private _frameLocators: PageOrFrameLocator[] = [];
+  private _text!: string;
+
+  constructor() {
   }
 
-  private async _allFramesSnapshot(frame: playwright.Page | playwright.FrameLocator): Promise<yaml.Document> {
-    const frameIndex = this._lastSnapshotFrames.push(frame) - 1;
+  static async create(page: playwright.Page): Promise<PageSnapshot> {
+    const snapshot = new PageSnapshot();
+    await snapshot._build(page);
+    return snapshot;
+  }
+
+  text(options?: { status?: string, hasFileChooser?: boolean }): string {
+    const results: string[] = [];
+    if (options?.status) {
+      results.push(options.status);
+      results.push('');
+    }
+    if (options?.hasFileChooser) {
+      results.push('- There is a file chooser visible that requires browser_choose_file to be called');
+      results.push('');
+    }
+    results.push(this._text);
+    return results.join('\n');
+  }
+
+  private async _build(page: playwright.Page) {
+    const yamlDocument = await this._snapshotFrame(page);
+    const lines = [];
+    lines.push(
+        `- Page URL: ${page.url()}`,
+        `- Page Title: ${await page.title()}`
+    );
+    lines.push(
+        `- Page Snapshot`,
+        '```yaml',
+        yamlDocument.toString().trim(),
+        '```',
+        ''
+    );
+    this._text = lines.join('\n');
+  }
+
+  private async _snapshotFrame(frame: playwright.Page | playwright.FrameLocator) {
+    const frameIndex = this._frameLocators.push(frame) - 1;
     const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true });
     const snapshot = yaml.parseDocument(snapshotString);
 
@@ -189,7 +274,7 @@ export class Context {
             const ref = value.match(/\[ref=(.*)\]/)?.[1];
             if (ref) {
               try {
-                const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
+                const childSnapshot = await this._snapshotFrame(frame.frameLocator(`aria-ref=${ref}`));
                 return snapshot.createPair(node.value, childSnapshot);
               } catch (error) {
                 return snapshot.createPair(node.value, '<could not take iframe snapshot>');
@@ -206,11 +291,11 @@ export class Context {
   }
 
   refLocator(ref: string): playwright.Locator {
-    let frame = this._lastSnapshotFrames[0];
+    let frame = this._frameLocators[0];
     const match = ref.match(/^f(\d+)(.*)/);
     if (match) {
       const frameIndex = parseInt(match[1], 10);
-      frame = this._lastSnapshotFrames[frameIndex];
+      frame = this._frameLocators[frameIndex];
       ref = match[2];
     }
 

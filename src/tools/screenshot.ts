@@ -17,8 +17,6 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { runAndWait } from './utils';
-
 import type { Tool } from './tool';
 
 export const screenshot: Tool = {
@@ -76,11 +74,13 @@ export const click: Tool = {
   },
 
   handle: async (context, params) => {
-    return await runAndWait(context, 'Clicked mouse', async page => {
+    return await context.runAndWait(async page => {
       const validatedParams = clickSchema.parse(params);
       await page.mouse.move(validatedParams.x, validatedParams.y);
       await page.mouse.down();
       await page.mouse.up();
+    }, {
+      status: 'Clicked mouse',
     });
   },
 };
@@ -101,11 +101,13 @@ export const drag: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = dragSchema.parse(params);
-    return await runAndWait(context, `Dragged mouse from (${validatedParams.startX}, ${validatedParams.startY}) to (${validatedParams.endX}, ${validatedParams.endY})`, async page => {
+    return await context.runAndWait(async page => {
       await page.mouse.move(validatedParams.startX, validatedParams.startY);
       await page.mouse.down();
       await page.mouse.move(validatedParams.endX, validatedParams.endY);
       await page.mouse.up();
+    }, {
+      status: `Dragged mouse from (${validatedParams.startX}, ${validatedParams.startY}) to (${validatedParams.endX}, ${validatedParams.endY})`,
     });
   },
 };
@@ -124,10 +126,12 @@ export const type: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
-    return await runAndWait(context, `Typed text "${validatedParams.text}"`, async page => {
+    return await context.runAndWait(async page => {
       await page.keyboard.type(validatedParams.text);
       if (validatedParams.submit)
         await page.keyboard.press('Enter');
+    }, {
+      status: `Typed text "${validatedParams.text}"`,
     });
   },
 };
