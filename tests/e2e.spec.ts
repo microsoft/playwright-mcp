@@ -11,6 +11,7 @@ test('test qa with single url', async ({ endtoendClient }) => {
   const response = await endtoendClient.callTool({
     name: 'browser_endtoend',
     arguments: {
+      testCases: ["Validate that the blog posts are loading"],
       urls: ['http://localhost:3000']
     }
   });
