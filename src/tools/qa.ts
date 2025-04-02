@@ -2,7 +2,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 
 import { openai } from '@ai-sdk/openai';
-import { streamText, tool } from 'ai';
+import { generateText, tool } from 'ai';
 
 import * as common from './common';
 import { snapshotBatchSchema, CommonToolParams } from './schemas';
@@ -43,7 +43,7 @@ export const qa: Tool = {
   handle: async (context, params) => { 
     const validatedParams = common.multiNavigationSchema.parse(params);
     const content = `${systemMessage} - List of Urls in target for end to end testing : ${JSON.stringify(validatedParams)}`
-    const result = streamText({
+    const result = generateText({
         model: openai('gpt-4o'),
         messages: [{ role: 'system', content: content }],
         tools: {
@@ -62,16 +62,15 @@ export const qa: Tool = {
             }
          })
         },
-        maxSteps: 3,
+        maxSteps: 5,
         onStepFinish: step => {
-        console.log(JSON.stringify(step, null, 2));
+          console.log(JSON.stringify(step, null, 2));
         },
     });
     let fullResponse = '';
-    for await (const delta of result.textStream) {
+    for await (const delta of (await result).text) {
         fullResponse += delta;
     }
-    console.log("response: ", fullResponse);
     return {
         content: [{ type: 'text', text: fullResponse}]
     }
