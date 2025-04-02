@@ -37,10 +37,10 @@ export const navigate: ToolFactory = captureSnapshot => ({
   handle: async (context, params) => {
     const validatedParams = navigateSchema.parse(params);
     await context.createPage();
-    return await context.run(async page => {
-      await page.goto(validatedParams.url, { waitUntil: 'domcontentloaded' });
+    return await context.currentPage().run(async page => {
+      await page.page.goto(validatedParams.url, { waitUntil: 'domcontentloaded' });
       // Cap load event to 5 seconds, the page is operational at this point.
-      await page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
+      await page.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
     }, {
       status: `Navigated to ${validatedParams.url}`,
       captureSnapshot,
@@ -57,8 +57,8 @@ export const goBack: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goBackSchema),
   },
   handle: async context => {
-    return await context.runAndWait(async page => {
-      await page.goBack();
+    return await context.currentPage().runAndWait(async page => {
+      await page.page.goBack();
     }, {
       status: 'Navigated back',
       captureSnapshot: snapshot,
@@ -75,8 +75,8 @@ export const goForward: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goForwardSchema),
   },
   handle: async context => {
-    return await context.runAndWait(async page => {
-      await page.goForward();
+    return await context.currentPage().runAndWait(async page => {
+      await page.page.goForward();
     }, {
       status: 'Navigated forward',
       captureSnapshot: snapshot,
@@ -118,8 +118,8 @@ export const pressKey: (captureSnapshot: boolean) => Tool = captureSnapshot => (
   },
   handle: async (context, params) => {
     const validatedParams = pressKeySchema.parse(params);
-    return await context.runAndWait(async page => {
-      await page.keyboard.press(validatedParams.key);
+    return await context.currentPage().runAndWait(async page => {
+      await page.page.keyboard.press(validatedParams.key);
     }, {
       status: `Pressed key ${validatedParams.key}`,
       captureSnapshot,
@@ -136,9 +136,9 @@ export const pdf: Tool = {
     inputSchema: zodToJsonSchema(pdfSchema),
   },
   handle: async context => {
-    const page = context.existingPage();
+    const page = context.currentPage();
     const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + '.pdf';
-    await page.pdf({ path: fileName });
+    await page.page.pdf({ path: fileName });
     return {
       content: [{
         type: 'text',
@@ -179,8 +179,9 @@ export const chooseFile: ToolFactory = captureSnapshot => ({
   },
   handle: async (context, params) => {
     const validatedParams = chooseFileSchema.parse(params);
-    return await context.runAndWait(async () => {
-      await context.submitFileChooser(validatedParams.paths);
+    const page = context.currentPage();
+    return await page.runAndWait(async () => {
+      await page.submitFileChooser(validatedParams.paths);
     }, {
       status: `Chose files ${validatedParams.paths.join(', ')}`,
       captureSnapshot,

@@ -28,7 +28,7 @@ export const snapshot: Tool = {
   },
 
   handle: async context => {
-    return await context.run(async () => {}, { captureSnapshot: true });
+    return await context.currentPage().run(async () => {}, { captureSnapshot: true });
   },
 };
 
@@ -46,8 +46,8 @@ export const click: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return await context.runAndWaitWithSnapshot(async () => {
-      const locator = context.lastSnapshot().refLocator(validatedParams.ref);
+    return await context.currentPage().runAndWaitWithSnapshot(async page => {
+      const locator = page.lastSnapshot().refLocator(validatedParams.ref);
       await locator.click();
     }, {
       status: `Clicked "${validatedParams.element}"`,
@@ -71,9 +71,9 @@ export const drag: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = dragSchema.parse(params);
-    return await context.runAndWaitWithSnapshot(async () => {
-      const startLocator = context.lastSnapshot().refLocator(validatedParams.startRef);
-      const endLocator = context.lastSnapshot().refLocator(validatedParams.endRef);
+    return await context.currentPage().runAndWaitWithSnapshot(async page => {
+      const startLocator = page.lastSnapshot().refLocator(validatedParams.startRef);
+      const endLocator = page.lastSnapshot().refLocator(validatedParams.endRef);
       await startLocator.dragTo(endLocator);
     }, {
       status: `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`,
@@ -90,8 +90,8 @@ export const hover: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return context.runAndWaitWithSnapshot(async () => {
-      const locator = context.lastSnapshot().refLocator(validatedParams.ref);
+    return await context.currentPage().runAndWaitWithSnapshot(async page => {
+      const locator = page.lastSnapshot().refLocator(validatedParams.ref);
       await locator.hover();
     }, {
       status: `Hovered over "${validatedParams.element}"`,
@@ -114,8 +114,8 @@ export const type: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
-    return await context.runAndWaitWithSnapshot(async () => {
-      const locator = context.lastSnapshot().refLocator(validatedParams.ref);
+    return await context.currentPage().runAndWaitWithSnapshot(async page => {
+      const locator = page.lastSnapshot().refLocator(validatedParams.ref);
       if (validatedParams.slowly)
         await locator.pressSequentially(validatedParams.text);
       else
@@ -141,8 +141,8 @@ export const selectOption: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = selectOptionSchema.parse(params);
-    return await context.runAndWaitWithSnapshot(async () => {
-      const locator = context.lastSnapshot().refLocator(validatedParams.ref);
+    return await context.currentPage().runAndWaitWithSnapshot(async page => {
+      const locator = page.lastSnapshot().refLocator(validatedParams.ref);
       await locator.selectOption(validatedParams.values);
     }, {
       status: `Selected option in "${validatedParams.element}"`,
@@ -163,9 +163,9 @@ export const screenshot: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = screenshotSchema.parse(params);
-    const page = context.existingPage();
+    const page = context.currentPage();
     const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css' } : { type: 'jpeg', quality: 50, scale: 'css' };
-    const screenshot = await page.screenshot(options);
+    const screenshot = await page.page.screenshot(options);
     return {
       content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: validatedParams.raw ? 'image/png' : 'image/jpeg' }],
     };

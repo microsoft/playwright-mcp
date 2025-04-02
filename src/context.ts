@@ -43,47 +43,50 @@ type RunOptions = {
 export class Context {
   private _options: ContextOptions;
   private _browser: playwright.Browser | undefined;
-  private _page: playwright.Page | undefined;
-  private _console: playwright.ConsoleMessage[] = [];
-  private _createPagePromise: Promise<playwright.Page> | undefined;
-  private _fileChooser: playwright.FileChooser | undefined;
-  private _snapshot: PageSnapshot | undefined;
+  private _browserContext: playwright.BrowserContext | undefined;
+  private _pages: Page[] = [];
+  private _currentPage: Page | undefined;
+  private _createContextPromise: Promise<playwright.Page> | undefined;
 
   constructor(options: ContextOptions) {
     this._options = options;
   }
 
   async createPage(): Promise<playwright.Page> {
-    if (this._createPagePromise)
-      return this._createPagePromise;
-    this._createPagePromise = (async () => {
-      const { browser, page } = await this._createPage();
-      page.on('console', event => this._console.push(event));
-      page.on('framenavigated', frame => {
-        if (!frame.parentFrame())
-          this._console.length = 0;
-      });
-      page.on('close', () => this._onPageClose());
-      page.on('filechooser', chooser => this._fileChooser = chooser);
-      page.setDefaultNavigationTimeout(60000);
-      page.setDefaultTimeout(5000);
-      this._page = page;
+    if (this._createContextPromise)
+      return this._createContextPromise;
+    this._createContextPromise = (async () => {
+      const { browser, browserContext } = await this._createBrowserContext();
+      const pages = browserContext.pages();
+      for (const page of pages)
+        this._onPageCreated(page);
+      browserContext.on('page', page => this._onPageCreated(page));
+      let page = pages[0];
+      if (!page)
+        page = await browserContext.newPage();
+      this._currentPage = this._pages[0];
       this._browser = browser;
+      this._browserContext = browserContext;
       return page;
     })();
-    return this._createPagePromise;
+    return this._createContextPromise;
   }
 
-  private _onPageClose() {
-    const browser = this._browser;
-    const page = this._page;
-    void page?.context()?.close().then(() => browser?.close()).catch(() => {});
+  private _onPageCreated(page: playwright.Page) {
+    this._pages.push(new Page(page, page => this._onPageClose(page)));
+  }
 
-    this._createPagePromise = undefined;
-    this._browser = undefined;
-    this._page = undefined;
-    this._fileChooser = undefined;
-    this._console.length = 0;
+  private _onPageClose(page: Page) {
+    this._pages = this._pages.filter(p => p !== page);
+    if (this._currentPage === page)
+      this._currentPage = this._pages[0];
+    const browser = this._browser;
+    if (this._browserContext && !this._pages.length) {
+      void this._browserContext.close().then(() => browser?.close()).catch(() => {});
+      this._createContextPromise = undefined;
+      this._browser = undefined;
+      this._browserContext = undefined;
+    }
   }
 
   async install(): Promise<string> {
@@ -105,24 +108,90 @@ export class Context {
     });
   }
 
-  existingPage(): playwright.Page {
-    if (!this._page)
+  currentPage(): Page {
+    if (!this._currentPage)
       throw new Error('Navigate to a location to create a page');
-    return this._page;
+    return this._currentPage;
   }
 
-  async run(callback: (page: playwright.Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
-    const page = this.existingPage();
+  async close() {
+    if (!this._browserContext)
+      return;
+    await this._browserContext.close();
+  }
+
+  private async _createBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
+    if (this._options.remoteEndpoint) {
+      const url = new URL(this._options.remoteEndpoint);
+      if (this._options.browserName)
+        url.searchParams.set('browser', this._options.browserName);
+      if (this._options.launchOptions)
+        url.searchParams.set('launch-options', JSON.stringify(this._options.launchOptions));
+      const browser = await playwright[this._options.browserName ?? 'chromium'].connect(String(url));
+      const browserContext = await browser.newContext();
+      return { browser, browserContext };
+    }
+
+    if (this._options.cdpEndpoint) {
+      const browser = await playwright.chromium.connectOverCDP(this._options.cdpEndpoint);
+      const browserContext = browser.contexts()[0];
+      return { browser, browserContext };
+    }
+
+    const browserContext = await this._launchPersistentContext();
+    return { browserContext };
+  }
+
+  private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
+    try {
+      const browserType = this._options.browserName ? playwright[this._options.browserName] : playwright.chromium;
+      return await browserType.launchPersistentContext(this._options.userDataDir, this._options.launchOptions);
+    } catch (error: any) {
+      if (error.message.includes('Executable doesn\'t exist'))
+        throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
+      throw error;
+    }
+  }
+}
+
+class Page {
+  readonly page: playwright.Page;
+  private _console: playwright.ConsoleMessage[] = [];
+  private _fileChooser: playwright.FileChooser | undefined;
+  private _snapshot: PageSnapshot | undefined;
+  private _onPageClose: (page: Page) => void;
+
+  constructor(page: playwright.Page, onPageClose: (page: Page) => void) {
+    this.page = page;
+    this._onPageClose = onPageClose;
+    page.on('console', event => this._console.push(event));
+    page.on('framenavigated', frame => {
+      if (!frame.parentFrame())
+        this._console.length = 0;
+    });
+    page.on('close', () => this._onClose());
+    page.on('filechooser', chooser => this._fileChooser = chooser);
+    page.setDefaultNavigationTimeout(60000);
+    page.setDefaultTimeout(5000);
+  }
+
+  private _onClose() {
+    this._fileChooser = undefined;
+    this._console.length = 0;
+    this._onPageClose(this);
+  }
+
+  async run(callback: (page: Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
     try {
       if (!options?.noClearFileChooser)
         this._fileChooser = undefined;
       if (options?.waitForCompletion)
-        await waitForCompletion(page, () => callback(page));
+        await waitForCompletion(this.page, () => callback(this));
       else
-        await callback(page);
+        await callback(this);
     } finally {
       if (options?.captureSnapshot)
-        this._snapshot = await PageSnapshot.create(page);
+        this._snapshot = await PageSnapshot.create(this.page);
     }
     return {
       content: [{
@@ -132,14 +201,14 @@ export class Context {
     };
   }
 
-  async runAndWait(callback: (page: playwright.Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+  async runAndWait(callback: (page: Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
     return await this.run(callback, {
       waitForCompletion: true,
       ...options,
     });
   }
 
-  async runAndWaitWithSnapshot(callback: (page: playwright.Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+  async runAndWaitWithSnapshot(callback: (page: Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
     return await this.run(callback, {
       captureSnapshot: true,
       waitForCompletion: true,
@@ -157,54 +226,11 @@ export class Context {
     return this._console;
   }
 
-  async close() {
-    if (!this._page)
-      return;
-    await this._page.close();
-  }
-
   async submitFileChooser(paths: string[]) {
     if (!this._fileChooser)
       throw new Error('No file chooser visible');
     await this._fileChooser.setFiles(paths);
     this._fileChooser = undefined;
-  }
-
-  private async _createPage(): Promise<{ browser?: playwright.Browser, page: playwright.Page }> {
-    if (this._options.remoteEndpoint) {
-      const url = new URL(this._options.remoteEndpoint);
-      if (this._options.browserName)
-        url.searchParams.set('browser', this._options.browserName);
-      if (this._options.launchOptions)
-        url.searchParams.set('launch-options', JSON.stringify(this._options.launchOptions));
-      const browser = await playwright[this._options.browserName ?? 'chromium'].connect(String(url));
-      const page = await browser.newPage();
-      return { browser, page };
-    }
-
-    if (this._options.cdpEndpoint) {
-      const browser = await playwright.chromium.connectOverCDP(this._options.cdpEndpoint);
-      const browserContext = browser.contexts()[0];
-      let [page] = browserContext.pages();
-      if (!page)
-        page = await browserContext.newPage();
-      return { browser, page };
-    }
-
-    const context = await this._launchPersistentContext();
-    const [page] = context.pages();
-    return { page };
-  }
-
-  private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
-    try {
-      const browserType = this._options.browserName ? playwright[this._options.browserName] : playwright.chromium;
-      return await browserType.launchPersistentContext(this._options.userDataDir, this._options.launchOptions);
-    } catch (error: any) {
-      if (error.message.includes('Executable doesn\'t exist'))
-        throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
-      throw error;
-    }
   }
 }
 
