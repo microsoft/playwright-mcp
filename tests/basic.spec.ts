@@ -346,23 +346,15 @@ test('browser_resize', async ({ client }) => {
     },
   });
 
-  const desktopResponse = await client.callTool({
+  const response = await client.callTool({
     name: 'browser_resize',
     arguments: {
-      format: 'desktop',
+      width: 390,
+      height: 780,
     },
   });
-  expect(desktopResponse).toContainTextContent('Resized browser to desktop format (1280x720)');
-  expect(desktopResponse).toContainTextContent('Window size: 1280x720');
-
-  const mobileResponse = await client.callTool({
-    name: 'browser_resize',
-    arguments: {
-      format: 'mobile',
-    },
-  });
-  expect(mobileResponse).toContainTextContent('Resized browser to mobile format (390x780)');
-  expect(mobileResponse).toContainTextContent('Window size: 390x780');
+  expect(response).toContainTextContent('Resized browser window');
+  expect(response).toContainTextContent('Window size: 390x780');
 });
 
 test('save as pdf', async ({ client }) => {
