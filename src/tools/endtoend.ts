@@ -53,9 +53,9 @@ const systemMessage = `
     'browser_choose_file': 
 `;
 
-export const qa: Tool = {
+export const endtoend: Tool = {
   schema: {
-    name: "browser_qa",
+    name: "browser_endtoend",
     description: "Run an end to end test suit in the browser",
     inputSchema: zodToJsonSchema(common.multiNavigationSchema)
    },

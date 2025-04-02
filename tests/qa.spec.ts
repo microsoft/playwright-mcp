@@ -1,15 +1,15 @@
 import { test, expect } from './fixtures';
 
-test('test tool list', async ({ qaClient }) => {
-    const { tools: qaTools } = await qaClient.listTools();
+test('test tool list', async ({ endtoendClient }) => {
+    const { tools: qaTools } = await endtoendClient.listTools();
     expect(qaTools.map(t => t.name)).toEqual([
-      'browser_qa'
+      'browser_endtoend'
     ]);
 });
 
-test('test qa with single url', async ({ qaClient }) => {
-  const response = await qaClient.callTool({
-    name: 'browser_qa',
+test('test qa with single url', async ({ endtoendClient }) => {
+  const response = await endtoendClient.callTool({
+    name: 'browser_endtoend',
     arguments: {
       urls: ['http://localhost:3000']
     }

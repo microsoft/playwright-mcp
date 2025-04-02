@@ -18,7 +18,7 @@ import { createServerWithTools } from './server';
 import * as snapshot from './tools/snapshot';
 import * as common from './tools/common';
 import * as screenshot from './tools/screenshot';
-import * as qa from './tools/qa'
+import * as endtoend from './tools/endtoend'
 import { console } from './resources/console';
 
 import type { Tool } from './tools/tool';
@@ -27,7 +27,7 @@ import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
 const qaTools: Tool[] = [
-  qa.qa
+  endtoend.endtoend
 ]
 
 const commonTools: Tool[] = [
@@ -49,7 +49,7 @@ const snapshotTools: Tool[] = [
   snapshot.type,
   snapshot.selectOption,
   snapshot.screenshot,
-  qa.batch,
+  endtoend.batch,
   ...commonTools,
 ];
 
@@ -75,13 +75,13 @@ type Options = {
   launchOptions?: LaunchOptions;
   cdpEndpoint?: string;
   vision?: boolean;
-  qa?: boolean;
+  endtoend?: boolean;
 };
 
 const packageJSON = require('../package.json');
 
 export function createServer(options?: Options): Server {
-  const tools = options?.qa ? qaTools : (options?.vision ? screenshotTools : snapshotTools);
+  const tools = options?.endtoend ? qaTools : (options?.vision ? screenshotTools : snapshotTools);
   return createServerWithTools({
     name: 'Playwright',
     version: packageJSON.version,
