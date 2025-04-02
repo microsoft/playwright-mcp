@@ -337,7 +337,7 @@ test('cdp server', async ({ cdpEndpoint, startClient }) => {
 test('test batch processing in snapshot mode', async ({ client }) => {
   const fs = require('fs');
   const path = require('path');
-  const testData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/snapshot_test.json'), 'utf8'));
+  const testData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/batch_test.json'), 'utf8'));
   const response = await client.callTool({
     name: 'browser_batch',
     arguments: {
