@@ -20,7 +20,7 @@ import path from 'path';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { captureAriaSnapshot, runAndWait } from './utils';
+import { captureAriaSnapshot, runAndWait, sanitizeForFilePath } from './utils';
 
 import type { ToolFactory, Tool } from './tool';
 
@@ -127,7 +127,7 @@ export const pdf: Tool = {
   },
   handle: async context => {
     const page = context.existingPage();
-    const fileName = path.join(os.tmpdir(), `/page-${new Date().toISOString()}.pdf`);
+    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + '.pdf';
     await page.pdf({ path: fileName });
     return {
       content: [{
@@ -174,3 +174,20 @@ export const chooseFile: ToolFactory = snapshot => ({
     }, snapshot);
   },
 });
+
+export const install: Tool = {
+  schema: {
+    name: 'browser_install',
+    description: 'Install the browser specified in the config. Call this if you get an error about the browser not being installed.',
+    inputSchema: zodToJsonSchema(z.object({})),
+  },
+  handle: async context => {
+    const channel = await context.install();
+    return {
+      content: [{
+        type: 'text',
+        text: `Browser ${channel} installed`,
+      }],
+    };
+  },
+};

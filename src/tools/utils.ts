@@ -123,11 +123,15 @@ export async function saveScreenshot(
       .replace(/:/g, '-')
       .replace(/\./g, '-');
   const filename = `screenshot-${timestamp}.${type}`;
-  const filepath = path.join(directory, filename);
+  const filepath = path.join(directory, sanitizeForFilePath(filename));
 
   // Save the file
   await fs.promises.writeFile(filepath, buffer);
 
   // Return absolute path
   return path.resolve(filepath);
+}
+
+export function sanitizeForFilePath(s: string) {
+  return s.replace(/[\x00-\x2C\x2E-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F]+/g, '-');
 }
