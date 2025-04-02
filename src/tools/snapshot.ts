@@ -46,9 +46,9 @@ export const click: Tool = {
     inputSchema: zodToJsonSchema(elementSchema),
   },
 
-  handle: async (context, params, batchMode) => {
+  handle: async (context, params, snapshot) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `"${validatedParams.element}" clicked`, () => context.refLocator(validatedParams.ref).click(), batchMode);
+    return runAndWait(context, `"${validatedParams.element}" clicked`, () => context.refLocator(validatedParams.ref).click(), snapshot);
   },
 };
 
@@ -66,13 +66,13 @@ export const drag: Tool = {
     inputSchema: zodToJsonSchema(dragSchema),
   },
 
-  handle: async (context, params, batchMode) => {
+  handle: async (context, params, snapshot) => {
     const validatedParams = dragSchema.parse(params);
     return runAndWait(context, `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`, async () => {
       const startLocator = context.refLocator(validatedParams.startRef);
       const endLocator = context.refLocator(validatedParams.endRef);
       await startLocator.dragTo(endLocator);
-    }, batchMode);
+    }, snapshot);
   },
 };
 
@@ -83,9 +83,9 @@ export const hover: Tool = {
     inputSchema: zodToJsonSchema(elementSchema),
   },
 
-  handle: async (context, params, batchMode) => {
+  handle: async (context, params, snapshot) => {
     const validatedParams = elementSchema.parse(params);
-    return runAndWait(context, `Hovered over "${validatedParams.element}"`, () => context.refLocator(validatedParams.ref).hover(), batchMode);
+    return runAndWait(context, `Hovered over "${validatedParams.element}"`, () => context.refLocator(validatedParams.ref).hover(), snapshot);
   },
 };
 
@@ -101,14 +101,14 @@ export const type: Tool = {
     inputSchema: zodToJsonSchema(typeSchema),
   },
 
-  handle: async (context, params, batchMode) => {
+  handle: async (context, params, snapshot) => {
     const validatedParams = typeSchema.parse(params);
     return await runAndWait(context, `Typed "${validatedParams.text}" into "${validatedParams.element}"`, async () => {
       const locator = context.refLocator(validatedParams.ref);
       await locator.fill(validatedParams.text);
       if (validatedParams.submit)
         await locator.press('Enter');
-    }, batchMode);
+    }, snapshot);
   },
 };
 
@@ -123,12 +123,12 @@ export const selectOption: Tool = {
     inputSchema: zodToJsonSchema(selectOptionSchema),
   },
 
-  handle: async (context, params, batchMode) => {
+  handle: async (context, params, snapshot) => {
     const validatedParams = selectOptionSchema.parse(params);
     return await runAndWait(context, `Selected option in "${validatedParams.element}"`, async () => {
       const locator = context.refLocator(validatedParams.ref);
       await locator.selectOption(validatedParams.values);
-    }, batchMode);
+    }, snapshot);
   },
 };
 
