@@ -7,6 +7,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - **Fast and lightweight**: Uses Playwright's accessibility tree, not pixel-based input.
 - **LLM-friendly**: No vision models needed, operates purely on structured data.
 - **Deterministic tool application**: Avoids ambiguity common with screenshot-based approaches.
+- **API Mocking**: Intercept and mock API responses for testing and simulation.
 
 ### Use Cases
 
@@ -14,6 +15,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - Data extraction from structured content
 - Automated testing driven by LLMs
 - General-purpose browser interaction for agents
+- API mocking and response simulation
 
 ### Example config
 
@@ -246,6 +248,21 @@ The Playwright MCP provides a set of tools for browser automation. Here are all 
   - Description: Wait for a specified time in seconds
   - Parameters:
     - `time` (number): The time to wait in seconds (capped at 10 seconds)
+
+- **browser_mock_api**
+  - Description: Mock API responses by intercepting network requests
+  - Parameters:
+    - `url` (string): URL pattern to match for interception (supports glob and regex patterns)
+    - `method` (string, optional): HTTP method to match (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, or ALL)
+    - `status` (number, default 200): HTTP status code to return
+    - `contentType` (string, default "application/json"): Content-Type header for the response
+    - `body` (string): Response body content (typically JSON formatted as a string)
+    - `headers` (object, optional): Additional response headers to include
+
+- **browser_clear_mock**
+  - Description: Clear previously configured API mocks
+  - Parameters:
+    - `url` (string, optional): URL pattern to remove mocking for. If not provided, all mocks will be cleared
 
 - **browser_close**
   - Description: Close the page

@@ -18,6 +18,7 @@ import { createServerWithTools } from './server';
 import * as snapshot from './tools/snapshot';
 import * as common from './tools/common';
 import * as screenshot from './tools/screenshot';
+import * as mock from './tools/mock';
 import { console } from './resources/console';
 
 import type { Tool } from './tools/tool';
@@ -44,6 +45,8 @@ const snapshotTools: Tool[] = [
   snapshot.type,
   snapshot.selectOption,
   snapshot.screenshot,
+  mock.mockApi(true),
+  mock.clearMock(true),
   ...commonTools,
 ];
 
@@ -57,6 +60,8 @@ const screenshotTools: Tool[] = [
   screenshot.click,
   screenshot.drag,
   screenshot.type,
+  mock.mockApi(false),
+  mock.clearMock(false),
   ...commonTools,
 ];
 
