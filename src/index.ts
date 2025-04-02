@@ -49,6 +49,7 @@ const snapshotTools: Tool[] = [
   snapshot.type,
   snapshot.selectOption,
   snapshot.screenshot,
+  qa.batch,
   ...commonTools,
 ];
 
