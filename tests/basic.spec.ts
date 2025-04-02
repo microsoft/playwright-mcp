@@ -37,6 +37,7 @@ test('test tool list', async ({ client, visionClient }) => {
     'browser_wait',
     'browser_save_as_pdf',
     'browser_close',
+    'browser_install',
   ]);
 
   const { tools: visionTools } = await visionClient.listTools();
@@ -55,6 +56,7 @@ test('test tool list', async ({ client, visionClient }) => {
     'browser_wait',
     'browser_save_as_pdf',
     'browser_close',
+    'browser_install',
   ]);
 });
 
@@ -79,7 +81,7 @@ test('test browser_navigate', async ({ client }) => {
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- document [ref=s1e2]: Hello, world!
+- text: Hello, world!
 \`\`\`
 `
   );
@@ -97,7 +99,7 @@ test('test browser_click', async ({ client }) => {
     name: 'browser_click',
     arguments: {
       element: 'Submit button',
-      ref: 's1e4',
+      ref: 's1e3',
     },
   })).toHaveTextContent(`"Submit button" clicked
 
@@ -105,8 +107,7 @@ test('test browser_click', async ({ client }) => {
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- document [ref=s2e2]:
-  - button "Submit" [ref=s2e4]
+- button "Submit" [ref=s2e3]
 \`\`\`
 `);
 });
@@ -133,7 +134,7 @@ test('test reopen browser', async ({ client }) => {
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- document [ref=s1e2]: Hello, world!
+- text: Hello, world!
 \`\`\`
 `);
 });
@@ -150,7 +151,7 @@ test('single option', async ({ client }) => {
     name: 'browser_select_option',
     arguments: {
       element: 'Select',
-      ref: 's1e4',
+      ref: 's1e3',
       values: ['bar'],
     },
   })).toHaveTextContent(`Selected option in "Select"
@@ -159,10 +160,9 @@ test('single option', async ({ client }) => {
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- document [ref=s2e2]:
-  - combobox [ref=s2e4]:
-    - option "Foo" [ref=s2e5]
-    - option "Bar" [selected] [ref=s2e6]
+- combobox [ref=s2e3]:
+    - option "Foo" [ref=s2e4]
+    - option "Bar" [selected] [ref=s2e5]
 \`\`\`
 `);
 });
@@ -179,7 +179,7 @@ test('multiple option', async ({ client }) => {
     name: 'browser_select_option',
     arguments: {
       element: 'Select',
-      ref: 's1e4',
+      ref: 's1e3',
       values: ['bar', 'baz'],
     },
   })).toHaveTextContent(`Selected option in "Select"
@@ -188,11 +188,10 @@ test('multiple option', async ({ client }) => {
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- document [ref=s2e2]:
-  - listbox [ref=s2e4]:
-    - option "Foo" [ref=s2e5]
-    - option "Bar" [selected] [ref=s2e6]
-    - option "Baz" [selected] [ref=s2e7]
+- listbox [ref=s2e3]:
+    - option "Foo" [ref=s2e4]
+    - option "Bar" [selected] [ref=s2e5]
+    - option "Baz" [selected] [ref=s2e6]
 \`\`\`
 `);
 });
@@ -219,21 +218,26 @@ test('stitched aria frames', async ({ client }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: {
-      url: 'data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>',
+      url: `data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button><main><iframe src='data:text/html,<p>Nested</p>'></iframe></main>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>`,
     },
-  })).toHaveTextContent(`
-- Page URL: data:text/html,<h1>Hello</h1><iframe src="data:text/html,<h1>World</h1>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>
-- Page Title: 
-- Page Snapshot
+  })).toContainTextContent(`
 \`\`\`yaml
-- document [ref=s1e2]:
-  - heading "Hello" [level=1] [ref=s1e4]
-
-# iframe src=data:text/html,<h1>World</h1>
-- document [ref=f0s1e2]:
-  - heading "World" [level=1] [ref=f0s1e4]
+- heading "Hello" [level=1] [ref=s1e3]
+- iframe [ref=s1e4]:
+    - button "World" [ref=f1s1e3]
+    - main [ref=f1s1e4]:
+        - iframe [ref=f1s1e5]:
+            - paragraph [ref=f2s1e3]: Nested
 \`\`\`
 `);
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'World',
+      ref: 'f1s1e3',
+    },
+  })).toContainTextContent('"World" clicked');
 });
 
 test('browser_choose_file', async ({ client }) => {
@@ -242,13 +246,13 @@ test('browser_choose_file', async ({ client }) => {
     arguments: {
       url: 'data:text/html,<html><title>Title</title><input type="file" /><button>Button</button></html>',
     },
-  })).toContainTextContent('- textbox [ref=s1e4]');
+  })).toContainTextContent('- textbox [ref=s1e3]');
 
   expect(await client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Textbox',
-      ref: 's1e4',
+      ref: 's1e3',
     },
   })).toContainTextContent('There is a file chooser visible that requires browser_choose_file to be called');
 
@@ -264,7 +268,7 @@ test('browser_choose_file', async ({ client }) => {
     });
 
     expect(response).not.toContainTextContent('There is a file chooser visible that requires browser_choose_file to be called');
-    expect(response).toContainTextContent('textbox [ref=s3e4]: C:\\fakepath\\test.txt');
+    expect(response).toContainTextContent('textbox [ref=s3e3]: C:\\fakepath\\test.txt');
   }
 
   {
@@ -272,12 +276,12 @@ test('browser_choose_file', async ({ client }) => {
       name: 'browser_click',
       arguments: {
         element: 'Textbox',
-        ref: 's3e4',
+        ref: 's3e3',
       },
     });
 
     expect(response).toContainTextContent('There is a file chooser visible that requires browser_choose_file to be called');
-    expect(response).toContainTextContent('button "Button" [ref=s4e5]');
+    expect(response).toContainTextContent('button "Button" [ref=s4e4]');
   }
 
   {
@@ -285,7 +289,7 @@ test('browser_choose_file', async ({ client }) => {
       name: 'browser_click',
       arguments: {
         element: 'Button',
-        ref: 's4e5',
+        ref: 's4e4',
       },
     });
 
@@ -328,7 +332,7 @@ test('cdp server', async ({ cdpEndpoint, startClient }) => {
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- document [ref=s1e2]: Hello, world!
+- text: Hello, world!
 \`\`\`
 `
   );
@@ -359,4 +363,37 @@ test('browser_resize', async ({ client }) => {
   });
   expect(mobileResponse).toContainTextContent('Resized browser to mobile format (390x780)');
   expect(mobileResponse).toContainTextContent('Window size: 390x780');
+});
+
+test('save as pdf', async ({ client }) => {
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toHaveTextContent(`
+- Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+- Page Title: Title
+- Page Snapshot
+\`\`\`yaml
+- text: Hello, world!
+\`\`\`
+`
+  );
+
+  const response = await client.callTool({
+    name: 'browser_save_as_pdf',
+  });
+  expect(response).toHaveTextContent(/^Saved as.*page-[^:]+.pdf$/);
+});
+
+test('executable path', async ({ startClient }) => {
+  const client = await startClient({ args: [`--executable-path=bogus`] });
+  const response = await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  });
+  expect(response).toContainTextContent(`executable doesn't exist`);
 });

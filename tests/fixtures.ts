@@ -71,6 +71,7 @@ export const test = baseTest.extend<Fixtures>({
   cdpEndpoint: async ({ }, use, testInfo) => {
     const port = 3200 + (+process.env.TEST_PARALLEL_INDEX!);
     const browser = await chromium.launchPersistentContext(testInfo.outputPath('user-data-dir'), {
+      channel: 'chrome',
       args: [`--remote-debugging-port=${port}`],
     });
     await use(`http://localhost:${port}`);
@@ -81,15 +82,14 @@ export const test = baseTest.extend<Fixtures>({
 type Response = Awaited<ReturnType<Client['callTool']>>;
 
 export const expect = baseExpect.extend({
-  toHaveTextContent(response: Response, content: string | string[]) {
+  toHaveTextContent(response: Response, content: string | RegExp) {
     const isNot = this.isNot;
     try {
-      content = Array.isArray(content) ? content : [content];
-      const texts = (response.content as any).map(c => c.text);
+      const text = (response.content as any)[0].text;
       if (isNot)
-        baseExpect(texts).not.toEqual(content);
+        baseExpect(text).not.toMatch(content);
       else
-        baseExpect(texts).toEqual(content);
+        baseExpect(text).toMatch(content);
     } catch (e) {
       return {
         pass: isNot,

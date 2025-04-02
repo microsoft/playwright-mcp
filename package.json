@@ -1,6 +1,6 @@
 {
   "name": "@playwright/mcp",
-  "version": "0.0.7",
+  "version": "0.0.9",
   "description": "Playwright Tools for MCP",
   "repository": {
     "type": "git",
@@ -32,18 +32,19 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.1",
     "commander": "^13.1.0",
-    "playwright": "1.52.0-alpha-1743011787000",
+    "playwright": "^1.52.0-alpha-1743163434000",
+    "yaml": "^2.7.1",
     "zod-to-json-schema": "^3.24.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.19.0",
-    "@playwright/test": "1.52.0-alpha-1743011787000",
+    "@playwright/test": "^1.52.0-alpha-1743163434000",
     "@stylistic/eslint-plugin": "^3.0.1",
+    "@types/node": "^22.13.10",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",
     "@typescript-eslint/utils": "^8.26.1",
-    "@types/node": "^22.13.10",
     "eslint": "^9.19.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-notice": "^1.0.0",
