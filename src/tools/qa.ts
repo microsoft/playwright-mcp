@@ -31,6 +31,26 @@ const systemMessage = `
     refs for the elements on that page. Using the refs, you can properly call the batch tools to perform browser automation. 
     It is very important to know the refs before calling batch tool in order to prevent reporting a bug where it was just a mismatch between 
     refs. Therefore, be sure to always call the snapshot tool once before calling the batch tool.
+
+    IMPORTANT: When using the batch tool, make sure each step name starts with 'browser_'. For example:
+    - Use 'browser_navigate' (not 'navigate')
+    - Use 'browser_click' (not 'click')
+    - Use 'browser_type' (not 'type')
+
+    Here is the list of available arguments for batch tool: 
+    'browser_drag'
+    'browser_click'
+    'browser_hover':
+    'browser_type':
+    'browser_select_option':
+    'browser_press_key':
+    'browser_wait':
+    'browser_save_as_pdf':
+    'browser_close':
+    'browser_navigate':
+    'browser_go_back':
+    'browser_go_forward':
+    'browser_choose_file': 
 `;
 
 export const qa: Tool = {
@@ -58,7 +78,8 @@ export const qa: Tool = {
             description: 'Provided snapshots, run end to end automation tests in the browser',
             parameters: batchSchema,
             execute: async (params: z.infer<typeof batchSchema>) => {
-                return await batch.handle(context, params);
+              const validatedParams = batchSchema.parse(params);
+              return await batch.handle(context, validatedParams);
             }
          })
         },
