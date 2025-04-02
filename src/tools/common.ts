@@ -175,6 +175,29 @@ export const chooseFile: ToolFactory = snapshot => ({
   },
 });
 
+const resizeSchema = z.object({
+  width: z.number().describe('Width of the browser window'),
+  height: z.number().describe('Height of the browser window'),
+});
+
+export const resize: ToolFactory = snapshot => ({
+  schema: {
+    name: 'browser_resize',
+    description: 'Resize the browser window',
+    inputSchema: zodToJsonSchema(resizeSchema),
+  },
+  handle: async (context, params) => {
+    const validatedParams = resizeSchema.parse(params);
+
+    return await runAndWait(
+        context,
+        `Resized browser window`,
+        async page => page.setViewportSize({ width: validatedParams.width, height: validatedParams.height }),
+        snapshot
+    );
+  },
+});
+
 export const install: Tool = {
   schema: {
     name: 'browser_install',
