@@ -20,6 +20,9 @@ import path from 'path';
 import * as playwright from 'playwright';
 import yaml from 'yaml';
 
+import { waitForCompletion } from './tools/utils';
+import { ToolResult } from './tools/tool';
+
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
   userDataDir: string;
@@ -29,14 +32,21 @@ export type ContextOptions = {
   saveScreenshotsDir?: string;
 };
 
+type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
+
+type RunOptions = {
+  captureSnapshot?: boolean;
+  waitForCompletion?: boolean;
+  status?: string;
+  noClearFileChooser?: boolean;
+};
+
 export class Context {
   private _options: ContextOptions;
   private _browser: playwright.Browser | undefined;
-  private _page: playwright.Page | undefined;
-  private _console: playwright.ConsoleMessage[] = [];
-  private _createPagePromise: Promise<playwright.Page> | undefined;
-  private _fileChooser: playwright.FileChooser | undefined;
-  private _lastSnapshotFrames: (playwright.Page | playwright.FrameLocator)[] = [];
+  private _browserContext: playwright.BrowserContext | undefined;
+  private _tabs: Tab[] = [];
+  private _currentTab: Tab | undefined;
 
   constructor(options: ContextOptions) {
     this._options = options;
@@ -46,37 +56,76 @@ export class Context {
     return this._options;
   }
 
-  async createPage(): Promise<playwright.Page> {
-    if (this._createPagePromise)
-      return this._createPagePromise;
-    this._createPagePromise = (async () => {
-      const { browser, page } = await this._createPage();
-      page.on('console', event => this._console.push(event));
-      page.on('framenavigated', frame => {
-        if (!frame.parentFrame())
-          this._console.length = 0;
-      });
-      page.on('close', () => this._onPageClose());
-      page.on('filechooser', chooser => this._fileChooser = chooser);
-      page.setDefaultNavigationTimeout(60000);
-      page.setDefaultTimeout(5000);
-      this._page = page;
-      this._browser = browser;
-      return page;
-    })();
-    return this._createPagePromise;
+  tabs(): Tab[] {
+    return this._tabs;
   }
 
-  private _onPageClose() {
-    const browser = this._browser;
-    const page = this._page;
-    void page?.context()?.close().then(() => browser?.close()).catch(() => {});
+  currentTab(): Tab {
+    if (!this._currentTab)
+      throw new Error('Navigate to a location to create a tab');
+    return this._currentTab;
+  }
 
-    this._createPagePromise = undefined;
-    this._browser = undefined;
-    this._page = undefined;
-    this._fileChooser = undefined;
-    this._console.length = 0;
+  async newTab(): Promise<Tab> {
+    const browserContext = await this._ensureBrowserContext();
+    const page = await browserContext.newPage();
+    this._currentTab = this._tabs.find(t => t.page === page)!;
+    return this._currentTab;
+  }
+
+  async selectTab(index: number) {
+    this._currentTab = this._tabs[index - 1];
+    await this._currentTab.page.bringToFront();
+  }
+
+  async ensureTab(): Promise<Tab> {
+    const context = await this._ensureBrowserContext();
+    if (!this._currentTab)
+      await context.newPage();
+    return this._currentTab!;
+  }
+
+  async listTabs(): Promise<string> {
+    if (!this._tabs.length)
+      return 'No tabs open';
+    const lines: string[] = ['Open tabs:'];
+    for (let i = 0; i < this._tabs.length; i++) {
+      const tab = this._tabs[i];
+      const title = await tab.page.title();
+      const url = tab.page.url();
+      const current = tab === this._currentTab ? ' (current)' : '';
+      lines.push(`- ${i + 1}:${current} [${title}] (${url})`);
+    }
+    return lines.join('\n');
+  }
+
+  async closeTab(index: number | undefined) {
+    const tab = index === undefined ? this.currentTab() : this._tabs[index - 1];
+    await tab.page.close();
+    return await this.listTabs();
+  }
+
+  private _onPageCreated(page: playwright.Page) {
+    const tab = new Tab(this, page, tab => this._onPageClosed(tab));
+    this._tabs.push(tab);
+    if (!this._currentTab)
+      this._currentTab = tab;
+  }
+
+  private _onPageClosed(tab: Tab) {
+    const index = this._tabs.indexOf(tab);
+    if (index === -1)
+      return;
+    this._tabs.splice(index, 1);
+
+    if (this._currentTab === tab)
+      this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
+    const browser = this._browser;
+    if (this._browserContext && !this._tabs.length) {
+      void this._browserContext.close().then(() => browser?.close()).catch(() => {});
+      this._browser = undefined;
+      this._browserContext = undefined;
+    }
   }
 
   async install(): Promise<string> {
@@ -98,38 +147,25 @@ export class Context {
     });
   }
 
-  existingPage(): playwright.Page {
-    if (!this._page)
-      throw new Error('Navigate to a location to create a page');
-    return this._page;
-  }
-
-  async console(): Promise<playwright.ConsoleMessage[]> {
-    return this._console;
-  }
-
   async close() {
-    if (!this._page)
+    if (!this._browserContext)
       return;
-    await this._page.close();
+    await this._browserContext.close();
   }
 
-  async submitFileChooser(paths: string[]) {
-    if (!this._fileChooser)
-      throw new Error('No file chooser visible');
-    await this._fileChooser.setFiles(paths);
-    this._fileChooser = undefined;
+  private async _ensureBrowserContext() {
+    if (!this._browserContext) {
+      const context = await this._createBrowserContext();
+      this._browser = context.browser;
+      this._browserContext = context.browserContext;
+      for (const page of this._browserContext.pages())
+        this._onPageCreated(page);
+      this._browserContext.on('page', page => this._onPageCreated(page));
+    }
+    return this._browserContext;
   }
 
-  hasFileChooser() {
-    return !!this._fileChooser;
-  }
-
-  clearFileChooser() {
-    this._fileChooser = undefined;
-  }
-
-  private async _createPage(): Promise<{ browser?: playwright.Browser, page: playwright.Page }> {
+  private async _createBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
     if (this._options.remoteEndpoint) {
       const url = new URL(this._options.remoteEndpoint);
       if (this._options.browserName)
@@ -137,22 +173,18 @@ export class Context {
       if (this._options.launchOptions)
         url.searchParams.set('launch-options', JSON.stringify(this._options.launchOptions));
       const browser = await playwright[this._options.browserName ?? 'chromium'].connect(String(url));
-      const page = await browser.newPage();
-      return { browser, page };
+      const browserContext = await browser.newContext();
+      return { browser, browserContext };
     }
 
     if (this._options.cdpEndpoint) {
       const browser = await playwright.chromium.connectOverCDP(this._options.cdpEndpoint);
       const browserContext = browser.contexts()[0];
-      let [page] = browserContext.pages();
-      if (!page)
-        page = await browserContext.newPage();
-      return { browser, page };
+      return { browser, browserContext };
     }
 
-    const context = await this._launchPersistentContext();
-    const [page] = context.pages();
-    return { page };
+    const browserContext = await this._launchPersistentContext();
+    return { browserContext };
   }
 
   private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
@@ -165,15 +197,144 @@ export class Context {
       throw error;
     }
   }
+}
 
-  async allFramesSnapshot() {
-    this._lastSnapshotFrames = [];
-    const yaml = await this._allFramesSnapshot(this.existingPage());
-    return yaml.toString().trim();
+class Tab {
+  readonly context: Context;
+  readonly page: playwright.Page;
+  private _console: playwright.ConsoleMessage[] = [];
+  private _fileChooser: playwright.FileChooser | undefined;
+  private _snapshot: PageSnapshot | undefined;
+  private _onPageClose: (tab: Tab) => void;
+
+  constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void) {
+    this.context = context;
+    this.page = page;
+    this._onPageClose = onPageClose;
+    page.on('console', event => this._console.push(event));
+    page.on('framenavigated', frame => {
+      if (!frame.parentFrame())
+        this._console.length = 0;
+    });
+    page.on('close', () => this._onClose());
+    page.on('filechooser', chooser => this._fileChooser = chooser);
+    page.setDefaultNavigationTimeout(60000);
+    page.setDefaultTimeout(5000);
   }
 
-  private async _allFramesSnapshot(frame: playwright.Page | playwright.FrameLocator): Promise<yaml.Document> {
-    const frameIndex = this._lastSnapshotFrames.push(frame) - 1;
+  private _onClose() {
+    this._fileChooser = undefined;
+    this._console.length = 0;
+    this._onPageClose(this);
+  }
+
+  async navigate(url: string) {
+    await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+    // Cap load event to 5 seconds, the page is operational at this point.
+    await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
+  }
+
+  async run(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+    try {
+      if (!options?.noClearFileChooser)
+        this._fileChooser = undefined;
+      if (options?.waitForCompletion)
+        await waitForCompletion(this.page, () => callback(this));
+      else
+        await callback(this);
+    } finally {
+      if (options?.captureSnapshot)
+        this._snapshot = await PageSnapshot.create(this.page);
+    }
+    const tabList = this.context.tabs().length > 1 ? await this.context.listTabs() + '\n\nCurrent tab:' + '\n' : '';
+    const snapshot = this._snapshot?.text({ status: options?.status, hasFileChooser: !!this._fileChooser }) ?? options?.status ?? '';
+    return {
+      content: [{
+        type: 'text',
+        text: tabList + snapshot,
+      }],
+    };
+  }
+
+  async runAndWait(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+    return await this.run(callback, {
+      waitForCompletion: true,
+      ...options,
+    });
+  }
+
+  async runAndWaitWithSnapshot(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+    return await this.run(callback, {
+      captureSnapshot: true,
+      waitForCompletion: true,
+      ...options,
+    });
+  }
+
+  lastSnapshot(): PageSnapshot {
+    if (!this._snapshot)
+      throw new Error('No snapshot available');
+    return this._snapshot;
+  }
+
+  async console(): Promise<playwright.ConsoleMessage[]> {
+    return this._console;
+  }
+
+  async submitFileChooser(paths: string[]) {
+    if (!this._fileChooser)
+      throw new Error('No file chooser visible');
+    await this._fileChooser.setFiles(paths);
+    this._fileChooser = undefined;
+  }
+}
+
+class PageSnapshot {
+  private _frameLocators: PageOrFrameLocator[] = [];
+  private _text!: string;
+
+  constructor() {
+  }
+
+  static async create(page: playwright.Page): Promise<PageSnapshot> {
+    const snapshot = new PageSnapshot();
+    await snapshot._build(page);
+    return snapshot;
+  }
+
+  text(options?: { status?: string, hasFileChooser?: boolean }): string {
+    const results: string[] = [];
+    if (options?.status) {
+      results.push(options.status);
+      results.push('');
+    }
+    if (options?.hasFileChooser) {
+      results.push('- There is a file chooser visible that requires browser_choose_file to be called');
+      results.push('');
+    }
+    results.push(this._text);
+    return results.join('\n');
+  }
+
+  private async _build(page: playwright.Page) {
+    const yamlDocument = await this._snapshotFrame(page);
+    const lines = [];
+    lines.push(
+        `- Page URL: ${page.url()}`,
+        `- Page Title: ${await page.title()}`
+    );
+    lines.push(
+        `- Page Snapshot`,
+        '```yaml',
+        yamlDocument.toString().trim(),
+        '```',
+        ''
+    );
+    this._text = lines.join('\n');
+  }
+
+  private async _snapshotFrame(frame: playwright.Page | playwright.FrameLocator) {
+    const frameIndex = this._frameLocators.push(frame) - 1;
     const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true });
     const snapshot = yaml.parseDocument(snapshotString);
 
@@ -194,7 +355,7 @@ export class Context {
             const ref = value.match(/\[ref=(.*)\]/)?.[1];
             if (ref) {
               try {
-                const childSnapshot = await this._allFramesSnapshot(frame.frameLocator(`aria-ref=${ref}`));
+                const childSnapshot = await this._snapshotFrame(frame.frameLocator(`aria-ref=${ref}`));
                 return snapshot.createPair(node.value, childSnapshot);
               } catch (error) {
                 return snapshot.createPair(node.value, '<could not take iframe snapshot>');
@@ -211,11 +372,11 @@ export class Context {
   }
 
   refLocator(ref: string): playwright.Locator {
-    let frame = this._lastSnapshotFrames[0];
+    let frame = this._frameLocators[0];
     const match = ref.match(/^f(\d+)(.*)/);
     if (match) {
       const frameIndex = parseInt(match[1], 10);
-      frame = this._lastSnapshotFrames[frameIndex];
+      frame = this._frameLocators[frameIndex];
       ref = match[2];
     }
 

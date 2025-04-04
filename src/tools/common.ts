@@ -20,7 +20,7 @@ import path from 'path';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { captureAriaSnapshot, runAndWait, sanitizeForFilePath } from './utils';
+import { sanitizeForFilePath } from './utils';
 
 import type { ToolFactory, Tool } from './tool';
 
@@ -28,7 +28,7 @@ const navigateSchema = z.object({
   url: z.string().describe('The URL to navigate to'),
 });
 
-export const navigate: ToolFactory = snapshot => ({
+export const navigate: ToolFactory = captureSnapshot => ({
   schema: {
     name: 'browser_navigate',
     description: 'Navigate to a URL',
@@ -36,18 +36,13 @@ export const navigate: ToolFactory = snapshot => ({
   },
   handle: async (context, params) => {
     const validatedParams = navigateSchema.parse(params);
-    const page = await context.createPage();
-    await page.goto(validatedParams.url, { waitUntil: 'domcontentloaded' });
-    // Cap load event to 5 seconds, the page is operational at this point.
-    await page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
-    if (snapshot)
-      return captureAriaSnapshot(context);
-    return {
-      content: [{
-        type: 'text',
-        text: `Navigated to ${validatedParams.url}`,
-      }],
-    };
+    const currentTab = await context.ensureTab();
+    return await currentTab.run(async tab => {
+      await tab.navigate(validatedParams.url);
+    }, {
+      status: `Navigated to ${validatedParams.url}`,
+      captureSnapshot,
+    });
   },
 });
 
@@ -60,7 +55,12 @@ export const goBack: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goBackSchema),
   },
   handle: async context => {
-    return await runAndWait(context, 'Navigated back', async page => page.goBack(), snapshot);
+    return await context.currentTab().runAndWait(async tab => {
+      await tab.page.goBack();
+    }, {
+      status: 'Navigated back',
+      captureSnapshot: snapshot,
+    });
   },
 });
 
@@ -73,7 +73,12 @@ export const goForward: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goForwardSchema),
   },
   handle: async context => {
-    return await runAndWait(context, 'Navigated forward', async page => page.goForward(), snapshot);
+    return await context.currentTab().runAndWait(async tab => {
+      await tab.page.goForward();
+    }, {
+      status: 'Navigated forward',
+      captureSnapshot: snapshot,
+    });
   },
 });
 
@@ -103,7 +108,7 @@ const pressKeySchema = z.object({
   key: z.string().describe('Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'),
 });
 
-export const pressKey: Tool = {
+export const pressKey: (captureSnapshot: boolean) => Tool = captureSnapshot => ({
   schema: {
     name: 'browser_press_key',
     description: 'Press a key on the keyboard',
@@ -111,11 +116,14 @@ export const pressKey: Tool = {
   },
   handle: async (context, params) => {
     const validatedParams = pressKeySchema.parse(params);
-    return await runAndWait(context, `Pressed key ${validatedParams.key}`, async page => {
-      await page.keyboard.press(validatedParams.key);
+    return await context.currentTab().runAndWait(async tab => {
+      await tab.page.keyboard.press(validatedParams.key);
+    }, {
+      status: `Pressed key ${validatedParams.key}`,
+      captureSnapshot,
     });
   },
-};
+});
 
 const pdfSchema = z.object({});
 
@@ -126,9 +134,9 @@ export const pdf: Tool = {
     inputSchema: zodToJsonSchema(pdfSchema),
   },
   handle: async context => {
-    const page = context.existingPage();
+    const tab = context.currentTab();
     const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + '.pdf';
-    await page.pdf({ path: fileName });
+    await tab.page.pdf({ path: fileName });
     return {
       content: [{
         type: 'text',
@@ -161,7 +169,7 @@ const chooseFileSchema = z.object({
   paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
 });
 
-export const chooseFile: ToolFactory = snapshot => ({
+export const chooseFile: ToolFactory = captureSnapshot => ({
   schema: {
     name: 'browser_choose_file',
     description: 'Choose one or multiple files to upload',
@@ -169,9 +177,14 @@ export const chooseFile: ToolFactory = snapshot => ({
   },
   handle: async (context, params) => {
     const validatedParams = chooseFileSchema.parse(params);
-    return await runAndWait(context, `Chose files ${validatedParams.paths.join(', ')}`, async () => {
-      await context.submitFileChooser(validatedParams.paths);
-    }, snapshot);
+    const tab = context.currentTab();
+    return await tab.runAndWait(async () => {
+      await tab.submitFileChooser(validatedParams.paths);
+    }, {
+      status: `Chose files ${validatedParams.paths.join(', ')}`,
+      captureSnapshot,
+      noClearFileChooser: true,
+    });
   },
 });
 

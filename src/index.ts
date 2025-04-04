@@ -18,6 +18,7 @@ import { createServerWithTools } from './server';
 import * as snapshot from './tools/snapshot';
 import * as common from './tools/common';
 import * as screenshot from './tools/screenshot';
+import * as tabs from './tools/tabs';
 import { console } from './resources/console';
 
 import type { Tool } from './tools/tool';
@@ -26,40 +27,47 @@ import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
 const commonTools: Tool[] = [
-  common.pressKey,
   common.wait,
   common.pdf,
   common.close,
   common.install,
+  tabs.listTabs,
+  tabs.newTab,
 ];
 
 const snapshotTools: Tool[] = [
   common.navigate(true),
-  common.goBack(true),
-  common.goForward(true),
-  common.chooseFile(true),
-  common.resize(true),
   snapshot.snapshot,
   snapshot.click,
   snapshot.hover,
   snapshot.type,
   snapshot.selectOption,
   snapshot.screenshot,
+  common.goBack(true),
+  common.goForward(true),
+  common.chooseFile(true),
+  common.pressKey(true),
+  common.resize(true),
   ...commonTools,
+  tabs.selectTab(true),
+  tabs.closeTab(true),
 ];
 
 const screenshotTools: Tool[] = [
   common.navigate(false),
-  common.goBack(false),
-  common.goForward(false),
-  common.chooseFile(false),
-  common.resize(false),
   screenshot.screenshot,
   screenshot.moveMouse,
   screenshot.click,
   screenshot.drag,
   screenshot.type,
+  common.goBack(false),
+  common.goForward(false),
+  common.chooseFile(false),
+  common.pressKey(false),
+  common.resize(false),
   ...commonTools,
+  tabs.selectTab(false),
+  tabs.closeTab(false),
 ];
 
 const resources: Resource[] = [

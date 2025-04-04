@@ -23,40 +23,48 @@ test('test tool list', async ({ client, visionClient }) => {
   const { tools } = await client.listTools();
   expect(tools.map(t => t.name)).toEqual([
     'browser_navigate',
-    'browser_go_back',
-    'browser_go_forward',
-    'browser_choose_file',
-    'browser_resize',
     'browser_snapshot',
     'browser_click',
     'browser_hover',
     'browser_type',
     'browser_select_option',
     'browser_take_screenshot',
+    'browser_go_back',
+    'browser_go_forward',
+    'browser_choose_file',
     'browser_press_key',
+    'browser_resize',
     'browser_wait',
     'browser_save_as_pdf',
     'browser_close',
     'browser_install',
+    'browser_list_tabs',
+    'browser_new_tab',
+    'browser_select_tab',
+    'browser_close_tab',
   ]);
 
   const { tools: visionTools } = await visionClient.listTools();
   expect(visionTools.map(t => t.name)).toEqual([
     'browser_navigate',
-    'browser_go_back',
-    'browser_go_forward',
-    'browser_choose_file',
-    'browser_resize',
     'browser_screenshot',
     'browser_move_mouse',
     'browser_click',
     'browser_drag',
     'browser_type',
+    'browser_go_back',
+    'browser_go_forward',
+    'browser_choose_file',
     'browser_press_key',
+    'browser_resize',
     'browser_wait',
     'browser_save_as_pdf',
     'browser_close',
     'browser_install',
+    'browser_list_tabs',
+    'browser_new_tab',
+    'browser_select_tab',
+    'browser_close_tab',
   ]);
 });
 
@@ -77,6 +85,8 @@ test('test browser_navigate', async ({ client }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
+Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
@@ -101,7 +111,7 @@ test('test browser_click', async ({ client }) => {
       element: 'Submit button',
       ref: 's1e3',
     },
-  })).toHaveTextContent(`"Submit button" clicked
+  })).toHaveTextContent(`Clicked "Submit button"
 
 - Page URL: data:text/html,<html><title>Title</title><button>Submit</button></html>
 - Page Title: Title
@@ -130,6 +140,8 @@ test('test reopen browser', async ({ client }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
+Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
@@ -237,7 +249,7 @@ test('stitched aria frames', async ({ client }) => {
       element: 'World',
       ref: 'f1s1e3',
     },
-  })).toContainTextContent('"World" clicked');
+  })).toContainTextContent('Clicked "World"');
 });
 
 test('browser_choose_file', async ({ client }) => {
@@ -328,6 +340,8 @@ test('cdp server', async ({ cdpEndpoint, startClient }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
+Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
@@ -364,6 +378,8 @@ test('save as pdf', async ({ client }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
+Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
@@ -388,4 +404,62 @@ test('executable path', async ({ startClient }) => {
     },
   });
   expect(response).toContainTextContent(`executable doesn't exist`);
+});
+
+test('fill in text', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: `data:text/html,<input type='keypress' onkeypress="console.log('Key pressed:', event.key, ', Text:', event.target.value)"></input>`,
+    },
+  });
+  await client.callTool({
+    name: 'browser_type',
+    arguments: {
+      element: 'textbox',
+      ref: 's1e3',
+      text: 'Hi!',
+      submit: true,
+    },
+  });
+  const resource = await client.readResource({
+    uri: 'browser://console',
+  });
+  expect(resource.contents).toEqual([{
+    uri: 'browser://console',
+    mimeType: 'text/plain',
+    text: '[LOG] Key pressed: Enter , Text: Hi!',
+  }]);
+});
+
+test('type slowly', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: `data:text/html,<input type='text' onkeydown="console.log('Key pressed:', event.key, 'Text:', event.target.value)"></input>`,
+    },
+  });
+  await client.callTool({
+    name: 'browser_type',
+    arguments: {
+      element: 'textbox',
+      ref: 's1e3',
+      text: 'Hi!',
+      submit: true,
+      slowly: true,
+    },
+  });
+  const resource = await client.readResource({
+    uri: 'browser://console',
+  });
+  expect(resource.contents).toEqual([{
+    uri: 'browser://console',
+    mimeType: 'text/plain',
+    text: [
+      '[LOG] Key pressed: H Text: ',
+      '[LOG] Key pressed: i Text: H',
+      '[LOG] Key pressed: ! Text: Hi',
+      '[LOG] Key pressed: Enter Text: Hi!',
+    ].join('\n'),
+  }]);
 });
