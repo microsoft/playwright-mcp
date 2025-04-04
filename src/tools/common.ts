@@ -202,12 +202,12 @@ export const resize: ToolFactory = snapshot => ({
   handle: async (context, params) => {
     const validatedParams = resizeSchema.parse(params);
 
-    return await runAndWait(
-        context,
-        `Resized browser window`,
-        async page => page.setViewportSize({ width: validatedParams.width, height: validatedParams.height }),
-        snapshot
-    );
+    return await context.currentTab().runAndWait(async tab => {
+      await tab.page.setViewportSize({ width: validatedParams.width, height: validatedParams.height });
+    }, {
+      status: `Resized browser window`,
+      captureSnapshot: snapshot,
+    });
   },
 });
 
