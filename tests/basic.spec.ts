@@ -21,49 +21,50 @@ import { test, expect } from './fixtures';
 
 test('test tool list', async ({ client, visionClient }) => {
   const { tools } = await client.listTools();
-  expect(tools.map(t => t.name)).toEqual([
-    'browser_navigate',
-    'browser_snapshot',
-    'browser_click',
-    'browser_hover',
-    'browser_type',
-    'browser_select_option',
-    'browser_take_screenshot',
-    'browser_go_back',
-    'browser_go_forward',
-    'browser_choose_file',
-    'browser_press_key',
-    'browser_wait',
-    'browser_save_as_pdf',
-    'browser_close',
-    'browser_install',
-    'browser_list_tabs',
-    'browser_new_tab',
-    'browser_select_tab',
-    'browser_close_tab',
-  ]);
-
-  const { tools: visionTools } = await visionClient.listTools();
-  expect(visionTools.map(t => t.name)).toEqual([
-    'browser_navigate',
-    'browser_screenshot',
-    'browser_move_mouse',
+  expect(new Set(tools.map(t => t.name))).toEqual(new Set([
     'browser_click',
     'browser_drag',
+    'browser_hover',
+    'browser_select_option',
     'browser_type',
-    'browser_go_back',
-    'browser_go_forward',
     'browser_choose_file',
-    'browser_press_key',
-    'browser_wait',
-    'browser_save_as_pdf',
     'browser_close',
     'browser_install',
-    'browser_list_tabs',
-    'browser_new_tab',
-    'browser_select_tab',
-    'browser_close_tab',
-  ]);
+    'browser_navigate_back',
+    'browser_navigate_forward',
+    'browser_navigate',
+    'browser_pdf_save',
+    'browser_press_key',
+    'browser_snapshot',
+    'browser_tab_close',
+    'browser_tab_list',
+    'browser_tab_new',
+    'browser_tab_select',
+    'browser_take_screenshot',
+    'browser_wait',
+  ]));
+
+  const { tools: visionTools } = await visionClient.listTools();
+  expect(new Set(visionTools.map(t => t.name))).toEqual(new Set([
+    'browser_choose_file',
+    'browser_close',
+    'browser_install',
+    'browser_navigate_back',
+    'browser_navigate_forward',
+    'browser_navigate',
+    'browser_pdf_save',
+    'browser_press_key',
+    'browser_screen_capture',
+    'browser_screen_click',
+    'browser_screen_drag',
+    'browser_screen_move_mouse',
+    'browser_screen_type',
+    'browser_tab_close',
+    'browser_tab_list',
+    'browser_tab_new',
+    'browser_tab_select',
+    'browser_wait',
+  ]));
 });
 
 test('test resources list', async ({ client }) => {
@@ -369,7 +370,7 @@ Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body>
   );
 
   const response = await client.callTool({
-    name: 'browser_save_as_pdf',
+    name: 'browser_pdf_save',
   });
   expect(response).toHaveTextContent(/^Saved as.*page-[^:]+.pdf$/);
 });

@@ -19,9 +19,9 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import type { Tool } from './tool';
 
-export const screenshot: Tool = {
+const screenshot: Tool = {
   schema: {
-    name: 'browser_screenshot',
+    name: 'browser_screen_capture',
     description: 'Take a screenshot of the current page',
     inputSchema: zodToJsonSchema(z.object({})),
   },
@@ -44,9 +44,9 @@ const moveMouseSchema = elementSchema.extend({
   y: z.number().describe('Y coordinate'),
 });
 
-export const moveMouse: Tool = {
+const moveMouse: Tool = {
   schema: {
-    name: 'browser_move_mouse',
+    name: 'browser_screen_move_mouse',
     description: 'Move mouse to a given position',
     inputSchema: zodToJsonSchema(moveMouseSchema),
   },
@@ -66,9 +66,9 @@ const clickSchema = elementSchema.extend({
   y: z.number().describe('Y coordinate'),
 });
 
-export const click: Tool = {
+const click: Tool = {
   schema: {
-    name: 'browser_click',
+    name: 'browser_screen_click',
     description: 'Click left mouse button',
     inputSchema: zodToJsonSchema(clickSchema),
   },
@@ -92,9 +92,9 @@ const dragSchema = elementSchema.extend({
   endY: z.number().describe('End Y coordinate'),
 });
 
-export const drag: Tool = {
+const drag: Tool = {
   schema: {
-    name: 'browser_drag',
+    name: 'browser_screen_drag',
     description: 'Drag left mouse button',
     inputSchema: zodToJsonSchema(dragSchema),
   },
@@ -117,9 +117,9 @@ const typeSchema = z.object({
   submit: z.boolean().optional().describe('Whether to submit entered text (press Enter after)'),
 });
 
-export const type: Tool = {
+const type: Tool = {
   schema: {
-    name: 'browser_type',
+    name: 'browser_screen_type',
     description: 'Type text',
     inputSchema: zodToJsonSchema(typeSchema),
   },
@@ -135,3 +135,11 @@ export const type: Tool = {
     });
   },
 };
+
+export default [
+  screenshot,
+  moveMouse,
+  click,
+  drag,
+  type,
+];

@@ -22,7 +22,7 @@ import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 async function createTab(client: Client, title: string, body: string) {
   return await client.callTool({
-    name: 'browser_new_tab',
+    name: 'browser_tab_new',
     arguments: {
       url: `data:text/html,<title>${title}</title><body>${body}</body>`,
     },
@@ -62,7 +62,7 @@ test('select tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   await createTab(client, 'Tab two', 'Body two');
   expect(await client.callTool({
-    name: 'browser_select_tab',
+    name: 'browser_tab_select',
     arguments: {
       index: 2,
     },
@@ -85,7 +85,7 @@ test('close tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   await createTab(client, 'Tab two', 'Body two');
   expect(await client.callTool({
-    name: 'browser_close_tab',
+    name: 'browser_tab_close',
     arguments: {
       index: 3,
     },

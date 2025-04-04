@@ -19,9 +19,9 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import type { ToolFactory, Tool } from './tool';
 
-export const listTabs: Tool = {
+const listTabs: Tool = {
   schema: {
-    name: 'browser_list_tabs',
+    name: 'browser_tab_list',
     description: 'List browser tabs',
     inputSchema: zodToJsonSchema(z.object({})),
   },
@@ -39,9 +39,9 @@ const selectTabSchema = z.object({
   index: z.number().describe('The index of the tab to select'),
 });
 
-export const selectTab: ToolFactory = captureSnapshot => ({
+const selectTab: ToolFactory = captureSnapshot => ({
   schema: {
-    name: 'browser_select_tab',
+    name: 'browser_tab_select',
     description: 'Select a tab by index',
     inputSchema: zodToJsonSchema(selectTabSchema),
   },
@@ -57,9 +57,9 @@ const newTabSchema = z.object({
   url: z.string().optional().describe('The URL to navigate to in the new tab. If not provided, the new tab will be blank.'),
 });
 
-export const newTab: Tool = {
+const newTab: Tool = {
   schema: {
-    name: 'browser_new_tab',
+    name: 'browser_tab_new',
     description: 'Open a new tab',
     inputSchema: zodToJsonSchema(newTabSchema),
   },
@@ -76,9 +76,9 @@ const closeTabSchema = z.object({
   index: z.number().optional().describe('The index of the tab to close. Closes current tab if not provided.'),
 });
 
-export const closeTab: ToolFactory = captureSnapshot => ({
+const closeTab: ToolFactory = captureSnapshot => ({
   schema: {
-    name: 'browser_close_tab',
+    name: 'browser_tab_close',
     description: 'Close a tab',
     inputSchema: zodToJsonSchema(closeTabSchema),
   },
@@ -96,3 +96,10 @@ export const closeTab: ToolFactory = captureSnapshot => ({
     };
   },
 });
+
+export default (captureSnapshot: boolean) => [
+  listTabs,
+  newTab,
+  selectTab(captureSnapshot),
+  closeTab(captureSnapshot),
+];

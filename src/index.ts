@@ -15,10 +15,15 @@
  */
 
 import { createServerWithTools } from './server';
-import * as snapshot from './tools/snapshot';
-import * as common from './tools/common';
-import * as screenshot from './tools/screenshot';
-import * as tabs from './tools/tabs';
+import common from './tools/common';
+import fileChooser from './tools/fileChooser';
+import install from './tools/install';
+import keyboard from './tools/keyboard';
+import navigate from './tools/navigate';
+import pdf from './tools/pdf';
+import snapshot from './tools/snapshot';
+import tabs from './tools/tabs';
+import screen from './tools/screen';
 import { console } from './resources/console';
 
 import type { Tool } from './tools/tool';
@@ -26,46 +31,26 @@ import type { Resource } from './resources/resource';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
-const commonTools: Tool[] = [
-  common.wait,
-  common.pdf,
-  common.close,
-  common.install,
-  tabs.listTabs,
-  tabs.newTab,
-];
-
 const snapshotTools: Tool[] = [
-  common.navigate(true),
-  snapshot.snapshot,
-  snapshot.click,
-  snapshot.hover,
-  snapshot.type,
-  snapshot.selectOption,
-  snapshot.screenshot,
-  common.goBack(true),
-  common.goForward(true),
-  common.chooseFile(true),
-  common.pressKey(true),
-  ...commonTools,
-  tabs.selectTab(true),
-  tabs.closeTab(true),
+  ...common,
+  ...fileChooser(true),
+  ...install,
+  ...keyboard(true),
+  ...navigate(true),
+  ...pdf,
+  ...snapshot,
+  ...tabs(true),
 ];
 
 const screenshotTools: Tool[] = [
-  common.navigate(false),
-  screenshot.screenshot,
-  screenshot.moveMouse,
-  screenshot.click,
-  screenshot.drag,
-  screenshot.type,
-  common.goBack(false),
-  common.goForward(false),
-  common.chooseFile(false),
-  common.pressKey(false),
-  ...commonTools,
-  tabs.selectTab(false),
-  tabs.closeTab(false),
+  ...common,
+  ...fileChooser(false),
+  ...install,
+  ...keyboard(false),
+  ...navigate(false),
+  ...pdf,
+  ...screen,
+  ...tabs(false),
 ];
 
 const resources: Resource[] = [

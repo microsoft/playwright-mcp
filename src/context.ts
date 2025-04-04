@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import { fork } from 'child_process';
-import path from 'path';
-
 import * as playwright from 'playwright';
 import yaml from 'yaml';
 
@@ -41,14 +38,14 @@ type RunOptions = {
 };
 
 export class Context {
-  private _options: ContextOptions;
+  readonly options: ContextOptions;
   private _browser: playwright.Browser | undefined;
   private _browserContext: playwright.BrowserContext | undefined;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
 
   constructor(options: ContextOptions) {
-    this._options = options;
+    this.options = options;
   }
 
   tabs(): Tab[] {
@@ -123,25 +120,6 @@ export class Context {
     }
   }
 
-  async install(): Promise<string> {
-    const channel = this._options.launchOptions?.channel ?? this._options.browserName ?? 'chrome';
-    const cli = path.join(require.resolve('playwright/package.json'), '..', 'cli.js');
-    const child = fork(cli, ['install', channel], {
-      stdio: 'pipe',
-    });
-    const output: string[] = [];
-    child.stdout?.on('data', data => output.push(data.toString()));
-    child.stderr?.on('data', data => output.push(data.toString()));
-    return new Promise((resolve, reject) => {
-      child.on('close', code => {
-        if (code === 0)
-          resolve(channel);
-        else
-          reject(new Error(`Failed to install browser: ${output.join('')}`));
-      });
-    });
-  }
-
   async close() {
     if (!this._browserContext)
       return;
@@ -161,19 +139,19 @@ export class Context {
   }
 
   private async _createBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
-    if (this._options.remoteEndpoint) {
-      const url = new URL(this._options.remoteEndpoint);
-      if (this._options.browserName)
-        url.searchParams.set('browser', this._options.browserName);
-      if (this._options.launchOptions)
-        url.searchParams.set('launch-options', JSON.stringify(this._options.launchOptions));
-      const browser = await playwright[this._options.browserName ?? 'chromium'].connect(String(url));
+    if (this.options.remoteEndpoint) {
+      const url = new URL(this.options.remoteEndpoint);
+      if (this.options.browserName)
+        url.searchParams.set('browser', this.options.browserName);
+      if (this.options.launchOptions)
+        url.searchParams.set('launch-options', JSON.stringify(this.options.launchOptions));
+      const browser = await playwright[this.options.browserName ?? 'chromium'].connect(String(url));
       const browserContext = await browser.newContext();
       return { browser, browserContext };
     }
 
-    if (this._options.cdpEndpoint) {
-      const browser = await playwright.chromium.connectOverCDP(this._options.cdpEndpoint);
+    if (this.options.cdpEndpoint) {
+      const browser = await playwright.chromium.connectOverCDP(this.options.cdpEndpoint);
       const browserContext = browser.contexts()[0];
       return { browser, browserContext };
     }
@@ -184,8 +162,8 @@ export class Context {
 
   private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
     try {
-      const browserType = this._options.browserName ? playwright[this._options.browserName] : playwright.chromium;
-      return await browserType.launchPersistentContext(this._options.userDataDir, this._options.launchOptions);
+      const browserType = this.options.browserName ? playwright[this.options.browserName] : playwright.chromium;
+      return await browserType.launchPersistentContext(this.options.userDataDir, this.options.launchOptions);
     } catch (error: any) {
       if (error.message.includes('Executable doesn\'t exist'))
         throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);

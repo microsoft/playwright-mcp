@@ -20,7 +20,7 @@ import zodToJsonSchema from 'zod-to-json-schema';
 import type * as playwright from 'playwright';
 import type { Tool } from './tool';
 
-export const snapshot: Tool = {
+const snapshot: Tool = {
   schema: {
     name: 'browser_snapshot',
     description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
@@ -37,7 +37,7 @@ const elementSchema = z.object({
   ref: z.string().describe('Exact target element reference from the page snapshot'),
 });
 
-export const click: Tool = {
+const click: Tool = {
   schema: {
     name: 'browser_click',
     description: 'Perform click on a web page',
@@ -62,7 +62,7 @@ const dragSchema = z.object({
   endRef: z.string().describe('Exact target element reference from the page snapshot'),
 });
 
-export const drag: Tool = {
+const drag: Tool = {
   schema: {
     name: 'browser_drag',
     description: 'Perform drag and drop between two elements',
@@ -81,7 +81,7 @@ export const drag: Tool = {
   },
 };
 
-export const hover: Tool = {
+const hover: Tool = {
   schema: {
     name: 'browser_hover',
     description: 'Hover over element on page',
@@ -105,7 +105,7 @@ const typeSchema = elementSchema.extend({
   slowly: z.boolean().optional().describe('Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'),
 });
 
-export const type: Tool = {
+const type: Tool = {
   schema: {
     name: 'browser_type',
     description: 'Type text into editable element',
@@ -132,7 +132,7 @@ const selectOptionSchema = elementSchema.extend({
   values: z.array(z.string()).describe('Array of values to select in the dropdown. This can be a single value or multiple values.'),
 });
 
-export const selectOption: Tool = {
+const selectOption: Tool = {
   schema: {
     name: 'browser_select_option',
     description: 'Select an option in a dropdown',
@@ -154,7 +154,7 @@ const screenshotSchema = z.object({
   raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
 });
 
-export const screenshot: Tool = {
+const screenshot: Tool = {
   schema: {
     name: 'browser_take_screenshot',
     description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
@@ -171,3 +171,13 @@ export const screenshot: Tool = {
     };
   },
 };
+
+export default [
+  snapshot,
+  click,
+  drag,
+  hover,
+  type,
+  selectOption,
+  screenshot,
+];
