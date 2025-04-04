@@ -86,10 +86,17 @@ export const expect = baseExpect.extend({
     const isNot = this.isNot;
     try {
       const text = (response.content as any)[0].text;
-      if (isNot)
-        baseExpect(text).not.toMatch(content);
-      else
-        baseExpect(text).toMatch(content);
+      if (typeof content === 'string') {
+        if (isNot)
+          baseExpect(text.trim()).not.toBe(content.trim());
+        else
+          baseExpect(text.trim()).toBe(content.trim());
+      } else {
+        if (isNot)
+          baseExpect(text).not.toMatch(content);
+        else
+          baseExpect(text).toMatch(content);
+      }
     } catch (e) {
       return {
         pass: isNot,

@@ -37,6 +37,10 @@ test('test tool list', async ({ client, visionClient }) => {
     'browser_save_as_pdf',
     'browser_close',
     'browser_install',
+    'browser_list_tabs',
+    'browser_new_tab',
+    'browser_select_tab',
+    'browser_close_tab',
   ]);
 
   const { tools: visionTools } = await visionClient.listTools();
@@ -55,6 +59,10 @@ test('test tool list', async ({ client, visionClient }) => {
     'browser_save_as_pdf',
     'browser_close',
     'browser_install',
+    'browser_list_tabs',
+    'browser_new_tab',
+    'browser_select_tab',
+    'browser_close_tab',
   ]);
 });
 
@@ -75,6 +83,8 @@ test('test browser_navigate', async ({ client }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
+Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
@@ -128,6 +138,8 @@ test('test reopen browser', async ({ client }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
+Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
@@ -326,6 +338,8 @@ test('cdp server', async ({ cdpEndpoint, startClient }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
+Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
@@ -343,6 +357,8 @@ test('save as pdf', async ({ client }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
+Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot

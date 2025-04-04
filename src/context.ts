@@ -44,46 +44,78 @@ export class Context {
   private _options: ContextOptions;
   private _browser: playwright.Browser | undefined;
   private _browserContext: playwright.BrowserContext | undefined;
-  private _pages: Page[] = [];
-  private _currentPage: Page | undefined;
-  private _createContextPromise: Promise<playwright.Page> | undefined;
+  private _tabs: Tab[] = [];
+  private _currentTab: Tab | undefined;
 
   constructor(options: ContextOptions) {
     this._options = options;
   }
 
-  async createPage(): Promise<playwright.Page> {
-    if (this._createContextPromise)
-      return this._createContextPromise;
-    this._createContextPromise = (async () => {
-      const { browser, browserContext } = await this._createBrowserContext();
-      const pages = browserContext.pages();
-      for (const page of pages)
-        this._onPageCreated(page);
-      browserContext.on('page', page => this._onPageCreated(page));
-      let page = pages[0];
-      if (!page)
-        page = await browserContext.newPage();
-      this._currentPage = this._pages[0];
-      this._browser = browser;
-      this._browserContext = browserContext;
-      return page;
-    })();
-    return this._createContextPromise;
+  tabs(): Tab[] {
+    return this._tabs;
+  }
+
+  currentTab(): Tab {
+    if (!this._currentTab)
+      throw new Error('Navigate to a location to create a tab');
+    return this._currentTab;
+  }
+
+  async newTab(): Promise<Tab> {
+    const browserContext = await this._ensureBrowserContext();
+    const page = await browserContext.newPage();
+    this._currentTab = this._tabs.find(t => t.page === page)!;
+    return this._currentTab;
+  }
+
+  async selectTab(index: number) {
+    this._currentTab = this._tabs[index - 1];
+    await this._currentTab.page.bringToFront();
+  }
+
+  async ensureTab(): Promise<Tab> {
+    if (this._currentTab)
+      return this._currentTab;
+
+    const context = await this._ensureBrowserContext();
+    await context.newPage();
+    return this._currentTab!;
+  }
+
+  async listTabs(): Promise<string> {
+    if (!this._tabs.length)
+      return 'No tabs open';
+    const lines: string[] = ['Open tabs:'];
+    for (let i = 0; i < this._tabs.length; i++) {
+      const tab = this._tabs[i];
+      const title = await tab.page.title();
+      const url = tab.page.url();
+      const current = tab === this._currentTab ? ' (current)' : '';
+      lines.push(`- ${i + 1}:${current} [${title}] (${url})`);
+    }
+    return lines.join('\n');
+  }
+
+  async closeTab(index: number | undefined) {
+    const tab = index === undefined ? this.currentTab() : this._tabs[index - 1];
+    await tab.page.close();
+    return await this.listTabs();
   }
 
   private _onPageCreated(page: playwright.Page) {
-    this._pages.push(new Page(page, page => this._onPageClose(page)));
+    const tab = new Tab(this, page, tab => this._onPageClosed(tab));
+    this._tabs.push(tab);
+    if (!this._currentTab)
+      this._currentTab = tab;
   }
 
-  private _onPageClose(page: Page) {
-    this._pages = this._pages.filter(p => p !== page);
-    if (this._currentPage === page)
-      this._currentPage = this._pages[0];
+  private _onPageClosed(tab: Tab) {
+    this._tabs = this._tabs.filter(t => t !== tab);
+    if (this._currentTab === tab)
+      this._currentTab = this._tabs[0];
     const browser = this._browser;
-    if (this._browserContext && !this._pages.length) {
+    if (this._browserContext && !this._tabs.length) {
       void this._browserContext.close().then(() => browser?.close()).catch(() => {});
-      this._createContextPromise = undefined;
       this._browser = undefined;
       this._browserContext = undefined;
     }
@@ -108,16 +140,20 @@ export class Context {
     });
   }
 
-  currentPage(): Page {
-    if (!this._currentPage)
-      throw new Error('Navigate to a location to create a page');
-    return this._currentPage;
-  }
-
   async close() {
     if (!this._browserContext)
       return;
     await this._browserContext.close();
+  }
+
+  private async _ensureBrowserContext() {
+    if (!this._browserContext) {
+      const context = await this._createBrowserContext();
+      this._browser = context.browser;
+      this._browserContext = context.browserContext;
+      this._browserContext.on('page', page => this._onPageCreated(page));
+    }
+    return this._browserContext;
   }
 
   private async _createBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
@@ -154,14 +190,16 @@ export class Context {
   }
 }
 
-class Page {
+class Tab {
+  readonly context: Context;
   readonly page: playwright.Page;
   private _console: playwright.ConsoleMessage[] = [];
   private _fileChooser: playwright.FileChooser | undefined;
   private _snapshot: PageSnapshot | undefined;
-  private _onPageClose: (page: Page) => void;
+  private _onPageClose: (tab: Tab) => void;
 
-  constructor(page: playwright.Page, onPageClose: (page: Page) => void) {
+  constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void) {
+    this.context = context;
     this.page = page;
     this._onPageClose = onPageClose;
     page.on('console', event => this._console.push(event));
@@ -181,7 +219,13 @@ class Page {
     this._onPageClose(this);
   }
 
-  async run(callback: (page: Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+  async navigate(url: string) {
+    await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+    // Cap load event to 5 seconds, the page is operational at this point.
+    await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
+  }
+
+  async run(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
     try {
       if (!options?.noClearFileChooser)
         this._fileChooser = undefined;
@@ -193,22 +237,24 @@ class Page {
       if (options?.captureSnapshot)
         this._snapshot = await PageSnapshot.create(this.page);
     }
+    const tabList = this.context.tabs().length > 1 ? await this.context.listTabs() + '\n\nCurrent tab:' + '\n' : '';
+    const snapshot = this._snapshot?.text({ status: options?.status, hasFileChooser: !!this._fileChooser }) ?? options?.status ?? '';
     return {
       content: [{
         type: 'text',
-        text: this._snapshot?.text({ status: options?.status, hasFileChooser: !!this._fileChooser }) ?? options?.status ?? '',
+        text: tabList + snapshot,
       }],
     };
   }
 
-  async runAndWait(callback: (page: Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+  async runAndWait(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
     return await this.run(callback, {
       waitForCompletion: true,
       ...options,
     });
   }
 
-  async runAndWaitWithSnapshot(callback: (page: Page) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+  async runAndWaitWithSnapshot(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
     return await this.run(callback, {
       captureSnapshot: true,
       waitForCompletion: true,

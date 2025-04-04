@@ -27,8 +27,8 @@ export const screenshot: Tool = {
   },
 
   handle: async context => {
-    const page = context.currentPage();
-    const screenshot = await page.page.screenshot({ type: 'jpeg', quality: 50, scale: 'css' });
+    const tab = context.currentTab();
+    const screenshot = await tab.page.screenshot({ type: 'jpeg', quality: 50, scale: 'css' });
     return {
       content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: 'image/jpeg' }],
     };
@@ -53,8 +53,8 @@ export const moveMouse: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = moveMouseSchema.parse(params);
-    const page = context.currentPage();
-    await page.page.mouse.move(validatedParams.x, validatedParams.y);
+    const tab = context.currentTab();
+    await tab.page.mouse.move(validatedParams.x, validatedParams.y);
     return {
       content: [{ type: 'text', text: `Moved mouse to (${validatedParams.x}, ${validatedParams.y})` }],
     };
@@ -74,11 +74,11 @@ export const click: Tool = {
   },
 
   handle: async (context, params) => {
-    return await context.currentPage().runAndWait(async page => {
+    return await context.currentTab().runAndWait(async tab => {
       const validatedParams = clickSchema.parse(params);
-      await page.page.mouse.move(validatedParams.x, validatedParams.y);
-      await page.page.mouse.down();
-      await page.page.mouse.up();
+      await tab.page.mouse.move(validatedParams.x, validatedParams.y);
+      await tab.page.mouse.down();
+      await tab.page.mouse.up();
     }, {
       status: 'Clicked mouse',
     });
@@ -101,11 +101,11 @@ export const drag: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = dragSchema.parse(params);
-    return await context.currentPage().runAndWait(async page => {
-      await page.page.mouse.move(validatedParams.startX, validatedParams.startY);
-      await page.page.mouse.down();
-      await page.page.mouse.move(validatedParams.endX, validatedParams.endY);
-      await page.page.mouse.up();
+    return await context.currentTab().runAndWait(async tab => {
+      await tab.page.mouse.move(validatedParams.startX, validatedParams.startY);
+      await tab.page.mouse.down();
+      await tab.page.mouse.move(validatedParams.endX, validatedParams.endY);
+      await tab.page.mouse.up();
     }, {
       status: `Dragged mouse from (${validatedParams.startX}, ${validatedParams.startY}) to (${validatedParams.endX}, ${validatedParams.endY})`,
     });
@@ -126,10 +126,10 @@ export const type: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
-    return await context.currentPage().runAndWait(async page => {
-      await page.page.keyboard.type(validatedParams.text);
+    return await context.currentTab().runAndWait(async tab => {
+      await tab.page.keyboard.type(validatedParams.text);
       if (validatedParams.submit)
-        await page.page.keyboard.press('Enter');
+        await tab.page.keyboard.press('Enter');
     }, {
       status: `Typed text "${validatedParams.text}"`,
     });

@@ -24,7 +24,7 @@ export const console: Resource = {
   },
 
   read: async (context, uri) => {
-    const messages = await context.currentPage().console();
+    const messages = await context.currentTab().console();
     const log = messages.map(message => `[${message.type().toUpperCase()}] ${message.text()}`).join('\n');
     return [{
       uri,

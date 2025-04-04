@@ -18,6 +18,7 @@ import { createServerWithTools } from './server';
 import * as snapshot from './tools/snapshot';
 import * as common from './tools/common';
 import * as screenshot from './tools/screenshot';
+import * as tabs from './tools/tabs';
 import { console } from './resources/console';
 
 import type { Tool } from './tools/tool';
@@ -30,6 +31,8 @@ const commonTools: Tool[] = [
   common.pdf,
   common.close,
   common.install,
+  tabs.listTabs,
+  tabs.newTab,
 ];
 
 const snapshotTools: Tool[] = [
@@ -45,6 +48,8 @@ const snapshotTools: Tool[] = [
   common.chooseFile(true),
   common.pressKey(true),
   ...commonTools,
+  tabs.selectTab(true),
+  tabs.closeTab(true),
 ];
 
 const screenshotTools: Tool[] = [
@@ -59,6 +64,8 @@ const screenshotTools: Tool[] = [
   common.chooseFile(false),
   common.pressKey(false),
   ...commonTools,
+  tabs.selectTab(false),
+  tabs.closeTab(false),
 ];
 
 const resources: Resource[] = [

@@ -36,11 +36,9 @@ export const navigate: ToolFactory = captureSnapshot => ({
   },
   handle: async (context, params) => {
     const validatedParams = navigateSchema.parse(params);
-    await context.createPage();
-    return await context.currentPage().run(async page => {
-      await page.page.goto(validatedParams.url, { waitUntil: 'domcontentloaded' });
-      // Cap load event to 5 seconds, the page is operational at this point.
-      await page.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
+    const currentTab = await context.ensureTab();
+    return await currentTab.run(async tab => {
+      await tab.navigate(validatedParams.url);
     }, {
       status: `Navigated to ${validatedParams.url}`,
       captureSnapshot,
@@ -57,8 +55,8 @@ export const goBack: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goBackSchema),
   },
   handle: async context => {
-    return await context.currentPage().runAndWait(async page => {
-      await page.page.goBack();
+    return await context.currentTab().runAndWait(async tab => {
+      await tab.page.goBack();
     }, {
       status: 'Navigated back',
       captureSnapshot: snapshot,
@@ -75,8 +73,8 @@ export const goForward: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goForwardSchema),
   },
   handle: async context => {
-    return await context.currentPage().runAndWait(async page => {
-      await page.page.goForward();
+    return await context.currentTab().runAndWait(async tab => {
+      await tab.page.goForward();
     }, {
       status: 'Navigated forward',
       captureSnapshot: snapshot,
@@ -118,8 +116,8 @@ export const pressKey: (captureSnapshot: boolean) => Tool = captureSnapshot => (
   },
   handle: async (context, params) => {
     const validatedParams = pressKeySchema.parse(params);
-    return await context.currentPage().runAndWait(async page => {
-      await page.page.keyboard.press(validatedParams.key);
+    return await context.currentTab().runAndWait(async tab => {
+      await tab.page.keyboard.press(validatedParams.key);
     }, {
       status: `Pressed key ${validatedParams.key}`,
       captureSnapshot,
@@ -136,9 +134,9 @@ export const pdf: Tool = {
     inputSchema: zodToJsonSchema(pdfSchema),
   },
   handle: async context => {
-    const page = context.currentPage();
+    const tab = context.currentTab();
     const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + '.pdf';
-    await page.page.pdf({ path: fileName });
+    await tab.page.pdf({ path: fileName });
     return {
       content: [{
         type: 'text',
@@ -179,9 +177,9 @@ export const chooseFile: ToolFactory = captureSnapshot => ({
   },
   handle: async (context, params) => {
     const validatedParams = chooseFileSchema.parse(params);
-    const page = context.currentPage();
-    return await page.runAndWait(async () => {
-      await page.submitFileChooser(validatedParams.paths);
+    const tab = context.currentTab();
+    return await tab.runAndWait(async () => {
+      await tab.submitFileChooser(validatedParams.paths);
     }, {
       status: `Chose files ${validatedParams.paths.join(', ')}`,
       captureSnapshot,
