@@ -74,11 +74,9 @@ export class Context {
   }
 
   async ensureTab(): Promise<Tab> {
-    if (this._currentTab)
-      return this._currentTab;
-
     const context = await this._ensureBrowserContext();
-    await context.newPage();
+    if (!this._currentTab)
+      await context.newPage();
     return this._currentTab!;
   }
 
@@ -110,9 +108,13 @@ export class Context {
   }
 
   private _onPageClosed(tab: Tab) {
-    this._tabs = this._tabs.filter(t => t !== tab);
+    const index = this._tabs.indexOf(tab);
+    if (index === -1)
+      return;
+    this._tabs.splice(index, 1);
+
     if (this._currentTab === tab)
-      this._currentTab = this._tabs[0];
+      this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
     const browser = this._browser;
     if (this._browserContext && !this._tabs.length) {
       void this._browserContext.close().then(() => browser?.close()).catch(() => {});
@@ -151,6 +153,8 @@ export class Context {
       const context = await this._createBrowserContext();
       this._browser = context.browser;
       this._browserContext = context.browserContext;
+      for (const page of this._browserContext.pages())
+        this._onPageCreated(page);
       this._browserContext.on('page', page => this._onPageCreated(page));
     }
     return this._browserContext;

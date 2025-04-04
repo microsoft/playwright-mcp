@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { chromium } from 'playwright';
+
 import { test, expect } from './fixtures';
 
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -29,6 +31,11 @@ async function createTab(client: Client, title: string, body: string) {
 
 test('create new tab', async ({ client }) => {
   expect(await createTab(client, 'Tab one', 'Body one')).toHaveTextContent(`
+Open tabs:
+- 1: [] (about:blank)
+- 2: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
+
+Current tab:
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot
@@ -38,8 +45,9 @@ test('create new tab', async ({ client }) => {
 
   expect(await createTab(client, 'Tab two', 'Body two')).toHaveTextContent(`
 Open tabs:
-- 1: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
-- 2: (current) [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
+- 1: [] (about:blank)
+- 2: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
+- 3: (current) [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
 
 Current tab:
 - Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
@@ -56,12 +64,13 @@ test('select tab', async ({ client }) => {
   expect(await client.callTool({
     name: 'browser_select_tab',
     arguments: {
-      index: 1,
+      index: 2,
     },
   })).toHaveTextContent(`
 Open tabs:
-- 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
-- 2: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
+- 1: [] (about:blank)
+- 2: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
+- 3: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
 
 Current tab:
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
@@ -78,13 +87,35 @@ test('close tab', async ({ client }) => {
   expect(await client.callTool({
     name: 'browser_close_tab',
     arguments: {
-      index: 2,
+      index: 3,
     },
   })).toHaveTextContent(`
+Open tabs:
+- 1: [] (about:blank)
+- 2: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
+
+Current tab:
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot
 \`\`\`yaml
 - text: Body one
 \`\`\``);
+});
+
+test('reuse first tab when navigating', async ({ startClient, cdpEndpoint }) => {
+  const browser = await chromium.connectOverCDP(cdpEndpoint);
+  const [context] = browser.contexts();
+  const pages = context.pages();
+
+  const client = await startClient({ args: [`--cdp-endpoint=${cdpEndpoint}`] });
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<title>Title</title><body>Body</body>',
+    },
+  });
+
+  expect(pages.length).toBe(1);
+  expect(await pages[0].title()).toBe('Title');
 });
