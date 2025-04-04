@@ -20,6 +20,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import type { Tool } from './tool';
 
 const screenshot: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_screen_capture',
     description: 'Take a screenshot of the current page',
@@ -45,6 +46,7 @@ const moveMouseSchema = elementSchema.extend({
 });
 
 const moveMouse: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_screen_move_mouse',
     description: 'Move mouse to a given position',
@@ -67,6 +69,7 @@ const clickSchema = elementSchema.extend({
 });
 
 const click: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_screen_click',
     description: 'Click left mouse button',
@@ -93,6 +96,7 @@ const dragSchema = elementSchema.extend({
 });
 
 const drag: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_screen_drag',
     description: 'Drag left mouse button',
@@ -118,6 +122,7 @@ const typeSchema = z.object({
 });
 
 const type: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_screen_type',
     description: 'Type text',

@@ -23,6 +23,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import type { Tool } from './tool';
 
 const install: Tool = {
+  capability: 'install',
   schema: {
     name: 'browser_install',
     description: 'Install the browser specified in the config. Call this if you get an error about the browser not being installed.',

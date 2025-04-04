@@ -27,6 +27,7 @@ import type { Tool } from './tool';
 const pdfSchema = z.object({});
 
 const pdf: Tool = {
+  capability: 'pdf',
   schema: {
     name: 'browser_pdf_save',
     description: 'Save page as PDF',

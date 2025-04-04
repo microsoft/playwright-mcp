@@ -19,18 +19,19 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import type { ToolFactory } from './tool';
 
-const chooseFileSchema = z.object({
+const uploadFileSchema = z.object({
   paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
 });
 
-const chooseFile: ToolFactory = captureSnapshot => ({
+const uploadFile: ToolFactory = captureSnapshot => ({
+  capability: 'files',
   schema: {
-    name: 'browser_choose_file',
-    description: 'Choose one or multiple files to upload',
-    inputSchema: zodToJsonSchema(chooseFileSchema),
+    name: 'browser_file_upload',
+    description: 'Upload one or multiple files',
+    inputSchema: zodToJsonSchema(uploadFileSchema),
   },
   handle: async (context, params) => {
-    const validatedParams = chooseFileSchema.parse(params);
+    const validatedParams = uploadFileSchema.parse(params);
     const tab = context.currentTab();
     return await tab.runAndWait(async () => {
       await tab.submitFileChooser(validatedParams.paths);
@@ -43,5 +44,5 @@ const chooseFile: ToolFactory = captureSnapshot => ({
 });
 
 export default (captureSnapshot: boolean) => [
-  chooseFile(captureSnapshot),
+  uploadFile(captureSnapshot),
 ];

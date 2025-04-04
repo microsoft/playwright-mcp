@@ -24,6 +24,7 @@ const navigateSchema = z.object({
 });
 
 const navigate: ToolFactory = captureSnapshot => ({
+  capability: 'core',
   schema: {
     name: 'browser_navigate',
     description: 'Navigate to a URL',
@@ -44,6 +45,7 @@ const navigate: ToolFactory = captureSnapshot => ({
 const goBackSchema = z.object({});
 
 const goBack: ToolFactory = snapshot => ({
+  capability: 'history',
   schema: {
     name: 'browser_navigate_back',
     description: 'Go back to the previous page',
@@ -62,6 +64,7 @@ const goBack: ToolFactory = snapshot => ({
 const goForwardSchema = z.object({});
 
 const goForward: ToolFactory = snapshot => ({
+  capability: 'history',
   schema: {
     name: 'browser_navigate_forward',
     description: 'Go forward to the next page',

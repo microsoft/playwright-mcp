@@ -68,6 +68,7 @@ The Playwright MCP server supports the following command-line options:
   - Chrome channels: `chrome-beta`, `chrome-canary`, `chrome-dev`
   - Edge channels: `msedge-beta`, `msedge-canary`, `msedge-dev`
   - Default: `chrome`
+- `--caps <caps>`: Comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.
 - `--cdp-endpoint <endpoint>`: CDP endpoint to connect to
 - `--executable-path <path>`: Path to the browser executable
 - `--headless`: Run browser in headless mode (headed by default)
@@ -299,7 +300,7 @@ server.connect(transport);
 
 ### Files and Media
 
-- **browser_choose_file**
+- **browser_file_upload**
   - Description: Choose one or multiple files to upload
   - Parameters:
     - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.

@@ -24,6 +24,7 @@ const pressKeySchema = z.object({
 });
 
 const pressKey: ToolFactory = captureSnapshot => ({
+  capability: 'core',
   schema: {
     name: 'browser_press_key',
     description: 'Press a key on the keyboard',

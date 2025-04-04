@@ -24,6 +24,7 @@ const waitSchema = z.object({
 });
 
 const wait: Tool = {
+  capability: 'wait',
   schema: {
     name: 'browser_wait',
     description: 'Wait for a specified time in seconds',
@@ -44,6 +45,7 @@ const wait: Tool = {
 const closeSchema = z.object({});
 
 const close: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_close',
     description: 'Close the page',

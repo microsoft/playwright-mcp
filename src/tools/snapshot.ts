@@ -21,6 +21,7 @@ import type * as playwright from 'playwright';
 import type { Tool } from './tool';
 
 const snapshot: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_snapshot',
     description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
@@ -38,6 +39,7 @@ const elementSchema = z.object({
 });
 
 const click: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_click',
     description: 'Perform click on a web page',
@@ -63,6 +65,7 @@ const dragSchema = z.object({
 });
 
 const drag: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_drag',
     description: 'Perform drag and drop between two elements',
@@ -82,6 +85,7 @@ const drag: Tool = {
 };
 
 const hover: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_hover',
     description: 'Hover over element on page',
@@ -106,6 +110,7 @@ const typeSchema = elementSchema.extend({
 });
 
 const type: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_type',
     description: 'Type text into editable element',
@@ -133,6 +138,7 @@ const selectOptionSchema = elementSchema.extend({
 });
 
 const selectOption: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_select_option',
     description: 'Select an option in a dropdown',
@@ -155,6 +161,7 @@ const screenshotSchema = z.object({
 });
 
 const screenshot: Tool = {
+  capability: 'core',
   schema: {
     name: 'browser_take_screenshot',
     description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,

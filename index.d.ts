@@ -18,6 +18,8 @@
 import type { LaunchOptions } from 'playwright';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
+type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install';
+
 type Options = {
   /**
    * Path to the user data directory.
@@ -35,6 +37,11 @@ type Options = {
    * @default false
    */
   vision?: boolean;
+
+  /**
+   * Capabilities to enable.
+   */
+  capabilities?: ToolCapability[];
 };
 
 export function createServer(options?: Options): Server;

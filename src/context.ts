@@ -282,7 +282,7 @@ class PageSnapshot {
       results.push('');
     }
     if (options?.hasFileChooser) {
-      results.push('- There is a file chooser visible that requires browser_choose_file to be called');
+      results.push('- There is a file chooser visible that requires browser_file_upload to be called');
       results.push('');
     }
     results.push(this._text);

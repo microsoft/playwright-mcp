@@ -20,6 +20,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import type { ToolFactory, Tool } from './tool';
 
 const listTabs: Tool = {
+  capability: 'tabs',
   schema: {
     name: 'browser_tab_list',
     description: 'List browser tabs',
@@ -40,6 +41,7 @@ const selectTabSchema = z.object({
 });
 
 const selectTab: ToolFactory = captureSnapshot => ({
+  capability: 'tabs',
   schema: {
     name: 'browser_tab_select',
     description: 'Select a tab by index',
@@ -58,6 +60,7 @@ const newTabSchema = z.object({
 });
 
 const newTab: Tool = {
+  capability: 'tabs',
   schema: {
     name: 'browser_tab_new',
     description: 'Open a new tab',
@@ -77,6 +80,7 @@ const closeTabSchema = z.object({
 });
 
 const closeTab: ToolFactory = captureSnapshot => ({
+  capability: 'tabs',
   schema: {
     name: 'browser_tab_close',
     description: 'Close a tab',

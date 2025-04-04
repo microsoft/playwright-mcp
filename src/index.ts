@@ -16,7 +16,7 @@
 
 import { createServerWithTools } from './server';
 import common from './tools/common';
-import fileChooser from './tools/fileChooser';
+import files from './tools/files';
 import install from './tools/install';
 import keyboard from './tools/keyboard';
 import navigate from './tools/navigate';
@@ -24,16 +24,16 @@ import pdf from './tools/pdf';
 import snapshot from './tools/snapshot';
 import tabs from './tools/tabs';
 import screen from './tools/screen';
-import { console } from './resources/console';
+import { console as consoleResource } from './resources/console';
 
-import type { Tool } from './tools/tool';
+import type { Tool, ToolCapability } from './tools/tool';
 import type { Resource } from './resources/resource';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
 const snapshotTools: Tool[] = [
   ...common,
-  ...fileChooser(true),
+  ...files(true),
   ...install,
   ...keyboard(true),
   ...navigate(true),
@@ -44,7 +44,7 @@ const snapshotTools: Tool[] = [
 
 const screenshotTools: Tool[] = [
   ...common,
-  ...fileChooser(false),
+  ...files(false),
   ...install,
   ...keyboard(false),
   ...navigate(false),
@@ -54,7 +54,7 @@ const screenshotTools: Tool[] = [
 ];
 
 const resources: Resource[] = [
-  console,
+  consoleResource,
 ];
 
 type Options = {
@@ -63,12 +63,14 @@ type Options = {
   launchOptions?: LaunchOptions;
   cdpEndpoint?: string;
   vision?: boolean;
+  capabilities?: ToolCapability[];
 };
 
 const packageJSON = require('../package.json');
 
 export function createServer(options?: Options): Server {
-  const tools = options?.vision ? screenshotTools : snapshotTools;
+  const allTools = options?.vision ? screenshotTools : snapshotTools;
+  const tools = allTools.filter(tool => !options?.capabilities || tool.capability === 'core' || options.capabilities.includes(tool.capability));
   return createServerWithTools({
     name: 'Playwright',
     version: packageJSON.version,
