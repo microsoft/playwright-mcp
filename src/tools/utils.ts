@@ -15,6 +15,8 @@
  */
 
 import type * as playwright from 'playwright';
+import path from 'path';
+import fs from 'fs';
 
 export async function waitForCompletion<R>(page: playwright.Page, callback: () => Promise<R>): Promise<R> {
   const requests = new Set<playwright.Request>();
@@ -67,6 +69,29 @@ export async function waitForCompletion<R>(page: playwright.Page, callback: () =
   } finally {
     dispose();
   }
+}
+
+export async function saveScreenshot(
+  buffer: Buffer,
+  directory: string,
+  type: 'jpeg' | 'png'
+): Promise<string> {
+  // Ensure directory exists
+  await fs.promises.mkdir(directory, { recursive: true });
+
+  // Generate unique filename with timestamp
+  const timestamp = new Date()
+      .toISOString()
+      .replace(/:/g, '-')
+      .replace(/\./g, '-');
+  const filename = `screenshot-${timestamp}.${type}`;
+  const filepath = path.join(directory, sanitizeForFilePath(filename));
+
+  // Save the file
+  await fs.promises.writeFile(filepath, buffer);
+
+  // Return absolute path
+  return path.resolve(filepath);
 }
 
 export function sanitizeForFilePath(s: string) {

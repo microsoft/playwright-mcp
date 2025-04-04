@@ -47,6 +47,7 @@ const snapshotTools: Tool[] = [
   common.goForward(true),
   common.chooseFile(true),
   common.pressKey(true),
+  common.resize(true),
   ...commonTools,
   tabs.selectTab(true),
   tabs.closeTab(true),
@@ -63,6 +64,7 @@ const screenshotTools: Tool[] = [
   common.goForward(false),
   common.chooseFile(false),
   common.pressKey(false),
+  common.resize(false),
   ...commonTools,
   tabs.selectTab(false),
   tabs.closeTab(false),
@@ -78,6 +80,7 @@ type Options = {
   launchOptions?: LaunchOptions;
   cdpEndpoint?: string;
   vision?: boolean;
+  saveScreenshotsDir?: string;
 };
 
 const packageJSON = require('../package.json');
@@ -93,5 +96,6 @@ export function createServer(options?: Options): Server {
     userDataDir: options?.userDataDir ?? '',
     launchOptions: options?.launchOptions,
     cdpEndpoint: options?.cdpEndpoint,
+    saveScreenshotsDir: options?.saveScreenshotsDir,
   });
 }

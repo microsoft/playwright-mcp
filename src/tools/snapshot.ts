@@ -16,6 +16,7 @@
 
 import { z } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
+import { saveScreenshot } from './utils';
 
 import type * as playwright from 'playwright';
 import type { Tool } from './tool';
@@ -166,6 +167,16 @@ export const screenshot: Tool = {
     const tab = context.currentTab();
     const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css' } : { type: 'jpeg', quality: 50, scale: 'css' };
     const screenshot = await tab.page.screenshot(options);
+
+    const saveDir = context.getOptions().saveScreenshotsDir;
+    if (saveDir) {
+      const imageType = validatedParams.raw ? 'png' : 'jpeg';
+      const filePath = await saveScreenshot(screenshot, saveDir, imageType);
+      return {
+        content: [{ type: 'text', text: `Screenshot saved to: ${filePath}` }],
+      };
+    }
+
     return {
       content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: validatedParams.raw ? 'image/png' : 'image/jpeg' }],
     };

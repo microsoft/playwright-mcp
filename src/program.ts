@@ -42,6 +42,7 @@ program
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--save-screenshots <directory>', 'Save screenshots to the specified directory instead of returning base64 data')
     .action(async options => {
       let browserName: 'chromium' | 'firefox' | 'webkit';
       let channel: string | undefined;
@@ -85,6 +86,7 @@ program
         launchOptions,
         vision: !!options.vision,
         cdpEndpoint: options.cdpEndpoint,
+        saveScreenshotsDir: options.saveScreenshots,
       }));
       setupExitWatchdog(serverList);
 

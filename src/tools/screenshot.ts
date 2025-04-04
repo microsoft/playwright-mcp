@@ -16,6 +16,7 @@
 
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import { saveScreenshot } from './utils';
 
 import type { Tool } from './tool';
 
@@ -29,6 +30,15 @@ export const screenshot: Tool = {
   handle: async context => {
     const tab = context.currentTab();
     const screenshot = await tab.page.screenshot({ type: 'jpeg', quality: 50, scale: 'css' });
+
+    const saveDir = context.getOptions().saveScreenshotsDir;
+    if (saveDir) {
+      const filePath = await saveScreenshot(screenshot, saveDir, 'jpeg');
+      return {
+        content: [{ type: 'text', text: `Screenshot saved to: ${filePath}` }],
+      };
+    }
+
     return {
       content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: 'image/jpeg' }],
     };

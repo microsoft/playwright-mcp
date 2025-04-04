@@ -29,6 +29,7 @@ export type ContextOptions = {
   launchOptions?: playwright.LaunchOptions;
   cdpEndpoint?: string;
   remoteEndpoint?: string;
+  saveScreenshotsDir?: string;
 };
 
 type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
@@ -49,6 +50,10 @@ export class Context {
 
   constructor(options: ContextOptions) {
     this._options = options;
+  }
+
+  getOptions(): ContextOptions {
+    return this._options;
   }
 
   tabs(): Tab[] {
