@@ -187,7 +187,7 @@ export const close: Tool = {
   },
 };
 
-const chooseFileSchema = z.object({
+export const chooseFileSchema = z.object({
   paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
 });
 
