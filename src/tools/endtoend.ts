@@ -18,48 +18,16 @@ const systemMessage = `
     You are an Automation Test Engineer that is in charge of ensuring the quality of the software developed by 
     the Software Engineers. Your job is to execute end to end tests on the given web app and find 
     the bugs if there are any. At the end you need to report your findings back to the engineers in which
-    if there are any busg in your report, they will fix them. 
+    if there are any bugs in your report, they will fix them. 
 
-    You are given two tools. Snapshot and Batch:
-    
-    Snapshot: "For any given url, generate snapshots of the web page."
-    Batch: "Run browser automation tools in order, given a list of tools that are available for use"
-    
-    The batch tool runs browser automation given a test case with steps to run using playwright. 
-    Batch tool works with "Aria Refs". In order to use the correct refs for batch tool, you need to use 
-    Snapshot tool first. With Snapshot tool you can generate the snapshot for each url or page and recieve the 
-    refs for the elements on that page. Using the refs, you can properly call the batch tools to perform browser automation. 
-    It is very important to know the refs before calling batch tool in order to prevent reporting a bug where it was just a mismatch between 
-    refs. Therefore, be sure to always call the snapshot tool once before calling the batch tool.
+    You have access to a set of tools that will help you perform browser automation. Based on each test case, 
+    you need to decide which tool is the best one to perform the next action. 
 
-    You will be provided a list of test cases to run as your test suite and the urls for path finding. 
-    You can use the snapshot tool to find the correct refs for each web page given, and using the test cases provided 
-    to you, generate test steps that validates the test cases given to you on the web.
+    Remeber the result of each test case execution and include the result of each specific test case in your report.
 
-    IMPORTANT: When using the batch tool, make sure each step name starts with 'browser_'. For example:
-    - Use 'browser_navigate' (not 'navigate')
-    - Use 'browser_click' (not 'click')
-    - Use 'browser_type' (not 'type')
-
-    Here is the list of available arguments for batch tool: 
-    'browser_drag'
-    'browser_click'
-    'browser_hover':
-    'browser_type':
-    'browser_select_option':
-    'browser_press_key':
-    'browser_wait':
-    'browser_save_as_pdf':
-    'browser_close':
-    'browser_navigate':
-    'browser_go_back':
-    'browser_go_forward':
-    'browser_choose_file': 
+    Be deterministic in your response. The result of the test is either failed or pass. If the actual result does not 
+    match the expect result, the test case is considered failed.
 `;
-
-const testCaseSchema = z.object({
-  definition: z.string().describe("The test case definitions")
-})
 
 const endtoendSchema = z.object({
   testCases: z.array(z.string()).describe("The list of test case definitions to execute on the web"),
@@ -76,64 +44,169 @@ export const endtoend: Tool = {
   handle: async (context, params) => { 
     const validatedParams = endtoendSchema.parse(params);
     const content = `${systemMessage} - List of Urls in target for end to end testing : ${JSON.stringify(validatedParams)}`
-    const result = generateText({
+    while(true) {
+      const result = generateText({
         model: openai('gpt-4o'),
         messages: [{ role: 'system', content: content }],
         tools: {
-        snapshot: tool({
-            description: 'Provided urls, get the snapshot of the pages that need validation',
-            parameters: common.multiNavigationSchema,
+          snapshot: tool({
+            description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
+            parameters: z.object({}),
             execute: async () => {
-                return await common.multiNavigation(true).handle(context, { urls: validatedParams.urls });
+              return await snapshot.snapshot.handle(context);
             }
-        }),
-        batch: tool ({
-            description: 'Provided snapshots, run end to end automation tests in the browser',
-            parameters: batchSchema,
-            execute: async (params: z.infer<typeof batchSchema>) => {
-              const validatedParams = batchSchema.parse(params);
-              return await batch.handle(context, validatedParams);
+          }),
+          click: tool({
+            description: 'Perform click on a web page',
+            parameters: snapshot.elementSchema,
+            execute: async (params: z.infer<typeof snapshot.elementSchema>) => {
+              const validatedParams = snapshot.elementSchema.parse(params)
+              return await snapshot.click.handle(context, validatedParams, true);
             }
-         })
+          }),
+          drag: tool({
+            description: 'Perform drag and drop between two elements',
+            parameters: snapshot.dragSchema,
+            execute: async (params: z.infer<typeof snapshot.dragSchema>) => {
+              const validatedParams = snapshot.dragSchema.parse(params)
+              return await snapshot.drag.handle(context, validatedParams, true);
+            }
+          }),
+          hover: tool({
+            description: 'Hover over element on page',
+            parameters: snapshot.elementSchema,
+            execute: async (params: z.infer<typeof snapshot.elementSchema>) => {
+              const validatedParams = snapshot.elementSchema.parse(params);
+              return await snapshot.hover.handle(context, validatedParams, true);
+            }
+          }),
+          type: tool({
+            description: 'Type text into editable element',
+            parameters: snapshot.typeSchema,
+            execute: async (params: z.infer<typeof snapshot.typeSchema>) => {
+              const validatedParams = snapshot.typeSchema.parse(params);
+              return await snapshot.type.handle(context, validatedParams, true);
+            }
+          }),
+          selectOption: tool({
+            description: 'Select an option in a dropdown',
+            parameters: snapshot.selectOptionSchema,
+            execute: async (params: z.infer<typeof snapshot.selectOptionSchema>) => {
+              const validatedParams = snapshot.selectOptionSchema.parse(params);
+              return await snapshot.selectOption.handle(context, validatedParams, true);
+            }
+          }),
+          screenshot: tool({
+            description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
+            parameters: snapshot.screenshotSchema,
+            execute: async (params: z.infer<typeof snapshot.screenshotSchema>) => {
+              const validatedParams = snapshot.screenshotSchema.parse(params);
+              return await snapshot.screenshot.handle(context, validatedParams, true);
+            }
+          }),
+          // common tools
+          navigate: tool({
+            description: 'Navigate to a URL',
+            parameters: common.navigateSchema,
+            execute: async (params: z.infer<typeof common.navigateSchema>) => {
+              const validatedParams = common.navigateSchema.parse(params);
+              return await common.navigate(true).handle(context, validatedParams);
+            }
+          }),
+          goBack: tool({
+            description: 'Go back to the previous page',
+            parameters: common.goBackSchema,
+            execute: async (params: z.infer<typeof common.goBackSchema>) => {
+              return await common.goBack(true).handle(context)
+            }
+          }),
+          goForward: tool({
+            description: 'Go back to the previous page',
+            parameters: common.goForwardSchema,
+            execute: async (params: z.infer<typeof common.goBackSchema>) => {
+              return await common.goForward(true).handle(context)
+            }
+          }),
+          wait: tool({
+            description: 'Wait for a specified time in seconds',
+            parameters: common.waitSchema,
+            execute: async (params: z.infer<typeof common.waitSchema>) => {
+              const validatedParams = common.waitSchema.parse(params);
+              return await common.wait.handle(context, validatedParams, true);
+            }
+          }), 
+          pressKey: tool({
+            description: 'Press a key on the keyboard',
+            parameters: common.pressKeySchema,
+            execute: async (params: z.infer<typeof common.pressKeySchema>) => {
+              const validatedParams = common.pressKeySchema.parse(params);
+              return await common.pressKey.handle(context, validatedParams, true);
+            }
+          }),
+          pdf: tool({
+            description: 'Save page as PDF',
+            parameters: common.pdfSchema,
+            execute: async (params: z.infer<typeof common.pdfSchema>) => {
+              const validatedParams = common.pdfSchema.parse(params);
+              return await common.pdf.handle(context, validatedParams, true);
+            }
+          }),
+          close: tool({
+            description: 'Close the page',
+            parameters: common.closeSchema,
+            execute: async (params: z.infer<typeof common.closeSchema>) => {
+              const validatedParams = common.closeSchema.parse(params);
+              return await common.close.handle(context, validatedParams, true);
+            }
+          }),
+          chooseFile: tool({
+            description: 'Choose one or multiple files to upload',
+            parameters: common.chooseFileSchema, 
+            execute: async (params: z.infer<typeof common.chooseFileSchema>) => {
+              const validatedParams = common.chooseFileSchema.parse(params);
+              return await common.chooseFile(true).handle(context, validatedParams)
+            }
+          })
         },
         maxSteps: 5,
         onStepFinish: step => {
           console.log(JSON.stringify(step, null, 2));
         },
-    });
-    let fullResponse = '';
-    for await (const delta of (await result).text) {
-        fullResponse += delta;
-    }
-    return {
-        content: [{ type: 'text', text: fullResponse}]
+      });
+      let fullResponse = '';
+      for await (const delta of (await result).text) {
+          fullResponse += delta;
+      }
+      return {
+          content: [{ type: 'text', text: fullResponse}]
+      }
     }
   }
 }
 
 // Define snapshot-specific tool params
 export const snapshotParams = z.discriminatedUnion('name', [
-    z.object({
-      name: z.literal('browser_drag'),
-      params: snapshot.dragSchema
-    }),
-    z.object({
-      name: z.literal('browser_click'),
-      params: snapshot.elementSchema
-    }),
-    z.object({
-      name: z.literal('browser_hover'),
-      params: snapshot.elementSchema
-    }),
-    z.object({
-      name: z.literal('browser_type'),
-      params: snapshot.typeSchema
-    }),
-    z.object({
-      name: z.literal('browser_select_option'),
-      params: snapshot.selectOptionSchema
-    }),
-  ]);
+  z.object({
+    name: z.literal('browser_drag'),
+    params: snapshot.dragSchema
+  }),
+  z.object({
+    name: z.literal('browser_click'),
+    params: snapshot.elementSchema
+  }),
+  z.object({
+    name: z.literal('browser_hover'),
+    params: snapshot.elementSchema
+  }),
+  z.object({
+    name: z.literal('browser_type'),
+    params: snapshot.typeSchema
+  }),
+  z.object({
+    name: z.literal('browser_select_option'),
+    params: snapshot.selectOptionSchema
+  }),
+]);
   
 // Combine with common tools
 const SnapshotStepSchema = z.union([CommonToolParams, snapshotParams]);
