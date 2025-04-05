@@ -12,7 +12,15 @@ test('test qa with single url', async ({ endtoendClient }) => {
   const response = await endtoendClient.callTool({
     name: 'browser_endtoend',
     arguments: {
-      testCases: ["Validate that you can click on readmore button for each blog posts and they load", "Validate that the theme toggle works"],
+      testCases: [
+        {
+          testDefinition: "Validate that the read more button opens the blog posts and the content loads",
+        },
+        {
+          testDefinition: "Validate that the toggle theme can be opened",
+          expect: "The background color of the website should turn to black if white, or turn to white if black"
+        },
+      ],
       urls: ['http://localhost:3000']
     }
   });
