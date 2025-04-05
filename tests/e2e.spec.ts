@@ -18,6 +18,5 @@ test('test qa with single url', async ({ endtoendClient }) => {
   });
 
   console.log("response: ", response);
-  // Verify response contains snapshot and batch information
   await fs.writeFile('qa_response.txt', JSON.stringify(response, null, 2));
 });
