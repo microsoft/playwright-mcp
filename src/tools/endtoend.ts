@@ -29,8 +29,13 @@ const systemMessage = `
     match the expect result, the test case is considered failed.
 `;
 
+const testCases = z.object({
+  testDefinition: z.string().describe("The tesct case definition"),
+  expect: z.string().optional().describe("The expected result of running the test case")
+})
+
 const endtoendSchema = z.object({
-  testCases: z.array(z.string()).describe("The list of test case definitions to execute on the web"),
+  testCases: z.array(testCases).describe("The list of test case definitions to execute on the web"),
   urls: z.array(z.string()).min(1).describe("One or more URLs to execute end-to-end tests against")
 });
 
