@@ -49,7 +49,7 @@ export const test = baseTest.extend<Fixtures>({
     let client: StdioClientTransport | undefined;
 
     use(async options => {
-      const args = ['--headless', '--user-data-dir', userDataDir];
+      const args = ['--user-data-dir', userDataDir];
       if (options?.vision)
         args.push('--vision');
       if (options?.endtoend)
