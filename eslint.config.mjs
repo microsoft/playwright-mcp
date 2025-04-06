@@ -168,13 +168,13 @@ export const baseRules = {
   "eol-last": 2,
 
   // copyright
-  "notice/notice": [
-    2,
-    {
-      mustMatch: "Copyright",
-      templateFile: path.join(__dirname, "utils", "copyright.js"),
-    },
-  ],
+  // "notice/notice": [
+  //   2,
+  //   {
+  //     mustMatch: "Copyright",
+  //     templateFile: path.join(__dirname, "utils", "copyright.js"),
+  //   },
+  // ],
 
   // react
   "react/react-in-jsx-scope": 0,

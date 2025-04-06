@@ -28,11 +28,12 @@ test('test tool list', async ({ client, visionClient }) => {
     'browser_choose_file',
     'browser_snapshot',
     'browser_click',
+    'browser_drag',
     'browser_hover',
     'browser_type',
     'browser_select_option',
-    'browser_batch_snapshot',
     'browser_take_screenshot',
+    'browser_batch',
     'browser_press_key',
     'browser_wait',
     'browser_save_as_pdf',
@@ -331,4 +332,18 @@ test('cdp server', async ({ cdpEndpoint, startClient }) => {
 \`\`\`
 `
   );
+});
+
+test('test batch processing in snapshot mode', async ({ client }) => {
+  const fs = require('fs');
+  const path = require('path');
+  const testData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/batch_test.json'), 'utf8'));
+  const response = await client.callTool({
+    name: 'browser_batch',
+    arguments: {
+      input: testData
+    }
+  }) as any;
+  const content = response.content[0].text;
+  expect(content).toContain('Successfully executed snapshot steps');
 });
