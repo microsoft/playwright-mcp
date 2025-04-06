@@ -16,7 +16,14 @@ Note: This MCP is forked from Microsoft's [Playwright MCP](https://github.com/mi
 
 ### Example config
 
-After cloning this repo, add the E2E MCP server to your MCP Client as such:
+After cloning this repo, build and add the E2E MCP server to your MCP Client as such:
+Notice that you need OpenAI API key to run this MCP server in end to end mode.
+
+```bash
+npm run build
+```
+
+Then:
 
 ```js
 {
@@ -26,7 +33,7 @@ After cloning this repo, add the E2E MCP server to your MCP Client as such:
             "args": [
                 "/Users/Documents/projects/e2e-mcp/lib/program.js",
                 "--endtoend",
-                "--api-key=<your api key>"
+                "--api-key=<your openai api key>"
             ]
         }
     }
