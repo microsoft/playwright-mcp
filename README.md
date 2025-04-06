@@ -323,6 +323,3 @@ server.connect(transport);
 - **browser_install**
   - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
   - Parameters: None
-
-### Vision Mode
-
