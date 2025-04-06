@@ -76,6 +76,7 @@ type Options = {
   cdpEndpoint?: string;
   vision?: boolean;
   endtoend?: boolean;
+  apiKey?: string;
 };
 
 const packageJSON = require('../package.json');
@@ -90,5 +91,6 @@ export function createServer(options?: Options): Server {
     userDataDir: options?.userDataDir ?? '',
     launchOptions: options?.launchOptions,
     cdpEndpoint: options?.cdpEndpoint,
+    apiKey: options?.apiKey,
   });
 }

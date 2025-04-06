@@ -49,6 +49,8 @@ export const endtoend: Tool = {
   handle: async (context, params) => { 
     const validatedParams = endtoendSchema.parse(params);
     const content = `${systemMessage} - List of Urls in target for end to end testing : ${JSON.stringify(validatedParams)}`
+    const apiKey = context.apiKey
+    process.env.OPENAI_API_KEY = apiKey;
     while(true) {
       const result = generateText({
         model: openai('gpt-4o'),
@@ -173,10 +175,7 @@ export const endtoend: Tool = {
             }
           })
         },
-        maxSteps: 5,
-        onStepFinish: step => {
-          console.log(JSON.stringify(step, null, 2));
-        },
+        maxSteps: 5        
       });
       let fullResponse = '';
       for await (const delta of (await result).text) {

@@ -21,6 +21,7 @@ export type ContextOptions = {
   launchOptions?: playwright.LaunchOptions;
   cdpEndpoint?: string;
   remoteEndpoint?: string;
+  apiKey?: string;
 };
 
 export class Context {
@@ -34,6 +35,10 @@ export class Context {
 
   constructor(options: ContextOptions) {
     this._options = options;
+  }
+
+  get apiKey() {
+    return this._options.apiKey;
   }
 
   async createPage(): Promise<playwright.Page> {

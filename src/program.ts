@@ -41,6 +41,7 @@ program
     .option('--endtoend', 'Run server to execute end to end tests on browser' )
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
+    .option('--api-key <key>', 'API key of your AI provider')
     .action(async options => {
       const launchOptions: LaunchOptions = {
         headless: !!options.headless,
@@ -53,6 +54,7 @@ program
         vision: !!options.vision,
         endtoend: !!options.endtoend,
         cdpEndpoint: options.cdpEndpoint,
+        apiKey: options.apiKey,
       }));
       setupExitWatchdog(serverList);
 
