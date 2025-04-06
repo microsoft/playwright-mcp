@@ -28,7 +28,7 @@ Then:
 ```js
 {
     "mcpServers": {
-        "EndToEnd": {
+        "e2e": {
             "command": "node",
             "args": [
                 "/Users/Documents/projects/e2e-mcp/lib/program.js",
