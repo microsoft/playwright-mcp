@@ -53,12 +53,12 @@ export const navigate: ToolFactory = snapshot => ({
 
 export const multiNavigationSchema = z.object({
   urls: z.array(z.string()).min(1).describe('One or more URLs to execute end-to-end tests against')
-})
+});
 
 export const multiNavigation: ToolFactory = snapshot =>  ({
   schema: {
     name: 'browser_e2e',
-    description: "Execute End to End automation test in the browser",
+    description: 'Execute End to End automation test in the browser',
     inputSchema: zodToJsonSchema(multiNavigationSchema)
   },
 

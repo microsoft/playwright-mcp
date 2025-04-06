@@ -38,7 +38,7 @@ program
     .option('--headless', 'Run browser in headless mode, headed by default')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
-    .option('--endtoend', 'Run server to execute end to end tests on browser' )
+    .option('--endtoend', 'Run server to execute end to end tests on browser')
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .option('--api-key <key>', 'API key of your AI provider')

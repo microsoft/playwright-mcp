@@ -344,6 +344,6 @@ test('test batch processing in snapshot mode', async ({ client }) => {
       input: testData
     }
   }) as any;
-  const content = response.content[0].text;  
+  const content = response.content[0].text;
   expect(content).toContain('Successfully executed snapshot steps');
 });

@@ -18,7 +18,7 @@ import { createServerWithTools } from './server';
 import * as snapshot from './tools/snapshot';
 import * as common from './tools/common';
 import * as screenshot from './tools/screenshot';
-import * as endtoend from './tools/endtoend'
+import * as endtoend from './tools/endtoend';
 import { console } from './resources/console';
 
 import type { Tool } from './tools/tool';
@@ -28,7 +28,7 @@ import type { LaunchOptions } from 'playwright';
 
 const qaTools: Tool[] = [
   endtoend.endtoend
-]
+];
 
 const commonTools: Tool[] = [
   common.pressKey,

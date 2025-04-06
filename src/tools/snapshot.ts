@@ -153,7 +153,3 @@ export const screenshot: Tool = {
     };
   },
 };
-
-function refLocator(page: playwright.Page, ref: string): playwright.Locator {
-  return page.locator(`aria-ref=${ref}`);
-}

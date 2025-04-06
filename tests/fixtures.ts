@@ -41,7 +41,7 @@ export const test = baseTest.extend<Fixtures>({
   },
 
   endtoendClient: async ({ startClient }, use) => {
-    await use(await startClient({ endtoend: true }))
+    await use(await startClient({ endtoend: true }));
   },
 
   startClient: async ({ }, use, testInfo) => {
@@ -49,11 +49,11 @@ export const test = baseTest.extend<Fixtures>({
     let client: StdioClientTransport | undefined;
 
     use(async options => {
-      const args = ['--headless' , '--user-data-dir', userDataDir];
+      const args = ['--headless', '--user-data-dir', userDataDir];
       if (options?.vision)
         args.push('--vision');
       if (options?.endtoend)
-        args.push('--endtoend')
+        args.push('--endtoend');
       if (options?.args)
         args.push(...options.args);
       const transport = new StdioClientTransport({

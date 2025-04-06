@@ -30,28 +30,28 @@ const systemMessage = `
 `;
 
 const testCases = z.object({
-  testDefinition: z.string().describe("The tesct case definition"),
-  expect: z.string().optional().describe("The expected result of running the test case")
-})
+  testDefinition: z.string().describe('The tesct case definition'),
+  expect: z.string().optional().describe('The expected result of running the test case')
+});
 
 const endtoendSchema = z.object({
-  testCases: z.array(testCases).describe("The list of test case definitions to execute on the web"),
-  urls: z.array(z.string()).min(1).describe("One or more URLs to execute end-to-end tests against")
+  testCases: z.array(testCases).describe('The list of test case definitions to execute on the web'),
+  urls: z.array(z.string()).min(1).describe('One or more URLs to execute end-to-end tests against')
 });
 
 export const endtoend: Tool = {
   schema: {
-    name: "browser_endtoend",
-    description: "Run an end to end test suit in the browser",
+    name: 'browser_endtoend',
+    description: 'Run an end to end test suit in the browser',
     inputSchema: zodToJsonSchema(endtoendSchema)
-   },
+  },
 
-  handle: async (context, params) => { 
+  handle: async (context, params) => {
     const validatedParams = endtoendSchema.parse(params);
-    const content = `${systemMessage} - List of Urls in target for end to end testing : ${JSON.stringify(validatedParams)}`
-    const apiKey = context.apiKey
+    const content = `${systemMessage} - List of Urls in target for end to end testing : ${JSON.stringify(validatedParams)}`;
+    const apiKey = context.apiKey;
     process.env.OPENAI_API_KEY = apiKey;
-    while(true) {
+    while (true) {
       const result = generateText({
         model: openai('gpt-4o'),
         messages: [{ role: 'system', content: content }],
@@ -67,7 +67,7 @@ export const endtoend: Tool = {
             description: 'Perform click on a web page',
             parameters: snapshot.elementSchema,
             execute: async (params: z.infer<typeof snapshot.elementSchema>) => {
-              const validatedParams = snapshot.elementSchema.parse(params)
+              const validatedParams = snapshot.elementSchema.parse(params);
               return await snapshot.click.handle(context, validatedParams, true);
             }
           }),
@@ -75,7 +75,7 @@ export const endtoend: Tool = {
             description: 'Perform drag and drop between two elements',
             parameters: snapshot.dragSchema,
             execute: async (params: z.infer<typeof snapshot.dragSchema>) => {
-              const validatedParams = snapshot.dragSchema.parse(params)
+              const validatedParams = snapshot.dragSchema.parse(params);
               return await snapshot.drag.handle(context, validatedParams, true);
             }
           }),
@@ -124,14 +124,14 @@ export const endtoend: Tool = {
             description: 'Go back to the previous page',
             parameters: common.goBackSchema,
             execute: async (params: z.infer<typeof common.goBackSchema>) => {
-              return await common.goBack(true).handle(context)
+              return await common.goBack(true).handle(context);
             }
           }),
           goForward: tool({
             description: 'Go back to the previous page',
             parameters: common.goForwardSchema,
             execute: async (params: z.infer<typeof common.goBackSchema>) => {
-              return await common.goForward(true).handle(context)
+              return await common.goForward(true).handle(context);
             }
           }),
           wait: tool({
@@ -141,7 +141,7 @@ export const endtoend: Tool = {
               const validatedParams = common.waitSchema.parse(params);
               return await common.wait.handle(context, validatedParams, true);
             }
-          }), 
+          }),
           pressKey: tool({
             description: 'Press a key on the keyboard',
             parameters: common.pressKeySchema,
@@ -168,25 +168,25 @@ export const endtoend: Tool = {
           }),
           chooseFile: tool({
             description: 'Choose one or multiple files to upload',
-            parameters: common.chooseFileSchema, 
+            parameters: common.chooseFileSchema,
             execute: async (params: z.infer<typeof common.chooseFileSchema>) => {
               const validatedParams = common.chooseFileSchema.parse(params);
-              return await common.chooseFile(true).handle(context, validatedParams)
+              return await common.chooseFile(true).handle(context, validatedParams);
             }
           })
         },
-        maxSteps: 5        
+        maxSteps: 5
       });
       let fullResponse = '';
-      for await (const delta of (await result).text) {
-          fullResponse += delta;
-      }
+      for await (const delta of (await result).text)
+        fullResponse += delta;
+
       return {
-          content: [{ type: 'text', text: fullResponse}]
-      }
+        content: [{ type: 'text', text: fullResponse }]
+      };
     }
   }
-}
+};
 
 // Define snapshot-specific tool params
 export const snapshotParams = z.discriminatedUnion('name', [
@@ -211,7 +211,7 @@ export const snapshotParams = z.discriminatedUnion('name', [
     params: snapshot.selectOptionSchema
   }),
 ]);
-  
+
 // Combine with common tools
 const SnapshotStepSchema = z.union([CommonToolParams, snapshotParams]);
 
@@ -238,7 +238,7 @@ export const batch: Tool = {
       for (const step of testCase.steps as Array<{ name: string; params: any }>) {
         let tool: Tool;
         switch (step.name) {
-          case 'browser_drag': 
+          case 'browser_drag':
             tool = snapshot.drag;
             break;
           case 'browser_click':
@@ -274,7 +274,7 @@ export const batch: Tool = {
           case 'browser_go_forward':
             tool = common.goForward(false);
             break;
-          case 'browser_choose_file': 
+          case 'browser_choose_file':
             tool = common.chooseFile(false);
             break;
           default:
@@ -290,9 +290,9 @@ export const batch: Tool = {
           results.push({ definition: testCase.definition, step: step.name, result });
         } catch (error) {
           return {
-            content: [{ 
-              type: 'text', 
-              text: `Failed to execute snapshot step "${step.name}": ${error}. Here is the batch tool result: \n${JSON.stringify(results, null, 2)}` 
+            content: [{
+              type: 'text',
+              text: `Failed to execute snapshot step "${step.name}": ${error}. Here is the batch tool result: \n${JSON.stringify(results, null, 2)}`
             }],
             isError: true
           };
@@ -301,9 +301,9 @@ export const batch: Tool = {
     }
 
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Successfully executed snapshot steps:\n${JSON.stringify(results, null, 2)}` 
+      content: [{
+        type: 'text',
+        text: `Successfully executed snapshot steps:\n${JSON.stringify(results, null, 2)}`
       }]
     };
   }
