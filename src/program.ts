@@ -100,11 +100,15 @@ program
     });
 
 function setupExitWatchdog(serverList: ServerList) {
-  process.stdin.on('close', async () => {
+  const handleExit = async () => {
     setTimeout(() => process.exit(0), 15000);
     await serverList.closeAll();
     process.exit(0);
-  });
+  };
+
+  process.stdin.on('close', handleExit);
+  process.on('SIGINT', handleExit);
+  process.on('SIGTERM', handleExit);
 }
 
 program.parse(process.argv);
