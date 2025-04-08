@@ -22,6 +22,8 @@ After cloning this repo, build and add the E2E MCP server to your MCP Client as 
 Notice that you need OpenAI API key to run this MCP server in end to end mode.
 
 ```bash
+npm install
+npx playwright install
 npm run build
 ```
 
