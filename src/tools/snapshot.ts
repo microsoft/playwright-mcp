@@ -179,7 +179,7 @@ const screenshot: Tool = {
   },
 };
 
-// Added scrollToEnd tool
+
 const scrollToEndSchema = z.object({
   delay: z.number().optional().describe('Delay in milliseconds between scroll steps (default: 100)'),
   step: z.number().optional().describe('Pixels to scroll in each step (default: 100)'),
