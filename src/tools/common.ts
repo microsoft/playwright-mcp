@@ -17,7 +17,7 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import type { Tool } from './tool';
+import type { Tool, ToolFactory } from './tool';
 
 const waitSchema = z.object({
   time: z.number().describe('The time to wait in seconds'),
@@ -62,7 +62,34 @@ const close: Tool = {
   },
 };
 
-export default [
+const resizeSchema = z.object({
+  width: z.number().describe('Width of the browser window'),
+  height: z.number().describe('Height of the browser window'),
+});
+
+const resize: ToolFactory = captureSnapshot => ({
+  capability: 'core',
+  schema: {
+    name: 'browser_resize',
+    description: 'Resize the browser window',
+    inputSchema: zodToJsonSchema(resizeSchema),
+  },
+  handle: async (context, params) => {
+    const validatedParams = resizeSchema.parse(params);
+
+    const tab = context.currentTab();
+    return await tab.run(
+        tab => tab.page.setViewportSize({ width: validatedParams.width, height: validatedParams.height }),
+        {
+          status: `Resized browser window`,
+          captureSnapshot,
+        }
+    );
+  },
+});
+
+export default (captureSnapshot: boolean) => [
   close,
   wait,
+  resize(captureSnapshot)
 ];

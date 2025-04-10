@@ -32,7 +32,7 @@ import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
 const snapshotTools: Tool[] = [
-  ...common,
+  ...common(true),
   ...files(true),
   ...install,
   ...keyboard(true),
@@ -43,7 +43,7 @@ const snapshotTools: Tool[] = [
 ];
 
 const screenshotTools: Tool[] = [
-  ...common,
+  ...common(false),
   ...files(false),
   ...install,
   ...keyboard(false),
