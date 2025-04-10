@@ -179,6 +179,42 @@ const screenshot: Tool = {
   },
 };
 
+// Added scrollToEnd tool
+const scrollToEndSchema = z.object({
+  delay: z.number().optional().describe('Delay in milliseconds between scroll steps (default: 100)'),
+  step: z.number().optional().describe('Pixels to scroll in each step (default: 100)'),
+});
+
+const scrollToEnd: Tool = {
+  capability: 'core',
+  schema: {
+    name: 'browser_scroll_to_end',
+    description: 'Scroll down the page gradually to the bottom',
+    inputSchema: zodToJsonSchema(scrollToEndSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = scrollToEndSchema.parse(params);
+    return await context.currentTab().runAndWaitWithSnapshot(async tab => {
+      await tab.page.evaluate(async ({ delay, step }) => {
+        const scrollDelay = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const scrollStep = step || 100;
+        const scrollDelay_ms = delay || 100;
+        
+        for (let i = 0; i < document.body.scrollHeight; i += scrollStep) {
+          window.scrollTo(0, i);
+          await scrollDelay(scrollDelay_ms);
+        }
+      }, { 
+        delay: validatedParams.delay || 100,
+        step: validatedParams.step || 100 
+      });
+    }, {
+      status: 'Scrolled page to bottom',
+    });
+  },
+};
+
 export default [
   snapshot,
   click,
@@ -187,4 +223,5 @@ export default [
   type,
   selectOption,
   screenshot,
+  scrollToEnd, 
 ];
