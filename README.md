@@ -323,3 +323,11 @@ server.connect(transport);
 - **browser_install**
   - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
   - Parameters: None
+
+### Resources
+
+- **`browser://console`**
+  - Description: Provides access to the tab's console
+
+- **`browser://downloads/$filename`**
+  - Description: Files downloaded from the browser
