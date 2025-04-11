@@ -15,6 +15,7 @@
  */
 
 import type { Context } from '../context';
+import { Disposable } from '../utils/events';
 
 export type ResourceSchema = {
   uri: string;
@@ -33,4 +34,9 @@ export type ResourceResult = {
 export type Resource = {
   schema: ResourceSchema;
   read: (context: Context, uri: string) => Promise<ResourceResult[]>;
+};
+
+export type ResourceList = {
+  list: (context: Context) => Promise<Resource[]>;
+  subscribe(context: Context, onChanged: () => void): Disposable;
 };

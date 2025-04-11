@@ -15,12 +15,12 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListResourcesRequestSchema, ListToolsRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListResourcesRequestSchema, ListResourcesResult, ListToolsRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { Context } from './context';
 
 import type { Tool } from './tools/tool';
-import type { Resource } from './resources/resource';
+import type { Resource, ResourceList } from './resources/resource';
 import type { ContextOptions } from './context';
 
 type Options = ContextOptions & {
@@ -28,15 +28,18 @@ type Options = ContextOptions & {
   version: string;
   tools: Tool[];
   resources: Resource[],
+  resourceLists: ResourceList[];
 };
 
 export function createServerWithTools(options: Options): Server {
-  const { name, version, tools, resources } = options;
+  const { name, version, tools, resources, resourceLists } = options;
   const context = new Context(options);
   const server = new Server({ name, version }, {
     capabilities: {
       tools: {},
-      resources: {},
+      resources: {
+        listChanged: true,
+      },
     }
   });
 
@@ -44,9 +47,13 @@ export function createServerWithTools(options: Options): Server {
     return { tools: tools.map(tool => tool.schema) };
   });
 
-  server.setRequestHandler(ListResourcesRequestSchema, async () => {
-    return { resources: resources.map(resource => resource.schema) };
+  server.setRequestHandler(ListResourcesRequestSchema, async (): Promise<ListResourcesResult> => {
+    const listResources = await Promise.all(resourceLists.map(resourceList => resourceList.list(context)));
+    return { resources: [...resources, ...listResources.flat()].map(resource => resource.schema) };
   });
+
+  for (const resourceList of resourceLists)
+    resourceList.subscribe(context, () => server.sendResourceListChanged());
 
   server.setRequestHandler(CallToolRequestSchema, async request => {
     const tool = tools.find(tool => tool.schema.name === request.params.name);

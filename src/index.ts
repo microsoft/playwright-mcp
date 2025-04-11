@@ -25,9 +25,10 @@ import snapshot from './tools/snapshot';
 import tabs from './tools/tabs';
 import screen from './tools/screen';
 import { console as consoleResource } from './resources/console';
+import { downloads } from './resources/downloads';
 
 import type { Tool, ToolCapability } from './tools/tool';
-import type { Resource } from './resources/resource';
+import type { Resource, ResourceList } from './resources/resource';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
@@ -57,6 +58,10 @@ const resources: Resource[] = [
   consoleResource,
 ];
 
+const resourceLists: ResourceList[] = [
+  downloads
+];
+
 type Options = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
   userDataDir?: string;
@@ -76,6 +81,7 @@ export function createServer(options?: Options): Server {
     version: packageJSON.version,
     tools,
     resources,
+    resourceLists,
     browserName: options?.browserName,
     userDataDir: options?.userDataDir ?? '',
     launchOptions: options?.launchOptions,
