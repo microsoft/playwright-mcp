@@ -19,6 +19,7 @@ import yaml from 'yaml';
 
 import { waitForCompletion } from './tools/utils';
 import { ToolResult } from './tools/tool';
+import { EventEmitter } from './utils/events';
 
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
@@ -43,6 +44,9 @@ export class Context {
   private _browserContext: playwright.BrowserContext | undefined;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
+  private _downloads: playwright.Download[] = [];
+  private _downloadChanged = new EventEmitter<void>();
+  readonly onDownloadChanged = this._downloadChanged.event;
 
   constructor(options: ContextOptions) {
     this.options = options;
@@ -95,6 +99,15 @@ export class Context {
     const tab = index === undefined ? this.currentTab() : this._tabs[index - 1];
     await tab.page.close();
     return await this.listTabs();
+  }
+
+  onDownload(download: playwright.Download) {
+    this._downloads.push(download);
+    this._downloadChanged.fire();
+  }
+
+  downloads(): playwright.Download[] {
+    return this._downloads;
   }
 
   private _onPageCreated(page: playwright.Page) {
@@ -191,6 +204,9 @@ class Tab {
     });
     page.on('close', () => this._onClose());
     page.on('filechooser', chooser => this._fileChooser = chooser);
+    page.on('download', download => {
+      this.context.onDownload(download);
+    });
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
   }

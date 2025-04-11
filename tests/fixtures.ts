@@ -20,11 +20,17 @@ import { chromium } from 'playwright';
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { Notification } from '@modelcontextprotocol/sdk/types.js';
+
+class TestClient extends Client {
+  notifications: Notification[] = [];
+  fallbackNotificationHandler = async (n: Notification) => { this.notifications.push(n); };
+}
 
 type Fixtures = {
-  client: Client;
-  visionClient: Client;
-  startClient: (options?: { args?: string[] }) => Promise<Client>;
+  client: TestClient;
+  visionClient: TestClient;
+  startClient: (options?: { args?: string[] }) => Promise<TestClient>;
   wsEndpoint: string;
   cdpEndpoint: string;
 };
@@ -51,7 +57,7 @@ export const test = baseTest.extend<Fixtures>({
         command: 'node',
         args: [path.join(__dirname, '../cli.js'), ...args],
       });
-      const client = new Client({ name: 'test', version: '1.0.0' });
+      const client = new TestClient({ name: 'test', version: '1.0.0' });
       await client.connect(transport);
       await client.ping();
       return client;
