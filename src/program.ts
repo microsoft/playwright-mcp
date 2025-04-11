@@ -44,6 +44,7 @@ program
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--args <args>', 'Additional arguments to pass to the browser')
     .action(async options => {
       let browserName: 'chromium' | 'firefox' | 'webkit';
       let channel: string | undefined;
@@ -77,6 +78,7 @@ program
         headless: !!options.headless,
         channel,
         executablePath: options.executablePath,
+        args: options.args ? options.args.split(' ').map((arg: string) => arg.trim()) : [],
       };
 
       const userDataDir = options.userDataDir ?? await createUserDataDir(browserName);
