@@ -39,6 +39,8 @@ test('test snapshot tool list', async ({ client }) => {
     'browser_tab_select',
     'browser_take_screenshot',
     'browser_wait',
+    'browser_custom_javascript',
+    'browser_execute_generated_javascript',
   ]));
 });
 
@@ -63,6 +65,8 @@ test('test vision tool list', async ({ visionClient }) => {
     'browser_tab_new',
     'browser_tab_select',
     'browser_wait',
+    'browser_custom_javascript',
+    'browser_execute_generated_javascript',
   ]));
 });
 

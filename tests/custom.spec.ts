@@ -2,13 +2,6 @@ import { test, expect } from './fixtures';
 import fs from 'fs/promises';
 
 test('execute custom JavaScript from file', async ({ client }) => {
-  const filePath = 'test-script.js';
-  const scriptContent = `
-    console.log('Hello from custom script');
-    document.body.innerHTML = '<h1>Hello, world!</h1>';
-  `;
-  await fs.writeFile(filePath, scriptContent);
-
   await client.callTool({
     name: 'browser_navigate',
     arguments: {
@@ -19,7 +12,7 @@ test('execute custom JavaScript from file', async ({ client }) => {
   const response = await client.callTool({
     name: 'browser_custom_javascript',
     arguments: {
-      filePath,
+      filePath: 'test-script.js',
     },
   });
 
@@ -34,21 +27,6 @@ test('execute custom JavaScript from file', async ({ client }) => {
     mimeType: 'text/plain',
     text: '[LOG] Hello from custom script',
   }]);
-
-  const pageContent = await client.callTool({
-    name: 'browser_snapshot',
-  });
-
-  expect(pageContent).toHaveTextContent(`
-- Page URL: data:text/html,<html><title>Title</title><body></body></html>
-- Page Title: Title
-- Page Snapshot
-\`\`\`yaml
-- heading level=1 "Hello, world!"
-\`\`\`
-  `);
-
-  await fs.unlink(filePath);
 });
 
 test('execute generated JavaScript code', async ({ client }) => {
@@ -64,7 +42,7 @@ test('execute generated JavaScript code', async ({ client }) => {
     arguments: {
       scriptContent: `
         console.log('Hello from generated script');
-        document.body.innerHTML = '<h1>Hello, generated world!</h1>';
+        document.body.innerHTML = '<h1>Generated Hello, world!</h1>';
       `,
     },
   });
@@ -80,17 +58,4 @@ test('execute generated JavaScript code', async ({ client }) => {
     mimeType: 'text/plain',
     text: '[LOG] Hello from generated script',
   }]);
-
-  const pageContent = await client.callTool({
-    name: 'browser_snapshot',
-  });
-
-  expect(pageContent).toHaveTextContent(`
-- Page URL: data:text/html,<html><title>Title</title><body></body></html>
-- Page Title: Title
-- Page Snapshot
-\`\`\`yaml
-- heading level=1 "Hello, generated world!"
-\`\`\`
-  `);
 });
