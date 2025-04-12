@@ -37,7 +37,7 @@ test('execute custom JavaScript from file', async ({ client }) => {
   }]);
 
   // Clean up the test script file
-  fs.rm(scriptPath);
+  await fs.promises.rm(scriptPath);
 });
 
 test('execute generated JavaScript code', async ({ client }) => {
@@ -69,4 +69,3 @@ test('execute generated JavaScript code', async ({ client }) => {
     text: '[LOG] Hello from generated script',
   }]);
 });
-
