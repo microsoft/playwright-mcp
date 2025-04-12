@@ -90,3 +90,47 @@ test('execute custom JavaScript function from file', async ({ client }) => {
 
   await fs.unlink(filePath);
 });
+
+test('execute generated JavaScript code', async ({ client }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body></body></html>',
+    },
+  });
+
+  const response = await client.callTool({
+    name: 'browser_execute_generated_javascript',
+    arguments: {
+      scriptContent: `
+        console.log('Hello from generated script');
+        document.body.innerHTML = '<h1>Hello, generated world!</h1>';
+      `,
+    },
+  });
+
+  expect(response).toHaveTextContent('Executed generated JavaScript code');
+
+  const resource = await client.readResource({
+    uri: 'browser://console',
+  });
+
+  expect(resource.contents).toEqual([{
+    uri: 'browser://console',
+    mimeType: 'text/plain',
+    text: '[LOG] Hello from generated script',
+  }]);
+
+  const pageContent = await client.callTool({
+    name: 'browser_snapshot',
+  });
+
+  expect(pageContent).toHaveTextContent(`
+- Page URL: data:text/html,<html><title>Title</title><body></body></html>
+- Page Title: Title
+- Page Snapshot
+\`\`\`yaml
+- heading level=1 "Hello, generated world!"
+\`\`\`
+  `);
+});
