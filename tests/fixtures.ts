@@ -20,6 +20,7 @@ import { chromium } from 'playwright';
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { spawn } from 'child_process';
 
 type Fixtures = {
   client: Client;
@@ -68,12 +69,25 @@ export const test = baseTest.extend<Fixtures>({
 
   cdpEndpoint: async ({ }, use, testInfo) => {
     const port = 3200 + (+process.env.TEST_PARALLEL_INDEX!);
-    const browser = await chromium.launchPersistentContext(testInfo.outputPath('user-data-dir'), {
-      channel: 'chrome',
-      args: [`--remote-debugging-port=${port}`],
+    const executablePath = chromium.executablePath();
+    const browserProcess = spawn(executablePath, [
+      `--user-data-dir=${testInfo.outputPath('user-data-dir')}`,
+      `--remote-debugging-port=${port}`,
+      `--no-first-run`,
+      `--no-sandbox`,
+      `--headless`,
+      `data:text/html,hello world`,
+    ], {
+      stdio: 'pipe',
+    });
+    await new Promise<void>(resolve => {
+      browserProcess.stderr.on('data', data => {
+        if (data.toString().includes('DevTools listening on '))
+          resolve();
+      });
     });
     await use(`http://localhost:${port}`);
-    await browser.close();
+    browserProcess.kill();
   },
 });
 

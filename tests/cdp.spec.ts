@@ -35,3 +35,27 @@ Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body>
 `
   );
 });
+
+test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
+  const client = await startClient({ args: [`--cdp-endpoint=${cdpEndpoint}`] });
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Hello, world!',
+      ref: 'f0',
+    },
+  })).toHaveTextContent(`Error: No current snapshot available. Capture a snapshot of navigate to a new location first.`);
+
+  expect(await client.callTool({
+    name: 'browser_snapshot',
+    arguments: {},
+  })).toHaveTextContent(`
+- Page URL: data:text/html,hello world
+- Page Title: 
+- Page Snapshot
+\`\`\`yaml
+- text: hello world
+\`\`\`
+`);
+});

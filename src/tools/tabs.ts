@@ -89,7 +89,7 @@ const closeTab: ToolFactory = captureSnapshot => ({
   handle: async (context, params) => {
     const validatedParams = closeTabSchema.parse(params);
     await context.closeTab(validatedParams.index);
-    const currentTab = await context.currentTab();
+    const currentTab = context.currentTab();
     if (currentTab)
       return await currentTab.run(async () => {}, { captureSnapshot });
     return {

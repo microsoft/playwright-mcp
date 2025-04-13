@@ -29,7 +29,8 @@ const snapshot: Tool = {
   },
 
   handle: async context => {
-    return await context.currentTab().run(async () => {}, { captureSnapshot: true });
+    const tab = await context.ensureTab();
+    return await tab.run(async () => {}, { captureSnapshot: true });
   },
 };
 
@@ -48,8 +49,8 @@ const click: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async tab => {
-      const locator = tab.lastSnapshot().refLocator(validatedParams.ref);
+    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
+      const locator = snapshot.refLocator(validatedParams.ref);
       await locator.click();
     }, {
       status: `Clicked "${validatedParams.element}"`,
@@ -74,9 +75,9 @@ const drag: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = dragSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async tab => {
-      const startLocator = tab.lastSnapshot().refLocator(validatedParams.startRef);
-      const endLocator = tab.lastSnapshot().refLocator(validatedParams.endRef);
+    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
+      const startLocator = snapshot.refLocator(validatedParams.startRef);
+      const endLocator = snapshot.refLocator(validatedParams.endRef);
       await startLocator.dragTo(endLocator);
     }, {
       status: `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`,
@@ -94,8 +95,8 @@ const hover: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async tab => {
-      const locator = tab.lastSnapshot().refLocator(validatedParams.ref);
+    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
+      const locator = snapshot.refLocator(validatedParams.ref);
       await locator.hover();
     }, {
       status: `Hovered over "${validatedParams.element}"`,
@@ -119,8 +120,8 @@ const type: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async tab => {
-      const locator = tab.lastSnapshot().refLocator(validatedParams.ref);
+    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
+      const locator = snapshot.refLocator(validatedParams.ref);
       if (validatedParams.slowly)
         await locator.pressSequentially(validatedParams.text);
       else
@@ -147,8 +148,8 @@ const selectOption: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = selectOptionSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async tab => {
-      const locator = tab.lastSnapshot().refLocator(validatedParams.ref);
+    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
+      const locator = snapshot.refLocator(validatedParams.ref);
       await locator.selectOption(validatedParams.values);
     }, {
       status: `Selected option in "${validatedParams.element}"`,

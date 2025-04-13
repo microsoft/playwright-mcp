@@ -28,7 +28,7 @@ const screenshot: Tool = {
   },
 
   handle: async context => {
-    const tab = context.currentTab();
+    const tab = await context.ensureTab();
     const screenshot = await tab.page.screenshot({ type: 'jpeg', quality: 50, scale: 'css' });
     return {
       content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: 'image/jpeg' }],

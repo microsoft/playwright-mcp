@@ -54,7 +54,7 @@ export class Context {
 
   currentTab(): Tab {
     if (!this._currentTab)
-      throw new Error('Navigate to a location to create a tab');
+      throw new Error('No current snapshot available. Capture a snapshot of navigate to a new location first.');
     return this._currentTab;
   }
 
@@ -236,8 +236,8 @@ class Tab {
     });
   }
 
-  async runAndWaitWithSnapshot(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
-    return await this.run(callback, {
+  async runAndWaitWithSnapshot(callback: (snapshot: PageSnapshot) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+    return await this.run(tab => callback(tab.lastSnapshot()), {
       captureSnapshot: true,
       waitForCompletion: true,
       ...options,
