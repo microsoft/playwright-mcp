@@ -17,7 +17,9 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import type { ToolFactory } from './tool';
+import type { Tool, ToolFactory } from './tool';
+import path from 'node:path';
+import os from 'node:os';
 
 const uploadFileSchema = z.object({
   paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
@@ -43,6 +45,36 @@ const uploadFile: ToolFactory = captureSnapshot => ({
   },
 });
 
+const getDownloadSchema = z.object({
+  filename: z.string().describe('The name of the file to download.'),
+});
+
+const getDownload: Tool = {
+  capability: 'files',
+  schema: {
+    name: 'browser_get_download',
+    description: 'Access a file downloaded a by browser',
+    inputSchema: zodToJsonSchema(getDownloadSchema),
+  },
+  handle: async (context, params) => {
+    const { filename } = getDownloadSchema.parse(params);
+    const download = context.downloads().find(download => download.suggestedFilename() === filename);
+    if (!download)
+      throw new Error(`No download found with name ${filename}`);
+
+    const fileName = path.join(os.tmpdir(), download.suggestedFilename());
+    await download.saveAs(fileName);
+
+    return {
+      content: [{
+        type: 'text',
+        text: `Saved download as ${fileName}`,
+      }]
+    };
+  }
+};
+
 export default (captureSnapshot: boolean) => [
   uploadFile(captureSnapshot),
+  getDownload,
 ];

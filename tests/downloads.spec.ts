@@ -15,6 +15,7 @@
  */
 
 import { test, expect } from './fixtures';
+import fs from 'fs';
 
 test('downloads', async ({ client }) => {
   expect(
@@ -42,4 +43,15 @@ test('downloads', async ({ client }) => {
     name: 'Browser download: foo.txt',
     uri: 'browser://downloads/foo.txt',
   });
+
+  expect(
+      await client.callTool({
+        name: 'browser_get_download',
+        arguments: {
+          filename: 'foo.txt',
+        },
+      })
+  ).toContainTextContent('Saved download as /tmp/foo.txt');
+
+  expect(fs.readFileSync('/tmp/foo.txt', 'utf-8')).toBe('Hello, world!');
 });

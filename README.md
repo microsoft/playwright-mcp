@@ -305,6 +305,11 @@ server.connect(transport);
   - Parameters:
     - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
 
+- **browser_get_download**
+  - Description: Access a file downloaded a by browser
+  - Parameters:
+    - `filename` (string): The name of the file to download.
+
 - **browser_pdf_save**
   - Description: Save page as PDF
   - Parameters: None
