@@ -95,6 +95,15 @@ export class Context {
     return lines.join('\n');
   }
 
+  listDownloads() {
+    if (!this.downloads().length)
+      return 'No downloads';
+    const lines: string[] = ['Downloads:'];
+    for (const download of this.downloads())
+      lines.push(`- [${download.suggestedFilename()}] (${download.url()})`);
+    return lines.join('\n');
+  }
+
   async closeTab(index: number | undefined) {
     const tab = index === undefined ? this.currentTab() : this._tabs[index - 1];
     await tab.page.close();
@@ -237,10 +246,11 @@ class Tab {
     }
     const tabList = this.context.tabs().length > 1 ? await this.context.listTabs() + '\n\nCurrent tab:' + '\n' : '';
     const snapshot = this._snapshot?.text({ status: options?.status, hasFileChooser: !!this._fileChooser }) ?? options?.status ?? '';
+    const downloadList = this.context.downloads().length ? this.context.listDownloads() + '\n\n' : '';
     return {
       content: [{
         type: 'text',
-        text: tabList + snapshot,
+        text: tabList + downloadList + snapshot,
       }],
     };
   }

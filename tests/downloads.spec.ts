@@ -27,13 +27,22 @@ test('downloads', async ({ client }) => {
       })
   ).toContainTextContent(`link "Download" [ref=s1e3]`);
 
-  await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Download',
-      ref: 's1e3',
-    },
-  });
+  expect(
+      await client.callTool({
+        name: 'browser_click',
+        arguments: {
+          element: 'Download',
+          ref: 's1e3',
+        },
+      })
+  ).toContainTextContent(`
+Downloads:
+- [foo.txt] (data:text/plain;base64,SGVsbG8sIHdvcmxkIQ==)
+
+Clicked "Download"
+
+- Page URL: 
+`.trim());
 
   await expect.poll(() => client.notifications).toContainEqual(expect.objectContaining({ method: 'notifications/resources/list_changed' }));
 
