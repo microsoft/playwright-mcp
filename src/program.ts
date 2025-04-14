@@ -74,7 +74,7 @@ program
       }
 
       const launchOptions: LaunchOptions = {
-        headless: !!options.headless,
+        headless: options.headless ?? !process.env.DISPLAY,
         channel,
         executablePath: options.executablePath,
       };
