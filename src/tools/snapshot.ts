@@ -19,6 +19,9 @@ import zodToJsonSchema from 'zod-to-json-schema';
 
 import type * as playwright from 'playwright';
 import type { Tool } from './tool';
+import path from 'path';
+import os from 'os';
+import { sanitizeForFilePath } from './utils';
 
 const snapshot: Tool = {
   capability: 'core',
@@ -172,13 +175,43 @@ const screenshot: Tool = {
   handle: async (context, params) => {
     const validatedParams = screenshotSchema.parse(params);
     const tab = context.currentTab();
-    const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css' } : { type: 'jpeg', quality: 50, scale: 'css' };
-    const screenshot = await tab.page.screenshot(options);
+    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + `${validatedParams.raw ? '.png' : '.jpeg'}`;
+    const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css', path: fileName } : { type: 'jpeg', quality: 50, scale: 'css', path: fileName };
+    await tab.page.screenshot(options);
     return {
-      content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: validatedParams.raw ? 'image/png' : 'image/jpeg' }],
+      content: [{
+        type: 'text',
+        text: `Saved as ${fileName}`,
+      }],
     };
   },
 };
+
+const screenshotElementSchema = elementSchema.extend({
+  raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
+});
+
+const screenshotElement: Tool = {
+  capability: 'core',
+  schema: {
+    name: 'browser_screenshot_element',
+    description: 'Take a screenshot of an element on the page',
+    inputSchema: zodToJsonSchema(screenshotElementSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = screenshotElementSchema.parse(params);
+    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + `${validatedParams.raw ? '.png' : '.jpeg'}`;
+    const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css', path: fileName } : { type: 'jpeg', quality: 50, scale: 'css', path: fileName };
+    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
+      const locator = snapshot.refLocator(validatedParams.ref);
+      await locator.screenshot(options);
+    }, {
+      status: `Saved as "${fileName}"`,
+    });
+  },
+};
+
 
 export default [
   snapshot,
@@ -188,4 +221,5 @@ export default [
   type,
   selectOption,
   screenshot,
+  screenshotElement
 ];

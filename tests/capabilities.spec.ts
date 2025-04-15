@@ -33,6 +33,7 @@ test('test snapshot tool list', async ({ client }) => {
     'browser_pdf_save',
     'browser_press_key',
     'browser_resize',
+    'browser_screenshot_element',
     'browser_snapshot',
     'browser_tab_close',
     'browser_tab_list',
