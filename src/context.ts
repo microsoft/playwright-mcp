@@ -205,6 +205,17 @@ class Tab {
     await this.page.goto(url, { waitUntil: 'domcontentloaded' });
     // Cap load event to 5 seconds, the page is operational at this point.
     await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
+
+    // 페이지 로드 후 오버레이 주입 시도
+    try {
+      // 동적으로 codegen 모듈 가져오기 (순환 참조 방지)
+      const { injectOverlay } = require('./tools/codegen');
+      if (typeof injectOverlay === 'function')
+        await injectOverlay(this.context);
+
+    } catch (error) {
+      console.error('Failed to inject recorder overlay in navigate method:', error);
+    }
   }
 
   async run(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {

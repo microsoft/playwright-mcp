@@ -17,49 +17,47 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import type { ToolFactory, Tool } from './tool';
+import type { ToolFactory } from './tool';
+// 동적으로 불러오기 위해 import 제거
+// import { injectOverlay } from './codegen';
 
-const listTabs: Tool = {
-  capability: 'tabs',
-  schema: {
-    name: 'browser_tab_list',
-    description: 'List browser tabs',
-    inputSchema: zodToJsonSchema(z.object({})),
-  },
-  handle: async context => {
-    return {
-      content: [{
-        type: 'text',
-        text: await context.listTabs(),
-      }],
-    };
-  },
-};
-
-const selectTabSchema = z.object({
-  index: z.number().describe('The index of the tab to select'),
+const selectSchema = z.object({
+  index: z.number().int().positive().describe('Index of the tab to select'),
 });
 
-const selectTab: ToolFactory = captureSnapshot => ({
+const select: ToolFactory = snapshot => ({
   capability: 'tabs',
   schema: {
     name: 'browser_tab_select',
     description: 'Select a tab by index',
-    inputSchema: zodToJsonSchema(selectTabSchema),
+    inputSchema: zodToJsonSchema(selectSchema),
   },
   handle: async (context, params) => {
-    const validatedParams = selectTabSchema.parse(params);
+    const validatedParams = selectSchema.parse(params);
     await context.selectTab(validatedParams.index);
-    const currentTab = await context.ensureTab();
-    return await currentTab.run(async () => {}, { captureSnapshot });
+
+    // 탭 선택 후 자동으로 오버레이 주입
+    try {
+      // 순환 참조 방지를 위해 동적으로 가져오기
+      const { injectOverlay } = require('./codegen');
+      if (typeof injectOverlay === 'function')
+        await injectOverlay(context);
+
+    } catch (error) {
+      console.error('Failed to inject recorder overlay after tab selection:', error);
+    }
+
+    return context.currentTab().runAndWaitWithSnapshot(async tab => {}, {
+      status: `Selected tab ${validatedParams.index}`,
+    });
   },
 });
 
 const newTabSchema = z.object({
-  url: z.string().optional().describe('The URL to navigate to in the new tab. If not provided, the new tab will be blank.'),
+  url: z.string().optional().describe('The URL to navigate to'),
 });
 
-const newTab: Tool = {
+const newTab: ToolFactory = snapshot => ({
   capability: 'tabs',
   schema: {
     name: 'browser_tab_new',
@@ -68,18 +66,55 @@ const newTab: Tool = {
   },
   handle: async (context, params) => {
     const validatedParams = newTabSchema.parse(params);
-    await context.newTab();
-    if (validatedParams.url)
-      await context.currentTab().navigate(validatedParams.url);
-    return await context.currentTab().run(async () => {}, { captureSnapshot: true });
-  },
-};
+    const tab = await context.newTab();
 
-const closeTabSchema = z.object({
-  index: z.number().optional().describe('The index of the tab to close. Closes current tab if not provided.'),
+    const result = await tab.runAndWaitWithSnapshot(async tab => {
+      if (validatedParams.url)
+        await tab.navigate(validatedParams.url);
+
+      // 새 탭에 자동으로 오버레이 주입
+      try {
+        // 순환 참조 방지를 위해 동적으로 가져오기
+        const { injectOverlay } = require('./codegen');
+        if (typeof injectOverlay === 'function')
+          await injectOverlay(context);
+
+      } catch (error) {
+        console.error('Failed to inject recorder overlay in new tab:', error);
+      }
+    }, {
+      status: `Opened new tab${validatedParams.url ? ` and navigated to ${validatedParams.url}` : ''}`,
+    });
+
+    return result;
+  },
 });
 
-const closeTab: ToolFactory = captureSnapshot => ({
+const listTabsSchema = z.object({});
+
+const listTabs: ToolFactory = snapshot => ({
+  capability: 'tabs',
+  schema: {
+    name: 'browser_tab_list',
+    description: 'List browser tabs',
+    inputSchema: zodToJsonSchema(listTabsSchema),
+  },
+  handle: async context => {
+    const tabList = await context.listTabs();
+    return {
+      content: [{
+        type: 'text',
+        text: tabList,
+      }],
+    };
+  },
+});
+
+const closeTabSchema = z.object({
+  index: z.number().int().positive().optional().describe('Index of the tab to close'),
+});
+
+const closeTab: ToolFactory = snapshot => ({
   capability: 'tabs',
   schema: {
     name: 'browser_tab_close',
@@ -88,22 +123,33 @@ const closeTab: ToolFactory = captureSnapshot => ({
   },
   handle: async (context, params) => {
     const validatedParams = closeTabSchema.parse(params);
-    await context.closeTab(validatedParams.index);
-    const currentTab = await context.currentTab();
-    if (currentTab)
-      return await currentTab.run(async () => {}, { captureSnapshot });
+    const tabList = await context.closeTab(validatedParams?.index);
+
+    // 탭 닫은 후 현재 탭에 오버레이 주입 시도
+    try {
+      if (context.tabs().length > 0) {
+        // 순환 참조 방지를 위해 동적으로 가져오기
+        const { injectOverlay } = require('./codegen');
+        if (typeof injectOverlay === 'function')
+          await injectOverlay(context);
+
+      }
+    } catch (error) {
+      console.error('Failed to inject recorder overlay after closing tab:', error);
+    }
+
     return {
       content: [{
         type: 'text',
-        text: await context.listTabs(),
+        text: tabList,
       }],
     };
   },
 });
 
-export default (captureSnapshot: boolean) => [
-  listTabs,
-  newTab,
-  selectTab(captureSnapshot),
-  closeTab(captureSnapshot),
+export default (snapshot: boolean) => [
+  select(snapshot),
+  newTab(snapshot),
+  listTabs(snapshot),
+  closeTab(snapshot),
 ];

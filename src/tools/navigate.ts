@@ -18,6 +18,8 @@ import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import type { ToolFactory } from './tool';
+// 동적으로 불러오기 위해 여기서는 import 제거
+// import { injectOverlay } from './codegen';
 
 const navigateSchema = z.object({
   url: z.string().describe('The URL to navigate to'),
@@ -33,12 +35,26 @@ const navigate: ToolFactory = captureSnapshot => ({
   handle: async (context, params) => {
     const validatedParams = navigateSchema.parse(params);
     const currentTab = await context.ensureTab();
-    return await currentTab.run(async tab => {
+
+    const result = await currentTab.run(async tab => {
       await tab.navigate(validatedParams.url);
+
+      // 페이지 로드 후 자동으로 오버레이 주입
+      try {
+        // 순환 참조 방지를 위해 동적으로 가져오기
+        const { injectOverlay } = require('./codegen');
+        if (typeof injectOverlay === 'function')
+          await injectOverlay(context);
+
+      } catch (error) {
+        console.error('Failed to inject recorder overlay after navigation:', error);
+      }
     }, {
       status: `Navigated to ${validatedParams.url}`,
       captureSnapshot,
     });
+
+    return result;
   },
 });
 
@@ -52,12 +68,25 @@ const goBack: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goBackSchema),
   },
   handle: async context => {
-    return await context.currentTab().runAndWait(async tab => {
+    const result = await context.currentTab().runAndWait(async tab => {
       await tab.page.goBack();
+
+      // 이전 페이지로 이동 후 자동으로 오버레이 주입
+      try {
+        // 순환 참조 방지를 위해 동적으로 가져오기
+        const { injectOverlay } = require('./codegen');
+        if (typeof injectOverlay === 'function')
+          await injectOverlay(context);
+
+      } catch (error) {
+        console.error('Failed to inject recorder overlay after going back:', error);
+      }
     }, {
       status: 'Navigated back',
       captureSnapshot: snapshot,
     });
+
+    return result;
   },
 });
 
@@ -71,12 +100,25 @@ const goForward: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goForwardSchema),
   },
   handle: async context => {
-    return await context.currentTab().runAndWait(async tab => {
+    const result = await context.currentTab().runAndWait(async tab => {
       await tab.page.goForward();
+
+      // 다음 페이지로 이동 후 자동으로 오버레이 주입
+      try {
+        // 순환 참조 방지를 위해 동적으로 가져오기
+        const { injectOverlay } = require('./codegen');
+        if (typeof injectOverlay === 'function')
+          await injectOverlay(context);
+
+      } catch (error) {
+        console.error('Failed to inject recorder overlay after going forward:', error);
+      }
     }, {
       status: 'Navigated forward',
       captureSnapshot: snapshot,
     });
+
+    return result;
   },
 });
 

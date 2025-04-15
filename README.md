@@ -7,6 +7,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - **Fast and lightweight**: Uses Playwright's accessibility tree, not pixel-based input.
 - **LLM-friendly**: No vision models needed, operates purely on structured data.
 - **Deterministic tool application**: Avoids ambiguity common with screenshot-based approaches.
+- **Built-in Codegen**: Record and generate Playwright code from user actions.
 
 ### Use Cases
 
@@ -14,6 +15,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - Data extraction from structured content
 - Automated testing driven by LLMs
 - General-purpose browser interaction for agents
+- Rapid test script creation with codegen recording
 
 ### Example config
 
@@ -323,3 +325,78 @@ server.connect(transport);
 - **browser_install**
   - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
   - Parameters: None
+
+### Codegen Recording Tools
+
+MCP now includes Playwright Codegen-like functionality that allows you to record browser interactions and generate test code automatically.
+
+#### User Interface
+
+When using MCP in browser mode, a recording button appears in the bottom right corner of the page. Clicking it toggles recording mode:
+- 🔴 Red button: Ready to record (click to start)
+- ■ Green button: Recording in progress (click to stop)
+
+#### Recording Tools
+
+- **start_record**
+  - Description: Start recording user actions in the browser
+  - UI: Starts recording when the 🔴 button is clicked
+  - Records clicks, typing, navigation, and other common interactions
+
+- **stop_record**
+  - Description: Stop recording user actions in the browser
+  - UI: Stops recording when the ■ button is clicked
+  - Maintains recorded actions in memory
+
+- **code_generate**
+  - Description: Generate Playwright test code from recorded actions
+  - Parameters:
+    - `target_file` (string, optional): Path to test file where code will be inserted after the `//@pw-codegen` marker
+    - `language` (enum, optional): 'javascript' or 'typescript' (default: 'javascript')
+  - Returns generated code or inserts it into the specified file
+
+#### Using Codegen
+
+1. **UI Recording Method**:
+   - Navigate to a page using MCP
+   - Click the 🔴 record button in the browser's bottom-right corner
+   - Perform the actions you want to record
+   - Click the ■ stop button when finished
+   - Use the `code_generate` tool to generate and save your code
+
+2. **Tool-based Recording Method**:
+   - Use the `start_record` tool to begin recording
+   - Perform browser actions
+   - Use the `stop_record` tool to end recording
+   - Use the `code_generate` tool with a target file path
+
+3. **Test File Setup**:
+   - Create a test file with a `//@pw-codegen` marker where code should be inserted
+   - Run the `code_generate` tool with the file path to insert code at that location
+
+```typescript
+// Example test file setup
+import { test, expect } from '@playwright/test';
+
+test('my first test', async ({ page }) => {
+  // Code will be inserted below this line
+  //@pw-codegen
+  
+  // Rest of your test logic
+  expect(page.url()).toContain('success');
+});
+```
+
+#### Example Usage
+
+```typescript
+// Example interaction with MCP
+await tools.browser_navigate({ url: 'https://example.com' });
+await tools.start_record();
+// Perform actions in the browser...
+await tools.stop_record();
+await tools.code_generate({ 
+  target_file: './tests/my-test.spec.ts',
+  language: 'typescript'
+});
+```

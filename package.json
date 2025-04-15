@@ -20,6 +20,7 @@
     "watch": "tsc --watch",
     "test": "playwright test",
     "clean": "rm -rf lib",
+    "start": "node ./cli.js --port 3000",
     "npm-publish": "npm run clean && npm run build && npm run test && npm publish"
   },
   "exports": {
