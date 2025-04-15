@@ -298,6 +298,12 @@ server.connect(transport);
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
 
+### Console
+
+- **browser_console_messages**
+  - Description: Returns all console messages
+  - Parameters: None
+
 ### Files and Media
 
 - **browser_file_upload**

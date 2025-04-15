@@ -20,6 +20,7 @@ import fs from 'fs';
 
 import { createServerWithTools } from './server';
 import common from './tools/common';
+import console from './tools/console';
 import files from './tools/files';
 import install from './tools/install';
 import keyboard from './tools/keyboard';
@@ -28,15 +29,14 @@ import pdf from './tools/pdf';
 import snapshot from './tools/snapshot';
 import tabs from './tools/tabs';
 import screen from './tools/screen';
-import { console as consoleResource } from './resources/console';
 
 import type { Tool, ToolCapability } from './tools/tool';
-import type { Resource } from './resources/resource';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
 const snapshotTools: Tool[] = [
   ...common(true),
+  ...console,
   ...files(true),
   ...install,
   ...keyboard(true),
@@ -48,6 +48,7 @@ const snapshotTools: Tool[] = [
 
 const screenshotTools: Tool[] = [
   ...common(false),
+  ...console,
   ...files(false),
   ...install,
   ...keyboard(false),
@@ -55,10 +56,6 @@ const screenshotTools: Tool[] = [
   ...pdf,
   ...screen,
   ...tabs(false),
-];
-
-const resources: Resource[] = [
-  consoleResource,
 ];
 
 type Options = {
@@ -115,7 +112,7 @@ export async function createServer(options?: Options): Promise<Server> {
     name: 'Playwright',
     version: packageJSON.version,
     tools,
-    resources,
+    resources: [],
     browserName,
     userDataDir,
     launchOptions,

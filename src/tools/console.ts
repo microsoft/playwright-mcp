@@ -14,22 +14,32 @@
  * limitations under the License.
  */
 
-import type { Resource } from './resource';
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
-export const console: Resource = {
+import type { Tool } from './tool';
+
+const consoleSchema = z.object({});
+
+const console: Tool = {
+  capability: 'core',
   schema: {
-    uri: 'browser://console',
-    name: 'Page console',
-    mimeType: 'text/plain',
+    name: 'browser_console_messages',
+    description: 'Returns all console messages',
+    inputSchema: zodToJsonSchema(consoleSchema),
   },
-
-  read: async (context, uri) => {
+  handle: async context => {
     const messages = await context.currentTab().console();
     const log = messages.map(message => `[${message.type().toUpperCase()}] ${message.text()}`).join('\n');
-    return [{
-      uri,
-      mimeType: 'text/plain',
-      text: log
-    }];
+    return {
+      content: [{
+        type: 'text',
+        text: log
+      }],
+    };
   },
 };
+
+export default [
+  console,
+];

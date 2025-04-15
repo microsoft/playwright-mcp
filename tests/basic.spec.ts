@@ -211,14 +211,10 @@ test('browser_type', async ({ client }) => {
       submit: true,
     },
   });
-  const resource = await client.readResource({
-    uri: 'browser://console',
-  });
-  expect(resource.contents).toEqual([{
-    uri: 'browser://console',
-    mimeType: 'text/plain',
-    text: '[LOG] Key pressed: Enter , Text: Hi!',
-  }]);
+  expect(await client.callTool({
+    name: 'browser_console_messages',
+    arguments: {},
+  })).toHaveTextContent('[LOG] Key pressed: Enter , Text: Hi!');
 });
 
 test('browser_type (slowly)', async ({ client }) => {
@@ -238,19 +234,15 @@ test('browser_type (slowly)', async ({ client }) => {
       slowly: true,
     },
   });
-  const resource = await client.readResource({
-    uri: 'browser://console',
-  });
-  expect(resource.contents).toEqual([{
-    uri: 'browser://console',
-    mimeType: 'text/plain',
-    text: [
-      '[LOG] Key pressed: H Text: ',
-      '[LOG] Key pressed: i Text: H',
-      '[LOG] Key pressed: ! Text: Hi',
-      '[LOG] Key pressed: Enter Text: Hi!',
-    ].join('\n'),
-  }]);
+  expect(await client.callTool({
+    name: 'browser_console_messages',
+    arguments: {},
+  })).toHaveTextContent([
+    '[LOG] Key pressed: H Text: ',
+    '[LOG] Key pressed: i Text: H',
+    '[LOG] Key pressed: ! Text: Hi',
+    '[LOG] Key pressed: Enter Text: Hi!',
+  ].join('\n'));
 });
 
 test('browser_resize', async ({ client }) => {

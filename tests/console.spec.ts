@@ -16,7 +16,7 @@
 
 import { test, expect } from './fixtures';
 
-test('browser://console', async ({ client }) => {
+test('browser_console_messages', async ({ client }) => {
   await client.callTool({
     name: 'browser_navigate',
     arguments: {
@@ -24,12 +24,12 @@ test('browser://console', async ({ client }) => {
     },
   });
 
-  const resource = await client.readResource({
-    uri: 'browser://console',
+  const resource = await client.callTool({
+    name: 'browser_console_messages',
+    arguments: {},
   });
-  expect(resource.contents).toEqual([{
-    uri: 'browser://console',
-    mimeType: 'text/plain',
-    text: '[LOG] Hello, world!\n[ERROR] Error',
-  }]);
+  expect(resource).toHaveTextContent([
+    '[LOG] Hello, world!',
+    '[ERROR] Error',
+  ].join('\n'));
 });

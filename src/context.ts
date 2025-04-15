@@ -111,18 +111,21 @@ export class Context {
 
     if (this._currentTab === tab)
       this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
-    const browser = this._browser;
-    if (this._browserContext && !this._tabs.length) {
-      void this._browserContext.close().then(() => browser?.close()).catch(() => {});
-      this._browser = undefined;
-      this._browserContext = undefined;
-    }
+    if (this._browserContext && !this._tabs.length)
+      void this.close();
   }
 
   async close() {
     if (!this._browserContext)
       return;
-    await this._browserContext.close();
+    const browserContext = this._browserContext;
+    const browser = this._browser;
+    this._browserContext = undefined;
+    this._browser = undefined;
+
+    await browserContext?.close().then(async () => {
+      await browser?.close();
+    }).catch(() => {});
   }
 
   private async _ensureBrowserContext() {

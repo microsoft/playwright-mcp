@@ -20,6 +20,7 @@ test('test snapshot tool list', async ({ client }) => {
   const { tools } = await client.listTools();
   expect(new Set(tools.map(t => t.name))).toEqual(new Set([
     'browser_click',
+    'browser_console_messages',
     'browser_drag',
     'browser_file_upload',
     'browser_hover',
@@ -47,6 +48,7 @@ test('test vision tool list', async ({ visionClient }) => {
   const { tools: visionTools } = await visionClient.listTools();
   expect(new Set(visionTools.map(t => t.name))).toEqual(new Set([
     'browser_close',
+    'browser_console_messages',
     'browser_file_upload',
     'browser_install',
     'browser_navigate_back',
@@ -70,12 +72,7 @@ test('test vision tool list', async ({ visionClient }) => {
 
 test('test resources list', async ({ client }) => {
   const { resources } = await client.listResources();
-  expect(resources).toEqual([
-    expect.objectContaining({
-      uri: 'browser://console',
-      mimeType: 'text/plain',
-    }),
-  ]);
+  expect(resources).toEqual([]);
 });
 
 test('test capabilities', async ({ startClient }) => {
