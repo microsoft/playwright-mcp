@@ -26,7 +26,7 @@ export const script: Resource = {
   read: async (context, uri) => {
     return [{
       uri,
-      mimeType: 'text/plain',
+      mimeType: 'application/javascript',
       text: context.script.join('\n'),
     }];
   },
