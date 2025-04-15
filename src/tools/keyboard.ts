@@ -34,9 +34,12 @@ const pressKey: ToolFactory = captureSnapshot => ({
     const validatedParams = pressKeySchema.parse(params);
     return await context.currentTab().runAndWait(async tab => {
       await tab.page.keyboard.press(validatedParams.key);
-      return `await page.keyboard.press('${validatedParams.key}');`;
+      const code = [
+        `// Press ${validatedParams.key}`,
+        `await page.keyboard.press('${validatedParams.key}');`,
+      ];
+      return { code };
     }, {
-      status: `Pressed key ${validatedParams.key}`,
       captureSnapshot,
     });
   },

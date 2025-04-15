@@ -51,7 +51,12 @@ const selectTab: ToolFactory = captureSnapshot => ({
     const validatedParams = selectTabSchema.parse(params);
     await context.selectTab(validatedParams.index);
     const currentTab = await context.ensureTab();
-    return await currentTab.run(async () => {}, { captureSnapshot });
+    return await currentTab.run(async () => {
+      const code = [
+        `// <internal code to select tab ${validatedParams.index}>`,
+      ];
+      return { code };
+    }, { captureSnapshot });
   },
 });
 
@@ -71,7 +76,12 @@ const newTab: Tool = {
     await context.newTab();
     if (validatedParams.url)
       await context.currentTab().navigate(validatedParams.url);
-    return await context.currentTab().run(async () => {}, { captureSnapshot: true });
+    return await context.currentTab().run(async () => {
+      const code = [
+        `// <internal code to open a new tab>`,
+      ];
+      return { code };
+    }, { captureSnapshot: true });
   },
 };
 
@@ -90,8 +100,14 @@ const closeTab: ToolFactory = captureSnapshot => ({
     const validatedParams = closeTabSchema.parse(params);
     await context.closeTab(validatedParams.index);
     const currentTab = context.currentTab();
-    if (currentTab)
-      return await currentTab.run(async () => {}, { captureSnapshot });
+    if (currentTab) {
+      return await currentTab.run(async () => {
+        const code = [
+          `// <internal code to close tab ${validatedParams.index}>`,
+        ];
+        return { code };
+      }, { captureSnapshot });
+    }
     return {
       content: [{
         type: 'text',

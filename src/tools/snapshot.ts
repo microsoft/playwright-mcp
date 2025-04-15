@@ -32,7 +32,10 @@ const snapshot: Tool = {
 
   handle: async context => {
     const tab = await context.ensureTab();
-    return await tab.run(async () => {}, { captureSnapshot: true });
+    return await tab.run(async () => {
+      const code = [`// <internal code to capture accessibility snapshot>`];
+      return { code };
+    }, { captureSnapshot: true });
   },
 };
 
@@ -53,11 +56,12 @@ const click: Tool = {
     const validatedParams = elementSchema.parse(params);
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const locator = snapshot.refLocator(validatedParams.ref);
-      const action = `await page.${await generateLocator(locator)}.click();`;
+      const code = [
+        `// Click ${validatedParams.element}`,
+        `await page.${await generateLocator(locator)}.click();`
+      ];
       await locator.click();
-      return action;
-    }, {
-      status: `Clicked "${validatedParams.element}"`,
+      return { code };
     });
   },
 };
@@ -82,11 +86,12 @@ const drag: Tool = {
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const startLocator = snapshot.refLocator(validatedParams.startRef);
       const endLocator = snapshot.refLocator(validatedParams.endRef);
-      const action = `await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`;
+      const code = [
+        `// Drag ${validatedParams.startElement} to ${validatedParams.endElement}`,
+        `await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`
+      ];
       await startLocator.dragTo(endLocator);
-      return action;
-    }, {
-      status: `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`,
+      return { code };
     });
   },
 };
@@ -103,11 +108,12 @@ const hover: Tool = {
     const validatedParams = elementSchema.parse(params);
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const locator = snapshot.refLocator(validatedParams.ref);
-      const action = `await page.${await generateLocator(locator)}.hover();`;
+      const code = [
+        `// Hover over ${validatedParams.element}`,
+        `await page.${await generateLocator(locator)}.hover();`
+      ];
       await locator.hover();
-      return action;
-    }, {
-      status: `Hovered over "${validatedParams.element}"`,
+      return { code };
     });
   },
 };
@@ -131,21 +137,22 @@ const type: Tool = {
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const locator = snapshot.refLocator(validatedParams.ref);
 
-      let action = '';
+      const code: string[] = [];
       if (validatedParams.slowly) {
-        action = `await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(validatedParams.text)});`;
+        code.push(`// Press "${validatedParams.text}" sequentially into "${validatedParams.element}"`);
+        code.push(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(validatedParams.text)});`);
         await locator.pressSequentially(validatedParams.text);
       } else {
-        action = `await page.${await generateLocator(locator)}.fill(${javascript.quote(validatedParams.text)});`;
+        code.push(`// Fill "${validatedParams.text}" into "${validatedParams.element}"`);
+        code.push(`await page.${await generateLocator(locator)}.fill(${javascript.quote(validatedParams.text)});`);
         await locator.fill(validatedParams.text);
       }
       if (validatedParams.submit) {
-        action += `\nawait page.${await generateLocator(locator)}.press('Enter');`;
+        code.push(`// Submit text`);
+        code.push(`await page.${await generateLocator(locator)}.press('Enter');`);
         await locator.press('Enter');
       }
-      return action;
-    }, {
-      status: `Typed "${validatedParams.text}" into "${validatedParams.element}"`,
+      return { code };
     });
   },
 };
@@ -166,11 +173,12 @@ const selectOption: Tool = {
     const validatedParams = selectOptionSchema.parse(params);
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const locator = snapshot.refLocator(validatedParams.ref);
-      const action = `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(validatedParams.values)});`;
+      const code = [
+        `// Select options [${validatedParams.values.join(', ')}] in ${validatedParams.element}`,
+        `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(validatedParams.values)});`
+      ];
       await locator.selectOption(validatedParams.values);
-      return action;
-    }, {
-      status: `Selected option in "${validatedParams.element}"`,
+      return { code };
     });
   },
 };

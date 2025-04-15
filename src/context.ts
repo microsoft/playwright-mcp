@@ -33,7 +33,6 @@ type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
 type RunOptions = {
   captureSnapshot?: boolean;
   waitForCompletion?: boolean;
-  status?: string;
   noClearFileChooser?: boolean;
 };
 
@@ -79,8 +78,8 @@ export class Context {
 
   async listTabs(): Promise<string> {
     if (!this._tabs.length)
-      return 'No tabs open';
-    const lines: string[] = ['Open tabs:'];
+      return '### No tabs open';
+    const lines: string[] = ['### Open tabs'];
     for (let i = 0; i < this._tabs.length; i++) {
       const tab = this._tabs[i];
       const title = await tab.page.title();
@@ -172,6 +171,10 @@ export class Context {
   }
 }
 
+type RunResult = {
+  code: string[];
+};
+
 class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
@@ -207,33 +210,33 @@ class Tab {
     await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
   }
 
-  async run(callback: (tab: Tab) => Promise<void | string>, options?: RunOptions): Promise<ToolResult> {
-    let actionCode: string | undefined;
+  async run(callback: (tab: Tab) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
+    let runResult: RunResult | undefined;
     try {
       if (!options?.noClearFileChooser)
         this._fileChooser = undefined;
       if (options?.waitForCompletion)
-        actionCode = await waitForCompletion(this.page, () => callback(this)) ?? undefined;
+        runResult = await waitForCompletion(this.page, () => callback(this)) ?? undefined;
       else
-        actionCode = await callback(this) ?? undefined;
+        runResult = await callback(this) ?? undefined;
     } finally {
       if (options?.captureSnapshot)
         this._snapshot = await PageSnapshot.create(this.page);
     }
 
     const result: string[] = [];
-    if (options?.status)
-      result.push(options.status, '');
+    result.push(`- Ran code:
+\`\`\`js
+${runResult.code.join('\n')}
+\`\`\`
+`);
 
     if (this.context.tabs().length > 1)
       result.push(await this.context.listTabs(), '');
 
-    if (actionCode)
-      result.push('- Action: ' + actionCode, '');
-
     if (this._snapshot) {
       if (this.context.tabs().length > 1)
-        result.push('Current tab:');
+        result.push('### Current tab');
       result.push(this._snapshot.text({ hasFileChooser: !!this._fileChooser }));
     }
 
@@ -245,14 +248,14 @@ class Tab {
     };
   }
 
-  async runAndWait(callback: (tab: Tab) => Promise<void | string>, options?: RunOptions): Promise<ToolResult> {
+  async runAndWait(callback: (tab: Tab) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
     return await this.run(callback, {
       waitForCompletion: true,
       ...options,
     });
   }
 
-  async runAndWaitWithSnapshot(callback: (snapshot: PageSnapshot) => Promise<void | string>, options?: RunOptions): Promise<ToolResult> {
+  async runAndWaitWithSnapshot(callback: (snapshot: PageSnapshot) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
     return await this.run(tab => callback(tab.lastSnapshot()), {
       captureSnapshot: true,
       waitForCompletion: true,

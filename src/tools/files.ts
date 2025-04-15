@@ -35,8 +35,11 @@ const uploadFile: ToolFactory = captureSnapshot => ({
     const tab = context.currentTab();
     return await tab.runAndWait(async () => {
       await tab.submitFileChooser(validatedParams.paths);
+      const code = [
+        `// <internal code to chose files ${validatedParams.paths.join(', ')}`,
+      ];
+      return { code };
     }, {
-      status: `Chose files ${validatedParams.paths.join(', ')}`,
       captureSnapshot,
       noClearFileChooser: true,
     });

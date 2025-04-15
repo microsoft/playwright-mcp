@@ -79,11 +79,16 @@ const click: Tool = {
   handle: async (context, params) => {
     return await context.currentTab().runAndWait(async tab => {
       const validatedParams = clickSchema.parse(params);
+      const code = [
+        `// Click mouse at coordinates (${validatedParams.x}, ${validatedParams.y})`,
+        `await page.mouse.move(${validatedParams.x}, ${validatedParams.y});`,
+        `await page.mouse.down();`,
+        `await page.mouse.up();`,
+      ];
       await tab.page.mouse.move(validatedParams.x, validatedParams.y);
       await tab.page.mouse.down();
       await tab.page.mouse.up();
-    }, {
-      status: 'Clicked mouse',
+      return { code };
     });
   },
 };
@@ -110,8 +115,14 @@ const drag: Tool = {
       await tab.page.mouse.down();
       await tab.page.mouse.move(validatedParams.endX, validatedParams.endY);
       await tab.page.mouse.up();
-    }, {
-      status: `Dragged mouse from (${validatedParams.startX}, ${validatedParams.startY}) to (${validatedParams.endX}, ${validatedParams.endY})`,
+      const code = [
+        `// Drag mouse from (${validatedParams.startX}, ${validatedParams.startY}) to (${validatedParams.endX}, ${validatedParams.endY})`,
+        `await page.mouse.move(${validatedParams.startX}, ${validatedParams.startY});`,
+        `await page.mouse.down();`,
+        `await page.mouse.move(${validatedParams.endX}, ${validatedParams.endY});`,
+        `await page.mouse.up();`,
+      ];
+      return { code };
     });
   },
 };
@@ -132,11 +143,17 @@ const type: Tool = {
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
     return await context.currentTab().runAndWait(async tab => {
+      const code = [
+        `// Type ${validatedParams.text}`,
+        `await page.keyboard.type('${validatedParams.text}');`,
+      ];
       await tab.page.keyboard.type(validatedParams.text);
-      if (validatedParams.submit)
+      if (validatedParams.submit) {
+        code.push(`// Submit text`);
+        code.push(`await page.keyboard.press('Enter');`);
         await tab.page.keyboard.press('Enter');
-    }, {
-      status: `Typed text "${validatedParams.text}"`,
+      }
+      return { code };
     });
   },
 };

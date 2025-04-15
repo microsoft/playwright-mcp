@@ -39,5 +39,5 @@ test('stitched aria frames', async ({ client }) => {
       element: 'World',
       ref: 'f1s1e3',
     },
-  })).toContainTextContent('Clicked "World"');
+  })).toContainTextContent(`// Click World`);
 });

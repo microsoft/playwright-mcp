@@ -41,6 +41,11 @@ test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
     name: 'browser_snapshot',
     arguments: {},
   })).toHaveTextContent(`
+- Ran code:
+\`\`\`js
+// <internal code to capture accessibility snapshot>
+\`\`\`
+
 - Page URL: data:text/html,hello world
 - Page Title: 
 - Page Snapshot

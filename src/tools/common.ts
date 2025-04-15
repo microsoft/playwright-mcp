@@ -78,13 +78,16 @@ const resize: ToolFactory = captureSnapshot => ({
     const validatedParams = resizeSchema.parse(params);
 
     const tab = context.currentTab();
-    return await tab.run(
-        tab => tab.page.setViewportSize({ width: validatedParams.width, height: validatedParams.height }),
-        {
-          status: `Resized browser window`,
-          captureSnapshot,
-        }
-    );
+    return await tab.run(async tab => {
+      await tab.page.setViewportSize({ width: validatedParams.width, height: validatedParams.height });
+      const code = [
+        `// Resize browser window to ${validatedParams.width}x${validatedParams.height}`,
+        `await page.setViewportSize({ width: ${validatedParams.width}, height: ${validatedParams.height} });`
+      ];
+      return { code };
+    }, {
+      captureSnapshot,
+    });
   },
 });
 
