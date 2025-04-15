@@ -19,6 +19,7 @@ import yaml from 'yaml';
 
 import { waitForCompletion } from './tools/utils';
 import { ToolResult } from './tools/tool';
+import * as recorder from './recorder';
 
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
@@ -134,6 +135,16 @@ export class Context {
       for (const page of this._browserContext.pages())
         this._onPageCreated(page);
       this._browserContext.on('page', page => this._onPageCreated(page));
+      this._browserContext.exposeBinding('__pwRecordAction', (source, target: playwright.ElementHandle, action: recorder.Action) => {
+        const tab = this._tabs.find(t => t.page === source.page);
+        if (!tab)
+          throw new Error('Tab not found');
+        tab.onAction(target, action);
+      });
+      this._browserContext.addInitScript(`
+        const { Recorder } = (${recorder.source.toString()})();
+        new Recorder(globalThis.__pwRecordAction).install();
+      `);
     }
     return this._browserContext;
   }
@@ -259,6 +270,10 @@ class Tab {
       throw new Error('No file chooser visible');
     await this._fileChooser.setFiles(paths);
     this._fileChooser = undefined;
+  }
+
+  onAction(target: playwright.ElementHandle, action: recorder.Action) {
+    console.error(target, action);
   }
 }
 
