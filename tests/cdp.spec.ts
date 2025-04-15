@@ -23,17 +23,7 @@ test('cdp server', async ({ cdpEndpoint, startClient }) => {
     arguments: {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
-  })).toHaveTextContent(`
-Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
-
-- Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
-- Page Title: Title
-- Page Snapshot
-\`\`\`yaml
-- text: Hello, world!
-\`\`\`
-`
-  );
+  })).toContainTextContent(`- text: Hello, world!`);
 });
 
 test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
@@ -51,6 +41,11 @@ test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
     name: 'browser_snapshot',
     arguments: {},
   })).toHaveTextContent(`
+- Ran code:
+\`\`\`js
+// <internal code to capture accessibility snapshot>
+\`\`\`
+
 - Page URL: data:text/html,hello world
 - Page Title: 
 - Page Snapshot

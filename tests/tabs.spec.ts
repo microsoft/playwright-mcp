@@ -31,11 +31,16 @@ async function createTab(client: Client, title: string, body: string) {
 
 test('create new tab', async ({ client }) => {
   expect(await createTab(client, 'Tab one', 'Body one')).toHaveTextContent(`
-Open tabs:
+- Ran code:
+\`\`\`js
+// <internal code to open a new tab>
+\`\`\`
+
+### Open tabs
 - 1: [] (about:blank)
 - 2: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 
-Current tab:
+### Current tab
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot
@@ -44,12 +49,17 @@ Current tab:
 \`\`\``);
 
   expect(await createTab(client, 'Tab two', 'Body two')).toHaveTextContent(`
-Open tabs:
+- Ran code:
+\`\`\`js
+// <internal code to open a new tab>
+\`\`\`
+
+### Open tabs
 - 1: [] (about:blank)
 - 2: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 - 3: (current) [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
 
-Current tab:
+### Current tab
 - Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
 - Page Title: Tab two
 - Page Snapshot
@@ -67,12 +77,17 @@ test('select tab', async ({ client }) => {
       index: 2,
     },
   })).toHaveTextContent(`
-Open tabs:
+- Ran code:
+\`\`\`js
+// <internal code to select tab 2>
+\`\`\`
+
+### Open tabs
 - 1: [] (about:blank)
 - 2: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 - 3: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
 
-Current tab:
+### Current tab
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot
@@ -90,11 +105,16 @@ test('close tab', async ({ client }) => {
       index: 3,
     },
   })).toHaveTextContent(`
-Open tabs:
+- Ran code:
+\`\`\`js
+// <internal code to close tab 3>
+\`\`\`
+
+### Open tabs
 - 1: [] (about:blank)
 - 2: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 
-Current tab:
+### Current tab
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot

@@ -33,7 +33,6 @@ type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
 type RunOptions = {
   captureSnapshot?: boolean;
   waitForCompletion?: boolean;
-  status?: string;
   noClearFileChooser?: boolean;
 };
 
@@ -79,8 +78,8 @@ export class Context {
 
   async listTabs(): Promise<string> {
     if (!this._tabs.length)
-      return 'No tabs open';
-    const lines: string[] = ['Open tabs:'];
+      return '### No tabs open';
+    const lines: string[] = ['### Open tabs'];
     for (let i = 0; i < this._tabs.length; i++) {
       const tab = this._tabs[i];
       const title = await tab.page.title();
@@ -172,6 +171,10 @@ export class Context {
   }
 }
 
+type RunResult = {
+  code: string[];
+};
+
 class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
@@ -207,36 +210,52 @@ class Tab {
     await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
   }
 
-  async run(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+  async run(callback: (tab: Tab) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
+    let runResult: RunResult | undefined;
     try {
       if (!options?.noClearFileChooser)
         this._fileChooser = undefined;
       if (options?.waitForCompletion)
-        await waitForCompletion(this.page, () => callback(this));
+        runResult = await waitForCompletion(this.page, () => callback(this)) ?? undefined;
       else
-        await callback(this);
+        runResult = await callback(this) ?? undefined;
     } finally {
       if (options?.captureSnapshot)
         this._snapshot = await PageSnapshot.create(this.page);
     }
-    const tabList = this.context.tabs().length > 1 ? await this.context.listTabs() + '\n\nCurrent tab:' + '\n' : '';
-    const snapshot = this._snapshot?.text({ status: options?.status, hasFileChooser: !!this._fileChooser }) ?? options?.status ?? '';
+
+    const result: string[] = [];
+    result.push(`- Ran code:
+\`\`\`js
+${runResult.code.join('\n')}
+\`\`\`
+`);
+
+    if (this.context.tabs().length > 1)
+      result.push(await this.context.listTabs(), '');
+
+    if (this._snapshot) {
+      if (this.context.tabs().length > 1)
+        result.push('### Current tab');
+      result.push(this._snapshot.text({ hasFileChooser: !!this._fileChooser }));
+    }
+
     return {
       content: [{
         type: 'text',
-        text: tabList + snapshot,
+        text: result.join('\n'),
       }],
     };
   }
 
-  async runAndWait(callback: (tab: Tab) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+  async runAndWait(callback: (tab: Tab) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
     return await this.run(callback, {
       waitForCompletion: true,
       ...options,
     });
   }
 
-  async runAndWaitWithSnapshot(callback: (snapshot: PageSnapshot) => Promise<void>, options?: RunOptions): Promise<ToolResult> {
+  async runAndWaitWithSnapshot(callback: (snapshot: PageSnapshot) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
     return await this.run(tab => callback(tab.lastSnapshot()), {
       captureSnapshot: true,
       waitForCompletion: true,
@@ -275,13 +294,9 @@ class PageSnapshot {
     return snapshot;
   }
 
-  text(options?: { status?: string, hasFileChooser?: boolean }): string {
+  text(options: { hasFileChooser: boolean }): string {
     const results: string[] = [];
-    if (options?.status) {
-      results.push(options.status);
-      results.push('');
-    }
-    if (options?.hasFileChooser) {
+    if (options.hasFileChooser) {
       results.push('- There is a file chooser visible that requires browser_file_upload to be called');
       results.push('');
     }
@@ -358,4 +373,8 @@ class PageSnapshot {
 
     return frame.locator(`aria-ref=${ref}`);
   }
+}
+
+export async function generateLocator(locator: playwright.Locator): Promise<string> {
+  return (locator as any)._generateLocatorString();
 }

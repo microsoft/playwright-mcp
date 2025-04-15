@@ -24,7 +24,11 @@ test('browser_navigate', async ({ client }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
-Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+- Ran code:
+\`\`\`js
+// Navigate to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
+await page.goto('data:text/html,<html><title>Title</title><body>Hello, world!</body></html>');
+\`\`\`
 
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
@@ -50,7 +54,12 @@ test('browser_click', async ({ client }) => {
       element: 'Submit button',
       ref: 's1e3',
     },
-  })).toHaveTextContent(`Clicked "Submit button"
+  })).toHaveTextContent(`
+- Ran code:
+\`\`\`js
+// Click Submit button
+await page.getByRole('button', { name: 'Submit' }).click();
+\`\`\`
 
 - Page URL: data:text/html,<html><title>Title</title><button>Submit</button></html>
 - Page Title: Title
@@ -77,7 +86,12 @@ test('browser_select_option', async ({ client }) => {
       ref: 's1e3',
       values: ['bar'],
     },
-  })).toHaveTextContent(`Selected option in "Select"
+  })).toHaveTextContent(`
+- Ran code:
+\`\`\`js
+// Select options [bar] in Select
+await page.getByRole('combobox').selectOption(['bar']);
+\`\`\`
 
 - Page URL: data:text/html,<html><title>Title</title><select><option value="foo">Foo</option><option value="bar">Bar</option></select></html>
 - Page Title: Title
@@ -105,7 +119,12 @@ test('browser_select_option (multiple)', async ({ client }) => {
       ref: 's1e3',
       values: ['bar', 'baz'],
     },
-  })).toHaveTextContent(`Selected option in "Select"
+  })).toHaveTextContent(`
+- Ran code:
+\`\`\`js
+// Select options [bar, baz] in Select
+await page.getByRole('listbox').selectOption(['bar', 'baz']);
+\`\`\`
 
 - Page URL: data:text/html,<html><title>Title</title><select multiple><option value="foo">Foo</option><option value="bar">Bar</option><option value="baz">Baz</option></select></html>
 - Page Title: Title
@@ -249,6 +268,10 @@ test('browser_resize', async ({ client }) => {
       height: 780,
     },
   });
-  expect(response).toContainTextContent('Resized browser window');
-  expect(response).toContainTextContent('Window size: 390x780');
+  expect(response).toContainTextContent(`- Ran code:
+\`\`\`js
+// Resize browser window to 390x780
+await page.setViewportSize({ width: 390, height: 780 });
+\`\`\``);
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent('Window size: 390x780');
 });

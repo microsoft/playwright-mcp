@@ -1,3 +1,4 @@
 lib/
 node_modules/
 test-results/
+.vscode/mcp.json
