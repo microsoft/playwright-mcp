@@ -215,6 +215,16 @@ server.connect(transport);
   - Parameters:
     - `raw` (boolean, optional): Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.
 
+- **browser_custom_javascript**
+  - Description: Execute custom JavaScript from a file in the browser console.
+  - Parameters:
+    - `filePath` (string): The path to the JavaScript file to execute.
+
+- **browser_execute_generated_javascript**
+  - Description: Execute generated JavaScript code in the browser console.
+  - Parameters:
+    - `scriptContent` (string): The JavaScript code to execute.
+
 ### Vision-based Interactions
 
 - **browser_screen_move_mouse**
