@@ -250,5 +250,5 @@ test('browser_resize', async ({ client }) => {
     },
   });
   expect(response).toContainTextContent('Resized browser window');
-  expect(response).toContainTextContent('Window size: 390x780');
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent('Window size: 390x780');
 });
