@@ -44,6 +44,7 @@ export class Context {
   private _browserContext: playwright.BrowserContext | undefined;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
+  script: any[] = [];
 
   constructor(options: ContextOptions) {
     this.options = options;
@@ -135,15 +136,18 @@ export class Context {
       for (const page of this._browserContext.pages())
         this._onPageCreated(page);
       this._browserContext.on('page', page => this._onPageCreated(page));
-      this._browserContext.exposeBinding('__pwRecordAction', (source, target: playwright.ElementHandle, action: recorder.Action) => {
+      this._browserContext.exposeBinding('__generateLocator', (source, elementHandle: playwright.ElementHandle) => {
+        return (elementHandle as any)._generateLocatorString();
+      }, { handle: true });
+      this._browserContext.exposeBinding('__recordAction', (source, log: string) => {
         const tab = this._tabs.find(t => t.page === source.page);
         if (!tab)
           throw new Error('Tab not found');
-        tab.onAction(target, action);
+        void tab.onAction(log);
       });
       this._browserContext.addInitScript(`
         const { Recorder } = (${recorder.source.toString()})();
-        new Recorder(globalThis.__pwRecordAction).install();
+        new Recorder(globalThis.__generateLocator, globalThis.__recordAction).install();
       `);
     }
     return this._browserContext;
@@ -272,8 +276,9 @@ class Tab {
     this._fileChooser = undefined;
   }
 
-  onAction(target: playwright.ElementHandle, action: recorder.Action) {
-    console.error(target, action);
+  async onAction(log: string) {
+    this.context.script.push(log);
+    console.error(this.context.script);
   }
 }
 

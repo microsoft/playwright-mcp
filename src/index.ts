@@ -30,6 +30,7 @@ import type { Tool, ToolCapability } from './tools/tool';
 import type { Resource } from './resources/resource';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
+import { script } from './resources/script';
 
 const snapshotTools: Tool[] = [
   ...common(true),
@@ -55,6 +56,7 @@ const screenshotTools: Tool[] = [
 
 const resources: Resource[] = [
   consoleResource,
+  script,
 ];
 
 type Options = {
