@@ -209,9 +209,15 @@ const screenshot: Tool = {
     } else {
       return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
         const locator = snapshot.refLocator(validatedParams.ref);
+        const code = [
+          `// Screenshot ${validatedParams.element}`,
+          `await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`
+        ];
         await locator.screenshot(options);
-      }, {
-        status: `Saved as "${fileName}"`,
+        code.push(`// Saved as ${fileName}`);
+        return {
+          code
+        };
       });
     }
     return {
