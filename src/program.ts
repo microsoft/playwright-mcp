@@ -15,9 +15,6 @@
  */
 
 import http from 'http';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
 
 import { program } from 'commander';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -27,7 +24,6 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { createServer } from './index';
 import { ServerList } from './server';
 
-import type { LaunchOptions } from 'playwright';
 import assert from 'assert';
 import { ToolCapability } from './tools/tool';
 
@@ -45,46 +41,11 @@ program
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .action(async options => {
-      let browserName: 'chromium' | 'firefox' | 'webkit';
-      let channel: string | undefined;
-      switch (options.browser) {
-        case 'chrome':
-        case 'chrome-beta':
-        case 'chrome-canary':
-        case 'chrome-dev':
-        case 'msedge':
-        case 'msedge-beta':
-        case 'msedge-canary':
-        case 'msedge-dev':
-          browserName = 'chromium';
-          channel = options.browser;
-          break;
-        case 'chromium':
-          browserName = 'chromium';
-          break;
-        case 'firefox':
-          browserName = 'firefox';
-          break;
-        case 'webkit':
-          browserName = 'webkit';
-          break;
-        default:
-          browserName = 'chromium';
-          channel = 'chrome';
-      }
-
-      const launchOptions: LaunchOptions = {
-        headless: !!(options.headless ?? (os.platform() === 'linux' && !process.env.DISPLAY)),
-        channel,
-        executablePath: options.executablePath,
-      };
-
-      const userDataDir = options.userDataDir ?? await createUserDataDir(browserName);
-
       const serverList = new ServerList(() => createServer({
-        browserName,
-        userDataDir,
-        launchOptions,
+        browser: options.browser,
+        userDataDir: options.userDataDir,
+        headless: options.headless,
+        executablePath: options.executablePath,
         vision: !!options.vision,
         cdpEndpoint: options.cdpEndpoint,
         capabilities: options.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
@@ -112,21 +73,6 @@ function setupExitWatchdog(serverList: ServerList) {
 }
 
 program.parse(process.argv);
-
-async function createUserDataDir(browserName: 'chromium' | 'firefox' | 'webkit') {
-  let cacheDirectory: string;
-  if (process.platform === 'linux')
-    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
-  else if (process.platform === 'darwin')
-    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
-  else if (process.platform === 'win32')
-    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-  else
-    throw new Error('Unsupported platform: ' + process.platform);
-  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserName}-profile`);
-  await fs.promises.mkdir(result, { recursive: true });
-  return result;
-}
 
 async function startSSEServer(port: number, serverList: ServerList) {
   const sessions = new Map<string, SSEServerTransport>();

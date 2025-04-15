@@ -15,33 +15,46 @@
  * limitations under the License.
  */
 
-import type { LaunchOptions } from 'playwright';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install';
 
 type Options = {
-  /**
-   * Path to the user data directory.
-   */
-  userDataDir?: string;
-
-  /**
-   * Launch options for the browser.
-   */
-  launchOptions?: LaunchOptions;
-
-  /**
-   * Use screenshots instead of snapshots. Less accurate, reliable and overall
-   * slower, but contains visual representation of the page.
-   * @default false
-   */
-  vision?: boolean;
-
-  /**
-   * Capabilities to enable.
-   */
-  capabilities?: ToolCapability[];
+    /**
+     * The browser to use (e.g., 'chrome', 'chromium', 'firefox', 'webkit', 'msedge').
+     */
+    browser?: string;
+    /**
+     * Path to a user data directory for browser profile persistence.
+     */
+    userDataDir?: string;
+    /**
+     * Whether to run the browser in headless mode (default: true).
+     */
+    headless?: boolean;
+    /**
+     * Path to a custom browser executable.
+     */
+    executablePath?: string;
+    /**
+     * Chrome DevTools Protocol endpoint to connect to an existing browser instance.
+     */
+    cdpEndpoint?: string;
+    /**
+     * Enable vision capabilities (e.g., visual automation or OCR).
+     */
+    vision?: boolean;
+    /**
+     * List of enabled tool capabilities. Possible values:
+     *   - 'core': Core browser automation features.
+     *   - 'tabs': Tab management features.
+     *   - 'pdf': PDF generation and manipulation.
+     *   - 'history': Browser history access.
+     *   - 'wait': Wait and timing utilities.
+     *   - 'files': File upload/download support.
+     *   - 'install': Browser installation utilities.
+     */
+    capabilities?: ToolCapability[];
 };
-
-export function createServer(options?: Options): Server;
+export declare function createServer(options?: Options): Promise<Server>;
+export {};

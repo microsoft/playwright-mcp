@@ -89,14 +89,14 @@ export function createServerWithTools(options: Options): Server {
 
 export class ServerList {
   private _servers: Server[] = [];
-  private _serverFactory: () => Server;
+  private _serverFactory: () => Promise<Server>;
 
-  constructor(serverFactory: () => Server) {
+  constructor(serverFactory: () => Promise<Server>) {
     this._serverFactory = serverFactory;
   }
 
   async create() {
-    const server = this._serverFactory();
+    const server = await this._serverFactory();
     this._servers.push(server);
     return server;
   }
