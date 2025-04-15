@@ -19,6 +19,8 @@ import zodToJsonSchema from 'zod-to-json-schema';
 
 import type * as playwright from 'playwright';
 import type { Tool } from './tool';
+import { generateLocator } from '../context';
+import * as javascript from '../javascript';
 
 const snapshot: Tool = {
   capability: 'core',
@@ -51,7 +53,9 @@ const click: Tool = {
     const validatedParams = elementSchema.parse(params);
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const locator = snapshot.refLocator(validatedParams.ref);
+      const action = `await page.${await generateLocator(locator)}.click();`;
       await locator.click();
+      return action;
     }, {
       status: `Clicked "${validatedParams.element}"`,
     });
@@ -78,7 +82,9 @@ const drag: Tool = {
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const startLocator = snapshot.refLocator(validatedParams.startRef);
       const endLocator = snapshot.refLocator(validatedParams.endRef);
+      const action = `await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`;
       await startLocator.dragTo(endLocator);
+      return action;
     }, {
       status: `Dragged "${validatedParams.startElement}" to "${validatedParams.endElement}"`,
     });
@@ -97,7 +103,9 @@ const hover: Tool = {
     const validatedParams = elementSchema.parse(params);
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const locator = snapshot.refLocator(validatedParams.ref);
+      const action = `await page.${await generateLocator(locator)}.hover();`;
       await locator.hover();
+      return action;
     }, {
       status: `Hovered over "${validatedParams.element}"`,
     });
@@ -122,12 +130,20 @@ const type: Tool = {
     const validatedParams = typeSchema.parse(params);
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const locator = snapshot.refLocator(validatedParams.ref);
-      if (validatedParams.slowly)
+
+      let action = '';
+      if (validatedParams.slowly) {
+        action = `await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(validatedParams.text)});`;
         await locator.pressSequentially(validatedParams.text);
-      else
+      } else {
+        action = `await page.${await generateLocator(locator)}.fill(${javascript.quote(validatedParams.text)});`;
         await locator.fill(validatedParams.text);
-      if (validatedParams.submit)
+      }
+      if (validatedParams.submit) {
+        action += `\nawait page.${await generateLocator(locator)}.press('Enter');`;
         await locator.press('Enter');
+      }
+      return action;
     }, {
       status: `Typed "${validatedParams.text}" into "${validatedParams.element}"`,
     });
@@ -150,7 +166,9 @@ const selectOption: Tool = {
     const validatedParams = selectOptionSchema.parse(params);
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       const locator = snapshot.refLocator(validatedParams.ref);
+      const action = `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(validatedParams.values)});`;
       await locator.selectOption(validatedParams.values);
+      return action;
     }, {
       status: `Selected option in "${validatedParams.element}"`,
     });

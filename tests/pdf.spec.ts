@@ -36,17 +36,7 @@ test('save as pdf', async ({ client }) => {
     arguments: {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
-  })).toHaveTextContent(`
-Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
-
-- Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
-- Page Title: Title
-- Page Snapshot
-\`\`\`yaml
-- text: Hello, world!
-\`\`\`
-`
-  );
+  })).toContainTextContent(`- text: Hello, world!`);
 
   const response = await client.callTool({
     name: 'browser_pdf_save',

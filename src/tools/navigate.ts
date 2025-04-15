@@ -35,6 +35,7 @@ const navigate: ToolFactory = captureSnapshot => ({
     const currentTab = await context.ensureTab();
     return await currentTab.run(async tab => {
       await tab.navigate(validatedParams.url);
+      return `await page.goto('${validatedParams.url}');`;
     }, {
       status: `Navigated to ${validatedParams.url}`,
       captureSnapshot,
@@ -54,6 +55,7 @@ const goBack: ToolFactory = snapshot => ({
   handle: async context => {
     return await context.currentTab().runAndWait(async tab => {
       await tab.page.goBack();
+      return `await page.goBack();`;
     }, {
       status: 'Navigated back',
       captureSnapshot: snapshot,
@@ -73,6 +75,7 @@ const goForward: ToolFactory = snapshot => ({
   handle: async context => {
     return await context.currentTab().runAndWait(async tab => {
       await tab.page.goForward();
+      return `await page.goForward();`;
     }, {
       status: 'Navigated forward',
       captureSnapshot: snapshot,

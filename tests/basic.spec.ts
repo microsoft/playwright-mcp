@@ -26,6 +26,8 @@ test('browser_navigate', async ({ client }) => {
   })).toHaveTextContent(`
 Navigated to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 
+- Action: await page.goto('data:text/html,<html><title>Title</title><body>Hello, world!</body></html>');
+
 - Page URL: data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 - Page Title: Title
 - Page Snapshot
@@ -50,7 +52,10 @@ test('browser_click', async ({ client }) => {
       element: 'Submit button',
       ref: 's1e3',
     },
-  })).toHaveTextContent(`Clicked "Submit button"
+  })).toHaveTextContent(`
+Clicked "Submit button"
+
+- Action: await page.getByRole('button', { name: 'Submit' }).click();
 
 - Page URL: data:text/html,<html><title>Title</title><button>Submit</button></html>
 - Page Title: Title
@@ -77,7 +82,10 @@ test('browser_select_option', async ({ client }) => {
       ref: 's1e3',
       values: ['bar'],
     },
-  })).toHaveTextContent(`Selected option in "Select"
+  })).toHaveTextContent(`
+Selected option in "Select"
+
+- Action: await page.getByRole('combobox').selectOption(['bar']);
 
 - Page URL: data:text/html,<html><title>Title</title><select><option value="foo">Foo</option><option value="bar">Bar</option></select></html>
 - Page Title: Title
@@ -105,7 +113,10 @@ test('browser_select_option (multiple)', async ({ client }) => {
       ref: 's1e3',
       values: ['bar', 'baz'],
     },
-  })).toHaveTextContent(`Selected option in "Select"
+  })).toHaveTextContent(`
+Selected option in "Select"
+
+- Action: await page.getByRole('listbox').selectOption(['bar', 'baz']);
 
 - Page URL: data:text/html,<html><title>Title</title><select multiple><option value="foo">Foo</option><option value="bar">Bar</option><option value="baz">Baz</option></select></html>
 - Page Title: Title
