@@ -14,23 +14,6 @@
  * limitations under the License.
  */
 
-export type Action = ClickAction | FillAction | SelectAction;
-
-export interface ClickAction {
-  type: 'click';
-  button: 'left' | 'middle' | 'right';
-}
-
-export interface FillAction {
-  type: 'fill';
-  text: string;
-}
-
-export interface SelectAction {
-  type: 'select';
-  text: string;
-}
-
 export function source() {
   class Recorder {
     constructor(

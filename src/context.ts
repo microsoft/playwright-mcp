@@ -217,6 +217,7 @@ class Tab {
   }
 
   async navigate(url: string) {
+    this.context.script.push(`await page.goto('${url}');`);
     await this.page.goto(url, { waitUntil: 'domcontentloaded' });
     // Cap load event to 5 seconds, the page is operational at this point.
     await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
