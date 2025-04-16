@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
 
+<a href="https://glama.ai/mcp/servers/@microsoft/playwright-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@microsoft/playwright-mcp/badge" alt="Playwright Server MCP server" />
+</a>
+
 ### Key Features
 
 - **Fast and lightweight**: Uses Playwright's accessibility tree, not pixel-based input.
