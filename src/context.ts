@@ -214,7 +214,7 @@ class Tab {
   }
 
   async run(callback: (tab: Tab) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
-    const blockedBeforeAction = this.blockReason(options);
+    const blockedBeforeAction = this._blockReason(options);
     if (blockedBeforeAction) {
       return {
         content: [{
@@ -238,7 +238,7 @@ class Tab {
     const result: string[] = [];
     result.push('', '- Ran code:', '```js', ...runResult.code, '```', '');
 
-    const blockedAfterAction = this.blockReason();
+    const blockedAfterAction = this._blockReason();
     if (blockedAfterAction)
       result.push(blockedAfterAction, '');
 
@@ -297,7 +297,7 @@ class Tab {
     this._fileChooser = undefined;
   }
 
-  blockReason(options?: RunOptions): string | undefined {
+  private _blockReason(options?: RunOptions): string | undefined {
     if (this._fileChooser && !options?.noClearFileChooser)
       return '- The page opened a file chooser. Use browser_file_upload to submit files or dismiss it before continuing.';
   }
