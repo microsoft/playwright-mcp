@@ -1,12 +1,14 @@
-# Write a regression test for a bug report
+# Examples
 
-## Prompt:
+Below are some examples of prompts to use with Playwright MCP. Draw inspiration from them to create your own. If you come up with a new prompt that works well, feel free to let us know in an issue or pull request.
+
+## Write a regression test for a bug report
 
 We have received a user report about a bug on our website https://debs-obrien.github.io/playwright-movies-app. I'd like you to verify if this bug exists by trying to follow the steps. If you see different behaviour, explain how it's different. If you see the same behaviour, please write me a Playwright regression test that encapsulates the buggy user flow. While writing the test, draw inspiration from the Playwright code you ran. Here's the user report:
 
 Howdy. I love your movies site, but there's something fishy going on. I'm looking at The Garfield Movie - a spectacular film - but somehow it's showing the wrong length. The movie is 90mins long, I measured myself yesterday! But somehow your site is claiming 101mins. Am I looking at it wrong, or is there a bug?
 
-## Output:
+**Output:**
 
 ```ts
 import { test, expect } from '@playwright/test';
