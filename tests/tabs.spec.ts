@@ -31,7 +31,7 @@ async function createTab(client: Client, title: string, body: string) {
 
 test('create new tab', async ({ client }) => {
   expect(await createTab(client, 'Tab one', 'Body one')).toHaveTextContent(`
-- Ran code:
+- Ran Playwright code:
 \`\`\`js
 // <internal code to open a new tab>
 \`\`\`
@@ -49,7 +49,7 @@ test('create new tab', async ({ client }) => {
 \`\`\``);
 
   expect(await createTab(client, 'Tab two', 'Body two')).toHaveTextContent(`
-- Ran code:
+- Ran Playwright code:
 \`\`\`js
 // <internal code to open a new tab>
 \`\`\`
@@ -77,7 +77,7 @@ test('select tab', async ({ client }) => {
       index: 2,
     },
   })).toHaveTextContent(`
-- Ran code:
+- Ran Playwright code:
 \`\`\`js
 // <internal code to select tab 2>
 \`\`\`
@@ -105,7 +105,7 @@ test('close tab', async ({ client }) => {
       index: 3,
     },
   })).toHaveTextContent(`
-- Ran code:
+- Ran Playwright code:
 \`\`\`js
 // <internal code to close tab 3>
 \`\`\`

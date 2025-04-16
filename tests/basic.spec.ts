@@ -24,7 +24,7 @@ test('browser_navigate', async ({ client }) => {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toHaveTextContent(`
-- Ran code:
+- Ran Playwright code:
 \`\`\`js
 // Navigate to data:text/html,<html><title>Title</title><body>Hello, world!</body></html>
 await page.goto('data:text/html,<html><title>Title</title><body>Hello, world!</body></html>');
@@ -55,7 +55,7 @@ test('browser_click', async ({ client }) => {
       ref: 's1e3',
     },
   })).toHaveTextContent(`
-- Ran code:
+- Ran Playwright code:
 \`\`\`js
 // Click Submit button
 await page.getByRole('button', { name: 'Submit' }).click();
@@ -87,7 +87,7 @@ test('browser_select_option', async ({ client }) => {
       values: ['bar'],
     },
   })).toHaveTextContent(`
-- Ran code:
+- Ran Playwright code:
 \`\`\`js
 // Select options [bar] in Select
 await page.getByRole('combobox').selectOption(['bar']);
@@ -120,7 +120,7 @@ test('browser_select_option (multiple)', async ({ client }) => {
       values: ['bar', 'baz'],
     },
   })).toHaveTextContent(`
-- Ran code:
+- Ran Playwright code:
 \`\`\`js
 // Select options [bar, baz] in Select
 await page.getByRole('listbox').selectOption(['bar', 'baz']);
@@ -260,7 +260,7 @@ test('browser_resize', async ({ client }) => {
       height: 780,
     },
   });
-  expect(response).toContainTextContent(`- Ran code:
+  expect(response).toContainTextContent(`- Ran Playwright code:
 \`\`\`js
 // Resize browser window to 390x780
 await page.setViewportSize({ width: 390, height: 780 });
