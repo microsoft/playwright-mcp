@@ -152,7 +152,7 @@ test('browser_file_upload', async ({ client }) => {
       element: 'Textbox',
       ref: 's1e3',
     },
-  })).toContainTextContent('There is a file chooser visible that requires browser_file_upload to be called');
+  })).toContainTextContent('The page opened a file chooser. Use browser_file_upload to submit files or dismiss it before continuing.');
 
   const filePath = test.info().outputPath('test.txt');
   await fs.writeFile(filePath, 'Hello, world!');
@@ -165,7 +165,7 @@ test('browser_file_upload', async ({ client }) => {
       },
     });
 
-    expect(response).not.toContainTextContent('There is a file chooser visible that requires browser_file_upload to be called');
+    expect(response).not.toContainTextContent('The page opened a file chooser. Use browser_file_upload to submit files or dismiss it before continuing.');
     expect(response).toContainTextContent('textbox [ref=s3e3]: C:\\fakepath\\test.txt');
   }
 
@@ -178,7 +178,7 @@ test('browser_file_upload', async ({ client }) => {
       },
     });
 
-    expect(response).toContainTextContent('There is a file chooser visible that requires browser_file_upload to be called');
+    expect(response).toContainTextContent('The page opened a file chooser. Use browser_file_upload to submit files or dismiss it before continuing.');
     expect(response).toContainTextContent('button "Button" [ref=s4e4]');
   }
 
@@ -191,7 +191,18 @@ test('browser_file_upload', async ({ client }) => {
       },
     });
 
-    expect(response, 'not submitting browser_file_upload dismisses file chooser').not.toContainTextContent('There is a file chooser visible that requires browser_file_upload to be called');
+    expect(response, 'not submitting browser_file_upload gets blocked').toHaveTextContent('- The page opened a file chooser. Use browser_file_upload to submit files or dismiss it before continuing.');
+  }
+
+  {
+    const response = await client.callTool({
+      name: 'browser_file_upload',
+      arguments: {
+        paths: [],
+      },
+    });
+
+    expect(response, 'empty paths dismisses').toContainTextContent('<internal code to dismiss the file chooser>');
   }
 });
 

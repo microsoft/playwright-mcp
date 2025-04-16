@@ -214,10 +214,18 @@ class Tab {
   }
 
   async run(callback: (tab: Tab) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
+    const blockedBeforeAction = this.blockReason(options);
+    if (blockedBeforeAction) {
+      return {
+        content: [{
+          type: 'text',
+          text: blockedBeforeAction,
+        }],
+      };
+    }
+
     let runResult: RunResult | undefined;
     try {
-      if (!options?.noClearFileChooser)
-        this._fileChooser = undefined;
       if (options?.waitForCompletion)
         runResult = await waitForCompletion(this.page, () => callback(this)) ?? undefined;
       else
@@ -228,11 +236,11 @@ class Tab {
     }
 
     const result: string[] = [];
-    result.push(`- Ran code:
-\`\`\`js
-${runResult.code.join('\n')}
-\`\`\`
-`);
+    result.push('', '- Ran code:', '```js', ...runResult.code, '```', '');
+
+    const blockedAfterAction = this.blockReason();
+    if (blockedAfterAction)
+      result.push(blockedAfterAction, '');
 
     if (this.context.tabs().length > 1)
       result.push(await this.context.listTabs(), '');
@@ -240,7 +248,7 @@ ${runResult.code.join('\n')}
     if (this._snapshot) {
       if (this.context.tabs().length > 1)
         result.push('### Current tab');
-      result.push(this._snapshot.text({ hasFileChooser: !!this._fileChooser }));
+      result.push(this._snapshot.text());
     }
 
     return {
@@ -282,6 +290,17 @@ ${runResult.code.join('\n')}
     await this._fileChooser.setFiles(paths);
     this._fileChooser = undefined;
   }
+
+  async dismissFileChooser() {
+    if (!this._fileChooser)
+      throw new Error('No file chooser visible');
+    this._fileChooser = undefined;
+  }
+
+  blockReason(options?: RunOptions): string | undefined {
+    if (this._fileChooser && !options?.noClearFileChooser)
+      return '- The page opened a file chooser. Use browser_file_upload to submit files or dismiss it before continuing.';
+  }
 }
 
 class PageSnapshot {
@@ -297,14 +316,8 @@ class PageSnapshot {
     return snapshot;
   }
 
-  text(options: { hasFileChooser: boolean }): string {
-    const results: string[] = [];
-    if (options.hasFileChooser) {
-      results.push('- There is a file chooser visible that requires browser_file_upload to be called');
-      results.push('');
-    }
-    results.push(this._text);
-    return results.join('\n');
+  text(): string {
+    return this._text;
   }
 
   private async _build(page: playwright.Page) {

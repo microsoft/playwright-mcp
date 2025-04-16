@@ -20,7 +20,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import type { ToolFactory } from './tool';
 
 const uploadFileSchema = z.object({
-  paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
+  paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files. Pass empty array to dismiss the file chooser.'),
 });
 
 const uploadFile: ToolFactory = captureSnapshot => ({
@@ -34,9 +34,14 @@ const uploadFile: ToolFactory = captureSnapshot => ({
     const validatedParams = uploadFileSchema.parse(params);
     const tab = context.currentTab();
     return await tab.runAndWait(async () => {
+      if (validatedParams.paths.length === 0) {
+        await tab.dismissFileChooser();
+        return { code: ['// <internal code to dismiss the file chooser>'] };
+      }
+
       await tab.submitFileChooser(validatedParams.paths);
       const code = [
-        `// <internal code to chose files ${validatedParams.paths.join(', ')}`,
+        `// <internal code to choose files ${validatedParams.paths.join(', ')} >`,
       ];
       return { code };
     }, {
