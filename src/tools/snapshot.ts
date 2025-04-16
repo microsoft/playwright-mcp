@@ -188,10 +188,10 @@ const selectOption: Tool = {
 
 const screenshotSchema = z.object({
   raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
-  element: z.string().optional().describe('Human-readable element description used to obtain permission to interact with the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.'),
+  element: z.string().optional().describe('Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.'),
   ref: z.string().optional().describe('Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.'),
 }).refine(data => {
-  return (!data.element) === (!data.ref);
+  return !!data.element === !!data.ref;
 }, {
   message: 'Both element and ref must be provided or neither.',
   path: ['ref', 'element']
@@ -215,7 +215,7 @@ const screenshot: Tool = {
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
       let screenshot: Buffer | undefined;
       const code = [
-        `// Screenshot ${isElementScreenshot ? validatedParams.element : 'viewport'}`,
+        `// Screenshot ${isElementScreenshot ? validatedParams.element : 'viewport'} and save it as ${fileName}`,
       ];
       if (isElementScreenshot) {
         const locator = snapshot.refLocator(validatedParams.ref!);
@@ -225,7 +225,6 @@ const screenshot: Tool = {
         code.push(`await page.screenshot(${javascript.formatObject(options)});`);
         screenshot = await tab.page.screenshot(options);
       }
-      code.push(`// Screenshot saved as ${fileName}`);
       return {
         code,
         images: [{
@@ -233,7 +232,7 @@ const screenshot: Tool = {
           mimeType: fileType === 'png' ? 'image/png' : 'image/jpeg',
         }]
       };
-    }, { captureSnapshot: false });
+    });
   }
 };
 
