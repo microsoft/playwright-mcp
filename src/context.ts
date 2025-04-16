@@ -162,10 +162,18 @@ export class Context {
     return { browserContext };
   }
 
+  private _persistentContext: playwright.BrowserContext | null = null;
+
   private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
+    // If we already have a persistent context, return it.
+    if (this._persistentContext) {
+      return this._persistentContext;
+    }
+    // Otherwise, launch a new persistent context.
     try {
       const browserType = this.options.browserName ? playwright[this.options.browserName] : playwright.chromium;
-      return await browserType.launchPersistentContext(this.options.userDataDir, this.options.launchOptions);
+      this._persistentContext = await browserType.launchPersistentContext(this.options.userDataDir, this.options.launchOptions);
+      return this._persistentContext;
     } catch (error: any) {
       if (error.message.includes('Executable doesn\'t exist'))
         throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
