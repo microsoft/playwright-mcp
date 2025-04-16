@@ -71,7 +71,7 @@ type Options = {
 const packageJSON = require('../package.json');
 
 export async function createServer(options?: Options): Promise<Server> {
-  let browserName: 'chromium' | 'firefox' | 'webkit';
+  let browserName: 'chromium' | 'firefox' | 'webkit' | '_bidiFirefox';
   let channel: string | undefined;
   switch (options?.browser) {
     case 'chrome':
@@ -90,6 +90,12 @@ export async function createServer(options?: Options): Promise<Server> {
       break;
     case 'firefox':
       browserName = 'firefox';
+      break;
+    case 'moz-firefox':
+    case 'moz-firefox-beta':
+    case 'moz-firefox-nightly':
+      browserName = '_bidiFirefox';
+      channel = options.browser;
       break;
     case 'webkit':
       browserName = 'webkit';
@@ -120,7 +126,7 @@ export async function createServer(options?: Options): Promise<Server> {
   });
 }
 
-async function createUserDataDir(browserName: 'chromium' | 'firefox' | 'webkit') {
+async function createUserDataDir(browserName: 'chromium' | 'firefox' | 'webkit' | '_bidiFirefox') {
   let cacheDirectory: string;
   if (process.platform === 'linux')
     cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');

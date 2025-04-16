@@ -30,6 +30,16 @@ export default defineConfig({
     { name: 'msedge', use: { mcpBrowser: 'msedge' } },
     { name: 'chromium', use: { mcpBrowser: 'chromium' } },
     { name: 'firefox', use: { mcpBrowser: 'firefox' } },
+    // Firefox headless fails on windows bots, see https://bugzilla.mozilla.org/show_bug.cgi?id=1960787
+    process.platform === 'win32' ? undefined :
+      {
+        name: 'moz-firefox',
+        use: {
+          mcpBrowser: 'moz-firefox',
+          // We currently look at /snap/bin/firefox on Linux by default, but on GHA it's not there.
+          mcpExecutablePath: process.platform === 'linux' ? '/usr/bin/firefox' : undefined
+        }
+      },
     { name: 'webkit', use: { mcpBrowser: 'webkit' } },
   ].filter(Boolean) as Project[],
 });

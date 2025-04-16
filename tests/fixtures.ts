@@ -32,6 +32,7 @@ type Fixtures = {
   // Cli options.
   mcpHeadless: boolean;
   mcpBrowser: string | undefined;
+  mcpExecutablePath: string | undefined;
 };
 
 export const test = baseTest.extend<Fixtures>({
@@ -44,7 +45,7 @@ export const test = baseTest.extend<Fixtures>({
     await use(await startClient({ args: ['--vision'] }));
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser }, use, testInfo) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpExecutablePath }, use, testInfo) => {
     const userDataDir = testInfo.outputPath('user-data-dir');
     let client: StdioClientTransport | undefined;
 
@@ -54,6 +55,8 @@ export const test = baseTest.extend<Fixtures>({
         args.push('--headless');
       if (mcpBrowser)
         args.push(`--browser=${mcpBrowser}`);
+      if (mcpExecutablePath)
+        args.push(`--executable-path=${mcpExecutablePath}`);
       if (options?.args)
         args.push(...options.args);
       const transport = new StdioClientTransport({
@@ -103,6 +106,8 @@ export const test = baseTest.extend<Fixtures>({
   },
 
   mcpBrowser: ['chromium', { option: true }],
+
+  mcpExecutablePath: [undefined, { option: true }],
 });
 
 type Response = Awaited<ReturnType<Client['callTool']>>;

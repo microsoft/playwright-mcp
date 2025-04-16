@@ -15,7 +15,7 @@
  */
 
 import fs from 'fs/promises';
-import { test, expect } from './fixtures';
+import { expect, test } from './fixtures';
 
 test('browser_navigate', async ({ client }) => {
   expect(await client.callTool({
@@ -195,7 +195,8 @@ test('browser_file_upload', async ({ client }) => {
   }
 });
 
-test('browser_type', async ({ client }) => {
+test('browser_type', async ({ client, mcpBrowser }) => {
+  test.fail(mcpBrowser === 'moz-firefox', 'Bidi Firefox does not support fill.');
   await client.callTool({
     name: 'browser_navigate',
     arguments: {
@@ -266,4 +267,23 @@ test('browser_resize', async ({ client }) => {
 await page.setViewportSize({ width: 390, height: 780 });
 \`\`\``);
   await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent('Window size: 390x780');
+});
+
+test('firefox bidi', async ({ startClient, mcpBrowser }) => {
+  test.skip(mcpBrowser !== 'moz-firefox', 'Only run with stable Firefox, over bidi protocol.');
+  const client = await startClient();
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: `data:text/html,<script>console.log("is firefox:", navigator.userAgent.includes("Firefox") ? true : navigator.userAgent);</script><body>Hello, world!</body>`,
+    },
+  });
+  const resource = await client.readResource({
+    uri: 'browser://console',
+  });
+  expect(resource.contents).toEqual([{
+    uri: 'browser://console',
+    mimeType: 'text/plain',
+    text: '[LOG] is firefox: true',
+  }]);
 });

@@ -11,7 +11,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Use macos-latest-large because macos-latest doesn't have MS Edge and Firefox preinstalled.
+        os: [ubuntu-latest, macos-latest-large, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:

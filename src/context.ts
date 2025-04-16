@@ -21,7 +21,7 @@ import { waitForCompletion } from './tools/utils';
 import { ToolResult } from './tools/tool';
 
 export type ContextOptions = {
-  browserName?: 'chromium' | 'firefox' | 'webkit';
+  browserName?: 'chromium' | 'firefox' | 'webkit' | '_bidiFirefox';
   userDataDir: string;
   launchOptions?: playwright.LaunchOptions;
   cdpEndpoint?: string;
