@@ -32,7 +32,7 @@ type Options = ContextOptions & {
 
 export function createServerWithTools(options: Options): Server {
   const { name, version, tools, resources } = options;
-  const context = new Context(options);
+  const context = new Context(tools, options);
   const server = new Server({ name, version }, {
     capabilities: {
       tools: {},
@@ -57,9 +57,21 @@ export function createServerWithTools(options: Options): Server {
       };
     }
 
+    const modalStates = context.modalStates().map(state => state.type);
+    if ((tool.clearsModalState && !modalStates.includes(tool.clearsModalState)) ||
+        (!tool.clearsModalState && modalStates.length)) {
+      const text = [
+        `Tool "${request.params.name}" does not handle the modal state.`,
+        ...context.modalStatesMarkdown(),
+      ].join('\n');
+      return {
+        content: [{ type: 'text', text }],
+        isError: true,
+      };
+    }
+
     try {
-      const result = await tool.handle(context, request.params.arguments);
-      return result;
+      return await tool.handle(context, request.params.arguments);
     } catch (error) {
       return {
         content: [{ type: 'text', text: String(error) }],

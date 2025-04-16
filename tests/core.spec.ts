@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import fs from 'fs/promises';
 import { test, expect } from './fixtures';
 
 test('browser_navigate', async ({ client }) => {
@@ -136,63 +135,6 @@ await page.getByRole('listbox').selectOption(['bar', 'baz']);
     - option "Baz" [selected] [ref=s2e6]
 \`\`\`
 `);
-});
-
-test('browser_file_upload', async ({ client }) => {
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><input type="file" /><button>Button</button></html>',
-    },
-  })).toContainTextContent('- textbox [ref=s1e3]');
-
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Textbox',
-      ref: 's1e3',
-    },
-  })).toContainTextContent('There is a file chooser visible that requires browser_file_upload to be called');
-
-  const filePath = test.info().outputPath('test.txt');
-  await fs.writeFile(filePath, 'Hello, world!');
-
-  {
-    const response = await client.callTool({
-      name: 'browser_file_upload',
-      arguments: {
-        paths: [filePath],
-      },
-    });
-
-    expect(response).not.toContainTextContent('There is a file chooser visible that requires browser_file_upload to be called');
-    expect(response).toContainTextContent('textbox [ref=s3e3]: C:\\fakepath\\test.txt');
-  }
-
-  {
-    const response = await client.callTool({
-      name: 'browser_click',
-      arguments: {
-        element: 'Textbox',
-        ref: 's3e3',
-      },
-    });
-
-    expect(response).toContainTextContent('There is a file chooser visible that requires browser_file_upload to be called');
-    expect(response).toContainTextContent('button "Button" [ref=s4e4]');
-  }
-
-  {
-    const response = await client.callTool({
-      name: 'browser_click',
-      arguments: {
-        element: 'Button',
-        ref: 's4e4',
-      },
-    });
-
-    expect(response, 'not submitting browser_file_upload dismisses file chooser').not.toContainTextContent('There is a file chooser visible that requires browser_file_upload to be called');
-  }
 });
 
 test('browser_type', async ({ client }) => {

@@ -34,16 +34,20 @@ const uploadFile: ToolFactory = captureSnapshot => ({
     const validatedParams = uploadFileSchema.parse(params);
     const tab = context.currentTab();
     return await tab.runAndWait(async () => {
-      await tab.submitFileChooser(validatedParams.paths);
+      const modalState = context.modalStates().find(state => state.type === 'fileChooser');
+      if (!modalState)
+        throw new Error('No file chooser visible');
+      await modalState.fileChooser.setFiles(validatedParams.paths);
+      context.clearModalState(modalState);
       const code = [
         `// <internal code to chose files ${validatedParams.paths.join(', ')}`,
       ];
       return { code };
     }, {
       captureSnapshot,
-      noClearFileChooser: true,
     });
   },
+  clearsModalState: 'fileChooser',
 });
 
 export default (captureSnapshot: boolean) => [

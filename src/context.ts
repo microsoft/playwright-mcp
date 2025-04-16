@@ -18,7 +18,8 @@ import * as playwright from 'playwright';
 import yaml from 'yaml';
 
 import { waitForCompletion } from './tools/utils';
-import { ToolResult } from './tools/tool';
+
+import type { ModalState, Tool, ToolResult } from './tools/tool';
 
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
@@ -33,18 +34,41 @@ type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
 type RunOptions = {
   captureSnapshot?: boolean;
   waitForCompletion?: boolean;
-  noClearFileChooser?: boolean;
 };
 
 export class Context {
+  readonly tools: Tool[];
   readonly options: ContextOptions;
   private _browser: playwright.Browser | undefined;
   private _browserContext: playwright.BrowserContext | undefined;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
+  private _modalStates: (ModalState & { tab: Tab })[] = [];
 
-  constructor(options: ContextOptions) {
+  constructor(tools: Tool[], options: ContextOptions) {
+    this.tools = tools;
     this.options = options;
+  }
+
+  modalStates(): ModalState[] {
+    return this._modalStates;
+  }
+
+  setModalState(modalState: ModalState, inTab: Tab) {
+    this._modalStates.push({ ...modalState, tab: inTab });
+  }
+
+  clearModalState(modalState: ModalState) {
+    this._modalStates = this._modalStates.filter(state => state !== modalState);
+  }
+
+  modalStatesMarkdown(): string[] {
+    const result: string[] = ['### Modal state'];
+    for (const state of this._modalStates) {
+      const tool = this.tools.find(tool => tool.clearsModalState === state.type);
+      result.push(`- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`);
+    }
+    return result;
   }
 
   tabs(): Tab[] {
@@ -104,6 +128,7 @@ export class Context {
   }
 
   private _onPageClosed(tab: Tab) {
+    this._modalStates = this._modalStates.filter(state => state.tab !== tab);
     const index = this._tabs.indexOf(tab);
     if (index === -1)
       return;
@@ -188,7 +213,6 @@ class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
   private _console: playwright.ConsoleMessage[] = [];
-  private _fileChooser: playwright.FileChooser | undefined;
   private _snapshot: PageSnapshot | undefined;
   private _onPageClose: (tab: Tab) => void;
 
@@ -202,13 +226,18 @@ class Tab {
         this._console.length = 0;
     });
     page.on('close', () => this._onClose());
-    page.on('filechooser', chooser => this._fileChooser = chooser);
+    page.on('filechooser', chooser => {
+      this.context.setModalState({
+        type: 'fileChooser',
+        description: 'File chooser',
+        fileChooser: chooser,
+      }, this);
+    });
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
   }
 
   private _onClose() {
-    this._fileChooser = undefined;
     this._console.length = 0;
     this._onPageClose(this);
   }
@@ -222,8 +251,6 @@ class Tab {
   async run(callback: (tab: Tab) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
     let runResult: RunResult | undefined;
     try {
-      if (!options?.noClearFileChooser)
-        this._fileChooser = undefined;
       if (options?.waitForCompletion)
         runResult = await waitForCompletion(this.page, () => callback(this)) ?? undefined;
       else
@@ -240,13 +267,23 @@ ${runResult.code.join('\n')}
 \`\`\`
 `);
 
+    if (this.context.modalStates().length) {
+      result.push(...this.context.modalStatesMarkdown());
+      return {
+        content: [{
+          type: 'text',
+          text: result.join('\n'),
+        }],
+      };
+    }
+
     if (this.context.tabs().length > 1)
       result.push(await this.context.listTabs(), '');
 
     if (this._snapshot) {
       if (this.context.tabs().length > 1)
         result.push('### Current tab');
-      result.push(this._snapshot.text({ hasFileChooser: !!this._fileChooser }));
+      result.push(this._snapshot.text());
     }
 
     const images = runResult.images?.map(image => {
@@ -289,13 +326,6 @@ ${runResult.code.join('\n')}
   async console(): Promise<playwright.ConsoleMessage[]> {
     return this._console;
   }
-
-  async submitFileChooser(paths: string[]) {
-    if (!this._fileChooser)
-      throw new Error('No file chooser visible');
-    await this._fileChooser.setFiles(paths);
-    this._fileChooser = undefined;
-  }
 }
 
 class PageSnapshot {
@@ -311,14 +341,8 @@ class PageSnapshot {
     return snapshot;
   }
 
-  text(options: { hasFileChooser: boolean }): string {
-    const results: string[] = [];
-    if (options.hasFileChooser) {
-      results.push('- There is a file chooser visible that requires browser_file_upload to be called');
-      results.push('');
-    }
-    results.push(this._text);
-    return results.join('\n');
+  text(): string {
+    return this._text;
   }
 
   private async _build(page: playwright.Page) {

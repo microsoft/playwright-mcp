@@ -17,7 +17,7 @@
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
 import type { JsonSchema7Type } from 'zod-to-json-schema';
 import type { Context } from '../context';
-
+import type * as playwright from 'playwright';
 export type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install';
 
 export type ToolSchema = {
@@ -25,6 +25,14 @@ export type ToolSchema = {
   description: string;
   inputSchema: JsonSchema7Type;
 };
+
+export type FileUploadModalState = {
+  type: 'fileChooser';
+  description: string;
+  fileChooser: playwright.FileChooser;
+};
+
+export type ModalState = FileUploadModalState;
 
 export type ToolResult = {
   content: (ImageContent | TextContent)[];
@@ -34,6 +42,7 @@ export type ToolResult = {
 export type Tool = {
   capability: ToolCapability;
   schema: ToolSchema;
+  clearsModalState?: ModalState['type'];
   handle: (context: Context, params?: Record<string, any>) => Promise<ToolResult>;
 };
 
