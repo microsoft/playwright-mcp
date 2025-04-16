@@ -213,20 +213,25 @@ const screenshot: Tool = {
     const options: playwright.PageScreenshotOptions = { type: fileType, quality: fileType === 'png' ? undefined : 50, scale: 'css', path: fileName };
     const isElementScreenshot = validatedParams.element && validatedParams.ref;
     return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
+      let screenshot: Buffer | undefined;
       const code = [
         `// Screenshot ${isElementScreenshot ? validatedParams.element : 'viewport'}`,
       ];
       if (isElementScreenshot) {
         const locator = snapshot.refLocator(validatedParams.ref!);
         code.push(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
-        await locator.screenshot(options);
+        screenshot = await locator.screenshot(options);
       } else {
         code.push(`await page.screenshot(${javascript.formatObject(options)});`);
-        await tab.page.screenshot(options);
+        screenshot = await tab.page.screenshot(options);
       }
       code.push(`// Screenshot saved as ${fileName}`);
       return {
-        code
+        code,
+        images: [{
+          data: screenshot.toString('base64'),
+          mimeType: fileType === 'png' ? 'image/png' : 'image/jpeg',
+        }]
       };
     }, { captureSnapshot: false });
   }

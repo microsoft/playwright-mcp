@@ -173,6 +173,12 @@ export class Context {
 
 type RunResult = {
   code: string[];
+  images?: ImageContent[];
+};
+
+type ImageContent = {
+  data: string;
+  mimeType: string;
 };
 
 class Tab {
@@ -240,8 +246,16 @@ ${runResult.code.join('\n')}
       result.push(this._snapshot.text({ hasFileChooser: !!this._fileChooser }));
     }
 
+    const images = runResult.images?.map(image => {
+      return {
+        type: 'image' as 'image',
+        data: image.data,
+        mimeType: image.mimeType,
+      };
+    }) ?? [];
+
     return {
-      content: [{
+      content: [...images, {
         type: 'text',
         text: result.join('\n'),
       }],
