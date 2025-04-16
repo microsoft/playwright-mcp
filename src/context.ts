@@ -239,7 +239,7 @@ class Tab {
     }
 
     const result: string[] = [];
-    result.push('', '- Ran code:', '```js', ...runResult.code, '```', '');
+    result.push('', '- Ran Playwright code:', '```js', ...runResult.code, '```', '');
 
     const blockedAfterAction = this._blockReason();
     if (blockedAfterAction)
