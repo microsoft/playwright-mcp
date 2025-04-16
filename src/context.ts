@@ -19,6 +19,7 @@ import yaml from 'yaml';
 
 import { waitForCompletion } from './tools/utils';
 import { ToolResult } from './tools/tool';
+import { uploadFile } from './tools/files';
 
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
@@ -301,7 +302,7 @@ class Tab {
 
   private _blockReason(options?: RunOptions): string | undefined {
     if (this._fileChooser && !options?.ignoreBlocks?.filechooser)
-      return '- The page opened a file chooser. Use browser_file_upload to submit files or dismiss it before continuing.';
+      return `- The page opened a file chooser. Use ${uploadFile(true).schema.name} to submit files or dismiss it before continuing.`;
   }
 }
 

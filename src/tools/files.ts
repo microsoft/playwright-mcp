@@ -23,7 +23,7 @@ const uploadFileSchema = z.object({
   paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files. Pass empty array to dismiss the file chooser.'),
 });
 
-const uploadFile: ToolFactory = captureSnapshot => ({
+export const uploadFile: ToolFactory = captureSnapshot => ({
   capability: 'files',
   schema: {
     name: 'browser_file_upload',
