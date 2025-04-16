@@ -46,7 +46,9 @@ const uploadFile: ToolFactory = captureSnapshot => ({
       return { code };
     }, {
       captureSnapshot,
-      noClearFileChooser: true,
+      ignoreBlocks: {
+        filechooser: true,
+      },
     });
   },
 });

@@ -33,7 +33,9 @@ type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
 type RunOptions = {
   captureSnapshot?: boolean;
   waitForCompletion?: boolean;
-  noClearFileChooser?: boolean;
+  ignoreBlocks?: {
+    filechooser?: boolean;
+  };
 };
 
 export class Context {
@@ -298,7 +300,7 @@ class Tab {
   }
 
   private _blockReason(options?: RunOptions): string | undefined {
-    if (this._fileChooser && !options?.noClearFileChooser)
+    if (this._fileChooser && !options?.ignoreBlocks?.filechooser)
       return '- The page opened a file chooser. Use browser_file_upload to submit files or dismiss it before continuing.';
   }
 }
