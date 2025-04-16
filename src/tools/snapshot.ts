@@ -186,9 +186,15 @@ const selectOption: Tool = {
   },
 };
 
-const screenshotSchema = elementSchema.extend({
+const screenshotSchema = z.object({
   raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
-  wholePage: z.boolean().optional().describe('Whether to take a screenshot of the whole page. Default is true, which takes a screenshot of the viewport.'),
+  element: z.string().optional().describe('Human-readable element description used to obtain permission to interact with the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.'),
+  ref: z.string().optional().describe('Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.'),
+}).refine(data => {
+  return (!data.element) === (!data.ref);
+}, {
+  message: 'Both element and ref must be provided or neither.',
+  path: ['ref', 'element']
 });
 
 const screenshot: Tool = {
@@ -202,31 +208,28 @@ const screenshot: Tool = {
   handle: async (context, params) => {
     const validatedParams = screenshotSchema.parse(params);
     const tab = context.currentTab();
-    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + `${validatedParams.raw ? '.png' : '.jpeg'}`;
-    const options: playwright.PageScreenshotOptions = validatedParams.raw ? { type: 'png', scale: 'css', path: fileName } : { type: 'jpeg', quality: 50, scale: 'css', path: fileName };
-    if (validatedParams.wholePage) {
-      await tab.page.screenshot(options);
-    } else {
-      return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
-        const locator = snapshot.refLocator(validatedParams.ref);
-        const code = [
-          `// Screenshot ${validatedParams.element}`,
-          `await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`
-        ];
+    const fileType = validatedParams.raw ? 'png' : 'jpeg';
+    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + `.${fileType}`;
+    const options: playwright.PageScreenshotOptions = { type: fileType, quality: fileType === 'png' ? undefined : 50, scale: 'css', path: fileName };
+    const isElementScreenshot = validatedParams.element && validatedParams.ref;
+    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
+      const code = [
+        `// Screenshot ${isElementScreenshot ? validatedParams.element : 'viewport'}`,
+      ];
+      if (isElementScreenshot) {
+        const locator = snapshot.refLocator(validatedParams.ref!);
+        code.push(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
         await locator.screenshot(options);
-        code.push(`// Saved as ${fileName}`);
-        return {
-          code
-        };
-      });
-    }
-    return {
-      content: [{
-        type: 'text',
-        text: `Saved as ${fileName}`,
-      }],
-    };
-  },
+      } else {
+        code.push(`await page.screenshot(${javascript.formatObject(options)});`);
+        await tab.page.screenshot(options);
+      }
+      code.push(`// Screenshot saved as ${fileName}`);
+      return {
+        code
+      };
+    }, { captureSnapshot: false });
+  }
 };
 
 
