@@ -228,7 +228,7 @@ class Tab {
     }
 
     const result: string[] = [];
-    result.push(`- Ran code:
+    result.push(`- Ran Playwright code:
 \`\`\`js
 ${runResult.code.join('\n')}
 \`\`\`
