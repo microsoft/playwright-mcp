@@ -199,7 +199,7 @@ ${code.join('\n')}
 
   async waitForTimeout(time: number) {
     if (this._currentTab && !this._javaScriptBlocked())
-      await this._currentTab.page.waitForTimeout(time);
+      await this._currentTab.page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
     else
       await new Promise(f => setTimeout(f, time));
   }
