@@ -322,6 +322,18 @@ server.connect(transport);
   - Parameters:
     - `time` (number): The time to wait in seconds (capped at 10 seconds)
 
+- **browser_resize**
+  - Description: Resize the browser window
+  - Parameters:
+    - `width` (number): The desired width of the browser window
+    - `height` (number): The desired height of the browser window
+
+- **browser_handle_dialog**
+  - Description: Handle browser dialogs (alert, confirm, prompt)
+  - Parameters:
+    - `accept` (boolean): Whether to accept or dismiss the dialog
+    - `promptText` (string, optional): Text to enter in case of prompt dialogs
+
 - **browser_close**
   - Description: Close the page
   - Parameters: None
