@@ -19,7 +19,8 @@ import yaml from 'yaml';
 
 import { waitForCompletion } from './tools/utils';
 
-import type { ModalState, Tool, ToolResult } from './tools/tool';
+import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
+import type { ModalState, Tool } from './tools/tool';
 
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
@@ -30,11 +31,6 @@ export type ContextOptions = {
 };
 
 type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
-
-type RunOptions = {
-  captureSnapshot?: boolean;
-  waitForCompletion?: boolean;
-};
 
 export class Context {
   readonly tools: Tool[];
@@ -75,7 +71,7 @@ export class Context {
     return this._tabs;
   }
 
-  currentTab(): Tab {
+  currentTabOrDie(): Tab {
     if (!this._currentTab)
       throw new Error('No current snapshot available. Capture a snapshot of navigate to a new location first.');
     return this._currentTab;
@@ -100,7 +96,7 @@ export class Context {
     return this._currentTab!;
   }
 
-  async listTabs(): Promise<string> {
+  async listTabsMarkdown(): Promise<string> {
     if (!this._tabs.length)
       return '### No tabs open';
     const lines: string[] = ['### Open tabs'];
@@ -115,9 +111,75 @@ export class Context {
   }
 
   async closeTab(index: number | undefined) {
-    const tab = index === undefined ? this.currentTab() : this._tabs[index - 1];
-    await tab.page.close();
-    return await this.listTabs();
+    const tab = index === undefined ? this._currentTab : this._tabs[index - 1];
+    await tab?.page.close();
+    return await this.listTabsMarkdown();
+  }
+
+  async run(tool: Tool, params: Record<string, unknown> | undefined) {
+    // Tab management is done outside of the action() call.
+    const toolResult = await tool.handle(this, params);
+    const { code, action, waitForNetwork, captureSnapshot } = toolResult;
+
+    if (!this._currentTab) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'No open pages available. Use the "browser_navigate" tool to navigate to a page first.',
+        }],
+      };
+    }
+
+    const tab = this.currentTabOrDie();
+    // TODO: race against modal dialogs to resolve clicks.
+    let actionResult: { content?: (ImageContent | TextContent)[] };
+    try {
+      if (waitForNetwork)
+        actionResult = await waitForCompletion(tab.page, () => action()) ?? undefined;
+      else
+        actionResult = await action();
+    } finally {
+      if (captureSnapshot)
+        await tab.captureSnapshot();
+    }
+
+    const result: string[] = [];
+    result.push(`- Ran Playwright code:
+\`\`\`js
+${code.join('\n')}
+\`\`\`
+`);
+
+    if (this.modalStates().length) {
+      result.push(...this.modalStatesMarkdown());
+      return {
+        content: [{
+          type: 'text',
+          text: result.join('\n'),
+        }],
+      };
+    }
+
+    if (this.tabs().length > 1)
+      result.push(await this.listTabsMarkdown(), '');
+
+    if (tab.hasSnapshot()) {
+      if (this.tabs().length > 1)
+        result.push('### Current tab');
+      result.push(tab.snapshotOrDie().text());
+    }
+
+    const content = actionResult?.content ?? [];
+
+    return {
+      content: [
+        ...content,
+        {
+          type: 'text',
+          text: result.join('\n'),
+        }
+      ],
+    };
   }
 
   private _onPageCreated(page: playwright.Page) {
@@ -199,17 +261,7 @@ export class Context {
   }
 }
 
-type RunResult = {
-  code: string[];
-  images?: ImageContent[];
-};
-
-type ImageContent = {
-  data: string;
-  mimeType: string;
-};
-
-class Tab {
+export class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
   private _console: playwright.ConsoleMessage[] = [];
@@ -248,76 +300,11 @@ class Tab {
     await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
   }
 
-  async run(callback: (tab: Tab) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
-    let runResult: RunResult | undefined;
-    try {
-      if (options?.waitForCompletion)
-        runResult = await waitForCompletion(this.page, () => callback(this)) ?? undefined;
-      else
-        runResult = await callback(this) ?? undefined;
-    } finally {
-      if (options?.captureSnapshot)
-        this._snapshot = await PageSnapshot.create(this.page);
-    }
-
-    const result: string[] = [];
-    result.push(`- Ran Playwright code:
-\`\`\`js
-${runResult.code.join('\n')}
-\`\`\`
-`);
-
-    if (this.context.modalStates().length) {
-      result.push(...this.context.modalStatesMarkdown());
-      return {
-        content: [{
-          type: 'text',
-          text: result.join('\n'),
-        }],
-      };
-    }
-
-    if (this.context.tabs().length > 1)
-      result.push(await this.context.listTabs(), '');
-
-    if (this._snapshot) {
-      if (this.context.tabs().length > 1)
-        result.push('### Current tab');
-      result.push(this._snapshot.text());
-    }
-
-    const images = runResult.images?.map(image => {
-      return {
-        type: 'image' as 'image',
-        data: image.data,
-        mimeType: image.mimeType,
-      };
-    }) ?? [];
-
-    return {
-      content: [...images, {
-        type: 'text',
-        text: result.join('\n'),
-      }],
-    };
+  hasSnapshot(): boolean {
+    return !!this._snapshot;
   }
 
-  async runAndWait(callback: (tab: Tab) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
-    return await this.run(callback, {
-      waitForCompletion: true,
-      ...options,
-    });
-  }
-
-  async runAndWaitWithSnapshot(callback: (snapshot: PageSnapshot) => Promise<RunResult>, options?: RunOptions): Promise<ToolResult> {
-    return await this.run(tab => callback(tab.lastSnapshot()), {
-      captureSnapshot: true,
-      waitForCompletion: true,
-      ...options,
-    });
-  }
-
-  lastSnapshot(): PageSnapshot {
+  snapshotOrDie(): PageSnapshot {
     if (!this._snapshot)
       throw new Error('No snapshot available');
     return this._snapshot;
@@ -325,6 +312,10 @@ ${runResult.code.join('\n')}
 
   async console(): Promise<playwright.ConsoleMessage[]> {
     return this._console;
+  }
+
+  async captureSnapshot() {
+    this._snapshot = await PageSnapshot.create(this.page);
   }
 }
 

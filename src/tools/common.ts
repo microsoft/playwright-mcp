@@ -23,41 +23,45 @@ const waitSchema = z.object({
   time: z.number().describe('The time to wait in seconds'),
 });
 
-const wait: Tool = {
+const wait: ToolFactory = captureSnapshot => ({
   capability: 'wait',
+
   schema: {
     name: 'browser_wait',
     description: 'Wait for a specified time in seconds',
     inputSchema: zodToJsonSchema(waitSchema),
   },
+
   handle: async (context, params) => {
     const validatedParams = waitSchema.parse(params);
     await new Promise(f => setTimeout(f, Math.min(10000, validatedParams.time * 1000)));
     return {
-      content: [{
-        type: 'text',
-        text: `Waited for ${validatedParams.time} seconds`,
-      }],
+      code: [`// Waited for ${validatedParams.time} seconds`],
+      action: async () => ({}),
+      captureSnapshot,
+      waitForNetwork: false,
     };
   },
-};
+});
 
 const closeSchema = z.object({});
 
 const close: Tool = {
   capability: 'core',
+
   schema: {
     name: 'browser_close',
     description: 'Close the page',
     inputSchema: zodToJsonSchema(closeSchema),
   },
+
   handle: async context => {
     await context.close();
     return {
-      content: [{
-        type: 'text',
-        text: `Page closed`,
-      }],
+      code: [`// Internal to close the page`],
+      action: async () => ({}),
+      captureSnapshot: false,
+      waitForNetwork: false,
     };
   },
 };
@@ -74,25 +78,33 @@ const resize: ToolFactory = captureSnapshot => ({
     description: 'Resize the browser window',
     inputSchema: zodToJsonSchema(resizeSchema),
   },
+
   handle: async (context, params) => {
     const validatedParams = resizeSchema.parse(params);
 
-    const tab = context.currentTab();
-    return await tab.run(async tab => {
+    const tab = context.currentTabOrDie();
+
+    const code = [
+      `// Resize browser window to ${validatedParams.width}x${validatedParams.height}`,
+      `await page.setViewportSize({ width: ${validatedParams.width}, height: ${validatedParams.height} });`
+    ];
+
+    const action = async () => {
       await tab.page.setViewportSize({ width: validatedParams.width, height: validatedParams.height });
-      const code = [
-        `// Resize browser window to ${validatedParams.width}x${validatedParams.height}`,
-        `await page.setViewportSize({ width: ${validatedParams.width}, height: ${validatedParams.height} });`
-      ];
-      return { code };
-    }, {
+      return {};
+    };
+
+    return {
+      code,
+      action,
       captureSnapshot,
-    });
+      waitForNetwork: true
+    };
   },
 });
 
 export default (captureSnapshot: boolean) => [
   close,
-  wait,
+  wait(captureSnapshot),
   resize(captureSnapshot)
 ];

@@ -25,27 +25,35 @@ const uploadFileSchema = z.object({
 
 const uploadFile: ToolFactory = captureSnapshot => ({
   capability: 'files',
+
   schema: {
     name: 'browser_file_upload',
     description: 'Upload one or multiple files',
     inputSchema: zodToJsonSchema(uploadFileSchema),
   },
+
   handle: async (context, params) => {
     const validatedParams = uploadFileSchema.parse(params);
-    const tab = context.currentTab();
-    return await tab.runAndWait(async () => {
-      const modalState = context.modalStates().find(state => state.type === 'fileChooser');
-      if (!modalState)
-        throw new Error('No file chooser visible');
+    const modalState = context.modalStates().find(state => state.type === 'fileChooser');
+    if (!modalState)
+      throw new Error('No file chooser visible');
+
+    const code = [
+      `// <internal code to chose files ${validatedParams.paths.join(', ')}`,
+    ];
+
+    const action = async () => {
       await modalState.fileChooser.setFiles(validatedParams.paths);
       context.clearModalState(modalState);
-      const code = [
-        `// <internal code to chose files ${validatedParams.paths.join(', ')}`,
-      ];
-      return { code };
-    }, {
+      return {};
+    };
+
+    return {
+      code,
+      action,
       captureSnapshot,
-    });
+      waitForNetwork: true,
+    };
   },
   clearsModalState: 'fileChooser',
 });

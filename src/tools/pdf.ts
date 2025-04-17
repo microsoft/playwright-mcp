@@ -21,6 +21,7 @@ import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { sanitizeForFilePath } from './utils';
+import * as javascript from '../javascript';
 
 import type { Tool } from './tool';
 
@@ -28,20 +29,27 @@ const pdfSchema = z.object({});
 
 const pdf: Tool = {
   capability: 'pdf',
+
   schema: {
     name: 'browser_pdf_save',
     description: 'Save page as PDF',
     inputSchema: zodToJsonSchema(pdfSchema),
   },
+
   handle: async context => {
-    const tab = context.currentTab();
+    const tab = context.currentTabOrDie();
     const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + '.pdf';
-    await tab.page.pdf({ path: fileName });
+
+    const code = [
+      `// Save page as ${fileName}`,
+      `await page.pdf(${javascript.formatObject({ path: fileName })});`,
+    ];
+
     return {
-      content: [{
-        type: 'text',
-        text: `Saved as ${fileName}`,
-      }],
+      code,
+      action: async () => tab.page.pdf({ path: fileName }).then(() => ({})),
+      captureSnapshot: false,
+      waitForNetwork: false,
     };
   },
 };

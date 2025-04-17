@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
+import path from 'path';
+import os from 'os';
+
 import { z } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
 
-import type * as playwright from 'playwright';
-import type { Tool } from './tool';
-import path from 'path';
-import os from 'os';
 import { sanitizeForFilePath } from './utils';
 import { generateLocator } from '../context';
 import * as javascript from '../javascript';
+
+import type * as playwright from 'playwright';
+import type { Tool } from './tool';
 
 const snapshot: Tool = {
   capability: 'core',
@@ -34,11 +36,14 @@ const snapshot: Tool = {
   },
 
   handle: async context => {
-    const tab = await context.ensureTab();
-    return await tab.run(async () => {
-      const code = [`// <internal code to capture accessibility snapshot>`];
-      return { code };
-    }, { captureSnapshot: true });
+    await context.ensureTab();
+
+    return {
+      code: [`// <internal code to capture accessibility snapshot>`],
+      action: async () => ({}),
+      captureSnapshot: true,
+      waitForNetwork: false,
+    };
   },
 };
 
@@ -57,15 +62,20 @@ const click: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
-      const locator = snapshot.refLocator(validatedParams.ref);
-      const code = [
-        `// Click ${validatedParams.element}`,
-        `await page.${await generateLocator(locator)}.click();`
-      ];
-      await locator.click();
-      return { code };
-    });
+    const tab = context.currentTabOrDie();
+    const locator = tab.snapshotOrDie().refLocator(validatedParams.ref);
+
+    const code = [
+      `// Click ${validatedParams.element}`,
+      `await page.${await generateLocator(locator)}.click();`
+    ];
+
+    return {
+      code,
+      action: () => locator.click().then(() => ({})),
+      captureSnapshot: true,
+      waitForNetwork: true,
+    };
   },
 };
 
@@ -86,16 +96,21 @@ const drag: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = dragSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
-      const startLocator = snapshot.refLocator(validatedParams.startRef);
-      const endLocator = snapshot.refLocator(validatedParams.endRef);
-      const code = [
-        `// Drag ${validatedParams.startElement} to ${validatedParams.endElement}`,
-        `await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`
-      ];
-      await startLocator.dragTo(endLocator);
-      return { code };
-    });
+    const snapshot = context.currentTabOrDie().snapshotOrDie();
+    const startLocator = snapshot.refLocator(validatedParams.startRef);
+    const endLocator = snapshot.refLocator(validatedParams.endRef);
+
+    const code = [
+      `// Drag ${validatedParams.startElement} to ${validatedParams.endElement}`,
+      `await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`
+    ];
+
+    return {
+      code,
+      action: () => startLocator.dragTo(endLocator).then(() => ({})),
+      captureSnapshot: true,
+      waitForNetwork: true,
+    };
   },
 };
 
@@ -109,15 +124,20 @@ const hover: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = elementSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
-      const locator = snapshot.refLocator(validatedParams.ref);
-      const code = [
-        `// Hover over ${validatedParams.element}`,
-        `await page.${await generateLocator(locator)}.hover();`
-      ];
-      await locator.hover();
-      return { code };
-    });
+    const snapshot = context.currentTabOrDie().snapshotOrDie();
+    const locator = snapshot.refLocator(validatedParams.ref);
+
+    const code = [
+      `// Hover over ${validatedParams.element}`,
+      `await page.${await generateLocator(locator)}.hover();`
+    ];
+
+    return {
+      code,
+      action: () => locator.hover().then(() => ({})),
+      captureSnapshot: true,
+      waitForNetwork: true,
+    };
   },
 };
 
@@ -137,26 +157,34 @@ const type: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
-      const locator = snapshot.refLocator(validatedParams.ref);
+    const snapshot = context.currentTabOrDie().snapshotOrDie();
+    const locator = snapshot.refLocator(validatedParams.ref);
 
-      const code: string[] = [];
-      if (validatedParams.slowly) {
-        code.push(`// Press "${validatedParams.text}" sequentially into "${validatedParams.element}"`);
-        code.push(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(validatedParams.text)});`);
-        await locator.pressSequentially(validatedParams.text);
-      } else {
-        code.push(`// Fill "${validatedParams.text}" into "${validatedParams.element}"`);
-        code.push(`await page.${await generateLocator(locator)}.fill(${javascript.quote(validatedParams.text)});`);
-        await locator.fill(validatedParams.text);
-      }
-      if (validatedParams.submit) {
-        code.push(`// Submit text`);
-        code.push(`await page.${await generateLocator(locator)}.press('Enter');`);
-        await locator.press('Enter');
-      }
-      return { code };
-    });
+    const code: string[] = [];
+    const steps: (() => Promise<void>)[] = [];
+
+    if (validatedParams.slowly) {
+      code.push(`// Press "${validatedParams.text}" sequentially into "${validatedParams.element}"`);
+      code.push(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(validatedParams.text)});`);
+      steps.push(() => locator.pressSequentially(validatedParams.text));
+    } else {
+      code.push(`// Fill "${validatedParams.text}" into "${validatedParams.element}"`);
+      code.push(`await page.${await generateLocator(locator)}.fill(${javascript.quote(validatedParams.text)});`);
+      steps.push(() => locator.fill(validatedParams.text));
+    }
+
+    if (validatedParams.submit) {
+      code.push(`// Submit text`);
+      code.push(`await page.${await generateLocator(locator)}.press('Enter');`);
+      steps.push(() => locator.press('Enter'));
+    }
+
+    return {
+      code,
+      action: () => steps.reduce((acc, step) => acc.then(step), Promise.resolve()).then(() => ({})),
+      captureSnapshot: true,
+      waitForNetwork: true,
+    };
   },
 };
 
@@ -174,15 +202,20 @@ const selectOption: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = selectOptionSchema.parse(params);
-    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
-      const locator = snapshot.refLocator(validatedParams.ref);
-      const code = [
-        `// Select options [${validatedParams.values.join(', ')}] in ${validatedParams.element}`,
-        `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(validatedParams.values)});`
-      ];
-      await locator.selectOption(validatedParams.values);
-      return { code };
-    });
+    const snapshot = context.currentTabOrDie().snapshotOrDie();
+    const locator = snapshot.refLocator(validatedParams.ref);
+
+    const code = [
+      `// Select options [${validatedParams.values.join(', ')}] in ${validatedParams.element}`,
+      `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(validatedParams.values)});`
+    ];
+
+    return {
+      code,
+      action: () => locator.selectOption(validatedParams.values).then(() => ({})),
+      captureSnapshot: true,
+      waitForNetwork: true,
+    };
   },
 };
 
@@ -207,32 +240,41 @@ const screenshot: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = screenshotSchema.parse(params);
-    const tab = context.currentTab();
+    const tab = context.currentTabOrDie();
+    const snapshot = tab.snapshotOrDie();
     const fileType = validatedParams.raw ? 'png' : 'jpeg';
     const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + `.${fileType}`;
     const options: playwright.PageScreenshotOptions = { type: fileType, quality: fileType === 'png' ? undefined : 50, scale: 'css', path: fileName };
     const isElementScreenshot = validatedParams.element && validatedParams.ref;
-    return await context.currentTab().runAndWaitWithSnapshot(async snapshot => {
-      let screenshot: Buffer | undefined;
-      const code = [
-        `// Screenshot ${isElementScreenshot ? validatedParams.element : 'viewport'} and save it as ${fileName}`,
-      ];
-      if (isElementScreenshot) {
-        const locator = snapshot.refLocator(validatedParams.ref!);
-        code.push(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
-        screenshot = await locator.screenshot(options);
-      } else {
-        code.push(`await page.screenshot(${javascript.formatObject(options)});`);
-        screenshot = await tab.page.screenshot(options);
-      }
+
+    const code = [
+      `// Screenshot ${isElementScreenshot ? validatedParams.element : 'viewport'} and save it as ${fileName}`,
+    ];
+
+    const locator = validatedParams.ref ? snapshot.refLocator(validatedParams.ref) : null;
+
+    if (locator)
+      code.push(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
+    else
+      code.push(`await page.screenshot(${javascript.formatObject(options)});`);
+
+    const action = async () => {
+      const screenshot = locator ? await locator.screenshot(options) : await tab.page.screenshot(options);
       return {
-        code,
-        images: [{
+        content: [{
+          type: 'image' as 'image',
           data: screenshot.toString('base64'),
           mimeType: fileType === 'png' ? 'image/png' : 'image/jpeg',
         }]
       };
-    });
+    };
+
+    return {
+      code,
+      action,
+      captureSnapshot: true,
+      waitForNetwork: false,
+    };
   }
 };
 

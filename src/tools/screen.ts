@@ -17,6 +17,8 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
+import * as javascript from '../javascript';
+
 import type { Tool } from './tool';
 
 const screenshot: Tool = {
@@ -29,9 +31,24 @@ const screenshot: Tool = {
 
   handle: async context => {
     const tab = await context.ensureTab();
-    const screenshot = await tab.page.screenshot({ type: 'jpeg', quality: 50, scale: 'css' });
+    const options = { type: 'jpeg' as 'jpeg', quality: 50, scale: 'css' as 'css' };
+
+    const code = [
+      `// Take a screenshot of the current page`,
+      `await page.screenshot(${javascript.formatObject(options)});`,
+    ];
+
+    const action = () => tab.page.screenshot(options).then(buffer => {
+      return {
+        content: [{ type: 'image' as 'image', data: buffer.toString('base64'), mimeType: 'image/jpeg' }],
+      };
+    });
+
     return {
-      content: [{ type: 'image', data: screenshot.toString('base64'), mimeType: 'image/jpeg' }],
+      code,
+      action,
+      captureSnapshot: false,
+      waitForNetwork: false
     };
   },
 };
@@ -55,10 +72,17 @@ const moveMouse: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = moveMouseSchema.parse(params);
-    const tab = context.currentTab();
-    await tab.page.mouse.move(validatedParams.x, validatedParams.y);
+    const tab = context.currentTabOrDie();
+    const code = [
+      `// Move mouse to (${validatedParams.x}, ${validatedParams.y})`,
+      `await page.mouse.move(${validatedParams.x}, ${validatedParams.y});`,
+    ];
+    const action = () => tab.page.mouse.move(validatedParams.x, validatedParams.y).then(() => ({}));
     return {
-      content: [{ type: 'text', text: `Moved mouse to (${validatedParams.x}, ${validatedParams.y})` }],
+      code,
+      action,
+      captureSnapshot: false,
+      waitForNetwork: false
     };
   },
 };
@@ -77,19 +101,26 @@ const click: Tool = {
   },
 
   handle: async (context, params) => {
-    return await context.currentTab().runAndWait(async tab => {
-      const validatedParams = clickSchema.parse(params);
-      const code = [
-        `// Click mouse at coordinates (${validatedParams.x}, ${validatedParams.y})`,
-        `await page.mouse.move(${validatedParams.x}, ${validatedParams.y});`,
-        `await page.mouse.down();`,
-        `await page.mouse.up();`,
-      ];
+    const validatedParams = clickSchema.parse(params);
+    const tab = context.currentTabOrDie();
+    const code = [
+      `// Click mouse at coordinates (${validatedParams.x}, ${validatedParams.y})`,
+      `await page.mouse.move(${validatedParams.x}, ${validatedParams.y});`,
+      `await page.mouse.down();`,
+      `await page.mouse.up();`,
+    ];
+    const action = async () => {
       await tab.page.mouse.move(validatedParams.x, validatedParams.y);
       await tab.page.mouse.down();
       await tab.page.mouse.up();
-      return { code };
-    });
+      return {};
+    };
+    return {
+      code,
+      action,
+      captureSnapshot: false,
+      waitForNetwork: true,
+    };
   },
 };
 
@@ -102,6 +133,7 @@ const dragSchema = elementSchema.extend({
 
 const drag: Tool = {
   capability: 'core',
+
   schema: {
     name: 'browser_screen_drag',
     description: 'Drag left mouse button',
@@ -110,20 +142,30 @@ const drag: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = dragSchema.parse(params);
-    return await context.currentTab().runAndWait(async tab => {
+    const tab = context.currentTabOrDie();
+
+    const code = [
+      `// Drag mouse from (${validatedParams.startX}, ${validatedParams.startY}) to (${validatedParams.endX}, ${validatedParams.endY})`,
+      `await page.mouse.move(${validatedParams.startX}, ${validatedParams.startY});`,
+      `await page.mouse.down();`,
+      `await page.mouse.move(${validatedParams.endX}, ${validatedParams.endY});`,
+      `await page.mouse.up();`,
+    ];
+
+    const action = async () => {
       await tab.page.mouse.move(validatedParams.startX, validatedParams.startY);
       await tab.page.mouse.down();
       await tab.page.mouse.move(validatedParams.endX, validatedParams.endY);
       await tab.page.mouse.up();
-      const code = [
-        `// Drag mouse from (${validatedParams.startX}, ${validatedParams.startY}) to (${validatedParams.endX}, ${validatedParams.endY})`,
-        `await page.mouse.move(${validatedParams.startX}, ${validatedParams.startY});`,
-        `await page.mouse.down();`,
-        `await page.mouse.move(${validatedParams.endX}, ${validatedParams.endY});`,
-        `await page.mouse.up();`,
-      ];
-      return { code };
-    });
+      return {};
+    };
+
+    return {
+      code,
+      action,
+      captureSnapshot: false,
+      waitForNetwork: true,
+    };
   },
 };
 
@@ -134,6 +176,7 @@ const typeSchema = z.object({
 
 const type: Tool = {
   capability: 'core',
+
   schema: {
     name: 'browser_screen_type',
     description: 'Type text',
@@ -142,19 +185,31 @@ const type: Tool = {
 
   handle: async (context, params) => {
     const validatedParams = typeSchema.parse(params);
-    return await context.currentTab().runAndWait(async tab => {
-      const code = [
-        `// Type ${validatedParams.text}`,
-        `await page.keyboard.type('${validatedParams.text}');`,
-      ];
+    const tab = context.currentTabOrDie();
+
+    const code = [
+      `// Type ${validatedParams.text}`,
+      `await page.keyboard.type('${validatedParams.text}');`,
+    ];
+
+    const action = async () => {
       await tab.page.keyboard.type(validatedParams.text);
-      if (validatedParams.submit) {
-        code.push(`// Submit text`);
-        code.push(`await page.keyboard.press('Enter');`);
+      if (validatedParams.submit)
         await tab.page.keyboard.press('Enter');
-      }
-      return { code };
-    });
+      return {};
+    };
+
+    if (validatedParams.submit) {
+      code.push(`// Submit text`);
+      code.push(`await page.keyboard.press('Enter');`);
+    }
+
+    return {
+      code,
+      action,
+      captureSnapshot: false,
+      waitForNetwork: true,
+    };
   },
 };
 

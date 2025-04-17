@@ -25,53 +25,62 @@ const navigateSchema = z.object({
 
 const navigate: ToolFactory = captureSnapshot => ({
   capability: 'core',
+
   schema: {
     name: 'browser_navigate',
     description: 'Navigate to a URL',
     inputSchema: zodToJsonSchema(navigateSchema),
   },
+
   handle: async (context, params) => {
     const validatedParams = navigateSchema.parse(params);
-    const currentTab = await context.ensureTab();
-    return await currentTab.run(async tab => {
-      await tab.navigate(validatedParams.url);
-      const code = [
-        `// Navigate to ${validatedParams.url}`,
-        `await page.goto('${validatedParams.url}');`,
-      ];
-      return { code };
-    }, {
+    const tab = await context.ensureTab();
+    await tab.navigate(validatedParams.url);
+
+    const code = [
+      `// Navigate to ${validatedParams.url}`,
+      `await page.goto('${validatedParams.url}');`,
+    ];
+
+    return {
+      code,
+      action: async () => ({}),
       captureSnapshot,
-    });
+      waitForNetwork: false,
+    };
   },
 });
 
 const goBackSchema = z.object({});
 
-const goBack: ToolFactory = snapshot => ({
+const goBack: ToolFactory = captureSnapshot => ({
   capability: 'history',
   schema: {
     name: 'browser_navigate_back',
     description: 'Go back to the previous page',
     inputSchema: zodToJsonSchema(goBackSchema),
   },
+
   handle: async context => {
-    return await context.currentTab().runAndWait(async tab => {
-      await tab.page.goBack();
-      const code = [
-        `// Navigate back`,
-        `await page.goBack();`,
-      ];
-      return { code };
-    }, {
-      captureSnapshot: snapshot,
-    });
+    const tab = await context.ensureTab();
+    await tab.page.goBack();
+    const code = [
+      `// Navigate back`,
+      `await page.goBack();`,
+    ];
+
+    return {
+      code,
+      action: async () => ({}),
+      captureSnapshot,
+      waitForNetwork: false,
+    };
   },
 });
 
 const goForwardSchema = z.object({});
 
-const goForward: ToolFactory = snapshot => ({
+const goForward: ToolFactory = captureSnapshot => ({
   capability: 'history',
   schema: {
     name: 'browser_navigate_forward',
@@ -79,16 +88,18 @@ const goForward: ToolFactory = snapshot => ({
     inputSchema: zodToJsonSchema(goForwardSchema),
   },
   handle: async context => {
-    return await context.currentTab().runAndWait(async tab => {
-      await tab.page.goForward();
-      const code = [
-        `// Navigate forward`,
-        `await page.goForward();`,
-      ];
-      return { code };
-    }, {
-      captureSnapshot: snapshot,
-    });
+    const tab = context.currentTabOrDie();
+    await tab.page.goForward();
+    const code = [
+      `// Navigate forward`,
+      `await page.goForward();`,
+    ];
+    return {
+      code,
+      action: async () => ({}),
+      captureSnapshot,
+      waitForNetwork: false,
+    };
   },
 });
 

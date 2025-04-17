@@ -35,8 +35,10 @@ export type FileUploadModalState = {
 export type ModalState = FileUploadModalState;
 
 export type ToolResult = {
-  content: (ImageContent | TextContent)[];
-  isError?: boolean;
+  code: string[];
+  action: () => Promise<{ content?: (ImageContent | TextContent)[] }>;
+  captureSnapshot: boolean;
+  waitForNetwork: boolean;
 };
 
 export type Tool = {

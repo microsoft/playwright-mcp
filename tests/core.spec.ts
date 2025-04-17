@@ -69,7 +69,6 @@ await page.getByRole('button', { name: 'Submit' }).click();
 `);
 });
 
-
 test('browser_select_option', async ({ client }) => {
   await client.callTool({
     name: 'browser_navigate',

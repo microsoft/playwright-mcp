@@ -25,23 +25,30 @@ const pressKeySchema = z.object({
 
 const pressKey: ToolFactory = captureSnapshot => ({
   capability: 'core',
+
   schema: {
     name: 'browser_press_key',
     description: 'Press a key on the keyboard',
     inputSchema: zodToJsonSchema(pressKeySchema),
   },
+
   handle: async (context, params) => {
     const validatedParams = pressKeySchema.parse(params);
-    return await context.currentTab().runAndWait(async tab => {
-      await tab.page.keyboard.press(validatedParams.key);
-      const code = [
-        `// Press ${validatedParams.key}`,
-        `await page.keyboard.press('${validatedParams.key}');`,
-      ];
-      return { code };
-    }, {
+    const tab = context.currentTabOrDie();
+
+    const code = [
+      `// Press ${validatedParams.key}`,
+      `await page.keyboard.press('${validatedParams.key}');`,
+    ];
+
+    const action = () => tab.page.keyboard.press(validatedParams.key).then(() => ({}));
+
+    return {
+      code,
+      action,
       captureSnapshot,
-    });
+      waitForNetwork: true
+    };
   },
 });
 

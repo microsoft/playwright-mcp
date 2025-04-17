@@ -71,7 +71,7 @@ export function createServerWithTools(options: Options): Server {
     }
 
     try {
-      return await tool.handle(context, request.params.arguments);
+      return await context.run(tool, request.params.arguments);
     } catch (error) {
       return {
         content: [{ type: 'text', text: String(error) }],

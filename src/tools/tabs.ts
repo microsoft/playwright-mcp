@@ -21,17 +21,19 @@ import type { ToolFactory, Tool } from './tool';
 
 const listTabs: Tool = {
   capability: 'tabs',
+
   schema: {
     name: 'browser_tab_list',
     description: 'List browser tabs',
     inputSchema: zodToJsonSchema(z.object({})),
   },
-  handle: async context => {
+
+  handle: async () => {
     return {
-      content: [{
-        type: 'text',
-        text: await context.listTabs(),
-      }],
+      code: [`// <internal code to list tabs>`],
+      action: async () => ({}),
+      captureSnapshot: false,
+      waitForNetwork: false,
     };
   },
 };
@@ -42,21 +44,26 @@ const selectTabSchema = z.object({
 
 const selectTab: ToolFactory = captureSnapshot => ({
   capability: 'tabs',
+
   schema: {
     name: 'browser_tab_select',
     description: 'Select a tab by index',
     inputSchema: zodToJsonSchema(selectTabSchema),
   },
+
   handle: async (context, params) => {
     const validatedParams = selectTabSchema.parse(params);
     await context.selectTab(validatedParams.index);
-    const currentTab = await context.ensureTab();
-    return await currentTab.run(async () => {
-      const code = [
-        `// <internal code to select tab ${validatedParams.index}>`,
-      ];
-      return { code };
-    }, { captureSnapshot });
+    const code = [
+      `// <internal code to select tab ${validatedParams.index}>`,
+    ];
+
+    return {
+      code,
+      action: async () => ({}),
+      captureSnapshot,
+      waitForNetwork: false
+    };
   },
 });
 
@@ -64,26 +71,32 @@ const newTabSchema = z.object({
   url: z.string().optional().describe('The URL to navigate to in the new tab. If not provided, the new tab will be blank.'),
 });
 
-const newTab: Tool = {
+const newTab: ToolFactory = captureSnapshot => ({
   capability: 'tabs',
+
   schema: {
     name: 'browser_tab_new',
     description: 'Open a new tab',
     inputSchema: zodToJsonSchema(newTabSchema),
   },
+
   handle: async (context, params) => {
     const validatedParams = newTabSchema.parse(params);
     await context.newTab();
     if (validatedParams.url)
-      await context.currentTab().navigate(validatedParams.url);
-    return await context.currentTab().run(async () => {
-      const code = [
-        `// <internal code to open a new tab>`,
-      ];
-      return { code };
-    }, { captureSnapshot: true });
+      await context.currentTabOrDie().navigate(validatedParams.url);
+
+    const code = [
+      `// <internal code to open a new tab>`,
+    ];
+    return {
+      code,
+      action: async () => ({}),
+      captureSnapshot,
+      waitForNetwork: false
+    };
   },
-};
+});
 
 const closeTabSchema = z.object({
   index: z.number().optional().describe('The index of the tab to close. Closes current tab if not provided.'),
@@ -91,35 +104,31 @@ const closeTabSchema = z.object({
 
 const closeTab: ToolFactory = captureSnapshot => ({
   capability: 'tabs',
+
   schema: {
     name: 'browser_tab_close',
     description: 'Close a tab',
     inputSchema: zodToJsonSchema(closeTabSchema),
   },
+
   handle: async (context, params) => {
     const validatedParams = closeTabSchema.parse(params);
     await context.closeTab(validatedParams.index);
-    const currentTab = context.currentTab();
-    if (currentTab) {
-      return await currentTab.run(async () => {
-        const code = [
-          `// <internal code to close tab ${validatedParams.index}>`,
-        ];
-        return { code };
-      }, { captureSnapshot });
-    }
+    const code = [
+      `// <internal code to close tab ${validatedParams.index}>`,
+    ];
     return {
-      content: [{
-        type: 'text',
-        text: await context.listTabs(),
-      }],
+      code,
+      action: async () => ({}),
+      captureSnapshot,
+      waitForNetwork: false
     };
   },
 });
 
 export default (captureSnapshot: boolean) => [
   listTabs,
-  newTab,
+  newTab(captureSnapshot),
   selectTab(captureSnapshot),
   closeTab(captureSnapshot),
 ];
