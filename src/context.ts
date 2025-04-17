@@ -217,7 +217,6 @@ ${code.join('\n')}
     const browserContext = this._browserContext;
     const browser = this._browser;
     const persistentContext = this._persistentContext;
-    
     this._browserContext = undefined;
     this._browser = undefined;
     this._persistentContext = null;
@@ -237,9 +236,8 @@ ${code.join('\n')}
         const context = await this._createBrowserContext();
         this._browser = context.browser;
         this._browserContext = context.browserContext;
-        if (!this.options.remoteEndpoint && !this.options.cdpEndpoint) {
+        if (!this.options.remoteEndpoint && !this.options.cdpEndpoint)
           this._persistentContext = this._browserContext;
-        }
       }
       for (const page of this._browserContext.pages())
         this._onPageCreated(page);
