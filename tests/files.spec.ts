@@ -136,4 +136,24 @@ Tool "browser_snapshot" does not handle the modal state.
       },
     })).toContainTextContent([`Downloaded test.txt to`, '// <internal code to accept and cancel files>\n```\n\n- Page URL: about:blank']);
   });
+
+  test('navigating to PDF link', async ({ client, server }) => {
+    server.on('request', (req, res) => {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'filename="test.pdf"');
+      res.end('Hello world!');
+    });
+    expect(await client.callTool({
+      name: 'browser_navigate',
+      arguments: {
+        url: server.PREFIX,
+      },
+    })).toContainTextContent('### Modal state\n- [Download (test.pdf)]');
+    expect(await client.callTool({
+      name: 'browser_file_download',
+      arguments: {
+        filenames: ['test.pdf'],
+      },
+    })).toContainTextContent([`Downloaded test.pdf to`, '// <internal code to accept and cancel files>\n```\n\n- Page URL: about:blank']);
+  });
 });
