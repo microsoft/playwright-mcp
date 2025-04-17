@@ -118,7 +118,9 @@ Tool "browser_snapshot" does not handle the modal state.
     })).toContainTextContent([`Downloaded test.txt to`, '// <internal code to accept and cancel files>']);
   });
 
-  test('navigating to downloading link', async ({ client, server }) => {
+  test('navigating to downloading link', async ({ client, server, mcpBrowser }) => {
+    test.skip(mcpBrowser === 'msedge', 'msedge behaves differently');
+
     server.on('request', (req, res) => {
       res.setHeader('Content-Disposition', 'attachment; filename="test.txt"');
       res.end('Hello world!');
