@@ -21,6 +21,7 @@ import fs from 'fs';
 import { createServerWithTools } from './server';
 import common from './tools/common';
 import console from './tools/console';
+import dialogs from './tools/dialogs';
 import files from './tools/files';
 import install from './tools/install';
 import keyboard from './tools/keyboard';
@@ -37,6 +38,7 @@ import type { LaunchOptions } from 'playwright';
 const snapshotTools: Tool[] = [
   ...common(true),
   ...console,
+  ...dialogs(true),
   ...files(true),
   ...install,
   ...keyboard(true),
@@ -49,6 +51,7 @@ const snapshotTools: Tool[] = [
 const screenshotTools: Tool[] = [
   ...common(false),
   ...console,
+  ...dialogs(false),
   ...files(false),
   ...install,
   ...keyboard(false),

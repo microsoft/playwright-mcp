@@ -32,14 +32,22 @@ export type FileUploadModalState = {
   fileChooser: playwright.FileChooser;
 };
 
-export type ModalState = FileUploadModalState;
+export type DialogModalState = {
+  type: 'dialog';
+  description: string;
+  dialog: playwright.Dialog;
+};
+
+export type ModalState = FileUploadModalState | DialogModalState;
+
+export type ToolActionResult = { content?: (ImageContent | TextContent)[] } | undefined | void;
 
 export type ToolResult = {
   code: string[];
-  action?: () => Promise<{ content?: (ImageContent | TextContent)[] } | undefined | void>;
+  action?: () => Promise<ToolActionResult>;
   captureSnapshot: boolean;
   waitForNetwork: boolean;
-  resultOverride?: { content?: (ImageContent | TextContent)[] };
+  resultOverride?: ToolActionResult;
 };
 
 export type Tool = {

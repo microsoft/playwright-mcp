@@ -18,9 +18,10 @@ import * as playwright from 'playwright';
 import yaml from 'yaml';
 
 import { waitForCompletion } from './tools/utils';
+import { ManualPromise } from './manualPromise';
 
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
-import type { ModalState, Tool } from './tools/tool';
+import type { ModalState, Tool, ToolActionResult } from './tools/tool';
 
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
@@ -32,6 +33,10 @@ export type ContextOptions = {
 
 type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
 
+type PendingAction = {
+  dialogShown: ManualPromise<void>;
+};
+
 export class Context {
   readonly tools: Tool[];
   readonly options: ContextOptions;
@@ -40,6 +45,7 @@ export class Context {
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
+  private _pendingAction: PendingAction | undefined;
 
   constructor(tools: Tool[], options: ContextOptions) {
     this.tools = tools;
@@ -120,6 +126,7 @@ export class Context {
     // Tab management is done outside of the action() call.
     const toolResult = await tool.handle(this, params);
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
+    const racingAction = action ? () => this._raceAgainstModalDialogs(action) : undefined;
 
     if (resultOverride)
       return resultOverride;
@@ -138,11 +145,11 @@ export class Context {
     let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
     try {
       if (waitForNetwork)
-        actionResult = await waitForCompletion(tab.page, async () => action?.()) ?? undefined;
+        actionResult = await waitForCompletion(this, tab.page, async () => racingAction?.()) ?? undefined;
       else
-        actionResult = await action?.() ?? undefined;
+        actionResult = await racingAction?.() ?? undefined;
     } finally {
-      if (captureSnapshot)
+      if (captureSnapshot && !this._javaScriptBlocked())
         await tab.captureSnapshot();
     }
 
@@ -188,6 +195,43 @@ ${code.join('\n')}
         }
       ],
     };
+  }
+
+  async waitForTimeout(time: number) {
+    if (this._currentTab && !this._javaScriptBlocked())
+      await this._currentTab.page.waitForTimeout(time);
+    else
+      await new Promise(f => setTimeout(f, time));
+  }
+
+  private async _raceAgainstModalDialogs(action: () => Promise<ToolActionResult>): Promise<ToolActionResult> {
+    this._pendingAction = {
+      dialogShown: new ManualPromise(),
+    };
+
+    let result: ToolActionResult | undefined;
+    try {
+      await Promise.race([
+        action().then(r => result = r),
+        this._pendingAction.dialogShown,
+      ]);
+    } finally {
+      this._pendingAction = undefined;
+    }
+    return result;
+  }
+
+  private _javaScriptBlocked(): boolean {
+    return this._modalStates.some(state => state.type === 'dialog');
+  }
+
+  dialogShown(tab: Tab, dialog: playwright.Dialog) {
+    this.setModalState({
+      type: 'dialog',
+      description: `"${dialog.type()}" dialog with message "${dialog.message()}"`,
+      dialog,
+    }, tab);
+    this._pendingAction?.dialogShown.resolve();
   }
 
   private _onPageCreated(page: playwright.Page) {
@@ -293,6 +337,7 @@ export class Tab {
         fileChooser: chooser,
       }, this);
     });
+    page.on('dialog', dialog => this.context.dialogShown(this, dialog));
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
   }

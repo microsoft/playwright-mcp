@@ -15,8 +15,9 @@
  */
 
 import type * as playwright from 'playwright';
+import type { Context } from '../context';
 
-export async function waitForCompletion<R>(page: playwright.Page, callback: () => Promise<R>): Promise<R> {
+export async function waitForCompletion<R>(context: Context, page: playwright.Page, callback: () => Promise<R>): Promise<R> {
   const requests = new Set<playwright.Request>();
   let frameNavigated = false;
   let waitCallback: () => void = () => {};
@@ -62,7 +63,7 @@ export async function waitForCompletion<R>(page: playwright.Page, callback: () =
     if (!requests.size && !frameNavigated)
       waitCallback();
     await waitBarrier;
-    await page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
+    await context.waitForTimeout(1000);
     return result;
   } finally {
     dispose();

@@ -22,19 +22,20 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { spawn } from 'child_process';
 
-type Fixtures = {
+type TestFixtures = {
   client: Client;
   visionClient: Client;
   startClient: (options?: { args?: string[] }) => Promise<Client>;
   wsEndpoint: string;
   cdpEndpoint: string;
+};
 
-  // Cli options.
+type WorkerFixtures = {
   mcpHeadless: boolean;
   mcpBrowser: string | undefined;
 };
 
-export const test = baseTest.extend<Fixtures>({
+export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
 
   client: async ({ startClient }, use) => {
     await use(await startClient());
@@ -98,11 +99,11 @@ export const test = baseTest.extend<Fixtures>({
     browserProcess.kill();
   },
 
-  mcpHeadless: async ({ headless }, use) => {
+  mcpHeadless: [async ({ headless }, use) => {
     await use(headless);
-  },
+  }, { scope: 'worker' }],
 
-  mcpBrowser: ['chromium', { option: true }],
+  mcpBrowser: ['chromium', { option: true, scope: 'worker' }],
 });
 
 type Response = Awaited<ReturnType<Client['callTool']>>;
