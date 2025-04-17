@@ -40,6 +40,7 @@ export class Context {
   readonly options: ContextOptions;
   private _browser: playwright.Browser | undefined;
   private _browserContext: playwright.BrowserContext | undefined;
+  private _persistentContext: playwright.BrowserContext | null = null;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
 
@@ -120,19 +121,31 @@ export class Context {
       return;
     const browserContext = this._browserContext;
     const browser = this._browser;
+    const persistentContext = this._persistentContext;
+    
     this._browserContext = undefined;
     this._browser = undefined;
+    this._persistentContext = null;
 
-    await browserContext?.close().then(async () => {
-      await browser?.close();
-    }).catch(() => {});
+    await Promise.all([
+      browserContext?.close(),
+      browser?.close(),
+      persistentContext?.close()
+    ]).catch(() => {});
   }
 
   private async _ensureBrowserContext() {
     if (!this._browserContext) {
-      const context = await this._createBrowserContext();
-      this._browser = context.browser;
-      this._browserContext = context.browserContext;
+      if (this._persistentContext) {
+        this._browserContext = this._persistentContext;
+      } else {
+        const context = await this._createBrowserContext();
+        this._browser = context.browser;
+        this._browserContext = context.browserContext;
+        if (!this.options.remoteEndpoint && !this.options.cdpEndpoint) {
+          this._persistentContext = this._browserContext;
+        }
+      }
       for (const page of this._browserContext.pages())
         this._onPageCreated(page);
       this._browserContext.on('page', page => this._onPageCreated(page));
@@ -158,22 +171,10 @@ export class Context {
       return { browser, browserContext };
     }
 
-    const browserContext = await this._launchPersistentContext();
-    return { browserContext };
-  }
-
-  private _persistentContext: playwright.BrowserContext | null = null;
-
-  private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
-    // If we already have a persistent context, return it.
-    if (this._persistentContext) {
-      return this._persistentContext;
-    }
-    // Otherwise, launch a new persistent context.
     try {
       const browserType = this.options.browserName ? playwright[this.options.browserName] : playwright.chromium;
-      this._persistentContext = await browserType.launchPersistentContext(this.options.userDataDir, this.options.launchOptions);
-      return this._persistentContext;
+      const browserContext = await browserType.launchPersistentContext(this.options.userDataDir, this.options.launchOptions);
+      return { browserContext };
     } catch (error: any) {
       if (error.message.includes('Executable doesn\'t exist'))
         throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
