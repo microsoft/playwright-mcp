@@ -16,13 +16,36 @@
 
 import path from 'path';
 import { chromium } from 'playwright';
+import http from 'http';
+import net from 'net';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { spawn } from 'child_process';
 
+class TestServer extends http.Server {
+  PREFIX: string;
+  start() {
+    return new Promise<void>(resolve => {
+      super.listen(() => {
+        const address = this.address() as net.AddressInfo;
+        this.PREFIX = `http://localhost:${address.port}`;
+        resolve();
+      });
+    });
+  }
+  stop() {
+    return new Promise<void>(resolve => {
+      this.close(() => {
+        resolve();
+      });
+    });
+  }
+}
+
 type Fixtures = {
+  server: TestServer;
   client: Client;
   visionClient: Client;
   startClient: (options?: { args?: string[] }) => Promise<Client>;
@@ -103,6 +126,13 @@ export const test = baseTest.extend<Fixtures>({
   },
 
   mcpBrowser: ['chromium', { option: true }],
+
+  server: async ({}, use) => {
+    const server = new TestServer();
+    await server.start();
+    await use(server);
+    await server.stop();
+  }
 });
 
 type Response = Awaited<ReturnType<Client['callTool']>>;

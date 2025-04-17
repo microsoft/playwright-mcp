@@ -58,6 +58,10 @@ export class Context {
     this._modalStates = this._modalStates.filter(state => state !== modalState);
   }
 
+  hasModalState(type: ModalState['type']) {
+    return this._modalStates.some(state => state.type === type);
+  }
+
   modalStatesMarkdown(): string[] {
     const result: string[] = ['### Modal state'];
     for (const state of this._modalStates) {
@@ -310,7 +314,13 @@ export class Tab {
   }
 
   async navigate(url: string) {
-    await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+    try {
+      await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('net::ERR_ABORTED') && this.context.hasModalState('download'))
+        return;
+    }
+
     // Cap load event to 5 seconds, the page is operational at this point.
     await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
   }
