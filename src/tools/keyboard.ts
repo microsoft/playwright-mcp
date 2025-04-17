@@ -41,7 +41,7 @@ const pressKey: ToolFactory = captureSnapshot => ({
       `await page.keyboard.press('${validatedParams.key}');`,
     ];
 
-    const action = () => tab.page.keyboard.press(validatedParams.key).then(() => ({}));
+    const action = () => tab.page.keyboard.press(validatedParams.key);
 
     return {
       code,

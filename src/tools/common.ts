@@ -37,7 +37,6 @@ const wait: ToolFactory = captureSnapshot => ({
     await new Promise(f => setTimeout(f, Math.min(10000, validatedParams.time * 1000)));
     return {
       code: [`// Waited for ${validatedParams.time} seconds`],
-      action: async () => ({}),
       captureSnapshot,
       waitForNetwork: false,
     };
@@ -59,7 +58,6 @@ const close: Tool = {
     await context.close();
     return {
       code: [`// Internal to close the page`],
-      action: async () => ({}),
       captureSnapshot: false,
       waitForNetwork: false,
     };
@@ -91,7 +89,6 @@ const resize: ToolFactory = captureSnapshot => ({
 
     const action = async () => {
       await tab.page.setViewportSize({ width: validatedParams.width, height: validatedParams.height });
-      return {};
     };
 
     return {

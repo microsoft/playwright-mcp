@@ -40,7 +40,6 @@ const snapshot: Tool = {
 
     return {
       code: [`// <internal code to capture accessibility snapshot>`],
-      action: async () => ({}),
       captureSnapshot: true,
       waitForNetwork: false,
     };
@@ -72,7 +71,7 @@ const click: Tool = {
 
     return {
       code,
-      action: () => locator.click().then(() => ({})),
+      action: () => locator.click(),
       captureSnapshot: true,
       waitForNetwork: true,
     };
@@ -107,7 +106,7 @@ const drag: Tool = {
 
     return {
       code,
-      action: () => startLocator.dragTo(endLocator).then(() => ({})),
+      action: () => startLocator.dragTo(endLocator),
       captureSnapshot: true,
       waitForNetwork: true,
     };
@@ -134,7 +133,7 @@ const hover: Tool = {
 
     return {
       code,
-      action: () => locator.hover().then(() => ({})),
+      action: () => locator.hover(),
       captureSnapshot: true,
       waitForNetwork: true,
     };
@@ -181,7 +180,7 @@ const type: Tool = {
 
     return {
       code,
-      action: () => steps.reduce((acc, step) => acc.then(step), Promise.resolve()).then(() => ({})),
+      action: () => steps.reduce((acc, step) => acc.then(step), Promise.resolve()),
       captureSnapshot: true,
       waitForNetwork: true,
     };
@@ -212,7 +211,7 @@ const selectOption: Tool = {
 
     return {
       code,
-      action: () => locator.selectOption(validatedParams.values).then(() => ({})),
+      action: () => locator.selectOption(validatedParams.values).then(() => {}),
       captureSnapshot: true,
       waitForNetwork: true,
     };

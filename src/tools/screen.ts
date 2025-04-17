@@ -77,7 +77,7 @@ const moveMouse: Tool = {
       `// Move mouse to (${validatedParams.x}, ${validatedParams.y})`,
       `await page.mouse.move(${validatedParams.x}, ${validatedParams.y});`,
     ];
-    const action = () => tab.page.mouse.move(validatedParams.x, validatedParams.y).then(() => ({}));
+    const action = () => tab.page.mouse.move(validatedParams.x, validatedParams.y);
     return {
       code,
       action,
@@ -113,7 +113,6 @@ const click: Tool = {
       await tab.page.mouse.move(validatedParams.x, validatedParams.y);
       await tab.page.mouse.down();
       await tab.page.mouse.up();
-      return {};
     };
     return {
       code,
@@ -157,7 +156,6 @@ const drag: Tool = {
       await tab.page.mouse.down();
       await tab.page.mouse.move(validatedParams.endX, validatedParams.endY);
       await tab.page.mouse.up();
-      return {};
     };
 
     return {
@@ -196,7 +194,6 @@ const type: Tool = {
       await tab.page.keyboard.type(validatedParams.text);
       if (validatedParams.submit)
         await tab.page.keyboard.press('Enter');
-      return {};
     };
 
     if (validatedParams.submit) {

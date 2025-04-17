@@ -44,7 +44,6 @@ const navigate: ToolFactory = captureSnapshot => ({
 
     return {
       code,
-      action: async () => ({}),
       captureSnapshot,
       waitForNetwork: false,
     };
@@ -71,7 +70,6 @@ const goBack: ToolFactory = captureSnapshot => ({
 
     return {
       code,
-      action: async () => ({}),
       captureSnapshot,
       waitForNetwork: false,
     };
@@ -96,7 +94,6 @@ const goForward: ToolFactory = captureSnapshot => ({
     ];
     return {
       code,
-      action: async () => ({}),
       captureSnapshot,
       waitForNetwork: false,
     };

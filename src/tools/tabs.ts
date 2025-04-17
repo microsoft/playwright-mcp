@@ -28,12 +28,18 @@ const listTabs: Tool = {
     inputSchema: zodToJsonSchema(z.object({})),
   },
 
-  handle: async () => {
+  handle: async context => {
+    await context.ensureTab();
     return {
       code: [`// <internal code to list tabs>`],
-      action: async () => ({}),
       captureSnapshot: false,
       waitForNetwork: false,
+      resultOverride: {
+        content: [{
+          type: 'text',
+          text: await context.listTabsMarkdown(),
+        }],
+      },
     };
   },
 };
@@ -60,7 +66,6 @@ const selectTab: ToolFactory = captureSnapshot => ({
 
     return {
       code,
-      action: async () => ({}),
       captureSnapshot,
       waitForNetwork: false
     };
@@ -91,7 +96,6 @@ const newTab: ToolFactory = captureSnapshot => ({
     ];
     return {
       code,
-      action: async () => ({}),
       captureSnapshot,
       waitForNetwork: false
     };
@@ -119,7 +123,6 @@ const closeTab: ToolFactory = captureSnapshot => ({
     ];
     return {
       code,
-      action: async () => ({}),
       captureSnapshot,
       waitForNetwork: false
     };

@@ -45,7 +45,6 @@ const uploadFile: ToolFactory = captureSnapshot => ({
     const action = async () => {
       await modalState.fileChooser.setFiles(validatedParams.paths);
       context.clearModalState(modalState);
-      return {};
     };
 
     return {

@@ -49,7 +49,6 @@ const install: Tool = {
     });
     return {
       code: [`// Browser ${channel} installed`],
-      action: async () => ({}),
       captureSnapshot: false,
       waitForNetwork: false,
     };

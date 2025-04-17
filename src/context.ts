@@ -119,7 +119,10 @@ export class Context {
   async run(tool: Tool, params: Record<string, unknown> | undefined) {
     // Tab management is done outside of the action() call.
     const toolResult = await tool.handle(this, params);
-    const { code, action, waitForNetwork, captureSnapshot } = toolResult;
+    const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
+
+    if (resultOverride)
+      return resultOverride;
 
     if (!this._currentTab) {
       return {
@@ -132,12 +135,12 @@ export class Context {
 
     const tab = this.currentTabOrDie();
     // TODO: race against modal dialogs to resolve clicks.
-    let actionResult: { content?: (ImageContent | TextContent)[] };
+    let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
     try {
       if (waitForNetwork)
-        actionResult = await waitForCompletion(tab.page, () => action()) ?? undefined;
+        actionResult = await waitForCompletion(tab.page, async () => action?.()) ?? undefined;
       else
-        actionResult = await action();
+        actionResult = await action?.() ?? undefined;
     } finally {
       if (captureSnapshot)
         await tab.captureSnapshot();
@@ -163,11 +166,16 @@ ${code.join('\n')}
     if (this.tabs().length > 1)
       result.push(await this.listTabsMarkdown(), '');
 
-    if (tab.hasSnapshot()) {
-      if (this.tabs().length > 1)
-        result.push('### Current tab');
+    if (this.tabs().length > 1)
+      result.push('### Current tab');
+
+    result.push(
+        `- Page URL: ${tab.page.url()}`,
+        `- Page Title: ${await tab.page.title()}`
+    );
+
+    if (captureSnapshot && tab.hasSnapshot())
       result.push(tab.snapshotOrDie().text());
-    }
 
     const content = actionResult?.content ?? [];
 
@@ -338,19 +346,12 @@ class PageSnapshot {
 
   private async _build(page: playwright.Page) {
     const yamlDocument = await this._snapshotFrame(page);
-    const lines = [];
-    lines.push(
-        `- Page URL: ${page.url()}`,
-        `- Page Title: ${await page.title()}`
-    );
-    lines.push(
-        `- Page Snapshot`,
-        '```yaml',
-        yamlDocument.toString().trim(),
-        '```',
-        ''
-    );
-    this._text = lines.join('\n');
+    this._text = [
+      `- Page Snapshot`,
+      '```yaml',
+      yamlDocument.toString({ indentSeq: false }).trim(),
+      '```',
+    ].join('\n');
   }
 
   private async _snapshotFrame(frame: playwright.Page | playwright.FrameLocator) {

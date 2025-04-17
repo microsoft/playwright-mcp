@@ -96,8 +96,8 @@ await page.getByRole('combobox').selectOption(['bar']);
 - Page Snapshot
 \`\`\`yaml
 - combobox [ref=s2e3]:
-    - option "Foo" [ref=s2e4]
-    - option "Bar" [selected] [ref=s2e5]
+  - option "Foo" [ref=s2e4]
+  - option "Bar" [selected] [ref=s2e5]
 \`\`\`
 `);
 });
@@ -129,9 +129,9 @@ await page.getByRole('listbox').selectOption(['bar', 'baz']);
 - Page Snapshot
 \`\`\`yaml
 - listbox [ref=s2e3]:
-    - option "Foo" [ref=s2e4]
-    - option "Bar" [selected] [ref=s2e5]
-    - option "Baz" [selected] [ref=s2e6]
+  - option "Foo" [ref=s2e4]
+  - option "Bar" [selected] [ref=s2e5]
+  - option "Baz" [selected] [ref=s2e6]
 \`\`\`
 `);
 });
