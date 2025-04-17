@@ -48,10 +48,9 @@ const install: Tool = {
       });
     });
     return {
-      content: [{
-        type: 'text',
-        text: `Browser ${channel} installed`,
-      }],
+      code: [`// Browser ${channel} installed`],
+      captureSnapshot: false,
+      waitForNetwork: false,
     };
   },
 };

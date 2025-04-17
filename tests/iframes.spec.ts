@@ -26,12 +26,11 @@ test('stitched aria frames', async ({ client }) => {
 \`\`\`yaml
 - heading "Hello" [level=1] [ref=s1e3]
 - iframe [ref=s1e4]:
-    - button "World" [ref=f1s1e3]
-    - main [ref=f1s1e4]:
-        - iframe [ref=f1s1e5]:
-            - paragraph [ref=f2s1e3]: Nested
-\`\`\`
-`);
+  - button "World" [ref=f1s1e3]
+  - main [ref=f1s1e4]:
+    - iframe [ref=f1s1e5]:
+      - paragraph [ref=f2s1e3]: Nested
+\`\`\``);
 
   expect(await client.callTool({
     name: 'browser_click',

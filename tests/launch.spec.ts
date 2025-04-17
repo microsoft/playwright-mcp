@@ -26,7 +26,7 @@ test('test reopen browser', async ({ client }) => {
 
   expect(await client.callTool({
     name: 'browser_close',
-  })).toHaveTextContent('Page closed');
+  })).toContainTextContent('No open pages available');
 
   expect(await client.callTool({
     name: 'browser_navigate',

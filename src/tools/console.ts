@@ -29,13 +29,17 @@ const console: Tool = {
     inputSchema: zodToJsonSchema(consoleSchema),
   },
   handle: async context => {
-    const messages = await context.currentTab().console();
+    const messages = await context.currentTabOrDie().console();
     const log = messages.map(message => `[${message.type().toUpperCase()}] ${message.text()}`).join('\n');
     return {
-      content: [{
-        type: 'text',
-        text: log
-      }],
+      code: [`// <internal code to get console messages>`],
+      action: async () => {
+        return {
+          content: [{ type: 'text', text: log }]
+        };
+      },
+      captureSnapshot: false,
+      waitForNetwork: false,
     };
   },
 };

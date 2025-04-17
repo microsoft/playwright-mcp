@@ -42,5 +42,5 @@ test('save as pdf', async ({ client, mcpBrowser }) => {
   const response = await client.callTool({
     name: 'browser_pdf_save',
   });
-  expect(response).toHaveTextContent(/^Saved as.*page-[^:]+.pdf$/);
+  expect(response).toHaveTextContent(/Save page as.*page-[^:]+.pdf/);
 });
