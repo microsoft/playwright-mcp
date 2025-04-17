@@ -16,8 +16,11 @@
 
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import os from 'os';
+import path from 'path';
 
-import type { ToolFactory } from './tool';
+import { DownloadModalState, Tool, type ToolFactory } from './tool';
+import { sanitizeForFilePath } from './utils';
 
 const uploadFileSchema = z.object({
   paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
@@ -57,6 +60,61 @@ const uploadFile: ToolFactory = captureSnapshot => ({
   clearsModalState: 'fileChooser',
 });
 
+const downloadFileSchema = z.object({
+  filenames: z.array(z.string()).describe('The filenames to accept. All other files will be canceled.'),
+});
+
+const downloadFile: Tool = {
+  capability: 'files',
+
+  schema: {
+    name: 'browser_file_download',
+    description: 'Accept file downloads. Only use this if there is a download modal visible.',
+    inputSchema: zodToJsonSchema(downloadFileSchema),
+  },
+
+  handle: async (context, params) => {
+    const validatedParams = downloadFileSchema.parse(params);
+    const modals = context.modalStates().filter(state => state.type === 'download');
+    if (!modals.length)
+      throw new Error('No download modal visible');
+
+    const accepted = new Set<DownloadModalState>();
+    for (const filename of validatedParams.filenames) {
+      const download = modals.find(modal => modal.download.suggestedFilename() === filename);
+      if (!download)
+        throw new Error(`No download modal visible for file ${filename}`);
+      accepted.add(download);
+    }
+
+    return {
+      code: [`// <internal code to accept and cancel files>`],
+      action: async () => {
+        const text: string[] = [];
+        await Promise.all(modals.map(async modal => {
+          context.clearModalState(modal);
+
+          if (!accepted.has(modal))
+            return modal.download.cancel();
+
+          const filePath = path.join(os.tmpdir(), sanitizeForFilePath(`download-${new Date().toISOString()}`), modal.download.suggestedFilename());
+          try {
+            await modal.download.saveAs(filePath);
+            text.push(`Downloaded ${modal.download.suggestedFilename()} to ${filePath}`);
+          } catch {
+            text.push(`Failed to download ${modal.download.suggestedFilename()}`);
+          }
+        }));
+        return { content: [{ type: 'text', text: text.join('\n') }] };
+      },
+      captureSnapshot: false,
+      waitForNetwork: true,
+    };
+  },
+  clearsModalState: 'download',
+};
+
 export default (captureSnapshot: boolean) => [
   uploadFile(captureSnapshot),
+  downloadFile,
 ];

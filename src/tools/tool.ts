@@ -32,7 +32,13 @@ export type FileUploadModalState = {
   fileChooser: playwright.FileChooser;
 };
 
-export type ModalState = FileUploadModalState;
+export type DownloadModalState = {
+  type: 'download';
+  description: string;
+  download: playwright.Download;
+};
+
+export type ModalState = FileUploadModalState | DownloadModalState;
 
 export type ToolResult = {
   code: string[];
