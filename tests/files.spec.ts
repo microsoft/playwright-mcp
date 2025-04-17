@@ -75,3 +75,46 @@ test('browser_file_upload', async ({ client }) => {
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
   }
 });
+
+test.describe('browser_file_download', () => {
+  test('after clicking on download link', async ({ client }) => {
+    expect(await client.callTool({
+      name: 'browser_navigate',
+      arguments: {
+        url: 'data:text/html,<a href="data:text/plain,Hello world!" download="test.txt">Download</a>',
+      },
+    })).toContainTextContent('- link "Download" [ref=s1e3]');
+
+    expect(await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'Download link',
+        ref: 's1e3',
+      },
+    })).toContainTextContent(`
+### Modal state
+- [Download (test.txt)]: can be handled by the "browser_file_download" tool`);
+
+    expect(await client.callTool({
+      name: 'browser_snapshot',
+      arguments: {},
+    })).toContainTextContent(`
+Tool "browser_snapshot" does not handle the modal state.
+### Modal state
+- [Download (test.txt)]: can be handled by the "browser_file_download" tool`.trim());
+
+    expect(await client.callTool({
+      name: 'browser_file_download',
+      arguments: {
+        filenames: ['wrong_file.txt'],
+      },
+    })).toContainTextContent(`Error: No download modal visible for file wrong_file.txt`);
+
+    expect(await client.callTool({
+      name: 'browser_file_download',
+      arguments: {
+        filenames: ['test.txt'],
+      },
+    })).toContainTextContent([`Downloaded test.txt to`, '// <internal code to accept and cancel files>']);
+  });
+});

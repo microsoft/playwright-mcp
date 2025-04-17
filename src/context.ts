@@ -293,6 +293,13 @@ export class Tab {
         fileChooser: chooser,
       }, this);
     });
+    page.on('download', download => {
+      this.context.setModalState({
+        type: 'download',
+        description: `Download (${download.suggestedFilename()})`,
+        download,
+      }, this);
+    });
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
   }
