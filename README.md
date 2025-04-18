@@ -170,14 +170,12 @@ server.connect(transport);
 
 ### Snapshot-based Interactions
 
+- **browser_snapshot**
+  - Description: Capture accessibility snapshot of the current page, this is better than screenshot
+  - Parameters: None
+
 - **browser_click**
   - Description: Perform click on a web page
-  - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
-    - `ref` (string): Exact target element reference from the page snapshot
-
-- **browser_hover**
-  - Description: Hover over element on page
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -185,10 +183,16 @@ server.connect(transport);
 - **browser_drag**
   - Description: Perform drag and drop between two elements
   - Parameters:
-    - `startElement` (string): Human-readable source element description used to obtain permission to interact with the element
+    - `startElement` (string): Human-readable source element description used to obtain the permission to interact with the element
     - `startRef` (string): Exact source element reference from the page snapshot
-    - `endElement` (string): Human-readable target element description used to obtain permission to interact with the element
+    - `endElement` (string): Human-readable target element description used to obtain the permission to interact with the element
     - `endRef` (string): Exact target element reference from the page snapshot
+
+- **browser_hover**
+  - Description: Hover over element on page
+  - Parameters:
+    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `ref` (string): Exact target element reference from the page snapshot
 
 - **browser_type**
   - Description: Type text into editable element
@@ -206,16 +210,18 @@ server.connect(transport);
     - `ref` (string): Exact target element reference from the page snapshot
     - `values` (array): Array of values to select in the dropdown. This can be a single value or multiple values.
 
-- **browser_snapshot**
-  - Description: Capture accessibility snapshot of the current page, this is better than screenshot
-  - Parameters: None
-
 - **browser_take_screenshot**
   - Description: Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.
   - Parameters:
     - `raw` (boolean, optional): Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.
+    - `element` (string, optional): Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.
+    - `ref` (string, optional): Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.
 
 ### Vision-based Interactions
+
+- **browser_screen_capture**
+  - Description: Take a screenshot of the current page
+  - Parameters: None
 
 - **browser_screen_move_mouse**
   - Description: Move mouse to a given position
@@ -223,10 +229,6 @@ server.connect(transport);
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
     - `y` (number): Y coordinate
-
-- **browser_screen_capture**
-  - Description: Take a screenshot of the current page
-  - Parameters: None
 
 - **browser_screen_click**
   - Description: Click left mouse button
@@ -247,13 +249,8 @@ server.connect(transport);
 - **browser_screen_type**
   - Description: Type text
   - Parameters:
-    - `text` (string): Text to type
+    - `text` (string): Text to type into the element
     - `submit` (boolean, optional): Whether to submit entered text (press Enter after)
-
-- **browser_press_key**
-  - Description: Press a key on the keyboard
-  - Parameters:
-    - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
 
 ### Tab Management
 
@@ -307,7 +304,7 @@ server.connect(transport);
 ### Files and Media
 
 - **browser_file_upload**
-  - Description: Choose one or multiple files to upload
+  - Description: Upload one or multiple files
   - Parameters:
     - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
 
@@ -317,27 +314,28 @@ server.connect(transport);
 
 ### Utilities
 
-- **browser_wait**
-  - Description: Wait for a specified time in seconds
-  - Parameters:
-    - `time` (number): The time to wait in seconds (capped at 10 seconds)
-
-- **browser_resize**
-  - Description: Resize the browser window
-  - Parameters:
-    - `width` (number): The desired width of the browser window
-    - `height` (number): The desired height of the browser window
-
-- **browser_handle_dialog**
-  - Description: Handle browser dialogs (alert, confirm, prompt)
-  - Parameters:
-    - `accept` (boolean): Whether to accept or dismiss the dialog
-    - `promptText` (string, optional): Text to enter in case of prompt dialogs
-
 - **browser_close**
   - Description: Close the page
   - Parameters: None
 
+- **browser_wait**
+  - Description: Wait for a specified time in seconds
+  - Parameters:
+    - `time` (number): The time to wait in seconds
+
+- **browser_resize**
+  - Description: Resize the browser window
+  - Parameters:
+    - `width` (number): Width of the browser window
+    - `height` (number): Height of the browser window
+
 - **browser_install**
   - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
   - Parameters: None
+
+- **browser_handle_dialog**
+  - Description: Handle a dialog
+  - Parameters:
+    - `accept` (boolean): Whether to accept the dialog.
+    - `promptText` (string, optional): The text of the prompt in case of a prompt dialog.
+
