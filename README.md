@@ -15,8 +15,24 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - Automated testing driven by LLMs
 - General-purpose browser interaction for agents
 
-### Example config
+### Example configs
+VS Code (in `settings.json`)
+```js
+{
+ "mcp":
+    "servers": {
+      "playwright": {
+        "command": "npx",
+        "args": [
+          "@playwright/mcp@latest"
+        ]
+      }
+    }
+  }
+}
+```
 
+Claude Desktop (in `claude_desktop_config.json`)
 ```js
 {
   "mcpServers": {
@@ -37,7 +53,7 @@ Install the Playwright MCP server in VS Code using one of these buttons:
 
 <!--
 // Generate using?:
-const config = JSON.stringify({ name: 'playwright', command: 'npx', args: ["-y", "@playwright/mcp@latest"] });
+const config = JSON.stringify({ name: 'playwright', command: 'npx', args: ["@playwright/mcp@latest"] });
 const urlForWebsites = `vscode:mcp/install?${encodeURIComponent(config)}`;
 // Github markdown does not allow linking to `vscode:` directly, so you can use our redirect:
 const urlForGithub = `https://insiders.vscode.dev/redirect?url=${encodeURIComponent(urlForWebsites)}`;
@@ -50,6 +66,11 @@ Alternatively, you can install the Playwright MCP server using the VS Code CLI:
 ```bash
 # For VS Code
 code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
+```
+
+```bash
+# For VS Code Powershell terminal
+code --add-mcp '{\"name\":\"playwright\",\"command\":\"npx\",\"args\":[\"@playwright/mcp@latest\"]}'
 ```
 
 ```bash
