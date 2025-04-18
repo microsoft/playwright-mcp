@@ -17,6 +17,8 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Example config
 
+#### NPX
+
 ```js
 {
   "mcpServers": {
@@ -30,6 +32,19 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 }
 ```
 
+#### Docker
+
+**NOTE:** The Docker implementation only supports headless chromium at the moment.
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "--init", "mcp/playwright"]
+    }
+  }
+}
+```
 
 #### Installation in VS Code
 
@@ -153,6 +168,13 @@ To use Vision Mode, add the `--vision` flag when starting the server:
 
 Vision Mode works best with the computer use models that are able to interact with elements using
 X Y coordinate space, based on the provided screenshot.
+
+### Build with Docker
+
+You can build the Docker image yourself.
+```
+docker build -t mcp/playwright .
+```
 
 ### Programmatic usage with custom transports
 
