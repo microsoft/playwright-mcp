@@ -40,6 +40,7 @@ program
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--stealth', 'Enable stealth mode for the browser to avoid detection.')
     .action(async options => {
       const serverList = new ServerList(() => createServer({
         browser: options.browser,
@@ -49,6 +50,7 @@ program
         vision: !!options.vision,
         cdpEndpoint: options.cdpEndpoint,
         capabilities: options.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
+        stealth: options.stealth,
       }));
       setupExitWatchdog(serverList);
 
