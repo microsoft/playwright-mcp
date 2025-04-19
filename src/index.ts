@@ -69,6 +69,7 @@ type Options = {
   cdpEndpoint?: string;
   vision?: boolean;
   capabilities?: ToolCapability[];
+  stealth?: boolean;
 };
 
 const packageJSON = require('../package.json');
@@ -120,6 +121,7 @@ export async function createServer(options?: Options): Promise<Server> {
     userDataDir,
     launchOptions,
     cdpEndpoint: options?.cdpEndpoint,
+    stealth: !!options?.stealth,
   });
 }
 

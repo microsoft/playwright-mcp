@@ -15,6 +15,9 @@
  */
 
 import * as playwright from 'playwright';
+import { chromium } from 'playwright-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+
 import yaml from 'yaml';
 
 import { waitForCompletion } from './tools/utils';
@@ -23,12 +26,15 @@ import { ManualPromise } from './manualPromise';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
 import type { ModalState, Tool, ToolActionResult } from './tools/tool';
 
+chromium.use(StealthPlugin());
+
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
   userDataDir: string;
   launchOptions?: playwright.LaunchOptions;
   cdpEndpoint?: string;
   remoteEndpoint?: string;
+  stealth?: boolean;
 };
 
 type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
@@ -303,7 +309,7 @@ ${code.join('\n')}
 
   private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
     try {
-      const browserType = this.options.browserName ? playwright[this.options.browserName] : playwright.chromium;
+      const browserType = this.options.stealth ? chromium : this.options.browserName ? playwright[this.options.browserName] : playwright.chromium;
       return await browserType.launchPersistentContext(this.options.userDataDir, this.options.launchOptions);
     } catch (error: any) {
       if (error.message.includes('Executable doesn\'t exist'))

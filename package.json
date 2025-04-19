@@ -36,6 +36,8 @@
     "@modelcontextprotocol/sdk": "^1.6.1",
     "commander": "^13.1.0",
     "playwright": "^1.52.0-alpha-1743163434000",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "yaml": "^2.7.1",
     "zod-to-json-schema": "^3.24.4"
   },
