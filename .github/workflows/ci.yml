@@ -44,3 +44,49 @@ jobs:
 
     - name: Run tests
       run: npm test
+      env:
+        PWTEST_BOT_NAME: ${{ matrix.os }}
+
+    - name: Upload blob report
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: blob-report-${{ matrix.os }}
+        path: blob-report
+        retention-days: 1
+
+  merge-reports:
+    permissions:
+      pull-requests: write  # Post comments to the PR
+      contents: read    # This is required for actions/checkout to succeed
+    if: ${{ !cancelled() }}
+    needs: [build-and-test]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: npm ci
+    - uses: actions/checkout@v4
+      name: Checkout GHA markdown reporter
+      with:
+        repository: microsoft/playwright
+        path: playwright
+        sparse-checkout: |
+          packages/playwright-dashboard/src/
+
+    - name: Download blob reports
+      uses: actions/download-artifact@v4
+      with:
+        path: all-blob-reports
+        pattern: blob-report-*
+        merge-multiple: true
+    - name: Merge into HTML Report
+      run: npx playwright merge-reports all-blob-reports --reporter ./playwright/packages/playwright-dashboard/src/ghaMarkdownReporter.ts,html
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload HTML report
+      uses: actions/upload-artifact@v4
+      with:
+        name: html-report--attempt-${{ github.run_attempt }}
+        path: playwright-report
+        retention-days: 7

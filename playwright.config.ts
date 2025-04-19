@@ -24,7 +24,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'list',
+  reporter: process.env.CI ? [
+    ['list'],
+    ['blob', { fileName: `${process.env.PWTEST_BOT_NAME}.zip` }],
+  ] : [
+    ['list']
+  ],
   projects: [
     { name: 'chrome' },
     { name: 'msedge', use: { mcpBrowser: 'msedge' } },
