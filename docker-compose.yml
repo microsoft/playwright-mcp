@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  playwright-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8931:8931"
+    volumes:
+      # Mount volume for persistent browser data
+      - playwright-data:/root/.cache/ms-playwright
+    environment:
+      # Can be overridden with --env-file or docker-compose env variables
+      - PLAYWRIGHT_HEADLESS_MODE=true
+
+volumes:
+  playwright-data: 
