@@ -74,9 +74,23 @@ function setupExitWatchdog(serverList: ServerList) {
 
 program.parse(process.argv);
 
+// A custom SSEServerTransport that allows setting a specific sessionId
+class ReattachableSSEServerTransport extends SSEServerTransport {
+  constructor(path: string, res: http.ServerResponse, sessionId?: string) {
+    super(path, res);
+    // If a sessionId is provided, override the auto-generated one
+    if (sessionId) {
+      // @ts-ignore - Accessing private field
+      this._sessionId = sessionId;
+    }
+  }
+}
+
 async function startSSEServer(port: number, serverList: ServerList) {
-  type Session = { server: Server, transport: SSEServerTransport, lastSeen: number };
+  type Session = { server: Server, transport: SSEServerTransport, lastSeen: number, isReattaching?: boolean };
   const sessions = new Map<string, Session>();
+  // Add a lock map to prevent concurrent session reattachment
+  const sessionLocks = new Map<string, boolean>();
 
   const httpServer = http.createServer(async (req, res) => {
     if (req.method === 'POST') {
@@ -103,21 +117,34 @@ async function startSSEServer(port: number, serverList: ServerList) {
 
       // Reuse existing session if sessionId is provided and valid
       if (requestedId && sessions.has(requestedId)) {
-        const session = sessions.get(requestedId)!;
-        const transport = new SSEServerTransport('/sse', res);
-        // Force using the old sessionId
-        Reflect.set(transport, 'sessionId', requestedId);
-
-        // Update session
-        session.transport = transport;
-        session.lastSeen = Date.now();
-
-        res.on('close', () => {
+        // Acquire a lock for this session to prevent concurrent reattachment
+        if (sessionLocks.get(requestedId)) {
+          res.statusCode = 423; // Locked
+          res.end('Session is currently being reattached by another request');
+          return;
+        }
+        sessionLocks.set(requestedId, true);
+        try {
+          const session = sessions.get(requestedId)!;
+          // Create transport with the requested sessionId to ensure consistency
+          const transport = new ReattachableSSEServerTransport('/sse', res, requestedId);
+          // Mark this session as reattaching to handle special case in event emission
+          session.isReattaching = true;
+          // Update session
+          session.transport = transport;
           session.lastSeen = Date.now();
-        });
 
-        await session.server.connect(transport);
-        return;
+          res.on('close', () => {
+            session.lastSeen = Date.now();
+            session.isReattaching = false;
+          });
+          console.log(`Reattaching to existing session: ${requestedId}`);
+          await session.server.connect(transport);
+          return;
+        } finally {
+          // Release the lock
+          sessionLocks.delete(requestedId);
+        }
       }
 
       // Create new session (original logic)
@@ -131,7 +158,7 @@ async function startSSEServer(port: number, serverList: ServerList) {
         if (session)
           session.lastSeen = Date.now();
       });
-
+      console.log(`Created new session: ${transport.sessionId}`);
       await server.connect(transport);
       return;
     } else {
@@ -170,9 +197,13 @@ async function startSSEServer(port: number, serverList: ServerList) {
     const now = Date.now();
     for (const [id, session] of sessions) {
       if (now - session.lastSeen > TTL) {
-        sessions.delete(id);
-        session.server.close().catch(() => {});
-        console.log(`Closed idle session: ${id}`);
+        // Don't clean up sessions that are currently being reattached
+        if (!session.isReattaching && !sessionLocks.get(id)) {
+          sessions.delete(id);
+          sessionLocks.delete(id);
+          session.server.close().catch(() => {});
+          console.log(`Closed idle session: ${id}`);
+        }
       }
     }
   }, 10 * 60_000);  // Check every 10 minutes
