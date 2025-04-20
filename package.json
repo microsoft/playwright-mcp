@@ -16,7 +16,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint . && node update-readme.js",
+    "lint": "eslint .",
     "watch": "tsc --watch",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
