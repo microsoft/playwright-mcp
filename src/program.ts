@@ -19,7 +19,7 @@ import http from 'http';
 import { program } from 'commander';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 import { createServer } from './index';
 import { ServerList } from './server';
@@ -75,7 +75,9 @@ function setupExitWatchdog(serverList: ServerList) {
 program.parse(process.argv);
 
 async function startSSEServer(port: number, serverList: ServerList) {
-  const sessions = new Map<string, SSEServerTransport>();
+  type Session = { server: Server, transport: SSEServerTransport, lastSeen: number };
+  const sessions = new Map<string, Session>();
+
   const httpServer = http.createServer(async (req, res) => {
     if (req.method === 'POST') {
       const searchParams = new URL(`http://localhost${req.url}`).searchParams;
@@ -85,23 +87,51 @@ async function startSSEServer(port: number, serverList: ServerList) {
         res.end('Missing sessionId');
         return;
       }
-      const transport = sessions.get(sessionId);
-      if (!transport) {
+      const session = sessions.get(sessionId);
+      if (!session) {
         res.statusCode = 404;
         res.end('Session not found');
         return;
       }
 
-      await transport.handlePostMessage(req, res);
+      session.lastSeen = Date.now();
+      await session.transport.handlePostMessage(req, res);
       return;
     } else if (req.method === 'GET') {
+      const url = new URL(`http://localhost${req.url}`);
+      const requestedId = url.searchParams.get('sessionId');
+
+      // Reuse existing session if sessionId is provided and valid
+      if (requestedId && sessions.has(requestedId)) {
+        const session = sessions.get(requestedId)!;
+        const transport = new SSEServerTransport('/sse', res);
+        // Force using the old sessionId
+        Reflect.set(transport, 'sessionId', requestedId);
+
+        // Update session
+        session.transport = transport;
+        session.lastSeen = Date.now();
+
+        res.on('close', () => {
+          session.lastSeen = Date.now();
+        });
+
+        await session.server.connect(transport);
+        return;
+      }
+
+      // Create new session (original logic)
       const transport = new SSEServerTransport('/sse', res);
-      sessions.set(transport.sessionId, transport);
       const server = await serverList.create();
+      sessions.set(transport.sessionId, { server, transport, lastSeen: Date.now() });
+
       res.on('close', () => {
-        sessions.delete(transport.sessionId);
-        serverList.close(server).catch(e => console.error(e));
+        // Only mark last seen time, don't destroy server
+        const session = sessions.get(transport.sessionId);
+        if (session)
+          session.lastSeen = Date.now();
       });
+
       await server.connect(transport);
       return;
     } else {
@@ -133,4 +163,17 @@ async function startSSEServer(port: number, serverList: ServerList) {
       }
     }, undefined, 2));
   });
+
+  // Cleanup idle sessions periodically
+  setInterval(() => {
+    const TTL = 30 * 60_000;  // 30 minutes
+    const now = Date.now();
+    for (const [id, session] of sessions) {
+      if (now - session.lastSeen > TTL) {
+        sessions.delete(id);
+        session.server.close().catch(() => {});
+        console.log(`Closed idle session: ${id}`);
+      }
+    }
+  }, 10 * 60_000);  // Check every 10 minutes
 }
