@@ -21,7 +21,7 @@ jobs:
     - run: npm run build
     - name: Run ESLint
       run: npm run lint
-    - run: node update-readme.js
+    - run: npm run update-readme
     - name: Ensure no changes
       run: git diff --exit-code
 

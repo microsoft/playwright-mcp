@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint .",
+    "update-readme": "node utils/update-readme.js",
     "watch": "tsc --watch",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
