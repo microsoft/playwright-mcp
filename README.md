@@ -55,7 +55,7 @@ Install the Playwright MCP server in VS Code using one of these buttons:
 
 <!--
 // Generate using?:
-const config = JSON.stringify({ name: 'playwright', command: 'npx', args: ["-y", "@playwright/mcp@latest"] });
+const config = JSON.stringify({ name: 'playwright', command: 'npx', args: ["@playwright/mcp@latest"] });
 const urlForWebsites = `vscode:mcp/install?${encodeURIComponent(config)}`;
 // Github markdown does not allow linking to `vscode:` directly, so you can use our redirect:
 const urlForGithub = `https://insiders.vscode.dev/redirect?url=${encodeURIComponent(urlForWebsites)}`;
