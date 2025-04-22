@@ -44,20 +44,21 @@ class TestServer extends http.Server {
   }
 }
 
-type Fixtures = {
+type TestFixtures = {
   server: TestServer;
   client: Client;
   visionClient: Client;
   startClient: (options?: { args?: string[] }) => Promise<Client>;
   wsEndpoint: string;
   cdpEndpoint: string;
+};
 
-  // Cli options.
+type WorkerFixtures = {
   mcpHeadless: boolean;
   mcpBrowser: string | undefined;
 };
 
-export const test = baseTest.extend<Fixtures>({
+export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
 
   client: async ({ startClient }, use) => {
     await use(await startClient());
@@ -121,18 +122,19 @@ export const test = baseTest.extend<Fixtures>({
     browserProcess.kill();
   },
 
-  mcpHeadless: async ({ headless }, use) => {
+  mcpHeadless: [async ({ headless }, use) => {
     await use(headless);
-  },
+  }, { scope: 'worker' }],
 
-  mcpBrowser: ['chromium', { option: true }],
+  mcpBrowser: ['chromium', { option: true, scope: 'worker' }],
 
   server: async ({}, use) => {
     const server = new TestServer();
     await server.start();
     await use(server);
     await server.stop();
-  }
+  },
+
 });
 
 type Response = Awaited<ReturnType<Client['callTool']>>;

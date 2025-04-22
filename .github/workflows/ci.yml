@@ -7,7 +7,25 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    - name: Install dependencies
+      run: npm ci
+    - run: npm run build
+    - name: Run ESLint
+      run: npm run lint
+    - run: npm run update-readme
+    - name: Ensure no changes
+      run: git diff --exit-code
+
+  test:
     strategy:
       fail-fast: false
       matrix:
@@ -32,9 +50,6 @@ jobs:
     - name: Install MS Edge
       if: ${{ matrix.os == 'macos-latest' }} # MS Edge is not preinstalled on macOS runners.
       run: npx playwright install msedge
-
-    - name: Run linting
-      run: npm run lint
 
     - name: Build
       run: npm run build

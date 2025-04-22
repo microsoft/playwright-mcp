@@ -38,14 +38,22 @@ export type DownloadModalState = {
   download: playwright.Download;
 };
 
-export type ModalState = FileUploadModalState | DownloadModalState;
+export type DialogModalState = {
+  type: 'dialog';
+  description: string;
+  dialog: playwright.Dialog;
+};
+
+export type ModalState = FileUploadModalState | DialogModalState | DownloadModalState;
+
+export type ToolActionResult = { content?: (ImageContent | TextContent)[] } | undefined | void;
 
 export type ToolResult = {
   code: string[];
-  action?: () => Promise<{ content?: (ImageContent | TextContent)[] } | undefined | void>;
+  action?: () => Promise<ToolActionResult>;
   captureSnapshot: boolean;
   waitForNetwork: boolean;
-  resultOverride?: { content?: (ImageContent | TextContent)[] };
+  resultOverride?: ToolActionResult;
 };
 
 export type Tool = {
