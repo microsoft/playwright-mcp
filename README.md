@@ -385,6 +385,13 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_file_download**
+  - Description: Accept file downloads. Only use this if there is a download modal visible.
+  - Parameters:
+    - `filenames` (array): The filenames to accept. All other files will be canceled.
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_pdf_save**
   - Description: Save page as PDF
   - Parameters: None
