@@ -32,20 +32,6 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 }
 ```
 
-#### Docker
-
-**NOTE:** The Docker implementation only supports headless chromium at the moment.
-```js
-{
-  "mcpServers": {
-    "playwright": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "--init", "mcp/playwright"]
-    }
-  }
-}
-```
-
 #### Installation in VS Code
 
 Install the Playwright MCP server in VS Code using one of these buttons:
@@ -138,6 +124,20 @@ And then in MCP client config, set the `url` to the SSE endpoint:
   "mcpServers": {
     "playwright": {
       "url": "http://localhost:8931/sse"
+    }
+  }
+}
+```
+
+### Docker
+
+**NOTE:** The Docker implementation only supports headless chromium at the moment.
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "--init", "mcp/playwright"]
     }
   }
 }
