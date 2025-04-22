@@ -25,7 +25,7 @@ const console = defineTool({
     inputSchema: z.object({}),
   },
   handle: async context => {
-    const messages = await context.currentTabOrDie().console();
+    const messages = context.currentTabOrDie().console();
     const log = messages.map(message => `[${message.type().toUpperCase()}] ${message.text()}`).join('\n');
     return {
       code: [`// <internal code to get console messages>`],

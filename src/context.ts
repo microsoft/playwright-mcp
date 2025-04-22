@@ -371,11 +371,11 @@ export class Tab {
     return this._snapshot;
   }
 
-  async console(): Promise<playwright.ConsoleMessage[]> {
+  console(): playwright.ConsoleMessage[] {
     return this._console;
   }
 
-  async requests(): Promise<Map<playwright.Request, playwright.Response | null>> {
+  requests(): Map<playwright.Request, playwright.Response | null> {
     return this._requests;
   }
 
