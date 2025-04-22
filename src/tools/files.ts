@@ -15,16 +15,11 @@
  */
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 import os from 'os';
 import path from 'path';
 
-import { DownloadModalState, Tool, type ToolFactory } from './tool';
+import { defineTool, DownloadModalState, type ToolFactory } from './tool';
 import { sanitizeForFilePath } from './utils';
-
-const uploadFileSchema = z.object({
-  paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
-});
 
 const uploadFile: ToolFactory = captureSnapshot => ({
   capability: 'files',
@@ -32,21 +27,22 @@ const uploadFile: ToolFactory = captureSnapshot => ({
   schema: {
     name: 'browser_file_upload',
     description: 'Upload one or multiple files',
-    inputSchema: zodToJsonSchema(uploadFileSchema),
+    inputSchema: z.object({
+      paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
+    }),
   },
 
   handle: async (context, params) => {
-    const validatedParams = uploadFileSchema.parse(params);
     const modalState = context.modalStates().find(state => state.type === 'fileChooser');
     if (!modalState)
       throw new Error('No file chooser visible');
 
     const code = [
-      `// <internal code to chose files ${validatedParams.paths.join(', ')}`,
+      `// <internal code to chose files ${params.paths.join(', ')}`,
     ];
 
     const action = async () => {
-      await modalState.fileChooser.setFiles(validatedParams.paths);
+      await modalState.fileChooser.setFiles(params.paths);
       context.clearModalState(modalState);
     };
 
@@ -60,27 +56,24 @@ const uploadFile: ToolFactory = captureSnapshot => ({
   clearsModalState: 'fileChooser',
 });
 
-const downloadFileSchema = z.object({
-  filenames: z.array(z.string()).describe('The filenames to accept. All other files will be canceled.'),
-});
-
-const downloadFile: Tool = {
+const downloadFile = defineTool({
   capability: 'files',
 
   schema: {
     name: 'browser_file_download',
     description: 'Accept file downloads. Only use this if there is a download modal visible.',
-    inputSchema: zodToJsonSchema(downloadFileSchema),
+    inputSchema: z.object({
+      filenames: z.array(z.string()).describe('The filenames to accept. All other files will be canceled.'),
+    }),
   },
 
   handle: async (context, params) => {
-    const validatedParams = downloadFileSchema.parse(params);
     const modals = context.modalStates().filter(state => state.type === 'download');
     if (!modals.length)
       throw new Error('No download modal visible');
 
     const accepted = new Set<DownloadModalState>();
-    for (const filename of validatedParams.filenames) {
+    for (const filename of params.filenames) {
       const download = modals.find(modal => modal.download.suggestedFilename() === filename);
       if (!download)
         throw new Error(`No download modal visible for file ${filename}`);
@@ -112,7 +105,7 @@ const downloadFile: Tool = {
     };
   },
   clearsModalState: 'download',
-};
+});
 
 export default (captureSnapshot: boolean) => [
   uploadFile(captureSnapshot),

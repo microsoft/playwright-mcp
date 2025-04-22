@@ -15,18 +15,14 @@
  */
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool } from './tool';
 
-import type { Tool } from './tool';
-
-const consoleSchema = z.object({});
-
-const console: Tool = {
+const console = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_console_messages',
     description: 'Returns all console messages',
-    inputSchema: zodToJsonSchema(consoleSchema),
+    inputSchema: z.object({}),
   },
   handle: async context => {
     const messages = await context.currentTabOrDie().console();
@@ -42,7 +38,7 @@ const console: Tool = {
       waitForNetwork: false,
     };
   },
-};
+});
 
 export default [
   console,

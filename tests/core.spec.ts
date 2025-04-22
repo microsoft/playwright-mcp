@@ -206,5 +206,5 @@ test('browser_resize', async ({ client }) => {
 // Resize browser window to 390x780
 await page.setViewportSize({ width: 390, height: 780 });
 \`\`\``);
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent('Window size: 390x780');
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot', arguments: {} })).toContainTextContent('Window size: 390x780');
 });
