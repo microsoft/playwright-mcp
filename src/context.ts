@@ -317,6 +317,7 @@ export class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
   private _console: playwright.ConsoleMessage[] = [];
+  private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
   private _snapshot: PageSnapshot | undefined;
   private _onPageClose: (tab: Tab) => void;
 
@@ -325,9 +326,11 @@ export class Tab {
     this.page = page;
     this._onPageClose = onPageClose;
     page.on('console', event => this._console.push(event));
+    page.on('request', request => this._requests.set(request, null));
+    page.on('response', response => this._requests.set(response.request(), response));
     page.on('framenavigated', frame => {
       if (!frame.parentFrame())
-        this._console.length = 0;
+        this._clearCollectedArtifacts();
     });
     page.on('close', () => this._onClose());
     page.on('filechooser', chooser => {
@@ -342,8 +345,13 @@ export class Tab {
     page.setDefaultTimeout(5000);
   }
 
-  private _onClose() {
+  private _clearCollectedArtifacts() {
     this._console.length = 0;
+    this._requests.clear();
+  }
+
+  private _onClose() {
+    this._clearCollectedArtifacts();
     this._onPageClose(this);
   }
 
@@ -365,6 +373,10 @@ export class Tab {
 
   async console(): Promise<playwright.ConsoleMessage[]> {
     return this._console;
+  }
+
+  async requests(): Promise<Map<playwright.Request, playwright.Response | null>> {
+    return this._requests;
   }
 
   async captureSnapshot() {
