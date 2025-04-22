@@ -16,27 +16,45 @@
 
 import { spawn } from 'node:child_process';
 import path from 'node:path';
-import { test } from './fixtures';
+import { test as baseTest } from './fixtures';
+import { expect } from 'playwright/test';
 
-test('sse transport', async () => {
-  const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '0'], { stdio: 'pipe' });
-  try {
-    let stdout = '';
-    const url = await new Promise<string>(resolve => cp.stdout?.on('data', data => {
-      stdout += data.toString();
-      const match = stdout.match(/Listening on (http:\/\/.*)/);
-      if (match)
-        resolve(match[1]);
-    }));
+const test = baseTest.extend<{ serverEndpoint: string }>({
+  serverEndpoint: async ({}, use) => {
+    const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '0'], { stdio: 'pipe' });
+    try {
+      let stdout = '';
+      const url = await new Promise<string>(resolve => cp.stdout?.on('data', data => {
+        stdout += data.toString();
+        const match = stdout.match(/Listening on (http:\/\/.*)/);
+        if (match)
+          resolve(match[1]);
+      }));
 
-    // need dynamic import b/c of some ESM nonsense
-    const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
-    const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
-    const transport = new SSEClientTransport(new URL(url));
-    const client = new Client({ name: 'test', version: '1.0.0' });
-    await client.connect(transport);
-    await client.ping();
-  } finally {
-    cp.kill();
-  }
+      await use(url);
+    } finally {
+      cp.kill();
+    }
+  },
+});
+
+test('sse transport', async ({ serverEndpoint }) => {
+  // need dynamic import b/c of some ESM nonsense
+  const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
+  const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+  const transport = new SSEClientTransport(new URL(serverEndpoint));
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await client.connect(transport);
+  await client.ping();
+});
+
+test('streamable http transport', async ({ serverEndpoint }) => {
+  // need dynamic import b/c of some ESM nonsense
+  const { StreamableHTTPClientTransport } = await import('@modelcontextprotocol/sdk/client/streamableHttp.js');
+  const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+  const transport = new StreamableHTTPClientTransport(new URL('/mcp', serverEndpoint));
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await client.connect(transport);
+  await client.ping();
+  expect(transport.sessionId, 'has session support').toBeDefined();
 });

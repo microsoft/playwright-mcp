@@ -34,7 +34,7 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.6.1",
+    "@modelcontextprotocol/sdk": "^1.10.1",
     "commander": "^13.1.0",
     "playwright": "^1.52.0-alpha-1743163434000",
     "yaml": "^2.7.1",

@@ -15,10 +15,12 @@
  */
 
 import http from 'http';
+import crypto from 'node:crypto';
 
 import { program } from 'commander';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
 
 import { createServer } from './index';
@@ -53,7 +55,7 @@ program
       setupExitWatchdog(serverList);
 
       if (options.port) {
-        startSSEServer(+options.port, serverList);
+        startHttpServer(+options.port, serverList);
       } else {
         const server = await serverList.create();
         await server.connect(new StdioServerTransport());
@@ -74,9 +76,45 @@ function setupExitWatchdog(serverList: ServerList) {
 
 program.parse(process.argv);
 
-async function startSSEServer(port: number, serverList: ServerList) {
-  const sessions = new Map<string, SSEServerTransport>();
+async function startHttpServer(port: number, serverList: ServerList) {
+  const sseSessions = new Map<string, SSEServerTransport>();
+  const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
+    const isStreamableHttp = req.url?.startsWith('/mcp');
+    if (isStreamableHttp) {
+      if (req.method === 'POST') {
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+        if (sessionId) {
+          const transport = streamableSessions.get(sessionId);
+          if (!transport) {
+            res.statusCode = 404;
+            res.end('Session not found');
+            return;
+          }
+          return await transport.handleRequest(req, res);
+        }
+
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => crypto.randomUUID(),
+          onsessioninitialized: sessionId => {
+            streamableSessions.set(sessionId, transport);
+          }
+        });
+        transport.onclose = () => {
+          if (transport.sessionId)
+            streamableSessions.delete(transport.sessionId);
+
+        };
+        const server = await serverList.create();
+        await server.connect(transport);
+        return await transport.handleRequest(req, res);
+      }
+
+      res.statusCode = 400;
+      res.end('Invalid request');
+      return;
+    }
+
     if (req.method === 'POST') {
       const searchParams = new URL(`http://localhost${req.url}`).searchParams;
       const sessionId = searchParams.get('sessionId');
@@ -85,7 +123,7 @@ async function startSSEServer(port: number, serverList: ServerList) {
         res.end('Missing sessionId');
         return;
       }
-      const transport = sessions.get(sessionId);
+      const transport = sseSessions.get(sessionId);
       if (!transport) {
         res.statusCode = 404;
         res.end('Session not found');
@@ -96,10 +134,10 @@ async function startSSEServer(port: number, serverList: ServerList) {
       return;
     } else if (req.method === 'GET') {
       const transport = new SSEServerTransport('/sse', res);
-      sessions.set(transport.sessionId, transport);
+      sseSessions.set(transport.sessionId, transport);
       const server = await serverList.create();
       res.on('close', () => {
-        sessions.delete(transport.sessionId);
+        sseSessions.delete(transport.sessionId);
         serverList.close(server).catch(e => console.error(e));
       });
       await server.connect(transport);
@@ -132,5 +170,6 @@ async function startSSEServer(port: number, serverList: ServerList) {
         }
       }
     }, undefined, 2));
+    console.log('If your client supports streamable HTTP, you can use the /mcp endpoint instead.');
   });
 }
