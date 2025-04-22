@@ -19,6 +19,23 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 #### NPX
 
+VS Code (in `settings.json`)
+```js
+{
+ "mcp":
+    "servers": {
+      "playwright": {
+        "command": "npx",
+        "args": [
+          "@playwright/mcp@latest"
+        ]
+      }
+    }
+  }
+}
+```
+
+Claude Desktop (in `claude_desktop_config.json`)
 ```js
 {
   "mcpServers": {
@@ -51,6 +68,11 @@ Alternatively, you can install the Playwright MCP server using the VS Code CLI:
 ```bash
 # For VS Code
 code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
+```
+
+```bash
+# For VS Code Powershell terminal
+code --add-mcp '{\"name\":\"playwright\",\"command\":\"npx\",\"args\":[\"@playwright/mcp@latest\"]}'
 ```
 
 ```bash
