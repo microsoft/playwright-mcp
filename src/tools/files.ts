@@ -15,35 +15,30 @@
  */
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool, type ToolFactory } from './tool';
 
-import type { ToolFactory } from './tool';
-
-const uploadFileSchema = z.object({
-  paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
-});
-
-const uploadFile: ToolFactory = captureSnapshot => ({
+const uploadFile: ToolFactory = captureSnapshot => defineTool({
   capability: 'files',
 
   schema: {
     name: 'browser_file_upload',
     description: 'Upload one or multiple files',
-    inputSchema: zodToJsonSchema(uploadFileSchema),
+    inputSchema: z.object({
+      paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
+    }),
   },
 
   handle: async (context, params) => {
-    const validatedParams = uploadFileSchema.parse(params);
     const modalState = context.modalStates().find(state => state.type === 'fileChooser');
     if (!modalState)
       throw new Error('No file chooser visible');
 
     const code = [
-      `// <internal code to chose files ${validatedParams.paths.join(', ')}`,
+      `// <internal code to chose files ${params.paths.join(', ')}`,
     ];
 
     const action = async () => {
-      await modalState.fileChooser.setFiles(validatedParams.paths);
+      await modalState.fileChooser.setFiles(params.paths);
       context.clearModalState(modalState);
     };
 

@@ -16,6 +16,7 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListResourcesRequestSchema, ListToolsRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Context } from './context';
 
@@ -41,7 +42,13 @@ export function createServerWithTools(options: Options): Server {
   });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    return { tools: tools.map(tool => tool.schema) };
+    return {
+      tools: tools.map(tool => ({
+        name: tool.schema.name,
+        description: tool.schema.description,
+        inputSchema: zodToJsonSchema(tool.schema.inputSchema)
+      })),
+    };
   });
 
   server.setRequestHandler(ListResourcesRequestSchema, async () => {
