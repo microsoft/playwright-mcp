@@ -25,6 +25,13 @@ test('browser_file_upload', async ({ client }) => {
     },
   })).toContainTextContent('- textbox [ref=s1e3]');
 
+  {
+    expect(await client.callTool({
+      name: 'browser_file_upload',
+      arguments: { paths: [] },
+    })).toHaveTextContent('Error: No file chooser visible');
+  }
+
   expect(await client.callTool({
     name: 'browser_click',
     arguments: {

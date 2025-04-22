@@ -58,8 +58,7 @@ export function createServerWithTools(options: Options): Server {
     }
 
     const modalStates = context.modalStates().map(state => state.type);
-    if ((tool.clearsModalState && !modalStates.includes(tool.clearsModalState)) ||
-        (!tool.clearsModalState && modalStates.length)) {
+    if (modalStates.length && (!tool.clearsModalState || !modalStates.includes(tool.clearsModalState))) {
       const text = [
         `Tool "${request.params.name}" does not handle the modal state.`,
         ...context.modalStatesMarkdown(),
