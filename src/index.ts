@@ -30,6 +30,7 @@ import pdf from './tools/pdf';
 import snapshot from './tools/snapshot';
 import tabs from './tools/tabs';
 import screen from './tools/screen';
+import axe from './tools/axe';
 
 import type { Tool, ToolCapability } from './tools/tool';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -46,6 +47,7 @@ const snapshotTools: Tool[] = [
   ...pdf,
   ...snapshot,
   ...tabs(true),
+  ...axe,
 ];
 
 const screenshotTools: Tool[] = [
@@ -59,6 +61,7 @@ const screenshotTools: Tool[] = [
   ...pdf,
   ...screen,
   ...tabs(false),
+  ...axe,
 ];
 
 type Options = {
