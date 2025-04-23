@@ -1,16 +1,4 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "moduleResolution": "node",
-    "strict": true,
-    "module": "CommonJS",
-    "outDir": "./lib"
-  },
-  "include": [
-    "src",
-    "tests",
-    "*.ts",
-  ],
+  "extends": "./tsconfig.json",
+  "include": ["**/*.ts", "**/*.js"],
 }
