@@ -14,20 +14,13 @@
  * limitations under the License.
  */
 
-import http from 'http';
-import crypto from 'node:crypto';
-
 import { program } from 'commander';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-
 
 import { createServer } from './index';
 import { ServerList } from './server';
 
-import assert from 'assert';
 import { ToolCapability } from './tools/tool';
+import { startHttpTransport, startStdioTransport } from './transport';
 
 const packageJSON = require('../package.json');
 
@@ -54,12 +47,10 @@ program
       }));
       setupExitWatchdog(serverList);
 
-      if (options.port) {
-        startHttpServer(+options.port, serverList);
-      } else {
-        const server = await serverList.create();
-        await server.connect(new StdioServerTransport());
-      }
+      if (options.port)
+        await startHttpTransport(+options.port, serverList);
+      else
+        await startStdioTransport(serverList);
     });
 
 function setupExitWatchdog(serverList: ServerList) {
@@ -75,101 +66,3 @@ function setupExitWatchdog(serverList: ServerList) {
 }
 
 program.parse(process.argv);
-
-async function startHttpServer(port: number, serverList: ServerList) {
-  const sseSessions = new Map<string, SSEServerTransport>();
-  const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
-  const httpServer = http.createServer(async (req, res) => {
-    const isStreamableHttp = req.url?.startsWith('/mcp');
-    if (isStreamableHttp) {
-      if (req.method === 'POST') {
-        const sessionId = req.headers['mcp-session-id'] as string | undefined;
-        if (sessionId) {
-          const transport = streamableSessions.get(sessionId);
-          if (!transport) {
-            res.statusCode = 404;
-            res.end('Session not found');
-            return;
-          }
-          return await transport.handleRequest(req, res);
-        }
-
-        const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => crypto.randomUUID(),
-          onsessioninitialized: sessionId => {
-            streamableSessions.set(sessionId, transport);
-          }
-        });
-        transport.onclose = () => {
-          if (transport.sessionId)
-            streamableSessions.delete(transport.sessionId);
-
-        };
-        const server = await serverList.create();
-        await server.connect(transport);
-        return await transport.handleRequest(req, res);
-      }
-
-      res.statusCode = 400;
-      res.end('Invalid request');
-      return;
-    }
-
-    if (req.method === 'POST') {
-      const searchParams = new URL(`http://localhost${req.url}`).searchParams;
-      const sessionId = searchParams.get('sessionId');
-      if (!sessionId) {
-        res.statusCode = 400;
-        res.end('Missing sessionId');
-        return;
-      }
-      const transport = sseSessions.get(sessionId);
-      if (!transport) {
-        res.statusCode = 404;
-        res.end('Session not found');
-        return;
-      }
-
-      await transport.handlePostMessage(req, res);
-      return;
-    } else if (req.method === 'GET') {
-      const transport = new SSEServerTransport('/sse', res);
-      sseSessions.set(transport.sessionId, transport);
-      const server = await serverList.create();
-      res.on('close', () => {
-        sseSessions.delete(transport.sessionId);
-        serverList.close(server).catch(e => console.error(e));
-      });
-      await server.connect(transport);
-      return;
-    } else {
-      res.statusCode = 405;
-      res.end('Method not allowed');
-    }
-  });
-
-  httpServer.listen(port, () => {
-    const address = httpServer.address();
-    assert(address, 'Could not bind server socket');
-    let url: string;
-    if (typeof address === 'string') {
-      url = address;
-    } else {
-      const resolvedPort = address.port;
-      let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
-      if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
-        resolvedHost = 'localhost';
-      url = `http://${resolvedHost}:${resolvedPort}`;
-    }
-    console.log(`Listening on ${url}`);
-    console.log('Put this in your client config:');
-    console.log(JSON.stringify({
-      'mcpServers': {
-        'playwright': {
-          'url': `${url}/sse`
-        }
-      }
-    }, undefined, 2));
-    console.log('If your client supports streamable HTTP, you can use the /mcp endpoint instead.');
-  });
-}
