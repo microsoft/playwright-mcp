@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
+import { Notification } from '@modelcontextprotocol/sdk/types.js';
 import { test, expect } from './fixtures';
 import fs from 'fs/promises';
 
 test('browser_file_upload', async ({ client }) => {
+  const notifications: Notification[] = [];
+  client.fallbackNotificationHandler = async notification => { notifications.push(notification); };
+
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: {
@@ -38,6 +42,8 @@ test('browser_file_upload', async ({ client }) => {
     },
   })).toContainTextContent(`### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
+
+  expect(notifications).toContainEqual(expect.objectContaining({ method: 'notifications/tools/list_changed' }));
 
   const filePath = test.info().outputPath('test.txt');
   await fs.writeFile(filePath, 'Hello, world!');

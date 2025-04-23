@@ -42,8 +42,10 @@ export function createServerWithTools(options: Options): Server {
   });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const modalStates = context.modalStates().map(state => state.type);
+    const activeTools = tools.filter(tool => !tool.clearsModalState || modalStates.includes(tool.clearsModalState));
     return {
-      tools: tools.map(tool => ({
+      tools: activeTools.map(tool => ({
         name: tool.schema.name,
         description: tool.schema.description,
         inputSchema: zodToJsonSchema(tool.schema.inputSchema)
@@ -64,9 +66,9 @@ export function createServerWithTools(options: Options): Server {
       };
     }
 
-    const modalStates = context.modalStates().map(state => state.type);
-    if ((tool.clearsModalState && !modalStates.includes(tool.clearsModalState)) ||
-        (!tool.clearsModalState && modalStates.length)) {
+    const modalStates = new Set(context.modalStates().map(state => state.type));
+    if ((tool.clearsModalState && !modalStates.has(tool.clearsModalState)) ||
+        (!tool.clearsModalState && modalStates.size)) {
       const text = [
         `Tool "${request.params.name}" does not handle the modal state.`,
         ...context.modalStatesMarkdown(),
@@ -78,7 +80,14 @@ export function createServerWithTools(options: Options): Server {
     }
 
     try {
-      return await context.run(tool, request.params.arguments);
+      const response = await context.run(tool, request.params.arguments);
+
+      const newModalStates = context.modalStates().map(state => state.type);
+      const modalStateChanged = newModalStates.length !== modalStates.size || newModalStates.some(state => !modalStates.has(state));
+      if (modalStateChanged)
+        await server.sendToolListChanged();
+
+      return response;
     } catch (error) {
       return {
         content: [{ type: 'text', text: String(error) }],
