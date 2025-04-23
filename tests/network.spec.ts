@@ -42,8 +42,8 @@ test('browser_network_requests', async ({ client, server }) => {
     },
   });
 
-  expect.poll(() => client.callTool({
+  await expect.poll(() => client.callTool({
     name: 'browser_network_requests',
     arguments: {},
-  })).toHaveTextContent(`[GET] http://localhost:8907/json => [200] OK`);
+  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/json => [200] OK`);
 });

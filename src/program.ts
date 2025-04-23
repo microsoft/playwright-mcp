@@ -53,7 +53,7 @@ program
       setupExitWatchdog(serverList);
 
       if (options.port) {
-        startSSEServer(+options.port, serverList);
+        await startSSEServer(+options.port, serverList);
       } else {
         const server = await serverList.create();
         await server.connect(new StdioServerTransport());

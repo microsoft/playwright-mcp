@@ -53,7 +53,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     const userDataDir = testInfo.outputPath('user-data-dir');
     let client: StdioClientTransport | undefined;
 
-    use(async options => {
+    await use(async options => {
       const args = ['--user-data-dir', userDataDir];
       if (mcpHeadless)
         args.push('--headless');
