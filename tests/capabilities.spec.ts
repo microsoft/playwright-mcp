@@ -19,6 +19,7 @@ import { test, expect } from './fixtures';
 test('test snapshot tool list', async ({ client }) => {
   const { tools } = await client.listTools();
   expect(new Set(tools.map(t => t.name))).toEqual(new Set([
+    'browser_accessibility_test',
     'browser_click',
     'browser_console_messages',
     'browser_drag',
@@ -48,6 +49,7 @@ test('test snapshot tool list', async ({ client }) => {
 test('test vision tool list', async ({ visionClient }) => {
   const { tools: visionTools } = await visionClient.listTools();
   expect(new Set(visionTools.map(t => t.name))).toEqual(new Set([
+    'browser_accessibility_test',
     'browser_close',
     'browser_console_messages',
     'browser_file_upload',

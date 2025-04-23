@@ -17,25 +17,28 @@
 import { test, expect } from './fixtures';
 
 test('browser_accessibility_test', async ({ client }) => {
-  expect(await client.callTool({
-    name: 'browser_accessibility_test',
-    arguments: {},
-  })).toContainTextContent(``);
-
-  expect(await client.callTool({
-    name: 'browser_accessibility_test',
-    arguments: {},
-  })).toEqual({
-    content: [
-      {
-        data: expect.any(String),
-        mimeType: 'image/jpeg',
-        type: 'image',
-      },
-      {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
-        type: 'text',
-      },
-    ],
+  await client.callTool({
+    name: 'browser_tab_new',
+    arguments: {
+      url: `data:text/html,<html lang="en"><title>Accessibility test</title><body><header><h1>Accessibility test</h1></header><main><button></button></main><footer><p>A simple footer</p></footer></body></html>`,
+    },
   });
+
+  const { content: toolOutput } = await client.callTool({
+    name: 'browser_accessibility_test',
+    arguments: {},
+  });
+
+  expect(toolOutput).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          text: expect.stringContaining('Ensure buttons have discernible text'),
+          type: 'text',
+        }),
+        expect.objectContaining({
+          text: expect.stringContaining('await new AxeBuilder({ page }).analyze();'),
+          type: 'text',
+        }),
+      ])
+  );
 });
