@@ -56,14 +56,14 @@ export const endtoend: Tool = {
         model: openai('gpt-4o'),
         messages: [{ role: 'system', content: content }],
         tools: {
-          snapshot: tool({
+          snapshotSnapshot: tool({
             description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
             parameters: z.object({}),
             execute: async () => {
               return await snapshot.snapshot.handle(context);
             }
           }),
-          click: tool({
+          clickSnapshot: tool({
             description: 'Perform click on a web page',
             parameters: snapshot.elementSchema,
             execute: async (params: z.infer<typeof snapshot.elementSchema>) => {
@@ -71,7 +71,7 @@ export const endtoend: Tool = {
               return await snapshot.click.handle(context, validatedParams, true);
             }
           }),
-          drag: tool({
+          dragSnapshot: tool({
             description: 'Perform drag and drop between two elements',
             parameters: snapshot.dragSchema,
             execute: async (params: z.infer<typeof snapshot.dragSchema>) => {
@@ -79,7 +79,7 @@ export const endtoend: Tool = {
               return await snapshot.drag.handle(context, validatedParams, true);
             }
           }),
-          hover: tool({
+          hoverSnapshot: tool({
             description: 'Hover over element on page',
             parameters: snapshot.elementSchema,
             execute: async (params: z.infer<typeof snapshot.elementSchema>) => {
@@ -87,7 +87,7 @@ export const endtoend: Tool = {
               return await snapshot.hover.handle(context, validatedParams, true);
             }
           }),
-          type: tool({
+          typeSnapshot: tool({
             description: 'Type text into editable element',
             parameters: snapshot.typeSchema,
             execute: async (params: z.infer<typeof snapshot.typeSchema>) => {
@@ -95,7 +95,7 @@ export const endtoend: Tool = {
               return await snapshot.type.handle(context, validatedParams, true);
             }
           }),
-          selectOption: tool({
+          selectOptionSnapshot: tool({
             description: 'Select an option in a dropdown',
             parameters: snapshot.selectOptionSchema,
             execute: async (params: z.infer<typeof snapshot.selectOptionSchema>) => {
@@ -103,7 +103,7 @@ export const endtoend: Tool = {
               return await snapshot.selectOption.handle(context, validatedParams, true);
             }
           }),
-          screenshot: tool({
+          screenshotSnapshot: tool({
             description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
             parameters: snapshot.screenshotSchema,
             execute: async (params: z.infer<typeof snapshot.screenshotSchema>) => {
