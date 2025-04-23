@@ -18,22 +18,18 @@ import os from 'os';
 import path from 'path';
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool } from './tool';
 
 import { sanitizeForFilePath } from './utils';
 import * as javascript from '../javascript';
 
-import type { Tool } from './tool';
-
-const pdfSchema = z.object({});
-
-const pdf: Tool = {
+const pdf = defineTool({
   capability: 'pdf',
 
   schema: {
     name: 'browser_pdf_save',
     description: 'Save page as PDF',
-    inputSchema: zodToJsonSchema(pdfSchema),
+    inputSchema: z.object({}),
   },
 
   handle: async context => {
@@ -52,7 +48,7 @@ const pdf: Tool = {
       waitForNetwork: false,
     };
   },
-};
+});
 
 export default [
   pdf,

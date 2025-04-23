@@ -96,8 +96,8 @@ await page.getByRole('combobox').selectOption(['bar']);
 - Page Snapshot
 \`\`\`yaml
 - combobox [ref=s2e3]:
-  - option "Foo" [ref=s2e4]
-  - option "Bar" [selected] [ref=s2e5]
+  - option "Foo"
+  - option "Bar" [selected]
 \`\`\`
 `);
 });
@@ -206,5 +206,5 @@ test('browser_resize', async ({ client }) => {
 // Resize browser window to 390x780
 await page.setViewportSize({ width: 390, height: 780 });
 \`\`\``);
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent('Window size: 390x780');
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot', arguments: {} })).toContainTextContent('Window size: 390x780');
 });

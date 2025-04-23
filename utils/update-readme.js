@@ -18,6 +18,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const zodToJsonSchema = require('zod-to-json-schema').default;
 
 const commonTools = require('../lib/tools/common').default;
 const consoleTools = require('../lib/tools/console').default;
@@ -107,11 +108,11 @@ function formatToolForReadme(tool) {
  */
 
 /**
- * @param {import('../src/tools/tool').ToolSchema} schema 
+ * @param {import('../src/tools/tool').ToolSchema<any>} schema 
  * @returns {ParsedToolSchema}
  */
 function processToolSchema(schema) {
-  const inputSchema =  /** @type {import('zod-to-json-schema').JsonSchema7ObjectType} */ (schema.inputSchema || {});
+  const inputSchema =  /** @type {import('zod-to-json-schema').JsonSchema7ObjectType} */ zodToJsonSchema(schema.inputSchema || {});
   if (inputSchema.type !== 'object')
     throw new Error(`Tool ${schema.name} input schema is not an object`);
 

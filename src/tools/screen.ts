@@ -15,18 +15,20 @@
  */
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool } from './tool';
 
 import * as javascript from '../javascript';
 
-import type { Tool } from './tool';
+const elementSchema = z.object({
+  element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
+});
 
-const screenshot: Tool = {
+const screenshot = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_screen_capture',
     description: 'Take a screenshot of the current page',
-    inputSchema: zodToJsonSchema(z.object({})),
+    inputSchema: z.object({}),
   },
 
   handle: async context => {
@@ -51,33 +53,26 @@ const screenshot: Tool = {
       waitForNetwork: false
     };
   },
-};
-
-const elementSchema = z.object({
-  element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
 });
 
-const moveMouseSchema = elementSchema.extend({
-  x: z.number().describe('X coordinate'),
-  y: z.number().describe('Y coordinate'),
-});
-
-const moveMouse: Tool = {
+const moveMouse = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_screen_move_mouse',
     description: 'Move mouse to a given position',
-    inputSchema: zodToJsonSchema(moveMouseSchema),
+    inputSchema: elementSchema.extend({
+      x: z.number().describe('X coordinate'),
+      y: z.number().describe('Y coordinate'),
+    }),
   },
 
   handle: async (context, params) => {
-    const validatedParams = moveMouseSchema.parse(params);
     const tab = context.currentTabOrDie();
     const code = [
-      `// Move mouse to (${validatedParams.x}, ${validatedParams.y})`,
-      `await page.mouse.move(${validatedParams.x}, ${validatedParams.y});`,
+      `// Move mouse to (${params.x}, ${params.y})`,
+      `await page.mouse.move(${params.x}, ${params.y});`,
     ];
-    const action = () => tab.page.mouse.move(validatedParams.x, validatedParams.y);
+    const action = () => tab.page.mouse.move(params.x, params.y);
     return {
       code,
       action,
@@ -85,32 +80,29 @@ const moveMouse: Tool = {
       waitForNetwork: false
     };
   },
-};
-
-const clickSchema = elementSchema.extend({
-  x: z.number().describe('X coordinate'),
-  y: z.number().describe('Y coordinate'),
 });
 
-const click: Tool = {
+const click = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_screen_click',
     description: 'Click left mouse button',
-    inputSchema: zodToJsonSchema(clickSchema),
+    inputSchema: elementSchema.extend({
+      x: z.number().describe('X coordinate'),
+      y: z.number().describe('Y coordinate'),
+    }),
   },
 
   handle: async (context, params) => {
-    const validatedParams = clickSchema.parse(params);
     const tab = context.currentTabOrDie();
     const code = [
-      `// Click mouse at coordinates (${validatedParams.x}, ${validatedParams.y})`,
-      `await page.mouse.move(${validatedParams.x}, ${validatedParams.y});`,
+      `// Click mouse at coordinates (${params.x}, ${params.y})`,
+      `await page.mouse.move(${params.x}, ${params.y});`,
       `await page.mouse.down();`,
       `await page.mouse.up();`,
     ];
     const action = async () => {
-      await tab.page.mouse.move(validatedParams.x, validatedParams.y);
+      await tab.page.mouse.move(params.x, params.y);
       await tab.page.mouse.down();
       await tab.page.mouse.up();
     };
@@ -121,40 +113,37 @@ const click: Tool = {
       waitForNetwork: true,
     };
   },
-};
-
-const dragSchema = elementSchema.extend({
-  startX: z.number().describe('Start X coordinate'),
-  startY: z.number().describe('Start Y coordinate'),
-  endX: z.number().describe('End X coordinate'),
-  endY: z.number().describe('End Y coordinate'),
 });
 
-const drag: Tool = {
+const drag = defineTool({
   capability: 'core',
 
   schema: {
     name: 'browser_screen_drag',
     description: 'Drag left mouse button',
-    inputSchema: zodToJsonSchema(dragSchema),
+    inputSchema: elementSchema.extend({
+      startX: z.number().describe('Start X coordinate'),
+      startY: z.number().describe('Start Y coordinate'),
+      endX: z.number().describe('End X coordinate'),
+      endY: z.number().describe('End Y coordinate'),
+    }),
   },
 
   handle: async (context, params) => {
-    const validatedParams = dragSchema.parse(params);
     const tab = context.currentTabOrDie();
 
     const code = [
-      `// Drag mouse from (${validatedParams.startX}, ${validatedParams.startY}) to (${validatedParams.endX}, ${validatedParams.endY})`,
-      `await page.mouse.move(${validatedParams.startX}, ${validatedParams.startY});`,
+      `// Drag mouse from (${params.startX}, ${params.startY}) to (${params.endX}, ${params.endY})`,
+      `await page.mouse.move(${params.startX}, ${params.startY});`,
       `await page.mouse.down();`,
-      `await page.mouse.move(${validatedParams.endX}, ${validatedParams.endY});`,
+      `await page.mouse.move(${params.endX}, ${params.endY});`,
       `await page.mouse.up();`,
     ];
 
     const action = async () => {
-      await tab.page.mouse.move(validatedParams.startX, validatedParams.startY);
+      await tab.page.mouse.move(params.startX, params.startY);
       await tab.page.mouse.down();
-      await tab.page.mouse.move(validatedParams.endX, validatedParams.endY);
+      await tab.page.mouse.move(params.endX, params.endY);
       await tab.page.mouse.up();
     };
 
@@ -165,38 +154,35 @@ const drag: Tool = {
       waitForNetwork: true,
     };
   },
-};
-
-const typeSchema = z.object({
-  text: z.string().describe('Text to type into the element'),
-  submit: z.boolean().optional().describe('Whether to submit entered text (press Enter after)'),
 });
 
-const type: Tool = {
+const type = defineTool({
   capability: 'core',
 
   schema: {
     name: 'browser_screen_type',
     description: 'Type text',
-    inputSchema: zodToJsonSchema(typeSchema),
+    inputSchema: z.object({
+      text: z.string().describe('Text to type into the element'),
+      submit: z.boolean().optional().describe('Whether to submit entered text (press Enter after)'),
+    }),
   },
 
   handle: async (context, params) => {
-    const validatedParams = typeSchema.parse(params);
     const tab = context.currentTabOrDie();
 
     const code = [
-      `// Type ${validatedParams.text}`,
-      `await page.keyboard.type('${validatedParams.text}');`,
+      `// Type ${params.text}`,
+      `await page.keyboard.type('${params.text}');`,
     ];
 
     const action = async () => {
-      await tab.page.keyboard.type(validatedParams.text);
-      if (validatedParams.submit)
+      await tab.page.keyboard.type(params.text);
+      if (params.submit)
         await tab.page.keyboard.press('Enter');
     };
 
-    if (validatedParams.submit) {
+    if (params.submit) {
       code.push(`// Submit text`);
       code.push(`await page.keyboard.press('Enter');`);
     }
@@ -208,7 +194,7 @@ const type: Tool = {
       waitForNetwork: true,
     };
   },
-};
+});
 
 export default [
   screenshot,
