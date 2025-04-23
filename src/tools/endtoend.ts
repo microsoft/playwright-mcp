@@ -7,6 +7,7 @@ import { generateText, tool } from 'ai';
 import * as common from './common';
 import { snapshotBatchSchema, CommonToolParams } from './schemas';
 import * as snapshot from './snapshot';
+import * as screenshot from './screenshot';
 import { captureAriaSnapshot } from './utils';
 import type { Tool } from './tool';
 
@@ -56,7 +57,8 @@ export const endtoend: Tool = {
         model: openai('gpt-4o'),
         messages: [{ role: 'system', content: content }],
         tools: {
-          snapshotSnapshot: tool({
+          // snapshot tools
+          snapshot: tool({
             description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
             parameters: z.object({}),
             execute: async () => {
@@ -103,12 +105,44 @@ export const endtoend: Tool = {
               return await snapshot.selectOption.handle(context, validatedParams, true);
             }
           }),
-          screenshotSnapshot: tool({
-            description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
-            parameters: snapshot.screenshotSchema,
-            execute: async (params: z.infer<typeof snapshot.screenshotSchema>) => {
-              const validatedParams = snapshot.screenshotSchema.parse(params);
-              return await snapshot.screenshot.handle(context, validatedParams, true);
+          // screenshot tools
+          screenshot: tool({
+            description: 'Take a screenshot of the current page',
+            parameters: z.object({}),
+            execute: async () => {
+              return await screenshot.screenshot.handle(context);
+            }
+          }),
+          moveMouseVision: tool({
+            description: 'Move mouse to a given position',
+            parameters: screenshot.moveMouseSchema,
+            execute: async (params: z.infer<typeof screenshot.moveMouseSchema>) => {
+              const validatedParams = screenshot.moveMouseSchema.parse(params);
+              return await screenshot.moveMouse.handle(context, validatedParams);
+            }
+          }),
+          clickVision: tool({
+            description: 'Click on a web page',
+            parameters: screenshot.clickSchema,
+            execute: async (params: z.infer<typeof screenshot.clickSchema>) => {
+              const validatedParams = screenshot.clickSchema.parse(params);
+              return await screenshot.click.handle(context, validatedParams);
+            }
+          }),
+          dragVision: tool({
+            description: 'Drag and drop between two elements',
+            parameters: screenshot.dragSchema,
+            execute: async (params: z.infer<typeof screenshot.dragSchema>) => {
+              const validatedParams = screenshot.dragSchema.parse(params);
+              return await screenshot.drag.handle(context, validatedParams);
+            }
+          }),
+          typeVision: tool({
+            description: 'Type text into editable element',
+            parameters: screenshot.typeSchema,
+            execute: async (params: z.infer<typeof screenshot.typeSchema>) => {
+              const validatedParams = screenshot.typeSchema.parse(params);
+              return await screenshot.type.handle(context, validatedParams);
             }
           }),
           // common tools
