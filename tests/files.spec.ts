@@ -29,7 +29,11 @@ test('browser_file_upload', async ({ client }) => {
     expect(await client.callTool({
       name: 'browser_file_upload',
       arguments: { paths: [] },
-    })).toHaveTextContent('Error: No file chooser visible');
+    })).toHaveTextContent(`
+The tool "browser_file_upload" can only be used when there is related modal state present.
+### Modal state
+- There is no modal state present
+      `.trim());
   }
 
   expect(await client.callTool({

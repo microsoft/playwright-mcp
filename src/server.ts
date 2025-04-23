@@ -49,33 +49,25 @@ export function createServerWithTools(options: Options): Server {
   });
 
   server.setRequestHandler(CallToolRequestSchema, async request => {
+    const errorResult = (...messages: string[]) => ({
+      content: [{ type: 'text', text: messages.join('\n') }],
+      isError: true,
+    });
     const tool = tools.find(tool => tool.schema.name === request.params.name);
-    if (!tool) {
-      return {
-        content: [{ type: 'text', text: `Tool "${request.params.name}" not found` }],
-        isError: true,
-      };
-    }
+    if (!tool)
+      return errorResult(`Tool "${request.params.name}" not found`);
+
 
     const modalStates = context.modalStates().map(state => state.type);
-    if (modalStates.length && (!tool.clearsModalState || !modalStates.includes(tool.clearsModalState))) {
-      const text = [
-        `Tool "${request.params.name}" does not handle the modal state.`,
-        ...context.modalStatesMarkdown(),
-      ].join('\n');
-      return {
-        content: [{ type: 'text', text }],
-        isError: true,
-      };
-    }
+    if (tool.clearsModalState && !modalStates.includes(tool.clearsModalState))
+      return errorResult(`The tool "${request.params.name}" can only be used when there is related modal state present.`, ...context.modalStatesMarkdown());
+    if (!tool.clearsModalState && modalStates.length)
+      return errorResult(`Tool "${request.params.name}" does not handle the modal state.`, ...context.modalStatesMarkdown());
 
     try {
       return await context.run(tool, request.params.arguments);
     } catch (error) {
-      return {
-        content: [{ type: 'text', text: String(error) }],
-        isError: true,
-      };
+      return errorResult(String(error));
     }
   });
 

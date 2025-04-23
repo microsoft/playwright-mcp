@@ -66,6 +66,8 @@ export class Context {
 
   modalStatesMarkdown(): string[] {
     const result: string[] = ['### Modal state'];
+    if (this._modalStates.length === 0)
+      result.push('- There is no modal state present');
     for (const state of this._modalStates) {
       const tool = this.tools.find(tool => tool.clearsModalState === state.type);
       result.push(`- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`);
