@@ -23,7 +23,12 @@ test('browser_file_upload', async ({ client }) => {
     arguments: {
       url: 'data:text/html,<html><title>Title</title><input type="file" /><button>Button</button></html>',
     },
-  })).toContainTextContent('- textbox [ref=s1e3]');
+  })).toContainTextContent(`
+\`\`\`yaml
+- generic [ref=s1e2]:
+  - button "Choose File" [ref=s1e3]
+  - button "Button" [ref=s1e4]
+\`\`\``);
 
   expect(await client.callTool({
     name: 'browser_click',
@@ -46,7 +51,12 @@ test('browser_file_upload', async ({ client }) => {
     });
 
     expect(response).not.toContainTextContent('### Modal state');
-    expect(response).toContainTextContent('textbox [ref=s3e3]: C:\\fakepath\\test.txt');
+    expect(response).toContainTextContent(`
+\`\`\`yaml
+- generic [ref=s3e2]:
+  - button "Choose File" [ref=s3e3]
+  - button "Button" [ref=s3e4]
+\`\`\``);
   }
 
   {
@@ -121,7 +131,7 @@ Tool "browser_snapshot" does not handle the modal state.
   test('navigating to downloading link', async ({ client, server, mcpBrowser }) => {
     test.skip(mcpBrowser === 'msedge', 'msedge behaves differently');
 
-    server.on('request', (req, res) => {
+    server.route('/', (req, res) => {
       res.setHeader('Content-Disposition', 'attachment; filename="test.txt"');
       res.end('Hello world!');
     });
@@ -143,7 +153,7 @@ Tool "browser_snapshot" does not handle the modal state.
     test.skip(mcpBrowser === 'msedge', 'msedge behaves differently');
     test.skip(mcpBrowser === 'webkit', 'webkit behaves differently');
 
-    server.on('request', (req, res) => {
+    server.route('/', (req, res) => {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'filename="test.pdf"');
       res.end('Hello world!');

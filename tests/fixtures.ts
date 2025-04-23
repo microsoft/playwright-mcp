@@ -16,46 +16,27 @@
 
 import path from 'path';
 import { chromium } from 'playwright';
-import http from 'http';
-import net from 'net';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { spawn } from 'child_process';
-
-class TestServer extends http.Server {
-  PREFIX: string;
-  start() {
-    return new Promise<void>(resolve => {
-      super.listen(() => {
-        const address = this.address() as net.AddressInfo;
-        this.PREFIX = `http://localhost:${address.port}`;
-        resolve();
-      });
-    });
-  }
-  stop() {
-    return new Promise<void>(resolve => {
-      this.close(() => {
-        resolve();
-      });
-    });
-  }
-}
+import { TestServer } from './testserver';
 
 type TestFixtures = {
-  server: TestServer;
   client: Client;
   visionClient: Client;
   startClient: (options?: { args?: string[] }) => Promise<Client>;
   wsEndpoint: string;
   cdpEndpoint: string;
+  server: TestServer;
+  httpsServer: TestServer;
 };
 
 type WorkerFixtures = {
   mcpHeadless: boolean;
   mcpBrowser: string | undefined;
+  _workerServers: { server: TestServer, httpsServer: TestServer };
 };
 
 export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
@@ -126,15 +107,32 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await use(headless);
   }, { scope: 'worker' }],
 
-  mcpBrowser: ['chromium', { option: true, scope: 'worker' }],
+  mcpBrowser: ['chrome', { option: true, scope: 'worker' }],
 
-  server: async ({}, use) => {
-    const server = new TestServer();
-    await server.start();
-    await use(server);
-    await server.stop();
+  _workerServers: [async ({}, use, workerInfo) => {
+    const port = 8907 + workerInfo.workerIndex * 4;
+    const server = await TestServer.create(port);
+
+    const httpsPort = port + 1;
+    const httpsServer = await TestServer.createHTTPS(httpsPort);
+
+    await use({ server, httpsServer });
+
+    await Promise.all([
+      server.stop(),
+      httpsServer.stop(),
+    ]);
+  }, { scope: 'worker' }],
+
+  server: async ({ _workerServers }, use) => {
+    _workerServers.server.reset();
+    await use(_workerServers.server);
   },
 
+  httpsServer: async ({ _workerServers }, use) => {
+    _workerServers.httpsServer.reset();
+    await use(_workerServers.httpsServer);
+  },
 });
 
 type Response = Awaited<ReturnType<Client['callTool']>>;

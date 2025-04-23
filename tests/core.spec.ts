@@ -96,8 +96,8 @@ await page.getByRole('combobox').selectOption(['bar']);
 - Page Snapshot
 \`\`\`yaml
 - combobox [ref=s2e3]:
-  - option "Foo" [ref=s2e4]
-  - option "Bar" [selected] [ref=s2e5]
+  - option "Foo"
+  - option "Bar" [selected]
 \`\`\`
 `);
 });

@@ -26,6 +26,7 @@ import files from './tools/files';
 import install from './tools/install';
 import keyboard from './tools/keyboard';
 import navigate from './tools/navigate';
+import network from './tools/network';
 import pdf from './tools/pdf';
 import snapshot from './tools/snapshot';
 import tabs from './tools/tabs';
@@ -43,6 +44,7 @@ const snapshotTools: Tool<any>[] = [
   ...install,
   ...keyboard(true),
   ...navigate(true),
+  ...network,
   ...pdf,
   ...snapshot,
   ...tabs(true),
@@ -56,6 +58,7 @@ const screenshotTools: Tool<any>[] = [
   ...install,
   ...keyboard(false),
   ...navigate(false),
+  ...network,
   ...pdf,
   ...screen,
   ...tabs(false),
