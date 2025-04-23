@@ -37,11 +37,11 @@ export const screenshot: Tool = {
   },
 };
 
-const elementSchema = z.object({
+export const elementSchema = z.object({
   element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
 });
 
-const moveMouseSchema = elementSchema.extend({
+export const moveMouseSchema = elementSchema.extend({
   x: z.number().describe('X coordinate'),
   y: z.number().describe('Y coordinate'),
 });
@@ -63,7 +63,7 @@ export const moveMouse: Tool = {
   },
 };
 
-const clickSchema = elementSchema.extend({
+export const clickSchema = elementSchema.extend({
   x: z.number().describe('X coordinate'),
   y: z.number().describe('Y coordinate'),
 });
@@ -85,7 +85,7 @@ export const click: Tool = {
   },
 };
 
-const dragSchema = elementSchema.extend({
+export const dragSchema = elementSchema.extend({
   startX: z.number().describe('Start X coordinate'),
   startY: z.number().describe('Start Y coordinate'),
   endX: z.number().describe('End X coordinate'),
@@ -110,7 +110,7 @@ export const drag: Tool = {
   },
 };
 
-const typeSchema = z.object({
+export const typeSchema = z.object({
   text: z.string().describe('Text to type into the element'),
   submit: z.boolean().describe('Whether to submit entered text (press Enter after)'),
 });
