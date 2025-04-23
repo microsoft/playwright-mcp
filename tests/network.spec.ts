@@ -16,7 +16,7 @@
 
 import { test, expect } from './fixtures';
 
-test('browser_network_requests_post', async ({ client, server }) => {
+test('browser_network_requests_post_xhr', async ({ client, server }) => {
   server.route('/', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(`<button onclick="fetch('/json', {
@@ -64,7 +64,7 @@ test('browser_network_requests_post', async ({ client, server }) => {
   })).toHaveTextContent(`Response Body: {"name":"John Doe"}`);
 });
 
-test('browser_network_requests_get', async ({ client, server }) => {
+test('browser_network_requests_get_xhr', async ({ client, server }) => {
   server.route('/', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(`<button onclick="fetch('/query?param1=value1&param2=value2')">GET with params</button>`);
@@ -112,4 +112,81 @@ test('browser_network_requests_get', async ({ client, server }) => {
     name: 'browser_network_requests',
     arguments: {},
   })).toHaveTextContent(`Response Body: {"received":{"param1":"value1","param2":"value2"}}`);
+});
+
+test('browser_network_requests_ignores_non_xhr', async ({ client, server }) => {
+  // Setup a page with image and script resources that should be ignored
+  server.route('/', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`
+      <html>
+        <head>
+          <script src="/script.js"></script>
+          <link rel="stylesheet" href="/style.css">
+        </head>
+        <body>
+          <img src="/image.png">
+          <button onclick="makeXhrRequest()">Make XHR</button>
+          <script>
+            function makeXhrRequest() {
+              fetch('/api', {
+                headers: { 'Content-Type': 'application/json' }
+              });
+            }
+          </script>
+        </body>
+      </html>
+    `);
+  });
+
+  server.route('/script.js', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/javascript' });
+    res.end('console.log("Script loaded");');
+  });
+
+  server.route('/style.css', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/css' });
+    res.end('body { color: red; }');
+  });
+
+  server.route('/image.png', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'image/png' });
+    res.end(Buffer.from('fake image data'));
+  });
+
+  server.route('/api', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true }));
+  });
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX,
+    },
+  });
+
+  // Verify that script, style, and image requests are NOT shown
+  const initialResult = await client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  });
+
+  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:8907/script.js`);
+  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:8907/style.css`);
+  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:8907/image.png`);
+
+  // Make an XHR request and verify it IS shown
+  await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Make XHR button',
+      ref: 's1e3',
+    },
+  });
+
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).toHaveTextContent(`[GET] http://localhost:8907/api`);
 });

@@ -24,15 +24,19 @@ const requests = defineTool({
 
   schema: {
     name: 'browser_network_requests',
-    description: 'Returns all network requests since loading the page',
+    description: 'Returns XHR/Fetch API network requests since loading the page',
     inputSchema: z.object({}),
   },
 
   handle: async context => {
     const requests = context.currentTabOrDie().requests();
-    const log = await Promise.all([...requests.entries()].map(async ([request, response]) => renderRequest(request, response)));
+
+    // Filter XHR requests
+    const xhrRequests = [...requests.entries()].filter(([request]) => isXhrRequest(request));
+
+    const log = await Promise.all(xhrRequests.map(async ([request, response]) => renderRequest(request, response)));
     return {
-      code: [`// <internal code to list network requests>`],
+      code: [`// <internal code to list XHR network requests>`],
       action: async () => {
         return {
           content: [{ type: 'text', text: log.join('\n\n') }]
@@ -43,6 +47,23 @@ const requests = defineTool({
     };
   },
 });
+
+function isXhrRequest(request: playwright.Request): boolean {
+  // Check resource type if available
+  const resourceType = request.resourceType();
+  if (resourceType === 'xhr' || resourceType === 'fetch')
+    return true;
+
+  // Check request headers as a fallback
+  const headers = request.headers();
+  if (headers['x-requested-with']?.toLowerCase() === 'xmlhttprequest')
+    return true;
+
+  // Check if request was initiated by fetch or XMLHttpRequest
+  return request.isNavigationRequest() === false &&
+         (headers.accept?.includes('application/json') ||
+          headers['content-type']?.includes('application/json'));
+}
 
 async function renderRequest(request: playwright.Request, response: playwright.Response | null): Promise<string> {
   const result: string[] = [];
