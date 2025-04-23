@@ -37,7 +37,7 @@
     "@axe-core/playwright": "^4.10.1",
     "@modelcontextprotocol/sdk": "^1.6.1",
     "commander": "^13.1.0",
-    "playwright": "1.53.0-alpha-1745357020000",
+    "playwright": "^1.52.0",
     "yaml": "^2.7.1",
     "zod-to-json-schema": "^3.24.4"
   },

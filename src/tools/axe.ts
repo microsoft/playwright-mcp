@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import { z } from 'zod';
-import zodToJsonSchema from 'zod-to-json-schema';
 
 import AxeBuilder from '@axe-core/playwright';
 import type { Tool, ToolActionResult } from './tool';
@@ -26,7 +25,7 @@ const axe: Tool = {
   schema: {
     name: 'browser_accessibility_test',
     description: 'Execute an accessibility automatic assesment of the current page using axe-core.',
-    inputSchema: zodToJsonSchema(axeSchema),
+    inputSchema: axeSchema,
   },
 
   handle: async (context, params) => {
