@@ -53,7 +53,7 @@ program
       setupExitWatchdog(serverList);
 
       if (options.port) {
-        await startSSEServer(+options.port, serverList);
+        startSSEServer(+options.port, serverList);
       } else {
         const server = await serverList.create();
         await server.connect(new StdioServerTransport());
@@ -74,7 +74,7 @@ function setupExitWatchdog(serverList: ServerList) {
 
 program.parse(process.argv);
 
-async function startSSEServer(port: number, serverList: ServerList) {
+function startSSEServer(port: number, serverList: ServerList) {
   const sessions = new Map<string, SSEServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
     if (req.method === 'POST') {
