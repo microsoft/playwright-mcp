@@ -30,12 +30,12 @@ const requests = defineTool({
 
   handle: async context => {
     const requests = context.currentTabOrDie().requests();
-    const log = [...requests.entries()].map(([request, response]) => renderRequest(request, response)).join('\n');
+    const log = await Promise.all([...requests.entries()].map(async ([request, response]) => renderRequest(request, response)));
     return {
       code: [`// <internal code to list network requests>`],
       action: async () => {
         return {
-          content: [{ type: 'text', text: log }]
+          content: [{ type: 'text', text: log.join('\n\n') }]
         };
       },
       captureSnapshot: false,
@@ -44,12 +44,28 @@ const requests = defineTool({
   },
 });
 
-function renderRequest(request: playwright.Request, response: playwright.Response | null) {
+async function renderRequest(request: playwright.Request, response: playwright.Response | null): Promise<string> {
   const result: string[] = [];
   result.push(`[${request.method().toUpperCase()}] ${request.url()}`);
-  if (response)
-    result.push(`=> [${response.status()}] ${response.statusText()}`);
-  return result.join(' ');
+
+  // Add request body if available
+  const postData = request.postData();
+  if (postData)
+    result.push(`Request Body: ${postData}`);
+
+  if (!response)
+    return result.join('\n');
+
+  result.push(`=> [${response.status()}] ${response.statusText()}`);
+
+  // Add response body as text
+  const body = await response.body();
+  if (body) {
+    const text = body.toString('utf-8');
+    result.push(`Response Body: ${text}`);
+  }
+
+  return result.join('\n');
 }
 
 export default [

@@ -16,10 +16,14 @@
 
 import { test, expect } from './fixtures';
 
-test('browser_network_requests', async ({ client, server }) => {
+test('browser_network_requests_post', async ({ client, server }) => {
   server.route('/', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(`<button onclick="fetch('/json')">Click me</button>`);
+    res.end(`<button onclick="fetch('/json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: 'test payload' })
+    })">Click me</button>`);
   });
 
   server.route('/json', (req, res) => {
@@ -45,5 +49,67 @@ test('browser_network_requests', async ({ client, server }) => {
   expect.poll(() => client.callTool({
     name: 'browser_network_requests',
     arguments: {},
-  })).toHaveTextContent(`[GET] http://localhost:8907/json => [200] OK`);
+  })).toHaveTextContent(`[POST] http://localhost:8907/json`);
+
+  // Check if request body is displayed
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).toHaveTextContent(`Request Body: {"data":"test payload"}`);
+
+  // Check if response body is displayed
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).toHaveTextContent(`Response Body: {"name":"John Doe"}`);
+});
+
+test('browser_network_requests_get', async ({ client, server }) => {
+  server.route('/', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`<button onclick="fetch('/query?param1=value1&param2=value2')">GET with params</button>`);
+  });
+
+  server.route('/query', (req, res) => {
+    const url = new URL(req.url!, `http://${req.headers.host}`);
+    const param1 = url.searchParams.get('param1');
+    const param2 = url.searchParams.get('param2');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      received: {
+        param1,
+        param2
+      }
+    }));
+  });
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX,
+    },
+  });
+
+  await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'GET with params button',
+      ref: 's1e3',
+    },
+  });
+
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).toHaveTextContent(`[GET] http://localhost:8907/query?param1=value1&param2=value2`);
+
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).not.toHaveTextContent(`Request Body:`);
+
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).toHaveTextContent(`Response Body: {"received":{"param1":"value1","param2":"value2"}}`);
 });
