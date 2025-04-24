@@ -132,7 +132,7 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 When running in a remote server, you can use the `--host` flag to bind the server to `0.0.0.0` to make it accessible from outside.
 
 ```bash
-npx @playwright/mcp@latest --port 8931 --host 0.0.0.0`
+npx @playwright/mcp@latest --port 8931 --host 0.0.0.0
 ```
 
 In MCP client config, `$server-ip` is the IP address of the server:
@@ -150,6 +150,7 @@ In MCP client config, `$server-ip` is the IP address of the server:
 ### Docker
 
 **NOTE:** The Docker implementation only supports headless chromium at the moment.
+
 ```js
 {
   "mcpServers": {
@@ -190,6 +191,7 @@ X Y coordinate space, based on the provided screenshot.
 ### Build with Docker
 
 You can build the Docker image yourself.
+
 ```
 docker build -t mcp/playwright .
 ```
