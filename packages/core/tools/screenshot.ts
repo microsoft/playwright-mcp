@@ -17,7 +17,7 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { runAndWait } from './utils';
+import { runAndWait } from '../utils';
 
 import type { Tool } from './tool';
 

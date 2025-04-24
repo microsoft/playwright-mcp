@@ -20,7 +20,7 @@ import path from 'path';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { captureAriaSnapshot, runAndWait } from './utils';
+import { captureAriaSnapshot, runAndWait } from '../utils';
 
 import type { ToolFactory, Tool } from './tool';
 

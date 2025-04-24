@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText, tool } from 'ai';
 
-import * as common from '../core/common';
-import * as snapshot from '../core/snapshot';
-import * as screenshot from '../core/screenshot';
-import type { Tool } from '../core/tool';
+import * as common from '../core/tools/common';
+import * as snapshot from '../core/tools/snapshot';
+import * as screenshot from '../core/tools/screenshot';
+import type { Tool } from '../core/tools/tool';
 
 import dotenv from 'dotenv';
 

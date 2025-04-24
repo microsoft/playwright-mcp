@@ -17,11 +17,11 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListResourcesRequestSchema, ListToolsRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-import { Context } from './context';
+import { Context } from '../packages/core/context';
 
-import type { Tool } from '../packages/core/tool';
+import type { Tool } from '../packages/core/tools/tool';
 import type { Resource } from '../packages/core/resources/resource';
-import type { ContextOptions } from './context';
+import type { ContextOptions } from '../packages/core/context';
 
 type Options = ContextOptions & {
   name: string;
