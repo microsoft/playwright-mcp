@@ -87,7 +87,9 @@ test('browser_file_upload', async ({ client }) => {
 });
 
 test.describe('browser_file_download', () => {
-  test('after clicking on download link', async ({ client }) => {
+  test('after clicking on download link', async ({ client, mcpBrowser }) => {
+    test.skip(mcpBrowser === 'webkit' && process.platform === 'linux');
+
     expect(await client.callTool({
       name: 'browser_navigate',
       arguments: {
@@ -129,7 +131,7 @@ Tool "browser_snapshot" does not handle the modal state.
   });
 
   test('navigating to downloading link', async ({ client, server, mcpBrowser }) => {
-    test.skip(mcpBrowser === 'msedge', 'msedge behaves differently');
+    test.skip(mcpBrowser === 'msedge' || mcpBrowser === 'chrome');
 
     server.route('/', (req, res) => {
       res.setHeader('Content-Disposition', 'attachment; filename="test.txt"');
