@@ -7,7 +7,7 @@ import { generateText, tool } from 'ai';
 import * as common from '../core/common';
 import * as snapshot from '../core/snapshot';
 import * as screenshot from '../core/screenshot';
-import type { Tool } from '../../src/tools/tool';
+import type { Tool } from '../core/tool';
 
 import dotenv from 'dotenv';
 

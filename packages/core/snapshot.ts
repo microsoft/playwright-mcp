@@ -20,7 +20,7 @@ import zodToJsonSchema from 'zod-to-json-schema';
 import { captureAriaSnapshot, runAndWait } from './utils';
 
 import type * as playwright from 'playwright';
-import type { Tool } from '../../src/tools/tool';
+import type { Tool } from './tool';
 
 export const snapshot: Tool = {
   schema: {

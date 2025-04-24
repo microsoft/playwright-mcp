@@ -19,7 +19,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { runAndWait } from './utils';
 
-import type { Tool } from '../../src/tools/tool';
+import type { Tool } from './tool';
 
 export const screenshot: Tool = {
   schema: {

@@ -22,7 +22,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { captureAriaSnapshot, runAndWait } from './utils';
 
-import type { ToolFactory, Tool } from '../../src/tools/tool';
+import type { ToolFactory, Tool } from './tool';
 
 export const navigateSchema = z.object({
   url: z.string().describe('The URL to navigate to'),

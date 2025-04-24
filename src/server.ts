@@ -19,7 +19,7 @@ import { CallToolRequestSchema, ListResourcesRequestSchema, ListToolsRequestSche
 
 import { Context } from './context';
 
-import type { Tool } from './tools/tool';
+import type { Tool } from '../packages/core/tool';
 import type { Resource } from '../packages/core/resources/resource';
 import type { ContextOptions } from './context';
 

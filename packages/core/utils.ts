@@ -15,7 +15,7 @@
  */
 
 import type * as playwright from 'playwright';
-import type { ToolResult } from '../../src/tools/tool';
+import type { ToolResult } from './tool';
 import type { Context } from '../../src/context';
 
 async function waitForCompletion<R>(page: playwright.Page, callback: () => Promise<R>): Promise<R> {
