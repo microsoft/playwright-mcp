@@ -9,6 +9,6 @@
     "outDir": "./lib"
   },
   "include": [
-    "src",
+    "src", "packages/core/common.ts", "packages/core/screenshot.ts", "packages/core/snapshot.ts", "packages/core/utils.ts", "packages/testickl/endtoend.ts",
   ],
 }

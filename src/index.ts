@@ -15,14 +15,14 @@
  */
 
 import { createServerWithTools } from './server';
-import * as snapshot from './tools/snapshot';
-import * as common from './tools/common';
-import * as screenshot from './tools/screenshot';
-import * as endtoend from './tools/endtoend';
-import { console } from './resources/console';
+import * as snapshot from '../packages/core/snapshot';
+import * as common from '../packages/core/common';
+import * as screenshot from '../packages/core/screenshot';
+import * as endtoend from '../packages/testickl/endtoend';
+import { console } from '../packages/core/resources/console';
 
 import type { Tool } from './tools/tool';
-import type { Resource } from './resources/resource';
+import type { Resource } from '../packages/core/resources/resource';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
