@@ -15,33 +15,28 @@
  */
 
 import { z } from 'zod';
-import zodToJsonSchema from 'zod-to-json-schema';
+import { defineTool, type ToolFactory } from './tool';
 
-import type { ToolFactory } from './tool';
-
-const pressKeySchema = z.object({
-  key: z.string().describe('Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'),
-});
-
-const pressKey: ToolFactory = captureSnapshot => ({
+const pressKey: ToolFactory = captureSnapshot => defineTool({
   capability: 'core',
 
   schema: {
     name: 'browser_press_key',
     description: 'Press a key on the keyboard',
-    inputSchema: zodToJsonSchema(pressKeySchema),
+    inputSchema: z.object({
+      key: z.string().describe('Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'),
+    }),
   },
 
   handle: async (context, params) => {
-    const validatedParams = pressKeySchema.parse(params);
     const tab = context.currentTabOrDie();
 
     const code = [
-      `// Press ${validatedParams.key}`,
-      `await page.keyboard.press('${validatedParams.key}');`,
+      `// Press ${params.key}`,
+      `await page.keyboard.press('${params.key}');`,
     ];
 
-    const action = () => tab.page.keyboard.press(validatedParams.key);
+    const action = () => tab.page.keyboard.press(params.key);
 
     return {
       code,

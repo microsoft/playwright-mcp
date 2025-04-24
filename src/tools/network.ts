@@ -17,18 +17,22 @@
 import { z } from 'zod';
 import { defineTool } from './tool';
 
-const console = defineTool({
+import type * as playwright from 'playwright';
+
+const requests = defineTool({
   capability: 'core',
+
   schema: {
-    name: 'browser_console_messages',
-    description: 'Returns all console messages',
+    name: 'browser_network_requests',
+    description: 'Returns all network requests since loading the page',
     inputSchema: z.object({}),
   },
+
   handle: async context => {
-    const messages = context.currentTabOrDie().console();
-    const log = messages.map(message => `[${message.type().toUpperCase()}] ${message.text()}`).join('\n');
+    const requests = context.currentTabOrDie().requests();
+    const log = [...requests.entries()].map(([request, response]) => renderRequest(request, response)).join('\n');
     return {
-      code: [`// <internal code to get console messages>`],
+      code: [`// <internal code to list network requests>`],
       action: async () => {
         return {
           content: [{ type: 'text', text: log }]
@@ -40,6 +44,14 @@ const console = defineTool({
   },
 });
 
+function renderRequest(request: playwright.Request, response: playwright.Response | null) {
+  const result: string[] = [];
+  result.push(`[${request.method().toUpperCase()}] ${request.url()}`);
+  if (response)
+    result.push(`=> [${response.status()}] ${response.statusText()}`);
+  return result.join(' ');
+}
+
 export default [
-  console,
+  requests,
 ];

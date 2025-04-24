@@ -15,32 +15,27 @@
  */
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool, type ToolFactory } from './tool';
 
-import type { ToolFactory } from './tool';
-
-const handleDialogSchema = z.object({
-  accept: z.boolean().describe('Whether to accept the dialog.'),
-  promptText: z.string().optional().describe('The text of the prompt in case of a prompt dialog.'),
-});
-
-const handleDialog: ToolFactory = captureSnapshot => ({
+const handleDialog: ToolFactory = captureSnapshot => defineTool({
   capability: 'core',
 
   schema: {
     name: 'browser_handle_dialog',
     description: 'Handle a dialog',
-    inputSchema: zodToJsonSchema(handleDialogSchema),
+    inputSchema: z.object({
+      accept: z.boolean().describe('Whether to accept the dialog.'),
+      promptText: z.string().optional().describe('The text of the prompt in case of a prompt dialog.'),
+    }),
   },
 
   handle: async (context, params) => {
-    const validatedParams = handleDialogSchema.parse(params);
     const dialogState = context.modalStates().find(state => state.type === 'dialog');
     if (!dialogState)
       throw new Error('No dialog visible');
 
-    if (validatedParams.accept)
-      await dialogState.dialog.accept(validatedParams.promptText);
+    if (params.accept)
+      await dialogState.dialog.accept(params.promptText);
     else
       await dialogState.dialog.dismiss();
 

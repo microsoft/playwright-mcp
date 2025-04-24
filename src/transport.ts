@@ -28,7 +28,7 @@ export async function startStdioTransport(serverList: ServerList) {
   await server.connect(new StdioServerTransport());
 }
 
-export async function startHttpTransport(port: number, serverList: ServerList) {
+export async function startHttpTransport(port: number, hostname: string | undefined, serverList: ServerList) {
   const sseSessions = new Map<string, SSEServerTransport>();
   async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
     if (req.method === 'POST') {
@@ -101,7 +101,7 @@ export async function startHttpTransport(port: number, serverList: ServerList) {
     else
       await handleSSE(req, res, url);
   });
-  httpServer.listen(port, () => {
+  httpServer.listen(port, hostname, () => {
     const address = httpServer.address();
     assert(address, 'Could not bind server socket');
     let url: string;

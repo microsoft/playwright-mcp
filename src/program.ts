@@ -33,6 +33,7 @@ program
     .option('--executable-path <path>', 'Path to the browser executable.')
     .option('--headless', 'Run browser in headless mode, headed by default')
     .option('--port <port>', 'Port to listen on for SSE transport.')
+    .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .action(async options => {
@@ -48,7 +49,7 @@ program
       setupExitWatchdog(serverList);
 
       if (options.port)
-        await startHttpTransport(+options.port, serverList);
+        await startHttpTransport(+options.port, options.host, serverList);
       else
         await startStdioTransport(serverList);
     });
