@@ -420,7 +420,7 @@ class PageSnapshot {
 
   private async _snapshotFrame(frame: playwright.Page | playwright.FrameLocator) {
     const frameIndex = this._frameLocators.push(frame) - 1;
-    const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true, emitGeneric: true });
+    const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true });
     const snapshot = yaml.parseDocument(snapshotString);
 
     const visit = async (node: any): Promise<unknown> => {
