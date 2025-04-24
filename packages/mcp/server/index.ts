@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { createServerWithTools } from '../../../src/server';
+import { createServerWithTools } from './server';
 import * as snapshot from '../../core/tools/snapshot';
 import * as common from '../../core/tools/common';
 import * as screenshot from '../../core/tools/screenshot';
