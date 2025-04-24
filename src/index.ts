@@ -21,10 +21,12 @@ import fs from 'fs';
 import { createServerWithTools } from './server';
 import common from './tools/common';
 import console from './tools/console';
+import dialogs from './tools/dialogs';
 import files from './tools/files';
 import install from './tools/install';
 import keyboard from './tools/keyboard';
 import navigate from './tools/navigate';
+import network from './tools/network';
 import pdf from './tools/pdf';
 import snapshot from './tools/snapshot';
 import tabs from './tools/tabs';
@@ -34,25 +36,29 @@ import type { Tool, ToolCapability } from './tools/tool';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
-const snapshotTools: Tool[] = [
+const snapshotTools: Tool<any>[] = [
   ...common(true),
   ...console,
+  ...dialogs(true),
   ...files(true),
   ...install,
   ...keyboard(true),
   ...navigate(true),
+  ...network,
   ...pdf,
   ...snapshot,
   ...tabs(true),
 ];
 
-const screenshotTools: Tool[] = [
+const screenshotTools: Tool<any>[] = [
   ...common(false),
   ...console,
+  ...dialogs(false),
   ...files(false),
   ...install,
   ...keyboard(false),
   ...navigate(false),
+  ...network,
   ...pdf,
   ...screen,
   ...tabs(false),

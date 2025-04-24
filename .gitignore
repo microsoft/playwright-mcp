@@ -2,3 +2,6 @@ lib/
 node_modules/
 test-results/
 .vscode/mcp.json
+
+.idea
+.DS_Store

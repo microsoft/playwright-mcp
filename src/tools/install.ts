@@ -18,16 +18,14 @@ import { fork } from 'child_process';
 import path from 'path';
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool } from './tool';
 
-import type { Tool } from './tool';
-
-const install: Tool = {
+const install = defineTool({
   capability: 'install',
   schema: {
     name: 'browser_install',
     description: 'Install the browser specified in the config. Call this if you get an error about the browser not being installed.',
-    inputSchema: zodToJsonSchema(z.object({})),
+    inputSchema: z.object({}),
   },
 
   handle: async context => {
@@ -53,7 +51,7 @@ const install: Tool = {
       waitForNetwork: false,
     };
   },
-};
+});
 
 export default [
   install,

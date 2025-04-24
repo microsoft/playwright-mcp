@@ -21,20 +21,25 @@ import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { spawn } from 'child_process';
+import { TestServer } from './testserver';
 
-type Fixtures = {
+type TestFixtures = {
   client: Client;
   visionClient: Client;
   startClient: (options?: { args?: string[] }) => Promise<Client>;
   wsEndpoint: string;
   cdpEndpoint: string;
-
-  // Cli options.
-  mcpHeadless: boolean;
-  mcpBrowser: string | undefined;
+  server: TestServer;
+  httpsServer: TestServer;
 };
 
-export const test = baseTest.extend<Fixtures>({
+type WorkerFixtures = {
+  mcpHeadless: boolean;
+  mcpBrowser: string | undefined;
+  _workerServers: { server: TestServer, httpsServer: TestServer };
+};
+
+export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
 
   client: async ({ startClient }, use) => {
     await use(await startClient());
@@ -48,7 +53,7 @@ export const test = baseTest.extend<Fixtures>({
     const userDataDir = testInfo.outputPath('user-data-dir');
     let client: StdioClientTransport | undefined;
 
-    use(async options => {
+    await use(async options => {
       const args = ['--user-data-dir', userDataDir];
       if (mcpHeadless)
         args.push('--headless');
@@ -98,11 +103,36 @@ export const test = baseTest.extend<Fixtures>({
     browserProcess.kill();
   },
 
-  mcpHeadless: async ({ headless }, use) => {
+  mcpHeadless: [async ({ headless }, use) => {
     await use(headless);
+  }, { scope: 'worker' }],
+
+  mcpBrowser: ['chrome', { option: true, scope: 'worker' }],
+
+  _workerServers: [async ({}, use, workerInfo) => {
+    const port = 8907 + workerInfo.workerIndex * 4;
+    const server = await TestServer.create(port);
+
+    const httpsPort = port + 1;
+    const httpsServer = await TestServer.createHTTPS(httpsPort);
+
+    await use({ server, httpsServer });
+
+    await Promise.all([
+      server.stop(),
+      httpsServer.stop(),
+    ]);
+  }, { scope: 'worker' }],
+
+  server: async ({ _workerServers }, use) => {
+    _workerServers.server.reset();
+    await use(_workerServers.server);
   },
 
-  mcpBrowser: ['chromium', { option: true }],
+  httpsServer: async ({ _workerServers }, use) => {
+    _workerServers.httpsServer.reset();
+    await use(_workerServers.httpsServer);
+  },
 });
 
 type Response = Awaited<ReturnType<Client['callTool']>>;

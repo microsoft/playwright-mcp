@@ -17,41 +17,44 @@
 import { z } from 'zod';
 import { defineTool, type ToolFactory } from './tool';
 
-const uploadFile: ToolFactory = captureSnapshot => defineTool({
-  capability: 'files',
+const handleDialog: ToolFactory = captureSnapshot => defineTool({
+  capability: 'core',
 
   schema: {
-    name: 'browser_file_upload',
-    description: 'Upload one or multiple files',
+    name: 'browser_handle_dialog',
+    description: 'Handle a dialog',
     inputSchema: z.object({
-      paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
+      accept: z.boolean().describe('Whether to accept the dialog.'),
+      promptText: z.string().optional().describe('The text of the prompt in case of a prompt dialog.'),
     }),
   },
 
   handle: async (context, params) => {
-    const modalState = context.modalStates().find(state => state.type === 'fileChooser');
-    if (!modalState)
-      throw new Error('No file chooser visible');
+    const dialogState = context.modalStates().find(state => state.type === 'dialog');
+    if (!dialogState)
+      throw new Error('No dialog visible');
+
+    if (params.accept)
+      await dialogState.dialog.accept(params.promptText);
+    else
+      await dialogState.dialog.dismiss();
+
+    context.clearModalState(dialogState);
 
     const code = [
-      `// <internal code to chose files ${params.paths.join(', ')}`,
+      `// <internal code to handle "${dialogState.dialog.type()}" dialog>`,
     ];
-
-    const action = async () => {
-      await modalState.fileChooser.setFiles(params.paths);
-      context.clearModalState(modalState);
-    };
 
     return {
       code,
-      action,
       captureSnapshot,
-      waitForNetwork: true,
+      waitForNetwork: false,
     };
   },
-  clearsModalState: 'fileChooser',
+
+  clearsModalState: 'dialog',
 });
 
 export default (captureSnapshot: boolean) => [
-  uploadFile(captureSnapshot),
+  handleDialog(captureSnapshot),
 ];

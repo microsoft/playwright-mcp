@@ -18,9 +18,10 @@ import * as playwright from 'playwright';
 import yaml from 'yaml';
 
 import { waitForCompletion } from './tools/utils';
+import { ManualPromise } from './manualPromise';
 
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
-import type { ModalState, Tool } from './tools/tool';
+import type { ModalState, Tool, ToolActionResult } from './tools/tool';
 
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
@@ -32,6 +33,10 @@ export type ContextOptions = {
 
 type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
 
+type PendingAction = {
+  dialogShown: ManualPromise<void>;
+};
+
 export class Context {
   readonly tools: Tool[];
   readonly options: ContextOptions;
@@ -41,6 +46,7 @@ export class Context {
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
+  private _pendingAction: PendingAction | undefined;
 
   constructor(tools: Tool[], options: ContextOptions) {
     this.tools = tools;
@@ -119,8 +125,9 @@ export class Context {
 
   async run(tool: Tool, params: Record<string, unknown> | undefined) {
     // Tab management is done outside of the action() call.
-    const toolResult = await tool.handle(this, params);
+    const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params));
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
+    const racingAction = action ? () => this._raceAgainstModalDialogs(action) : undefined;
 
     if (resultOverride)
       return resultOverride;
@@ -139,11 +146,11 @@ export class Context {
     let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
     try {
       if (waitForNetwork)
-        actionResult = await waitForCompletion(tab.page, async () => action?.()) ?? undefined;
+        actionResult = await waitForCompletion(this, tab.page, async () => racingAction?.()) ?? undefined;
       else
-        actionResult = await action?.() ?? undefined;
+        actionResult = await racingAction?.() ?? undefined;
     } finally {
-      if (captureSnapshot)
+      if (captureSnapshot && !this._javaScriptBlocked())
         await tab.captureSnapshot();
     }
 
@@ -189,6 +196,43 @@ ${code.join('\n')}
         }
       ],
     };
+  }
+
+  async waitForTimeout(time: number) {
+    if (this._currentTab && !this._javaScriptBlocked())
+      await this._currentTab.page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
+    else
+      await new Promise(f => setTimeout(f, time));
+  }
+
+  private async _raceAgainstModalDialogs(action: () => Promise<ToolActionResult>): Promise<ToolActionResult> {
+    this._pendingAction = {
+      dialogShown: new ManualPromise(),
+    };
+
+    let result: ToolActionResult | undefined;
+    try {
+      await Promise.race([
+        action().then(r => result = r),
+        this._pendingAction.dialogShown,
+      ]);
+    } finally {
+      this._pendingAction = undefined;
+    }
+    return result;
+  }
+
+  private _javaScriptBlocked(): boolean {
+    return this._modalStates.some(state => state.type === 'dialog');
+  }
+
+  dialogShown(tab: Tab, dialog: playwright.Dialog) {
+    this.setModalState({
+      type: 'dialog',
+      description: `"${dialog.type()}" dialog with message "${dialog.message()}"`,
+      dialog,
+    }, tab);
+    this._pendingAction?.dialogShown.resolve();
   }
 
   private _onPageCreated(page: playwright.Page) {
@@ -280,6 +324,7 @@ export class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
   private _console: playwright.ConsoleMessage[] = [];
+  private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
   private _snapshot: PageSnapshot | undefined;
   private _onPageClose: (tab: Tab) => void;
 
@@ -288,9 +333,11 @@ export class Tab {
     this.page = page;
     this._onPageClose = onPageClose;
     page.on('console', event => this._console.push(event));
+    page.on('request', request => this._requests.set(request, null));
+    page.on('response', response => this._requests.set(response.request(), response));
     page.on('framenavigated', frame => {
       if (!frame.parentFrame())
-        this._console.length = 0;
+        this._clearCollectedArtifacts();
     });
     page.on('close', () => this._onClose());
     page.on('filechooser', chooser => {
@@ -300,12 +347,18 @@ export class Tab {
         fileChooser: chooser,
       }, this);
     });
+    page.on('dialog', dialog => this.context.dialogShown(this, dialog));
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
   }
 
-  private _onClose() {
+  private _clearCollectedArtifacts() {
     this._console.length = 0;
+    this._requests.clear();
+  }
+
+  private _onClose() {
+    this._clearCollectedArtifacts();
     this._onPageClose(this);
   }
 
@@ -325,8 +378,12 @@ export class Tab {
     return this._snapshot;
   }
 
-  async console(): Promise<playwright.ConsoleMessage[]> {
+  console(): playwright.ConsoleMessage[] {
     return this._console;
+  }
+
+  requests(): Map<playwright.Request, playwright.Response | null> {
+    return this._requests;
   }
 
   async captureSnapshot() {
@@ -363,7 +420,7 @@ class PageSnapshot {
 
   private async _snapshotFrame(frame: playwright.Page | playwright.FrameLocator) {
     const frameIndex = this._frameLocators.push(frame) - 1;
-    const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true });
+    const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true, emitGeneric: true });
     const snapshot = yaml.parseDocument(snapshotString);
 
     const visit = async (node: any): Promise<unknown> => {
