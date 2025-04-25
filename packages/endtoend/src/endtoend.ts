@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText, tool } from 'ai';
 
-import * as common from '../../core/src/tools/common';
-import * as snapshot from '../../core/src/tools/snapshot';
-import * as screenshot from '../../core/src/tools/screenshot';
-import type { Tool } from '../../core/src/tools/tool';
+import * as common from '@best/core';
+import * as snapshot from '@best/core';
+import * as screenshot from '@best/core';
+import type { Tool } from '@best/core';
 
 import dotenv from 'dotenv';
 
@@ -121,26 +121,26 @@ export const endtoend: Tool = {
           }),
           clickVision: tool({
             description: 'Click on a web page',
-            parameters: screenshot.clickSchema,
-            execute: async (params: z.infer<typeof screenshot.clickSchema>) => {
-              const validatedParams = screenshot.clickSchema.parse(params);
-              return await screenshot.click.handle(context, validatedParams);
+            parameters: screenshot.clickVisionkSchema,
+            execute: async (params: z.infer<typeof screenshot.clickVisionkSchema>) => {
+              const validatedParams = screenshot.clickVisionkSchema.parse(params);
+              return await screenshot.clickVision.handle(context, validatedParams);
             }
           }),
           dragVision: tool({
             description: 'Drag and drop between two elements',
-            parameters: screenshot.dragSchema,
-            execute: async (params: z.infer<typeof screenshot.dragSchema>) => {
-              const validatedParams = screenshot.dragSchema.parse(params);
-              return await screenshot.drag.handle(context, validatedParams);
+            parameters: screenshot.dragVisionkSchema,
+            execute: async (params: z.infer<typeof screenshot.dragVisionkSchema>) => {
+              const validatedParams = screenshot.dragVisionkSchema.parse(params);
+              return await screenshot.dragVision.handle(context, validatedParams);
             }
           }),
           typeVision: tool({
             description: 'Type text into editable element',
-            parameters: screenshot.typeSchema,
-            execute: async (params: z.infer<typeof screenshot.typeSchema>) => {
-              const validatedParams = screenshot.typeSchema.parse(params);
-              return await screenshot.type.handle(context, validatedParams);
+            parameters: screenshot.typeVisionkSchema,
+            execute: async (params: z.infer<typeof screenshot.typeVisionkSchema>) => {
+              const validatedParams = screenshot.typeVisionkSchema.parse(params);
+              return await screenshot.typeVision.handle(context, validatedParams);
             }
           }),
           // common tools
