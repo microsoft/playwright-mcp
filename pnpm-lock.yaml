@@ -72,9 +72,6 @@ importers:
       '@best/core':
         specifier: workspace:*
         version: link:../core
-      '@best/mcp':
-        specifier: workspace:*
-        version: link:../mcp
     devDependencies:
       '@ai-sdk/openai':
         specifier: ^1.3.6

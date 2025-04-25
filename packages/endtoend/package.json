@@ -14,8 +14,7 @@
       "test": "playwright test"
     },
     "dependencies": {
-      "@best/core": "workspace:*",
-      "@best/mcp": "workspace:*"
+      "@best/core": "workspace:*"
     },
     "devDependencies": {
       "commander": "^13.1.0",
