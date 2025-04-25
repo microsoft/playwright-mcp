@@ -24,8 +24,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 
 
-import { createServer } from '../packages/mcp/server/index';
-import { ServerList } from '../packages/mcp/server/server';
+import { createServer } from '../packages/mcp/src/index';
+import { ServerList } from '../packages/mcp/src/server';
 
 import type { LaunchOptions } from 'playwright';
 import assert from 'assert';
