@@ -42,7 +42,9 @@
     "eslint": "^9.19.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-notice": "^1.0.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "playwright": "1.52.0-alpha-1743011787000"
   },
   "packageManager": "pnpm@10.9.0"
 }
