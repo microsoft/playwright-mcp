@@ -34,7 +34,7 @@ import screen from './tools/screen';
 
 import type { Tool, ToolCapability } from './tools/tool';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import type { LaunchOptions } from 'playwright';
+import type { LaunchOptions, BrowserContextOptions } from 'playwright';
 
 const snapshotTools: Tool<any>[] = [
   ...common(true),
@@ -84,15 +84,13 @@ export async function createServer(options?: Options): Promise<Server> {
     case 'chrome-beta':
     case 'chrome-canary':
     case 'chrome-dev':
+    case 'chromium':
     case 'msedge':
     case 'msedge-beta':
     case 'msedge-canary':
     case 'msedge-dev':
       browserName = 'chromium';
       channel = options.browser;
-      break;
-    case 'chromium':
-      browserName = 'chromium';
       break;
     case 'firefox':
       browserName = 'firefox';
@@ -106,10 +104,12 @@ export async function createServer(options?: Options): Promise<Server> {
   }
   const userDataDir = options?.userDataDir ?? await createUserDataDir(browserName);
 
-  const launchOptions: LaunchOptions = {
+  const launchOptions: LaunchOptions & BrowserContextOptions = {
     headless: !!(options?.headless ?? (os.platform() === 'linux' && !process.env.DISPLAY)),
     channel,
     executablePath: options?.executablePath,
+    viewport: null,
+    ...{ assistantMode: true },
   };
 
   const allTools = options?.vision ? screenshotTools : snapshotTools;

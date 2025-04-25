@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import net from 'net';
+
 import * as playwright from 'playwright';
 import yaml from 'yaml';
 
@@ -26,7 +28,7 @@ import type { ModalState, Tool, ToolActionResult } from './tools/tool';
 export type ContextOptions = {
   browserName?: 'chromium' | 'firefox' | 'webkit';
   userDataDir: string;
-  launchOptions?: playwright.LaunchOptions;
+  launchOptions?: playwright.LaunchOptions & playwright.BrowserContextOptions;
   cdpEndpoint?: string;
   remoteEndpoint?: string;
 };
@@ -42,6 +44,7 @@ export class Context {
   readonly options: ContextOptions;
   private _browser: playwright.Browser | undefined;
   private _browserContext: playwright.BrowserContext | undefined;
+  private _createBrowserContextPromise: Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> | undefined;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
@@ -259,6 +262,7 @@ ${code.join('\n')}
       return;
     const browserContext = this._browserContext;
     const browser = this._browser;
+    this._createBrowserContextPromise = undefined;
     this._browserContext = undefined;
     this._browser = undefined;
 
@@ -280,6 +284,15 @@ ${code.join('\n')}
   }
 
   private async _createBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
+    if (!this._createBrowserContextPromise)
+      this._createBrowserContextPromise = this._innerCreateBrowserContext();
+    return this._createBrowserContextPromise;
+  }
+
+  private async _innerCreateBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
+    if (this.options.browserName === 'chromium')
+      (this.options.launchOptions as any).webSocketPort = await findFreePort();
+
     if (this.options.remoteEndpoint) {
       const url = new URL(this.options.remoteEndpoint);
       if (this.options.browserName)
@@ -467,4 +480,15 @@ class PageSnapshot {
 
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
   return (locator as any)._generateLocatorString();
+}
+
+async function findFreePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(0, () => {
+      const { port } = server.address() as net.AddressInfo;
+      server.close(() => resolve(port));
+    });
+    server.on('error', reject);
+  });
 }
