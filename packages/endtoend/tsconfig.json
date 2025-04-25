@@ -7,7 +7,6 @@
     "include": ["src/**/*.ts"],
     "exclude": ["node_modules", "lib"],
     "references": [
-      { "path": "../core" },
-      { "path": "../mcp" }
+      { "path": "../core" }
     ]
 }
