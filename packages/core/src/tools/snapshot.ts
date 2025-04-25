@@ -132,11 +132,11 @@ export const selectOption: Tool = {
   },
 };
 
-export const screenshotSchema = z.object({
+const screenshotSchema = z.object({
   raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
 });
 
-export const screenshot: Tool = {
+const screenshot: Tool = {
   schema: {
     name: 'browser_take_screenshot',
     description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,

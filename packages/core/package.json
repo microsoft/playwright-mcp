@@ -13,6 +13,9 @@
       "playwright": "1.52.0-alpha-1743011787000"
     },
     "devDependencies": {
+      "zod-to-json-schema": "^3.24.4",
+      "zod": "^3.24.3",
+      "@modelcontextprotocol/sdk": "^1.6.1"
     },
     "publishConfig": {
       "access": "public"
