@@ -58,7 +58,7 @@ export const test = baseTest.extend<Fixtures>({
         args.push(...options.args);
       const transport = new StdioClientTransport({
         command: 'node',
-        args: [path.join(__dirname, '../cli.js'), ...args],
+        args: [path.join(__dirname, '../packages/mcp/cli.js'), ...args],
       });
       const client = new Client({ name: 'test', version: '1.0.0' });
       await client.connect(transport);
