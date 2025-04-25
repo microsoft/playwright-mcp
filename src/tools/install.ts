@@ -34,19 +34,22 @@ const install = defineTool({
     const child = fork(cli, ['install', channel], {
       stdio: 'pipe',
     });
-    const output: string[] = [];
-    child.stdout?.on('data', data => output.push(data.toString()));
-    child.stderr?.on('data', data => output.push(data.toString()));
-    await new Promise<void>((resolve, reject) => {
+    const chunks: string[] = [];
+    child.stdout?.on('data', data => chunks.push(data.toString()));
+    child.stderr?.on('data', data => chunks.push(data.toString()));
+    const code = await new Promise<string>((resolve, reject) => {
       child.on('close', code => {
+        const output = chunks.join('');
         if (code === 0)
-          resolve();
+          resolve(`// Browser ${channel} installed`);
+        else if (output.includes('already installed'))
+          resolve(`// Browser ${channel} is already installed`);
         else
-          reject(new Error(`Failed to install browser: ${output.join('')}`));
+          reject(new Error(`Failed to install browser: ${output}`));
       });
     });
     return {
-      code: [`// Browser ${channel} installed`],
+      code: [code],
       captureSnapshot: false,
       waitForNetwork: false,
     };
