@@ -9,6 +9,6 @@
     "outDir": "./lib"
   },
   "include": [
-    "src", "packages/core/tools/common.ts", "packages/core/tools/screenshot.ts", "packages/core/tools/snapshot.ts", "packages/core/src/utils.ts", "packages/testickl/endtoend.ts", "packages/core/tools/tool.ts", "packages/mcp/src/index.ts", "packages/core/context.ts", "packages/mcp/src/server.ts",
+    "src", "packages/core/tools/common.ts", "packages/core/tools/screenshot.ts", "packages/core/tools/snapshot.ts", "packages/core/src/utils.ts", "packages/testickl/src/endtoend.ts", "packages/core/tools/tool.ts", "packages/mcp/src/index.ts", "packages/core/context.ts", "packages/mcp/src/server.ts",
   ],
 }

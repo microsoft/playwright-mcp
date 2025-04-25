@@ -18,7 +18,7 @@ import { createServerWithTools } from './server';
 import * as snapshot from '../../core/src/tools/snapshot';
 import * as common from '../../core/src/tools/common';
 import * as screenshot from '../../core/src/tools/screenshot';
-import * as endtoend from '../../testickl/endtoend';
+import * as endtoend from '../../testickl/src/endtoend';
 import { console } from '../../core/src/resources/console';
 
 import type { Tool } from '../../core/src/tools/tool';
