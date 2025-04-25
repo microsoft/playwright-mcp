@@ -15,14 +15,14 @@
  */
 
 import { createServerWithTools } from './server';
-import * as snapshot from '../../core/src/tools/snapshot';
-import * as common from '../../core/src/tools/common';
-import * as screenshot from '../../core/src/tools/screenshot';
-import * as endtoend from '../../endtoend/src/endtoend';
-import { console } from '../../core/src/resources/console';
+import * as snapshot from '@best/core';
+import * as common from '@best/core';
+import * as screenshot from '@best/core';
+import * as endtoend from 'best';
+import { console } from '@best/core';
 
-import type { Tool } from '../../core/src/tools/tool';
-import type { Resource } from '../../core/src/resources/resource';
+import type { Tool } from '@best/core';
+import type { Resource } from '@best/core';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
