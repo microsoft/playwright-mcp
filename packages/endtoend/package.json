@@ -1,0 +1,26 @@
+{
+    "name": "best",
+    "version": "1.0.0",
+    "description": "Best testing framework and cli",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "bin": {
+      "testickl": "lib/cli.js"
+    },
+    "license": "Apache-2.0",
+    "scripts": {
+      "build": "tsc -b",
+      "dev": "tsc -w --preserveWatchOutput",
+      "test": "playwright test"
+    },
+    "dependencies": {
+      "@best/core": "workspace:*",
+      "@best/mcp": "workspace:*",
+      "commander": "^13.1.0"
+    },
+    "devDependencies": {
+    },
+    "publishConfig": {
+      "access": "public"
+    }
+}

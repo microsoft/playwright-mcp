@@ -1,0 +1,28 @@
+{
+    "name": "@best/mcp",
+    "version": "0.0.1",
+    "description": "Best testing framework MCP Server",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "license": "Apache-2.0",
+    "scripts": {
+      "build": "tsc -b",
+      "dev": "tsc -w --preserveWatchOutput"
+    },
+    "dependencies": {
+      "@ai-sdk/openai": "^1.3.6",
+      "@modelcontextprotocol/sdk": "^1.6.1",
+      "@best/core": "workspace:*",
+      "best": "workspace:*",
+      "ai": "^4.2.10",
+      "dotenv": "^16.4.7",
+      "zod-to-json-schema": "^3.24.4"
+    },
+    "devDependencies": {
+      "commander": "^13.1.0",
+      "playwright": "1.52.0-alpha-1743011787000"
+    },
+    "bin": {
+        "mcp-server-best": "cli.js"
+    }
+}

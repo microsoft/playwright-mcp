@@ -1,12 +1,12 @@
 {
-  "name": "@e2e/mcp",
-  "version": "0.0.7",
-  "description": "Playwright Tools for MCP",
+  "name": "best-monorepo",
+  "version": "0.0.1",
+  "description": "Best Testing Framework Monorepo",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+    "url": "git+https://github.com/best-testing/best.git"
   },
-  "homepage": "https://playwright.dev",
+  "homepage": "https://best.com",
   "engines": {
     "node": ">=18"
   },
@@ -15,11 +15,12 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b packages/core packages/mcp packages/endtoend",
+    "dev": "pnpm --parallel --filter=\"./packages/*\" run dev",
     "lint": "eslint .",
     "watch": "tsc --watch",
     "test": "playwright test",
-    "clean": "rm -rf lib",
+    "clean": "pnpm --filter=\"./packages/*\" exec rm -rf lib tsconfig.tsbuildinfo && rm -rf node_modules",
     "npm-publish": "npm run clean && npm run build && npm run test && npm publish"
   },
   "exports": {
@@ -28,15 +29,6 @@
       "types": "./index.d.ts",
       "default": "./index.js"
     }
-  },
-  "dependencies": {
-    "@ai-sdk/openai": "^1.3.6",
-    "@modelcontextprotocol/sdk": "^1.6.1",
-    "ai": "^4.2.10",
-    "commander": "^13.1.0",
-    "dotenv": "^16.4.7",
-    "playwright": "1.52.0-alpha-1743011787000",
-    "zod-to-json-schema": "^3.24.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -52,7 +44,5 @@
     "eslint-plugin-notice": "^1.0.0",
     "typescript": "^5.8.2"
   },
-  "bin": {
-    "mcp-server-playwright": "cli.js"
-  }
+  "packageManager": "pnpm@10.9.0"
 }

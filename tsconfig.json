@@ -1,14 +1,22 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "moduleResolution": "node",
-    "strict": true,
     "module": "CommonJS",
-    "outDir": "./lib"
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "declaration": true,
+    "sourceMap": true,
+    "composite": true,
+    "declarationMap": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": [
-    "src", "packages/core/tools/common.ts", "packages/core/tools/screenshot.ts", "packages/core/tools/snapshot.ts", "packages/core/src/utils.ts", "packages/testickl/src/endtoend.ts", "packages/core/tools/tool.ts", "packages/mcp/src/index.ts", "packages/core/context.ts", "packages/mcp/src/server.ts",
-  ],
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/mcp" },
+    { "path": "./packages/endtoend" }
+  ]
 }

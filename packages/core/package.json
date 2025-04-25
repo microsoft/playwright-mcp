@@ -1,0 +1,20 @@
+{
+    "name": "@best/core",
+    "version": "0.0.1",
+    "description": "Core Playwright automation library for Best testing framework",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "license": "Apache-2.0",
+    "scripts": {
+      "build": "tsc -b",
+      "dev": "tsc -w --preserveWatchOutput"
+    },
+    "dependencies": {
+      "playwright": "1.52.0-alpha-1743011787000"
+    },
+    "devDependencies": {
+    },
+    "publishConfig": {
+      "access": "public"
+    }
+}
