@@ -15,10 +15,17 @@
     },
     "dependencies": {
       "@best/core": "workspace:*",
-      "@best/mcp": "workspace:*",
-      "commander": "^13.1.0"
+      "@best/mcp": "workspace:*"
     },
     "devDependencies": {
+      "commander": "^13.1.0",
+      "zod-to-json-schema": "^3.24.4",
+      "zod": "^3.24.3",
+      "@modelcontextprotocol/sdk": "^1.6.1",
+      "ai": "^4.2.10",
+      "dotenv": "^16.4.7",
+      "playwright": "1.52.0-alpha-1743011787000",
+      "@ai-sdk/openai": "^1.3.6"
     },
     "publishConfig": {
       "access": "public"
