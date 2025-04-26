@@ -16,7 +16,7 @@
 
 import path from 'path';
 import { chromium } from 'playwright';
-import { Context } from '@best/core';
+import { Context, navigate } from '@best/core';
 import type { ContextOptions } from '@best/core';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
@@ -148,3 +148,16 @@ export const expect = baseExpect.extend({
     };
   },
 });
+
+export async function navigateAndGetSnapshot(coreContext: Context, htmlContent: string): Promise<string> {
+  const navResult = await navigate(true).handle(coreContext, { url: `data:text/html,${encodeURIComponent(htmlContent)}` });
+  const content = navResult.content[0];
+  baseExpect(content.type).toBe('text');
+  return content.text;
+}
+
+export function extractRef(snapshotText: string, regex: RegExp): string {
+  const match = snapshotText.match(regex);
+  baseExpect(match, `Ref regex ${regex} did not match in snapshot:\n${snapshotText}`).not.toBeNull();
+  return match![1];
+}
