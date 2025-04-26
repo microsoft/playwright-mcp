@@ -33,6 +33,7 @@ const plugins = {
 };
 
 export const baseRules = {
+  "@typescript-eslint/no-floating-promises": "error",
   "@typescript-eslint/no-unused-vars": [
     2,
     { args: "none", caughtErrors: "none" },
@@ -184,6 +185,9 @@ const languageOptions = {
   parser: tsParser,
   ecmaVersion: 9,
   sourceType: "module",
+  parserOptions: {
+    project: path.join(fileURLToPath(import.meta.url), "..", "tsconfig.all.json"),
+  }
 };
 
 export default [

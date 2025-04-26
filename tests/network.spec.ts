@@ -49,7 +49,7 @@ test('browser_network_requests_post_xhr', async ({ client, server }) => {
   expect.poll(() => client.callTool({
     name: 'browser_network_requests',
     arguments: {},
-  })).toHaveTextContent(`[POST] http://localhost:8907/json`);
+  })).toHaveTextContent(`[POST] http://localhost:${server.PORT}/json`);
 
   // Check if request body is displayed
   expect.poll(() => client.callTool({
@@ -101,7 +101,7 @@ test('browser_network_requests_get_xhr', async ({ client, server }) => {
   expect.poll(() => client.callTool({
     name: 'browser_network_requests',
     arguments: {},
-  })).toHaveTextContent(`[GET] http://localhost:8907/query?param1=value1&param2=value2`);
+  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/query?param1=value1&param2=value2`);
 
   expect.poll(() => client.callTool({
     name: 'browser_network_requests',
@@ -172,9 +172,9 @@ test('browser_network_requests_ignores_non_xhr', async ({ client, server }) => {
     arguments: {},
   });
 
-  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:8907/script.js`);
-  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:8907/style.css`);
-  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:8907/image.png`);
+  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:${server.PORT}/script.js`);
+  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:${server.PORT}/style.css`);
+  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:${server.PORT}/image.png`);
 
   // Make an XHR request and verify it IS shown
   await client.callTool({
@@ -188,5 +188,5 @@ test('browser_network_requests_ignores_non_xhr', async ({ client, server }) => {
   expect.poll(() => client.callTool({
     name: 'browser_network_requests',
     arguments: {},
-  })).toHaveTextContent(`[GET] http://localhost:8907/api`);
+  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/api`);
 });
