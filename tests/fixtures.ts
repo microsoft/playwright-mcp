@@ -25,9 +25,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 type Fixtures = {
   client: Client;
-  visionClient: Client;
-  endtoendClient: Client;
-  startClient: (options?: { args?: string[], vision?: boolean, endtoend?: boolean }) => Promise<Client>;
+  startClient: (options?: { args?: string[] }) => Promise<Client>;
   wsEndpoint: string;
   cdpEndpoint: string;
   coreContext: Context;
@@ -39,24 +37,12 @@ export const test = baseTest.extend<Fixtures>({
     await use(await startClient());
   },
 
-  visionClient: async ({ startClient }, use) => {
-    await use(await startClient({ vision: true }));
-  },
-
-  endtoendClient: async ({ startClient }, use) => {
-    await use(await startClient({ endtoend: true }));
-  },
-
   startClient: async ({ }, use, testInfo) => {
     const userDataDir = testInfo.outputPath('user-data-dir');
     let client: StdioClientTransport | undefined;
 
     use(async options => {
       const args = ['--headless', '--user-data-dir', userDataDir];
-      if (options?.vision)
-        args.push('--vision');
-      if (options?.endtoend)
-        args.push('--endtoend');
       if (options?.args)
         args.push(...options.args);
       const transport = new StdioClientTransport({
