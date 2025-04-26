@@ -38,6 +38,9 @@ importers:
       '@typescript-eslint/utils':
         specifier: ^8.26.1
         version: 8.31.0(eslint@9.25.1)(typescript@5.8.3)
+      best:
+        specifier: workspace:*
+        version: link:packages/endtoend
       eslint:
         specifier: ^9.19.0
         version: 9.25.1
