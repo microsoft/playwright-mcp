@@ -16,6 +16,8 @@
 
 import path from 'path';
 import { chromium } from 'playwright';
+import { Context } from '@best/core';
+import type { ContextOptions } from '@best/core';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -28,6 +30,7 @@ type Fixtures = {
   startClient: (options?: { args?: string[], vision?: boolean, endtoend?: boolean }) => Promise<Client>;
   wsEndpoint: string;
   cdpEndpoint: string;
+  coreContext: Context;
 };
 
 export const test = baseTest.extend<Fixtures>({
@@ -82,6 +85,19 @@ export const test = baseTest.extend<Fixtures>({
     });
     await use(`http://localhost:${port}`);
     await browser.close();
+  },
+
+  coreContext: async ({}, use, testInfo) => {
+    const options: ContextOptions = {
+      userDataDir: testInfo.outputPath(`user-data-dir-core-${testInfo.workerIndex}`),
+      launchOptions: {
+         headless: true,
+         channel: 'chrome',
+      },
+    };
+    const context = new Context(options);
+    await use(context);
+    await context.close();
   },
 });
 
