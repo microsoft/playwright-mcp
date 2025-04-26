@@ -73,15 +73,16 @@ type Options = {
   userDataDir?: string;
   launchOptions?: LaunchOptions;
   cdpEndpoint?: string;
-  vision?: boolean;
-  endtoend?: boolean;
+  // vision?: boolean;
+  // endtoend?: boolean;
   apiKey?: string;
 };
 
 const packageJSON = require('../package.json');
 
 export function createServer(options?: Options): Server {
-  const tools = options?.endtoend ? qaTools : (options?.vision ? screenshotTools : snapshotTools);
+  // const tools = options?.endtoend ? qaTools : (options?.vision ? screenshotTools : snapshotTools);
+  const tools = qaTools;
   return createServerWithTools({
     name: 'Playwright',
     version: packageJSON.version,
