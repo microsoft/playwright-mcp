@@ -53,13 +53,12 @@ importers:
 
   packages/core:
     dependencies:
-      playwright:
-        specifier: 1.52.0-alpha-1743011787000
-        version: 1.52.0-alpha-1743011787000
-    devDependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.6.1
         version: 1.10.2
+      playwright:
+        specifier: 1.52.0-alpha-1743011787000
+        version: 1.52.0-alpha-1743011787000
       zod:
         specifier: ^3.24.3
         version: 3.24.3
@@ -69,19 +68,42 @@ importers:
 
   packages/endtoend:
     dependencies:
-      '@best/core':
-        specifier: workspace:*
-        version: link:../core
-    devDependencies:
       '@ai-sdk/openai':
         specifier: ^1.3.6
         version: 1.3.18(zod@3.24.3)
+      '@best/core':
+        specifier: workspace:*
+        version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.6.1
         version: 1.10.2
       ai:
         specifier: ^4.2.10
         version: 4.3.9(react@19.1.0)(zod@3.24.3)
+      commander:
+        specifier: ^13.1.0
+        version: 13.1.0
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.5.0
+      zod:
+        specifier: ^3.24.3
+        version: 3.24.3
+      zod-to-json-schema:
+        specifier: ^3.24.4
+        version: 3.24.5(zod@3.24.3)
+
+  packages/mcp:
+    dependencies:
+      '@best/core':
+        specifier: workspace:*
+        version: link:../core
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.6.1
+        version: 1.10.2
+      best:
+        specifier: workspace:*
+        version: link:../endtoend
       commander:
         specifier: ^13.1.0
         version: 13.1.0
@@ -97,37 +119,6 @@ importers:
       zod-to-json-schema:
         specifier: ^3.24.4
         version: 3.24.5(zod@3.24.3)
-
-  packages/mcp:
-    dependencies:
-      '@ai-sdk/openai':
-        specifier: ^1.3.6
-        version: 1.3.18(zod@3.24.3)
-      '@best/core':
-        specifier: workspace:*
-        version: link:../core
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.6.1
-        version: 1.10.2
-      ai:
-        specifier: ^4.2.10
-        version: 4.3.9(react@19.1.0)(zod@3.24.3)
-      best:
-        specifier: workspace:*
-        version: link:../endtoend
-      dotenv:
-        specifier: ^16.4.7
-        version: 16.5.0
-      zod-to-json-schema:
-        specifier: ^3.24.4
-        version: 3.24.5(zod@3.24.3)
-    devDependencies:
-      commander:
-        specifier: ^13.1.0
-        version: 13.1.0
-      playwright:
-        specifier: 1.52.0-alpha-1743011787000
-        version: 1.52.0-alpha-1743011787000
 
 packages:
 
