@@ -47,7 +47,7 @@ test('test resources list', async ({ client }) => {
   ]);
 });
 
-test.skip('sse transport', async () => {
+test('sse transport', async () => {
   const cp = spawn('node', [path.join(__dirname, '../packages/mcp/cli.js'), '--port', '0'], { stdio: 'pipe' });
   try {
     let stdout = '';
