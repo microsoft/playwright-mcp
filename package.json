@@ -31,6 +31,7 @@
     }
   },
   "devDependencies": {
+    "@best/core": "workspace:*",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.19.0",
     "@playwright/test": "1.52.0-alpha-1743011787000",
