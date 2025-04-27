@@ -76,6 +76,7 @@ The Playwright MCP server supports the following command-line options:
 - `--port <port>`: Port to listen on for SSE transport
 - `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
 - `--proxy-server <proxy>`: Proxy server to use, e.g. "http://proxy.example.com:8080" or "socks5://proxy.example.com:1080"
+- `--proxy-bypass <bypass>`: Comma-separated list of hosts to bypass proxy, e.g. "localhost,example.com,*.example.org". Default is "localhost"
 - `--user-data-dir <path>`: Path to the user data directory
 - `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
 

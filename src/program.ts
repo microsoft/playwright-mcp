@@ -40,6 +40,7 @@ program
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--proxy-server <proxy>', 'Set HTTP/HTTPS proxy server, e.g. "http://proxy.example.com:8080"')
+    .option('--proxy-bypass <bypass>', 'Comma-separated list of hosts to bypass proxy, defaults to "localhost"', 'localhost')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .action(async options => {
@@ -51,6 +52,7 @@ program
         vision: !!options.vision,
         cdpEndpoint: options.cdpEndpoint,
         proxyServer: options.proxyServer,
+        proxyBypass: options.proxyBypass,
         capabilities: options.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
       }));
       setupExitWatchdog(serverList);
