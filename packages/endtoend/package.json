@@ -1,12 +1,9 @@
 {
     "name": "best",
-    "version": "1.0.0",
+    "version": "0.0.1",
     "description": "Best testing framework and cli",
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
-    "bin": {
-      "testickl": "lib/cli.js"
-    },
     "license": "Apache-2.0",
     "scripts": {
       "build": "tsc -b",
@@ -26,5 +23,8 @@
     "devDependencies": {},
     "publishConfig": {
       "access": "public"
+    },
+    "bin": {
+      "best": "cli.js"
     }
 }
