@@ -74,6 +74,7 @@ The Playwright MCP server supports the following command-line options:
 - `--executable-path <path>`: Path to the browser executable
 - `--headless`: Run browser in headless mode (headed by default)
 - `--port <port>`: Port to listen on for SSE transport
+- `--proxy-server <proxy>`: Proxy server to use, e.g. "http://proxy.example.com:8080" or "socks5://proxy.example.com:1080"
 - `--user-data-dir <path>`: Path to the user data directory
 - `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
 

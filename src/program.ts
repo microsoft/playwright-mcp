@@ -38,6 +38,7 @@ program
     .option('--executable-path <path>', 'Path to the browser executable.')
     .option('--headless', 'Run browser in headless mode, headed by default')
     .option('--port <port>', 'Port to listen on for SSE transport.')
+    .option('--proxy-server <proxy>', 'Set HTTP/HTTPS proxy server, e.g. "http://proxy.example.com:8080"')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .action(async options => {
@@ -48,6 +49,7 @@ program
         executablePath: options.executablePath,
         vision: !!options.vision,
         cdpEndpoint: options.cdpEndpoint,
+        proxyServer: options.proxyServer,
         capabilities: options.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
       }));
       setupExitWatchdog(serverList);

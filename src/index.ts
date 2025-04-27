@@ -69,6 +69,7 @@ type Options = {
   cdpEndpoint?: string;
   vision?: boolean;
   capabilities?: ToolCapability[];
+  proxyServer?: string;
 };
 
 const packageJSON = require('../package.json');
@@ -107,6 +108,7 @@ export async function createServer(options?: Options): Promise<Server> {
     headless: !!(options?.headless ?? (os.platform() === 'linux' && !process.env.DISPLAY)),
     channel,
     executablePath: options?.executablePath,
+    proxy: options?.proxyServer ? { server: options.proxyServer } : undefined,
   };
 
   const allTools = options?.vision ? screenshotTools : snapshotTools;
