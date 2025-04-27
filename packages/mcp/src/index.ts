@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+// import * as snapshot from '@best/core';
+// import * as common from '@best/core';
+// import * as screenshot from '@best/core';
+
 import { createServerWithTools } from './server';
-import * as snapshot from '@best/core';
-import * as common from '@best/core';
-import * as screenshot from '@best/core';
 import * as endtoend from 'best';
 import { console } from '@best/core';
 
@@ -30,40 +31,40 @@ const qaTools: Tool[] = [
   endtoend.endtoend
 ];
 
-const commonTools: Tool[] = [
-  common.pressKey,
-  common.wait,
-  common.pdf,
-  common.close,
-];
+// const commonTools: Tool[] = [
+//   common.pressKey,
+//   common.wait,
+//   common.pdf,
+//   common.close,
+// ];
 
-const snapshotTools: Tool[] = [
-  common.navigate(true),
-  common.goBack(true),
-  common.goForward(true),
-  common.chooseFile(true),
-  snapshot.snapshot,
-  snapshot.click,
-  snapshot.drag,
-  snapshot.hover,
-  snapshot.type,
-  snapshot.selectOption,
-  snapshot.screenshot,
-  ...commonTools,
-];
+// const snapshotTools: Tool[] = [
+//   common.navigate(true),
+//   common.goBack(true),
+//   common.goForward(true),
+//   common.chooseFile(true),
+//   snapshot.snapshot,
+//   snapshot.click,
+//   snapshot.drag,
+//   snapshot.hover,
+//   snapshot.type,
+//   snapshot.selectOption,
+//   snapshot.screenshot,
+//   ...commonTools,
+// ];
 
-const screenshotTools: Tool[] = [
-  common.navigate(false),
-  common.goBack(false),
-  common.goForward(false),
-  common.chooseFile(false),
-  screenshot.screenshot,
-  screenshot.moveMouse,
-  screenshot.click,
-  screenshot.drag,
-  screenshot.type,
-  ...commonTools,
-];
+// const screenshotTools: Tool[] = [
+//   common.navigate(false),
+//   common.goBack(false),
+//   common.goForward(false),
+//   common.chooseFile(false),
+//   screenshot.screenshot,
+//   screenshot.moveMouse,
+//   screenshot.click,
+//   screenshot.drag,
+//   screenshot.type,
+//   ...commonTools,
+// ];
 
 const resources: Resource[] = [
   console,
