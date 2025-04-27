@@ -38,6 +38,7 @@ program
     .option('--executable-path <path>', 'Path to the browser executable.')
     .option('--headless', 'Run browser in headless mode, headed by default')
     .option('--port <port>', 'Port to listen on for SSE transport.')
+    .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--proxy-server <proxy>', 'Set HTTP/HTTPS proxy server, e.g. "http://proxy.example.com:8080"')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
@@ -55,7 +56,7 @@ program
       setupExitWatchdog(serverList);
 
       if (options.port) {
-        startSSEServer(+options.port, serverList);
+        startSSEServer(+options.port, options.host || 'localhost', serverList);
       } else {
         const server = await serverList.create();
         await server.connect(new StdioServerTransport());
@@ -76,7 +77,7 @@ function setupExitWatchdog(serverList: ServerList) {
 
 program.parse(process.argv);
 
-async function startSSEServer(port: number, serverList: ServerList) {
+function startSSEServer(port: number, host: string, serverList: ServerList) {
   const sessions = new Map<string, SSEServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
     if (req.method === 'POST') {
@@ -112,7 +113,7 @@ async function startSSEServer(port: number, serverList: ServerList) {
     }
   });
 
-  httpServer.listen(port, () => {
+  httpServer.listen(port, host, () => {
     const address = httpServer.address();
     assert(address, 'Could not bind server socket');
     let url: string;
@@ -122,7 +123,7 @@ async function startSSEServer(port: number, serverList: ServerList) {
       const resolvedPort = address.port;
       let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
       if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
-        resolvedHost = 'localhost';
+        resolvedHost = host === 'localhost' ? 'localhost' : resolvedHost;
       url = `http://${resolvedHost}:${resolvedPort}`;
     }
     console.log(`Listening on ${url}`);

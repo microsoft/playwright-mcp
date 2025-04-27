@@ -24,12 +24,14 @@ test('stitched aria frames', async ({ client }) => {
     },
   })).toContainTextContent(`
 \`\`\`yaml
-- heading "Hello" [level=1] [ref=s1e3]
-- iframe [ref=s1e4]:
-  - button "World" [ref=f1s1e3]
-  - main [ref=f1s1e4]:
-    - iframe [ref=f1s1e5]:
-      - paragraph [ref=f2s1e3]: Nested
+- generic [ref=s1e2]:
+  - heading "Hello" [level=1] [ref=s1e3]
+  - iframe [ref=s1e4]:
+    - generic [ref=f1s1e2]:
+      - button "World" [ref=f1s1e3]
+      - main [ref=f1s1e4]:
+        - iframe [ref=f1s1e5]:
+          - paragraph [ref=f2s1e3]: Nested
 \`\`\``);
 
   expect(await client.callTool({

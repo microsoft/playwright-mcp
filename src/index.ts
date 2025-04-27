@@ -26,6 +26,7 @@ import files from './tools/files';
 import install from './tools/install';
 import keyboard from './tools/keyboard';
 import navigate from './tools/navigate';
+import network from './tools/network';
 import pdf from './tools/pdf';
 import snapshot from './tools/snapshot';
 import tabs from './tools/tabs';
@@ -35,7 +36,7 @@ import type { Tool, ToolCapability } from './tools/tool';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
-const snapshotTools: Tool[] = [
+const snapshotTools: Tool<any>[] = [
   ...common(true),
   ...console,
   ...dialogs(true),
@@ -43,12 +44,13 @@ const snapshotTools: Tool[] = [
   ...install,
   ...keyboard(true),
   ...navigate(true),
+  ...network,
   ...pdf,
   ...snapshot,
   ...tabs(true),
 ];
 
-const screenshotTools: Tool[] = [
+const screenshotTools: Tool<any>[] = [
   ...common(false),
   ...console,
   ...dialogs(false),
@@ -56,6 +58,7 @@ const screenshotTools: Tool[] = [
   ...install,
   ...keyboard(false),
   ...navigate(false),
+  ...network,
   ...pdf,
   ...screen,
   ...tabs(false),

@@ -74,6 +74,7 @@ The Playwright MCP server supports the following command-line options:
 - `--executable-path <path>`: Path to the browser executable
 - `--headless`: Run browser in headless mode (headed by default)
 - `--port <port>`: Port to listen on for SSE transport
+- `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
 - `--proxy-server <proxy>`: Proxy server to use, e.g. "http://proxy.example.com:8080" or "socks5://proxy.example.com:1080"
 - `--user-data-dir <path>`: Path to the user data directory
 - `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
@@ -90,8 +91,7 @@ Playwright MCP will launch the browser with the new profile, located at
 
 All the logged in information will be stored in that profile, you can delete it between sessions if you'd like to clear the offline state.
 
-
-### Running headless browser (Browser without GUI).
+### Running headless browser (Browser without GUI)
 
 This mode is useful for background or batch operations.
 
@@ -130,9 +130,28 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 }
 ```
 
+When running in a remote server, you can use the `--host` flag to bind the server to `0.0.0.0` to make it accessible from outside.
+
+```bash
+npx @playwright/mcp@latest --port 8931 --host 0.0.0.0
+```
+
+In MCP client config, `$server-ip` is the IP address of the server:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "url": "http://{$server-ip}:8931/sse"
+    }
+  }
+}
+```
+
 ### Docker
 
 **NOTE:** The Docker implementation only supports headless chromium at the moment.
+
 ```js
 {
   "mcpServers": {
@@ -173,6 +192,7 @@ X Y coordinate space, based on the provided screenshot.
 ### Build with Docker
 
 You can build the Docker image yourself.
+
 ```
 docker build -t mcp/playwright .
 ```

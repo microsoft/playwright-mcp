@@ -124,7 +124,7 @@ export class Context {
 
   async run(tool: Tool, params: Record<string, unknown> | undefined) {
     // Tab management is done outside of the action() call.
-    const toolResult = await tool.handle(this, params);
+    const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params));
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
     const racingAction = action ? () => this._raceAgainstModalDialogs(action) : undefined;
 
@@ -317,6 +317,7 @@ export class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
   private _console: playwright.ConsoleMessage[] = [];
+  private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
   private _snapshot: PageSnapshot | undefined;
   private _onPageClose: (tab: Tab) => void;
 
@@ -325,9 +326,11 @@ export class Tab {
     this.page = page;
     this._onPageClose = onPageClose;
     page.on('console', event => this._console.push(event));
+    page.on('request', request => this._requests.set(request, null));
+    page.on('response', response => this._requests.set(response.request(), response));
     page.on('framenavigated', frame => {
       if (!frame.parentFrame())
-        this._console.length = 0;
+        this._clearCollectedArtifacts();
     });
     page.on('close', () => this._onClose());
     page.on('filechooser', chooser => {
@@ -342,8 +345,13 @@ export class Tab {
     page.setDefaultTimeout(5000);
   }
 
-  private _onClose() {
+  private _clearCollectedArtifacts() {
     this._console.length = 0;
+    this._requests.clear();
+  }
+
+  private _onClose() {
+    this._clearCollectedArtifacts();
     this._onPageClose(this);
   }
 
@@ -363,8 +371,12 @@ export class Tab {
     return this._snapshot;
   }
 
-  async console(): Promise<playwright.ConsoleMessage[]> {
+  console(): playwright.ConsoleMessage[] {
     return this._console;
+  }
+
+  requests(): Map<playwright.Request, playwright.Response | null> {
+    return this._requests;
   }
 
   async captureSnapshot() {
@@ -401,7 +413,7 @@ class PageSnapshot {
 
   private async _snapshotFrame(frame: playwright.Page | playwright.FrameLocator) {
     const frameIndex = this._frameLocators.push(frame) - 1;
-    const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true });
+    const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true, emitGeneric: true });
     const snapshot = yaml.parseDocument(snapshotString);
 
     const visit = async (node: any): Promise<unknown> => {
