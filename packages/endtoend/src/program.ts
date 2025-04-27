@@ -1,6 +1,8 @@
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
+
+import chalk from 'chalk';
 import dotenv from 'dotenv';
 
 import { program } from 'commander';
@@ -10,6 +12,7 @@ import { Context } from '@best/core';
 
 dotenv.config();
 
+const readline = require('readline');
 const packageJSON = require('../package.json');
 
 program
@@ -69,6 +72,14 @@ type Options = {
     baseUrl?: string;
 };
 
+type TestCase = {
+    id: number;
+    definition: string;
+    status: 'pending' | 'running' | 'pass' | 'fail' | 'error';
+    line: number;
+    errorMessage?: string;
+}
+
 async function runTests(testFiles: string[], options: Options) {
     const context = new Context({
         userDataDir: options.userDataDir ?? '',
@@ -76,24 +87,105 @@ async function runTests(testFiles: string[], options: Options) {
         cdpEndpoint: options.cdpEndpoint,
         apiKey: options.apiKey,
     });
-
+    const allTestCases: TestCase[] = [];
     for (const testFile of testFiles) {
-        console.log(`Running test file: ${testFile}`);
         const content = await fs.promises.readFile(testFile, 'utf8');
         const parts = content.split(/\n- /);
         for (const part of parts) {
             if (!part) continue;
-            const testCase = part.split('\n\n')[0].trim();
-            console.log(`Test definition: ${testCase.toString()}`);
-            const result = await endtoend.handle(context, { testDefinition: testCase });
-            console.log(`Result: ${result}`);
+            const testCase = part.split('\n\n')[0].trim().replace(/^-\s*/, '');
+            allTestCases.push({
+                id: allTestCases.length + 1,
+                definition: testCase,
+                status: 'pending',
+                line: 0,
+            });
         }
+    }
+
+    console.log('\n');
+    allTestCases.forEach((test, index) => {
+        console.log(`${chalk.gray('⋯')} ${test.definition}`);
+        test.line = index + 1;
+    });
+
+    readline.moveCursor(process.stdout, 0, -allTestCases.length);
+    for (const test of allTestCases) {
+        updateTestStatus(test, 'running');
+        try {
+            const result = await endtoend.handle(context, { testDefinition: test.definition });
+            const responseText = result.content[0].text as string;            
+            const status = processTestResult(responseText, test);
+            updateTestStatus(test, status);
+        } catch (error) {
+            test.errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            updateTestStatus(test, 'error');
+        }
+        readline.moveCursor(process.stdout, 0, 1);
+    }
+    readline.moveCursor(process.stdout, 0, allTestCases.length - allTestCases.length);
+    console.log('\n');
+    context.close();
+}
+
+function updateTestStatus(test: TestCase, status: TestCase['status']) {
+    test.status = status;
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+    
+    let symbol = '';
+    let colorFn = chalk.white;
+
+    switch (status) {
+        case 'pending':
+            symbol = '⋯';
+            colorFn = chalk.gray;
+            break;
+        case 'running':
+            symbol = '⟳';
+            colorFn = chalk.white;
+            break;
+        case 'pass':
+            symbol = '✓';
+            colorFn = chalk.green;
+            break;
+        case 'fail':
+            symbol = '✗';
+            colorFn = chalk.red;
+            break;
+        case 'error':
+            symbol = '!';
+            colorFn = chalk.yellow;
+            break;
+    }
+    process.stdout.write(`${colorFn(symbol)} ${colorFn(test.definition)}`);
+    if (test.errorMessage && (status === 'error' || status === 'fail')) {
+        process.stdout.write(`\n    ${colorFn(test.errorMessage)}`);
+        readline.moveCursor(process.stdout, 0, -1);
+    }
+}
+
+function processTestResult(responseText: string, test: TestCase): TestCase['status'] {
+    const jsonMatch = responseText.match(/```json\s*(.+?)\s*```/s);
+    if (jsonMatch && jsonMatch[1]) {
+        try {
+            const resultJson = JSON.parse(jsonMatch[1]);
+            const status = resultJson.status;
+            test.errorMessage = resultJson.errorMessage;
+            
+            return status === "PASS" ? 'pass' : 'fail';
+        } catch (error) {
+            test.errorMessage = "JSON parse error";
+            return 'error';
+        }
+    } else {
+        test.errorMessage = "No JSON found in response";
+        return 'error';
     }
 }
 
 async function findTestFiles(testName: string) {
     const projectRoot = process.cwd();
-    
     let targetFilename = testName;
     if (!targetFilename.endsWith('.spec.md')) {
       if (targetFilename.endsWith('.spec')) {
@@ -102,19 +194,15 @@ async function findTestFiles(testName: string) {
         targetFilename += '.spec.md';
       }
     }
-    
+
     const pattern = path.join(projectRoot, '**', targetFilename).replace(/\\/g, '/');
-    console.log(`Searching for: ${targetFilename} using pattern: ${pattern}`);
-    
     try {
       // For glob v11+, use the glob.glob method
       const { glob: globFn } = await import('glob');
       const files = await globFn(pattern, { absolute: true });
-      
       if (files.length === 0) {
-        console.log(`No file named "${targetFilename}" found in project directory.`);
+        console.log(chalk.red(`No file named "${targetFilename}" found in project directory.`));
       }
-      
       return files;
     } catch (error) {
       console.error(`Error during search:`, error);
