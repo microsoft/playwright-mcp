@@ -24,7 +24,7 @@ const requests = defineTool({
 
   schema: {
     name: 'browser_network_requests',
-    description: 'Returns network requests since loading the page',
+    description: 'Returns all network requests since loading the page, if the request is a xhr or fetch, it will return the request body and response body',
     inputSchema: z.object({}),
   },
 
