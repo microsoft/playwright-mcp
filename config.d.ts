@@ -85,4 +85,21 @@ export type Config = {
    * The directory to save output files.
    */
   outputDir?: string;
+
+  /**
+   * Configuration for specific tools.
+   */
+  tools?: {
+    /**
+     * Configuration for the browser_take_screenshot tool.
+     */
+    browser_take_screenshot?: {
+
+      /**
+       * Whether to disable base64-encoded image responses to the clients that
+       * don't support binary data or prefer to save on tokens.
+      */
+      omitBase64?: boolean;
+    }
+  }
 };

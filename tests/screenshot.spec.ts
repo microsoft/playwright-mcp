@@ -93,3 +93,39 @@ test('browser_take_screenshot (outputDir)', async ({ startClient }, testInfo) =>
   expect(fs.existsSync(outputDir)).toBeTruthy();
   expect([...fs.readdirSync(outputDir)]).toHaveLength(1);
 });
+
+test('browser_take_screenshot (omitBase64)', async ({ startClient }) => {
+  const client = await startClient({
+    config: {
+      tools: {
+        browser_take_screenshot: {
+          omitBase64: true,
+        },
+      },
+    },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toContainTextContent(`Navigate to data:text/html`);
+
+  await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {},
+  });
+
+  expect(await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {},
+  })).toEqual({
+    content: [
+      {
+        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        type: 'text',
+      },
+    ],
+  });
+});

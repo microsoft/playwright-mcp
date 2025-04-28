@@ -244,14 +244,15 @@ const screenshot = defineTool({
     else
       code.push(`await page.screenshot(${javascript.formatObject(options)});`);
 
+    const includeBase64 = !context.config.tools?.browser_take_screenshot?.omitBase64;
     const action = async () => {
       const screenshot = locator ? await locator.screenshot(options) : await tab.page.screenshot(options);
       return {
-        content: [{
+        content: includeBase64 ? [{
           type: 'image' as 'image',
           data: screenshot.toString('base64'),
           mimeType: fileType === 'png' ? 'image/png' : 'image/jpeg',
-        }]
+        }] : []
       };
     };
 
