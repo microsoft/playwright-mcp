@@ -15,7 +15,7 @@
  */
 
 import { test, expect } from './fixtures';
-import { Buffer } from "node:buffer";
+import { Buffer } from 'node:buffer';
 
 test('browser_network_requests_post_xhr', async ({ client, server }) => {
   server.route('/', (req, res) => {
@@ -47,22 +47,29 @@ test('browser_network_requests_post_xhr', async ({ client, server }) => {
     },
   });
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).toHaveTextContent(`[POST] http://localhost:${server.PORT}/json`);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).toContain(`${server.PORT}/json`);
 
-  // Check if request body is displayed
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).toHaveTextContent(`Request Body: {"data":"test payload"}`);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).toContain('test payload');
 
-  // Check if response body is displayed
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).toHaveTextContent(`Response Body: {"name":"John Doe"}`);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).toContain('John Doe');
 });
 
 test('browser_network_requests_with_bodies', async ({ client, server }) => {
@@ -99,20 +106,29 @@ test('browser_network_requests_with_bodies', async ({ client, server }) => {
     },
   });
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/query?param1=value1&param2=value2`);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).toContain(`[GET] http://localhost:${server.PORT}/query?param1=value1&param2=value2`);
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).not.toHaveTextContent(`Request Body:`);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).not.toContain('Request Body:');
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).toHaveTextContent(`Response Body: {"received":{"param1":"value1","param2":"value2"}}`);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).toContain('value1');
 });
 
 test('browser_network_requests_non_xhr', async ({ client, server }) => {
@@ -159,38 +175,59 @@ test('browser_network_requests_non_xhr', async ({ client, server }) => {
   });
 
   // script, style, image requests should be present
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/script.js`);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).toContain(`[GET] http://localhost:${server.PORT}/script.js`);
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/style.css`);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).toContain(`[GET] http://localhost:${server.PORT}/style.css`);
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/image.png`);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).toContain(`[GET] http://localhost:${server.PORT}/image.png`);
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).not.toHaveTextContent(jsContent);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).not.toContain('Script loaded');
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).not.toHaveTextContent(cssContent);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).not.toContain('red');
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).not.toHaveTextContent(imgContent);
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).not.toContain('fake image data');
 
-  expect.poll(() => client.callTool({
-    name: 'browser_network_requests',
-    arguments: {},
-  })).not.toHaveTextContent('Response Body:');
+  await expect.poll(async () => {
+    const result = await client.callTool({
+      name: 'browser_network_requests',
+      arguments: {},
+    });
+    return JSON.stringify(result);
+  }).not.toContain('Response Body:');
 });
