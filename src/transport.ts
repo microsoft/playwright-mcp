@@ -90,7 +90,7 @@ async function handleStreamable(req: http.IncomingMessage, res: http.ServerRespo
   res.end('Invalid request');
 }
 
-export async function startHttpTransport(port: number, hostname: string | undefined, serverList: ServerList) {
+export function startHttpTransport(port: number, hostname: string | undefined, serverList: ServerList) {
   const sseSessions = new Map<string, SSEServerTransport>();
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {

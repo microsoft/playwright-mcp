@@ -49,7 +49,7 @@ program
       setupExitWatchdog(serverList);
 
       if (options.port)
-        await startHttpTransport(+options.port, options.host, serverList);
+        startHttpTransport(+options.port, options.host, serverList);
       else
         await startStdioTransport(serverList);
     });
