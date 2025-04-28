@@ -45,7 +45,7 @@ program
     .action(async options => {
       const serverList = new ServerList(() => createServer({
         browser: options.browser,
-        browserOption: options.browserOption?.split(',').map((c: string) => c.trim()),
+        browserOption: options.browserOption?.split(',').map((c: string) => `--${c.trim()}`),
         userDataDir: options.userDataDir,
         headless: options.headless,
         executablePath: options.executablePath,
