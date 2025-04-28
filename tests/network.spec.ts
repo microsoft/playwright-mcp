@@ -15,6 +15,7 @@
  */
 
 import { test, expect } from './fixtures';
+import { Buffer } from "node:buffer";
 
 test('browser_network_requests_post_xhr', async ({ client, server }) => {
   server.route('/', (req, res) => {
@@ -114,8 +115,12 @@ test('browser_network_requests_get_xhr', async ({ client, server }) => {
   })).toHaveTextContent(`Response Body: {"received":{"param1":"value1","param2":"value2"}}`);
 });
 
-test('browser_network_requests_ignores_non_xhr', async ({ client, server }) => {
-  // Setup a page with image and script resources that should be ignored
+test('browser_network_requests_non_xhr', async ({ client, server }) => {
+  // Resource contents
+  const jsContent = 'console.log("Script loaded");';
+  const cssContent = 'body { color: red; }';
+  const imgContent = 'fake image data';
+
   server.route('/', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(`
@@ -126,14 +131,6 @@ test('browser_network_requests_ignores_non_xhr', async ({ client, server }) => {
         </head>
         <body>
           <img src="/image.png">
-          <button onclick="makeXhrRequest()">Make XHR</button>
-          <script>
-            function makeXhrRequest() {
-              fetch('/api', {
-                headers: { 'Content-Type': 'application/json' }
-              });
-            }
-          </script>
         </body>
       </html>
     `);
@@ -141,22 +138,17 @@ test('browser_network_requests_ignores_non_xhr', async ({ client, server }) => {
 
   server.route('/script.js', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/javascript' });
-    res.end('console.log("Script loaded");');
+    res.end(jsContent);
   });
 
   server.route('/style.css', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/css' });
-    res.end('body { color: red; }');
+    res.end(cssContent);
   });
 
   server.route('/image.png', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'image/png' });
-    res.end(Buffer.from('fake image data'));
-  });
-
-  server.route('/api', (req, res) => {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true }));
+    res.end(Buffer.from(imgContent));
   });
 
   await client.callTool({
@@ -166,27 +158,39 @@ test('browser_network_requests_ignores_non_xhr', async ({ client, server }) => {
     },
   });
 
-  // Verify that script, style, and image requests are NOT shown
-  const initialResult = await client.callTool({
+  // script, style, image requests should be present
+  expect.poll(() => client.callTool({
     name: 'browser_network_requests',
     arguments: {},
-  });
-
-  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:${server.PORT}/script.js`);
-  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:${server.PORT}/style.css`);
-  expect(initialResult).not.toHaveTextContent(`[GET] http://localhost:${server.PORT}/image.png`);
-
-  // Make an XHR request and verify it IS shown
-  await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Make XHR button',
-      ref: 's1e3',
-    },
-  });
+  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/script.js`);
 
   expect.poll(() => client.callTool({
     name: 'browser_network_requests',
     arguments: {},
-  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/api`);
+  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/style.css`);
+
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/image.png`);
+
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).not.toHaveTextContent(jsContent);
+
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).not.toHaveTextContent(cssContent);
+
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).not.toHaveTextContent(imgContent);
+
+  expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+    arguments: {},
+  })).not.toHaveTextContent('Response Body:');
 });

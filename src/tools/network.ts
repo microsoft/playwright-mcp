@@ -24,22 +24,19 @@ const requests = defineTool({
 
   schema: {
     name: 'browser_network_requests',
-    description: 'Returns XHR/Fetch API network requests since loading the page',
+    description: 'Returns network requests since loading the page',
     inputSchema: z.object({}),
   },
 
   handle: async context => {
     const requests = context.currentTabOrDie().requests();
-
-    // Filter XHR requests
-    const xhrRequests = [...requests.entries()].filter(([request]) => isXhrRequest(request));
-
-    const log = await Promise.all(xhrRequests.map(async ([request, response]) => renderRequest(request, response)));
+    const allRequests = [...requests.entries()];
+    const log = await Promise.all(allRequests.map(async ([request, response]) => renderRequest(request, response)));
     return {
-      code: [`// <internal code to list XHR network requests>`],
+      code: ['// <internal code to list all network requests>'],
       action: async () => {
         return {
-          content: [{ type: 'text', text: log.join('\n\n') }]
+          content: [{ type: 'text', text: log.join('\n') }]
         };
       },
       captureSnapshot: false,
@@ -48,18 +45,14 @@ const requests = defineTool({
   },
 });
 
-function isXhrRequest(request: playwright.Request): boolean {
-  // Check resource type if available
+// Only include request/response body for XHR/fetch/json requests
+function shouldIncludeBody(request: playwright.Request): boolean {
   const resourceType = request.resourceType();
   if (resourceType === 'xhr' || resourceType === 'fetch')
     return true;
-
-  // Check request headers as a fallback
   const headers = request.headers();
   if (headers['x-requested-with']?.toLowerCase() === 'xmlhttprequest')
     return true;
-
-  // Check if request was initiated by fetch or XMLHttpRequest
   return request.isNavigationRequest() === false &&
          (headers.accept?.includes('application/json') ||
           headers['content-type']?.includes('application/json'));
@@ -69,24 +62,21 @@ async function renderRequest(request: playwright.Request, response: playwright.R
   const result: string[] = [];
   result.push(`[${request.method().toUpperCase()}] ${request.url()}`);
 
-  // Add request body if available
-  const postData = request.postData();
-  if (postData)
-    result.push(`Request Body: ${postData}`);
-
-  if (!response)
-    return result.join('\n');
-
-  result.push(`=> [${response.status()}] ${response.statusText()}`);
-
-  // Add response body as text
-  const body = await response.body();
-  if (body) {
-    const text = body.toString('utf-8');
-    result.push(`Response Body: ${text}`);
+  // Add request body for XHR/fetch/json only
+  if (shouldIncludeBody(request)) {
+    const postData = request.postData();
+    if (postData)
+      result.push(`Request Body: ${postData}`);
+    if (response) {
+      const body = await response.body();
+      if (body) {
+        const text = body.toString('utf-8');
+        result.push(`Response Body: ${text}`);
+      }
+    }
   }
 
-  return result.join('\n');
+  return result.join(' ');
 }
 
 export default [
