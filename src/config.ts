@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
 import net from 'net';
 import os from 'os';
+import path from 'path';
+
+import { sanitizeForFilePath } from './tools/utils';
 
 import type { Config } from '../config';
 import type { LaunchOptions, BrowserContextOptions } from 'playwright';
@@ -83,4 +87,11 @@ async function findFreePort() {
     });
     server.on('error', reject);
   });
+}
+
+export async function outputFile(config: Config, name: string): Promise<string> {
+  const result = config.outputDir ?? os.tmpdir();
+  await fs.promises.mkdir(result, { recursive: true });
+  const fileName = sanitizeForFilePath(name);
+  return path.join(result, fileName);
 }

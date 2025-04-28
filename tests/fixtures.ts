@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
 import path from 'path';
 import { chromium } from 'playwright';
 
@@ -23,10 +24,12 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { spawn } from 'child_process';
 import { TestServer } from './testserver';
 
+import type { Config } from '../config';
+
 type TestFixtures = {
   client: Client;
   visionClient: Client;
-  startClient: (options?: { args?: string[] }) => Promise<Client>;
+  startClient: (options?: { args?: string[], config?: Config }) => Promise<Client>;
   wsEndpoint: string;
   cdpEndpoint: string;
   server: TestServer;
@@ -61,6 +64,11 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
         args.push(`--browser=${mcpBrowser}`);
       if (options?.args)
         args.push(...options.args);
+      if (options?.config) {
+        const configFile = testInfo.outputPath('config.json');
+        await fs.promises.writeFile(configFile, JSON.stringify(options.config, null, 2));
+        args.push(`--config=${configFile}`);
+      }
       const transport = new StdioClientTransport({
         command: 'node',
         args: [path.join(__dirname, '../cli.js'), ...args],

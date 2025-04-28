@@ -80,4 +80,9 @@ export type Config = {
    * Run server that uses screenshots (Aria snapshots are used by default).
    */
   vision?: boolean;
+
+  /**
+   * The directory to save output files.
+   */
+  outputDir?: string;
 };

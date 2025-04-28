@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-import path from 'path';
-import os from 'os';
-
 import { z } from 'zod';
 
-import { sanitizeForFilePath } from './utils';
 import { defineTool } from './tool';
 import * as javascript from '../javascript';
+import { outputFile } from '../config';
 
 import type * as playwright from 'playwright';
 
@@ -232,7 +229,7 @@ const screenshot = defineTool({
     const tab = context.currentTabOrDie();
     const snapshot = tab.snapshotOrDie();
     const fileType = params.raw ? 'png' : 'jpeg';
-    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + `.${fileType}`;
+    const fileName = await outputFile(context.config, `page-${new Date().toISOString()}.${fileType}`);
     const options: playwright.PageScreenshotOptions = { type: fileType, quality: fileType === 'png' ? undefined : 50, scale: 'css', path: fileName };
     const isElementScreenshot = params.element && params.ref;
 

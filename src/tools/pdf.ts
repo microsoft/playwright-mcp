@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-import os from 'os';
-import path from 'path';
-
 import { z } from 'zod';
 import { defineTool } from './tool';
 
-import { sanitizeForFilePath } from './utils';
 import * as javascript from '../javascript';
+import { outputFile } from '../config';
 
 const pdf = defineTool({
   capability: 'pdf',
@@ -34,7 +31,7 @@ const pdf = defineTool({
 
   handle: async context => {
     const tab = context.currentTabOrDie();
-    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + '.pdf';
+    const fileName = await outputFile(context.config, `page-${new Date().toISOString()}'.pdf'`);
 
     const code = [
       `// Save page as ${fileName}`,
