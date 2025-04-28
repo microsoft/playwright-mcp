@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
+
 import { program } from 'commander';
 
 import { createServer } from './index';
 import { ServerList } from './server';
 
-import { ToolCapability } from './tools/tool';
 import { startHttpTransport, startStdioTransport } from './transport';
+
+import type { Config, ToolCapability } from '../config';
 
 const packageJSON = require('../package.json');
 
@@ -32,20 +35,29 @@ program
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .option('--executable-path <path>', 'Path to the browser executable.')
     .option('--headless', 'Run browser in headless mode, headed by default')
+    .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
-    .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
-      const serverList = new ServerList(() => createServer({
-        browser: options.browser,
-        userDataDir: options.userDataDir,
-        headless: options.headless,
-        executablePath: options.executablePath,
-        vision: !!options.vision,
-        cdpEndpoint: options.cdpEndpoint,
+      const cliOverrides: Config = {
+        browser: {
+          type: options.browser,
+          userDataDir: options.userDataDir,
+          headless: options.headless,
+          executablePath: options.executablePath,
+          cdpEndpoint: options.cdpEndpoint,
+        },
+        server: {
+          port: options.port,
+          host: options.host,
+        },
         capabilities: options.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
-      }));
+        vision: !!options.vision,
+      };
+      const config = await loadConfig(options.config, cliOverrides);
+      const serverList = new ServerList(() => createServer(config));
       setupExitWatchdog(serverList);
 
       if (options.port)
@@ -53,6 +65,30 @@ program
       else
         await startStdioTransport(serverList);
     });
+
+async function loadConfig(configFile: string | undefined, cliOverrides: Config): Promise<Config> {
+  if (!configFile)
+    return cliOverrides;
+
+  try {
+    const config = JSON.parse(await fs.promises.readFile(configFile, 'utf8'));
+    return {
+      ...config,
+      ...cliOverrides,
+      browser: {
+        ...config.browser,
+        ...cliOverrides.browser,
+      },
+      server: {
+        ...config.server,
+        ...cliOverrides.server,
+      },
+    };
+  } catch (e) {
+    console.error(`Error loading config file ${configFile}: ${e}`);
+    process.exit(1);
+  }
+}
 
 function setupExitWatchdog(serverList: ServerList) {
   const handleExit = async () => {

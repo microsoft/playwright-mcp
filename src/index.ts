@@ -32,7 +32,8 @@ import snapshot from './tools/snapshot';
 import tabs from './tools/tabs';
 import screen from './tools/screen';
 
-import type { Tool, ToolCapability } from './tools/tool';
+import type { Tool } from './tools/tool';
+import type { Config } from '../config';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions, BrowserContextOptions } from 'playwright';
 
@@ -64,22 +65,12 @@ const screenshotTools: Tool<any>[] = [
   ...tabs(false),
 ];
 
-type Options = {
-  browser?: string;
-  userDataDir?: string;
-  headless?: boolean;
-  executablePath?: string;
-  cdpEndpoint?: string;
-  vision?: boolean;
-  capabilities?: ToolCapability[];
-};
-
 const packageJSON = require('../package.json');
 
-export async function createServer(options?: Options): Promise<Server> {
+export async function createServer(config?: Config): Promise<Server> {
   let browserName: 'chromium' | 'firefox' | 'webkit';
   let channel: string | undefined;
-  switch (options?.browser) {
+  switch (config?.browser?.type) {
     case 'chrome':
     case 'chrome-beta':
     case 'chrome-canary':
@@ -90,7 +81,7 @@ export async function createServer(options?: Options): Promise<Server> {
     case 'msedge-canary':
     case 'msedge-dev':
       browserName = 'chromium';
-      channel = options.browser;
+      channel = config.browser.type;
       break;
     case 'firefox':
       browserName = 'firefox';
@@ -102,18 +93,18 @@ export async function createServer(options?: Options): Promise<Server> {
       browserName = 'chromium';
       channel = 'chrome';
   }
-  const userDataDir = options?.userDataDir ?? await createUserDataDir(browserName);
+  const userDataDir = config?.browser?.userDataDir ?? await createUserDataDir(browserName);
 
   const launchOptions: LaunchOptions & BrowserContextOptions = {
-    headless: !!(options?.headless ?? (os.platform() === 'linux' && !process.env.DISPLAY)),
+    headless: !!(config?.browser?.headless ?? (os.platform() === 'linux' && !process.env.DISPLAY)),
     channel,
-    executablePath: options?.executablePath,
+    executablePath: config?.browser?.executablePath,
     viewport: null,
     ...{ assistantMode: true },
   };
 
-  const allTools = options?.vision ? screenshotTools : snapshotTools;
-  const tools = allTools.filter(tool => !options?.capabilities || tool.capability === 'core' || options.capabilities.includes(tool.capability));
+  const allTools = config?.vision ? screenshotTools : snapshotTools;
+  const tools = allTools.filter(tool => !config?.capabilities || tool.capability === 'core' || config.capabilities.includes(tool.capability));
   return createServerWithTools({
     name: 'Playwright',
     version: packageJSON.version,
@@ -122,7 +113,7 @@ export async function createServer(options?: Options): Promise<Server> {
     browserName,
     userDataDir,
     launchOptions,
-    cdpEndpoint: options?.cdpEndpoint,
+    cdpEndpoint: config?.browser?.cdpEndpoint,
   });
 }
 
