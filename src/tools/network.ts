@@ -47,7 +47,7 @@ const requests = defineTool({
 
 function shouldIncludeBody(request: playwright.Request): boolean {
   const headers = request.headers();
-  return headers['content-type']?.includes('application/json')
+  return headers['content-type']?.includes('application/json');
 }
 
 async function renderRequest(request: playwright.Request, response: playwright.Response | null): Promise<string> {

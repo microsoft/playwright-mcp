@@ -79,7 +79,7 @@ test('browser_network_requests_with_bodies', async ({ client, server }) => {
   });
 
   server.route('/query', (req, res) => {
-    const url = new URL(req.url!, `http://${req.headers.host}`);
+    const url = new URL(req.url || '', `http://${req.headers.host}`);
     const param1 = url.searchParams.get('param1');
     const param2 = url.searchParams.get('param2');
     res.writeHead(200, { 'Content-Type': 'application/json' });
