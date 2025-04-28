@@ -29,12 +29,14 @@ const pdf = defineTool({
   schema: {
     name: 'browser_pdf_save',
     description: 'Save page as PDF',
-    inputSchema: z.object({}),
+    inputSchema: z.object({
+      fileName: z.string().optional().describe('Path to save the PDF to. If not provided, the PDF will be saved to a temporary file.'),
+    }),
   },
 
-  handle: async context => {
+  handle: async (context, params) => {
     const tab = context.currentTabOrDie();
-    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + '.pdf';
+    const fileName = params.fileName ?? path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + '.pdf';
 
     const code = [
       `// Save page as ${fileName}`,

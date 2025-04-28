@@ -281,6 +281,7 @@ http.createServer(async (req, res) => {
     - `raw` (boolean, optional): Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.
     - `element` (string, optional): Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.
     - `ref` (string, optional): Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.
+    - `fileName` (string, optional): Path to save the screenshot to. If not provided, the screenshot will be returned and saved to a temporary file.
 
 ### Vision-based Interactions
 
@@ -407,7 +408,8 @@ http.createServer(async (req, res) => {
 
 - **browser_pdf_save**
   - Description: Save page as PDF
-  - Parameters: None
+  - Parameters:
+    - `fileName` (string, optional): Path to save the PDF to. If not provided, the PDF will be saved to a temporary file.
 
 ### Utilities
 

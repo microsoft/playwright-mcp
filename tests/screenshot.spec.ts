@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
+
 import { test, expect } from './fixtures';
 
 test('browser_take_screenshot (viewport)', async ({ client }) => {
@@ -69,4 +71,30 @@ test('browser_take_screenshot (element)', async ({ client }) => {
       },
     ],
   });
+});
+
+test('browser_take_screenshot (fileName)', async ({ client }, testInfo) => {
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toContainTextContent(`Navigate to data:text/html`);
+
+  const fileName = testInfo.outputPath('screenshot.jpeg');
+  expect(await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {
+      fileName,
+    },
+  })).toEqual({
+    content: [
+      {
+        text: expect.stringContaining(`Screenshot viewport and save it as ${fileName}`),
+        type: 'text',
+      },
+    ],
+  });
+
+  expect(fs.existsSync(fileName));
 });

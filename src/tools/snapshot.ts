@@ -214,6 +214,7 @@ const screenshotSchema = z.object({
   raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
   element: z.string().optional().describe('Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.'),
   ref: z.string().optional().describe('Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.'),
+  fileName: z.string().optional().describe('Path to save the screenshot to. If not provided, the screenshot will be returned and saved to a temporary file.'),
 }).refine(data => {
   return !!data.element === !!data.ref;
 }, {
@@ -233,7 +234,7 @@ const screenshot = defineTool({
     const tab = context.currentTabOrDie();
     const snapshot = tab.snapshotOrDie();
     const fileType = params.raw ? 'png' : 'jpeg';
-    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + `.${fileType}`;
+    const fileName = params.fileName ?? path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + `.${fileType}`;
     const options: playwright.PageScreenshotOptions = { type: fileType, quality: fileType === 'png' ? undefined : 50, scale: 'css', path: fileName };
     const isElementScreenshot = params.element && params.ref;
 
@@ -251,7 +252,7 @@ const screenshot = defineTool({
     const action = async () => {
       const screenshot = locator ? await locator.screenshot(options) : await tab.page.screenshot(options);
       return {
-        content: [{
+        content: params.fileName ? [] : [{
           type: 'image' as 'image',
           data: screenshot.toString('base64'),
           mimeType: fileType === 'png' ? 'image/png' : 'image/jpeg',
