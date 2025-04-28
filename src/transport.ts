@@ -28,78 +28,77 @@ export async function startStdioTransport(serverList: ServerList) {
   await server.connect(new StdioServerTransport());
 }
 
+async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, url: URL, serverList: ServerList, sessions: Map<string, SSEServerTransport>) {
+  if (req.method === 'POST') {
+    const sessionId = url.searchParams.get('sessionId');
+    if (!sessionId) {
+      res.statusCode = 400;
+      return res.end('Missing sessionId');
+    }
+
+    const transport = sessions.get(sessionId);
+    if (!transport) {
+      res.statusCode = 404;
+      return res.end('Session not found');
+    }
+
+    return await transport.handlePostMessage(req, res);
+  } else if (req.method === 'GET') {
+    const transport = new SSEServerTransport('/sse', res);
+    sessions.set(transport.sessionId, transport);
+    const server = await serverList.create();
+    res.on('close', () => {
+      sessions.delete(transport.sessionId);
+      serverList.close(server).catch(e => console.error(e));
+    });
+    return await server.connect(transport);
+  }
+
+  res.statusCode = 405;
+  res.end('Method not allowed');
+}
+
+async function handleStreamable(req: http.IncomingMessage, res: http.ServerResponse, serverList: ServerList, sessions: Map<string, StreamableHTTPServerTransport>) {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  if (sessionId) {
+    const transport = sessions.get(sessionId);
+    if (!transport) {
+      res.statusCode = 404;
+      res.end('Session not found');
+      return;
+    }
+    return await transport.handleRequest(req, res);
+  }
+
+  if (req.method === 'POST') {
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID(),
+      onsessioninitialized: sessionId => {
+        sessions.set(sessionId, transport);
+      }
+    });
+    transport.onclose = () => {
+      if (transport.sessionId)
+        sessions.delete(transport.sessionId);
+    };
+    const server = await serverList.create();
+    await server.connect(transport);
+    return await transport.handleRequest(req, res);
+  }
+
+  res.statusCode = 400;
+  res.end('Invalid request');
+}
+
 export async function startHttpTransport(port: number, hostname: string | undefined, serverList: ServerList) {
   const sseSessions = new Map<string, SSEServerTransport>();
-  async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
-    if (req.method === 'POST') {
-      const sessionId = url.searchParams.get('sessionId');
-      if (!sessionId) {
-        res.statusCode = 400;
-        return res.end('Missing sessionId');
-      }
-
-      const transport = sseSessions.get(sessionId);
-      if (!transport) {
-        res.statusCode = 404;
-        return res.end('Session not found');
-      }
-
-      return await transport.handlePostMessage(req, res);
-    } else if (req.method === 'GET') {
-      const transport = new SSEServerTransport('/sse', res);
-      sseSessions.set(transport.sessionId, transport);
-      const server = await serverList.create();
-      res.on('close', () => {
-        sseSessions.delete(transport.sessionId);
-        serverList.close(server).catch(e => console.error(e));
-      });
-      return await server.connect(transport);
-    }
-
-    res.statusCode = 405;
-    res.end('Method not allowed');
-  }
-
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
-  async function handleStreamable(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
-    if (sessionId) {
-      const transport = streamableSessions.get(sessionId);
-      if (!transport) {
-        res.statusCode = 404;
-        res.end('Session not found');
-        return;
-      }
-      return await transport.handleRequest(req, res);
-    }
-
-    if (req.method === 'POST') {
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => crypto.randomUUID(),
-        onsessioninitialized: sessionId => {
-          streamableSessions.set(sessionId, transport);
-        }
-      });
-      transport.onclose = () => {
-        if (transport.sessionId)
-          streamableSessions.delete(transport.sessionId);
-      };
-      const server = await serverList.create();
-      await server.connect(transport);
-      return await transport.handleRequest(req, res);
-    }
-
-    res.statusCode = 400;
-    res.end('Invalid request');
-  }
-
-
   const httpServer = http.createServer(async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);
     if (url.pathname.startsWith('/mcp'))
-      await handleStreamable(req, res, url);
+      await handleStreamable(req, res, serverList, streamableSessions);
     else
-      await handleSSE(req, res, url);
+      await handleSSE(req, res, url, serverList, sseSessions);
   });
   httpServer.listen(port, hostname, () => {
     const address = httpServer.address();
