@@ -33,7 +33,7 @@ const requests = defineTool({
     const allRequests = [...requests.entries()];
     const log = await Promise.all(allRequests.map(async ([request, response]) => await renderRequest(request, response)));
     return {
-      code: ['// <internal code to list all network requests>'],
+      code: [`// <internal code to list all network requests>`],
       action: async () => {
         return {
           content: [{ type: 'text', text: log }]
