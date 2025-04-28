@@ -47,12 +47,7 @@ const requests = defineTool({
 
 // Only include request/response body for XHR/fetch/json requests
 function shouldIncludeBody(request: playwright.Request): boolean {
-  const resourceType = request.resourceType();
-  if (resourceType === 'xhr' || resourceType === 'fetch')
-    return true;
   const headers = request.headers();
-  if (headers['x-requested-with']?.toLowerCase() === 'xmlhttprequest')
-    return true;
   return request.isNavigationRequest() === false &&
          (headers.accept?.includes('application/json') ||
           headers['content-type']?.includes('application/json'));
