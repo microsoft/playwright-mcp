@@ -36,7 +36,7 @@ const requests = defineTool({
       code: [`// <internal code to list network requests>`],
       action: async () => {
         return {
-          content: [{ type: 'text', text: log }]
+          content: [{ type: 'text', text: log.join('\n') }]
         };
       },
       captureSnapshot: false,
