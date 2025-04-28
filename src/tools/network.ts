@@ -36,7 +36,7 @@ const requests = defineTool({
       code: [`// <internal code to list all network requests>`],
       action: async () => {
         return {
-          content: [{ type: 'text', text: log }]
+          content: [{ type: 'text', text: log.join('\n') }]
         };
       },
       captureSnapshot: false,
@@ -45,29 +45,23 @@ const requests = defineTool({
   },
 });
 
-// Only include request/response body for XHR/fetch/json requests
 function shouldIncludeBody(request: playwright.Request): boolean {
   const headers = request.headers();
-  return request.isNavigationRequest() === false &&
-         (headers.accept?.includes('application/json') ||
-          headers['content-type']?.includes('application/json'));
+  return headers['content-type']?.includes('application/json')
 }
 
 async function renderRequest(request: playwright.Request, response: playwright.Response | null): Promise<string> {
   const result: string[] = [];
   result.push(`[${request.method().toUpperCase()}] ${request.url()}`);
 
-  // Add request body for XHR/fetch/json only
+  // Only include request/response body for application/json requests
   if (shouldIncludeBody(request)) {
     const postData = request.postData();
     if (postData)
       result.push(`Request Body: ${postData}`);
     if (response) {
-      const body = await response.body();
-      if (body) {
-        const text = body.toString('utf-8');
-        result.push(`Response Body: ${text}`);
-      }
+      const body = await response.text();
+      result.push(`Response Body: ${body}`);
     }
   }
 
