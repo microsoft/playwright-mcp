@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
   # Install `node_modules` including dev dependencies to run playwright commands with npx
   npm ci && \
   # Install system dependencies for playwright
-  npx playwright install-deps chromium-headless-shell && \
+  npx -y playwright install-deps chromium && \
   # Overwrite with only production `node_modules` required for runtime
   npm ci --omit=dev
 
@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
   # Install `node_modules` including dev dependencies to run playwright commands with npx
   npm ci && \
   # Install browser binaries
-  npx playwright install --only-shell chromium
+  npx -y playwright install --no-shell chromium
 
 # Copy the rest of the app
 COPY . .
