@@ -65,7 +65,7 @@ test('browser_network_requests_post_xhr', async ({ client, server }) => {
   })).toHaveTextContent(`Response Body: {"name":"John Doe"}`);
 });
 
-test('browser_network_requests_get_xhr', async ({ client, server }) => {
+test('browser_network_requests_with_bodies', async ({ client, server }) => {
   server.route('/', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(`<button onclick="fetch('/query?param1=value1&param2=value2')">GET with params</button>`);
