@@ -14,26 +14,21 @@
  * limitations under the License.
  */
 
-import net from 'net';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 import * as playwright from 'playwright';
-import yaml from 'yaml';
 
 import { waitForCompletion } from './tools/utils';
 import { ManualPromise } from './manualPromise';
+import { toBrowserOptions } from './config';
+import { Tab } from './tab';
 
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
 import type { ModalState, Tool, ToolActionResult } from './tools/tool';
-
-export type ContextOptions = {
-  browserName?: 'chromium' | 'firefox' | 'webkit';
-  userDataDir: string;
-  launchOptions?: playwright.LaunchOptions & playwright.BrowserContextOptions;
-  cdpEndpoint?: string;
-  remoteEndpoint?: string;
-};
-
-type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
+import type { Config } from '../config';
+import type { BrowserOptions } from './config';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
@@ -41,7 +36,7 @@ type PendingAction = {
 
 export class Context {
   readonly tools: Tool[];
-  readonly options: ContextOptions;
+  readonly config: Config;
   private _browser: playwright.Browser | undefined;
   private _browserContext: playwright.BrowserContext | undefined;
   private _createBrowserContextPromise: Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> | undefined;
@@ -50,9 +45,9 @@ export class Context {
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
 
-  constructor(tools: Tool[], options: ContextOptions) {
+  constructor(tools: Tool[], config: Config) {
     this.tools = tools;
-    this.options = options;
+    this.config = config;
   }
 
   modalStates(): ModalState[] {
@@ -290,205 +285,58 @@ ${code.join('\n')}
   }
 
   private async _innerCreateBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
-    if (this.options.browserName === 'chromium')
-      (this.options.launchOptions as any).webSocketPort = await findFreePort();
+    const browserOptions = await toBrowserOptions(this.config);
 
-    if (this.options.remoteEndpoint) {
-      const url = new URL(this.options.remoteEndpoint);
-      if (this.options.browserName)
-        url.searchParams.set('browser', this.options.browserName);
-      if (this.options.launchOptions)
-        url.searchParams.set('launch-options', JSON.stringify(this.options.launchOptions));
-      const browser = await playwright[this.options.browserName ?? 'chromium'].connect(String(url));
+    if (this.config.browser?.remoteEndpoint) {
+      const url = new URL(this.config.browser?.remoteEndpoint);
+      if (browserOptions.browserName)
+        url.searchParams.set('browser', browserOptions.browserName);
+      if (browserOptions.launchOptions)
+        url.searchParams.set('launch-options', JSON.stringify(browserOptions.launchOptions));
+      const browser = await playwright[browserOptions.browserName ?? 'chromium'].connect(String(url));
       const browserContext = await browser.newContext();
       return { browser, browserContext };
     }
 
-    if (this.options.cdpEndpoint) {
-      const browser = await playwright.chromium.connectOverCDP(this.options.cdpEndpoint);
+    if (this.config.browser?.cdpEndpoint) {
+      const browser = await playwright.chromium.connectOverCDP(this.config.browser?.cdpEndpoint);
       const browserContext = browser.contexts()[0];
       return { browser, browserContext };
     }
 
-    const browserContext = await this._launchPersistentContext();
+    const browserContext = await launchPersistentContext(this.config.browser?.userDataDir, browserOptions);
     return { browserContext };
   }
-
-  private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
-    try {
-      const browserType = this.options.browserName ? playwright[this.options.browserName] : playwright.chromium;
-      return await browserType.launchPersistentContext(this.options.userDataDir, this.options.launchOptions);
-    } catch (error: any) {
-      if (error.message.includes('Executable doesn\'t exist'))
-        throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
-      throw error;
-    }
-  }
 }
 
-export class Tab {
-  readonly context: Context;
-  readonly page: playwright.Page;
-  private _console: playwright.ConsoleMessage[] = [];
-  private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
-  private _snapshot: PageSnapshot | undefined;
-  private _onPageClose: (tab: Tab) => void;
-
-  constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void) {
-    this.context = context;
-    this.page = page;
-    this._onPageClose = onPageClose;
-    page.on('console', event => this._console.push(event));
-    page.on('request', request => this._requests.set(request, null));
-    page.on('response', response => this._requests.set(response.request(), response));
-    page.on('framenavigated', frame => {
-      if (!frame.parentFrame())
-        this._clearCollectedArtifacts();
-    });
-    page.on('close', () => this._onClose());
-    page.on('filechooser', chooser => {
-      this.context.setModalState({
-        type: 'fileChooser',
-        description: 'File chooser',
-        fileChooser: chooser,
-      }, this);
-    });
-    page.on('dialog', dialog => this.context.dialogShown(this, dialog));
-    page.setDefaultNavigationTimeout(60000);
-    page.setDefaultTimeout(5000);
-  }
-
-  private _clearCollectedArtifacts() {
-    this._console.length = 0;
-    this._requests.clear();
-  }
-
-  private _onClose() {
-    this._clearCollectedArtifacts();
-    this._onPageClose(this);
-  }
-
-  async navigate(url: string) {
-    await this.page.goto(url, { waitUntil: 'domcontentloaded' });
-    // Cap load event to 5 seconds, the page is operational at this point.
-    await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
-  }
-
-  hasSnapshot(): boolean {
-    return !!this._snapshot;
-  }
-
-  snapshotOrDie(): PageSnapshot {
-    if (!this._snapshot)
-      throw new Error('No snapshot available');
-    return this._snapshot;
-  }
-
-  console(): playwright.ConsoleMessage[] {
-    return this._console;
-  }
-
-  requests(): Map<playwright.Request, playwright.Response | null> {
-    return this._requests;
-  }
-
-  async captureSnapshot() {
-    this._snapshot = await PageSnapshot.create(this.page);
-  }
+async function createUserDataDir(browserName: 'chromium' | 'firefox' | 'webkit') {
+  let cacheDirectory: string;
+  if (process.platform === 'linux')
+    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+  else if (process.platform === 'darwin')
+    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
+  else if (process.platform === 'win32')
+    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+  else
+    throw new Error('Unsupported platform: ' + process.platform);
+  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserName}-profile`);
+  await fs.promises.mkdir(result, { recursive: true });
+  return result;
 }
 
-class PageSnapshot {
-  private _frameLocators: PageOrFrameLocator[] = [];
-  private _text!: string;
+async function launchPersistentContext(userDataDir: string | undefined, browserOptions: BrowserOptions): Promise<playwright.BrowserContext> {
+  userDataDir = userDataDir ?? await createUserDataDir(browserOptions.browserName);
 
-  constructor() {
-  }
-
-  static async create(page: playwright.Page): Promise<PageSnapshot> {
-    const snapshot = new PageSnapshot();
-    await snapshot._build(page);
-    return snapshot;
-  }
-
-  text(): string {
-    return this._text;
-  }
-
-  private async _build(page: playwright.Page) {
-    const yamlDocument = await this._snapshotFrame(page);
-    this._text = [
-      `- Page Snapshot`,
-      '```yaml',
-      yamlDocument.toString({ indentSeq: false }).trim(),
-      '```',
-    ].join('\n');
-  }
-
-  private async _snapshotFrame(frame: playwright.Page | playwright.FrameLocator) {
-    const frameIndex = this._frameLocators.push(frame) - 1;
-    const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true, emitGeneric: true });
-    const snapshot = yaml.parseDocument(snapshotString);
-
-    const visit = async (node: any): Promise<unknown> => {
-      if (yaml.isPair(node)) {
-        await Promise.all([
-          visit(node.key).then(k => node.key = k),
-          visit(node.value).then(v => node.value = v)
-        ]);
-      } else if (yaml.isSeq(node) || yaml.isMap(node)) {
-        node.items = await Promise.all(node.items.map(visit));
-      } else if (yaml.isScalar(node)) {
-        if (typeof node.value === 'string') {
-          const value = node.value;
-          if (frameIndex > 0)
-            node.value = value.replace('[ref=', `[ref=f${frameIndex}`);
-          if (value.startsWith('iframe ')) {
-            const ref = value.match(/\[ref=(.*)\]/)?.[1];
-            if (ref) {
-              try {
-                const childSnapshot = await this._snapshotFrame(frame.frameLocator(`aria-ref=${ref}`));
-                return snapshot.createPair(node.value, childSnapshot);
-              } catch (error) {
-                return snapshot.createPair(node.value, '<could not take iframe snapshot>');
-              }
-            }
-          }
-        }
-      }
-
-      return node;
-    };
-    await visit(snapshot.contents);
-    return snapshot;
-  }
-
-  refLocator(ref: string): playwright.Locator {
-    let frame = this._frameLocators[0];
-    const match = ref.match(/^f(\d+)(.*)/);
-    if (match) {
-      const frameIndex = parseInt(match[1], 10);
-      frame = this._frameLocators[frameIndex];
-      ref = match[2];
-    }
-
-    if (!frame)
-      throw new Error(`Frame does not exist. Provide ref from the most current snapshot.`);
-
-    return frame.locator(`aria-ref=${ref}`);
+  try {
+    const browserType = browserOptions.browserName ? playwright[browserOptions.browserName] : playwright.chromium;
+    return await browserType.launchPersistentContext(userDataDir, browserOptions.launchOptions);
+  } catch (error: any) {
+    if (error.message.includes('Executable doesn\'t exist'))
+      throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
+    throw error;
   }
 }
 
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
   return (locator as any)._generateLocatorString();
-}
-
-async function findFreePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.listen(0, () => {
-      const { port } = server.address() as net.AddressInfo;
-      server.close(() => resolve(port));
-    });
-    server.on('error', reject);
-  });
 }

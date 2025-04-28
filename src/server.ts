@@ -15,29 +15,26 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListResourcesRequestSchema, ListToolsRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Context } from './context';
 
 import type { Tool } from './tools/tool';
-import type { Resource } from './resources/resource';
-import type { ContextOptions } from './context';
+import type { Config } from '../config';
 
-type Options = ContextOptions & {
+type MCPServerOptions = {
   name: string;
   version: string;
   tools: Tool[];
-  resources: Resource[],
 };
 
-export function createServerWithTools(options: Options): Server {
-  const { name, version, tools, resources } = options;
-  const context = new Context(tools, options);
+export function createServerWithTools(serverOptions: MCPServerOptions, config: Config): Server {
+  const { name, version, tools } = serverOptions;
+  const context = new Context(tools, config);
   const server = new Server({ name, version }, {
     capabilities: {
       tools: {},
-      resources: {},
     }
   });
 
@@ -49,10 +46,6 @@ export function createServerWithTools(options: Options): Server {
         inputSchema: zodToJsonSchema(tool.schema.inputSchema)
       })),
     };
-  });
-
-  server.setRequestHandler(ListResourcesRequestSchema, async () => {
-    return { resources: resources.map(resource => resource.schema) };
   });
 
   server.setRequestHandler(CallToolRequestSchema, async request => {
@@ -85,15 +78,6 @@ export function createServerWithTools(options: Options): Server {
         isError: true,
       };
     }
-  });
-
-  server.setRequestHandler(ReadResourceRequestSchema, async request => {
-    const resource = resources.find(resource => resource.schema.uri === request.params.uri);
-    if (!resource)
-      return { contents: [] };
-
-    const contents = await resource.read(context, request.params.uri);
-    return { contents };
   });
 
   const oldClose = server.close.bind(server);

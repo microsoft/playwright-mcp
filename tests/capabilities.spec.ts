@@ -74,11 +74,6 @@ test('test vision tool list', async ({ visionClient }) => {
   ]));
 });
 
-test('test resources list', async ({ client }) => {
-  const { resources } = await client.listResources();
-  expect(resources).toEqual([]);
-});
-
 test('test capabilities', async ({ startClient }) => {
   const client = await startClient({
     args: ['--caps="core"'],

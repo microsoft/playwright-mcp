@@ -19,6 +19,7 @@ import path from 'path';
 
 import { z } from 'zod';
 import { defineTool } from './tool';
+import { toBrowserOptions } from '../config';
 
 const install = defineTool({
   capability: 'install',
@@ -29,7 +30,8 @@ const install = defineTool({
   },
 
   handle: async context => {
-    const channel = context.options.launchOptions?.channel ?? context.options.browserName ?? 'chrome';
+    const browserOptions = await toBrowserOptions(context.config);
+    const channel = browserOptions.launchOptions?.channel ?? browserOptions.browserName ?? 'chrome';
     const cli = path.join(require.resolve('playwright/package.json'), '..', 'cli.js');
     const child = fork(cli, ['install', channel], {
       stdio: 'pipe',

@@ -45,6 +45,11 @@ export type Config = {
      * Chrome DevTools Protocol endpoint to connect to an existing browser instance in case of Chromium family browsers.
      */
     cdpEndpoint?: string;
+
+    /**
+     * Remote endpoint to connect to an existing Playwright server.
+     */
+    remoteEndpoint?: string;
   },
 
   server?: {

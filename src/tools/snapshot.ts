@@ -20,11 +20,10 @@ import os from 'os';
 import { z } from 'zod';
 
 import { sanitizeForFilePath } from './utils';
-import { generateLocator } from '../context';
+import { defineTool } from './tool';
 import * as javascript from '../javascript';
 
 import type * as playwright from 'playwright';
-import { defineTool } from './tool';
 
 const snapshot = defineTool({
   capability: 'core',
@@ -268,6 +267,9 @@ const screenshot = defineTool({
   }
 });
 
+export async function generateLocator(locator: playwright.Locator): Promise<string> {
+  return (locator as any)._generateLocatorString();
+}
 
 export default [
   snapshot,
