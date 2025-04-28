@@ -33,6 +33,7 @@ program
     .version('Version ' + packageJSON.version)
     .name(packageJSON.name)
     .option('--browser <browser>', 'Browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.')
+    .option('--browser-option <browserOption>', 'Comma-separated list of browser options to use.')
     .option('--caps <caps>', 'Comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.')
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .option('--executable-path <path>', 'Path to the browser executable.')
@@ -44,6 +45,7 @@ program
     .action(async options => {
       const serverList = new ServerList(() => createServer({
         browser: options.browser,
+        browserOption: options.browserOption?.split(',').map((c: string) => c.trim()),
         userDataDir: options.userDataDir,
         headless: options.headless,
         executablePath: options.executablePath,

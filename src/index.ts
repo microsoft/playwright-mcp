@@ -66,6 +66,7 @@ const screenshotTools: Tool<any>[] = [
 
 type Options = {
   browser?: string;
+  browserOption?: string[];
   userDataDir?: string;
   headless?: boolean;
   executablePath?: string;
@@ -107,6 +108,7 @@ export async function createServer(options?: Options): Promise<Server> {
   const userDataDir = options?.userDataDir ?? await createUserDataDir(browserName);
 
   const launchOptions: LaunchOptions = {
+    args: options?.browserOption,
     headless: !!(options?.headless ?? (os.platform() === 'linux' && !process.env.DISPLAY)),
     channel,
     executablePath: options?.executablePath,
