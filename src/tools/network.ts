@@ -31,7 +31,7 @@ const requests = defineTool({
   handle: async context => {
     const requests = context.currentTabOrDie().requests();
     const allRequests = [...requests.entries()];
-    const log = await Promise.all(allRequests.map(async ([request, response]) => renderRequest(request, response)));
+    const log = await Promise.all(allRequests.map(async ([request, response]) => await renderRequest(request, response)));
     return {
       code: ['// <internal code to list all network requests>'],
       action: async () => {
