@@ -1,0 +1,2 @@
+- Go to youtube.com and validate that you can play a puppy video
+- Go to youtube.com and validate that you can play a soccer video
