@@ -21,7 +21,7 @@
     "watch": "tsc --watch",
     "test": "playwright test",
     "clean": "pnpm --filter=\"./packages/*\" exec rm -rf lib tsconfig.tsbuildinfo && rm -rf node_modules",
-    "npm-publish": "npm run clean && npm run build && npm run test && npm publish"
+    "npm-publish": "pnpm run clean && pnpm run build && pnpm run test && pnpm --filter=\"litest\" --filter=\"@litest/mcp\" publish"
   },
   "exports": {
     "./package.json": "./package.json",
