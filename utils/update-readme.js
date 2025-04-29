@@ -112,7 +112,7 @@ function formatToolForReadme(tool) {
  * @returns {ParsedToolSchema}
  */
 function processToolSchema(schema) {
-  const inputSchema =  /** @type {import('zod-to-json-schema').JsonSchema7ObjectType} */ zodToJsonSchema(schema.inputSchema || {});
+  const inputSchema = /** @type {import('zod-to-json-schema').JsonSchema7ObjectType} */ (zodToJsonSchema(schema.inputSchema || {}));
   if (inputSchema.type !== 'object')
     throw new Error(`Tool ${schema.name} input schema is not an object`);
 
