@@ -1,17 +1,17 @@
 {
-  "name": "best-monorepo",
+  "name": "litest-monorepo",
   "version": "0.0.1",
-  "description": "Best Testing Framework Monorepo",
+  "description": "Litest Testing Framework Monorepo",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/best-testing/best.git"
+    "url": "git+https://github.com/m2rads/litest"
   },
-  "homepage": "https://best.com",
+  "homepage": "https://litest.com",
   "engines": {
     "node": ">=18"
   },
   "author": {
-    "name": "Microsoft Corporation"
+    "name": "litest"
   },
   "license": "Apache-2.0",
   "scripts": {
@@ -48,5 +48,6 @@
     "@modelcontextprotocol/sdk": "^1.6.1",
     "playwright": "1.52.0-alpha-1743011787000"
   },
+  "private": true,
   "packageManager": "pnpm@10.9.0"
 }
