@@ -166,7 +166,7 @@ function updateTestStatus(test: TestCase, status: TestCase['status']) {
 }
 
 function processTestResult(responseText: string, test: TestCase): TestCase['status'] {
-    const jsonMatch = responseText.match(/```json\s*(.+?)\s*```/s);
+    const jsonMatch = responseText.match(/```json\s*(.+?)\s*```/s) || responseText.match(/\s*(.+?)\s*/s);
     if (jsonMatch && jsonMatch[1]) {
         try {
             const resultJson = JSON.parse(jsonMatch[1]);
