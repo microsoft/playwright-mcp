@@ -29,7 +29,7 @@ const install = defineTool({
   },
 
   handle: async context => {
-    const channel = context.config.browser?.launchOptions?.channel ?? context.config.browser?.launchOptions.channel ?? context.config.browser?.launchOptions.browserName ?? 'chrome';
+    const channel = context.config.browser?.launchOptions?.channel ?? context.config.browser?.launchOptions.browserName ?? 'chrome';
     const cli = path.join(require.resolve('playwright/package.json'), '..', 'cli.js');
     const child = fork(cli, ['install', channel], {
       stdio: 'pipe',

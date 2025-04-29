@@ -97,6 +97,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
       `--no-first-run`,
       `--no-sandbox`,
       `--headless`,
+      '--use-mock-keychain',
       `data:text/html,hello world`,
     ], {
       stdio: 'pipe',

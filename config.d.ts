@@ -30,6 +30,7 @@ export type Config = {
 
     /**
      * Path to a user data directory for browser profile persistence.
+     * Temporary directory is created by default.
      */
     userDataDir?: string;
 

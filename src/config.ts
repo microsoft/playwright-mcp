@@ -87,6 +87,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   const launchOptions: LaunchOptions = {
     channel,
     executablePath: cliOptions.executablePath,
+    headless: cliOptions.headless,
   };
 
   if (browserName === 'chromium')
@@ -126,7 +127,7 @@ async function loadConfig(configFile: string | undefined): Promise<Config> {
   try {
     return JSON.parse(await fs.promises.readFile(configFile, 'utf8'));
   } catch (error) {
-    throw new Error(`Failed to load config file: ${configFile}`);
+    throw new Error(`Failed to load config file: ${configFile}, ${error}`);
   }
 }
 
