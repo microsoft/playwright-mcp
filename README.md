@@ -1,4 +1,24 @@
-## End to End testing MCP Server
+# Litest
+
+Litest end to end testing framework with AI capabilities. Define your test cases in natural language and let AI handle the execution. 
+
+## Installation
+
+```bash
+npm install litest
+```
+
+## Usage
+
+### Run Tests
+Use --headless for running tests headlessly in CI workflows
+
+```bash
+npx litest example
+```
+
+
+## litest MCP Server
 
 https://github.com/user-attachments/assets/b801f239-dc66-4b3b-bcf2-42e2a9a68721
 
