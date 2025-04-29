@@ -83,9 +83,9 @@ The Playwright MCP server supports the following command-line options:
 Playwright MCP will launch the browser with the new profile, located at
 
 ```
-- `%USERPROFILE%\AppData\Local\ms-playwright\mcp-chrome-profile` on Windows
-- `~/Library/Caches/ms-playwright/mcp-chrome-profile` on macOS
-- `~/.cache/ms-playwright/mcp-chrome-profile` on Linux
+- `%USERPROFILE%\AppData\Local\ms-playwright\mcp-chromium-profile` on Windows
+- `~/Library/Caches/ms-playwright/mcp-chromium-profile` on macOS
+- `~/.cache/ms-playwright/mcp-chromium-profile` on Linux
 ```
 
 All the logged in information will be stored in that profile, you can delete it between sessions if you'd like to clear the offline state.
