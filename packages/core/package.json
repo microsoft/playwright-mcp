@@ -20,7 +20,5 @@
       "zod": "^3.24.3",
       "@modelcontextprotocol/sdk": "^1.6.1"
     },
-    "publishConfig": {
-      "access": "public"
-    }
+    "private": true
 }
