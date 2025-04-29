@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { endtoend } from 'best';
+import { litest } from 'litest';
 
 test('test endtoend tool handle invocation', async ({ coreContext }) => {
   test.setTimeout(15000);
@@ -8,9 +8,9 @@ test('test endtoend tool handle invocation', async ({ coreContext }) => {
     urls: ['data:text/html,Test']
   };
   try {
-    const result = await endtoend.handle(coreContext, params);
+    const result = await litest.handle(coreContext, params);
     expect(result.content[0].type).toBe('text');
   } catch (error: any) {
-    console.warn(`endtoend.handle failed as expected: ${error.message}`);
+    console.warn(`litest.handle failed as expected: ${error.message}`);
   }
 }); 
