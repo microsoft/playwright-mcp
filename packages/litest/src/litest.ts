@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText, tool } from 'ai';
 
-import * as common from '@best/core';
-import * as snapshot from '@best/core';
-import * as screenshot from '@best/core';
-import type { Tool } from '@best/core';
+import * as common from '@litest/core';
+import * as snapshot from '@litest/core';
+import * as screenshot from '@litest/core';
+import type { Tool } from '@litest/core';
 
 import dotenv from 'dotenv';
 
@@ -44,12 +44,12 @@ const testCase = z.object({
   // expect: z.string().optional().describe('The expected result of running the test case')
 });
 
-const endtoendSchema = z.object({
+const litestSchema = z.object({
   testCases: z.array(testCase).describe('The list of test case definitions to execute on the web'),
   urls: z.array(z.string()).min(1).describe('One or more URLs to execute end-to-end tests against')
 });
 
-export const endtoend: Tool = {
+export const litest: Tool = {
   schema: {
     name: 'browser_endtoend',
     description: 'Run an end to end test suit in the browser',

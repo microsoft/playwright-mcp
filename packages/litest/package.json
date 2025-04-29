@@ -1,7 +1,7 @@
 {
-  "name": "best",
+  "name": "litest",
   "version": "0.0.1",
-  "description": "Best testing framework and cli",
+  "description": "Litest testing framework and cli",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "license": "Apache-2.0",
@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.20",
-    "@best/core": "workspace:*",
+    "@litest/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.6.1",
     "ai": "^4.3.10",
     "axios": "^1.9.0",
@@ -27,6 +27,6 @@
     "access": "public"
   },
   "bin": {
-    "best": "cli.js"
+    "litest": "cli.js"
   }
 }

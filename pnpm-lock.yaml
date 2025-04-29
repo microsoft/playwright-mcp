@@ -8,15 +8,15 @@ importers:
 
   .:
     devDependencies:
-      '@best/core':
-        specifier: workspace:*
-        version: link:packages/core
       '@eslint/eslintrc':
         specifier: ^3.2.0
         version: 3.3.1
       '@eslint/js':
         specifier: ^9.19.0
         version: 9.25.1
+      '@litest/core':
+        specifier: workspace:*
+        version: link:packages/core
       '@modelcontextprotocol/sdk':
         specifier: ^1.6.1
         version: 1.10.2
@@ -38,9 +38,6 @@ importers:
       '@typescript-eslint/utils':
         specifier: ^8.26.1
         version: 8.31.0(eslint@9.25.1)(typescript@5.8.3)
-      best:
-        specifier: workspace:*
-        version: link:packages/endtoend
       eslint:
         specifier: ^9.19.0
         version: 9.25.1
@@ -50,6 +47,9 @@ importers:
       eslint-plugin-notice:
         specifier: ^1.0.0
         version: 1.0.0(eslint@9.25.1)
+      litest:
+        specifier: workspace:*
+        version: link:packages/litest
       playwright:
         specifier: 1.52.0-alpha-1743011787000
         version: 1.52.0-alpha-1743011787000
@@ -72,12 +72,12 @@ importers:
         specifier: ^3.24.4
         version: 3.24.5(zod@3.24.3)
 
-  packages/endtoend:
+  packages/litest:
     dependencies:
       '@ai-sdk/openai':
         specifier: ^1.3.20
         version: 1.3.20(zod@3.24.3)
-      '@best/core':
+      '@litest/core':
         specifier: workspace:*
         version: link:../core
       '@modelcontextprotocol/sdk':
@@ -110,21 +110,21 @@ importers:
 
   packages/mcp:
     dependencies:
-      '@best/core':
+      '@litest/core':
         specifier: workspace:*
         version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.6.1
         version: 1.10.2
-      best:
-        specifier: workspace:*
-        version: link:../endtoend
       commander:
         specifier: ^13.1.0
         version: 13.1.0
       dotenv:
         specifier: ^16.4.7
         version: 16.5.0
+      litest:
+        specifier: workspace:*
+        version: link:../litest
       playwright:
         specifier: 1.52.0-alpha-1743011787000
         version: 1.52.0-alpha-1743011787000

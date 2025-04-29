@@ -1,7 +1,7 @@
 {
-    "name": "@best/mcp",
+    "name": "@litest/mcp",
     "version": "0.0.1",
-    "description": "Best testing framework MCP Server",
+    "description": "Litest testing framework MCP Server",
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
     "license": "Apache-2.0",
@@ -11,8 +11,8 @@
     },
     "dependencies": {
       "@modelcontextprotocol/sdk": "^1.6.1",
-      "@best/core": "workspace:*",
-      "best": "workspace:*",
+      "@litest/core": "workspace:*",
+      "litest": "workspace:*",
       "dotenv": "^16.4.7",
       "commander": "^13.1.0",
       "zod-to-json-schema": "^3.24.4",
@@ -21,6 +21,6 @@
     },
     "devDependencies": {},
     "bin": {
-        "mcp-server-best": "cli.js"
+        "mcp-litest": "cli.js"
     }
 }

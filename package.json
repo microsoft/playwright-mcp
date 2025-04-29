@@ -15,7 +15,7 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc -b packages/core packages/mcp packages/endtoend",
+    "build": "tsc -b packages/core packages/mcp packages/litest",
     "dev": "pnpm --parallel --filter=\"./packages/*\" run dev",
     "lint": "eslint .",
     "watch": "tsc --watch",
@@ -31,8 +31,8 @@
     }
   },
   "devDependencies": {
-    "@best/core": "workspace:*",
-    "best": "workspace:*",
+    "@litest/core": "workspace:*",
+    "litest": "workspace:*",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.19.0",
     "@playwright/test": "1.52.0-alpha-1743011787000",

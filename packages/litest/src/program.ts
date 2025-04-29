@@ -7,8 +7,8 @@ import dotenv from 'dotenv';
 
 import { program } from 'commander';
 import { LaunchOptions } from 'playwright';
-import { endtoend } from './endtoend';
-import { Context } from '@best/core';
+import { litest } from './litest';
+import { Context } from '@litest/core';
 
 dotenv.config();
 
@@ -113,7 +113,7 @@ async function runTests(testFiles: string[], options: Options) {
     for (const test of allTestCases) {
         updateTestStatus(test, 'running');
         try {
-            const result = await endtoend.handle(context, { testDefinition: test.definition });
+            const result = await litest.handle(context, { testDefinition: test.definition });
             const responseText = result.content[0].text as string;            
             const status = processTestResult(responseText, test);
             updateTestStatus(test, status);
