@@ -96,7 +96,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   return {
     browser: {
       browserName,
-      userDataDir: cliOptions.userDataDir ?? await createUserDataDir(browserName),
+      userDataDir: cliOptions.userDataDir ?? await createUserDataDir({ browserName, channel }),
       launchOptions,
       cdpEndpoint: cliOptions.cdpEndpoint,
     },
@@ -131,7 +131,7 @@ async function loadConfig(configFile: string | undefined): Promise<Config> {
   }
 }
 
-async function createUserDataDir(browserName: 'chromium' | 'firefox' | 'webkit') {
+async function createUserDataDir(options: { browserName: 'chromium' | 'firefox' | 'webkit', channel: string | undefined }) {
   let cacheDirectory: string;
   if (process.platform === 'linux')
     cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
@@ -141,7 +141,7 @@ async function createUserDataDir(browserName: 'chromium' | 'firefox' | 'webkit')
     cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
   else
     throw new Error('Unsupported platform: ' + process.platform);
-  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserName}-profile`);
+  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${options.channel ?? options.browserName}-profile`);
   await fs.promises.mkdir(result, { recursive: true });
   return result;
 }
