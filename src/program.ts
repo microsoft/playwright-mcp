@@ -33,6 +33,7 @@ program
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .option('--executable-path <path>', 'Path to the browser executable.')
     .option('--headless', 'Run browser in headless mode, headed by default')
+    .option('--device <device>', 'Device to emulate, for example: "iPhone 15"')
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')

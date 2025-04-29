@@ -306,7 +306,7 @@ ${code.join('\n')}
 async function launchPersistentContext(browserConfig: Config['browser']): Promise<playwright.BrowserContext> {
   try {
     const browserType = browserConfig?.browserName ? playwright[browserConfig.browserName] : playwright.chromium;
-    return await browserType.launchPersistentContext(browserConfig?.userDataDir || '', browserConfig?.launchOptions);
+    return await browserType.launchPersistentContext(browserConfig?.userDataDir || '', { ...browserConfig?.launchOptions, ...browserConfig?.contextOptions });
   } catch (error: any) {
     if (error.message.includes('Executable doesn\'t exist'))
       throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);

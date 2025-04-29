@@ -18,11 +18,12 @@ import fs from 'fs';
 import net from 'net';
 import os from 'os';
 import path from 'path';
+import { devices } from 'playwright';
 
 import { sanitizeForFilePath } from './tools/utils';
 
 import type { Config, ToolCapability } from '../config';
-import type { LaunchOptions } from 'playwright';
+import type { BrowserContextOptions, LaunchOptions } from 'playwright';
 
 export type CLIOptions = {
   browser?: string;
@@ -30,6 +31,7 @@ export type CLIOptions = {
   cdpEndpoint?: string;
   executablePath?: string;
   headless?: boolean;
+  device?: string;
   userDataDir?: string;
   port?: number;
   host?: string;
@@ -93,11 +95,14 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   if (browserName === 'chromium')
     (launchOptions as any).webSocketPort = await findFreePort();
 
+  const contextOptions: BrowserContextOptions | undefined = cliOptions.device ? devices[cliOptions.device] : undefined;
+
   return {
     browser: {
       browserName,
       userDataDir: cliOptions.userDataDir ?? await createUserDataDir({ browserName, channel }),
       launchOptions,
+      contextOptions,
       cdpEndpoint: cliOptions.cdpEndpoint,
     },
     server: {

@@ -16,7 +16,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - General-purpose browser interaction for agents
 
 <!--
-// Generate using?:
+// Generate using:
 node utils/generate_links.js
 -->
 
@@ -72,6 +72,7 @@ The Playwright MCP server supports the following command-line options:
 - `--cdp-endpoint <endpoint>`: CDP endpoint to connect to
 - `--executable-path <path>`: Path to the browser executable
 - `--headless`: Run browser in headless mode (headed by default)
+- `--device`: Emulate mobile device
 - `--user-data-dir <path>`: Path to the user data directory
 - `--port <port>`: Port to listen on for SSE transport
 - `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
@@ -100,27 +101,29 @@ The Playwright MCP server can be configured using a JSON configuration file. Her
   browser?: {
     // Browser type to use (chromium, firefox, or webkit)
     browserName?: 'chromium' | 'firefox' | 'webkit';
-    
+
     // Path to user data directory for browser profile persistence
     userDataDir?: string;
-    
+
     // Browser launch options (see Playwright docs)
+    // @see https://playwright.dev/docs/api/class-browsertype#browser-type-launch
     launchOptions?: {
       channel?: string;        // Browser channel (e.g. 'chrome')
       headless?: boolean;      // Run in headless mode
       executablePath?: string; // Path to browser executable
       // ... other Playwright launch options
     };
-    
+
     // Browser context options
+    // @see https://playwright.dev/docs/api/class-browser#browser-new-context
     contextOptions?: {
       viewport?: { width: number, height: number };
       // ... other Playwright context options
     };
-    
+
     // CDP endpoint for connecting to existing browser
     cdpEndpoint?: string;
-    
+
     // Remote Playwright server endpoint
     remoteEndpoint?: string;
   },
@@ -165,8 +168,6 @@ npx @playwright/mcp@latest --config path/to/config.json
 ```
 
 ### Running on Linux
-
-When running headless without DISPLAY, pass `--headless` command line argument.
 
 When running headed browser on system w/o display or from worker processes of the IDEs,
 run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
