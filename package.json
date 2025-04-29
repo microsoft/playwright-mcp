@@ -15,12 +15,12 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc -b packages/core packages/mcp packages/litest",
+    "build": "tsc -b packages/core packages/litest packages/mcp",
     "dev": "pnpm --parallel --filter=\"./packages/*\" run dev",
     "lint": "eslint .",
     "watch": "tsc --watch",
     "test": "playwright test",
-    "clean": "pnpm --filter=\"./packages/*\" exec rm -rf lib tsconfig.tsbuildinfo && rm -rf node_modules",
+    "clean": "pnpm --filter=\"./packages/*\" exec rm -rf lib tsconfig.tsbuildinfo",
     "pnpm-publish": "pnpm run clean && pnpm run build && pnpm run test && pnpm --filter=\"litest\" --filter=\"@litest/mcp\" publish"
   },
   "exports": {
