@@ -15,6 +15,7 @@
     "@best/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.6.1",
     "ai": "^4.3.10",
+    "axios": "^1.9.0",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
     "dotenv": "^16.4.7",
