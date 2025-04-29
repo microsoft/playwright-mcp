@@ -44,10 +44,10 @@ const testCase = z.object({
   // expect: z.string().optional().describe('The expected result of running the test case')
 });
 
-const litestSchema = z.object({
-  testCases: z.array(testCase).describe('The list of test case definitions to execute on the web'),
-  urls: z.array(z.string()).min(1).describe('One or more URLs to execute end-to-end tests against')
-});
+// const litestSchema = z.object({
+//   testCases: z.array(testCase).describe('The list of test case definitions to execute on the web'),
+//   urls: z.array(z.string()).min(1).describe('One or more URLs to execute end-to-end tests against')
+// });
 
 export const litest: Tool = {
   schema: {

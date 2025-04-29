@@ -13,4 +13,4 @@ test('test endtoend tool handle invocation', async ({ coreContext }) => {
   } catch (error: any) {
     console.warn(`litest.handle failed as expected: ${error.message}`);
   }
-}); 
+});

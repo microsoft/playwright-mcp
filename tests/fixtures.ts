@@ -77,8 +77,8 @@ export const test = baseTest.extend<Fixtures>({
     const options: ContextOptions = {
       userDataDir: testInfo.outputPath(`user-data-dir-core-${testInfo.workerIndex}`),
       launchOptions: {
-         headless: true,
-         channel: 'chrome',
+        headless: true,
+        channel: 'chrome',
       },
     };
     const context = new Context(options);

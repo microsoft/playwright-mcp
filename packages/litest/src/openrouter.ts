@@ -104,156 +104,156 @@ function zodSchemaToFunctionParams(schema: z.ZodType<any>) {
 const tools: LLMTool[] = [
   // Snapshot tools
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "snapshot",
-      description: "Capture accessibility snapshot of the current page, this is better than screenshot",
-      parameters: { type: "object", properties: {} },
+      name: 'snapshot',
+      description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
+      parameters: { type: 'object', properties: {} },
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "clickSnapshot",
-      description: "Perform click on a web page",
+      name: 'clickSnapshot',
+      description: 'Perform click on a web page',
       parameters: zodSchemaToFunctionParams(snapshot.elementSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "dragSnapshot",
-      description: "Perform drag and drop between two elements",
+      name: 'dragSnapshot',
+      description: 'Perform drag and drop between two elements',
       parameters: zodSchemaToFunctionParams(snapshot.dragSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "hoverSnapshot",
-      description: "Hover over element on page",
+      name: 'hoverSnapshot',
+      description: 'Hover over element on page',
       parameters: zodSchemaToFunctionParams(snapshot.elementSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "typeSnapshot",
-      description: "Type text into editable element",
+      name: 'typeSnapshot',
+      description: 'Type text into editable element',
       parameters: zodSchemaToFunctionParams(snapshot.typeSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "selectOptionSnapshot",
-      description: "Select an option in a dropdown",
+      name: 'selectOptionSnapshot',
+      description: 'Select an option in a dropdown',
       parameters: zodSchemaToFunctionParams(snapshot.selectOptionSchema),
     }
   },
   // Screenshot tools
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "screenshot",
-      description: "Take a screenshot of the current page",
-      parameters: { type: "object", properties: {} },
+      name: 'screenshot',
+      description: 'Take a screenshot of the current page',
+      parameters: { type: 'object', properties: {} },
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "moveMouseVision",
-      description: "Move mouse to a given position",
+      name: 'moveMouseVision',
+      description: 'Move mouse to a given position',
       parameters: zodSchemaToFunctionParams(screenshot.moveMouseSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "clickVision",
-      description: "Click on a web page",
+      name: 'clickVision',
+      description: 'Click on a web page',
       parameters: zodSchemaToFunctionParams(screenshot.clickVisionkSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "dragVision",
-      description: "Drag and drop between two elements",
+      name: 'dragVision',
+      description: 'Drag and drop between two elements',
       parameters: zodSchemaToFunctionParams(screenshot.dragVisionkSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "typeVision",
-      description: "Type text into editable element",
+      name: 'typeVision',
+      description: 'Type text into editable element',
       parameters: zodSchemaToFunctionParams(screenshot.typeVisionkSchema),
     }
   },
   // Common tools
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "navigate",
-      description: "Navigate to a URL",
+      name: 'navigate',
+      description: 'Navigate to a URL',
       parameters: zodSchemaToFunctionParams(common.navigateSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "goBack",
-      description: "Go back to the previous page",
-      parameters: { type: "object", properties: {} },
+      name: 'goBack',
+      description: 'Go back to the previous page',
+      parameters: { type: 'object', properties: {} },
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "goForward",
-      description: "Go back to the previous page",
-      parameters: { type: "object", properties: {} },
+      name: 'goForward',
+      description: 'Go back to the previous page',
+      parameters: { type: 'object', properties: {} },
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "wait",
-      description: "Wait for a specified time in seconds",
+      name: 'wait',
+      description: 'Wait for a specified time in seconds',
       parameters: zodSchemaToFunctionParams(common.waitSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "pressKey",
-      description: "Press a key on the keyboard",
+      name: 'pressKey',
+      description: 'Press a key on the keyboard',
       parameters: zodSchemaToFunctionParams(common.pressKeySchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "pdf",
-      description: "Save page as PDF",
+      name: 'pdf',
+      description: 'Save page as PDF',
       parameters: zodSchemaToFunctionParams(common.pdfSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "close",
-      description: "Close the page",
+      name: 'close',
+      description: 'Close the page',
       parameters: zodSchemaToFunctionParams(common.closeSchema),
     }
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "chooseFile",
-      description: "Choose one or multiple files to upload",
+      name: 'chooseFile',
+      description: 'Choose one or multiple files to upload',
       parameters: zodSchemaToFunctionParams(common.chooseFileSchema),
     }
   }
@@ -275,7 +275,7 @@ async function handleToolExecution(context: any, toolName: string, toolParams: a
       return await snapshot.type.handle(context, snapshot.typeSchema.parse(toolParams), true);
     case 'selectOptionSnapshot':
       return await snapshot.selectOption.handle(context, snapshot.selectOptionSchema.parse(toolParams), true);
-    
+
     // Screenshot tools
     case 'screenshot':
       return await screenshot.screenshot.handle(context);
@@ -287,7 +287,7 @@ async function handleToolExecution(context: any, toolName: string, toolParams: a
       return await screenshot.dragVision.handle(context, screenshot.dragVisionkSchema.parse(toolParams));
     case 'typeVision':
       return await screenshot.typeVision.handle(context, screenshot.typeVisionkSchema.parse(toolParams));
-    
+
     // Common tools
     case 'navigate':
       return await common.navigate(true).handle(context, common.navigateSchema.parse(toolParams));
@@ -321,32 +321,32 @@ export const endtoend: CoreTool = {
   handle: async (context: any, params: any) => {
     const validatedParams = testCase.parse(params);
     const content = `${systemMessage} - List of Urls in target for end to end testing : ${JSON.stringify(validatedParams)}`;
-    
+
     // Get API key from context or environment
     const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      throw new Error("API key is required");
-    }
-    
-    let currentMessages: Message[] = [
-      { role: "system", content }
+    if (!apiKey)
+      throw new Error('API key is required');
+
+
+    const currentMessages: Message[] = [
+      { role: 'system', content }
     ];
-    
+
     // Maximum number of tool call steps
     const maxSteps = 5;
     let currentStep = 0;
-    
+
     while (currentStep < maxSteps) {
       currentStep++;
-      
+
       try {
         // Call OpenRouter API directly using axios
-        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', 
+        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions',
           {
-            model: "openai/gpt-4o", // Can be changed to any supported model
+            model: 'openai/gpt-4o', // Can be changed to any supported model
             messages: currentMessages,
             tools: tools,
-            tool_choice: "auto"
+            tool_choice: 'auto'
           } as OpenRouterRequest,
           {
             headers: {
@@ -357,29 +357,29 @@ export const endtoend: CoreTool = {
             }
           }
         );
-        
+
         const data = response.data as OpenRouterResponse;
         const message = data.choices[0].message;
-        
+
         // Add the assistant's message to our conversation
         currentMessages.push({
-          role: "assistant",
+          role: 'assistant',
           content: message.content,
           tool_calls: message.tool_calls
         });
-        
+
         // If there are tool calls in the response
         if (message.tool_calls && message.tool_calls.length > 0) {
           for (const toolCall of message.tool_calls) {
             const functionName = toolCall.function.name;
             const functionParams = JSON.parse(toolCall.function.arguments);
-            
+
             // Execute the tool
             const toolResult = await handleToolExecution(context, functionName, functionParams);
-            
+
             // Add the tool response to messages
             currentMessages.push({
-              role: "tool",
+              role: 'tool',
               tool_call_id: toolCall.id,
               content: JSON.stringify(toolResult)
             });
@@ -387,20 +387,20 @@ export const endtoend: CoreTool = {
         } else {
           // No more tool calls, we can return the final response
           return {
-            content: [{ type: 'text', text: message.content || "" }]
+            content: [{ type: 'text', text: message.content || '' }]
           };
         }
       } catch (error: any) {
         return {
-          content: [{ type: 'text', text: JSON.stringify({ status: "FAIL", errorMessage: `Error during execution: ${error.message}` }) }]
+          content: [{ type: 'text', text: JSON.stringify({ status: 'FAIL', errorMessage: `Error during execution: ${error.message}` }) }]
         };
       }
     }
-    
+
     // If we've reached the maximum number of steps, return the last assistant message
-    const lastAssistantMessage = currentMessages.filter(m => m.role === "assistant").pop();
+    const lastAssistantMessage = currentMessages.filter(m => m.role === 'assistant').pop();
     return {
-      content: [{ type: 'text', text: lastAssistantMessage?.content || JSON.stringify({ status: "FAIL", errorMessage: "Reached maximum number of steps without result" }) }]
+      content: [{ type: 'text', text: lastAssistantMessage?.content || JSON.stringify({ status: 'FAIL', errorMessage: 'Reached maximum number of steps without result' }) }]
     };
   }
 };

@@ -15,7 +15,7 @@ import {
   hover,
   type,
   screenshot as coreScreenshot,
-} from '@best/core';
+} from '@litest/core';
 import fs from 'fs/promises';
 
 test('test browser navigate', async ({ coreContext }) => {
@@ -31,8 +31,8 @@ test('test browser goBack', async ({ coreContext }) => {
   const goBackTool = goBack(true);
   const result = await goBackTool.handle(coreContext);
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: expect.stringContaining('Navigated back') &&
+    type: 'text',
+    text: expect.stringContaining('Navigated back') &&
             expect.stringContaining('- Page Title: Page 1')
   }));
 });
@@ -45,8 +45,8 @@ test('test browser goForward', async ({ coreContext }) => {
   const goForwardTool = goForward(true);
   const result = await goForwardTool.handle(coreContext);
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: expect.stringContaining('Navigated forward') &&
+    type: 'text',
+    text: expect.stringContaining('Navigated forward') &&
             expect.stringContaining('- Page Title: Page B')
   }));
 });
@@ -58,8 +58,8 @@ test('test browser wait', async ({ coreContext }) => {
   const params = { time: 0.1 };
   const result = await waitTool.handle(coreContext, params);
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: 'Waited for 0.1 seconds'
+    type: 'text',
+    text: 'Waited for 0.1 seconds'
   }));
   expect(coreContext.existingPage()).toBeDefined();
 });
@@ -72,8 +72,8 @@ test('test browser pressKey', async ({ coreContext }) => {
   const params = { key: 'A' };
   const result = await pressKeyTool.handle(coreContext, params);
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: 'Pressed key A'
+    type: 'text',
+    text: 'Pressed key A'
   }));
   await expect(coreContext.existingPage().locator('input')).toHaveValue('A');
 });
@@ -84,8 +84,8 @@ test('test browser save_as_pdf', async ({ coreContext }) => {
   const pdfTool = pdf;
   const result = await pdfTool.handle(coreContext);
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: expect.stringContaining('Saved as ') && expect.stringContaining('.pdf')
+    type: 'text',
+    text: expect.stringContaining('Saved as ') && expect.stringContaining('.pdf')
   }));
 });
 
@@ -96,8 +96,8 @@ test('test browser close', async ({ coreContext }) => {
   const closeTool = close;
   const result = await closeTool.handle(coreContext);
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: 'Page closed'
+    type: 'text',
+    text: 'Page closed'
   }));
 });
 
@@ -117,8 +117,8 @@ test('test browser choose file', async ({ coreContext }, testInfo) => {
   const result = await chooseFileTool.handle(coreContext, params);
 
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: expect.stringContaining('Chose files') &&
+    type: 'text',
+    text: expect.stringContaining('Chose files') &&
             expect.stringContaining('upload.txt') &&
             expect.stringMatching(/textbox \[ref=s\de\d+\]: C:\\fakepath\\upload.txt/)
   }));
@@ -131,8 +131,8 @@ test('test browser snapshot', async ({ coreContext }) => {
   const snapshotTool = snapshot;
   const result = await snapshotTool.handle(coreContext);
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: expect.stringContaining('- Page Title: Snapshot Page') &&
+    type: 'text',
+    text: expect.stringContaining('- Page Title: Snapshot Page') &&
             expect.stringContaining('Page Snapshot') &&
             expect.stringMatching(/heading "Snapshot Header"/)
   }));
@@ -150,8 +150,8 @@ test('test browser click (snapshot tool)', async ({ coreContext }) => {
   const result = await clickTool.handle(coreContext, params, true);
 
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: expect.stringContaining('"My Button" clicked') &&
+    type: 'text',
+    text: expect.stringContaining('"My Button" clicked') &&
             expect.stringContaining('- Page Title: Click Test')
   }));
 });
@@ -166,8 +166,8 @@ test('test browser hover', async ({ coreContext }) => {
   const result = await hoverTool.handle(coreContext, params, true);
 
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: expect.stringContaining('Hovered over "Hover Area"') &&
+    type: 'text',
+    text: expect.stringContaining('Hovered over "Hover Area"') &&
             expect.stringContaining('- Page Title: Hover Test')
   }));
 });
@@ -181,8 +181,8 @@ test('test browser type', async ({ coreContext }) => {
   const result = await typeTool.handle(coreContext, params, true);
 
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: expect.stringContaining('Typed "Typed Text" into "Textbox"') &&
+    type: 'text',
+    text: expect.stringContaining('Typed "Typed Text" into "Textbox"') &&
             expect.stringContaining('- Page Title: Type Test') &&
             expect.stringMatching(/textbox \[ref=s\de\d+\]: Typed Text/)
   }));
@@ -201,8 +201,8 @@ test('test browser selectOption', async ({ coreContext }) => {
   const result = await selectTool.handle(coreContext, params, true);
 
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'text',
-      text: expect.stringContaining('Selected option in "Combobox"') &&
+    type: 'text',
+    text: expect.stringContaining('Selected option in "Combobox"') &&
             expect.stringContaining('- Page Title: Select Test') &&
             expect.stringMatching(/option "Opt2" \[selected\]/)
   }));
@@ -216,9 +216,9 @@ test('test browser screenshot (jpeg)', async ({ coreContext }) => {
   const result = await screenshotTool.handle(coreContext);
 
   expect(result.content[0]).toEqual(expect.objectContaining({
-      type: 'image',
-      mimeType: 'image/jpeg',
-      data: expect.any(String)
+    type: 'image',
+    mimeType: 'image/jpeg',
+    data: expect.any(String)
   }));
   expect(result.content[0].data?.length).toBeGreaterThan(100);
 });
@@ -233,7 +233,6 @@ test('test browser drag', async ({ coreContext }) => {
   const sourceRef = extractRef(snapshotText, /region "S" \[ref=(.*?)\]/);
   const targetRef = extractRef(snapshotText, /region "T" \[ref=(.*?)\]/);
 
-  const dragTool = drag;
   const params = {
     startElement: 'S', startRef: sourceRef,
     endElement: 'T', endRef: targetRef
