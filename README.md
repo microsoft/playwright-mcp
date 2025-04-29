@@ -15,9 +15,14 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - Automated testing driven by LLMs
 - General-purpose browser interaction for agents
 
-### Example config
+<!--
+// Generate using?:
+node utils/generate_links.js
+-->
 
-#### NPX
+[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D) [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)
+
+### Example config
 
 ```js
 {
@@ -32,35 +37,29 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 }
 ```
 
-#### Installation in VS Code
+### Table of Contents
 
-Install the Playwright MCP server in VS Code using one of these buttons:
+- [Installation in VS Code](#installation-in-vs-code)
+- [Command line](#command-line)
+- [User profile](#user-profile)
+- [Configuration file](#configuration-file)
+- [Running on Linux](#running-on-linux)
+- [Docker](#docker)
+- [Programmatic usage](#programmatic-usage)
+- [Tool modes](#tool-modes)
 
-<!--
-// Generate using?:
-const config = JSON.stringify({ name: 'playwright', command: 'npx', args: ["-y", "@playwright/mcp@latest"] });
-const urlForWebsites = `vscode:mcp/install?${encodeURIComponent(config)}`;
-// Github markdown does not allow linking to `vscode:` directly, so you can use our redirect:
-const urlForGithub = `https://insiders.vscode.dev/redirect?url=${encodeURIComponent(urlForWebsites)}`;
--->
+### Installation in VS Code
 
-[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)  [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)
-
-Alternatively, you can install the Playwright MCP server using the VS Code CLI:
+You can install the Playwright MCP server using the VS Code CLI:
 
 ```bash
 # For VS Code
 code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
 ```
 
-```bash
-# For VS Code Insiders
-code-insiders --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
-```
-
 After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
 
-### CLI Options
+### Command line
 
 The Playwright MCP server supports the following command-line options:
 
@@ -73,12 +72,13 @@ The Playwright MCP server supports the following command-line options:
 - `--cdp-endpoint <endpoint>`: CDP endpoint to connect to
 - `--executable-path <path>`: Path to the browser executable
 - `--headless`: Run browser in headless mode (headed by default)
+- `--user-data-dir <path>`: Path to the user data directory
 - `--port <port>`: Port to listen on for SSE transport
 - `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
-- `--user-data-dir <path>`: Path to the user data directory
 - `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
+- `--config <path>`: Path to the configuration file
 
-### User data directory
+### User profile
 
 Playwright MCP will launch the browser with the new profile, located at
 
@@ -90,25 +90,83 @@ Playwright MCP will launch the browser with the new profile, located at
 
 All the logged in information will be stored in that profile, you can delete it between sessions if you'd like to clear the offline state.
 
-### Running headless browser (Browser without GUI)
+### Configuration file
 
-This mode is useful for background or batch operations.
+The Playwright MCP server can be configured using a JSON configuration file. Here's the complete configuration format:
 
-```js
+```typescript
 {
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest",
-        "--headless"
-      ]
+  // Browser configuration
+  browser?: {
+    // Browser type to use (chromium, firefox, or webkit)
+    browserName?: 'chromium' | 'firefox' | 'webkit';
+    
+    // Path to user data directory for browser profile persistence
+    userDataDir?: string;
+    
+    // Browser launch options (see Playwright docs)
+    launchOptions?: {
+      channel?: string;        // Browser channel (e.g. 'chrome')
+      headless?: boolean;      // Run in headless mode
+      executablePath?: string; // Path to browser executable
+      // ... other Playwright launch options
+    };
+    
+    // Browser context options
+    contextOptions?: {
+      viewport?: { width: number, height: number };
+      // ... other Playwright context options
+    };
+    
+    // CDP endpoint for connecting to existing browser
+    cdpEndpoint?: string;
+    
+    // Remote Playwright server endpoint
+    remoteEndpoint?: string;
+  },
+
+  // Server configuration
+  server?: {
+    port?: number;  // Port to listen on
+    host?: string;  // Host to bind to (default: localhost)
+  },
+
+  // List of enabled capabilities
+  capabilities?: Array<
+    'core' |    // Core browser automation
+    'tabs' |    // Tab management
+    'pdf' |     // PDF generation
+    'history' | // Browser history
+    'wait' |    // Wait utilities
+    'files' |   // File handling
+    'install'   // Browser installation
+  >;
+
+  // Enable vision mode (screenshots instead of accessibility snapshots)
+  vision?: boolean;
+
+  // Directory for output files
+  outputDir?: string;
+
+  // Tool-specific configurations
+  tools?: {
+    browser_take_screenshot?: {
+      // Disable base64-encoded image responses
+      omitBase64?: boolean;
     }
   }
 }
 ```
 
-### Running headed browser on Linux w/o DISPLAY
+You can specify the configuration file using the `--config` command line option:
+
+```bash
+npx @playwright/mcp@latest --config path/to/config.json
+```
+
+### Running on Linux
+
+When running headless without DISPLAY, pass `--headless` command line argument.
 
 When running headed browser on system w/o display or from worker processes of the IDEs,
 run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
@@ -129,24 +187,6 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 }
 ```
 
-When running in a remote server, you can use the `--host` flag to bind the server to `0.0.0.0` to make it accessible from outside.
-
-```bash
-npx @playwright/mcp@latest --port 8931 --host 0.0.0.0
-```
-
-In MCP client config, `$server-ip` is the IP address of the server:
-
-```js
-{
-  "mcpServers": {
-    "playwright": {
-      "url": "http://{$server-ip}:8931/sse"
-    }
-  }
-}
-```
-
 ### Docker
 
 **NOTE:** The Docker implementation only supports headless chromium at the moment.
@@ -162,7 +202,33 @@ In MCP client config, `$server-ip` is the IP address of the server:
 }
 ```
 
-### Tool Modes
+You can build the Docker image yourself.
+
+```
+docker build -t mcp/playwright .
+```
+
+### Programmatic usage
+
+```js
+import http from 'http';
+
+import { createServer } from '@playwright/mcp';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+
+http.createServer(async (req, res) => {
+  // ...
+
+  // Creates a headless Playwright MCP server with SSE transport
+  const mcpServer = await createServer({ headless: true });
+  const transport = new SSEServerTransport('/messages', res);
+  await mcpServer.connect(transport);
+
+  // ...
+});
+```
+
+### Tool modes
 
 The tools are available in two modes:
 
@@ -188,34 +254,6 @@ To use Vision Mode, add the `--vision` flag when starting the server:
 Vision Mode works best with the computer use models that are able to interact with elements using
 X Y coordinate space, based on the provided screenshot.
 
-### Build with Docker
-
-You can build the Docker image yourself.
-
-```
-docker build -t mcp/playwright .
-```
-
-### Programmatic usage with custom transports
-
-```js
-import http from 'http';
-
-import { createServer } from '@playwright/mcp';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-
-http.createServer(async (req, res) => {
-  // ...
-
-  // Creates a headless Playwright MCP server with SSE transport
-  const mcpServer = await createServer({ headless: true });
-  const transport = new SSEServerTransport('/messages', res);
-  await mcpServer.connect(transport);
-
-  // ...
-});
-
-```
 
 <!--- Generated by update-readme.js -->
 
