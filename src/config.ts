@@ -21,19 +21,46 @@ import path from 'path';
 
 import { sanitizeForFilePath } from './tools/utils';
 
-import type { Config } from '../config';
-import type { LaunchOptions, BrowserContextOptions } from 'playwright';
+import type { Config, ToolCapability } from '../config';
+import type { LaunchOptions } from 'playwright';
 
-export type BrowserOptions = {
-  browserName: 'chromium' | 'firefox' | 'webkit';
-  launchOptions: LaunchOptions;
-  contextOptions: BrowserContextOptions;
+export type CLIOptions = {
+  browser?: string;
+  caps?: string;
+  cdpEndpoint?: string;
+  executablePath?: string;
+  headless?: boolean;
+  userDataDir?: string;
+  port?: number;
+  host?: string;
+  vision?: boolean;
+  config?: string;
 };
 
-export async function toBrowserOptions(config: Config): Promise<BrowserOptions> {
+const defaultConfig: Config = {
+  browser: {
+    browserName: 'chromium',
+    userDataDir: os.tmpdir(),
+    launchOptions: {
+      channel: 'chrome',
+      headless: os.platform() === 'linux' && !process.env.DISPLAY,
+    },
+    contextOptions: {
+      viewport: null,
+    },
+  },
+};
+
+export async function resolveConfig(cliOptions: CLIOptions): Promise<Config> {
+  const config = await loadConfig(cliOptions.config);
+  const cliOverrides = await configFromCLIOptions(cliOptions);
+  return mergeConfig(defaultConfig, mergeConfig(config, cliOverrides));
+}
+
+export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Config> {
   let browserName: 'chromium' | 'firefox' | 'webkit';
   let channel: string | undefined;
-  switch (config.browser?.type) {
+  switch (cliOptions.browser) {
     case 'chrome':
     case 'chrome-beta':
     case 'chrome-canary':
@@ -44,7 +71,7 @@ export async function toBrowserOptions(config: Config): Promise<BrowserOptions> 
     case 'msedge-canary':
     case 'msedge-dev':
       browserName = 'chromium';
-      channel = config.browser.type;
+      channel = cliOptions.browser;
       break;
     case 'firefox':
       browserName = 'firefox';
@@ -58,23 +85,26 @@ export async function toBrowserOptions(config: Config): Promise<BrowserOptions> 
   }
 
   const launchOptions: LaunchOptions = {
-    headless: !!(config.browser?.headless ?? (os.platform() === 'linux' && !process.env.DISPLAY)),
     channel,
-    executablePath: config.browser?.executablePath,
-    ...{ assistantMode: true },
-  };
-
-  const contextOptions: BrowserContextOptions = {
-    viewport: null,
+    executablePath: cliOptions.executablePath,
   };
 
   if (browserName === 'chromium')
     (launchOptions as any).webSocketPort = await findFreePort();
 
   return {
-    browserName,
-    launchOptions,
-    contextOptions,
+    browser: {
+      browserName,
+      userDataDir: cliOptions.userDataDir ?? await createUserDataDir(browserName),
+      launchOptions,
+      cdpEndpoint: cliOptions.cdpEndpoint,
+    },
+    server: {
+      port: cliOptions.port,
+      host: cliOptions.host,
+    },
+    capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
+    vision: !!cliOptions.vision,
   };
 }
 
@@ -89,9 +119,57 @@ async function findFreePort() {
   });
 }
 
+async function loadConfig(configFile: string | undefined): Promise<Config> {
+  if (!configFile)
+    return {};
+
+  try {
+    return JSON.parse(await fs.promises.readFile(configFile, 'utf8'));
+  } catch (error) {
+    throw new Error(`Failed to load config file: ${configFile}`);
+  }
+}
+
+async function createUserDataDir(browserName: 'chromium' | 'firefox' | 'webkit') {
+  let cacheDirectory: string;
+  if (process.platform === 'linux')
+    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+  else if (process.platform === 'darwin')
+    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
+  else if (process.platform === 'win32')
+    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+  else
+    throw new Error('Unsupported platform: ' + process.platform);
+  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserName}-profile`);
+  await fs.promises.mkdir(result, { recursive: true });
+  return result;
+}
+
 export async function outputFile(config: Config, name: string): Promise<string> {
   const result = config.outputDir ?? os.tmpdir();
   await fs.promises.mkdir(result, { recursive: true });
   const fileName = sanitizeForFilePath(name);
   return path.join(result, fileName);
+}
+
+function mergeConfig(base: Config, overrides: Config): Config {
+  const browser: Config['browser'] = {
+    ...base.browser,
+    ...overrides.browser,
+    launchOptions: {
+      ...base.browser?.launchOptions,
+      ...overrides.browser?.launchOptions,
+      ...{ assistantMode: true },
+    },
+    contextOptions: {
+      ...base.browser?.contextOptions,
+      ...overrides.browser?.contextOptions,
+    },
+  };
+
+  return {
+    ...base,
+    ...overrides,
+    browser,
+  };
 }

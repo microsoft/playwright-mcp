@@ -14,21 +14,15 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-
 import * as playwright from 'playwright';
 
 import { waitForCompletion } from './tools/utils';
 import { ManualPromise } from './manualPromise';
-import { toBrowserOptions } from './config';
 import { Tab } from './tab';
 
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
 import type { ModalState, Tool, ToolActionResult } from './tools/tool';
 import type { Config } from '../config';
-import type { BrowserOptions } from './config';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
@@ -285,51 +279,32 @@ ${code.join('\n')}
   }
 
   private async _innerCreateBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
-    const browserOptions = await toBrowserOptions(this.config);
-
     if (this.config.browser?.remoteEndpoint) {
       const url = new URL(this.config.browser?.remoteEndpoint);
-      if (browserOptions.browserName)
-        url.searchParams.set('browser', browserOptions.browserName);
-      if (browserOptions.launchOptions)
-        url.searchParams.set('launch-options', JSON.stringify(browserOptions.launchOptions));
-      const browser = await playwright[browserOptions.browserName ?? 'chromium'].connect(String(url));
+      if (this.config.browser.browserName)
+        url.searchParams.set('browser', this.config.browser.browserName);
+      if (this.config.browser.launchOptions)
+        url.searchParams.set('launch-options', JSON.stringify(this.config.browser.launchOptions));
+      const browser = await playwright[this.config.browser?.browserName ?? 'chromium'].connect(String(url));
       const browserContext = await browser.newContext();
       return { browser, browserContext };
     }
 
     if (this.config.browser?.cdpEndpoint) {
-      const browser = await playwright.chromium.connectOverCDP(this.config.browser?.cdpEndpoint);
+      const browser = await playwright.chromium.connectOverCDP(this.config.browser.cdpEndpoint);
       const browserContext = browser.contexts()[0];
       return { browser, browserContext };
     }
 
-    const browserContext = await launchPersistentContext(this.config.browser?.userDataDir, browserOptions);
+    const browserContext = await launchPersistentContext(this.config.browser);
     return { browserContext };
   }
 }
 
-async function createUserDataDir(browserName: 'chromium' | 'firefox' | 'webkit') {
-  let cacheDirectory: string;
-  if (process.platform === 'linux')
-    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
-  else if (process.platform === 'darwin')
-    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
-  else if (process.platform === 'win32')
-    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-  else
-    throw new Error('Unsupported platform: ' + process.platform);
-  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserName}-profile`);
-  await fs.promises.mkdir(result, { recursive: true });
-  return result;
-}
-
-async function launchPersistentContext(userDataDir: string | undefined, browserOptions: BrowserOptions): Promise<playwright.BrowserContext> {
-  userDataDir = userDataDir ?? await createUserDataDir(browserOptions.browserName);
-
+async function launchPersistentContext(browserConfig: Config['browser']): Promise<playwright.BrowserContext> {
   try {
-    const browserType = browserOptions.browserName ? playwright[browserOptions.browserName] : playwright.chromium;
-    return await browserType.launchPersistentContext(userDataDir, browserOptions.launchOptions);
+    const browserType = browserConfig?.browserName ? playwright[browserConfig.browserName] : playwright.chromium;
+    return await browserType.launchPersistentContext(browserConfig?.userDataDir || '', browserConfig?.launchOptions);
   } catch (error: any) {
     if (error.message.includes('Executable doesn\'t exist'))
       throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);

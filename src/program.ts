@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-
 import { program } from 'commander';
 
 import { createServer } from './index';
@@ -23,7 +21,7 @@ import { ServerList } from './server';
 
 import { startHttpTransport, startStdioTransport } from './transport';
 
-import type { Config, ToolCapability } from '../config';
+import { resolveConfig } from './config';
 
 const packageJSON = require('../package.json');
 
@@ -41,22 +39,7 @@ program
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
-      const cliOverrides: Config = {
-        browser: {
-          type: options.browser,
-          userDataDir: options.userDataDir,
-          headless: options.headless,
-          executablePath: options.executablePath,
-          cdpEndpoint: options.cdpEndpoint,
-        },
-        server: {
-          port: options.port,
-          host: options.host,
-        },
-        capabilities: options.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
-        vision: !!options.vision,
-      };
-      const config = await loadConfig(options.config, cliOverrides);
+      const config = await resolveConfig(options);
       const serverList = new ServerList(() => createServer(config));
       setupExitWatchdog(serverList);
 
@@ -65,30 +48,6 @@ program
       else
         await startStdioTransport(serverList);
     });
-
-async function loadConfig(configFile: string | undefined, cliOverrides: Config): Promise<Config> {
-  if (!configFile)
-    return cliOverrides;
-
-  try {
-    const config = JSON.parse(await fs.promises.readFile(configFile, 'utf8'));
-    return {
-      ...config,
-      ...cliOverrides,
-      browser: {
-        ...config.browser,
-        ...cliOverrides.browser,
-      },
-      server: {
-        ...config.server,
-        ...cliOverrides.server,
-      },
-    };
-  } catch (e) {
-    console.error(`Error loading config file ${configFile}: ${e}`);
-    process.exit(1);
-  }
-}
 
 function setupExitWatchdog(serverList: ServerList) {
   const handleExit = async () => {

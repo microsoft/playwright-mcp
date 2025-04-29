@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import type * as playwright from 'playwright';
+
 export type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install';
 
 export type Config = {
@@ -24,12 +26,7 @@ export type Config = {
     /**
      * The type of browser to use.
      */
-    type?: 'chrome' | 'chrome-beta' | 'chrome-canary' | 'chrome-dev' | 'chromium' | 'msedge' | 'msedge-beta' | 'msedge-canary' | 'msedge-dev' | 'firefox' | 'webkit';
-
-    /**
-     * Path to a custom browser executable.
-     */
-    executablePath?: string;
+    browserName?: 'chromium' | 'firefox' | 'webkit';
 
     /**
      * Path to a user data directory for browser profile persistence.
@@ -37,9 +34,19 @@ export type Config = {
     userDataDir?: string;
 
     /**
-     * Whether to run the browser in headless mode (default: true).
+     * Launch options passed to
+     * @see https://playwright.dev/docs/api/class-browsertype#browser-type-launch-persistent-context
+     *
+     * This is useful for settings options like `channel`, `headless`, `executablePath`, etc.
      */
-    headless?: boolean;
+    launchOptions?: playwright.BrowserLaunchOptions;
+
+    /**
+     * Context options for the browser context.
+     *
+     * This is useful for settings options like `viewport`.
+     */
+    contextOptions?: playwright.BrowserContextOptions;
 
     /**
      * Chrome DevTools Protocol endpoint to connect to an existing browser instance in case of Chromium family browsers.
