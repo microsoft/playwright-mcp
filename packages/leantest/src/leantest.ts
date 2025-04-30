@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText, tool } from 'ai';
 
-import * as common from '@litest/core';
-import * as snapshot from '@litest/core';
-import * as screenshot from '@litest/core';
-import type { Tool } from '@litest/core';
+import * as common from '@leantest/core';
+import * as snapshot from '@leantest/core';
+import * as screenshot from '@leantest/core';
+import type { Tool } from '@leantest/core';
 
 import dotenv from 'dotenv';
 
@@ -39,7 +39,7 @@ const systemMessage = `
   You MUST Provide a JSON object as a response. If you are not sure about the result of the test case, return FAIL, but you must return a JSON object.
 `;
 
-const testCase = z.object({
+const leantestSchema = z.object({
   testDefinition: z.string().describe('The test case definition'),
   // expect: z.string().optional().describe('The expected result of running the test case')
 });
@@ -49,15 +49,15 @@ const testCase = z.object({
 //   urls: z.array(z.string()).min(1).describe('One or more URLs to execute end-to-end tests against')
 // });
 
-export const litest: Tool = {
+export const leantest: Tool = {
   schema: {
     name: 'browser_endtoend',
     description: 'Run an end to end test suit in the browser',
-    inputSchema: zodToJsonSchema(testCase)
+    inputSchema: zodToJsonSchema(leantestSchema)
   },
 
   handle: async (context, params) => {
-    const validatedParams = testCase.parse(params);
+    const validatedParams = leantestSchema.parse(params);
     const content = `${systemMessage} - List of Urls in target for end to end testing : ${JSON.stringify(validatedParams)}`;
     const apiKey = context.apiKey;
     process.env.OPENAI_API_KEY = apiKey;

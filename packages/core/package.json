@@ -1,5 +1,5 @@
 {
-    "name": "@litest/core",
+    "name": "@leantest/core",
     "version": "0.0.1",
     "description": "Core Playwright automation library for Best testing framework",
     "main": "lib/index.js",

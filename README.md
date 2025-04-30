@@ -1,6 +1,6 @@
-# Litest
+# Leantest
 
-Litest end to end testing framework with AI capabilities. Define your test cases in natural language and let AI handle the execution.
+Leantest end to end testing framework with AI capabilities. Define your test cases in natural language and let AI handle the execution.
 
 ### Key Features
 

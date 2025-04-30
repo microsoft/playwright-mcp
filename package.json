@@ -1,5 +1,5 @@
 {
-  "name": "litest-monorepo",
+  "name": "leantest-monorepo",
   "version": "0.0.1",
   "description": "Litest Testing Framework Monorepo",
   "repository": {
@@ -15,13 +15,13 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc -b packages/core packages/litest packages/mcp",
+    "build": "tsc -b packages/core packages/leantest packages/mcp",
     "dev": "pnpm --parallel --filter=\"./packages/*\" run dev",
     "lint": "eslint .",
     "watch": "tsc --watch",
     "test": "playwright test",
     "clean": "pnpm --filter=\"./packages/*\" exec rm -rf lib tsconfig.tsbuildinfo",
-    "npm-publish": "pnpm run clean && pnpm run build && pnpm run test && pnpm --filter=\"litest\" --filter=\"@litest/mcp\" publish"
+    "npm-publish": "pnpm run clean && pnpm run build && pnpm run test && pnpm --filter=\"leantest\" --filter=\"@leantest/mcp\" publish"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -31,8 +31,8 @@
     }
   },
   "devDependencies": {
-    "@litest/core": "workspace:*",
-    "litest": "workspace:*",
+    "@leantest/core": "workspace:*",
+    "leantest": "workspace:*",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.19.0",
     "@playwright/test": "1.52.0-alpha-1743011787000",
@@ -49,5 +49,5 @@
     "playwright": "1.52.0-alpha-1743011787000"
   },
   "private": true,
-  "packageManager": "pnpm@10.9.0"
+  "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39"
 }
