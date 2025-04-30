@@ -1,6 +1,6 @@
 # Limetest
 
-Limetest is the most light weight end to end testing framework with AI capabilities. Define your test cases in natural language and let AI handle the execution. quick test
+Limetest is the most light weight end to end testing framework with AI capabilities. Define your test cases in natural language and let AI handle the execution.
 
 ### Key Features
 
