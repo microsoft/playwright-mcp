@@ -89,7 +89,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   const launchOptions: LaunchOptions = {
     channel,
     executablePath: cliOptions.executablePath,
-    headless: cliOptions.headless ?? false,
+    headless: cliOptions.headless,
   };
 
   if (browserName === 'chromium')
@@ -158,24 +158,33 @@ export async function outputFile(config: Config, name: string): Promise<string> 
   return path.join(result, fileName);
 }
 
+function pickDefined<T extends object>(obj: T | undefined): Partial<T> {
+  return Object.fromEntries(
+      Object.entries(obj ?? {}).filter(([_, v]) => v !== undefined)
+  ) as Partial<T>;
+}
+
 function mergeConfig(base: Config, overrides: Config): Config {
   const browser: Config['browser'] = {
-    ...base.browser,
-    ...overrides.browser,
+    ...pickDefined(base.browser),
+    ...pickDefined(overrides.browser),
     launchOptions: {
-      ...base.browser?.launchOptions,
-      ...overrides.browser?.launchOptions,
+      ...pickDefined(base.browser?.launchOptions),
+      ...pickDefined(overrides.browser?.launchOptions),
       ...{ assistantMode: true },
     },
     contextOptions: {
-      ...base.browser?.contextOptions,
-      ...overrides.browser?.contextOptions,
+      ...pickDefined(base.browser?.contextOptions),
+      ...pickDefined(overrides.browser?.contextOptions),
     },
   };
 
+  if (browser.browserName !== 'chromium')
+    delete browser.launchOptions.channel;
+
   return {
-    ...base,
-    ...overrides,
+    ...pickDefined(base),
+    ...pickDefined(overrides),
     browser,
   };
 }

@@ -34,11 +34,11 @@ type TestFixtures = {
   cdpEndpoint: string;
   server: TestServer;
   httpsServer: TestServer;
+  mcpHeadless: boolean;
+  mcpBrowser: string | undefined;
 };
 
 type WorkerFixtures = {
-  mcpHeadless: boolean;
-  mcpBrowser: string | undefined;
   _workerServers: { server: TestServer, httpsServer: TestServer };
 };
 
@@ -112,11 +112,11 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     browserProcess.kill();
   },
 
-  mcpHeadless: [async ({ headless }, use) => {
+  mcpHeadless: async ({ headless }, use) => {
     await use(headless);
-  }, { scope: 'worker' }],
+  },
 
-  mcpBrowser: ['chrome', { option: true, scope: 'worker' }],
+  mcpBrowser: ['chrome', { option: true }],
 
   _workerServers: [async ({}, use, workerInfo) => {
     const port = 8907 + workerInfo.workerIndex * 4;
