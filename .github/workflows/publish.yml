@@ -22,6 +22,6 @@ jobs:
       - run: pnpm run build
       - run: pnpm run lint
       - run: pnpm run ctest
-      - run: pnpm --filter="litest" --filter="@litest/mcp" publish --provenance
+      - run: pnpm --filter="leantest" --filter="@leantest/mcp" publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
