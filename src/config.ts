@@ -154,8 +154,7 @@ async function createUserDataDir(options: { browserName: 'chromium' | 'firefox' 
 export async function outputFile(config: Config, name: string): Promise<string> {
   const result = config.outputDir ?? os.tmpdir();
   await fs.promises.mkdir(result, { recursive: true });
-  const fileName = sanitizeForFilePath(name);
-  return path.join(result, fileName);
+  return path.join(result, name);
 }
 
 function mergeConfig(base: Config, overrides: Config): Config {

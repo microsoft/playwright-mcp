@@ -21,6 +21,7 @@ import * as javascript from '../javascript';
 import { outputFile } from '../config';
 
 import type * as playwright from 'playwright';
+import { sanitizeForFilePath } from './utils';
 
 const snapshot = defineTool({
   capability: 'core',
@@ -229,7 +230,7 @@ const screenshot = defineTool({
     const tab = context.currentTabOrDie();
     const snapshot = tab.snapshotOrDie();
     const fileType = params.raw ? 'png' : 'jpeg';
-    const fileName = await outputFile(context.config, `page-${new Date().toISOString()}.${fileType}`);
+    const fileName = await outputFile(context.config, `page-${sanitizeForFilePath(new Date().toISOString())}.${fileType}`);
     const options: playwright.PageScreenshotOptions = { type: fileType, quality: fileType === 'png' ? undefined : 50, scale: 'css', path: fileName };
     const isElementScreenshot = params.element && params.ref;
 

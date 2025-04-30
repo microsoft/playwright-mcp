@@ -23,6 +23,7 @@ import { Tab } from './tab';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
 import type { ModalState, Tool, ToolActionResult } from './tools/tool';
 import type { Config } from '../config';
+import { outputFile } from './config';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
@@ -38,6 +39,7 @@ export class Context {
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
+  private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
 
   constructor(tools: Tool[], config: Config) {
     this.tools = tools;
@@ -164,6 +166,17 @@ ${code.join('\n')}
       };
     }
 
+    if (this._downloads.length) {
+      result.push('', '### Downloads');
+      for (const entry of this._downloads) {
+        if (entry.finished)
+          result.push(`- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`);
+        else
+          result.push(`- Downloading file ${entry.download.suggestedFilename()} ...`);
+      }
+      result.push('');
+    }
+
     if (this.tabs().length > 1)
       result.push(await this.listTabsMarkdown(), '');
 
@@ -226,6 +239,17 @@ ${code.join('\n')}
       dialog,
     }, tab);
     this._pendingAction?.dialogShown.resolve();
+  }
+
+  async downloadStarted(tab: Tab, download: playwright.Download) {
+    const entry = {
+      download,
+      finished: false,
+      outputFile: await outputFile(this.config, download.suggestedFilename())
+    };
+    this._downloads.push(entry);
+    await download.saveAs(entry.outputFile);
+    entry.finished = true;
   }
 
   private _onPageCreated(page: playwright.Page) {

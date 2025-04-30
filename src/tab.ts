@@ -48,6 +48,9 @@ export class Tab {
       }, this);
     });
     page.on('dialog', dialog => this.context.dialogShown(this, dialog));
+    page.on('download', download => {
+      void this.context.downloadStarted(this, download);
+    });
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
   }

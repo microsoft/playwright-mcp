@@ -16,6 +16,7 @@
 
 import { test, expect } from './fixtures';
 import fs from 'fs/promises';
+import path from 'path';
 
 test('browser_file_upload', async ({ client }) => {
   expect(await client.callTool({
@@ -95,4 +96,28 @@ The tool "browser_file_upload" can only be used when there is related modal stat
 ### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
   }
+});
+
+test('clicking on download link emits download', async ({ startClient }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const client = await startClient({
+    config: { outputDir },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<a href="data:text/plain,Hello world!" download="test.txt">Download</a>',
+    },
+  })).toContainTextContent('- link "Download" [ref=s1e3]');
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Download link',
+      ref: 's1e3',
+    },
+  })).toContainTextContent(`
+### Downloads
+- Downloaded file test.txt to ${path.join(outputDir, 'test.txt')}`);
 });
