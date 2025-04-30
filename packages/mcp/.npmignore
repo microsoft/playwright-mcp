@@ -1,0 +1,6 @@
+**/*
+README.md
+LICENSE
+!lib/**/*.js
+!cli.js
+!index.*
