@@ -89,7 +89,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   const launchOptions: LaunchOptions = {
     channel,
     executablePath: cliOptions.executablePath,
-    headless: cliOptions.headless,
+    headless: cliOptions.headless ?? false,
   };
 
   if (browserName === 'chromium')
