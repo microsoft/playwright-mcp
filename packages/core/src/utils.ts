@@ -15,8 +15,8 @@
  */
 
 import type * as playwright from 'playwright';
-import type { ToolResult } from './tool';
-import type { Context } from '../context';
+import type { ToolResult } from './tools/tool';
+import type { Context } from './context';
 
 async function waitForCompletion<R>(page: playwright.Page, callback: () => Promise<R>): Promise<R> {
   const requests = new Set<playwright.Request>();

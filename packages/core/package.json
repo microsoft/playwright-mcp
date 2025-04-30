@@ -1,0 +1,24 @@
+{
+    "name": "@limetest/core",
+    "version": "0.0.1",
+    "description": "Core Playwright automation library for Best testing framework",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "license": "Apache-2.0",
+    "scripts": {
+      "build": "tsc -b",
+      "dev": "tsc -w --preserveWatchOutput"
+    },
+    "dependencies": {
+      "playwright": "1.52.0-alpha-1743011787000",
+      "zod-to-json-schema": "^3.24.4",
+      "zod": "^3.24.3",
+      "@modelcontextprotocol/sdk": "^1.6.1"
+    },
+    "devDependencies": {
+      "zod-to-json-schema": "^3.24.4",
+      "zod": "^3.24.3",
+      "@modelcontextprotocol/sdk": "^1.6.1"
+    },
+    "private": true
+}

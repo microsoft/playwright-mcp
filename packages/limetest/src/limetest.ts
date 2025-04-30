@@ -4,50 +4,60 @@ import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText, tool } from 'ai';
 
-import * as common from './common';
-import { snapshotBatchSchema, CommonToolParams } from './schemas';
-import * as snapshot from './snapshot';
-import { captureAriaSnapshot } from './utils';
-import type { Tool } from './tool';
+import * as common from '@limetest/core';
+import * as snapshot from '@limetest/core';
+import * as screenshot from '@limetest/core';
+import type { Tool } from '@limetest/core';
 
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const systemMessage = `
-    You are an Automation Test Engineer that is in charge of ensuring the quality of the software developed by 
-    the Software Engineers. Your job is to execute end to end tests on the given web app and find 
-    the bugs if there are any. At the end you need to report your findings back to the engineers in which
-    if there are any bugs in your report, they will fix them. 
+  You are an Automation Test Engineer that is in charge of ensuring the quality of the software developed by 
+  the Software Engineers. Your job is to execute end to end tests on the given web app and find 
+  the bugs if there are any. At the end you need to report your findings back to the engineers in which
+  if there are any bugs in your report, they will fix them. 
 
-    You have access to a set of tools that will help you perform browser automation. Based on each test case, 
-    you need to decide which tool is the best one to perform the next action. 
+  You have access to a set of tools that will help you perform browser automation. Based on each test case, 
+  you need to decide which tool is the best one to perform the next action. 
 
-    Remeber the result of each test case execution and include the result of each specific test case in your report.
+  Remeber the result of each test case execution and include the result of each specific test case in your report.
 
-    Be deterministic in your response. The result of the test is either failed or pass. If the actual result does not 
-    match the expect result, the test case is considered failed.
+  Be deterministic in your response. The result of the test is either failed or pass. If the actual result does not 
+  match the expect result, the test case is considered failed.
+
+  IMPORTANT: After completing all test steps, you MUST provide your final response in the following JSON format ONLY:
+  {
+    "status": "PASS" or "FAIL",
+    "errorMessage": "Error message explaining why the test failed (only include if status is FAIL)"
+  }
+
+  Remember that the result of each test case execution is either PASS or FAIL. If the actual result does not 
+  match the expected result, the test case is considered FAILED.
+
+  You MUST Provide a JSON object as a response. If you are not sure about the result of the test case, return FAIL, but you must return a JSON object.
 `;
 
-const testCases = z.object({
-  testDefinition: z.string().describe('The tesct case definition'),
-  expect: z.string().optional().describe('The expected result of running the test case')
+const limetestSchema = z.object({
+  testDefinition: z.string().describe('The test case definition'),
+  // expect: z.string().optional().describe('The expected result of running the test case')
 });
 
-const endtoendSchema = z.object({
-  testCases: z.array(testCases).describe('The list of test case definitions to execute on the web'),
-  urls: z.array(z.string()).min(1).describe('One or more URLs to execute end-to-end tests against')
-});
+// const litestSchema = z.object({
+//   testCases: z.array(testCase).describe('The list of test case definitions to execute on the web'),
+//   urls: z.array(z.string()).min(1).describe('One or more URLs to execute end-to-end tests against')
+// });
 
-export const endtoend: Tool = {
+export const limetest: Tool = {
   schema: {
     name: 'browser_endtoend',
     description: 'Run an end to end test suit in the browser',
-    inputSchema: zodToJsonSchema(endtoendSchema)
+    inputSchema: zodToJsonSchema(limetestSchema)
   },
 
   handle: async (context, params) => {
-    const validatedParams = endtoendSchema.parse(params);
+    const validatedParams = limetestSchema.parse(params);
     const content = `${systemMessage} - List of Urls in target for end to end testing : ${JSON.stringify(validatedParams)}`;
     const apiKey = context.apiKey;
     process.env.OPENAI_API_KEY = apiKey;
@@ -56,6 +66,7 @@ export const endtoend: Tool = {
         model: openai('gpt-4o'),
         messages: [{ role: 'system', content: content }],
         tools: {
+          // snapshot tools
           snapshot: tool({
             description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
             parameters: z.object({}),
@@ -63,7 +74,7 @@ export const endtoend: Tool = {
               return await snapshot.snapshot.handle(context);
             }
           }),
-          click: tool({
+          clickSnapshot: tool({
             description: 'Perform click on a web page',
             parameters: snapshot.elementSchema,
             execute: async (params: z.infer<typeof snapshot.elementSchema>) => {
@@ -71,7 +82,7 @@ export const endtoend: Tool = {
               return await snapshot.click.handle(context, validatedParams, true);
             }
           }),
-          drag: tool({
+          dragSnapshot: tool({
             description: 'Perform drag and drop between two elements',
             parameters: snapshot.dragSchema,
             execute: async (params: z.infer<typeof snapshot.dragSchema>) => {
@@ -79,7 +90,7 @@ export const endtoend: Tool = {
               return await snapshot.drag.handle(context, validatedParams, true);
             }
           }),
-          hover: tool({
+          hoverSnapshot: tool({
             description: 'Hover over element on page',
             parameters: snapshot.elementSchema,
             execute: async (params: z.infer<typeof snapshot.elementSchema>) => {
@@ -87,7 +98,7 @@ export const endtoend: Tool = {
               return await snapshot.hover.handle(context, validatedParams, true);
             }
           }),
-          type: tool({
+          typeSnapshot: tool({
             description: 'Type text into editable element',
             parameters: snapshot.typeSchema,
             execute: async (params: z.infer<typeof snapshot.typeSchema>) => {
@@ -95,7 +106,7 @@ export const endtoend: Tool = {
               return await snapshot.type.handle(context, validatedParams, true);
             }
           }),
-          selectOption: tool({
+          selectOptionSnapshot: tool({
             description: 'Select an option in a dropdown',
             parameters: snapshot.selectOptionSchema,
             execute: async (params: z.infer<typeof snapshot.selectOptionSchema>) => {
@@ -103,12 +114,44 @@ export const endtoend: Tool = {
               return await snapshot.selectOption.handle(context, validatedParams, true);
             }
           }),
+          // screenshot tools
           screenshot: tool({
-            description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
-            parameters: snapshot.screenshotSchema,
-            execute: async (params: z.infer<typeof snapshot.screenshotSchema>) => {
-              const validatedParams = snapshot.screenshotSchema.parse(params);
-              return await snapshot.screenshot.handle(context, validatedParams, true);
+            description: 'Take a screenshot of the current page',
+            parameters: z.object({}),
+            execute: async () => {
+              return await screenshot.screenshot.handle(context);
+            }
+          }),
+          moveMouseVision: tool({
+            description: 'Move mouse to a given position',
+            parameters: screenshot.moveMouseSchema,
+            execute: async (params: z.infer<typeof screenshot.moveMouseSchema>) => {
+              const validatedParams = screenshot.moveMouseSchema.parse(params);
+              return await screenshot.moveMouse.handle(context, validatedParams);
+            }
+          }),
+          clickVision: tool({
+            description: 'Click on a web page',
+            parameters: screenshot.clickVisionkSchema,
+            execute: async (params: z.infer<typeof screenshot.clickVisionkSchema>) => {
+              const validatedParams = screenshot.clickVisionkSchema.parse(params);
+              return await screenshot.clickVision.handle(context, validatedParams);
+            }
+          }),
+          dragVision: tool({
+            description: 'Drag and drop between two elements',
+            parameters: screenshot.dragVisionkSchema,
+            execute: async (params: z.infer<typeof screenshot.dragVisionkSchema>) => {
+              const validatedParams = screenshot.dragVisionkSchema.parse(params);
+              return await screenshot.dragVision.handle(context, validatedParams);
+            }
+          }),
+          typeVision: tool({
+            description: 'Type text into editable element',
+            parameters: screenshot.typeVisionkSchema,
+            execute: async (params: z.infer<typeof screenshot.typeVisionkSchema>) => {
+              const validatedParams = screenshot.typeVisionkSchema.parse(params);
+              return await screenshot.typeVision.handle(context, validatedParams);
             }
           }),
           // common tools
@@ -185,126 +228,5 @@ export const endtoend: Tool = {
         content: [{ type: 'text', text: fullResponse }]
       };
     }
-  }
-};
-
-// Define snapshot-specific tool params
-export const snapshotParams = z.discriminatedUnion('name', [
-  z.object({
-    name: z.literal('browser_drag'),
-    params: snapshot.dragSchema
-  }),
-  z.object({
-    name: z.literal('browser_click'),
-    params: snapshot.elementSchema
-  }),
-  z.object({
-    name: z.literal('browser_hover'),
-    params: snapshot.elementSchema
-  }),
-  z.object({
-    name: z.literal('browser_type'),
-    params: snapshot.typeSchema
-  }),
-  z.object({
-    name: z.literal('browser_select_option'),
-    params: snapshot.selectOptionSchema
-  }),
-]);
-
-// Combine with common tools
-const SnapshotStepSchema = z.union([CommonToolParams, snapshotParams]);
-
-const batchSchema = snapshotBatchSchema.extend({
-  input: z.object({
-    test_cases: z.array(z.object({
-      definition: z.string(),
-      steps: z.array(SnapshotStepSchema)
-    }))
-  })
-});
-
-export const batch: Tool = {
-  schema: {
-    name: 'browser_batch',
-    description: 'TOOL CALL REQUIREMENT: MUST CALL browser_navigate TOOL FIRST IN THE TARGET URLS BEFORE CALLING THIS TOOL TO GET THE CORRECT ARIA REFS. This tool runs a bunch of steps at once.',
-    inputSchema: zodToJsonSchema(batchSchema)
-  },
-  handle: async (context, params) => {
-    const validatedParams = batchSchema.parse(params);
-    const results = [];
-
-    for (const testCase of validatedParams.input.test_cases) {
-      for (const step of testCase.steps as Array<{ name: string; params: any }>) {
-        let tool: Tool;
-        switch (step.name) {
-          case 'browser_drag':
-            tool = snapshot.drag;
-            break;
-          case 'browser_click':
-            tool = snapshot.click;
-            break;
-          case 'browser_hover':
-            tool = snapshot.hover;
-            break;
-          case 'browser_type':
-            tool = snapshot.type;
-            break;
-          case 'browser_select_option':
-            tool = snapshot.selectOption;
-            break;
-          case 'browser_press_key':
-            tool = common.pressKey;
-            break;
-          case 'browser_wait':
-            tool = common.wait;
-            break;
-          case 'browser_save_as_pdf':
-            tool = common.pdf;
-            break;
-          case 'browser_close':
-            tool = common.close;
-            break;
-          case 'browser_navigate':
-            tool = common.navigate(false);
-            break;
-          case 'browser_go_back':
-            tool = common.goBack(false);
-            break;
-          case 'browser_go_forward':
-            tool = common.goForward(false);
-            break;
-          case 'browser_choose_file':
-            tool = common.chooseFile(false);
-            break;
-          default:
-            throw new Error(`Unknown tool for snapshot mode: ${step.name}`);
-        }
-
-        try {
-          let result = await tool.handle(context, step.params, false);
-          result = {
-            content: [...result.content, ...(await captureAriaSnapshot(context)).content],
-            isError: result.isError
-          };
-          results.push({ definition: testCase.definition, step: step.name, result });
-        } catch (error) {
-          return {
-            content: [{
-              type: 'text',
-              text: `Failed to execute snapshot step "${step.name}": ${error}. Here is the batch tool result: \n${JSON.stringify(results, null, 2)}`
-            }],
-            isError: true
-          };
-        }
-      }
-    }
-
-    return {
-      content: [{
-        type: 'text',
-        text: `Successfully executed snapshot steps:\n${JSON.stringify(results, null, 2)}`
-      }]
-    };
   }
 };

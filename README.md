@@ -1,16 +1,39 @@
-## End to End testing MCP Server
+# Limetest
 
-https://github.com/user-attachments/assets/b801f239-dc66-4b3b-bcf2-42e2a9a68721
-
-A Model Context Protocol (MCP) server powered by [Playwright](https://playwright.dev) that provides automated end-to-end testing with dedicated LLM-driven test validation, separating testing concerns from the MCP client.
-
-Note: This MCP is forked from Microsoft's [Playwright MCP](https://github.com/microsoft/playwright-mcp). We optimized Playwright MCP for automated end to end testing.
+Limetest is the most light weight end to end testing framework with AI capabilities. Define your test cases in natural language and let AI handle the execution.
 
 ### Key Features
 
 - **Fast and lightweight**: Uses Playwright's accessibility tree, not pixel-based input.
 - **LLM-friendly**: No vision models needed, operates purely on structured data.
 - **Deterministic tool application**: Avoids ambiguity common with screenshot-based approaches.
+
+
+## Installation
+
+```bash
+npm install limetest
+
+npx playwright install
+```
+
+## Usage
+
+### Run Tests
+Use --headless for running tests headlessly in CI workflows
+
+```bash
+npx limetest example
+```
+
+
+## limetest MCP Server
+
+https://github.com/user-attachments/assets/b801f239-dc66-4b3b-bcf2-42e2a9a68721
+
+A Model Context Protocol (MCP) server powered by [Playwright](https://playwright.dev) that provides automated end-to-end testing with dedicated LLM-driven test validation, separating testing concerns from the MCP client.
+
+Note: This MCP is forked from Microsoft's [Playwright MCP](https://github.com/microsoft/playwright-mcp). We optimized Playwright MCP for automated end to end testing.
 
 ### Use Cases
 
@@ -22,9 +45,9 @@ After cloning this repo, build and add the E2E MCP server to your MCP Client as 
 Notice that you need OpenAI API key to run this MCP server in end to end mode.
 
 ```bash
-npm install
+npm install @limetest/mcp
+
 npx playwright install
-npm run build
 ```
 
 Then:
@@ -32,11 +55,10 @@ Then:
 ```js
 {
     "mcpServers": {
-        "e2e": {
+        "litest": {
             "command": "node",
             "args": [
-                "/Users/Documents/projects/e2e-mcp/lib/program.js",
-                "--endtoend",
+                "npx limetest-mcp",
                 "--api-key=<your openai api key>"
             ]
         }
@@ -46,7 +68,7 @@ Then:
 
 ### User data directory
 
-E2E MCP will launch Chrome browser with the new profile, located at
+litest MCP will launch Chrome browser with the new profile, located at
 
 ```
 - `%USERPROFILE%\AppData\Local\ms-playwright\mcp-chrome-profile` on Windows

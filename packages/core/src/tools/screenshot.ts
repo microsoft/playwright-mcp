@@ -17,7 +17,7 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { runAndWait } from './utils';
+import { runAndWait } from '../utils';
 
 import type { Tool } from './tool';
 
@@ -37,11 +37,11 @@ export const screenshot: Tool = {
   },
 };
 
-const elementSchema = z.object({
+export const elementVisionSchema = z.object({
   element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
 });
 
-const moveMouseSchema = elementSchema.extend({
+export const moveMouseSchema = elementVisionSchema.extend({
   x: z.number().describe('X coordinate'),
   y: z.number().describe('Y coordinate'),
 });
@@ -63,21 +63,21 @@ export const moveMouse: Tool = {
   },
 };
 
-const clickSchema = elementSchema.extend({
+export const clickVisionkSchema = elementVisionSchema.extend({
   x: z.number().describe('X coordinate'),
   y: z.number().describe('Y coordinate'),
 });
 
-export const click: Tool = {
+export const clickVision: Tool = {
   schema: {
     name: 'browser_click',
     description: 'Click left mouse button',
-    inputSchema: zodToJsonSchema(clickSchema),
+    inputSchema: zodToJsonSchema(clickVisionkSchema),
   },
 
   handle: async (context, params) => {
     return await runAndWait(context, 'Clicked mouse', async page => {
-      const validatedParams = clickSchema.parse(params);
+      const validatedParams = clickVisionkSchema.parse(params);
       await page.mouse.move(validatedParams.x, validatedParams.y);
       await page.mouse.down();
       await page.mouse.up();
@@ -85,22 +85,22 @@ export const click: Tool = {
   },
 };
 
-const dragSchema = elementSchema.extend({
+export const dragVisionkSchema = elementVisionSchema.extend({
   startX: z.number().describe('Start X coordinate'),
   startY: z.number().describe('Start Y coordinate'),
   endX: z.number().describe('End X coordinate'),
   endY: z.number().describe('End Y coordinate'),
 });
 
-export const drag: Tool = {
+export const dragVision: Tool = {
   schema: {
     name: 'browser_drag',
     description: 'Drag left mouse button',
-    inputSchema: zodToJsonSchema(dragSchema),
+    inputSchema: zodToJsonSchema(dragVisionkSchema),
   },
 
   handle: async (context, params) => {
-    const validatedParams = dragSchema.parse(params);
+    const validatedParams = dragVisionkSchema.parse(params);
     return await runAndWait(context, `Dragged mouse from (${validatedParams.startX}, ${validatedParams.startY}) to (${validatedParams.endX}, ${validatedParams.endY})`, async page => {
       await page.mouse.move(validatedParams.startX, validatedParams.startY);
       await page.mouse.down();
@@ -110,20 +110,20 @@ export const drag: Tool = {
   },
 };
 
-const typeSchema = z.object({
+export const typeVisionkSchema = z.object({
   text: z.string().describe('Text to type into the element'),
   submit: z.boolean().describe('Whether to submit entered text (press Enter after)'),
 });
 
-export const type: Tool = {
+export const typeVision: Tool = {
   schema: {
     name: 'browser_type',
     description: 'Type text',
-    inputSchema: zodToJsonSchema(typeSchema),
+    inputSchema: zodToJsonSchema(typeVisionkSchema),
   },
 
   handle: async (context, params) => {
-    const validatedParams = typeSchema.parse(params);
+    const validatedParams = typeVisionkSchema.parse(params);
     return await runAndWait(context, `Typed text "${validatedParams.text}"`, async page => {
       await page.keyboard.type(validatedParams.text);
       if (validatedParams.submit)

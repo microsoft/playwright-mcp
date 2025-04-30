@@ -16,6 +16,8 @@
 
 import path from 'path';
 import { chromium } from 'playwright';
+import { Context, navigate } from '@limetest/core';
+import type { ContextOptions } from '@limetest/core';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -23,11 +25,10 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 type Fixtures = {
   client: Client;
-  visionClient: Client;
-  endtoendClient: Client;
-  startClient: (options?: { args?: string[], vision?: boolean, endtoend?: boolean }) => Promise<Client>;
+  startClient: (options?: { args?: string[] }) => Promise<Client>;
   wsEndpoint: string;
   cdpEndpoint: string;
+  coreContext: Context;
 };
 
 export const test = baseTest.extend<Fixtures>({
@@ -36,29 +37,17 @@ export const test = baseTest.extend<Fixtures>({
     await use(await startClient());
   },
 
-  visionClient: async ({ startClient }, use) => {
-    await use(await startClient({ vision: true }));
-  },
-
-  endtoendClient: async ({ startClient }, use) => {
-    await use(await startClient({ endtoend: true }));
-  },
-
   startClient: async ({ }, use, testInfo) => {
     const userDataDir = testInfo.outputPath('user-data-dir');
     let client: StdioClientTransport | undefined;
 
     use(async options => {
       const args = ['--headless', '--user-data-dir', userDataDir];
-      if (options?.vision)
-        args.push('--vision');
-      if (options?.endtoend)
-        args.push('--endtoend');
       if (options?.args)
         args.push(...options.args);
       const transport = new StdioClientTransport({
         command: 'node',
-        args: [path.join(__dirname, '../cli.js'), ...args],
+        args: [path.join(__dirname, '../packages/mcp/cli.js'), ...args],
       });
       const client = new Client({ name: 'test', version: '1.0.0' });
       await client.connect(transport);
@@ -82,6 +71,19 @@ export const test = baseTest.extend<Fixtures>({
     });
     await use(`http://localhost:${port}`);
     await browser.close();
+  },
+
+  coreContext: async ({}, use, testInfo) => {
+    const options: ContextOptions = {
+      userDataDir: testInfo.outputPath(`user-data-dir-core-${testInfo.workerIndex}`),
+      launchOptions: {
+        headless: true,
+        channel: 'chrome',
+      },
+    };
+    const context = new Context(options);
+    await use(context);
+    await context.close();
   },
 });
 
@@ -132,3 +134,16 @@ export const expect = baseExpect.extend({
     };
   },
 });
+
+export async function navigateAndGetSnapshot(coreContext: Context, htmlContent: string): Promise<string> {
+  const navResult = await navigate(true).handle(coreContext, { url: `data:text/html,${encodeURIComponent(htmlContent)}` });
+  const content = navResult.content[0];
+  baseExpect(content.type).toBe('text');
+  return content.text;
+}
+
+export function extractRef(snapshotText: string, regex: RegExp): string {
+  const match = snapshotText.match(regex);
+  baseExpect(match, `Ref regex ${regex} did not match in snapshot:\n${snapshotText}`).not.toBeNull();
+  return match![1];
+}

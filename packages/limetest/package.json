@@ -1,0 +1,32 @@
+{
+  "name": "limetest",
+  "version": "0.0.1",
+  "description": "Litest testing framework and cli",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -w --preserveWatchOutput",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^1.3.20",
+    "@limetest/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "ai": "^4.3.10",
+    "axios": "^1.9.0",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "glob": "10.0.0",
+    "zod": "^3.24.3",
+    "zod-to-json-schema": "^3.24.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "limetest": "cli.js"
+  }
+}

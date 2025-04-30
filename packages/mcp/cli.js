@@ -15,4 +15,4 @@
  * limitations under the License.
  */
 
-require('./lib/program');
+require('./lib/program.js');

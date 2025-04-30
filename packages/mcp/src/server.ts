@@ -17,11 +17,11 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListResourcesRequestSchema, ListToolsRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-import { Context } from './context';
+import { Context } from '@limetest/core';
 
-import type { Tool } from './tools/tool';
-import type { Resource } from './resources/resource';
-import type { ContextOptions } from './context';
+import type { Tool } from '@limetest/core';
+import type { Resource } from '@limetest/core';
+import type { ContextOptions } from '@limetest/core';
 
 type Options = ContextOptions & {
   name: string;
