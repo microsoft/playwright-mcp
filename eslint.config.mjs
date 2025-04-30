@@ -179,6 +179,7 @@ export const baseRules = {
 
   // react
   "react/react-in-jsx-scope": 0,
+  "no-console": 2,
 };
 
 const languageOptions = {

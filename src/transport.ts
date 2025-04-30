@@ -49,7 +49,10 @@ async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, ur
     const server = await serverList.create();
     res.on('close', () => {
       sessions.delete(transport.sessionId);
-      serverList.close(server).catch(e => console.error(e));
+      serverList.close(server).catch(e => {
+        // eslint-disable-next-line no-console
+        console.error(e);
+      });
     });
     return await server.connect(transport);
   }
@@ -113,15 +116,19 @@ export function startHttpTransport(port: number, hostname: string | undefined, s
         resolvedHost = 'localhost';
       url = `http://${resolvedHost}:${resolvedPort}`;
     }
-    console.log(`Listening on ${url}`);
-    console.log('Put this in your client config:');
-    console.log(JSON.stringify({
-      'mcpServers': {
-        'playwright': {
-          'url': `${url}/sse`
+    const message = [
+      `Listening on ${url}`,
+      'Put this in your client config:',
+      JSON.stringify({
+        'mcpServers': {
+          'playwright': {
+            'url': `${url}/sse`
+          }
         }
-      }
-    }, undefined, 2));
-    console.log('If your client supports streamable HTTP, you can use the /mcp endpoint instead.');
+      }, undefined, 2),
+      'If your client supports streamable HTTP, you can use the /mcp endpoint instead.',
+    ].join('\n');
+    // eslint-disable-next-line no-console
+    console.log(message);
   });
 }

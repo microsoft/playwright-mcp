@@ -41,7 +41,6 @@ program
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
       const config = await resolveConfig(options);
-      console.error(config);
       const serverList = new ServerList(() => createServer(config));
       setupExitWatchdog(serverList);
 
