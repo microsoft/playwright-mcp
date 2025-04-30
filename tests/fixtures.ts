@@ -54,7 +54,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
 
   startClient: async ({ mcpHeadless, mcpBrowser }, use, testInfo) => {
     const userDataDir = testInfo.outputPath('user-data-dir');
-    let client: StdioClientTransport | undefined;
+    let client: Client | undefined;
 
     await use(async options => {
       const args = ['--user-data-dir', userDataDir];
@@ -73,7 +73,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
         command: 'node',
         args: [path.join(__dirname, '../cli.js'), ...args],
       });
-      const client = new Client({ name: 'test', version: '1.0.0' });
+      client = new Client({ name: 'test', version: '1.0.0' });
       await client.connect(transport);
       await client.ping();
       return client;
