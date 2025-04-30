@@ -12,7 +12,7 @@
     "dependencies": {
       "@modelcontextprotocol/sdk": "^1.6.1",
       "@limetest/core": "workspace:*",
-      "limetest": "workspace:*",
+      "@limetest/limetest": "workspace:*",
       "dotenv": "^16.4.7",
       "commander": "^13.1.0",
       "zod-to-json-schema": "^3.24.4",

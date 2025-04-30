@@ -17,6 +17,9 @@ importers:
       '@limetest/core':
         specifier: workspace:*
         version: link:packages/core
+      '@limetest/limetest':
+        specifier: workspace:*
+        version: link:packages/limetest
       '@modelcontextprotocol/sdk':
         specifier: ^1.6.1
         version: 1.10.2
@@ -47,9 +50,6 @@ importers:
       eslint-plugin-notice:
         specifier: ^1.0.0
         version: 1.0.0(eslint@9.25.1)
-      limetest:
-        specifier: workspace:*
-        version: link:packages/limetest
       playwright:
         specifier: 1.52.0-alpha-1743011787000
         version: 1.52.0-alpha-1743011787000
@@ -113,6 +113,9 @@ importers:
       '@limetest/core':
         specifier: workspace:*
         version: link:../core
+      '@limetest/limetest':
+        specifier: workspace:*
+        version: link:../limetest
       '@modelcontextprotocol/sdk':
         specifier: ^1.6.1
         version: 1.10.2
@@ -122,9 +125,6 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.5.0
-      limetest:
-        specifier: workspace:*
-        version: link:../limetest
       playwright:
         specifier: 1.52.0-alpha-1743011787000
         version: 1.52.0-alpha-1743011787000

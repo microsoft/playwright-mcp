@@ -12,7 +12,7 @@ Limetest is the most light weight end to end testing framework with AI capabilit
 ## Installation
 
 ```bash
-npm install limetest
+npm install @limetest/limetest
 
 npx playwright install
 ```

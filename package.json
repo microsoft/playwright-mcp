@@ -21,18 +21,11 @@
     "watch": "tsc --watch",
     "test": "playwright test",
     "clean": "pnpm --filter=\"./packages/*\" exec rm -rf lib tsconfig.tsbuildinfo",
-    "npm-publish": "pnpm run clean && pnpm run build && pnpm run test && pnpm --filter=\"limetest\" --filter=\"@limetest/mcp\" publish"
-  },
-  "exports": {
-    "./package.json": "./package.json",
-    ".": {
-      "types": "./index.d.ts",
-      "default": "./index.js"
-    }
+    "npm-publish": "pnpm run clean && pnpm run build && pnpm run test && pnpm --filter=\"@limetest/core\" --filter=\"@limetest/limetest\" --filter=\"@limetest/mcp\" publish"
   },
   "devDependencies": {
     "@limetest/core": "workspace:*",
-    "limetest": "workspace:*",
+    "@limetest/limetest": "workspace:*",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.19.0",
     "@playwright/test": "1.52.0-alpha-1743011787000",

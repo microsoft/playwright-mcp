@@ -1,5 +1,5 @@
 {
-  "name": "limetest",
+  "name": "@limetest/limetest",
   "version": "0.0.1",
   "description": "Litest testing framework and cli",
   "main": "lib/index.js",

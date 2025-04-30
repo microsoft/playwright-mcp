@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { limetest } from 'limetest';
+import { limetest } from '@limetest/limetest';
 
 test('test endtoend tool handle invocation', async ({ coreContext }) => {
   test.setTimeout(15000);

@@ -19,7 +19,7 @@
 // import * as screenshot from '@best/core';
 
 import { createServerWithTools } from './server';
-import * as limetest from 'limetest';
+import * as limetest from '@limetest/limetest';
 import { console } from '@limetest/core';
 
 import type { Tool } from '@limetest/core';
