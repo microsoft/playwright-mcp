@@ -20,8 +20,6 @@ import os from 'os';
 import path from 'path';
 import { devices } from 'playwright';
 
-import { sanitizeForFilePath } from './tools/utils';
-
 import type { Config, ToolCapability } from '../config';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';
 
