@@ -19,16 +19,16 @@
 // import * as screenshot from '@best/core';
 
 import { createServerWithTools } from './server';
-import * as leantest from 'leantest';
-import { console } from '@leantest/core';
+import * as limetest from 'limetest';
+import { console } from '@limetest/core';
 
-import type { Tool } from '@leantest/core';
-import type { Resource } from '@leantest/core';
+import type { Tool } from '@limetest/core';
+import type { Resource } from '@limetest/core';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { LaunchOptions } from 'playwright';
 
-const leantestTools: Tool[] = [
-  leantest.leantest
+const limetestTools: Tool[] = [
+  limetest.limetest
 ];
 
 // const commonTools: Tool[] = [
@@ -83,7 +83,7 @@ const packageJSON = require('../package.json');
 
 export function createServer(options?: Options): Server {
   // const tools = options?.endtoend ? qaTools : (options?.vision ? screenshotTools : snapshotTools);
-  const tools = leantestTools;
+  const tools = limetestTools;
   return createServerWithTools({
     name: 'Playwright',
     version: packageJSON.version,

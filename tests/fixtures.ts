@@ -16,8 +16,8 @@
 
 import path from 'path';
 import { chromium } from 'playwright';
-import { Context, navigate } from '@leantest/core';
-import type { ContextOptions } from '@leantest/core';
+import { Context, navigate } from '@limetest/core';
+import type { ContextOptions } from '@limetest/core';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';

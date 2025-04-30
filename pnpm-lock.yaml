@@ -14,7 +14,7 @@ importers:
       '@eslint/js':
         specifier: ^9.19.0
         version: 9.25.1
-      '@leantest/core':
+      '@limetest/core':
         specifier: workspace:*
         version: link:packages/core
       '@modelcontextprotocol/sdk':
@@ -47,9 +47,9 @@ importers:
       eslint-plugin-notice:
         specifier: ^1.0.0
         version: 1.0.0(eslint@9.25.1)
-      leantest:
+      limetest:
         specifier: workspace:*
-        version: link:packages/leantest
+        version: link:packages/limetest
       playwright:
         specifier: 1.52.0-alpha-1743011787000
         version: 1.52.0-alpha-1743011787000
@@ -72,12 +72,12 @@ importers:
         specifier: ^3.24.4
         version: 3.24.5(zod@3.24.3)
 
-  packages/leantest:
+  packages/limetest:
     dependencies:
       '@ai-sdk/openai':
         specifier: ^1.3.20
         version: 1.3.20(zod@3.24.3)
-      '@leantest/core':
+      '@limetest/core':
         specifier: workspace:*
         version: link:../core
       '@modelcontextprotocol/sdk':
@@ -110,7 +110,7 @@ importers:
 
   packages/mcp:
     dependencies:
-      '@leantest/core':
+      '@limetest/core':
         specifier: workspace:*
         version: link:../core
       '@modelcontextprotocol/sdk':
@@ -122,9 +122,9 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.5.0
-      leantest:
+      limetest:
         specifier: workspace:*
-        version: link:../leantest
+        version: link:../limetest
       playwright:
         specifier: 1.52.0-alpha-1743011787000
         version: 1.52.0-alpha-1743011787000

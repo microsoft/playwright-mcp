@@ -2,10 +2,10 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import axios from 'axios';
 
-import * as common from '@leantest/core';
-import * as snapshot from '@leantest/core';
-import * as screenshot from '@leantest/core';
-import type { Tool as CoreTool } from '@leantest/core';
+import * as common from '@limetest/core';
+import * as snapshot from '@limetest/core';
+import * as screenshot from '@limetest/core';
+import type { Tool as CoreTool } from '@limetest/core';
 
 import dotenv from 'dotenv';
 

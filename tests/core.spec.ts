@@ -15,7 +15,7 @@ import {
   hover,
   type,
   screenshot as coreScreenshot,
-} from '@leantest/core';
+} from '@limetest/core';
 import fs from 'fs/promises';
 
 test('test browser navigate', async ({ coreContext }) => {

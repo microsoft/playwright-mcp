@@ -8,6 +8,6 @@
     "exclude": ["node_modules", "lib"],
     "references": [
         { "path": "../core" },
-        { "path": "../leantest" }
+        { "path": "../limetest" }
     ]
 }

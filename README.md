@@ -1,6 +1,6 @@
-# Leantest
+# Limetest
 
-Leantest end to end testing framework with AI capabilities. Define your test cases in natural language and let AI handle the execution.
+Limetest is the most light weight end to end testing framework with AI capabilities. Define your test cases in natural language and let AI handle the execution.
 
 ### Key Features
 
@@ -12,7 +12,7 @@ Leantest end to end testing framework with AI capabilities. Define your test cas
 ## Installation
 
 ```bash
-npm install litest
+npm install limetest
 
 npx playwright install
 ```
@@ -23,11 +23,11 @@ npx playwright install
 Use --headless for running tests headlessly in CI workflows
 
 ```bash
-npx litest example
+npx limetest example
 ```
 
 
-## litest MCP Server
+## limetest MCP Server
 
 https://github.com/user-attachments/assets/b801f239-dc66-4b3b-bcf2-42e2a9a68721
 
@@ -45,7 +45,7 @@ After cloning this repo, build and add the E2E MCP server to your MCP Client as 
 Notice that you need OpenAI API key to run this MCP server in end to end mode.
 
 ```bash
-npm install @litest/mcp
+npm install @limetest/mcp
 
 npx playwright install
 ```
@@ -58,7 +58,7 @@ Then:
         "litest": {
             "command": "node",
             "args": [
-                "npx @litest/mcp",
+                "npx limetest-mcp",
                 "--api-key=<your openai api key>"
             ]
         }

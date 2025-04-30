@@ -1,5 +1,5 @@
 {
-    "name": "@leantest/mcp",
+    "name": "@limetest/mcp",
     "version": "0.0.1",
     "description": "Litest testing framework MCP Server",
     "main": "lib/index.js",
@@ -11,8 +11,8 @@
     },
     "dependencies": {
       "@modelcontextprotocol/sdk": "^1.6.1",
-      "@leantest/core": "workspace:*",
-      "leantest": "workspace:*",
+      "@limetest/core": "workspace:*",
+      "limetest": "workspace:*",
       "dotenv": "^16.4.7",
       "commander": "^13.1.0",
       "zod-to-json-schema": "^3.24.4",
@@ -24,6 +24,6 @@
       "access": "public"
     },
     "bin": {
-        "leantest-mcp": "cli.js"
+        "limetest-mcp": "cli.js"
     }
 }

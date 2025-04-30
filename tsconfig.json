@@ -17,6 +17,6 @@
   "references": [
     { "path": "./packages/core" },
     { "path": "./packages/mcp" },
-    { "path": "./packages/leantest" }
+    { "path": "./packages/limetest" }
   ]
 }
