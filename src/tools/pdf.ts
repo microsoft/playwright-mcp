@@ -15,10 +15,10 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool';
+import { defineTool } from './tool.js';
 
-import * as javascript from '../javascript';
-import { outputFile } from '../config';
+import * as javascript from '../javascript.js';
+import { outputFile } from '../config.js';
 
 const pdf = defineTool({
   capability: 'pdf',

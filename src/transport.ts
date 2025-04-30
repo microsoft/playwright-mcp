@@ -18,7 +18,7 @@ import http from 'node:http';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
 
-import { ServerList } from './server';
+import { ServerList } from './server.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';

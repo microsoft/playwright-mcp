@@ -33,6 +33,7 @@ const plugins = {
 };
 
 export const baseRules = {
+  "import/extensions": ["error", "ignorePackages", {ts: "always"}],
   "@typescript-eslint/no-floating-promises": "error",
   "@typescript-eslint/no-unused-vars": [
     2,

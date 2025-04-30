@@ -18,7 +18,7 @@ import { fork } from 'child_process';
 import path from 'path';
 
 import { z } from 'zod';
-import { defineTool } from './tool';
+import { defineTool } from './tool.js';
 
 const install = defineTool({
   capability: 'install',

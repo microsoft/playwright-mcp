@@ -16,9 +16,9 @@
 
 import * as playwright from 'playwright';
 
-import { PageSnapshot } from './pageSnapshot';
+import { PageSnapshot } from './pageSnapshot.js';
 
-import type { Context } from './context';
+import type { Context } from './context.js';
 
 export class Tab {
   readonly context: Context;

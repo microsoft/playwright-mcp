@@ -15,6 +15,7 @@
  */
 
 import fs from 'fs';
+import url from 'url';
 import path from 'path';
 import { chromium } from 'playwright';
 
@@ -22,7 +23,7 @@ import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { spawn } from 'child_process';
-import { TestServer } from './testserver';
+import { TestServer } from './testserver/index.ts';
 
 import type { Config } from '../config';
 
@@ -69,9 +70,11 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
         await fs.promises.writeFile(configFile, JSON.stringify(options.config, null, 2));
         args.push(`--config=${configFile}`);
       }
+      // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
+      const __filename = url.fileURLToPath(import.meta.url);
       const transport = new StdioClientTransport({
         command: 'node',
-        args: [path.join(__dirname, '../cli.js'), ...args],
+        args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
       });
       client = new Client({ name: 'test', version: '1.0.0' });
       await client.connect(transport);

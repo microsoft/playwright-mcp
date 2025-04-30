@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 
 test('test snapshot tool list', async ({ client }) => {
   const { tools } = await client.listTools();

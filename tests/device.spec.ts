@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 
 test('browser_take_screenshot (viewport)', async ({ startClient, server }) => {
   const client = await startClient({

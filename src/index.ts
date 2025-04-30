@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-import { createServerWithTools } from './server';
-import common from './tools/common';
-import console from './tools/console';
-import dialogs from './tools/dialogs';
-import files from './tools/files';
-import install from './tools/install';
-import keyboard from './tools/keyboard';
-import navigate from './tools/navigate';
-import network from './tools/network';
-import pdf from './tools/pdf';
-import snapshot from './tools/snapshot';
-import tabs from './tools/tabs';
-import screen from './tools/screen';
+import { createServerWithTools } from './server.js';
+import common from './tools/common.js';
+import console from './tools/console.js';
+import dialogs from './tools/dialogs.js';
+import files from './tools/files.js';
+import install from './tools/install.js';
+import keyboard from './tools/keyboard.js';
+import navigate from './tools/navigate.js';
+import network from './tools/network.js';
+import pdf from './tools/pdf.js';
+import snapshot from './tools/snapshot.js';
+import tabs from './tools/tabs.js';
+import screen from './tools/screen.js';
 
-import type { Tool } from './tools/tool';
-import type { Config } from '../config';
+import type { Tool } from './tools/tool.js';
+import type { Config } from '../config.js';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 const snapshotTools: Tool<any>[] = [
@@ -60,7 +60,7 @@ const screenshotTools: Tool<any>[] = [
   ...tabs(false),
 ];
 
-const packageJSON = require('../package.json');
+import packageJSON from '../package.json' with { type: 'json' };
 
 export async function createServer(config: Config = {}): Promise<Server> {
   const allTools = config.vision ? screenshotTools : snapshotTools;

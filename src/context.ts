@@ -16,13 +16,13 @@
 
 import * as playwright from 'playwright';
 
-import { waitForCompletion } from './tools/utils';
-import { ManualPromise } from './manualPromise';
-import { Tab } from './tab';
+import { waitForCompletion } from './tools/utils.js';
+import { ManualPromise } from './manualPromise.js';
+import { Tab } from './tab.js';
 
-import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
-import type { ModalState, Tool, ToolActionResult } from './tools/tool';
-import type { Config } from '../config';
+import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
+import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
+import type { Config } from '../config.js';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
