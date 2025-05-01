@@ -267,7 +267,7 @@ ${code.join('\n')}
   private async _setupRequestInterception(context: playwright.BrowserContext) {
     if (this._allowedHosts.length === 0)
       return;
-    
+
     await context.route('**/*', async (route, request) => {
       const url = new URL(request.url());
       if (this._allowedHosts.includes(url.host))
