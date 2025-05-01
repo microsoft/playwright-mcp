@@ -100,7 +100,7 @@ export type Config = {
   requestPatternAllowlist?: string[];
 
   /**
-   * List of Playwright Glob URL patterns to block the browser from requesting. Blocklist is evaluated before allowlist.
+   * List of Playwright Glob URL patterns to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed.
    */
   requestPatternBlocklist?: string[];
 
