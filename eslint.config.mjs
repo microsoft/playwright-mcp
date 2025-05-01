@@ -1,5 +1,6 @@
 /**
  * Copyright (c) Microsoft Corporation.
+ * Modified by Limetest.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,7 +189,10 @@ const languageOptions = {
 
 export default [
   {
-    ignores: ["**/*.js"],
+    ignores: [
+      "**/*.js",
+      "**/lib/**/*.d.ts"
+    ],
   },
   {
     files: ["**/*.ts", "**/*.tsx"],
