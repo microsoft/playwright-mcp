@@ -76,6 +76,7 @@ The Playwright MCP server supports the following command-line options:
 - `--user-data-dir <path>`: Path to the user data directory
 - `--port <port>`: Port to listen on for SSE transport
 - `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
+- `--allowed-hosts <hosts>`: Comma-separated list of allowed hosts. Default is to allow all hosts.
 - `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
 - `--config <path>`: Path to the configuration file
 
@@ -150,6 +151,9 @@ The Playwright MCP server can be configured using a JSON configuration file. Her
 
   // Directory for output files
   outputDir?: string;
+
+  // List of allowed hosts for requests. Default is to allow all hosts.
+  allowedHosts?: string[];
 
   // Tool-specific configurations
   tools?: {

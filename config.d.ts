@@ -95,6 +95,11 @@ export type Config = {
   outputDir?: string;
 
   /**
+   * List of allowed hosts for requests. Default is to allow all hosts.
+   */
+  allowedHosts?: string[];
+
+  /**
    * Configuration for specific tools.
    */
   tools?: {

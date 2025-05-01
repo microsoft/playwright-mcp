@@ -38,10 +38,12 @@ export class Context {
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
+  private _allowedHosts: string[];
 
   constructor(tools: Tool[], config: Config) {
     this.tools = tools;
     this.config = config;
+    this._allowedHosts = config.allowedHosts || [];
   }
 
   modalStates(): ModalState[] {
@@ -262,11 +264,25 @@ ${code.join('\n')}
     }).catch(() => {});
   }
 
+  private async _setupRequestInterception(context: playwright.BrowserContext) {
+    if (this._allowedHosts.length === 0)
+      return;
+    
+    await context.route('**/*', async (route, request) => {
+      const url = new URL(request.url());
+      if (this._allowedHosts.includes(url.host))
+        await route.continue();
+      else
+        await route.abort('blockedbyclient');
+    });
+  }
+
   private async _ensureBrowserContext() {
     if (!this._browserContext) {
       const context = await this._createBrowserContext();
       this._browser = context.browser;
       this._browserContext = context.browserContext;
+      await this._setupRequestInterception(this._browserContext);
       for (const page of this._browserContext.pages())
         this._onPageCreated(page);
       this._browserContext.on('page', page => this._onPageCreated(page));

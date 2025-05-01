@@ -29,8 +29,7 @@ program
     .version('Version ' + packageJSON.version)
     .name(packageJSON.name)
     .option('--browser <browser>', 'Browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.')
-    .option('--caps <caps>', 'Comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.')
-    .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
+    .option('--caps <caps>', 'Comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.')    .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .option('--executable-path <path>', 'Path to the browser executable.')
     .option('--headless', 'Run browser in headless mode, headed by default')
     .option('--device <device>', 'Device to emulate, for example: "iPhone 15"')
@@ -38,6 +37,7 @@ program
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--allowed-hosts <hosts>', 'Comma-separated list of allowed hosts.', commaSeparatedList)
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
       const config = await resolveConfig(options);
@@ -61,6 +61,10 @@ function setupExitWatchdog(serverList: ServerList) {
   process.stdin.on('close', handleExit);
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
+}
+
+function commaSeparatedList(value: string): string[] {
+  return value.split(',').map(v => v.trim());
 }
 
 program.parse(process.argv);

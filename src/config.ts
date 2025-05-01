@@ -37,6 +37,7 @@ export type CLIOptions = {
   host?: string;
   vision?: boolean;
   config?: string;
+  allowedHosts?: string[];
 };
 
 const defaultConfig: Config = {
@@ -51,6 +52,7 @@ const defaultConfig: Config = {
       viewport: null,
     },
   },
+  allowedHosts: [],
 };
 
 export async function resolveConfig(cliOptions: CLIOptions): Promise<Config> {
@@ -111,6 +113,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
+    allowedHosts: cliOptions.allowedHosts || [],
   };
 }
 
