@@ -4,9 +4,9 @@ Limetest is the most light weight end to end testing framework with AI capabilit
 
 ### Key Features
 
-- **Lightweight & Efficient**: Leverages the Playwright snapshot instead of pixel analysis for faster, more reliable interactions.
-- **Optimized for AI**: Works with language models without requiring vision capabilities by using structured data representations.
-- **Consistent Results**: Provides predictable test outcomes by eliminating the variability inherent in screenshot-based testing approaches.
+- **Optimized for AI**: Define your test cases in plain language and let AI execute them end to end.
+- **Lightweight & Efficient**: Leverages Playwright snapshot instead of pixel analysis for faster, more reliable execution.
+- **Vision Capabilities**: Falls back to vision mode when snapshot mode fails during more sophisticated test scenarios.
 
 ## Installation
 
