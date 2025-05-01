@@ -16,6 +16,16 @@ npm install @limetest/limetest
 npx playwright install
 ```
 
+### User data directory
+
+limtest will launch Chrome browser with the new profile, located at
+
+```
+- `%USERPROFILE%\AppData\Local\ms-limetest\mcp-chrome-profile` on Windows
+- `~/Library/Caches/ms-limetest/mcp-chrome-profile` on macOS
+- `~/.cache/ms-limetest/mcp-chrome-profile` on Linux
+```
+
 ## Usage
 
 ### Run Tests
@@ -60,16 +70,6 @@ Then:
         }
     }
 }
-```
-
-### User data directory
-
-limtest MCP will launch Chrome browser with the new profile, located at
-
-```
-- `%USERPROFILE%\AppData\Local\ms-limetest\mcp-chrome-profile` on Windows
-- `~/Library/Caches/ms-limetest/mcp-chrome-profile` on macOS
-- `~/.cache/ms-limetest/mcp-chrome-profile` on Linux
 ```
 
 All the logged in information will be stored in that profile, you can delete it between sessions if you'd like to clear the offline state.
