@@ -23,9 +23,6 @@
     "zod": "^3.24.3",
     "zod-to-json-schema": "^3.24.4"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "bin": {
     "limetest": "cli.js"
   }

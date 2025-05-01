@@ -20,9 +20,6 @@
       "playwright": "1.52.0-alpha-1743011787000"
     },
     "devDependencies": {},
-    "publishConfig": {
-      "access": "public"
-    },
     "bin": {
         "limetest-mcp": "cli.js"
     }
