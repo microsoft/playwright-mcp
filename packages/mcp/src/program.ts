@@ -87,7 +87,7 @@ async function createUserDataDir() {
     cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
   else
     throw new Error('Unsupported platform: ' + process.platform);
-  const result = path.join(cacheDirectory, 'ms-playwright', 'mcp-chrome-profile');
+  const result = path.join(cacheDirectory, 'ms-limetest', 'mcp-chrome-profile');
   await fs.promises.mkdir(result, { recursive: true });
   return result;
 }
@@ -145,7 +145,7 @@ async function startSSEServer(port: number, serverList: ServerList) {
     console.log('Put this in your client config:');
     console.log(JSON.stringify({
       'mcpServers': {
-        'playwright': {
+        'limetest': {
           'url': `${url}/sse`
         }
       }

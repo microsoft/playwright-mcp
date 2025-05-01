@@ -1,13 +1,12 @@
 # Limetest
 
-Limetest is the most light weight end to end testing framework with AI capabilities. Define your test cases in natural language and let AI handle the execution.
+Limetest is the most light weight end to end testing framework with AI capabilities that can run in your CI workflows. Define your test cases in natural language and let AI handle the execution.
 
 ### Key Features
 
-- **Fast and lightweight**: Uses Playwright's accessibility tree, not pixel-based input.
-- **LLM-friendly**: No vision models needed, operates purely on structured data.
-- **Deterministic tool application**: Avoids ambiguity common with screenshot-based approaches.
-
+- **Lightweight & Efficient**: Leverages the Playwright snapshot instead of pixel analysis for faster, more reliable interactions.
+- **Optimized for AI**: Works with language models without requiring vision capabilities by using structured data representations.
+- **Consistent Results**: Provides predictable test outcomes by eliminating the variability inherent in screenshot-based testing approaches.
 
 ## Installation
 
@@ -26,18 +25,15 @@ Use --headless for running tests headlessly in CI workflows
 npx limetest example
 ```
 
-
 ## limetest MCP Server
 
 https://github.com/user-attachments/assets/b801f239-dc66-4b3b-bcf2-42e2a9a68721
 
-A Model Context Protocol (MCP) server powered by [Playwright](https://playwright.dev) that provides automated end-to-end testing with dedicated LLM-driven test validation, separating testing concerns from the MCP client.
-
-Note: This MCP is forked from Microsoft's [Playwright MCP](https://github.com/microsoft/playwright-mcp). We optimized Playwright MCP for automated end to end testing.
+A Model Context Protocol (MCP) server powered by [Playwright](https://playwright.dev) that streamlinse end to end testing for your MCP client.
 
 ### Use Cases
 
-- Automated testing driven by LLMs
+- Automated testing planned and executed by LLMs
 
 ### Example config
 
@@ -55,10 +51,10 @@ Then:
 ```js
 {
     "mcpServers": {
-        "litest": {
-            "command": "node",
+        "limetest": {
+            "command": "npx",
             "args": [
-                "npx limetest-mcp",
+                "npx @limetest/mcp",
                 "--api-key=<your openai api key>"
             ]
         }
@@ -68,12 +64,16 @@ Then:
 
 ### User data directory
 
-litest MCP will launch Chrome browser with the new profile, located at
+limtest MCP will launch Chrome browser with the new profile, located at
 
 ```
-- `%USERPROFILE%\AppData\Local\ms-playwright\mcp-chrome-profile` on Windows
-- `~/Library/Caches/ms-playwright/mcp-chrome-profile` on macOS
-- `~/.cache/ms-playwright/mcp-chrome-profile` on Linux
+- `%USERPROFILE%\AppData\Local\ms-limetest\mcp-chrome-profile` on Windows
+- `~/Library/Caches/ms-limetest/mcp-chrome-profile` on macOS
+- `~/.cache/ms-limetest/mcp-chrome-profile` on Linux
 ```
 
-All the logged in information will be stored in that profile, you can delete it between sessions if you'dlike to clear the offline state.
+All the logged in information will be stored in that profile, you can delete it between sessions if you'd like to clear the offline state.
+
+## Acknowledgements
+
+Limetest is based on [Microsoft's Playwright MCP](https://github.com/microsoft/playwright-mcp) and optimized for automated end-to-end testing as a standalone framework. This project is distributed under the Apache 2.0 License.
