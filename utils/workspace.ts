@@ -7,7 +7,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
 
 interface PackageDescriptor {
   name: string;
@@ -115,14 +114,14 @@ class Workspace {
       for (const otherPackage of this._packages) {
         if (pkg.packageJSON.dependencies && pkg.packageJSON.dependencies[otherPackage.name]) {
           // Only replace with workspace:* if it's not already using the workspace protocol
-          if (!pkg.packageJSON.dependencies[otherPackage.name].startsWith('workspace:')) {
+          if (!pkg.packageJSON.dependencies[otherPackage.name].startsWith('workspace:'))
             pkg.packageJSON.dependencies[otherPackage.name] = 'workspace:*';
-          }
+
         }
         if (pkg.packageJSON.devDependencies && pkg.packageJSON.devDependencies[otherPackage.name]) {
-          if (!pkg.packageJSON.devDependencies[otherPackage.name].startsWith('workspace:')) {
+          if (!pkg.packageJSON.devDependencies[otherPackage.name].startsWith('workspace:'))
             pkg.packageJSON.devDependencies[otherPackage.name] = 'workspace:*';
-          }
+
         }
       }
       await maybeWriteJSON(pkg.packageJSONPath, pkg.packageJSON);
@@ -132,7 +131,7 @@ class Workspace {
   }
 }
 
-const readJSON = async (filePath: string): Promise<any> => 
+const readJSON = async (filePath: string): Promise<any> =>
   JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
 
 const writeJSON = async (filePath: string, json: any): Promise<void> => {
@@ -184,7 +183,7 @@ async function parseCLI() {
     '--get-version': async () => {
       console.log(await workspace.version());
     },
-    '--set-version': async (version) => {
+    '--set-version': async version => {
       if (!version)
         die('ERROR: Please specify version! e.g. --set-version 1.0.0');
       await workspace.setVersion(version);
@@ -205,8 +204,7 @@ async function parseCLI() {
 }
 
 // Run if this is the main module
-if (require.main === module) {
+if (require.main === module)
   parseCLI().catch(console.error);
-} else {
+else
   module.exports = { workspace };
-}
