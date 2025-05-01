@@ -48,8 +48,8 @@ test('browser_network_requests', async ({ client, server }) => {
   })).toHaveTextContent(`[GET] http://localhost:${server.PORT}/json => [200] OK`);
 });
 
-test('allowedHosts default to allow all', async ({ client, server }) => {
-  server.route('/allowed', (req, res) => {
+test('allowedRequestPatterns defaults to allow all', async ({ client, server }) => {
+  server.route('/allowed', (_req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('The pages content!');
   });
@@ -64,9 +64,9 @@ test('allowedHosts default to allow all', async ({ client, server }) => {
   expect(response).toContainTextContent('The pages content!');
 });
 
-test('allowedHosts blocks non-allowed host', async ({ startClient, browserName }) => {
+test('allowedRequestPatterns blocks url', async ({ startClient }) => {
   const client = await startClient({
-    args: ['--allowed-hosts', 'localhost'],
+    args: ['--allowed-request-patterns', 'https://localhost:1234/**/*'],
   });
 
   const response = await client.callTool({
@@ -79,14 +79,14 @@ test('allowedHosts blocks non-allowed host', async ({ startClient, browserName }
   expect(response).toHaveTextContent(/page\.goto: (Blocked by Web Inspector|NS_ERROR_FAILURE|net::ERR_BLOCKED_BY_CLIENT)/);
 });
 
-test('allowedHosts multiple entries works', async ({ startClient, server }) => {
-  server.route('/allowed', (req, res) => {
+test('allowedRequestPatterns multiple entries works', async ({ startClient, server }) => {
+  server.route('/allowed', (_req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('The pages content!');
   });
 
   const client = await startClient({
-    args: ['--allowed-hosts', `example.com,localhost:${server.PORT},playwright.dev`],
+    args: ['--allowed-request-patterns', `https://example.com/foo,${server.PREFIX}/allowed,https://example.com/bar`],
   });
 
   const response = await client.callTool({
@@ -97,19 +97,4 @@ test('allowedHosts multiple entries works', async ({ startClient, server }) => {
   });
 
   expect(response).toContainTextContent('The pages content!');
-});
-
-test('allowedHosts requires port if target url contains explicit port', async ({ startClient, server, browserName }) => {
-  const client = await startClient({
-    args: ['--allowed-hosts', `localhost`],
-  });
-
-  const response = await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: `${server.PREFIX}/nope`
-    },
-  });
-
-  expect(response).toHaveTextContent(/page\.goto: (Blocked by Web Inspector|NS_ERROR_FAILURE|net::ERR_BLOCKED_BY_CLIENT)/);
 });

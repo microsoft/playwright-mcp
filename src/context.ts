@@ -38,12 +38,12 @@ export class Context {
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
-  private _allowedHosts: string[];
+  private _allowedRequestPatterns: string[];
 
   constructor(tools: Tool[], config: Config) {
     this.tools = tools;
     this.config = config;
-    this._allowedHosts = config.allowedHosts || [];
+    this._allowedRequestPatterns = config.allowedRequestPatterns || [];
   }
 
   modalStates(): ModalState[] {
@@ -265,16 +265,13 @@ ${code.join('\n')}
   }
 
   private async _setupRequestInterception(context: playwright.BrowserContext) {
-    if (this._allowedHosts.length === 0)
+    if (this._allowedRequestPatterns.length === 0)
       return;
 
-    await context.route('**/*', async (route, request) => {
-      const url = new URL(request.url());
-      if (this._allowedHosts.includes(url.host))
-        await route.continue();
-      else
-        await route.abort('blockedbyclient');
-    });
+    await context.route('**/*', route => route.abort('blockedbyclient'));
+
+    for (const allowedPattern of this._allowedRequestPatterns)
+      await context.route(allowedPattern, route => route.continue());
   }
 
   private async _ensureBrowserContext() {
@@ -285,7 +282,7 @@ ${code.join('\n')}
       await this._setupRequestInterception(this._browserContext);
       for (const page of this._browserContext.pages())
         this._onPageCreated(page);
-      this._browserContext.on('page', page => this._onPageCreated(page));
+      this._browserContext.on('page', (page: playwright.Page) => this._onPageCreated(page));
     }
     return this._browserContext;
   }

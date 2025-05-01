@@ -95,9 +95,9 @@ export type Config = {
   outputDir?: string;
 
   /**
-   * List of allowed hosts for requests. Default is to allow all hosts.
+   * List of Playwright Glob URL patterns (https://playwright.dev/docs/network#glob-url-patterns) to allow the browser to request. Default is to allow all.
    */
-  allowedHosts?: string[];
+  allowedRequestPatterns?: string[];
 
   /**
    * Configuration for specific tools.
