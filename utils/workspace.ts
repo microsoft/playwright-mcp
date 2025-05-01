@@ -111,12 +111,19 @@ class Workspace {
         pkg.packageJSON.license = workspacePackageJSON.license;
       }
 
-      // 3. Update internal dependencies to use the same version
+      // 3. Handle internal dependencies - always use workspace:* for local development
       for (const otherPackage of this._packages) {
-        if (pkg.packageJSON.dependencies && pkg.packageJSON.dependencies[otherPackage.name])
-          pkg.packageJSON.dependencies[otherPackage.name] = version;
-        if (pkg.packageJSON.devDependencies && pkg.packageJSON.devDependencies[otherPackage.name])
-          pkg.packageJSON.devDependencies[otherPackage.name] = version;
+        if (pkg.packageJSON.dependencies && pkg.packageJSON.dependencies[otherPackage.name]) {
+          // Only replace with workspace:* if it's not already using the workspace protocol
+          if (!pkg.packageJSON.dependencies[otherPackage.name].startsWith('workspace:')) {
+            pkg.packageJSON.dependencies[otherPackage.name] = 'workspace:*';
+          }
+        }
+        if (pkg.packageJSON.devDependencies && pkg.packageJSON.devDependencies[otherPackage.name]) {
+          if (!pkg.packageJSON.devDependencies[otherPackage.name].startsWith('workspace:')) {
+            pkg.packageJSON.devDependencies[otherPackage.name] = 'workspace:*';
+          }
+        }
       }
       await maybeWriteJSON(pkg.packageJSONPath, pkg.packageJSON);
     }
