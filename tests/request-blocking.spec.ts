@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test as _test, expect } from './fixtures';
+import { test as _test, expect } from './fixtures.ts';
 
 const test = _test.extend<{ fetchPage: (url: string, config?: { allowlist?: string, blocklist?: string }) => Promise<string> }>({
   fetchPage: async ({ server, startClient }, use) => {
