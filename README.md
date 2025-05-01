@@ -76,7 +76,8 @@ The Playwright MCP server supports the following command-line options:
 - `--user-data-dir <path>`: Path to the user data directory
 - `--port <port>`: Port to listen on for SSE transport
 - `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
-- `--allowed-request-patterns <patterns>`: Comma-separated list of Playwright Glob URL patterns (https://playwright.dev/docs/network#glob-url-patterns) to allow the browser to request. Default is to allow all.
+- `--request-pattern-allowlist <patterns>`: Comma-separated list of Playwright Glob URL patterns (https://playwright.dev/docs/network#glob-url-patterns) to allow the browser to request. Default is to allow all.
+- `--request-pattern-blocklist <patterns>`: List of Playwright Glob URL patterns to block the browser from requesting. Blocklist is evaluated before allowlist.
 - `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
 - `--config <path>`: Path to the configuration file
 
@@ -153,7 +154,7 @@ The Playwright MCP server can be configured using a JSON configuration file. Her
   outputDir?: string;
 
   // List of Playwright Glob URL patterns (https://playwright.dev/docs/network#glob-url-patterns) to allow the browser to request. Default is to allow all.
-  allowedRequestPatterns?: string[];
+  requestPatternAllowlist?: string[];
 
   // Tool-specific configurations
   tools?: {

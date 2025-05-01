@@ -37,7 +37,8 @@ export type CLIOptions = {
   host?: string;
   vision?: boolean;
   config?: string;
-  allowedRequestPatterns?: string[];
+  requestPatternAllowlist?: string[];
+  requestPatternBlocklist?: string[];
 };
 
 const defaultConfig: Config = {
@@ -52,7 +53,8 @@ const defaultConfig: Config = {
       viewport: null,
     },
   },
-  allowedRequestPatterns: [],
+  requestPatternAllowlist: [],
+  requestPatternBlocklist: [],
 };
 
 export async function resolveConfig(cliOptions: CLIOptions): Promise<Config> {
@@ -113,7 +115,8 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
-    allowedRequestPatterns: cliOptions.allowedRequestPatterns || [],
+    requestPatternAllowlist: cliOptions.requestPatternAllowlist || [],
+    requestPatternBlocklist: cliOptions.requestPatternBlocklist || [],
   };
 }
 

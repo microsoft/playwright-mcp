@@ -38,12 +38,14 @@ export class Context {
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
-  private _allowedRequestPatterns: string[];
+  private _requestPatternAllowlist: string[];
+  private _requestPatternBlocklist: string[];
 
   constructor(tools: Tool[], config: Config) {
     this.tools = tools;
     this.config = config;
-    this._allowedRequestPatterns = config.allowedRequestPatterns || [];
+    this._requestPatternAllowlist = config.requestPatternAllowlist || [];
+    this._requestPatternBlocklist = config.requestPatternBlocklist || [];
   }
 
   modalStates(): ModalState[] {
@@ -265,13 +267,17 @@ ${code.join('\n')}
   }
 
   private async _setupRequestInterception(context: playwright.BrowserContext) {
-    if (this._allowedRequestPatterns.length === 0)
-      return;
+    if (this._requestPatternAllowlist.length > 0) {
+      await context.route('**/*', route => route.abort('blockedbyclient'));
 
-    await context.route('**/*', route => route.abort('blockedbyclient'));
+      for (const allowedPattern of this._requestPatternAllowlist)
+        await context.route(allowedPattern, route => route.continue());
+    }
 
-    for (const allowedPattern of this._allowedRequestPatterns)
-      await context.route(allowedPattern, route => route.continue());
+    if (this._requestPatternBlocklist.length > 0) {
+      for (const deniedPattern of this._requestPatternBlocklist)
+        await context.route(deniedPattern, route => route.abort('blockedbyclient'));
+    }
   }
 
   private async _ensureBrowserContext() {
