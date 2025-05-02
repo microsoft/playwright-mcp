@@ -26,17 +26,23 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
 
-const test = baseTest.extend<{ serverEndpoint: string }>({
+const test = baseTest.extend<{ serverEndpoint: URL }>({
   serverEndpoint: async ({}, use) => {
-    const cp = spawn('node', [path.join(path.dirname(__filename), '../cli.js'), '--port', '0'], { stdio: 'pipe' });
+    const cp = spawn('node', [path.join(path.dirname(__filename), '../cli.js'), '--port', '0', '--secret', 'mySecretValue'], { stdio: 'pipe' });
     try {
       let stdout = '';
-      const url = await new Promise<string>(resolve => cp.stdout?.on('data', data => {
+      const url = await new Promise<URL>(resolve => cp.stdout?.on('data', data => {
         stdout += data.toString();
         const match = stdout.match(/Listening on (http:\/\/.*)/);
-        if (match)
-          resolve(match[1]);
+        if (match) {
+          const baseURL = new URL(match[1]);
+          baseURL.searchParams.set('secret', 'mySecretValue');
+          resolve(baseURL);
+        }
       }));
+
+      cp.stderr.pipe(process.stderr);
+      cp.stdout.pipe(process.stdout);
 
       await use(url);
     } finally {
@@ -46,16 +52,25 @@ const test = baseTest.extend<{ serverEndpoint: string }>({
 });
 
 test('sse transport', async ({ serverEndpoint }) => {
-  const transport = new SSEClientTransport(new URL(serverEndpoint));
+  const transport = new SSEClientTransport(serverEndpoint);
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
   await client.ping();
 });
 
 test('streamable http transport', async ({ serverEndpoint }) => {
-  const transport = new StreamableHTTPClientTransport(new URL('/mcp', serverEndpoint));
+  serverEndpoint.pathname = '/mcp';
+  const transport = new StreamableHTTPClientTransport(serverEndpoint);
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
   await client.ping();
   expect(transport.sessionId, 'has session support').toBeDefined();
+});
+
+test('streamable http transport auth', async ({ serverEndpoint }) => {
+  serverEndpoint.pathname = '/mcp';
+  serverEndpoint.searchParams.delete('secret');
+  const transport = new StreamableHTTPClientTransport(serverEndpoint);
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await expect(() => client.connect(transport)).rejects.toThrow(/403/);
 });

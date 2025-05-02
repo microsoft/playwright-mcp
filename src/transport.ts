@@ -61,7 +61,12 @@ async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, ur
   res.end('Method not allowed');
 }
 
-async function handleStreamable(req: http.IncomingMessage, res: http.ServerResponse, serverList: ServerList, sessions: Map<string, StreamableHTTPServerTransport>) {
+async function handleStreamable(req: http.IncomingMessage, res: http.ServerResponse, url: URL, serverList: ServerList, sessions: Map<string, StreamableHTTPServerTransport>, secret: string | undefined) {
+  if (secret && url.searchParams.get('secret') !== secret) {
+    res.statusCode = 403;
+    return res.end('Forbidden');
+  }
+
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (sessionId) {
     const transport = sessions.get(sessionId);
@@ -93,36 +98,41 @@ async function handleStreamable(req: http.IncomingMessage, res: http.ServerRespo
   res.end('Invalid request');
 }
 
-export function startHttpTransport(port: number, hostname: string | undefined, serverList: ServerList) {
+export function startHttpTransport(port: number, hostname: string | undefined, serverList: ServerList, secret: string | undefined) {
   const sseSessions = new Map<string, SSEServerTransport>();
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);
     if (url.pathname.startsWith('/mcp'))
-      await handleStreamable(req, res, serverList, streamableSessions);
+      await handleStreamable(req, res, url, serverList, streamableSessions, secret);
     else
       await handleSSE(req, res, url, serverList, sseSessions);
   });
   httpServer.listen(port, hostname, () => {
     const address = httpServer.address();
     assert(address, 'Could not bind server socket');
-    let url: string;
+    let baseUrl: string;
     if (typeof address === 'string') {
-      url = address;
+      baseUrl = address;
     } else {
       const resolvedPort = address.port;
       let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
       if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
         resolvedHost = 'localhost';
-      url = `http://${resolvedHost}:${resolvedPort}`;
+      baseUrl = `http://${resolvedHost}:${resolvedPort}`;
     }
+
+    const sseUrl = new URL('/sse', baseUrl);
+    if (secret)
+      sseUrl.searchParams.set('secret', secret);
+
     const message = [
-      `Listening on ${url}`,
+      `Listening on ${baseUrl}`,
       'Put this in your client config:',
       JSON.stringify({
         'mcpServers': {
           'playwright': {
-            'url': `${url}/sse`
+            'url': `${sseUrl}`
           }
         }
       }, undefined, 2),

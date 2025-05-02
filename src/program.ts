@@ -37,6 +37,7 @@ program
     .option('--user-data-dir <path>', 'Path to the user data directory')
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
+    .option('--secret <secret>', 'Secret used to secure the SSE transport.')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
@@ -45,7 +46,7 @@ program
       setupExitWatchdog(serverList);
 
       if (options.port)
-        startHttpTransport(+options.port, options.host, serverList);
+        startHttpTransport(+options.port, options.host, serverList, options.secret);
       else
         await startStdioTransport(serverList);
     });
