@@ -27,7 +27,7 @@ import pdf from './tools/pdf.js';
 import snapshot from './tools/snapshot.js';
 import tabs from './tools/tabs.js';
 import screen from './tools/screen.js';
-
+import testing from './tools/testing.js';
 import type { Tool } from './tools/tool.js';
 import type { Config } from '../config.js';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -44,6 +44,7 @@ const snapshotTools: Tool<any>[] = [
   ...pdf,
   ...snapshot,
   ...tabs(true),
+  ...testing,
 ];
 
 const screenshotTools: Tool<any>[] = [
@@ -58,6 +59,7 @@ const screenshotTools: Tool<any>[] = [
   ...pdf,
   ...screen,
   ...tabs(false),
+  ...testing,
 ];
 
 import packageJSON from '../package.json' with { type: 'json' };

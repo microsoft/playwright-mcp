@@ -32,6 +32,7 @@ import pdfTools from '../lib/tools/pdf.js';
 import snapshotTools from '../lib/tools/snapshot.js';
 import tabsTools from '../lib/tools/tabs.js';
 import screenTools from '../lib/tools/screen.js';
+import testTools from '../lib/tools/testing.js';
 
 // Category definitions for tools
 const categories = {
@@ -61,6 +62,9 @@ const categories = {
     ...commonTools(true),
     ...installTools,
     ...dialogsTools(true),
+  ],
+  'Testing': [
+    ...testTools,
   ],
 };
 
