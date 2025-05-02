@@ -56,7 +56,7 @@ test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
 });
 
 test('should throw connection error and allow re-connecting', async ({ cdpEndpoint, startClient }) => {
-  const port = 3200 + (+process.env.TEST_PARALLEL_INDEX!);
+  const port = 3200 + test.info().parallelIndex;
   const client = await startClient({ args: [`--cdp-endpoint=http://localhost:${port}`] });
   expect(await client.callTool({
     name: 'browser_navigate',

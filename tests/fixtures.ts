@@ -96,7 +96,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
 
     await use(async port => {
       if (!port)
-        port = 3200 + (+process.env.TEST_PARALLEL_INDEX!);
+        port = 3200 + test.info().parallelIndex;
       if (browserProcess)
         return `http://localhost:${port}`;
       browserProcess = spawn(chromium.executablePath(), [
