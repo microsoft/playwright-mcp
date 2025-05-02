@@ -22,6 +22,7 @@ import { devices } from 'playwright';
 
 import type { Config, ToolCapability } from '../config.js';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';
+import { sanitizeForFilePath } from './tools/utils.js';
 
 export type CLIOptions = {
   browser?: string;
@@ -152,7 +153,8 @@ async function createUserDataDir(options: { browserName: 'chromium' | 'firefox' 
 export async function outputFile(config: Config, name: string): Promise<string> {
   const result = config.outputDir ?? os.tmpdir();
   await fs.promises.mkdir(result, { recursive: true });
-  return path.join(result, name);
+  const fileName = sanitizeForFilePath(name);
+  return path.join(result, fileName);
 }
 
 function pickDefined<T extends object>(obj: T | undefined): Partial<T> {
