@@ -23,7 +23,7 @@ test('cdp server', async ({ cdpEndpoint, startClient }) => {
     arguments: {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
-  })).toContainTextContent(`- text: Hello, world!`);
+  })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
 });
 
 test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
@@ -50,7 +50,7 @@ test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
 - Page Title: 
 - Page Snapshot
 \`\`\`yaml
-- text: hello world
+- generic [ref=s1e2]: hello world
 \`\`\`
 `);
 });
@@ -70,5 +70,5 @@ test('should throw connection error and allow re-connecting', async ({ cdpEndpoi
     arguments: {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
-  })).toContainTextContent(`- text: Hello, world!`);
+  })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
 });

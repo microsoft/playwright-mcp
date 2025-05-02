@@ -37,7 +37,7 @@ test('save as pdf', async ({ client, mcpBrowser }) => {
     arguments: {
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
-  })).toContainTextContent(`- text: Hello, world!`);
+  })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
 
   const response = await client.callTool({
     name: 'browser_pdf_save',

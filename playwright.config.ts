@@ -24,7 +24,7 @@ export default defineConfig<TestOptions>({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? 'list' : [['list'], ['html']],
+  reporter: 'list',
   projects: [
     { name: 'chrome' },
     { name: 'msedge', use: { mcpBrowser: 'msedge' } },
