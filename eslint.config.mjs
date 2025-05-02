@@ -33,6 +33,7 @@ const plugins = {
 };
 
 export const baseRules = {
+  "import/extensions": ["error", "ignorePackages", {ts: "always"}],
   "@typescript-eslint/no-floating-promises": "error",
   "@typescript-eslint/no-unused-vars": [
     2,
@@ -179,6 +180,7 @@ export const baseRules = {
 
   // react
   "react/react-in-jsx-scope": 0,
+  "no-console": 2,
 };
 
 const languageOptions = {

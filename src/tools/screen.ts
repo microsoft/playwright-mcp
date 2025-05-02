@@ -15,9 +15,9 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool';
+import { defineTool } from './tool.js';
 
-import * as javascript from '../javascript';
+import * as javascript from '../javascript.js';
 
 const elementSchema = z.object({
   element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),

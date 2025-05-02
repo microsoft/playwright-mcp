@@ -16,14 +16,14 @@
 
 import { program } from 'commander';
 
-import { createServer } from './index';
-import { ServerList } from './server';
+import { createServer } from './index.js';
+import { ServerList } from './server.js';
 
-import { startHttpTransport, startStdioTransport } from './transport';
+import { startHttpTransport, startStdioTransport } from './transport.js';
 
-import { resolveConfig } from './config';
+import { resolveConfig } from './config.js';
 
-const packageJSON = require('../package.json');
+import packageJSON from '../package.json' with { type: 'json' };
 
 program
     .version('Version ' + packageJSON.version)

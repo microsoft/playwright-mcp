@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 
 test('cdp server', async ({ cdpEndpoint, startClient }) => {
   const client = await startClient({ args: [`--cdp-endpoint=${cdpEndpoint}`] });

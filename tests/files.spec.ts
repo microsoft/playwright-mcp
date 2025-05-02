@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 import fs from 'fs/promises';
 import path from 'path';
 

@@ -15,7 +15,7 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool';
+import { defineTool } from './tool.js';
 
 const console = defineTool({
   capability: 'core',

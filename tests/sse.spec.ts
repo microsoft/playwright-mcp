@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
+import url from 'node:url';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
-import { test as baseTest } from './fixtures';
+import { test as baseTest } from './fixtures.js';
 import { expect } from 'playwright/test';
+
+// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
+const __filename = url.fileURLToPath(import.meta.url);
 
 const test = baseTest.extend<{ serverEndpoint: string }>({
   serverEndpoint: async ({}, use) => {
-    const cp = spawn('node', [path.join(__dirname, '../cli.js'), '--port', '0'], { stdio: 'pipe' });
+    const cp = spawn('node', [path.join(path.dirname(__filename), '../cli.js'), '--port', '0'], { stdio: 'pipe' });
     try {
       let stdout = '';
       const url = await new Promise<string>(resolve => cp.stdout?.on('data', data => {

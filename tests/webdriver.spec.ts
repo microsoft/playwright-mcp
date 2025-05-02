@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 
 test('do not falsely advertise user agent as a test driver', async ({ client, server, mcpBrowser }) => {
   test.skip(mcpBrowser === 'firefox');

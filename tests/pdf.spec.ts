@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 
 test('save as pdf unavailable', async ({ startClient }) => {
   const client = await startClient({ args: ['--caps="no-pdf"'] });
