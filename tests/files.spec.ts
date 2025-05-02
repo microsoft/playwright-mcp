@@ -111,7 +111,7 @@ test('clicking on download link emits download', async ({ startClient }, testInf
     },
   })).toContainTextContent('- link "Download" [ref=s1e3]');
 
-  expect(await client.callTool({
+  await expect.poll(() => client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Download link',
