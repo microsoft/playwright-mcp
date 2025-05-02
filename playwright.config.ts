@@ -16,20 +16,20 @@
 
 import { defineConfig } from '@playwright/test';
 
-import type { Project } from '@playwright/test';
+import type { TestOptions } from './tests/fixtures.js';
 
-export default defineConfig({
+export default defineConfig<TestOptions>({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'list',
+  reporter: process.env.CI ? 'list' : [['list'], ['html']],
   projects: [
     { name: 'chrome' },
     { name: 'msedge', use: { mcpBrowser: 'msedge' } },
     { name: 'chromium', use: { mcpBrowser: 'chromium' } },
     { name: 'firefox', use: { mcpBrowser: 'firefox' } },
     { name: 'webkit', use: { mcpBrowser: 'webkit' } },
-  ].filter(Boolean) as Project[],
+  ],
 });

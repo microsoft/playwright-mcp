@@ -27,6 +27,10 @@ import { TestServer } from './testserver/index.ts';
 
 import type { Config } from '../config';
 
+export type TestOptions = {
+  mcpBrowser: string | undefined;
+};
+
 type TestFixtures = {
   client: Client;
   visionClient: Client;
@@ -36,14 +40,13 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
-  mcpBrowser: string | undefined;
 };
 
 type WorkerFixtures = {
   _workerServers: { server: TestServer, httpsServer: TestServer };
 };
 
-export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
+export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>({
 
   client: async ({ startClient }, use) => {
     await use(await startClient());
