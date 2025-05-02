@@ -119,5 +119,5 @@ test('clicking on download link emits download', async ({ startClient }, testInf
     },
   })).toContainTextContent(`
 ### Downloads
-- Downloaded file test.txt to ${path.join(outputDir, 'test.txt')}`);
+- Downloaded file test.txt to ${path.join(outputDir, 'test-txt')}`);
 });
