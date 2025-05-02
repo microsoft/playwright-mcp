@@ -110,14 +110,14 @@ test('clicking on download link emits download', async ({ startClient }, testInf
       url: 'data:text/html,<a href="data:text/plain,Hello world!" download="test.txt">Download</a>',
     },
   })).toContainTextContent('- link "Download" [ref=s1e3]');
-
-  await expect.poll(() => client.callTool({
+  await client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Download link',
       ref: 's1e3',
     },
-  })).toContainTextContent(`
+  });
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot', arguments: {} })).toContainTextContent(`
 ### Downloads
-- Downloaded file test.txt to ${path.join(outputDir, 'test-txt')}`);
+- Downloaded file test.txt to ${path.join(outputDir, 'test.txt')}`);
 });
