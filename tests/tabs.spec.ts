@@ -142,11 +142,11 @@ test('close tab', async ({ client }) => {
 });
 
 test('reuse first tab when navigating', async ({ startClient, cdpEndpoint }) => {
-  const browser = await chromium.connectOverCDP(cdpEndpoint);
+  const browser = await chromium.connectOverCDP(await cdpEndpoint());
   const [context] = browser.contexts();
   const pages = context.pages();
 
-  const client = await startClient({ args: [`--cdp-endpoint=${cdpEndpoint}`] });
+  const client = await startClient({ args: [`--cdp-endpoint=${await cdpEndpoint()}`] });
   await client.callTool({
     name: 'browser_navigate',
     arguments: {

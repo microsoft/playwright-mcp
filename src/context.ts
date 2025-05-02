@@ -299,8 +299,12 @@ ${code.join('\n')}
   }
 
   private async _createBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
-    if (!this._createBrowserContextPromise)
+    if (!this._createBrowserContextPromise) {
       this._createBrowserContextPromise = this._innerCreateBrowserContext();
+      void this._createBrowserContextPromise.catch(() => {
+        this._createBrowserContextPromise = undefined;
+      });
+    }
     return this._createBrowserContextPromise;
   }
 
