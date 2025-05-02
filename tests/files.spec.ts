@@ -121,3 +121,20 @@ test('clicking on download link emits download', async ({ startClient }, testInf
 ### Downloads
 - Downloaded file test.txt to ${path.join(outputDir, 'test-txt')}`);
 });
+
+test('navigating to download link emits download', async ({ client, server }) => {
+  server.route('/download', (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain',
+      'Content-Disposition': 'attachment; filename=test.txt',
+    });
+    res.end('Hello world!');
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX + '/download',
+    },
+  })).toContainTextContent('### Downloads');
+});
