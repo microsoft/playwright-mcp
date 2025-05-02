@@ -58,6 +58,13 @@ test('sse transport', async ({ serverEndpoint }) => {
   await client.ping();
 });
 
+test('sse transport auth', async ({ serverEndpoint }) => {
+  serverEndpoint.searchParams.delete('secret');
+  const transport = new SSEClientTransport(serverEndpoint);
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await expect(() => client.connect(transport)).rejects.toThrow(/403/);
+});
+
 test('streamable http transport', async ({ serverEndpoint }) => {
   serverEndpoint.pathname = '/mcp';
   const transport = new StreamableHTTPClientTransport(serverEndpoint);

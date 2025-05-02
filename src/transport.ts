@@ -28,7 +28,7 @@ export async function startStdioTransport(serverList: ServerList) {
   await server.connect(new StdioServerTransport());
 }
 
-async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, url: URL, serverList: ServerList, sessions: Map<string, SSEServerTransport>) {
+async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, url: URL, serverList: ServerList, sessions: Map<string, SSEServerTransport>, secret: string | undefined) {
   if (req.method === 'POST') {
     const sessionId = url.searchParams.get('sessionId');
     if (!sessionId) {
@@ -44,7 +44,11 @@ async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, ur
 
     return await transport.handlePostMessage(req, res);
   } else if (req.method === 'GET') {
-    const transport = new SSEServerTransport('/sse', res);
+    let url = '/sse';
+    if (secret)
+      url += '?' + new URLSearchParams({ secret });
+
+    const transport = new SSEServerTransport(url, res);
     sessions.set(transport.sessionId, transport);
     const server = await serverList.create();
     res.on('close', () => {
@@ -61,12 +65,7 @@ async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, ur
   res.end('Method not allowed');
 }
 
-async function handleStreamable(req: http.IncomingMessage, res: http.ServerResponse, url: URL, serverList: ServerList, sessions: Map<string, StreamableHTTPServerTransport>, secret: string | undefined) {
-  if (secret && url.searchParams.get('secret') !== secret) {
-    res.statusCode = 403;
-    return res.end('Forbidden');
-  }
-
+async function handleStreamable(req: http.IncomingMessage, res: http.ServerResponse, serverList: ServerList, sessions: Map<string, StreamableHTTPServerTransport>) {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (sessionId) {
     const transport = sessions.get(sessionId);
@@ -103,10 +102,15 @@ export function startHttpTransport(port: number, hostname: string | undefined, s
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);
+    if (secret && url.searchParams.get('secret') !== secret) {
+      res.statusCode = 403;
+      return res.end('Forbidden');
+    }
+
     if (url.pathname.startsWith('/mcp'))
-      await handleStreamable(req, res, url, serverList, streamableSessions, secret);
+      await handleStreamable(req, res, serverList, streamableSessions);
     else
-      await handleSSE(req, res, url, serverList, sseSessions);
+      await handleSSE(req, res, url, serverList, sseSessions, secret);
   });
   httpServer.listen(port, hostname, () => {
     const address = httpServer.address();
