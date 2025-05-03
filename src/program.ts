@@ -38,6 +38,7 @@ program
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--output-dir <path>', 'Path to the directory for output files.')
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
       const config = await resolveConfig(options);

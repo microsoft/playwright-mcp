@@ -36,6 +36,7 @@ export type CLIOptions = {
   host?: string;
   vision?: boolean;
   config?: string;
+  outputDir?: string;
 };
 
 const defaultConfig: Config = {
@@ -110,6 +111,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
+    outputDir: cliOptions.outputDir,
   };
 }
 
