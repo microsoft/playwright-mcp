@@ -41,7 +41,6 @@ export type CLIOptions = {
 const defaultConfig: Config = {
   browser: {
     browserName: 'chromium',
-    userDataDir: os.tmpdir(),
     launchOptions: {
       channel: 'chrome',
       headless: os.platform() === 'linux' && !process.env.DISPLAY,
@@ -99,7 +98,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   return {
     browser: {
       browserName,
-      userDataDir: cliOptions.userDataDir ?? await createUserDataDir({ browserName, channel }),
+      userDataDir: cliOptions.userDataDir,
       launchOptions,
       contextOptions,
       cdpEndpoint: cliOptions.cdpEndpoint,
@@ -133,21 +132,6 @@ async function loadConfig(configFile: string | undefined): Promise<Config> {
   } catch (error) {
     throw new Error(`Failed to load config file: ${configFile}, ${error}`);
   }
-}
-
-async function createUserDataDir(options: { browserName: 'chromium' | 'firefox' | 'webkit', channel: string | undefined }) {
-  let cacheDirectory: string;
-  if (process.platform === 'linux')
-    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
-  else if (process.platform === 'darwin')
-    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
-  else if (process.platform === 'win32')
-    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-  else
-    throw new Error('Unsupported platform: ' + process.platform);
-  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${options.channel ?? options.browserName}-profile`);
-  await fs.promises.mkdir(result, { recursive: true });
-  return result;
 }
 
 export async function outputFile(config: Config, name: string): Promise<string> {

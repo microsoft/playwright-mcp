@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import * as playwright from 'playwright';
 
 import { waitForCompletion } from './tools/utils.js';
@@ -333,13 +337,30 @@ ${code.join('\n')}
 
 async function launchPersistentContext(browserConfig: Config['browser']): Promise<playwright.BrowserContext> {
   try {
-    const browserType = browserConfig?.browserName ? playwright[browserConfig.browserName] : playwright.chromium;
-    return await browserType.launchPersistentContext(browserConfig?.userDataDir || '', { ...browserConfig?.launchOptions, ...browserConfig?.contextOptions });
+    const browserName = browserConfig?.browserName ?? 'chromium';
+    const userDataDir = browserConfig?.userDataDir ?? await createUserDataDir({ ...browserConfig, browserName });
+    const browserType = playwright[browserName];
+    return await browserType.launchPersistentContext(userDataDir, { ...browserConfig?.launchOptions, ...browserConfig?.contextOptions });
   } catch (error: any) {
     if (error.message.includes('Executable doesn\'t exist'))
       throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
     throw error;
   }
+}
+
+async function createUserDataDir(browserConfig: Config['browser']) {
+  let cacheDirectory: string;
+  if (process.platform === 'linux')
+    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+  else if (process.platform === 'darwin')
+    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
+  else if (process.platform === 'win32')
+    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+  else
+    throw new Error('Unsupported platform: ' + process.platform);
+  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserConfig?.launchOptions.channel ?? browserConfig?.browserName}-profile`);
+  await fs.promises.mkdir(result, { recursive: true });
+  return result;
 }
 
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
