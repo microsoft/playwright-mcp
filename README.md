@@ -68,7 +68,7 @@ The Playwright MCP server supports the following command-line options:
   - Chrome channels: `chrome-beta`, `chrome-canary`, `chrome-dev`
   - Edge channels: `msedge-beta`, `msedge-canary`, `msedge-dev`
   - Default: `chrome`
-- `--caps <caps>`: Comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.
+- `--caps <caps>`: Semicolon-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.
 - `--cdp-endpoint <endpoint>`: CDP endpoint to connect to
 - `--executable-path <path>`: Path to the browser executable
 - `--headless`: Run browser in headless mode (headed by default)
@@ -76,8 +76,8 @@ The Playwright MCP server supports the following command-line options:
 - `--user-data-dir <path>`: Path to the user data directory
 - `--port <port>`: Port to listen on for SSE transport
 - `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
-- `--allowed-origins <origins>`: Comma-separated list of origins to allow the browser to request. Default is to allow all. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked.
-- `--blocked-origins <origins>`: Comma-separated list of origins to block the browser to request. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked.
+- `--allowed-origins <origins>`: Semicolon-separated list of origins to allow the browser to request. Default is to allow all. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked.
+- `--blocked-origins <origins>`: Semicolon-separated list of origins to block the browser to request. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked.
 - `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
 - `--config <path>`: Path to the configuration file
 
