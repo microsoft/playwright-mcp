@@ -20,8 +20,7 @@ import path from 'path';
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
+import { fileURLToPath } from 'node:url';
 
 const install = defineTool({
   capability: 'install',
@@ -33,8 +32,9 @@ const install = defineTool({
 
   handle: async context => {
     const channel = context.config.browser?.launchOptions?.channel ?? context.config.browser?.launchOptions.browserName ?? 'chrome';
-    const cli = path.join(require.resolve('playwright/package.json'), '..', 'cli.js');
-    const child = fork(cli, ['install', channel], {
+    const cliUrl = import.meta.resolve('playwright/package.json');
+    const cliPath = fileURLToPath(path.join(cliUrl, '..', 'cli.js'));
+    const child = fork(cliPath, ['install', channel], {
       stdio: 'pipe',
     });
     const output: string[] = [];
