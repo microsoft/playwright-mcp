@@ -53,8 +53,10 @@ const defaultConfig: Config = {
       viewport: null,
     },
   },
-  allowedOrigins: [],
-  blockedOrigins: [],
+  network: {
+    allowedOrigins: undefined,
+    blockedOrigins: undefined,
+  },
 };
 
 export async function resolveConfig(cliOptions: CLIOptions): Promise<Config> {
@@ -115,8 +117,10 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
-    allowedOrigins: cliOptions.allowedOrigins || [],
-    blockedOrigins: cliOptions.blockedOrigins || [],
+    network: {
+      allowedOrigins: cliOptions.allowedOrigins,
+      blockedOrigins: cliOptions.blockedOrigins,
+    }
   };
 }
 
@@ -189,8 +193,12 @@ function mergeConfig(base: Config, overrides: Config): Config {
     delete browser.launchOptions.channel;
 
   return {
-    ...pickDefined(base),
-    ...pickDefined(overrides),
+    ...base,
+    ...overrides,
     browser,
+    network: {
+      ...pickDefined(base.network),
+      ...pickDefined(overrides.network),
+    },
   };
 }

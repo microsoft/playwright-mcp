@@ -94,15 +94,17 @@ export type Config = {
    */
   outputDir?: string;
 
-  /**
-   * List of Playwright Glob URL patterns (https://playwright.dev/docs/network#glob-url-patterns) to allow the browser to request. Default is to allow all.
-   */
-  allowedOrigins?: string[];
+  network?: {
+    /**
+     * List of origins to allow the browser to request. Default is to allow all. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
+     */
+    allowedOrigins?: string[];
 
-  /**
-   * List of Playwright Glob URL patterns to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed.
-   */
-  blockedOrigins?: string[];
+    /**
+     * List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
+     */
+    blockedOrigins?: string[];
+  };
 
   /**
    * Configuration for specific tools.

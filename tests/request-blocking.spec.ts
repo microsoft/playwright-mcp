@@ -14,73 +14,78 @@
  * limitations under the License.
  */
 
-import { test as _test, expect } from './fixtures.ts';
-
-const test = _test.extend<{ fetchPage: (url: string, config?: { allowlist?: string, blocklist?: string }) => Promise<string> }>({
-  fetchPage: async ({ server, startClient }, use) => {
-    server.route('/ppp', (_req, res) => {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end('content:PPP');
-    });
-
-    server.route('/www', (_req, res) => {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end('content:WWW');
-    });
-
-    await use(async (url, config = {}) => {
-      const args: string[] = [];
-      if (config?.allowlist)
-        args.push('--allowed-origins', config.allowlist);
-
-      if (config?.blocklist)
-        args.push('--blocked-origins', config.blocklist);
-
-      const client = await startClient({
-        args,
-      });
-
-      const result = await client.callTool({
-        name: 'browser_navigate',
-        arguments: {
-          url,
-        },
-      });
-
-      return JSON.stringify(result, null, 2);
-    });
-  },
-});
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { test, expect } from './fixtures.ts';
 
 const BLOCK_MESSAGE = /Blocked by Web Inspector|NS_ERROR_FAILURE|net::ERR_BLOCKED_BY_CLIENT/g;
 
-test('default to allow all', async ({ fetchPage, server }) => {
-  const result = await fetchPage(server.PREFIX + '/ppp');
+const fetchPage = async (client: Client, url: string) => {
+  const result = await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url,
+    },
+  });
+
+  return JSON.stringify(result, null, 2);
+};
+
+test('default to allow all', async ({ server, client }) => {
+  server.route('/ppp', (_req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end('content:PPP');
+  });
+  const result = await fetchPage(client, server.PREFIX + '/ppp');
   expect(result).toContain('content:PPP');
 });
 
-test('blocklist works', async ({ fetchPage, server }) => {
-  const config = { blocklist: server.PREFIX + '/ppp' };
-  const result = await fetchPage(server.PREFIX + '/ppp', config);
+test('blocked works', async ({ startClient }) => {
+  const client = await startClient({
+    args: ['--blocked-origins', 'microsoft.com;example.com;playwright.dev']
+  });
+  const result = await fetchPage(client, 'https://example.com/');
   expect(result).toMatch(BLOCK_MESSAGE);
 });
 
-test('allowlist works', async ({ fetchPage, server }) => {
-  const result = await fetchPage(server.PREFIX + '/ppp', { allowlist: `https://example.com/,${server.PREFIX}/ppp,https://playwright.dev/` });
+test('allowed works', async ({ server, startClient }) => {
+  server.route('/ppp', (_req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end('content:PPP');
+  });
+  const client = await startClient({
+    args: ['--allowed-origins', `microsoft.com;${new URL(server.PREFIX).host};playwright.dev`]
+  });
+  const result = await fetchPage(client, server.PREFIX + '/ppp');
   expect(result).toContain('content:PPP');
 });
 
-test('blocklist takes precedence', async ({ fetchPage, server }) => {
-  const result = await fetchPage(server.PREFIX + '/ppp', { blocklist: `https://example.com/,${server.PREFIX}/ppp,https://playwright.dev/` });
+test('blocked takes precedence', async ({ startClient }) => {
+  const client = await startClient({
+    args: [
+      '--blocked-origins', 'example.com',
+      '--allowed-origins', 'example.com',
+    ],
+  });
+  const result = await fetchPage(client, 'https://example.com/');
   expect(result).toMatch(BLOCK_MESSAGE);
 });
 
-test('allowlist without blocklist denies all non-explicitly specified requests', async ({ fetchPage, server }) => {
-  const result = await fetchPage(server.PREFIX + '/ppp', { allowlist: server.PREFIX + '/www' });
+test('allowed without blocked blocks all non-explicitly specified origins', async ({ startClient }) => {
+  const client = await startClient({
+    args: ['--allowed-origins', 'playwright.dev'],
+  });
+  const result = await fetchPage(client, 'https://example.com/');
   expect(result).toMatch(BLOCK_MESSAGE);
 });
 
-test('blocklist without allowlist allows non-explicitly specified request', async ({ fetchPage, server }) => {
-  const result = await fetchPage(server.PREFIX + '/ppp', { blocklist: server.PREFIX + '/www' });
+test('blocked without allowed allows non-explicitly specified origins', async ({ server, startClient }) => {
+  server.route('/ppp', (_req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end('content:PPP');
+  });
+  const client = await startClient({
+    args: ['--blocked-origins', 'example.com'],
+  });
+  const result = await fetchPage(client, server.PREFIX + '/ppp');
   expect(result).toContain('content:PPP');
 });

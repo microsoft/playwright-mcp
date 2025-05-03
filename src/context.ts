@@ -38,14 +38,10 @@ export class Context {
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
-  private _allowedOrigins: string[];
-  private _blockedOrigins: string[];
 
   constructor(tools: Tool[], config: Config) {
     this.tools = tools;
     this.config = config;
-    this._allowedOrigins = config.allowedOrigins || [];
-    this._blockedOrigins = config.blockedOrigins || [];
   }
 
   modalStates(): ModalState[] {
@@ -267,16 +263,16 @@ ${code.join('\n')}
   }
 
   private async _setupRequestInterception(context: playwright.BrowserContext) {
-    if (this._allowedOrigins.length > 0) {
+    if (this.config.network?.allowedOrigins?.length) {
       await context.route('**/*', route => route.abort('blockedbyclient'));
 
-      for (const allowedPattern of this._allowedOrigins)
-        await context.route(allowedPattern, route => route.continue());
+      for (const origin of this.config.network.allowedOrigins)
+        await context.route(`*://${origin}/**/*`, route => route.continue());
     }
 
-    if (this._blockedOrigins.length > 0) {
-      for (const deniedPattern of this._blockedOrigins)
-        await context.route(deniedPattern, route => route.abort('blockedbyclient'));
+    if (this.config.network?.blockedOrigins?.length) {
+      for (const origin of this.config.network.blockedOrigins)
+        await context.route(`*://${origin}/**/*`, route => route.abort('blockedbyclient'));
     }
   }
 
@@ -288,7 +284,7 @@ ${code.join('\n')}
       await this._setupRequestInterception(this._browserContext);
       for (const page of this._browserContext.pages())
         this._onPageCreated(page);
-      this._browserContext.on('page', (page: playwright.Page) => this._onPageCreated(page));
+      this._browserContext.on('page', page => this._onPageCreated(page));
     }
     return this._browserContext;
   }
