@@ -77,6 +77,7 @@ The Playwright MCP server supports the following command-line options:
 - `--port <port>`: Port to listen on for SSE transport
 - `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
 - `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
+- `--output-dir`: Directory for output files
 - `--config <path>`: Path to the configuration file
 
 ### User profile
