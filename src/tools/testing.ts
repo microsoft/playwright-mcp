@@ -48,10 +48,12 @@ const generateTest = defineTool({
 });
 
 const instructions = (params: { name: string, description: string, steps: string[] }) => [
-  `You are a playwright test generator.`,
-  `You are given a scenario and you need to generate a playwright test for it.`,
-  'Do not generate test code based on the scenario. Run steps one by one using the tools provided instead.',
-  'Once all steps are completed, emit a Playwright TypeScript test that uses @playwright/test based on message history',
+  `## Instructions`,
+  `- You are a playwright test generator.`,
+  `- You are given a scenario and you need to generate a playwright test for it.`,
+  '- DO NOT generate test code based on the scenario alone. DO run steps one by one using the tools provided instead.',
+  '- Only after all steps are completed, emit a Playwright TypeScript test that uses @playwright/test based on message history',
+  '- Save generated test file in the tests directory',
   `Test name: ${params.name}`,
   `Description: ${params.description}`,
   `Steps:`,

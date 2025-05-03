@@ -8,4 +8,3 @@ Generate test for scenario:
 4. Switch to the **Checks** tab for that pull request.
 5. Expand the **infra** check suite to view its jobs.
 6. Click on the **docs & lint** job to view its details.
-7. Confirm that the job log page loads (and optionally, that the log is expired).
