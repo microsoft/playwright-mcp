@@ -31,10 +31,10 @@ const test = _test.extend<{ fetchPage: (url: string, config?: { allowlist?: stri
     await use(async (url, config = {}) => {
       const args: string[] = [];
       if (config?.allowlist)
-        args.push('--request-pattern-allowlist', config.allowlist);
+        args.push('--allowed-origins', config.allowlist);
 
       if (config?.blocklist)
-        args.push('--request-pattern-blocklist', config.blocklist);
+        args.push('--blocked-origins', config.blocklist);
 
       const client = await startClient({
         args,

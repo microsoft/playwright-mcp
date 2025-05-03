@@ -37,8 +37,8 @@ export type CLIOptions = {
   host?: string;
   vision?: boolean;
   config?: string;
-  requestPatternAllowlist?: string[];
-  requestPatternBlocklist?: string[];
+  allowedOrigins?: string[];
+  blockedOrigins?: string[];
 };
 
 const defaultConfig: Config = {
@@ -53,8 +53,8 @@ const defaultConfig: Config = {
       viewport: null,
     },
   },
-  requestPatternAllowlist: [],
-  requestPatternBlocklist: [],
+  allowedOrigins: [],
+  blockedOrigins: [],
 };
 
 export async function resolveConfig(cliOptions: CLIOptions): Promise<Config> {
@@ -115,8 +115,8 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
-    requestPatternAllowlist: cliOptions.requestPatternAllowlist || [],
-    requestPatternBlocklist: cliOptions.requestPatternBlocklist || [],
+    allowedOrigins: cliOptions.allowedOrigins || [],
+    blockedOrigins: cliOptions.blockedOrigins || [],
   };
 }
 

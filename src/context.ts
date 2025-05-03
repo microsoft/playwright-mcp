@@ -38,14 +38,14 @@ export class Context {
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
-  private _requestPatternAllowlist: string[];
-  private _requestPatternBlocklist: string[];
+  private _allowedOrigins: string[];
+  private _blockedOrigins: string[];
 
   constructor(tools: Tool[], config: Config) {
     this.tools = tools;
     this.config = config;
-    this._requestPatternAllowlist = config.requestPatternAllowlist || [];
-    this._requestPatternBlocklist = config.requestPatternBlocklist || [];
+    this._allowedOrigins = config.allowedOrigins || [];
+    this._blockedOrigins = config.blockedOrigins || [];
   }
 
   modalStates(): ModalState[] {
@@ -267,15 +267,15 @@ ${code.join('\n')}
   }
 
   private async _setupRequestInterception(context: playwright.BrowserContext) {
-    if (this._requestPatternAllowlist.length > 0) {
+    if (this._allowedOrigins.length > 0) {
       await context.route('**/*', route => route.abort('blockedbyclient'));
 
-      for (const allowedPattern of this._requestPatternAllowlist)
+      for (const allowedPattern of this._allowedOrigins)
         await context.route(allowedPattern, route => route.continue());
     }
 
-    if (this._requestPatternBlocklist.length > 0) {
-      for (const deniedPattern of this._requestPatternBlocklist)
+    if (this._blockedOrigins.length > 0) {
+      for (const deniedPattern of this._blockedOrigins)
         await context.route(deniedPattern, route => route.abort('blockedbyclient'));
     }
   }

@@ -97,12 +97,12 @@ export type Config = {
   /**
    * List of Playwright Glob URL patterns (https://playwright.dev/docs/network#glob-url-patterns) to allow the browser to request. Default is to allow all.
    */
-  requestPatternAllowlist?: string[];
+  allowedOrigins?: string[];
 
   /**
    * List of Playwright Glob URL patterns to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed.
    */
-  requestPatternBlocklist?: string[];
+  blockedOrigins?: string[];
 
   /**
    * Configuration for specific tools.
