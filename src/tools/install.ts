@@ -20,6 +20,9 @@ import path from 'path';
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+
 const install = defineTool({
   capability: 'install',
   schema: {
