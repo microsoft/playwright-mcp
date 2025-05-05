@@ -264,15 +264,15 @@ ${code.join('\n')}
 
   private async _setupRequestInterception(context: playwright.BrowserContext) {
     if (this.config.network?.allowedOrigins?.length) {
-      await context.route('**/*', route => route.abort('blockedbyclient'));
+      await context.route('**', route => route.abort('blockedbyclient'));
 
       for (const origin of this.config.network.allowedOrigins)
-        await context.route(`*://${origin}/**/*`, route => route.continue());
+        await context.route(`*://${origin}/**`, route => route.continue());
     }
 
     if (this.config.network?.blockedOrigins?.length) {
       for (const origin of this.config.network.blockedOrigins)
-        await context.route(`*://${origin}/**/*`, route => route.abort('blockedbyclient'));
+        await context.route(`*://${origin}/**`, route => route.abort('blockedbyclient'));
     }
   }
 
