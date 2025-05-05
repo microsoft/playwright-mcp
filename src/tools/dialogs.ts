@@ -22,11 +22,13 @@ const handleDialog: ToolFactory = captureSnapshot => defineTool({
 
   schema: {
     name: 'browser_handle_dialog',
+    title: 'Handle a dialog',
     description: 'Handle a dialog',
     inputSchema: z.object({
       accept: z.boolean().describe('Whether to accept the dialog.'),
       promptText: z.string().optional().describe('The text of the prompt in case of a prompt dialog.'),
     }),
+    type: 'destructive',
   },
 
   handle: async (context, params) => {

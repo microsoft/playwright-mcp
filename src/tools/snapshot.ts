@@ -26,8 +26,10 @@ const snapshot = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_snapshot',
+    title: 'Page snapshot',
     description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
     inputSchema: z.object({}),
+    type: 'readOnly',
   },
 
   handle: async context => {
@@ -50,8 +52,10 @@ const click = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_click',
+    title: 'Click',
     description: 'Perform click on a web page',
     inputSchema: elementSchema,
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
@@ -76,6 +80,7 @@ const drag = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_drag',
+    title: 'Drag mouse',
     description: 'Perform drag and drop between two elements',
     inputSchema: z.object({
       startElement: z.string().describe('Human-readable source element description used to obtain the permission to interact with the element'),
@@ -83,6 +88,7 @@ const drag = defineTool({
       endElement: z.string().describe('Human-readable target element description used to obtain the permission to interact with the element'),
       endRef: z.string().describe('Exact target element reference from the page snapshot'),
     }),
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
@@ -108,8 +114,10 @@ const hover = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_hover',
+    title: 'Hover mouse',
     description: 'Hover over element on page',
     inputSchema: elementSchema,
+    type: 'readOnly',
   },
 
   handle: async (context, params) => {
@@ -140,8 +148,10 @@ const type = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_type',
+    title: 'Type text',
     description: 'Type text into editable element',
     inputSchema: typeSchema,
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
@@ -184,8 +194,10 @@ const selectOption = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_select_option',
+    title: 'Select option',
     description: 'Select an option in a dropdown',
     inputSchema: selectOptionSchema,
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
@@ -221,8 +233,10 @@ const screenshot = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_take_screenshot',
+    title: 'Take a screenshot',
     description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
     inputSchema: screenshotSchema,
+    type: 'readOnly',
   },
 
   handle: async (context, params) => {

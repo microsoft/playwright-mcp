@@ -15,7 +15,7 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '@modelcontextprotocol/sdk/types.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Context } from './context.js';
@@ -43,8 +43,14 @@ export function createServerWithTools(serverOptions: MCPServerOptions, config: C
       tools: tools.map(tool => ({
         name: tool.schema.name,
         description: tool.schema.description,
-        inputSchema: zodToJsonSchema(tool.schema.inputSchema)
-      })),
+        inputSchema: zodToJsonSchema(tool.schema.inputSchema),
+        annotations: {
+          title: tool.schema.title,
+          readOnlyHint: tool.schema.type === 'readOnly',
+          destructiveHint: tool.schema.type === 'destructive',
+          openWorldHint: true,
+        },
+      })) as McpTool[],
     };
   });
 

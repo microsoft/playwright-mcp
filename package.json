@@ -17,7 +17,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsc",
-    "lint": "npm run update-readme && eslint .",
+    "lint": "npm run update-readme && eslint . && tsc --noEmit",
     "update-readme": "node utils/update-readme.js",
     "watch": "tsc --watch",
     "test": "playwright test",
@@ -35,7 +35,7 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.1",
+    "@modelcontextprotocol/sdk": "^1.11.0",
     "commander": "^13.1.0",
     "playwright": "1.53.0-alpha-1746218818000",
     "yaml": "^2.7.1",

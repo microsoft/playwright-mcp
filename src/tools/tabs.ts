@@ -22,8 +22,10 @@ const listTabs = defineTool({
 
   schema: {
     name: 'browser_tab_list',
+    title: 'List tabs',
     description: 'List browser tabs',
     inputSchema: z.object({}),
+    type: 'readOnly',
   },
 
   handle: async context => {
@@ -47,10 +49,12 @@ const selectTab: ToolFactory = captureSnapshot => defineTool({
 
   schema: {
     name: 'browser_tab_select',
+    title: 'Select a tab',
     description: 'Select a tab by index',
     inputSchema: z.object({
       index: z.number().describe('The index of the tab to select'),
     }),
+    type: 'readOnly',
   },
 
   handle: async (context, params) => {
@@ -72,10 +76,12 @@ const newTab: ToolFactory = captureSnapshot => defineTool({
 
   schema: {
     name: 'browser_tab_new',
+    title: 'Open a new tab',
     description: 'Open a new tab',
     inputSchema: z.object({
       url: z.string().optional().describe('The URL to navigate to in the new tab. If not provided, the new tab will be blank.'),
     }),
+    type: 'readOnly',
   },
 
   handle: async (context, params) => {
@@ -99,10 +105,12 @@ const closeTab: ToolFactory = captureSnapshot => defineTool({
 
   schema: {
     name: 'browser_tab_close',
+    title: 'Close a tab',
     description: 'Close a tab',
     inputSchema: z.object({
       index: z.number().optional().describe('The index of the tab to close. Closes current tab if not provided.'),
     }),
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
