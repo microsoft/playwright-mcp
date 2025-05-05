@@ -107,16 +107,112 @@ test('browser_take_screenshot (outputDir)', async ({ startClient }, testInfo) =>
     },
   })).toContainTextContent(`Navigate to data:text/html`);
 
-  await client.callTool({
+  expect(await client.callTool({
     name: 'browser_take_screenshot',
     arguments: {},
+  })).toEqual({
+    content: [
+      {
+        data: expect.any(String),
+        mimeType: 'image/jpeg',
+        type: 'image',
+      },
+      {
+        text: expect.stringMatching(
+            new RegExp(`// Screenshot viewport and save it as ${testInfo.outputPath('output')}/page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.\\jpeg`)
+        ),
+        type: 'text',
+      },
+    ],
   });
 
+  const files = [...fs.readdirSync(outputDir)];
+
   expect(fs.existsSync(outputDir)).toBeTruthy();
-  expect([...fs.readdirSync(outputDir)]).toHaveLength(1);
+  expect(files).toHaveLength(1);
+  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.jpeg$/);
 });
 
-test('browser_take_screenshot (omitBase64)', async ({ startClient }) => {
+test('browser_take_screenshot (raw: true)', async ({ startClient }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const client = await startClient({
+    config: { outputDir },
+  });
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toContainTextContent(`Navigate to data:text/html`);
+
+  expect(await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {
+      raw: true,
+    },
+  })).toEqual({
+    content: [
+      {
+        data: expect.any(String),
+        mimeType: 'image/png',
+        type: 'image',
+      },
+      {
+        text: expect.stringMatching(
+            new RegExp(`// Screenshot viewport and save it as ${testInfo.outputPath('output')}/page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.\\png`)
+        ),
+        type: 'text',
+      },
+    ],
+  });
+
+  const files = [...fs.readdirSync(outputDir)];
+
+  expect(fs.existsSync(outputDir)).toBeTruthy();
+  expect(files).toHaveLength(1);
+  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png$/);
+});
+
+test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const client = await startClient({
+    config: { outputDir },
+  });
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toContainTextContent(`Navigate to data:text/html`);
+
+  expect(await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {
+      filename: 'output.jpeg',
+    },
+  })).toEqual({
+    content: [
+      {
+        data: expect.any(String),
+        mimeType: 'image/jpeg',
+        type: 'image',
+      },
+      {
+        text: expect.stringContaining(`// Screenshot viewport and save it as ${testInfo.outputPath('output')}/output.jpeg`),
+        type: 'text',
+      },
+    ],
+  });
+
+  const files = [...fs.readdirSync(outputDir)];
+
+  expect(fs.existsSync(outputDir)).toBeTruthy();
+  expect(files).toHaveLength(1);
+  expect(files[0]).toMatch(/^output.jpeg$/);
+});
+
+
+test('browse_take_screenshot (omitBase64)', async ({ startClient }) => {
   const client = await startClient({
     config: {
       tools: {
