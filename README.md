@@ -498,6 +498,12 @@ X Y coordinate space, based on the provided screenshot.
     - `accept` (boolean): Whether to accept the dialog.
     - `promptText` (string, optional): The text of the prompt in case of a prompt dialog.
 
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_connect**
+  - Description: If the user explicitly asks to connect to a running browser, use this tool to initiate the connection.
+  - Parameters: None
+
 ### Testing
 
 <!-- NOTE: This has been generated via update-readme.js -->

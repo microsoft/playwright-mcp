@@ -31,5 +31,6 @@ export default defineConfig<TestOptions>({
     { name: 'chromium', use: { mcpBrowser: 'chromium' } },
     { name: 'firefox', use: { mcpBrowser: 'firefox' } },
     { name: 'webkit', use: { mcpBrowser: 'webkit' } },
+    { name: 'chromium-extension', use: { mcpBrowser: 'chromium', mcpExtension: true } },
   ],
 });

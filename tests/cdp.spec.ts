@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
+import url from 'node:url';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { test, expect } from './fixtures.js';
+
+test.skip(({ mcpExtension }) => !!mcpExtension, 'Connecting to CDP server is not supported in combination with --extension');
 
 test('cdp server', async ({ cdpEndpoint, startClient }) => {
   const client = await startClient({ args: [`--cdp-endpoint=${await cdpEndpoint()}`] });
@@ -71,4 +76,16 @@ test('should throw connection error and allow re-connecting', async ({ cdpEndpoi
       url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
     },
   })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
+});
+
+// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
+const __filename = url.fileURLToPath(import.meta.url);
+
+test('does not support --device', async () => {
+  const result = spawnSync('node', [
+    path.join(__filename, '../../cli.js'), '--device=Pixel 5', '--cdp-endpoint=http://localhost:1234',
+  ]);
+  expect(result.error).toBeUndefined();
+  expect(result.status).toBe(1);
+  expect(result.stderr.toString()).toContain('Device emulation is not supported with cdpEndpoint.');
 });

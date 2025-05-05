@@ -16,7 +16,8 @@
 
 import { test, expect } from './fixtures.js';
 
-test('--device should work', async ({ startClient, server }) => {
+test('--device should work', async ({ startClient, mcpExtension, server }) => {
+  test.skip(!!mcpExtension, 'Viewport is not supported when connecting via CDP. There we re-use the browser viewport.');
   const client = await startClient({
     args: ['--device', 'iPhone 15'],
   });

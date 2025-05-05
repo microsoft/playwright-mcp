@@ -16,7 +16,7 @@
 
 import { test, expect } from './fixtures.js';
 
-test('test snapshot tool list', async ({ client }) => {
+test('test snapshot tool list', async ({ client, mcpExtension }) => {
   const { tools } = await client.listTools();
   expect(new Set(tools.map(t => t.name))).toEqual(new Set([
     'browser_click',
@@ -29,6 +29,7 @@ test('test snapshot tool list', async ({ client }) => {
     'browser_select_option',
     'browser_type',
     'browser_close',
+    ...mcpExtension ? ['browser_connect'] : [],
     'browser_install',
     'browser_navigate_back',
     'browser_navigate_forward',
@@ -47,10 +48,11 @@ test('test snapshot tool list', async ({ client }) => {
   ]));
 });
 
-test('test vision tool list', async ({ visionClient }) => {
+test('test vision tool list', async ({ visionClient, mcpExtension }) => {
   const { tools: visionTools } = await visionClient.listTools();
   expect(new Set(visionTools.map(t => t.name))).toEqual(new Set([
     'browser_close',
+    ...mcpExtension ? ['browser_connect'] : [],
     'browser_console_messages',
     'browser_file_upload',
     'browser_generate_playwright_test',

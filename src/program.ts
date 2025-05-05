@@ -41,6 +41,7 @@ program
     .option('--blocked-origins <origins>', 'Semicolon-separated list of origins to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed.', semicolonSeparatedList)
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .option('--output-dir <path>', 'Path to the directory for output files.')
+    .option('--extension', 'Allow connecting to a running browser instance (Edge/Chrome only). Requires the \'Playwright MCP\' browser extension to be installed.')
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
       const config = await resolveConfig(options);

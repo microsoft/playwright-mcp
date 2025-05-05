@@ -39,6 +39,7 @@ export type CLIOptions = {
   allowedOrigins?: string[];
   blockedOrigins?: string[];
   outputDir?: string;
+  extension?: boolean;
 };
 
 const defaultConfig: Config = {
@@ -62,6 +63,15 @@ export async function resolveConfig(cliOptions: CLIOptions): Promise<Config> {
   const config = await loadConfig(cliOptions.config);
   const cliOverrides = await configFromCLIOptions(cliOptions);
   return mergeConfig(defaultConfig, mergeConfig(config, cliOverrides));
+}
+
+export function validateConfig(config: Config) {
+  if (config.extension) {
+    if (config.browser?.browserName !== 'chromium')
+      throw new Error('Extension mode is only supported for Chromium browsers.');
+    if (config.browser.cdpEndpoint)
+      throw new Error('Extension mode is not supported with cdpEndpoint.');
+  }
 }
 
 export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Config> {
@@ -100,6 +110,11 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   if (browserName === 'chromium')
     (launchOptions as any).webSocketPort = await findFreePort();
 
+  if (cliOptions.device && cliOptions.cdpEndpoint)
+    throw new Error('Device emulation is not supported with cdpEndpoint.');
+  if (cliOptions.device && cliOptions.extension)
+    throw new Error('Device emulation is not supported with extension mode.');
+
   const contextOptions: BrowserContextOptions | undefined = cliOptions.device ? devices[cliOptions.device] : undefined;
 
   return {
@@ -121,6 +136,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
       blockedOrigins: cliOptions.blockedOrigins,
     },
     outputDir: cliOptions.outputDir,
+    extension: !!cliOptions.extension,
   };
 }
 
