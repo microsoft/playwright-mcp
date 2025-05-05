@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Playwright MCP",
+  "version": "0.1",
+  "description": "Allows Playwright MCP to connect to your browser.",
+  "permissions": [
+    "debugger",
+    "tabs"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
+}

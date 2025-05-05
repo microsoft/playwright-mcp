@@ -17,7 +17,8 @@
 import fs from 'fs';
 import url from 'url';
 import path from 'path';
-import { chromium } from 'playwright';
+import readline from 'node:readline';
+import { chromium, Page } from 'playwright';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -29,10 +30,12 @@ import type { Config } from '../config';
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
+  mcpExtension: boolean | undefined;
 };
 
 type TestFixtures = {
   client: Client;
+  clientOutputLines: string[];
   visionClient: Client;
   startClient: (options?: { args?: string[], config?: Config }) => Promise<Client>;
   wsEndpoint: string;
@@ -40,6 +43,7 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
+  mcpExtensionPage: Page | undefined;
 };
 
 type WorkerFixtures = {
@@ -52,20 +56,26 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(await startClient());
   },
 
+  clientOutputLines: async ({}, use) => use([]),
+
   visionClient: async ({ startClient }, use) => {
     await use(await startClient({ args: ['--vision'] }));
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser }, use, testInfo) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpExtension, mcpExtensionPage, clientOutputLines }, use, testInfo) => {
     const userDataDir = testInfo.outputPath('user-data-dir');
     let client: Client | undefined;
 
     await use(async options => {
+      if (client)
+        throw new Error('Client already started');
       const args = ['--user-data-dir', userDataDir];
       if (mcpHeadless)
         args.push('--headless');
       if (mcpBrowser)
         args.push(`--browser=${mcpBrowser}`);
+      if (mcpExtension)
+        args.push('--extension');
       if (options?.args)
         args.push(...options.args);
       if (options?.config) {
@@ -78,9 +88,33 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       const transport = new StdioClientTransport({
         command: 'node',
         args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
+        env: {
+          ...process.env,
+          IS_UNDER_TEST: '1',
+        },
+        stderr: 'pipe',
       });
       client = new Client({ name: 'test', version: '1.0.0' });
       await client.connect(transport);
+      readline.createInterface(transport.stderr as any as NodeJS.ReadableStream).on('line', line => {
+        if (line.toString().startsWith('%%'))
+          clientOutputLines.push(line.substring(2));
+        else
+          // eslint-disable-next-line no-console
+          console.error(line);
+      });
+      if (mcpExtension && mcpExtensionPage) {
+        const browserConnectCall = client.callTool({
+          name: 'browser_connect',
+          arguments: {},
+        });
+        await expect.poll(() => clientOutputLines.filter(line => line.startsWith('open call to: ')), { timeout: test.info().timeout }).toHaveLength(1);
+        const openCallURL = clientOutputLines.filter(line => line.startsWith('open call to: '))[0].split('open call to: ')[1];
+        await mcpExtensionPage.goto(openCallURL);
+        await mcpExtensionPage.getByRole('button', { name: 'Allow Connection' }).click();
+        await expect(mcpExtensionPage.getByRole('heading', { name: 'Connection Established' })).toBeVisible();
+        await browserConnectCall;
+      }
       await client.ping();
       return client;
     });
@@ -129,6 +163,32 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   },
 
   mcpBrowser: ['chrome', { option: true }],
+
+  mcpExtension: [false, { option: true }],
+
+  mcpExtensionPage: async ({ mcpExtension, mcpHeadless }, use) => {
+    if (!mcpExtension)
+      return await use(undefined);
+    const webSocketPort = 8900 + test.info().parallelIndex * 4;
+    const pathToExtension = path.join(url.fileURLToPath(import.meta.url), '../../extension');
+    const context = await chromium.launchPersistentContext('', {
+      headless: mcpHeadless,
+      args: [
+        `--disable-extensions-except=${pathToExtension}`,
+        `--load-extension=${pathToExtension}`,
+        '--enable-features=AllowContentInitiatedDataUrlNavigations',
+        `--remote-debugging-port=1234`,
+      ],
+      channel: 'chromium',
+      ...{ assistantMode: true, webSocketPort },
+    });
+    const page = context.pages()[0];
+    // Do not auto dismiss dialogs.
+    page.on('dialog', () => {});
+    await expect.poll(() => context?.serviceWorkers()).toHaveLength(1);
+    await use(page);
+    await context?.close();
+  },
 
   _workerServers: [async ({}, use, workerInfo) => {
     const port = 8907 + workerInfo.workerIndex * 4;

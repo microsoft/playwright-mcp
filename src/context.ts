@@ -24,6 +24,7 @@ import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.
 import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
 import type { Config } from '../config.js';
 import { outputFile } from './config.js';
+import { CDPWebSocketRelay } from './CDPWebSocketRelay.js';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
@@ -34,6 +35,7 @@ export class Context {
   readonly config: Config;
   private _browser: playwright.Browser | undefined;
   private _browserContext: playwright.BrowserContext | undefined;
+  private _cdpExtensionRelay: CDPWebSocketRelay | undefined;
   private _createBrowserContextPromise: Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> | undefined;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
@@ -284,6 +286,8 @@ ${code.join('\n')}
     await browserContext?.close().then(async () => {
       await browser?.close();
     }).catch(() => {});
+    this._cdpExtensionRelay?.close();
+    this._cdpExtensionRelay = undefined;
   }
 
   private async _ensureBrowserContext() {
@@ -320,14 +324,32 @@ ${code.join('\n')}
       return { browser, browserContext };
     }
 
-    if (this.config.browser?.cdpEndpoint) {
-      const browser = await playwright.chromium.connectOverCDP(this.config.browser.cdpEndpoint);
+    let cdpEndpoint = this.config.browser?.cdpEndpoint;
+    if (this.config.extension) {
+      if (!this._cdpExtensionRelay)
+        throw new Error('Please use browser_connect before launching the browser');
+      cdpEndpoint = this._cdpExtensionRelay.browserConnectionURL();
+    }
+
+    if (cdpEndpoint) {
+      const browser = await playwright.chromium.connectOverCDP(cdpEndpoint);
       const browserContext = browser.contexts()[0];
       return { browser, browserContext };
     }
 
     const browserContext = await launchPersistentContext(this.config.browser);
     return { browserContext };
+  }
+
+  async connectToExtension(callback: (url: string) => Promise<void>): Promise<void> {
+    if (!this._cdpExtensionRelay)
+      this._cdpExtensionRelay = new CDPWebSocketRelay();
+    await this._cdpExtensionRelay.startIfNeeded();
+    const connectionURL = this._cdpExtensionRelay.extensionConnectionURL();
+    const interceptedConnectionURL = `http://demo.playwright.dev/mcp.html?${new URLSearchParams({ connectionURL })}`;
+    const waitForConnection = this._cdpExtensionRelay.waitForConnection();
+    await callback(interceptedConnectionURL);
+    await waitForConnection;
   }
 }
 

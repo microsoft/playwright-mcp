@@ -33,6 +33,7 @@ import snapshotTools from '../lib/tools/snapshot.js';
 import tabsTools from '../lib/tools/tabs.js';
 import screenTools from '../lib/tools/screen.js';
 import testTools from '../lib/tools/testing.js';
+import extensionTools from '../lib/tools/extension.js';
 
 // Category definitions for tools
 const categories = {
@@ -62,6 +63,7 @@ const categories = {
     ...commonTools(true),
     ...installTools,
     ...dialogsTools(true),
+    ...extensionTools,
   ],
   'Testing': [
     ...testTools,

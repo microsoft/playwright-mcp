@@ -36,8 +36,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.1",
+    "@types/ws": "^8.18.1",
     "commander": "^13.1.0",
     "playwright": "1.53.0-alpha-1746218818000",
+    "debug": "^4.4.0",
+    "open": "10.1.1",
+    "ws": "^8.18.1",
     "yaml": "^2.7.1",
     "zod-to-json-schema": "^3.24.4"
   },
@@ -46,6 +50,8 @@
     "@eslint/js": "^9.19.0",
     "@playwright/test": "1.53.0-alpha-1746218818000",
     "@stylistic/eslint-plugin": "^3.0.1",
+    "@types/chrome": "^0.0.315",
+    "@types/debug": "^4.1.12",
     "@types/node": "^22.13.10",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",

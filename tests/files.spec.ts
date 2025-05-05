@@ -96,7 +96,9 @@ The tool "browser_file_upload" can only be used when there is related modal stat
   }
 });
 
-test('clicking on download link emits download', async ({ startClient }, testInfo) => {
+test('clicking on download link emits download', async ({ startClient, mcpExtension }, testInfo) => {
+  test.fixme(!!mcpExtension, 'Downloads are on the Browser CDP domain and not supported with --extension');
+
   const outputDir = testInfo.outputPath('output');
   const client = await startClient({
     config: { outputDir },

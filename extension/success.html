@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playwright MCP Connection</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f9fafb;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    
+    .card {
+      max-width: 28rem;
+      width: 100%;
+      background-color: white;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+    
+    .card-header {
+      background-color: #45ba4b;
+      padding: 1.25rem;
+    }
+    
+    .header-content {
+      display: flex;
+      align-items: center;
+    }
+    
+    .check-icon {
+      height: 2.25rem;
+      width: 2.25rem;
+      color: white;
+    }
+    
+    .header-title {
+      margin-left: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .card-body {
+      padding: 1.5rem;
+    }
+    
+    .message {
+      color: #374151;
+      font-size: 1rem;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .status-indicator {
+      position: relative;
+      margin-right: 1rem;
+    }
+    
+    .ping {
+      height: 0.75rem;
+      width: 0.75rem;
+      background-color: #10b981;
+      border-radius: 9999px;
+      position: absolute;
+      animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+    
+    @keyframes ping {
+      75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+    
+    .dot {
+      height: 0.75rem;
+      width: 0.75rem;
+      background-color: #10b981;
+      border-radius: 9999px;
+      position: relative;
+    }
+    
+    .status-text {
+      color: #059669;
+      font-weight: 500;
+    }
+    
+    .divider {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 1rem;
+    }
+    
+    .info {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    
+    .button-wrapper {
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <div class="header-content">
+          <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <h2 class="header-title">Connection Established</h2>
+        </div>
+      </div>
+      
+      <div class="card-body">
+        <div class="message">
+          Your Playwright MCP server is now connected to this tab. The extension is actively proxying Chrome DevTools Protocol commands.
+        </div>
+        
+        <div class="status">
+          <div class="status-indicator">
+            <div class="ping"></div>
+            <div class="dot"></div>
+          </div>
+          <span class="status-text">Active Connection</span>
+        </div>
+
+        <div class="divider">
+          <p class="info">
+            You can continue using the browser normally while debugging. To stop the connection, simply press <code>Cancel</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

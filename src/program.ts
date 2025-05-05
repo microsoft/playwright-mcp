@@ -39,6 +39,7 @@ program
     .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .option('--output-dir <path>', 'Path to the directory for output files.')
+    .option('--extension', 'Allow connecting to a running browser instance (Edge/Chrome only). Requires the \'Playwright MCP\' browser extension to be installed.')
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
       const config = await resolveConfig(options);

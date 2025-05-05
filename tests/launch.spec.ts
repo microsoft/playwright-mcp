@@ -16,6 +16,8 @@
 
 import { test, expect } from './fixtures.js';
 
+test.skip(({ mcpExtension }) => !!mcpExtension, 'launch scenarios are not supported with --extension - the browser is already launched');
+
 test('test reopen browser', async ({ client }) => {
   await client.callTool({
     name: 'browser_navigate',
