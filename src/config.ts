@@ -178,8 +178,8 @@ function mergeConfig(base: Config, overrides: Config): Config {
     delete browser.launchOptions.channel;
 
   return {
-    ...base,
-    ...overrides,
+    ...pickDefined(base),
+    ...pickDefined(overrides),
     browser,
     network: {
       ...pickDefined(base.network),
