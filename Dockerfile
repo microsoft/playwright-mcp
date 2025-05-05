@@ -3,6 +3,8 @@ ARG PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 # ------------------------------
 # Base
 # ------------------------------
+# Base stage: Contains only the minimal dependencies required for runtime
+# (node_modules and Playwright system dependencies)
 FROM node:22-bookworm-slim AS base
 
 ARG PLAYWRIGHT_BROWSERS_PATH
@@ -38,6 +40,9 @@ RUN npm run build
 # ------------------------------
 # Browser
 # ------------------------------
+# Cache optimization:
+# - Browser is downloaded only when node_modules or Playwright system dependencies change
+# - Cache is reused when only source code changes
 FROM base AS browser
 
 RUN npx -y playwright-core install --no-shell chromium
@@ -56,9 +61,9 @@ RUN chown -R ${USERNAME}:${USERNAME} node_modules
 
 USER ${USERNAME}
 
+COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
 COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
 COPY --from=builder --chown=${USERNAME}:${USERNAME} /app/lib /app/lib
-COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
 ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium"]
