@@ -16,9 +16,9 @@
 
 import { z } from 'zod';
 
-import { defineTool } from './tool';
-import * as javascript from '../javascript';
-import { outputFile } from '../config';
+import { defineTool } from './tool.js';
+import * as javascript from '../javascript.js';
+import { outputFile } from '../config.js';
 
 import type * as playwright from 'playwright';
 

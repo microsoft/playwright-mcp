@@ -16,9 +16,9 @@
 
 import * as playwright from 'playwright';
 
-import { PageSnapshot } from './pageSnapshot';
+import { PageSnapshot } from './pageSnapshot.js';
 
-import type { Context } from './context';
+import type { Context } from './context.js';
 
 export class Tab {
   readonly context: Context;
@@ -48,6 +48,9 @@ export class Tab {
       }, this);
     });
     page.on('dialog', dialog => this.context.dialogShown(this, dialog));
+    page.on('download', download => {
+      void this.context.downloadStarted(this, download);
+    });
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
   }

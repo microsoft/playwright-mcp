@@ -16,7 +16,7 @@
 
 import fs from 'fs';
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 
 test('browser_take_screenshot (viewport)', async ({ client }) => {
   expect(await client.callTool({
@@ -72,6 +72,28 @@ test('browser_take_screenshot (element)', async ({ client }) => {
     ],
   });
 });
+
+test('--output-dir should work', async ({ startClient }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const client = await startClient({
+    args: ['--output-dir', outputDir],
+  });
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toContainTextContent(`Navigate to data:text/html`);
+
+  await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {},
+  });
+
+  expect(fs.existsSync(outputDir)).toBeTruthy();
+  expect([...fs.readdirSync(outputDir)]).toHaveLength(1);
+});
+
 
 test('browser_take_screenshot (outputDir)', async ({ startClient }, testInfo) => {
   const outputDir = testInfo.outputPath('output');

@@ -14,30 +14,28 @@
  * limitations under the License.
  */
 
+import fs from 'node:fs';
+
+import { Config } from '../config.js';
 import { test, expect } from './fixtures.js';
 
-test('--device should work', async ({ startClient, server }) => {
-  const client = await startClient({
-    args: ['--device', 'iPhone 15'],
-  });
+test('config user data dir', async ({ startClient, mcpBrowser }, testInfo) => {
+  const config: Config = {
+    browser: {
+      userDataDir: testInfo.outputPath('user-data-dir'),
+    },
+  };
+  const configPath = testInfo.outputPath('config.json');
+  await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
 
-  server.route('/', (req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(`
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-      </head>
-      <body></body>
-      <script>
-        document.body.textContent = window.innerWidth + "x" + window.innerHeight;
-      </script>
-    `);
-  });
-
+  const client = await startClient({ args: ['--config', configPath] });
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: {
-      url: server.PREFIX,
+      url: 'data:text/html,<html><body>Hello, world!</body></html>',
     },
-  })).toContainTextContent(`393x659`);
+  })).toContainTextContent(`Hello, world!`);
+
+  const files = await fs.promises.readdir(config.browser!.userDataDir!);
+  expect(files.length).toBeGreaterThan(0);
 });

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 
 // https://github.com/microsoft/playwright/issues/35663
 test.skip(({ mcpBrowser, mcpHeadless }) => mcpBrowser === 'webkit' && mcpHeadless);
@@ -126,7 +126,7 @@ test('confirm dialog (true)', async ({ client }) => {
   expect(result).toContainTextContent('// <internal code to handle "confirm" dialog>');
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
-- text: "true"
+- generic [ref=s2e2]: "true"
 \`\`\``);
 });
 
@@ -156,7 +156,7 @@ test('confirm dialog (false)', async ({ client }) => {
 
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
-- text: "false"
+- generic [ref=s2e2]: "false"
 \`\`\``);
 });
 
@@ -187,6 +187,6 @@ test('prompt dialog', async ({ client }) => {
 
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
-- text: Answer
+- generic [ref=s2e2]: Answer
 \`\`\``);
 });

@@ -16,12 +16,17 @@
  */
 
 import fs from 'fs';
+import url from 'node:url';
 import http from 'http';
 import https from 'https';
 import path from 'path';
+import debug from 'debug';
 
 const fulfillSymbol = Symbol('fulfil callback');
 const rejectSymbol = Symbol('reject callback');
+
+// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
+const __filename = url.fileURLToPath(import.meta.url);
 
 export class TestServer {
   private _server: http.Server;
@@ -42,8 +47,8 @@ export class TestServer {
 
   static async createHTTPS(port: number): Promise<TestServer> {
     const server = new TestServer(port, {
-      key: await fs.promises.readFile(path.join(__dirname, 'key.pem')),
-      cert: await fs.promises.readFile(path.join(__dirname, 'cert.pem')),
+      key: await fs.promises.readFile(path.join(path.dirname(__filename), 'key.pem')),
+      cert: await fs.promises.readFile(path.join(path.dirname(__filename), 'cert.pem')),
       passphrase: 'aaaa',
     });
     await new Promise(x => server._server.once('listening', x));
@@ -56,7 +61,7 @@ export class TestServer {
     else
       this._server = http.createServer(this._onRequest.bind(this));
     this._server.listen(port);
-    this.debugServer = require('debug')('pw:testserver');
+    this.debugServer = debug('pw:testserver');
 
     const cross_origin = '127.0.0.1';
     const same_origin = 'localhost';

@@ -16,28 +16,10 @@
 
 import { test, expect } from './fixtures.js';
 
-test('--device should work', async ({ startClient, server }) => {
-  const client = await startClient({
-    args: ['--device', 'iPhone 15'],
-  });
-
-  server.route('/', (req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(`
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-      </head>
-      <body></body>
-      <script>
-        document.body.textContent = window.innerWidth + "x" + window.innerHeight;
-      </script>
-    `);
-  });
-
+test('browser_install', async ({ client, mcpBrowser }) => {
+  test.skip(mcpBrowser !== 'chromium', 'Test only chromium');
   expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: server.PREFIX,
-    },
-  })).toContainTextContent(`393x659`);
+    name: 'browser_install',
+    arguments: {},
+  })).toContainTextContent(`No open pages available.`);
 });

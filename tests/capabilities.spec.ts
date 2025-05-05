@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 
 test('test snapshot tool list', async ({ client }) => {
   const { tools } = await client.listTools();
@@ -23,6 +23,7 @@ test('test snapshot tool list', async ({ client }) => {
     'browser_console_messages',
     'browser_drag',
     'browser_file_upload',
+    'browser_generate_playwright_test',
     'browser_handle_dialog',
     'browser_hover',
     'browser_select_option',
@@ -52,6 +53,7 @@ test('test vision tool list', async ({ visionClient }) => {
     'browser_close',
     'browser_console_messages',
     'browser_file_upload',
+    'browser_generate_playwright_test',
     'browser_handle_dialog',
     'browser_install',
     'browser_navigate_back',

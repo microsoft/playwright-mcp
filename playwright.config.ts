@@ -16,9 +16,9 @@
 
 import { defineConfig } from '@playwright/test';
 
-import type { Project } from '@playwright/test';
+import type { TestOptions } from './tests/fixtures.js';
 
-export default defineConfig({
+export default defineConfig<TestOptions>({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -31,5 +31,5 @@ export default defineConfig({
     { name: 'chromium', use: { mcpBrowser: 'chromium' } },
     { name: 'firefox', use: { mcpBrowser: 'firefox' } },
     { name: 'webkit', use: { mcpBrowser: 'webkit' } },
-  ].filter(Boolean) as Project[],
+  ],
 });

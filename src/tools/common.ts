@@ -15,7 +15,7 @@
  */
 
 import { z } from 'zod';
-import { defineTool, type ToolFactory } from './tool';
+import { defineTool, type ToolFactory } from './tool.js';
 
 const wait: ToolFactory = captureSnapshot => defineTool({
   capability: 'wait',

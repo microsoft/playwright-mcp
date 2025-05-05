@@ -15,7 +15,7 @@
  */
 
 import { z } from 'zod';
-import { defineTool, type ToolFactory } from './tool';
+import { defineTool, type ToolFactory } from './tool.js';
 
 const handleDialog: ToolFactory = captureSnapshot => defineTool({
   capability: 'core',

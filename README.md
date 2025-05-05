@@ -17,7 +17,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 <!--
 // Generate using:
-node utils/generate_links.js
+node utils/generate-links.js
 -->
 
 [<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D) [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)
@@ -79,6 +79,7 @@ The Playwright MCP server supports the following command-line options:
 - `--allowed-origins <origins>`: Semicolon-separated list of origins to allow the browser to request. Default is to allow all. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked.
 - `--blocked-origins <origins>`: Semicolon-separated list of origins to block the browser to request. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked.
 - `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
+- `--output-dir`: Directory for output files
 - `--config <path>`: Path to the configuration file
 
 ### User profile
@@ -144,7 +145,8 @@ The Playwright MCP server can be configured using a JSON configuration file. Her
     'history' | // Browser history
     'wait' |    // Wait utilities
     'files' |   // File handling
-    'install'   // Browser installation
+    'install' | // Browser installation
+    'testing'   // Testing
   >;
 
   // Enable vision mode (screenshots instead of accessibility snapshots)
@@ -495,5 +497,16 @@ X Y coordinate space, based on the provided screenshot.
   - Parameters:
     - `accept` (boolean): Whether to accept the dialog.
     - `promptText` (string, optional): The text of the prompt in case of a prompt dialog.
+
+### Testing
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_generate_playwright_test**
+  - Description: Generate a Playwright test for given scenario
+  - Parameters:
+    - `name` (string): The name of the test
+    - `description` (string): The description of the test
+    - `steps` (array): The steps of the test
 
 <!--- End of generated section -->

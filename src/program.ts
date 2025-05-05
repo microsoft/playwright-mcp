@@ -16,14 +16,14 @@
 
 import { program } from 'commander';
 
-import { createServer } from './index';
-import { ServerList } from './server';
+import { createServer } from './index.js';
+import { ServerList } from './server.js';
 
-import { startHttpTransport, startStdioTransport } from './transport';
+import { startHttpTransport, startStdioTransport } from './transport.js';
 
-import { resolveConfig } from './config';
+import { resolveConfig } from './config.js';
 
-const packageJSON = require('../package.json');
+import packageJSON from '../package.json' with { type: 'json' };
 
 program
     .version('Version ' + packageJSON.version)
@@ -40,10 +40,10 @@ program
     .option('--allowed-origins <origins>', 'Semicolon-separated list of origins to allow the browser to request. Default is to allow all.', semicolonSeparatedList)
     .option('--blocked-origins <origins>', 'Semicolon-separated list of origins to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed.', semicolonSeparatedList)
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--output-dir <path>', 'Path to the directory for output files.')
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
       const config = await resolveConfig(options);
-      console.error(config);
       const serverList = new ServerList(() => createServer(config));
       setupExitWatchdog(serverList);
 

@@ -15,7 +15,7 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool';
+import { defineTool } from './tool.js';
 
 import type * as playwright from 'playwright';
 

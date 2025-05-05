@@ -18,10 +18,10 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { Context } from './context';
+import { Context } from './context.js';
 
-import type { Tool } from './tools/tool';
-import type { Config } from '../config';
+import type { Tool } from './tools/tool.js';
+import type { Config } from '../config.js';
 
 type MCPServerOptions = {
   name: string;

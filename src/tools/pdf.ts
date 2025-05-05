@@ -15,10 +15,10 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool';
+import { defineTool } from './tool.js';
 
-import * as javascript from '../javascript';
-import { outputFile } from '../config';
+import * as javascript from '../javascript.js';
+import { outputFile } from '../config.js';
 
 const pdf = defineTool({
   capability: 'pdf',
@@ -31,7 +31,7 @@ const pdf = defineTool({
 
   handle: async context => {
     const tab = context.currentTabOrDie();
-    const fileName = await outputFile(context.config, `page-${new Date().toISOString()}'.pdf'`);
+    const fileName = await outputFile(context.config, `page-${new Date().toISOString()}.pdf`);
 
     const code = [
       `// Save page as ${fileName}`,
