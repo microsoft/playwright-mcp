@@ -69,10 +69,8 @@ export class Tab {
     const downloadEvent = this.page.waitForEvent('download');
     try {
       await this.page.goto(url, { waitUntil: 'domcontentloaded' });
-    } catch (e: unknown) {
-      if (!(e instanceof Error))
-        throw e;
-
+    } catch (_e: unknown) {
+      const e = _e as Error;
       const mightBeDownload =
         e.message.includes('net::ERR_ABORTED') // chromium
         || e.message.includes('Download is starting'); // firefox + webkit
