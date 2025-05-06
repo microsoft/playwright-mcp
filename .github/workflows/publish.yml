@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Needed for npm provenance
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,4 +21,33 @@ jobs:
       - run: npm run ctest
       - run: npm publish --provenance
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Needed for OIDC login to Azure
+    environment: allow-publishing-docker-to-acr
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU # Needed for multi-platform builds (e.g., arm64 on amd64 runner)
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx # Needed for multi-platform builds
+        uses: docker/setup-buildx-action@v3
+      - name: Azure Login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_DOCKER_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_DOCKER_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_DOCKER_SUBSCRIPTION_ID }}
+      - name: Login to ACR
+        run: az acr login --name playwright
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile # Adjust path if your Dockerfile is elsewhere
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: playwright.azurecr.io/public/playwright/mcp:${{ github.ref_name }}
