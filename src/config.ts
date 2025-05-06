@@ -39,6 +39,7 @@ export type CLIOptions = {
   allowedOrigins?: string[];
   blockedOrigins?: string[];
   outputDir?: string;
+  noImageResponses?: boolean;
 };
 
 const defaultConfig: Config = {

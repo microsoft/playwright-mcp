@@ -16,12 +16,10 @@
 
 import { program } from 'commander';
 
-import { createServer } from './index.js';
-import { ServerList } from './server.js';
-
 import { startHttpTransport, startStdioTransport } from './transport.js';
-
 import { resolveConfig } from './config.js';
+
+import type { Connection } from './connection.js';
 
 import packageJSON from '../package.json' with { type: 'json' };
 
@@ -40,23 +38,25 @@ program
     .option('--allowed-origins <origins>', 'Semicolon-separated list of origins to allow the browser to request. Default is to allow all.', semicolonSeparatedList)
     .option('--blocked-origins <origins>', 'Semicolon-separated list of origins to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed.', semicolonSeparatedList)
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--no-image-responses', 'Do not send image responses to the client.')
     .option('--output-dir <path>', 'Path to the directory for output files.')
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
       const config = await resolveConfig(options);
-      const serverList = new ServerList(() => createServer(config));
-      setupExitWatchdog(serverList);
+      const connectionList: Connection[] = [];
+      setupExitWatchdog(connectionList);
 
       if (options.port)
-        startHttpTransport(+options.port, options.host, serverList);
+        startHttpTransport(config, +options.port, options.host, connectionList);
       else
-        await startStdioTransport(serverList);
+        await startStdioTransport(config, connectionList);
     });
 
-function setupExitWatchdog(serverList: ServerList) {
+function setupExitWatchdog(connectionList: Connection[]) {
   const handleExit = async () => {
     setTimeout(() => process.exit(0), 15000);
-    await serverList.closeAll();
+    for (const connection of connectionList)
+      await connection.close();
     process.exit(0);
   };
 

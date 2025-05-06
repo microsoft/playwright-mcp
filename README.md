@@ -163,14 +163,11 @@ The Playwright MCP server can be configured using a JSON configuration file. Her
     // List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
     blockedOrigins?: string[];
   };
-
-  // Tool-specific configurations
-  tools?: {
-    browser_take_screenshot?: {
-      // Disable base64-encoded image responses
-      omitBase64?: boolean;
-    }
-  }
+ 
+  /**
+   * Do not send image responses to the client.
+   */
+  noImageResponses?: boolean;
 }
 ```
 
@@ -234,9 +231,9 @@ http.createServer(async (req, res) => {
   // ...
 
   // Creates a headless Playwright MCP server with SSE transport
-  const mcpServer = await createServer({ headless: true });
+  const connection = await createConnection({ headless: true });
   const transport = new SSEServerTransport('/messages', res);
-  await mcpServer.connect(transport);
+  await connection.connect(transport);
 
   // ...
 });

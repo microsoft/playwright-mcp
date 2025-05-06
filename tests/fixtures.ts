@@ -34,7 +34,7 @@ export type TestOptions = {
 type TestFixtures = {
   client: Client;
   visionClient: Client;
-  startClient: (options?: { args?: string[], config?: Config }) => Promise<Client>;
+  startClient: (options?: { clientName?: string, args?: string[], config?: Config }) => Promise<Client>;
   wsEndpoint: string;
   cdpEndpoint: (port?: number) => Promise<string>;
   server: TestServer;
@@ -79,7 +79,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
         command: 'node',
         args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
       });
-      client = new Client({ name: 'test', version: '1.0.0' });
+      client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' });
       await client.connect(transport);
       await client.ping();
       return client;

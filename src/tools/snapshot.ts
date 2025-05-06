@@ -258,7 +258,7 @@ const screenshot = defineTool({
     else
       code.push(`await page.screenshot(${javascript.formatObject(options)});`);
 
-    const includeBase64 = !context.config.tools?.browser_take_screenshot?.omitBase64;
+    const includeBase64 = !context.config.noImageResponses;
     const action = async () => {
       const screenshot = locator ? await locator.screenshot(options) : await tab.page.screenshot(options);
       return {

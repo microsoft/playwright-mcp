@@ -116,16 +116,40 @@ test('browser_take_screenshot (outputDir)', async ({ startClient }, testInfo) =>
   expect([...fs.readdirSync(outputDir)]).toHaveLength(1);
 });
 
-test('browser_take_screenshot (omitBase64)', async ({ startClient }) => {
+test('browser_take_screenshot (noImageResponses)', async ({ startClient }) => {
   const client = await startClient({
     config: {
-      tools: {
-        browser_take_screenshot: {
-          omitBase64: true,
-        },
-      },
+      noImageResponses: true,
     },
   });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toContainTextContent(`Navigate to data:text/html`);
+
+  await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {},
+  });
+
+  expect(await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {},
+  })).toEqual({
+    content: [
+      {
+        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        type: 'text',
+      },
+    ],
+  });
+});
+
+test('browser_take_screenshot (cursor)', async ({ startClient }) => {
+  const client = await startClient({ clientName: 'cursor:vscode' });
 
   expect(await client.callTool({
     name: 'browser_navigate',

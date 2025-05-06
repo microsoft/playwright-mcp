@@ -19,20 +19,19 @@ import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Context } from './context.js';
+import { snapshotTools, screenshotTools } from './tools.js';
 
-import type { Tool } from './tools/tool.js';
 import type { Config } from '../config.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
-type MCPServerOptions = {
-  name: string;
-  version: string;
-  tools: Tool[];
-};
+import packageJSON from '../package.json' with { type: 'json' };
 
-export function createServerWithTools(serverOptions: MCPServerOptions, config: Config): Server {
-  const { name, version, tools } = serverOptions;
+export async function createConnection(config: Config): Promise<Connection> {
+  const allTools = config.vision ? screenshotTools : snapshotTools;
+  const tools = allTools.filter(tool => !config.capabilities || tool.capability === 'core' || config.capabilities.includes(tool.capability));
+
   const context = new Context(tools, config);
-  const server = new Server({ name, version }, {
+  const server = new Server({ name: 'Playwright', version: packageJSON.version }, {
     capabilities: {
       tools: {},
     }
@@ -77,38 +76,30 @@ export function createServerWithTools(serverOptions: MCPServerOptions, config: C
     }
   });
 
-  const oldClose = server.close.bind(server);
-
-  server.close = async () => {
-    await oldClose();
-    await context.close();
-  };
-
-  return server;
+  const connection = new Connection(server, context);
+  return connection;
 }
 
-export class ServerList {
-  private _servers: Server[] = [];
-  private _serverFactory: () => Promise<Server>;
+export class Connection {
+  readonly server: Server;
+  readonly context: Context;
 
-  constructor(serverFactory: () => Promise<Server>) {
-    this._serverFactory = serverFactory;
+  constructor(server: Server, context: Context) {
+    this.server = server;
+    this.context = context;
   }
 
-  async create() {
-    const server = await this._serverFactory();
-    this._servers.push(server);
-    return server;
+  async connect(transport: Transport) {
+    await this.server.connect(transport);
+    await new Promise<void>(resolve => {
+      this.server.oninitialized = () => resolve();
+    });
+    if (this.server.getClientVersion()?.name.includes('cursor'))
+      this.context.config.noImageResponses = true;
   }
 
-  async close(server: Server) {
-    const index = this._servers.indexOf(server);
-    if (index !== -1)
-      this._servers.splice(index, 1);
-    await server.close();
-  }
-
-  async closeAll() {
-    await Promise.all(this._servers.map(server => server.close()));
+  async close() {
+    await this.server.close();
+    await this.context.close();
   }
 }
