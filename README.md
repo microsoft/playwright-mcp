@@ -576,3 +576,7 @@ X Y coordinate space, based on the provided screenshot.
   - Read-only: **true**
 
 <!--- End of generated section -->
+
+### Security Notice
+
+By running the Playwright MCP server, you are granting the connected LLM the ability to access and interact with any website your machine can reach. To restrict this access, use the `--allowed-origins` and `--blocked-origins` command-line options to define which network origins are permitted or denied. This helps ensure the LLM only interacts with explicitly allowed domains. If you are a security researcher, please refer to the [SECURITY.md](./SECURITY.md) file.
