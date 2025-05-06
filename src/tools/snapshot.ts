@@ -289,7 +289,7 @@ const getLocator = defineTool({
           content: [{ type: 'text', text: await generateLocator(locator) }]
         };
       },
-      captureSnapshot: true,
+      captureSnapshot: false,
       waitForNetwork: false,
     };
   },
