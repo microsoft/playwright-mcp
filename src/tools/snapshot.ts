@@ -265,6 +265,36 @@ const screenshot = defineTool({
   }
 });
 
+const getLocator = defineTool({
+  capability: 'core',
+  schema: {
+    name: 'browser_get_locator',
+    description: 'Get reusable locator for the element',
+    inputSchema: elementSchema,
+  },
+
+  handle: async (context, params) => {
+    const tab = context.currentTabOrDie();
+    const locator = tab.snapshotOrDie().refLocator(params.ref);
+
+    const code = [
+      `// Get reusable locator for ${params.element}`,
+      `await page.${await generateLocator(locator)};`
+    ];
+
+    return {
+      code,
+      action: async () => {
+        return {
+          content: [{ type: 'text', text: await generateLocator(locator) }]
+        };
+      },
+      captureSnapshot: true,
+      waitForNetwork: false,
+    };
+  },
+});
+
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
   return (locator as any)._generateLocatorString();
 }
@@ -277,4 +307,5 @@ export default [
   type,
   selectOption,
   screenshot,
+  getLocator,
 ];
