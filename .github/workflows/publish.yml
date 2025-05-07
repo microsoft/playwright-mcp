@@ -50,4 +50,6 @@ jobs:
           file: ./Dockerfile # Adjust path if your Dockerfile is elsewhere
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: playwright.azurecr.io/public/playwright/mcp:${{ github.ref_name }}
+          tags: |
+            playwright.azurecr.io/public/playwright/mcp:${{ github.ref_name }}
+            playwright.azurecr.io/public/playwright/mcp:latest
