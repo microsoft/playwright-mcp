@@ -66,7 +66,7 @@ export class Tab {
   }
 
   async navigate(url: string) {
-    const downloadEvent = this.page.waitForEvent('download');
+    const downloadEvent = this.page.waitForEvent('download').catch(() => {});
     try {
       await this.page.goto(url, { waitUntil: 'domcontentloaded' });
     } catch (_e: unknown) {
