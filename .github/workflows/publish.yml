@@ -51,5 +51,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            playwright.azurecr.io/public/playwright/mcp:${{ github.ref_name }}
+            playwright.azurecr.io/public/playwright/mcp:${{ github.event.release.tag_name }}
             playwright.azurecr.io/public/playwright/mcp:latest
