@@ -40,6 +40,7 @@ export type CLIOptions = {
   blockedOrigins?: string[];
   outputDir?: string;
   noImageResponses?: boolean;
+  secret?: string;
 };
 
 const defaultConfig: Config = {
@@ -122,6 +123,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
       blockedOrigins: cliOptions.blockedOrigins,
     },
     outputDir: cliOptions.outputDir,
+    secret: cliOptions.secret,
   };
 }
 
