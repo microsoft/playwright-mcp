@@ -16,6 +16,7 @@
 
 import { test, expect } from './fixtures.js';
 import fs from 'fs/promises';
+import path from 'path';
 
 test('browser_file_upload', async ({ client }) => {
   expect(await client.callTool({
@@ -25,9 +26,8 @@ test('browser_file_upload', async ({ client }) => {
     },
   })).toContainTextContent(`
 \`\`\`yaml
-- generic [ref=s1e2]:
-  - button "Choose File" [ref=s1e3]
-  - button "Button" [ref=s1e4]
+- button "Choose File" [ref=s1e3]
+- button "Button" [ref=s1e4]
 \`\`\``);
 
   {
@@ -64,9 +64,8 @@ The tool "browser_file_upload" can only be used when there is related modal stat
     expect(response).not.toContainTextContent('### Modal state');
     expect(response).toContainTextContent(`
 \`\`\`yaml
-- generic [ref=s3e2]:
-  - button "Choose File" [ref=s3e3]
-  - button "Button" [ref=s3e4]
+- button "Choose File" [ref=s3e3]
+- button "Button" [ref=s3e4]
 \`\`\``);
   }
 
@@ -95,4 +94,46 @@ The tool "browser_file_upload" can only be used when there is related modal stat
 ### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
   }
+});
+
+test('clicking on download link emits download', async ({ startClient }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const client = await startClient({
+    config: { outputDir },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<a href="data:text/plain,Hello world!" download="test.txt">Download</a>',
+    },
+  })).toContainTextContent('- link "Download" [ref=s1e3]');
+  await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Download link',
+      ref: 's1e3',
+    },
+  });
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot', arguments: {} })).toContainTextContent(`
+### Downloads
+- Downloaded file test.txt to ${path.join(outputDir, 'test.txt')}`);
+});
+
+test('navigating to download link emits download', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'webkit' && process.platform === 'linux', 'https://github.com/microsoft/playwright/blob/8e08fdb52c27bb75de9bf87627bf740fadab2122/tests/library/download.spec.ts#L436');
+  server.route('/download', (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain',
+      'Content-Disposition': 'attachment; filename=test.txt',
+    });
+    res.end('Hello world!');
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX + '/download',
+    },
+  })).toContainTextContent('### Downloads');
 });

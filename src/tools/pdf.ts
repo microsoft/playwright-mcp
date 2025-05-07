@@ -25,13 +25,15 @@ const pdf = defineTool({
 
   schema: {
     name: 'browser_pdf_save',
+    title: 'Save as PDF',
     description: 'Save page as PDF',
     inputSchema: z.object({}),
+    type: 'readOnly',
   },
 
   handle: async context => {
     const tab = context.currentTabOrDie();
-    const fileName = await outputFile(context.config, `page-${new Date().toISOString()}'.pdf'`);
+    const fileName = await outputFile(context.config, `page-${new Date().toISOString()}.pdf`);
 
     const code = [
       `// Save page as ${fileName}`,

@@ -22,8 +22,10 @@ import type { ToolCapability } from '../../config.js';
 
 export type ToolSchema<Input extends InputType> = {
   name: string;
+  title: string;
   description: string;
   inputSchema: Input;
+  type: 'readOnly' | 'destructive';
 };
 
 type InputType = z.Schema;

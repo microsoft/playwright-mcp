@@ -16,7 +16,7 @@
 
 import type * as playwright from 'playwright';
 
-export type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install';
+export type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install' | 'testing';
 
 export type Config = {
   /**
@@ -94,20 +94,20 @@ export type Config = {
    */
   outputDir?: string;
 
-  /**
-   * Configuration for specific tools.
-   */
-  tools?: {
+  network?: {
     /**
-     * Configuration for the browser_take_screenshot tool.
+     * List of origins to allow the browser to request. Default is to allow all. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
      */
-    browser_take_screenshot?: {
+    allowedOrigins?: string[];
 
-      /**
-       * Whether to disable base64-encoded image responses to the clients that
-       * don't support binary data or prefer to save on tokens.
-      */
-      omitBase64?: boolean;
-    }
-  }
+    /**
+     * List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
+     */
+    blockedOrigins?: string[];
+  };
+
+  /**
+   * Do not send image responses to the client.
+   */
+  noImageResponses?: boolean;
 };

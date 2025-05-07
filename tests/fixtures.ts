@@ -22,28 +22,31 @@ import { chromium } from 'playwright';
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { spawn } from 'child_process';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { TestServer } from './testserver/index.ts';
 
 import type { Config } from '../config';
 
+export type TestOptions = {
+  mcpBrowser: string | undefined;
+};
+
 type TestFixtures = {
   client: Client;
   visionClient: Client;
-  startClient: (options?: { args?: string[], config?: Config }) => Promise<Client>;
+  startClient: (options?: { clientName?: string, args?: string[], config?: Config }) => Promise<Client>;
   wsEndpoint: string;
-  cdpEndpoint: string;
+  cdpEndpoint: (port?: number) => Promise<string>;
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
-  mcpBrowser: string | undefined;
 };
 
 type WorkerFixtures = {
   _workerServers: { server: TestServer, httpsServer: TestServer };
 };
 
-export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
+export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>({
 
   client: async ({ startClient }, use) => {
     await use(await startClient());
@@ -76,7 +79,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
         command: 'node',
         args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
       });
-      client = new Client({ name: 'test', version: '1.0.0' });
+      client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' });
       await client.connect(transport);
       await client.ping();
       return client;
@@ -92,27 +95,33 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   },
 
   cdpEndpoint: async ({ }, use, testInfo) => {
-    const port = 3200 + (+process.env.TEST_PARALLEL_INDEX!);
-    const executablePath = chromium.executablePath();
-    const browserProcess = spawn(executablePath, [
-      `--user-data-dir=${testInfo.outputPath('user-data-dir')}`,
-      `--remote-debugging-port=${port}`,
-      `--no-first-run`,
-      `--no-sandbox`,
-      `--headless`,
-      '--use-mock-keychain',
-      `data:text/html,hello world`,
-    ], {
-      stdio: 'pipe',
-    });
-    await new Promise<void>(resolve => {
-      browserProcess.stderr.on('data', data => {
-        if (data.toString().includes('DevTools listening on '))
-          resolve();
+    let browserProcess: ChildProcessWithoutNullStreams | undefined;
+
+    await use(async port => {
+      if (!port)
+        port = 3200 + test.info().parallelIndex;
+      if (browserProcess)
+        return `http://localhost:${port}`;
+      browserProcess = spawn(chromium.executablePath(), [
+        `--user-data-dir=${testInfo.outputPath('user-data-dir')}`,
+        `--remote-debugging-port=${port}`,
+        `--no-first-run`,
+        `--no-sandbox`,
+        `--headless`,
+        '--use-mock-keychain',
+        `data:text/html,hello world`,
+      ], {
+        stdio: 'pipe',
       });
+      await new Promise<void>(resolve => {
+        browserProcess!.stderr.on('data', data => {
+          if (data.toString().includes('DevTools listening on '))
+            resolve();
+        });
+      });
+      return `http://localhost:${port}`;
     });
-    await use(`http://localhost:${port}`);
-    browserProcess.kill();
+    browserProcess?.kill();
   },
 
   mcpHeadless: async ({ headless }, use) => {

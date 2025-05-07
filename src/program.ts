@@ -16,14 +16,11 @@
 
 import { program } from 'commander';
 
-import { createServer } from './index.js';
-import { ServerList } from './server.js';
-
 import { startHttpTransport, startStdioTransport } from './transport.js';
-
 import { resolveConfig } from './config.js';
 
-import packageJSON from '../package.json' with { type: 'json' };
+import type { Connection } from './connection.js';
+import { packageJSON } from './context.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -38,29 +35,38 @@ program
     .option('--port <port>', 'Port to listen on for SSE transport.')
     .option('--host <host>', 'Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--secret <secret>', 'Secret used to secure the SSE transport.')
+    .option('--allowed-origins <origins>', 'Semicolon-separated list of origins to allow the browser to request. Default is to allow all.', semicolonSeparatedList)
+    .option('--blocked-origins <origins>', 'Semicolon-separated list of origins to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed.', semicolonSeparatedList)
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--no-image-responses', 'Do not send image responses to the client.')
+    .option('--output-dir <path>', 'Path to the directory for output files.')
     .option('--config <path>', 'Path to the configuration file.')
     .action(async options => {
       const config = await resolveConfig(options);
-      const serverList = new ServerList(() => createServer(config));
-      setupExitWatchdog(serverList);
+      const connectionList: Connection[] = [];
+      setupExitWatchdog(connectionList);
 
       if (options.port)
-        startHttpTransport(+options.port, options.host, serverList, options.secret);
+        startHttpTransport(config, +options.port, options.host, connectionList);
       else
-        await startStdioTransport(serverList);
+        await startStdioTransport(config, connectionList);
     });
 
-function setupExitWatchdog(serverList: ServerList) {
+function setupExitWatchdog(connectionList: Connection[]) {
   const handleExit = async () => {
     setTimeout(() => process.exit(0), 15000);
-    await serverList.closeAll();
+    for (const connection of connectionList)
+      await connection.close();
     process.exit(0);
   };
 
   process.stdin.on('close', handleExit);
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
+}
+
+function semicolonSeparatedList(value: string): string[] {
+  return value.split(';').map(v => v.trim());
 }
 
 program.parse(process.argv);

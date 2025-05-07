@@ -22,10 +22,12 @@ const navigate: ToolFactory = captureSnapshot => defineTool({
 
   schema: {
     name: 'browser_navigate',
+    title: 'Navigate to a URL',
     description: 'Navigate to a URL',
     inputSchema: z.object({
       url: z.string().describe('The URL to navigate to'),
     }),
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
@@ -49,8 +51,10 @@ const goBack: ToolFactory = captureSnapshot => defineTool({
   capability: 'history',
   schema: {
     name: 'browser_navigate_back',
+    title: 'Go back',
     description: 'Go back to the previous page',
     inputSchema: z.object({}),
+    type: 'readOnly',
   },
 
   handle: async context => {
@@ -73,8 +77,10 @@ const goForward: ToolFactory = captureSnapshot => defineTool({
   capability: 'history',
   schema: {
     name: 'browser_navigate_forward',
+    title: 'Go forward',
     description: 'Go forward to the next page',
     inputSchema: z.object({}),
+    type: 'readOnly',
   },
   handle: async context => {
     const tab = context.currentTabOrDie();

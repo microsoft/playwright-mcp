@@ -33,7 +33,7 @@ await page.goto('data:text/html,<html><title>Title</title><body>Hello, world!</b
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- text: Hello, world!
+- generic [ref=s1e2]: Hello, world!
 \`\`\`
 `
   );

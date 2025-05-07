@@ -16,8 +16,14 @@
  */
 
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-
 import type { Config } from './config';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
-export declare function createServer(config?: Config): Promise<Server>;
+export type Connection = {
+  server: Server;
+  connect(transport: Transport): Promise<void>;
+  close(): Promise<void>;
+};
+
+export declare function createConnection(config?: Config): Promise<Connection>;
 export {};
