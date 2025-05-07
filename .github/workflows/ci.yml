@@ -63,14 +63,12 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Playwright install
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps chromium
     - name: Build
       run: npm run build
     - name: Set up Docker Buildx
-      if: ${{ runner.os == 'Linux' }}
       uses: docker/setup-buildx-action@v3
     - name: Build and push
-      if: ${{ runner.os == 'Linux' }}
       uses: docker/build-push-action@v6
       with:
         tags: playwright-mcp-dev:latest

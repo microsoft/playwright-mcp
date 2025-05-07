@@ -19,14 +19,13 @@ import fs from 'node:fs';
 import { Config } from '../config.js';
 import { test, expect } from './fixtures.js';
 
-test('config user data dir', async ({ startClient, mcpMode }, testInfo) => {
-  test.skip(mcpMode === 'docker', 'Mounting files is not supported in docker mode');
+test('config user data dir', async ({ startClient, localOutputPath }) => {
   const config: Config = {
     browser: {
-      userDataDir: testInfo.outputPath('user-data-dir'),
+      userDataDir: localOutputPath('user-data-dir'),
     },
   };
-  const configPath = testInfo.outputPath('config.json');
+  const configPath = localOutputPath('config.json');
   await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
 
   const client = await startClient({ args: ['--config', configPath] });

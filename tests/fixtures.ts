@@ -41,6 +41,7 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
+  localOutputPath: (filePath: string) => string;
 };
 
 type WorkerFixtures = {
@@ -130,6 +131,13 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
   mcpMode: [undefined, { option: true }],
 
+  localOutputPath: async ({ mcpMode }, use, testInfo) => {
+    await use(filePath => {
+      test.skip(mcpMode === 'docker', 'Mounting files is not supported in docker mode');
+      return testInfo.outputPath(filePath);
+    });
+  },
+
   _workerServers: [async ({}, use, workerInfo) => {
     const port = 8907 + workerInfo.workerIndex * 4;
     const server = await TestServer.create(port);
@@ -169,6 +177,7 @@ function createTransport(args: string[], mcpMode: TestOptions['mcpMode']) {
   return new StdioClientTransport({
     command: 'node',
     args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
+    cwd: path.join(path.dirname(__filename), '..'),
   });
 }
 

@@ -18,9 +18,7 @@ import { test, expect } from './fixtures.js';
 import fs from 'fs/promises';
 import path from 'path';
 
-test('browser_file_upload', async ({ client, mcpMode }) => {
-  test.skip(mcpMode === 'docker', 'Mounting files is not supported in docker mode');
-
+test('browser_file_upload', async ({ client, localOutputPath }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: {
@@ -52,7 +50,7 @@ The tool "browser_file_upload" can only be used when there is related modal stat
   })).toContainTextContent(`### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
 
-  const filePath = test.info().outputPath('test.txt');
+  const filePath = localOutputPath('test.txt');
   await fs.writeFile(filePath, 'Hello, world!');
 
   {
@@ -98,10 +96,8 @@ The tool "browser_file_upload" can only be used when there is related modal stat
   }
 });
 
-test('clicking on download link emits download', async ({ startClient, mcpMode }, testInfo) => {
-  test.skip(mcpMode === 'docker', 'Mounting files is not supported in docker mode');
-
-  const outputDir = testInfo.outputPath('output');
+test('clicking on download link emits download', async ({ startClient, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
   const client = await startClient({
     config: { outputDir },
   });

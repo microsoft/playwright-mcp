@@ -73,10 +73,8 @@ test('browser_take_screenshot (element)', async ({ client }) => {
   });
 });
 
-test('--output-dir should work', async ({ startClient, mcpMode }, testInfo) => {
-  test.skip(mcpMode === 'docker', 'Mounting files is not supported in docker mode');
-
-  const outputDir = testInfo.outputPath('output');
+test('--output-dir should work', async ({ startClient, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
   const client = await startClient({
     args: ['--output-dir', outputDir],
   });
@@ -97,10 +95,8 @@ test('--output-dir should work', async ({ startClient, mcpMode }, testInfo) => {
 });
 
 
-test('browser_take_screenshot (outputDir)', async ({ startClient, mcpMode }, testInfo) => {
-  test.skip(mcpMode === 'docker', 'Mounting files is not supported in docker mode');
-
-  const outputDir = testInfo.outputPath('output');
+test('browser_take_screenshot (outputDir)', async ({ startClient, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
   const client = await startClient({
     config: { outputDir },
   });
