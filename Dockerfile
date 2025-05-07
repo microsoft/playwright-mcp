@@ -45,7 +45,7 @@ RUN npm run build
 # - Cache is reused when only source code changes
 FROM base AS browser
 
-RUN npx -y playwright-core install --no-shell chromium
+RUN npx playwright install --with-deps
 
 # ------------------------------
 # Runtime
