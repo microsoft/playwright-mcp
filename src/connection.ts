@@ -18,13 +18,11 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '@modelcontextprotocol/sdk/types.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { Context } from './context.js';
+import { Context, packageJSON } from './context.js';
 import { snapshotTools, screenshotTools } from './tools.js';
 
 import type { Config } from '../config.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-
-import packageJSON from '../package.json' with { type: 'json' };
 
 export async function createConnection(config: Config): Promise<Connection> {
   const allTools = config.vision ? screenshotTools : snapshotTools;

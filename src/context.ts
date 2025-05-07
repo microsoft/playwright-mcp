@@ -15,6 +15,7 @@
  */
 
 import fs from 'node:fs';
+import url from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -381,3 +382,6 @@ async function createUserDataDir(browserConfig: Config['browser']) {
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
   return (locator as any)._generateLocatorString();
 }
+
+const __filename = url.fileURLToPath(import.meta.url);
+export const packageJSON = JSON.parse(fs.readFileSync(path.join(path.dirname(__filename), '..', 'package.json'), 'utf8'));

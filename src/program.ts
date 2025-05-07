@@ -20,8 +20,7 @@ import { startHttpTransport, startStdioTransport } from './transport.js';
 import { resolveConfig } from './config.js';
 
 import type { Connection } from './connection.js';
-
-import packageJSON from '../package.json' with { type: 'json' };
+import { packageJSON } from './context.js';
 
 program
     .version('Version ' + packageJSON.version)
