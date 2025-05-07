@@ -122,7 +122,8 @@ test('clicking on download link emits download', async ({ startClient }, testInf
 - Downloaded file test.txt to ${path.join(outputDir, 'test-txt')}`);
 });
 
-test('navigating to download link emits download', async ({ client, server }) => {
+test('navigating to download link emits download', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'webkit' && process.platform === 'linux', 'https://github.com/microsoft/playwright/blob/8e08fdb52c27bb75de9bf87627bf740fadab2122/tests/library/download.spec.ts#L436');
   server.route('/download', (req, res) => {
     res.writeHead(200, {
       'Content-Type': 'text/plain',
