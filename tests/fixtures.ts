@@ -29,6 +29,7 @@ import type { Config } from '../config';
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
+  mcpMode: 'docker' | undefined;
 };
 
 type TestFixtures = {
@@ -56,12 +57,13 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(await startClient({ args: ['--vision'] }));
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser }, use, testInfo) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
     const userDataDir = testInfo.outputPath('user-data-dir');
+    const configDir = path.dirname(test.info().config.configFile!);
     let client: Client | undefined;
 
     await use(async options => {
-      const args = ['--user-data-dir', userDataDir];
+      const args = ['--user-data-dir', path.relative(configDir, userDataDir)];
       if (mcpHeadless)
         args.push('--headless');
       if (mcpBrowser)
@@ -71,15 +73,11 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       if (options?.config) {
         const configFile = testInfo.outputPath('config.json');
         await fs.promises.writeFile(configFile, JSON.stringify(options.config, null, 2));
-        args.push(`--config=${configFile}`);
+        args.push(`--config=${path.relative(configDir, configFile)}`);
       }
-      // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-      const __filename = url.fileURLToPath(import.meta.url);
-      const transport = new StdioClientTransport({
-        command: 'node',
-        args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
-      });
+
       client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' });
+      const transport = createTransport(args, mcpMode);
       await client.connect(transport);
       await client.ping();
       return client;
@@ -130,6 +128,8 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
   mcpBrowser: ['chrome', { option: true }],
 
+  mcpMode: [undefined, { option: true }],
+
   _workerServers: [async ({}, use, workerInfo) => {
     const port = 8907 + workerInfo.workerIndex * 4;
     const server = await TestServer.create(port);
@@ -155,6 +155,22 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(_workerServers.httpsServer);
   },
 });
+
+function createTransport(args: string[], mcpMode: TestOptions['mcpMode']) {
+  // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
+  const __filename = url.fileURLToPath(import.meta.url);
+  if (mcpMode === 'docker') {
+    const dockerArgs = ['run', '--rm', '-i', '--network=host', '-v', `${test.info().project.outputDir}:/app/test-results`];
+    return new StdioClientTransport({
+      command: 'docker',
+      args: [...dockerArgs, 'playwright-mcp-dev:latest', ...args],
+    });
+  }
+  return new StdioClientTransport({
+    command: 'node',
+    args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
+  });
+}
 
 type Response = Awaited<ReturnType<Client['callTool']>>;
 

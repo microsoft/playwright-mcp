@@ -19,7 +19,8 @@ import fs from 'node:fs';
 import { Config } from '../config.js';
 import { test, expect } from './fixtures.js';
 
-test('config user data dir', async ({ startClient, mcpBrowser }, testInfo) => {
+test('config user data dir', async ({ startClient, mcpMode }, testInfo) => {
+  test.skip(mcpMode === 'docker', 'Mounting files is not supported in docker mode');
   const config: Config = {
     browser: {
       userDataDir: testInfo.outputPath('user-data-dir'),
