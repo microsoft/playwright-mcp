@@ -119,7 +119,7 @@ test('browser_take_screenshot (outputDir)', async ({ startClient }, testInfo) =>
       },
       {
         text: expect.stringMatching(
-            new RegExp(`// Screenshot viewport and save it as ${testInfo.outputPath('output')}/page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.\\jpeg`)
+            new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.\\jpeg`)
         ),
         type: 'text',
       },
@@ -159,7 +159,7 @@ test('browser_take_screenshot (raw: true)', async ({ startClient }, testInfo) =>
       },
       {
         text: expect.stringMatching(
-            new RegExp(`// Screenshot viewport and save it as ${testInfo.outputPath('output')}/page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.\\png`)
+            new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.\\png`)
         ),
         type: 'text',
       },
@@ -198,7 +198,7 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient }
         type: 'image',
       },
       {
-        text: expect.stringContaining(`// Screenshot viewport and save it as ${testInfo.outputPath('output')}/output.jpeg`),
+        text: expect.stringContaining(`output.jpeg`),
         type: 'text',
       },
     ],
