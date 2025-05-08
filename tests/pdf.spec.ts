@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
+
 import { test, expect } from './fixtures.js';
 
 test('save as pdf unavailable', async ({ startClient }) => {
@@ -44,4 +46,39 @@ test('save as pdf', async ({ client, mcpBrowser }) => {
     arguments: {},
   });
   expect(response).toHaveTextContent(/Save page as.*page-[^:]+.pdf/);
+});
+
+test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser }, testInfo) => {
+  test.skip(!!mcpBrowser && !['chromium', 'chrome', 'msedge'].includes(mcpBrowser), 'Save as PDF is only supported in Chromium.');
+  const outputDir = testInfo.outputPath('output');
+  const client = await startClient({
+    config: { outputDir },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
+
+  expect(await client.callTool({
+    name: 'browser_pdf_save',
+    arguments: {
+      filename: 'output.pdf',
+    },
+  })).toEqual({
+    content: [
+      {
+        type: 'text',
+        text: expect.stringContaining(`output.pdf`),
+      },
+    ],
+  });
+
+  const files = [...fs.readdirSync(outputDir)];
+
+  expect(fs.existsSync(outputDir)).toBeTruthy();
+  expect(files).toHaveLength(1);
+  expect(files[0]).toMatch(/^output.pdf$/);
 });

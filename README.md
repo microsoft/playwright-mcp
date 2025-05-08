@@ -502,7 +502,8 @@ X Y coordinate space, based on the provided screenshot.
 - **browser_pdf_save**
   - Title: Save as PDF
   - Description: Save page as PDF
-  - Parameters: None
+  - Parameters:
+    - `filename` (string, optional): File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.
   - Read-only: **true**
 
 ### Utilities

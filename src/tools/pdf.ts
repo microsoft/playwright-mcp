@@ -20,6 +20,10 @@ import { defineTool } from './tool.js';
 import * as javascript from '../javascript.js';
 import { outputFile } from '../config.js';
 
+const pdfSchema = z.object({
+  filename: z.string().optional().describe('File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.'),
+});
+
 const pdf = defineTool({
   capability: 'pdf',
 
@@ -27,13 +31,13 @@ const pdf = defineTool({
     name: 'browser_pdf_save',
     title: 'Save as PDF',
     description: 'Save page as PDF',
-    inputSchema: z.object({}),
+    inputSchema: pdfSchema,
     type: 'readOnly',
   },
 
-  handle: async context => {
+  handle: async (context, params) => {
     const tab = context.currentTabOrDie();
-    const fileName = await outputFile(context.config, `page-${new Date().toISOString()}.pdf`);
+    const fileName = await outputFile(context.config, params.filename ?? `page-${new Date().toISOString()}.pdf`);
 
     const code = [
       `// Save page as ${fileName}`,
