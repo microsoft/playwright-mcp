@@ -73,8 +73,8 @@ test('browser_take_screenshot (element)', async ({ client }) => {
   });
 });
 
-test('--output-dir should work', async ({ startClient }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
+test('--output-dir should work', async ({ startClient, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
   const client = await startClient({
     args: ['--output-dir', outputDir],
   });
@@ -95,8 +95,8 @@ test('--output-dir should work', async ({ startClient }, testInfo) => {
 });
 
 
-test('browser_take_screenshot (outputDir)', async ({ startClient }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
+test('browser_take_screenshot (outputDir)', async ({ startClient, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
   const client = await startClient({
     config: { outputDir },
   });
@@ -212,16 +212,40 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient }
 });
 
 
-test('browse_take_screenshot (omitBase64)', async ({ startClient }) => {
+test('browser_take_screenshot (noImageResponses)', async ({ startClient }) => {
   const client = await startClient({
     config: {
-      tools: {
-        browser_take_screenshot: {
-          omitBase64: true,
-        },
-      },
+      noImageResponses: true,
     },
   });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
+    },
+  })).toContainTextContent(`Navigate to data:text/html`);
+
+  await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {},
+  });
+
+  expect(await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {},
+  })).toEqual({
+    content: [
+      {
+        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        type: 'text',
+      },
+    ],
+  });
+});
+
+test('browser_take_screenshot (cursor)', async ({ startClient }) => {
+  const client = await startClient({ clientName: 'cursor:vscode' });
 
   expect(await client.callTool({
     name: 'browser_navigate',

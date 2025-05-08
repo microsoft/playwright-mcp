@@ -24,8 +24,10 @@ const requests = defineTool({
 
   schema: {
     name: 'browser_network_requests',
+    title: 'List network requests',
     description: 'Returns all network requests since loading the page',
     inputSchema: z.object({}),
+    type: 'readOnly',
   },
 
   handle: async context => {

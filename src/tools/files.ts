@@ -22,10 +22,12 @@ const uploadFile: ToolFactory = captureSnapshot => defineTool({
 
   schema: {
     name: 'browser_file_upload',
+    title: 'Upload files',
     description: 'Upload one or multiple files',
     inputSchema: z.object({
       paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
     }),
+    type: 'destructive',
   },
 
   handle: async (context, params) => {

@@ -18,7 +18,7 @@ import { test, expect } from './fixtures.js';
 import fs from 'fs/promises';
 import path from 'path';
 
-test('browser_file_upload', async ({ client }) => {
+test('browser_file_upload', async ({ client, localOutputPath }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: {
@@ -50,7 +50,7 @@ The tool "browser_file_upload" can only be used when there is related modal stat
   })).toContainTextContent(`### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
 
-  const filePath = test.info().outputPath('test.txt');
+  const filePath = localOutputPath('test.txt');
   await fs.writeFile(filePath, 'Hello, world!');
 
   {
@@ -96,8 +96,8 @@ The tool "browser_file_upload" can only be used when there is related modal stat
   }
 });
 
-test('clicking on download link emits download', async ({ startClient }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
+test('clicking on download link emits download', async ({ startClient, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
   const client = await startClient({
     config: { outputDir },
   });
@@ -118,4 +118,22 @@ test('clicking on download link emits download', async ({ startClient }, testInf
   await expect.poll(() => client.callTool({ name: 'browser_snapshot', arguments: {} })).toContainTextContent(`
 ### Downloads
 - Downloaded file test.txt to ${path.join(outputDir, 'test.txt')}`);
+});
+
+test('navigating to download link emits download', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'webkit' && process.platform === 'linux', 'https://github.com/microsoft/playwright/blob/8e08fdb52c27bb75de9bf87627bf740fadab2122/tests/library/download.spec.ts#L436');
+  server.route('/download', (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain',
+      'Content-Disposition': 'attachment; filename=test.txt',
+    });
+    res.end('Hello world!');
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX + '/download',
+    },
+  })).toContainTextContent('### Downloads');
 });

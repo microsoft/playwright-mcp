@@ -18,17 +18,22 @@ import http from 'node:http';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
 
-import { ServerList } from './server.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-export async function startStdioTransport(serverList: ServerList) {
-  const server = await serverList.create();
-  await server.connect(new StdioServerTransport());
+import { createConnection } from './connection.js';
+
+import type { Config } from '../config.js';
+import type { Connection } from './connection.js';
+
+export async function startStdioTransport(config: Config, connectionList: Connection[]) {
+  const connection = await createConnection(config);
+  await connection.connect(new StdioServerTransport());
+  connectionList.push(connection);
 }
 
-async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, url: URL, serverList: ServerList, sessions: Map<string, SSEServerTransport>) {
+async function handleSSE(config: Config, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>, connectionList: Connection[]) {
   if (req.method === 'POST') {
     const sessionId = url.searchParams.get('sessionId');
     if (!sessionId) {
@@ -46,22 +51,24 @@ async function handleSSE(req: http.IncomingMessage, res: http.ServerResponse, ur
   } else if (req.method === 'GET') {
     const transport = new SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
-    const server = await serverList.create();
+    const connection = await createConnection(config);
+    await connection.connect(transport);
+    connectionList.push(connection);
     res.on('close', () => {
       sessions.delete(transport.sessionId);
-      serverList.close(server).catch(e => {
+      connection.close().catch(e => {
         // eslint-disable-next-line no-console
         console.error(e);
       });
     });
-    return await server.connect(transport);
+    return;
   }
 
   res.statusCode = 405;
   res.end('Method not allowed');
 }
 
-async function handleStreamable(req: http.IncomingMessage, res: http.ServerResponse, serverList: ServerList, sessions: Map<string, StreamableHTTPServerTransport>) {
+async function handleStreamable(config: Config, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, StreamableHTTPServerTransport>, connectionList: Connection[]) {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (sessionId) {
     const transport = sessions.get(sessionId);
@@ -84,24 +91,28 @@ async function handleStreamable(req: http.IncomingMessage, res: http.ServerRespo
       if (transport.sessionId)
         sessions.delete(transport.sessionId);
     };
-    const server = await serverList.create();
-    await server.connect(transport);
-    return await transport.handleRequest(req, res);
+    const connection = await createConnection(config);
+    connectionList.push(connection);
+    await Promise.all([
+      connection.connect(transport),
+      transport.handleRequest(req, res),
+    ]);
+    return;
   }
 
   res.statusCode = 400;
   res.end('Invalid request');
 }
 
-export function startHttpTransport(port: number, hostname: string | undefined, serverList: ServerList) {
+export function startHttpTransport(config: Config, port: number, hostname: string | undefined, connectionList: Connection[]) {
   const sseSessions = new Map<string, SSEServerTransport>();
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);
     if (url.pathname.startsWith('/mcp'))
-      await handleStreamable(req, res, serverList, streamableSessions);
+      await handleStreamable(config, req, res, streamableSessions, connectionList);
     else
-      await handleSSE(req, res, url, serverList, sseSessions);
+      await handleSSE(config, req, res, url, sseSessions, connectionList);
   });
   httpServer.listen(port, hostname, () => {
     const address = httpServer.address();

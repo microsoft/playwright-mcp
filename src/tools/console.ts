@@ -21,11 +21,13 @@ const console = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_console_messages',
+    title: 'Get console messages',
     description: 'Returns all console messages',
     inputSchema: z.object({}),
+    type: 'readOnly',
   },
   handle: async context => {
-    const messages = context.currentTabOrDie().console();
+    const messages = context.currentTabOrDie().consoleMessages();
     const log = messages.map(message => `[${message.type().toUpperCase()}] ${message.text()}`).join('\n');
     return {
       code: [`// <internal code to get console messages>`],

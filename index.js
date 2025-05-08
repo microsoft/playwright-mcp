@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-import { createServer } from './lib/index';
-export default { createServer };
+import { createConnection } from './lib/index';
+export default { createConnection };

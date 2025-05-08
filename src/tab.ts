@@ -23,7 +23,7 @@ import type { Context } from './context.js';
 export class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
-  private _console: playwright.ConsoleMessage[] = [];
+  private _consoleMessages: playwright.ConsoleMessage[] = [];
   private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
   private _snapshot: PageSnapshot | undefined;
   private _onPageClose: (tab: Tab) => void;
@@ -32,7 +32,7 @@ export class Tab {
     this.context = context;
     this.page = page;
     this._onPageClose = onPageClose;
-    page.on('console', event => this._console.push(event));
+    page.on('console', event => this._consoleMessages.push(event));
     page.on('request', request => this._requests.set(request, null));
     page.on('response', response => this._requests.set(response.request(), response));
     page.on('framenavigated', frame => {
@@ -56,7 +56,7 @@ export class Tab {
   }
 
   private _clearCollectedArtifacts() {
-    this._console.length = 0;
+    this._consoleMessages.length = 0;
     this._requests.clear();
   }
 
@@ -66,7 +66,26 @@ export class Tab {
   }
 
   async navigate(url: string) {
-    await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+    const downloadEvent = this.page.waitForEvent('download').catch(() => {});
+    try {
+      await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+    } catch (_e: unknown) {
+      const e = _e as Error;
+      const mightBeDownload =
+        e.message.includes('net::ERR_ABORTED') // chromium
+        || e.message.includes('Download is starting'); // firefox + webkit
+      if (!mightBeDownload)
+        throw e;
+
+      // on chromium, the download event is fired *after* page.goto rejects, so we wait a lil bit
+      const download = await Promise.race([
+        downloadEvent,
+        new Promise(resolve => setTimeout(resolve, 500)),
+      ]);
+      if (!download)
+        throw e;
+    }
+
     // Cap load event to 5 seconds, the page is operational at this point.
     await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
   }
@@ -81,8 +100,8 @@ export class Tab {
     return this._snapshot;
   }
 
-  console(): playwright.ConsoleMessage[] {
-    return this._console;
+  consoleMessages(): playwright.ConsoleMessage[] {
+    return this._consoleMessages;
   }
 
   requests(): Map<playwright.Request, playwright.Response | null> {

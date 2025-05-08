@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+import fs from 'node:fs';
+import url from 'node:url';
+import os from 'node:os';
+import path from 'node:path';
+
 import * as playwright from 'playwright';
 
 import { waitForCompletion } from './tools/utils.js';
@@ -286,11 +291,26 @@ ${code.join('\n')}
     }).catch(() => {});
   }
 
+  private async _setupRequestInterception(context: playwright.BrowserContext) {
+    if (this.config.network?.allowedOrigins?.length) {
+      await context.route('**', route => route.abort('blockedbyclient'));
+
+      for (const origin of this.config.network.allowedOrigins)
+        await context.route(`*://${origin}/**`, route => route.continue());
+    }
+
+    if (this.config.network?.blockedOrigins?.length) {
+      for (const origin of this.config.network.blockedOrigins)
+        await context.route(`*://${origin}/**`, route => route.abort('blockedbyclient'));
+    }
+  }
+
   private async _ensureBrowserContext() {
     if (!this._browserContext) {
       const context = await this._createBrowserContext();
       this._browser = context.browser;
       this._browserContext = context.browserContext;
+      await this._setupRequestInterception(this._browserContext);
       for (const page of this._browserContext.pages())
         this._onPageCreated(page);
       this._browserContext.on('page', page => this._onPageCreated(page));
@@ -333,8 +353,10 @@ ${code.join('\n')}
 
 async function launchPersistentContext(browserConfig: Config['browser']): Promise<playwright.BrowserContext> {
   try {
-    const browserType = browserConfig?.browserName ? playwright[browserConfig.browserName] : playwright.chromium;
-    return await browserType.launchPersistentContext(browserConfig?.userDataDir || '', { ...browserConfig?.launchOptions, ...browserConfig?.contextOptions });
+    const browserName = browserConfig?.browserName ?? 'chromium';
+    const userDataDir = browserConfig?.userDataDir ?? await createUserDataDir({ ...browserConfig, browserName });
+    const browserType = playwright[browserName];
+    return await browserType.launchPersistentContext(userDataDir, { ...browserConfig?.launchOptions, ...browserConfig?.contextOptions });
   } catch (error: any) {
     if (error.message.includes('Executable doesn\'t exist'))
       throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
@@ -342,6 +364,24 @@ async function launchPersistentContext(browserConfig: Config['browser']): Promis
   }
 }
 
+async function createUserDataDir(browserConfig: Config['browser']) {
+  let cacheDirectory: string;
+  if (process.platform === 'linux')
+    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+  else if (process.platform === 'darwin')
+    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
+  else if (process.platform === 'win32')
+    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+  else
+    throw new Error('Unsupported platform: ' + process.platform);
+  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserConfig?.launchOptions.channel ?? browserConfig?.browserName}-profile`);
+  await fs.promises.mkdir(result, { recursive: true });
+  return result;
+}
+
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
   return (locator as any)._generateLocatorString();
 }
+
+const __filename = url.fileURLToPath(import.meta.url);
+export const packageJSON = JSON.parse(fs.readFileSync(path.join(path.dirname(__filename), '..', 'package.json'), 'utf8'));

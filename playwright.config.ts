@@ -29,6 +29,7 @@ export default defineConfig<TestOptions>({
     { name: 'chrome' },
     { name: 'msedge', use: { mcpBrowser: 'msedge' } },
     { name: 'chromium', use: { mcpBrowser: 'chromium' } },
+    ...process.env.MCP_IN_DOCKER ? [{ name: 'chromium-docker', use: { mcpBrowser: 'chromium', mcpMode: 'docker' as const } }] : [],
     { name: 'firefox', use: { mcpBrowser: 'firefox' } },
     { name: 'webkit', use: { mcpBrowser: 'webkit' } },
   ],

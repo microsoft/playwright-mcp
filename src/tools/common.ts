@@ -22,10 +22,12 @@ const wait: ToolFactory = captureSnapshot => defineTool({
 
   schema: {
     name: 'browser_wait',
+    title: 'Wait',
     description: 'Wait for a specified time in seconds',
     inputSchema: z.object({
       time: z.number().describe('The time to wait in seconds'),
     }),
+    type: 'readOnly',
   },
 
   handle: async (context, params) => {
@@ -43,8 +45,10 @@ const close = defineTool({
 
   schema: {
     name: 'browser_close',
+    title: 'Close browser',
     description: 'Close the page',
     inputSchema: z.object({}),
+    type: 'readOnly',
   },
 
   handle: async context => {
@@ -61,11 +65,13 @@ const resize: ToolFactory = captureSnapshot => defineTool({
   capability: 'core',
   schema: {
     name: 'browser_resize',
+    title: 'Resize browser window',
     description: 'Resize the browser window',
     inputSchema: z.object({
       width: z.number().describe('Width of the browser window'),
       height: z.number().describe('Height of the browser window'),
     }),
+    type: 'readOnly',
   },
 
   handle: async (context, params) => {
