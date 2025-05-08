@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import * as playwright from 'playwright';
+import * as playwright from 'patchright';
 import yaml from 'yaml';
 
 type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;

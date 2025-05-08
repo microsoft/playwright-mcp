@@ -16,6 +16,7 @@
 
 import { z } from 'zod';
 import { defineTool } from './tool.js';
+import type * as playwright from 'patchright';
 
 import * as javascript from '../javascript.js';
 

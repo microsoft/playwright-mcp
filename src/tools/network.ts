@@ -17,7 +17,7 @@
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 
-import type * as playwright from 'playwright';
+import type * as playwright from 'patchright';
 
 const requests = defineTool({
   capability: 'core',

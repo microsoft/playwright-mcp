@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type * as playwright from 'playwright';
+import type * as playwright from 'patchright';
 import type { Context } from '../context.js';
 
 export async function waitForCompletion<R>(context: Context, page: playwright.Page, callback: () => Promise<R>): Promise<R> {

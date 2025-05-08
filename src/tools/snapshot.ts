@@ -20,7 +20,7 @@ import { defineTool } from './tool.js';
 import * as javascript from '../javascript.js';
 import { outputFile } from '../config.js';
 
-import type * as playwright from 'playwright';
+import type * as playwright from 'patchright';
 
 const snapshot = defineTool({
   capability: 'core',

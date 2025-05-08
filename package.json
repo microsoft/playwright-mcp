@@ -37,6 +37,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.0",
     "commander": "^13.1.0",
+    "patchright": "^1.52.2",
     "playwright": "1.53.0-alpha-1746218818000",
     "yaml": "^2.7.1",
     "zod-to-json-schema": "^3.24.4"

@@ -18,10 +18,10 @@ import fs from 'fs';
 import net from 'net';
 import os from 'os';
 import path from 'path';
-import { devices } from 'playwright';
+import { devices } from 'patchright';
 
 import type { Config, ToolCapability } from '../config.js';
-import type { BrowserContextOptions, LaunchOptions } from 'playwright';
+import type { BrowserContextOptions, LaunchOptions } from 'patchright';
 import { sanitizeForFilePath } from './tools/utils.js';
 
 export type CLIOptions = {

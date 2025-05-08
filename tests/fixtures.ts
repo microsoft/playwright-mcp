@@ -17,7 +17,7 @@
 import fs from 'fs';
 import url from 'url';
 import path from 'path';
-import { chromium } from 'playwright';
+import { chromium } from 'patchright';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';

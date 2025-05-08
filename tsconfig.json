@@ -8,9 +8,14 @@
     "module": "NodeNext",
     "rootDir": "src",
     "outDir": "./lib",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./types"
+    ]
   },
   "include": [
     "src",
+    "types"
   ],
 }

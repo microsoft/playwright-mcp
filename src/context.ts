@@ -19,7 +19,7 @@ import url from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 
-import * as playwright from 'playwright';
+import * as playwright from 'patchright';
 
 import { waitForCompletion } from './tools/utils.js';
 import { ManualPromise } from './manualPromise.js';
