@@ -94,84 +94,51 @@ test('--output-dir should work', async ({ startClient, localOutputPath }) => {
   expect([...fs.readdirSync(outputDir)]).toHaveLength(1);
 });
 
-
-test('browser_take_screenshot (outputDir)', async ({ startClient, localOutputPath }) => {
-  const outputDir = localOutputPath('output');
-  const client = await startClient({
-    config: { outputDir },
-  });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`Navigate to data:text/html`);
-
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-    arguments: {},
-  })).toEqual({
-    content: [
-      {
-        data: expect.any(String),
-        mimeType: 'image/jpeg',
-        type: 'image',
+for (const raw of [undefined, true]) {
+  test(`browser_take_screenshot (raw: ${raw})`, async ({ startClient }, testInfo) => {
+    const ext = raw ? 'png' : 'jpeg';
+    const outputDir = testInfo.outputPath('output');
+    const client = await startClient({
+      config: { outputDir },
+    });
+    expect(await client.callTool({
+      name: 'browser_navigate',
+      arguments: {
+        url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
       },
-      {
-        text: expect.stringMatching(
-            new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.\\jpeg`)
-        ),
-        type: 'text',
+    })).toContainTextContent(`Navigate to data:text/html`);
+
+    expect(await client.callTool({
+      name: 'browser_take_screenshot',
+      arguments: {
+        raw,
       },
-    ],
-  });
+    })).toEqual({
+      content: [
+        {
+          data: expect.any(String),
+          mimeType: `image/${ext}`,
+          type: 'image',
+        },
+        {
+          text: expect.stringMatching(
+              new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.${ext}`)
+          ),
+          type: 'text',
+        },
+      ],
+    });
 
-  const files = [...fs.readdirSync(outputDir)];
+    const files = [...fs.readdirSync(outputDir)];
 
-  expect(fs.existsSync(outputDir)).toBeTruthy();
-  expect(files).toHaveLength(1);
-  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.jpeg$/);
-});
-
-test('browser_take_screenshot (raw: true)', async ({ startClient }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
-  const client = await startClient({
-    config: { outputDir },
-  });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`Navigate to data:text/html`);
-
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-    arguments: {
-      raw: true,
-    },
-  })).toEqual({
-    content: [
-      {
-        data: expect.any(String),
-        mimeType: 'image/png',
-        type: 'image',
-      },
-      {
-        text: expect.stringMatching(
-            new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.\\png`)
-        ),
-        type: 'text',
-      },
-    ],
+    expect(fs.existsSync(outputDir)).toBeTruthy();
+    expect(files).toHaveLength(1);
+    expect(files[0]).toMatch(
+        new RegExp(`^page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z\\.${ext}$`)
+    );
   });
 
-  const files = [...fs.readdirSync(outputDir)];
-
-  expect(fs.existsSync(outputDir)).toBeTruthy();
-  expect(files).toHaveLength(1);
-  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png$/);
-});
+}
 
 test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
@@ -210,7 +177,6 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient }
   expect(files).toHaveLength(1);
   expect(files[0]).toMatch(/^output.jpeg$/);
 });
-
 
 test('browser_take_screenshot (noImageResponses)', async ({ startClient }) => {
   const client = await startClient({
