@@ -17,15 +17,11 @@
 import { test, expect } from './fixtures.js';
 
 test('browser_network_requests', async ({ client, server }) => {
-  server.route('/', (req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(`<button onclick="fetch('/json')">Click me</button>`);
-  });
+  server.setContent('/', `
+    <button onclick="fetch('/json')">Click me</button>
+  `, 'text/html');
 
-  server.route('/json', (req, res) => {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ name: 'John Doe' }));
-  });
+  server.setContent('/json', JSON.stringify({ name: 'John Doe' }), 'application/json');
 
   await client.callTool({
     name: 'browser_navigate',
@@ -45,5 +41,6 @@ test('browser_network_requests', async ({ client, server }) => {
   await expect.poll(() => client.callTool({
     name: 'browser_network_requests',
     arguments: {},
-  })).toHaveTextContent(`[GET] ${`${server.PREFIX}/json`} => [200] OK`);
+  })).toHaveTextContent(`[GET] ${`${server.PREFIX}`} => [200] OK
+[GET] ${`${server.PREFIX}json`} => [200] OK`);
 });

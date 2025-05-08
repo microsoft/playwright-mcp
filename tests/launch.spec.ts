@@ -16,12 +16,10 @@
 
 import { test, expect } from './fixtures.js';
 
-test('test reopen browser', async ({ client }) => {
+test('test reopen browser', async ({ client, server }) => {
   await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
+    arguments: { url: server.HELLO_WORLD },
   });
 
   expect(await client.callTool({
@@ -31,19 +29,15 @@ test('test reopen browser', async ({ client }) => {
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
+    arguments: { url: server.HELLO_WORLD },
   })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
 });
 
-test('executable path', async ({ startClient }) => {
+test('executable path', async ({ startClient, server }) => {
   const client = await startClient({ args: [`--executable-path=bogus`] });
   const response = await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
+    arguments: { url: server.HELLO_WORLD },
   });
   expect(response).toContainTextContent(`executable doesn't exist`);
 });

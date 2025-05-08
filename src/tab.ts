@@ -35,10 +35,6 @@ export class Tab {
     page.on('console', event => this._consoleMessages.push(event));
     page.on('request', request => this._requests.set(request, null));
     page.on('response', response => this._requests.set(response.request(), response));
-    page.on('framenavigated', frame => {
-      if (!frame.parentFrame())
-        this._clearCollectedArtifacts();
-    });
     page.on('close', () => this._onClose());
     page.on('filechooser', chooser => {
       this.context.setModalState({
@@ -66,6 +62,8 @@ export class Tab {
   }
 
   async navigate(url: string) {
+    this._clearCollectedArtifacts();
+
     const downloadEvent = this.page.waitForEvent('download').catch(() => {});
     try {
       await this.page.goto(url, { waitUntil: 'domcontentloaded' });

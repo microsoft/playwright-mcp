@@ -38,6 +38,7 @@ export class TestServer {
   readonly PORT: number;
   readonly PREFIX: string;
   readonly CROSS_PROCESS_PREFIX: string;
+  readonly HELLO_WORLD: string;
 
   static async create(port: number): Promise<TestServer> {
     const server = new TestServer(port);
@@ -67,8 +68,9 @@ export class TestServer {
     const same_origin = 'localhost';
     const protocol = sslOptions ? 'https' : 'http';
     this.PORT = port;
-    this.PREFIX = `${protocol}://${same_origin}:${port}`;
-    this.CROSS_PROCESS_PREFIX = `${protocol}://${cross_origin}:${port}`;
+    this.PREFIX = `${protocol}://${same_origin}:${port}/`;
+    this.CROSS_PROCESS_PREFIX = `${protocol}://${cross_origin}:${port}/`;
+    this.HELLO_WORLD = `${this.PREFIX}hello-world`;
   }
 
   setCSP(path: string, csp: string) {
@@ -86,6 +88,13 @@ export class TestServer {
 
   route(path: string, handler: (request: http.IncomingMessage, response: http.ServerResponse) => any) {
     this._routes.set(path, handler);
+  }
+
+  setContent(path: string, content: string, mimeType: string) {
+    this.route(path, (req, res) => {
+      res.writeHead(200, { 'Content-Type': mimeType });
+      res.end(mimeType === 'text/html' ? `<!DOCTYPE html>${content}` : content);
+    });
   }
 
   redirect(from: string, to: string) {
@@ -120,6 +129,15 @@ export class TestServer {
     for (const subscriber of this._requestSubscribers.values())
       subscriber[rejectSymbol].call(null, error);
     this._requestSubscribers.clear();
+
+    this.setContent('/favicon.ico', '', 'image/x-icon');
+
+    this.setContent('/', ``, 'text/html');
+
+    this.setContent('/hello-world', `
+      <title>Title</title>
+      <body>Hello, world!</body>
+    `, 'text/html');
   }
 
   _onRequest(request: http.IncomingMessage, response: http.ServerResponse) {
@@ -144,7 +162,11 @@ export class TestServer {
       this._requestSubscribers.delete(path);
     }
     const handler = this._routes.get(path);
-    if (handler)
+    if (handler) {
       handler.call(null, request, response);
+    } else {
+      response.writeHead(404);
+      response.end();
+    }
   }
 }

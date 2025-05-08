@@ -19,12 +19,11 @@ import { test, expect } from './fixtures.js';
 // https://github.com/microsoft/playwright/issues/35663
 test.skip(({ mcpBrowser, mcpHeadless }) => mcpBrowser === 'webkit' && mcpHeadless);
 
-test('alert dialog', async ({ client }) => {
+test('alert dialog', async ({ client, server }) => {
+  server.setContent('/', `<button onclick="alert('Alert')">Button</button>`, 'text/html');
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><button onclick="alert(\'Alert\')">Button</button></html>',
-    },
+    arguments: { url: server.PREFIX },
   })).toContainTextContent('- button "Button" [ref=s1e3]');
 
   expect(await client.callTool({
@@ -55,8 +54,8 @@ await page.getByRole('button', { name: 'Button' }).click();
 // <internal code to handle "alert" dialog>
 \`\`\`
 
-- Page URL: data:text/html,<html><title>Title</title><button onclick="alert('Alert')">Button</button></html>
-- Page Title: Title
+- Page URL: ${server.PREFIX}
+- Page Title: 
 - Page Snapshot
 \`\`\`yaml
 - button "Button" [ref=s2e3]
@@ -64,13 +63,19 @@ await page.getByRole('button', { name: 'Button' }).click();
 `);
 });
 
-test('two alert dialogs', async ({ client }) => {
+test('two alert dialogs', async ({ client, server }) => {
   test.fixme(true, 'Race between the dialog and ariaSnapshot');
+
+  server.setContent('/', `
+    <title>Title</title>
+    <body>
+      <button onclick="alert('Alert 1');alert('Alert 2');">Button</button>
+    </body>
+  `, 'text/html');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><button onclick="alert(\'Alert 1\');alert(\'Alert 2\');">Button</button></html>',
-    },
+    arguments: { url: server.PREFIX },
   })).toContainTextContent('- button "Button" [ref=s1e3]');
 
   expect(await client.callTool({
@@ -98,12 +103,17 @@ await page.getByRole('button', { name: 'Button' }).click();
   expect(result).not.toContainTextContent('### Modal state');
 });
 
-test('confirm dialog (true)', async ({ client }) => {
+test('confirm dialog (true)', async ({ client, server }) => {
+  server.setContent('/', `
+    <title>Title</title>
+    <body>
+      <button onclick="document.body.textContent = confirm('Confirm')">Button</button>
+    </body>
+  `, 'text/html');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><button onclick="document.body.textContent = confirm(\'Confirm\')">Button</button></html>',
-    },
+    arguments: { url: server.PREFIX },
   })).toContainTextContent('- button "Button" [ref=s1e3]');
 
   expect(await client.callTool({
@@ -130,12 +140,17 @@ test('confirm dialog (true)', async ({ client }) => {
 \`\`\``);
 });
 
-test('confirm dialog (false)', async ({ client }) => {
+test('confirm dialog (false)', async ({ client, server }) => {
+  server.setContent('/', `
+    <title>Title</title>
+    <body>
+      <button onclick="document.body.textContent = confirm('Confirm')">Button</button>
+    </body>
+  `, 'text/html');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><button onclick="document.body.textContent = confirm(\'Confirm\')">Button</button></html>',
-    },
+    arguments: { url: server.PREFIX },
   })).toContainTextContent('- button "Button" [ref=s1e3]');
 
   expect(await client.callTool({
@@ -160,12 +175,17 @@ test('confirm dialog (false)', async ({ client }) => {
 \`\`\``);
 });
 
-test('prompt dialog', async ({ client }) => {
+test('prompt dialog', async ({ client, server }) => {
+  server.setContent('/', `
+    <title>Title</title>
+    <body>
+      <button onclick="document.body.textContent = prompt('Prompt')">Button</button>
+    </body>
+  `, 'text/html');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><button onclick="document.body.textContent = prompt(\'Prompt\')">Button</button></html>',
-    },
+    arguments: { url: server.PREFIX },
   })).toContainTextContent('- button "Button" [ref=s1e3]');
 
   expect(await client.callTool({

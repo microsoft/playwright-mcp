@@ -18,13 +18,11 @@ import fs from 'fs';
 
 import { test, expect } from './fixtures.js';
 
-test('browser_take_screenshot (viewport)', async ({ client }) => {
+test('browser_take_screenshot (viewport)', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`Navigate to data:text/html`);
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`Navigate to http://localhost`);
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
@@ -44,19 +42,17 @@ test('browser_take_screenshot (viewport)', async ({ client }) => {
   });
 });
 
-test('browser_take_screenshot (element)', async ({ client }) => {
+test('browser_take_screenshot (element)', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><button>Hello, world!</button></html>',
-    },
-  })).toContainTextContent(`[ref=s1e3]`);
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`[ref=s1e2]`);
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
     arguments: {
       element: 'hello button',
-      ref: 's1e3',
+      ref: 's1e2',
     },
   })).toEqual({
     content: [
@@ -66,24 +62,22 @@ test('browser_take_screenshot (element)', async ({ client }) => {
         type: 'image',
       },
       {
-        text: expect.stringContaining(`page.getByRole('button', { name: 'Hello, world!' }).screenshot`),
+        text: expect.stringContaining(`page.getByText('Hello, world!').screenshot`),
         type: 'text',
       },
     ],
   });
 });
 
-test('--output-dir should work', async ({ startClient, localOutputPath }) => {
+test('--output-dir should work', async ({ startClient, localOutputPath, server }) => {
   const outputDir = localOutputPath('output');
   const client = await startClient({
     args: ['--output-dir', outputDir],
   });
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`Navigate to data:text/html`);
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`Navigate to http://localhost`);
 
   await client.callTool({
     name: 'browser_take_screenshot',
@@ -95,24 +89,20 @@ test('--output-dir should work', async ({ startClient, localOutputPath }) => {
 });
 
 for (const raw of [undefined, true]) {
-  test(`browser_take_screenshot (raw: ${raw})`, async ({ startClient }, testInfo) => {
+  test(`browser_take_screenshot (raw: ${raw})`, async ({ startClient, localOutputPath, server }) => {
     const ext = raw ? 'png' : 'jpeg';
-    const outputDir = testInfo.outputPath('output');
+    const outputDir = localOutputPath('output');
     const client = await startClient({
       config: { outputDir },
     });
     expect(await client.callTool({
       name: 'browser_navigate',
-      arguments: {
-        url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-      },
-    })).toContainTextContent(`Navigate to data:text/html`);
+      arguments: { url: server.PREFIX },
+    })).toContainTextContent(`Navigate to http://localhost`);
 
     expect(await client.callTool({
       name: 'browser_take_screenshot',
-      arguments: {
-        raw,
-      },
+      arguments: { raw },
     })).toEqual({
       content: [
         {
@@ -140,17 +130,15 @@ for (const raw of [undefined, true]) {
 
 }
 
-test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
+test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, localOutputPath, server }) => {
+  const outputDir = localOutputPath('output');
   const client = await startClient({
     config: { outputDir },
   });
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`Navigate to data:text/html`);
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`Navigate to http://localhost`);
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
@@ -178,7 +166,7 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient }
   expect(files[0]).toMatch(/^output.jpeg$/);
 });
 
-test('browser_take_screenshot (noImageResponses)', async ({ startClient }) => {
+test('browser_take_screenshot (noImageResponses)', async ({ startClient, server }) => {
   const client = await startClient({
     config: {
       noImageResponses: true,
@@ -187,10 +175,8 @@ test('browser_take_screenshot (noImageResponses)', async ({ startClient }) => {
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`Navigate to data:text/html`);
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`Navigate to http://localhost`);
 
   await client.callTool({
     name: 'browser_take_screenshot',
@@ -210,15 +196,13 @@ test('browser_take_screenshot (noImageResponses)', async ({ startClient }) => {
   });
 });
 
-test('browser_take_screenshot (cursor)', async ({ startClient }) => {
+test('browser_take_screenshot (cursor)', async ({ startClient, server }) => {
   const client = await startClient({ clientName: 'cursor:vscode' });
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`Navigate to data:text/html`);
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`Navigate to http://localhost`);
 
   await client.callTool({
     name: 'browser_take_screenshot',

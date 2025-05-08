@@ -18,12 +18,15 @@ import { test, expect } from './fixtures.js';
 import fs from 'fs/promises';
 import path from 'path';
 
-test('browser_file_upload', async ({ client, localOutputPath }) => {
+test('browser_file_upload', async ({ client, localOutputPath, server }) => {
+  server.setContent('/', `
+    <input type="file" />
+    <button>Button</button>
+  `, 'text/html');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><input type="file" /><button>Button</button></html>',
-    },
+    arguments: { url: server.PREFIX },
   })).toContainTextContent(`
 \`\`\`yaml
 - button "Choose File" [ref=s1e3]
@@ -96,17 +99,18 @@ The tool "browser_file_upload" can only be used when there is related modal stat
   }
 });
 
-test('clicking on download link emits download', async ({ startClient, localOutputPath }) => {
+test('clicking on download link emits download', async ({ startClient, localOutputPath, server }) => {
   const outputDir = localOutputPath('output');
   const client = await startClient({
     config: { outputDir },
   });
 
+  server.setContent('/', `<a href="/download" download="test.txt">Download</a>`, 'text/html');
+  server.setContent('/download', 'Data', 'text/plain');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<a href="data:text/plain,Hello world!" download="test.txt">Download</a>',
-    },
+    arguments: { url: server.PREFIX },
   })).toContainTextContent('- link "Download" [ref=s1e3]');
   await client.callTool({
     name: 'browser_click',
@@ -133,7 +137,7 @@ test('navigating to download link emits download', async ({ client, server, mcpB
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: {
-      url: server.PREFIX + '/download',
+      url: server.PREFIX + 'download',
     },
   })).toContainTextContent('### Downloads');
 });

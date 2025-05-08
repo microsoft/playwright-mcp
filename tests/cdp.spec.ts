@@ -16,13 +16,11 @@
 
 import { test, expect } from './fixtures.js';
 
-test('cdp server', async ({ cdpEndpoint, startClient }) => {
+test('cdp server', async ({ cdpEndpoint, startClient, server }) => {
   const client = await startClient({ args: [`--cdp-endpoint=${await cdpEndpoint()}`] });
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
+    arguments: { url: server.HELLO_WORLD },
   })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
 });
 
@@ -55,20 +53,22 @@ test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
 `);
 });
 
-test('should throw connection error and allow re-connecting', async ({ cdpEndpoint, startClient }) => {
+test('should throw connection error and allow re-connecting', async ({ cdpEndpoint, startClient, server }) => {
   const port = 3200 + test.info().parallelIndex;
   const client = await startClient({ args: [`--cdp-endpoint=http://localhost:${port}`] });
+
+  server.setContent('/', `
+    <title>Title</title>
+    <body>Hello, world!</body>
+  `, 'text/html');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
+    arguments: { url: server.PREFIX },
   })).toContainTextContent(`Error: browserType.connectOverCDP: connect ECONNREFUSED`);
   await cdpEndpoint(port);
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
+    arguments: { url: server.PREFIX },
   })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
 });
