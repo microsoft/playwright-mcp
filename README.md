@@ -207,7 +207,7 @@ And then in MCP client config, set the `url` to the SSE endpoint:
   "mcpServers": {
     "playwright": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "--init", "mcr.microsoft.com/playwright/mcp"]
+      "args": ["run", "-i", "--rm", "--init", "--pull=always", "mcr.microsoft.com/playwright/mcp"]
     }
   }
 }
