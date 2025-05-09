@@ -22,13 +22,13 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-import { createConnectionImpl } from './connection.js';
+import { createConnection } from './connection.js';
 
 import type { Config } from '../config.js';
 import type { Connection } from './connection.js';
 
 export async function startStdioTransport(config: Config, connectionList: Connection[]) {
-  const connection = await createConnectionImpl(config);
+  const connection = await createConnection(config);
   await connection.connect(new StdioServerTransport());
   connectionList.push(connection);
 }
@@ -51,7 +51,7 @@ async function handleSSE(config: Config, req: http.IncomingMessage, res: http.Se
   } else if (req.method === 'GET') {
     const transport = new SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
-    const connection = await createConnectionImpl(config);
+    const connection = await createConnection(config);
     await connection.connect(transport);
     connectionList.push(connection);
     res.on('close', () => {
@@ -91,7 +91,7 @@ async function handleStreamable(config: Config, req: http.IncomingMessage, res: 
       if (transport.sessionId)
         sessions.delete(transport.sessionId);
     };
-    const connection = await createConnectionImpl(config);
+    const connection = await createConnection(config);
     connectionList.push(connection);
     await Promise.all([
       connection.connect(transport),

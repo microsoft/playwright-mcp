@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Connection, createConnectionImpl  } from './connection.js';
+import { Connection, createConnection as createConnectionImpl } from './connection.js';
 
 import type { Config } from '../config.js';
 
