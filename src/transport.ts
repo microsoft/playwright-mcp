@@ -49,7 +49,11 @@ async function handleSSE(config: Config, req: http.IncomingMessage, res: http.Se
 
     return await transport.handlePostMessage(req, res);
   } else if (req.method === 'GET') {
-    const transport = new SSEServerTransport('/sse', res);
+    let url = '/sse';
+    if (config.secret)
+      url += '?' + new URLSearchParams({ secret: config.secret });
+
+    const transport = new SSEServerTransport(url, res);
     sessions.set(transport.sessionId, transport);
     const connection = await createConnection(config);
     await connection.connect(transport);
@@ -109,6 +113,11 @@ export function startHttpTransport(config: Config, port: number, hostname: strin
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);
+    if (config.secret && url.searchParams.get('secret') !== config.secret) {
+      res.statusCode = 403;
+      return res.end('Forbidden');
+    }
+
     if (url.pathname.startsWith('/mcp'))
       await handleStreamable(config, req, res, streamableSessions, connectionList);
     else
@@ -117,23 +126,28 @@ export function startHttpTransport(config: Config, port: number, hostname: strin
   httpServer.listen(port, hostname, () => {
     const address = httpServer.address();
     assert(address, 'Could not bind server socket');
-    let url: string;
+    let baseUrl: string;
     if (typeof address === 'string') {
-      url = address;
+      baseUrl = address;
     } else {
       const resolvedPort = address.port;
       let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
       if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
         resolvedHost = 'localhost';
-      url = `http://${resolvedHost}:${resolvedPort}`;
+      baseUrl = `http://${resolvedHost}:${resolvedPort}`;
     }
+
+    const sseUrl = new URL('/sse', baseUrl);
+    if (config.secret)
+      sseUrl.searchParams.set('secret', config.secret);
+
     const message = [
-      `Listening on ${url}`,
+      `Listening on ${baseUrl}`,
       'Put this in your client config:',
       JSON.stringify({
         'mcpServers': {
           'playwright': {
-            'url': `${url}/sse`
+            'url': `${sseUrl}`
           }
         }
       }, undefined, 2),

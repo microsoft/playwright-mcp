@@ -90,6 +90,11 @@ export type Config = {
   vision?: boolean;
 
   /**
+   * Secret used to secure the SSE transport.
+   */
+  secret?: string;
+
+  /**
    * The directory to save output files.
    */
   outputDir?: string;
