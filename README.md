@@ -207,7 +207,7 @@ And then in MCP client config, set the `url` to the SSE endpoint:
   "mcpServers": {
     "playwright": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "--init", "mcp/playwright"]
+      "args": ["run", "-i", "--rm", "--init", "mcr.microsoft.com/playwright/mcp"]
     }
   }
 }
@@ -216,7 +216,7 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 You can build the Docker image yourself.
 
 ```
-docker build -t mcp/playwright .
+docker build -t mcr.microsoft.com/playwright/mcp .
 ```
 
 ### Programmatic usage
