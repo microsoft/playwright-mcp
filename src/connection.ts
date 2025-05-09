@@ -24,7 +24,7 @@ import { snapshotTools, screenshotTools } from './tools.js';
 import type { Config } from '../config.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
-export async function createConnection(config: Config): Promise<Connection> {
+export async function createConnectionImpl(config: Config): Promise<Connection> {
   const allTools = config.vision ? screenshotTools : snapshotTools;
   const tools = allTools.filter(tool => !config.capabilities || tool.capability === 'core' || config.capabilities.includes(tool.capability));
 

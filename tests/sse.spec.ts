@@ -15,13 +15,18 @@
  */
 
 import url from 'node:url';
+import http from 'node:http';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
-import { test as baseTest } from './fixtures.js';
-import { expect } from 'playwright/test';
+import type { AddressInfo } from 'node:net';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+
+import { createConnection } from '@playwright/mcp';
+
+import { test as baseTest, expect } from './fixtures.js';
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
@@ -58,4 +63,41 @@ test('streamable http transport', async ({ serverEndpoint }) => {
   await client.connect(transport);
   await client.ping();
   expect(transport.sessionId, 'has session support').toBeDefined();
+});
+
+test('sse transport via public API', async ({ server }) => {
+  const sessions = new Map<string, SSEServerTransport>();
+  const mcpServer = http.createServer(async (req, res) => {
+    if (req.method === 'GET') {
+      const connection = await createConnection({ browser: { launchOptions: { headless: true } } });
+      const transport = new SSEServerTransport('/sse', res);
+      sessions.set(transport.sessionId, transport);
+      await connection.connect(transport);
+    } else if (req.method === 'POST') {
+      const url = new URL(`http://localhost${req.url}`);
+      const sessionId = url.searchParams.get('sessionId');
+      if (!sessionId) {
+        res.statusCode = 400;
+        return res.end('Missing sessionId');
+      }
+      const transport = sessions.get(sessionId);
+      if (!transport) {
+        res.statusCode = 404;
+        return res.end('Session not found');
+      }
+      void transport.handlePostMessage(req, res);
+    }
+  });
+  await new Promise<void>(resolve => mcpServer.listen(0, () => resolve()));
+  const serverUrl = `http://localhost:${(mcpServer.address() as AddressInfo).port}/sse`;
+  const transport = new SSEClientTransport(new URL(serverUrl));
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await client.connect(transport);
+  await client.ping();
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
+  await client.close();
+  mcpServer.close();
 });

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { Connection } from './connection.js';
+import { Connection, createConnectionImpl  } from './connection.js';
 
 import type { Config } from '../config.js';
 
 export async function createConnection(config: Config = {}): Promise<Connection> {
-  return createConnection(config);
+  return createConnectionImpl(config);
 }

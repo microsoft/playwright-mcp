@@ -16,4 +16,4 @@
  */
 
 import { createConnection } from './lib/index';
-export default { createConnection };
+export { createConnection };
