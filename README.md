@@ -518,11 +518,13 @@ X Y coordinate space, based on the provided screenshot.
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_wait**
-  - Title: Wait
-  - Description: Wait for a specified time in seconds
+- **browser_wait_for**
+  - Title: Wait for
+  - Description: Wait for text to appear or disappear or a specified time to pass
   - Parameters:
-    - `time` (number): The time to wait in seconds
+    - `time` (number, optional): The time to wait in seconds
+    - `text` (string, optional): The text to wait for
+    - `textGone` (string, optional): The text to wait for to disappear
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
