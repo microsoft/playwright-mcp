@@ -40,7 +40,7 @@ export type Config = {
      *
      * This is useful for settings options like `channel`, `headless`, `executablePath`, etc.
      */
-    launchOptions?: playwright.BrowserLaunchOptions;
+    launchOptions?: playwright.LaunchOptions;
 
     /**
      * Context options for the browser context.

@@ -374,7 +374,7 @@ async function createUserDataDir(browserConfig: Config['browser']) {
     cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
   else
     throw new Error('Unsupported platform: ' + process.platform);
-  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserConfig?.launchOptions.channel ?? browserConfig?.browserName}-profile`);
+  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserConfig?.launchOptions?.channel ?? browserConfig?.browserName}-profile`);
   await fs.promises.mkdir(result, { recursive: true });
   return result;
 }

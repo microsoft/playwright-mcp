@@ -175,7 +175,7 @@ function mergeConfig(base: Config, overrides: Config): Config {
     },
   };
 
-  if (browser.browserName !== 'chromium')
+  if (browser.browserName !== 'chromium' && browser.launchOptions)
     delete browser.launchOptions.channel;
 
   return {
