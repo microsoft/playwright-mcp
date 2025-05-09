@@ -19,6 +19,9 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { test as baseTest } from './fixtures.js';
 import { expect } from 'playwright/test';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
@@ -43,9 +46,6 @@ const test = baseTest.extend<{ serverEndpoint: string }>({
 });
 
 test('sse transport', async ({ serverEndpoint }) => {
-  // need dynamic import b/c of some ESM nonsense
-  const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
-  const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
   const transport = new SSEClientTransport(new URL(serverEndpoint));
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
@@ -53,9 +53,6 @@ test('sse transport', async ({ serverEndpoint }) => {
 });
 
 test('streamable http transport', async ({ serverEndpoint }) => {
-  // need dynamic import b/c of some ESM nonsense
-  const { StreamableHTTPClientTransport } = await import('@modelcontextprotocol/sdk/client/streamableHttp.js');
-  const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
   const transport = new StreamableHTTPClientTransport(new URL('/mcp', serverEndpoint));
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
