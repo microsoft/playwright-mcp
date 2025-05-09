@@ -179,8 +179,25 @@ npx @playwright/mcp@latest --config path/to/config.json
 
 ### Running on Linux
 
-When running headed browser on system w/o display or from worker processes of the IDEs,
-run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
+For systems with a display (most Linux desktop environments), set the DISPLAY environment variable:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "env": {
+        "DISPLAY": ":0"
+      }
+    }
+  }
+}
+```
+
+When running headed browser on system w/o display or from worker processes of the IDEs, run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
 
 ```bash
 npx @playwright/mcp@latest --port 8931
