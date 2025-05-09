@@ -29,8 +29,9 @@ test('browser_file_upload', async ({ client, localOutputPath, server }) => {
     arguments: { url: server.PREFIX },
   })).toContainTextContent(`
 \`\`\`yaml
-- button "Choose File" [ref=s1e3]
-- button "Button" [ref=s1e4]
+- generic [ref=e1]:
+  - button "Choose File" [ref=e2]
+  - button "Button" [ref=e3]
 \`\`\``);
 
   {
@@ -48,7 +49,7 @@ The tool "browser_file_upload" can only be used when there is related modal stat
     name: 'browser_click',
     arguments: {
       element: 'Textbox',
-      ref: 's1e3',
+      ref: 'e2',
     },
   })).toContainTextContent(`### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
@@ -67,8 +68,9 @@ The tool "browser_file_upload" can only be used when there is related modal stat
     expect(response).not.toContainTextContent('### Modal state');
     expect(response).toContainTextContent(`
 \`\`\`yaml
-- button "Choose File" [ref=s3e3]
-- button "Button" [ref=s3e4]
+- generic [ref=e1]:
+  - button "Choose File" [ref=e2]
+  - button "Button" [ref=e3]
 \`\`\``);
   }
 
@@ -77,7 +79,7 @@ The tool "browser_file_upload" can only be used when there is related modal stat
       name: 'browser_click',
       arguments: {
         element: 'Textbox',
-        ref: 's3e3',
+        ref: 'e2',
       },
     });
 
@@ -89,7 +91,7 @@ The tool "browser_file_upload" can only be used when there is related modal stat
       name: 'browser_click',
       arguments: {
         element: 'Button',
-        ref: 's4e4',
+        ref: 'e3',
       },
     });
 
@@ -111,12 +113,12 @@ test('clicking on download link emits download', async ({ startClient, localOutp
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent('- link "Download" [ref=s1e3]');
+  })).toContainTextContent('- link "Download" [ref=e2]');
   await client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Download link',
-      ref: 's1e3',
+      ref: 'e2',
     },
   });
   await expect.poll(() => client.callTool({ name: 'browser_snapshot', arguments: {} })).toContainTextContent(`

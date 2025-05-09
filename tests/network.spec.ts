@@ -34,7 +34,7 @@ test('browser_network_requests', async ({ client, server }) => {
     name: 'browser_click',
     arguments: {
       element: 'Click me button',
-      ref: 's1e3',
+      ref: 'e2',
     },
   });
 

@@ -21,7 +21,7 @@ test('cdp server', async ({ cdpEndpoint, startClient, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
+  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
 });
 
 test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
@@ -48,7 +48,7 @@ test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
 - Page Title: 
 - Page Snapshot
 \`\`\`yaml
-- generic [ref=s1e2]: hello world
+- generic [ref=e1]: hello world
 \`\`\`
 `);
 });
@@ -70,5 +70,5 @@ test('should throw connection error and allow re-connecting', async ({ cdpEndpoi
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
+  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
 });

@@ -97,7 +97,7 @@ test('sse transport via public API', async ({ server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- generic [ref=s1e2]: Hello, world!`);
+  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
   await client.close();
   mcpServer.close();
 });

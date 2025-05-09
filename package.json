@@ -37,14 +37,13 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.0",
     "commander": "^13.1.0",
-    "playwright": "1.53.0-alpha-1746218818000",
-    "yaml": "^2.7.1",
+    "playwright": "1.53.0-alpha-1746832516000",
     "zod-to-json-schema": "^3.24.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.19.0",
-    "@playwright/test": "1.53.0-alpha-1746218818000",
+    "@playwright/test": "1.53.0-alpha-1746832516000",
     "@stylistic/eslint-plugin": "^3.0.1",
     "@types/node": "^22.13.10",
     "@typescript-eslint/eslint-plugin": "^8.26.1",

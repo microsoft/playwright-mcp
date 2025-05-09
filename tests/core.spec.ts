@@ -31,7 +31,7 @@ await page.goto('${server.HELLO_WORLD}');
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- generic [ref=s1e2]: Hello, world!
+- generic [ref=e1]: Hello, world!
 \`\`\`
 `
   );
@@ -52,7 +52,7 @@ test('browser_click', async ({ client, server }) => {
     name: 'browser_click',
     arguments: {
       element: 'Submit button',
-      ref: 's1e3',
+      ref: 'e2',
     },
   })).toHaveTextContent(`
 - Ran Playwright code:
@@ -65,7 +65,7 @@ await page.getByRole('button', { name: 'Submit' }).click();
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- button "Submit" [ref=s2e3]
+- button "Submit" [ref=e2]
 \`\`\`
 `);
 });
@@ -88,7 +88,7 @@ test('browser_select_option', async ({ client, server }) => {
     name: 'browser_select_option',
     arguments: {
       element: 'Select',
-      ref: 's1e3',
+      ref: 'e2',
       values: ['bar'],
     },
   })).toHaveTextContent(`
@@ -102,7 +102,7 @@ await page.getByRole('combobox').selectOption(['bar']);
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- combobox [ref=s2e3]:
+- combobox [ref=e2]:
   - option "Foo"
   - option "Bar" [selected]
 \`\`\`
@@ -128,7 +128,7 @@ test('browser_select_option (multiple)', async ({ client, server }) => {
     name: 'browser_select_option',
     arguments: {
       element: 'Select',
-      ref: 's1e3',
+      ref: 'e2',
       values: ['bar', 'baz'],
     },
   })).toHaveTextContent(`
@@ -142,10 +142,10 @@ await page.getByRole('listbox').selectOption(['bar', 'baz']);
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- listbox [ref=s2e3]:
-  - option "Foo" [ref=s2e4]
-  - option "Bar" [selected] [ref=s2e5]
-  - option "Baz" [selected] [ref=s2e6]
+- listbox [ref=e2]:
+  - option "Foo" [ref=e3]
+  - option "Bar" [selected] [ref=e4]
+  - option "Baz" [selected] [ref=e5]
 \`\`\`
 `);
 });
@@ -168,7 +168,7 @@ test('browser_type', async ({ client, server }) => {
     name: 'browser_type',
     arguments: {
       element: 'textbox',
-      ref: 's1e3',
+      ref: 'e2',
       text: 'Hi!',
       submit: true,
     },
@@ -194,7 +194,7 @@ test('browser_type (slowly)', async ({ client, server }) => {
     name: 'browser_type',
     arguments: {
       element: 'textbox',
-      ref: 's1e3',
+      ref: 'e2',
       text: 'Hi!',
       submit: true,
       slowly: true,

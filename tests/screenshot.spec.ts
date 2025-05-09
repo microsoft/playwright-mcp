@@ -46,13 +46,13 @@ test('browser_take_screenshot (element)', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`[ref=s1e2]`);
+  })).toContainTextContent(`[ref=e1]`);
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
     arguments: {
       element: 'hello button',
-      ref: 's1e2',
+      ref: 'e1',
     },
   })).toEqual({
     content: [

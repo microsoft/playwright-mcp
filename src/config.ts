@@ -99,7 +99,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   };
 
   if (browserName === 'chromium')
-    (launchOptions as any).webSocketPort = await findFreePort();
+    (launchOptions as any).cdpPort = await findFreePort();
 
   const contextOptions: BrowserContextOptions | undefined = cliOptions.device ? devices[cliOptions.device] : undefined;
 

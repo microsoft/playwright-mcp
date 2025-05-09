@@ -24,13 +24,13 @@ test('alert dialog', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent('- button "Button" [ref=s1e3]');
+  })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Button',
-      ref: 's1e3',
+      ref: 'e2',
     },
   })).toHaveTextContent(`- Ran Playwright code:
 \`\`\`js
@@ -58,7 +58,7 @@ await page.getByRole('button', { name: 'Button' }).click();
 - Page Title: 
 - Page Snapshot
 \`\`\`yaml
-- button "Button" [ref=s2e3]
+- button "Button" [ref=e2]
 \`\`\`
 `);
 });
@@ -76,13 +76,13 @@ test('two alert dialogs', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent('- button "Button" [ref=s1e3]');
+  })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Button',
-      ref: 's1e3',
+      ref: 'e2',
     },
   })).toHaveTextContent(`- Ran Playwright code:
 \`\`\`js
@@ -114,13 +114,13 @@ test('confirm dialog (true)', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent('- button "Button" [ref=s1e3]');
+  })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Button',
-      ref: 's1e3',
+      ref: 'e2',
     },
   })).toContainTextContent(`### Modal state
 - ["confirm" dialog with message "Confirm"]: can be handled by the "browser_handle_dialog" tool`);
@@ -136,7 +136,7 @@ test('confirm dialog (true)', async ({ client, server }) => {
   expect(result).toContainTextContent('// <internal code to handle "confirm" dialog>');
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
-- generic [ref=s2e2]: "true"
+- generic [ref=e1]: "true"
 \`\`\``);
 });
 
@@ -151,13 +151,13 @@ test('confirm dialog (false)', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent('- button "Button" [ref=s1e3]');
+  })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Button',
-      ref: 's1e3',
+      ref: 'e2',
     },
   })).toContainTextContent(`### Modal state
 - ["confirm" dialog with message "Confirm"]: can be handled by the "browser_handle_dialog" tool`);
@@ -171,7 +171,7 @@ test('confirm dialog (false)', async ({ client, server }) => {
 
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
-- generic [ref=s2e2]: "false"
+- generic [ref=e1]: "false"
 \`\`\``);
 });
 
@@ -186,13 +186,13 @@ test('prompt dialog', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent('- button "Button" [ref=s1e3]');
+  })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Button',
-      ref: 's1e3',
+      ref: 'e2',
     },
   })).toContainTextContent(`### Modal state
 - ["prompt" dialog with message "Prompt"]: can be handled by the "browser_handle_dialog" tool`);
@@ -207,6 +207,6 @@ test('prompt dialog', async ({ client, server }) => {
 
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
-- generic [ref=s2e2]: Answer
+- generic [ref=e1]: Answer
 \`\`\``);
 });
