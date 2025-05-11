@@ -120,7 +120,12 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       });
       return `http://localhost:${port}`;
     });
-    browserProcess?.kill();
+    await new Promise<void>(resolve => {
+      if (!browserProcess)
+        return resolve();
+      browserProcess.on('exit', () => resolve());
+      browserProcess.kill();
+    });
   },
 
   mcpHeadless: async ({ headless }, use) => {
