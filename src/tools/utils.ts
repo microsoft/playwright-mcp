@@ -77,3 +77,7 @@ export function sanitizeForFilePath(s: string) {
     return sanitize(s);
   return sanitize(s.substring(0, separator)) + '.' + sanitize(s.substring(separator + 1));
 }
+
+export async function generateLocator(locator: playwright.Locator): Promise<string> {
+  return (locator as any)._generateLocatorString();
+}

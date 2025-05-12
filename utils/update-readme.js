@@ -32,41 +32,45 @@ import networkTools from '../lib/tools/network.js';
 import pdfTools from '../lib/tools/pdf.js';
 import snapshotTools from '../lib/tools/snapshot.js';
 import tabsTools from '../lib/tools/tabs.js';
-import screenTools from '../lib/tools/screen.js';
+import screenshotTools from '../lib/tools/screenshot.js';
 import testTools from '../lib/tools/testing.js';
+import visionTools from '../lib/tools/vision.js';
+import waitTools from '../lib/tools/wait.js';
 
 // Category definitions for tools
 const categories = {
-  'Snapshot-based Interactions': [
+  'Interactions': [
     ...snapshotTools,
-  ],
-  'Vision-based Interactions': [
-    ...screenTools
-  ],
-  'Tab Management': [
-    ...tabsTools(true),
+    ...keyboardTools(true),
+    ...waitTools(true),
+    ...filesTools(true),
+    ...dialogsTools(true),
   ],
   'Navigation': [
     ...navigateTools(true),
   ],
-  'Keyboard': [
-    ...keyboardTools(true)
-  ],
-  'Console': [
-    ...consoleTools
-  ],
-  'Files and Media': [
-    ...filesTools(true),
-    ...pdfTools
+  'Resources': [
+    ...screenshotTools,
+    ...pdfTools,
+    ...networkTools,
+    ...consoleTools,
   ],
   'Utilities': [
-    ...commonTools(true),
     ...installTools,
-    ...dialogsTools(true),
-    ...networkTools,
+    ...commonTools(true),
+  ],
+  'Tabs': [
+    ...tabsTools(true),
   ],
   'Testing': [
     ...testTools,
+  ],
+  'Vision mode': [
+    ...visionTools,
+    ...keyboardTools(),
+    ...waitTools(false),
+    ...filesTools(false),
+    ...dialogsTools(false),
   ],
 };
 
@@ -118,9 +122,12 @@ async function updateReadme() {
   const generatedLines = /** @type {string[]} */ ([]);
 
   for (const [category, categoryTools] of Object.entries(categories)) {
-    generatedLines.push(`### ${category}\n\n`);
+    generatedLines.push(`<details>\n<summary><b>${category}</b></summary>\n\n`);
+
     for (const tool of categoryTools)
       generatedLines.push(formatToolForReadme(tool.schema));
+
+    generatedLines.push(`</details>\n\n`);
   }
 
   const readmePath = path.join(path.dirname(__filename), '..', 'README.md');

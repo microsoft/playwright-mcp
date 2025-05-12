@@ -4,25 +4,22 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Key Features
 
-- **Fast and lightweight**: Uses Playwright's accessibility tree, not pixel-based input.
-- **LLM-friendly**: No vision models needed, operates purely on structured data.
-- **Deterministic tool application**: Avoids ambiguity common with screenshot-based approaches.
+- **Fast and lightweight**. Uses Playwright's accessibility tree, not pixel-based input.
+- **LLM-friendly**. No vision models needed, operates purely on structured data.
+- **Deterministic tool application**. Avoids ambiguity common with screenshot-based approaches.
 
-### Use Cases
-
-- Web navigation and form-filling
-- Data extraction from structured content
-- Automated testing driven by LLMs
-- General-purpose browser interaction for agents
+### Requirements
+- Node.js 18 or newer
+- VS Code, Cursor, Windsurf, Claude Desktop or any other MCP client
 
 <!--
 // Generate using:
 node utils/generate-links.js
 -->
 
-[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D) [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)
+### Getting started
 
-### Example config
+First, install the Playwright MCP server with your client. A typical configuration looks like this:
 
 ```js
 {
@@ -37,20 +34,12 @@ node utils/generate-links.js
 }
 ```
 
-### Table of Contents
+[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D) [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)
 
-- [Installation in VS Code](#installation-in-vs-code)
-- [Command line](#command-line)
-- [User profile](#user-profile)
-- [Configuration file](#configuration-file)
-- [Running on Linux](#running-on-linux)
-- [Docker](#docker)
-- [Programmatic usage](#programmatic-usage)
-- [Tool modes](#tool-modes)
 
-### Installation in VS Code
+<details><summary><b>Install in VS Code</b></summary>
 
-You can install the Playwright MCP server using the VS Code CLI:
+You can also install the Playwright MCP server using the VS Code CLI:
 
 ```bash
 # For VS Code
@@ -58,10 +47,68 @@ code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@la
 ```
 
 After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
+</details>
 
-### Command line
+<details>
+<summary><b>Install in Cursor</b></summary>
 
-The Playwright MCP server supports the following command-line options:
+Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, use `command` type with the command `npx @playwright/mcp`. You can also verify config or add command like arguments via clicking `Edit`.
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><b>Install in Windsurf</b></summary>
+
+Follow Windsuff MCP [documentation](https://docs.windsurf.com/windsurf/cascade/mcp). Use following configuration:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><b>Install in Claude Desktop</b></summary>
+
+Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user), use following configuration:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+</details>
+
+### Configuration
+
+Playwright MCP server supports following arguments. They can be provided in the JSON configuration above, as a part of the `"args"` list:
 
 - `--browser <browser>`: Browser or chrome channel to use. Possible values:
   - `chrome`, `firefox`, `webkit`, `msedge`
@@ -96,7 +143,15 @@ All the logged in information will be stored in that profile, you can delete it 
 
 ### Configuration file
 
-The Playwright MCP server can be configured using a JSON configuration file. Here's the complete configuration format:
+The Playwright MCP server can be configured using a JSON configuration file. You can specify the configuration file
+using the `--config` command line option:
+
+```bash
+npx @playwright/mcp@latest --config path/to/config.json
+```
+
+<details>
+<summary>Configuration file schema</summary>
 
 ```typescript
 {
@@ -170,14 +225,9 @@ The Playwright MCP server can be configured using a JSON configuration file. Her
   noImageResponses?: boolean;
 }
 ```
+</details>
 
-You can specify the configuration file using the `--config` command line option:
-
-```bash
-npx @playwright/mcp@latest --config path/to/config.json
-```
-
-### Running on Linux
+### Standalone MCP server
 
 When running headed browser on system w/o display or from worker processes of the IDEs,
 run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
@@ -198,7 +248,8 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 }
 ```
 
-### Docker
+<details>
+<summary><b>Docker</b></summary>
 
 **NOTE:** The Docker implementation only supports headless chromium at the moment.
 
@@ -218,8 +269,10 @@ You can build the Docker image yourself.
 ```
 docker build -t mcr.microsoft.com/playwright/mcp .
 ```
+</details>
 
-### Programmatic usage
+<details>
+<summary><b>Programmatic usage</b></summary>
 
 ```js
 import http from 'http';
@@ -238,8 +291,9 @@ http.createServer(async (req, res) => {
   // ...
 });
 ```
+</details>
 
-### Tool modes
+### Tools
 
 The tools are available in two modes:
 
@@ -265,10 +319,10 @@ To use Vision Mode, add the `--vision` flag when starting the server:
 Vision Mode works best with the computer use models that are able to interact with elements using
 X Y coordinate space, based on the provided screenshot.
 
-
 <!--- Generated by update-readme.js -->
 
-### Snapshot-based Interactions
+<details>
+<summary><b>Interactions</b></summary>
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
@@ -336,6 +390,80 @@ X Y coordinate space, based on the provided screenshot.
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_press_key**
+  - Title: Press a key
+  - Description: Press a key on the keyboard
+  - Parameters:
+    - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_wait_for**
+  - Title: Wait for
+  - Description: Wait for text to appear or disappear or a specified time to pass
+  - Parameters:
+    - `time` (number, optional): The time to wait in seconds
+    - `text` (string, optional): The text to wait for
+    - `textGone` (string, optional): The text to wait for to disappear
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_file_upload**
+  - Title: Upload files
+  - Description: Upload one or multiple files
+  - Parameters:
+    - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_handle_dialog**
+  - Title: Handle a dialog
+  - Description: Handle a dialog
+  - Parameters:
+    - `accept` (boolean): Whether to accept the dialog.
+    - `promptText` (string, optional): The text of the prompt in case of a prompt dialog.
+  - Read-only: **false**
+
+</details>
+
+<details>
+<summary><b>Navigation</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_navigate**
+  - Title: Navigate to a URL
+  - Description: Navigate to a URL
+  - Parameters:
+    - `url` (string): The URL to navigate to
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_navigate_back**
+  - Title: Go back
+  - Description: Go back to the previous page
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_navigate_forward**
+  - Title: Go forward
+  - Description: Go forward to the next page
+  - Parameters: None
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Resources</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_take_screenshot**
   - Title: Take a screenshot
   - Description: Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.
@@ -346,7 +474,122 @@ X Y coordinate space, based on the provided screenshot.
     - `ref` (string, optional): Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.
   - Read-only: **true**
 
-### Vision-based Interactions
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_pdf_save**
+  - Title: Save as PDF
+  - Description: Save page as PDF
+  - Parameters:
+    - `filename` (string, optional): File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_network_requests**
+  - Title: List network requests
+  - Description: Returns all network requests since loading the page
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_console_messages**
+  - Title: Get console messages
+  - Description: Returns all console messages
+  - Parameters: None
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Utilities</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_install**
+  - Title: Install the browser specified in the config
+  - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
+  - Parameters: None
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_close**
+  - Title: Close browser
+  - Description: Close the page
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_resize**
+  - Title: Resize browser window
+  - Description: Resize the browser window
+  - Parameters:
+    - `width` (number): Width of the browser window
+    - `height` (number): Height of the browser window
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Tabs</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_tab_list**
+  - Title: List tabs
+  - Description: List browser tabs
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_tab_new**
+  - Title: Open a new tab
+  - Description: Open a new tab
+  - Parameters:
+    - `url` (string, optional): The URL to navigate to in the new tab. If not provided, the new tab will be blank.
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_tab_select**
+  - Title: Select a tab
+  - Description: Select a tab by index
+  - Parameters:
+    - `index` (number): The index of the tab to select
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_tab_close**
+  - Title: Close a tab
+  - Description: Close a tab
+  - Parameters:
+    - `index` (number, optional): The index of the tab to close. Closes current tab if not provided.
+  - Read-only: **false**
+
+</details>
+
+<details>
+<summary><b>Testing</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_generate_playwright_test**
+  - Title: Generate a Playwright test
+  - Description: Generate a Playwright test for given scenario
+  - Parameters:
+    - `name` (string): The name of the test
+    - `description` (string): The description of the test
+    - `steps` (array): The steps of the test
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Vision mode</b></summary>
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
@@ -401,72 +644,6 @@ X Y coordinate space, based on the provided screenshot.
     - `submit` (boolean, optional): Whether to submit entered text (press Enter after)
   - Read-only: **false**
 
-### Tab Management
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_list**
-  - Title: List tabs
-  - Description: List browser tabs
-  - Parameters: None
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_new**
-  - Title: Open a new tab
-  - Description: Open a new tab
-  - Parameters:
-    - `url` (string, optional): The URL to navigate to in the new tab. If not provided, the new tab will be blank.
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_select**
-  - Title: Select a tab
-  - Description: Select a tab by index
-  - Parameters:
-    - `index` (number): The index of the tab to select
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_close**
-  - Title: Close a tab
-  - Description: Close a tab
-  - Parameters:
-    - `index` (number, optional): The index of the tab to close. Closes current tab if not provided.
-  - Read-only: **false**
-
-### Navigation
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_navigate**
-  - Title: Navigate to a URL
-  - Description: Navigate to a URL
-  - Parameters:
-    - `url` (string): The URL to navigate to
-  - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_navigate_back**
-  - Title: Go back
-  - Description: Go back to the previous page
-  - Parameters: None
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_navigate_forward**
-  - Title: Go forward
-  - Description: Go forward to the next page
-  - Parameters: None
-  - Read-only: **true**
-
-### Keyboard
-
 <!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_press_key**
@@ -475,46 +652,6 @@ X Y coordinate space, based on the provided screenshot.
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
   - Read-only: **false**
-
-### Console
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_console_messages**
-  - Title: Get console messages
-  - Description: Returns all console messages
-  - Parameters: None
-  - Read-only: **true**
-
-### Files and Media
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_file_upload**
-  - Title: Upload files
-  - Description: Upload one or multiple files
-  - Parameters:
-    - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
-  - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_pdf_save**
-  - Title: Save as PDF
-  - Description: Save page as PDF
-  - Parameters:
-    - `filename` (string, optional): File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.
-  - Read-only: **true**
-
-### Utilities
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_close**
-  - Title: Close browser
-  - Description: Close the page
-  - Parameters: None
-  - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
@@ -529,20 +666,11 @@ X Y coordinate space, based on the provided screenshot.
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_resize**
-  - Title: Resize browser window
-  - Description: Resize the browser window
+- **browser_file_upload**
+  - Title: Upload files
+  - Description: Upload one or multiple files
   - Parameters:
-    - `width` (number): Width of the browser window
-    - `height` (number): Height of the browser window
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_install**
-  - Title: Install the browser specified in the config
-  - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
-  - Parameters: None
+    - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -555,25 +683,6 @@ X Y coordinate space, based on the provided screenshot.
     - `promptText` (string, optional): The text of the prompt in case of a prompt dialog.
   - Read-only: **false**
 
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_network_requests**
-  - Title: List network requests
-  - Description: Returns all network requests since loading the page
-  - Parameters: None
-  - Read-only: **true**
-
-### Testing
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_generate_playwright_test**
-  - Title: Generate a Playwright test
-  - Description: Generate a Playwright test for given scenario
-  - Parameters:
-    - `name` (string): The name of the test
-    - `description` (string): The description of the test
-    - `steps` (array): The steps of the test
-  - Read-only: **true**
+</details>
 
 <!--- End of generated section -->

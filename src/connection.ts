@@ -19,13 +19,13 @@ import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Context, packageJSON } from './context.js';
-import { snapshotTools, screenshotTools } from './tools.js';
+import { snapshotTools, visionTools } from './tools.js';
 
 import type { Config } from '../config.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
 export async function createConnection(config: Config): Promise<Connection> {
-  const allTools = config.vision ? screenshotTools : snapshotTools;
+  const allTools = config.vision ? visionTools : snapshotTools;
   const tools = allTools.filter(tool => !config.capabilities || tool.capability === 'core' || config.capabilities.includes(tool.capability));
 
   const context = new Context(tools, config);

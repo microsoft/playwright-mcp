@@ -25,8 +25,10 @@ import network from './tools/network.js';
 import pdf from './tools/pdf.js';
 import snapshot from './tools/snapshot.js';
 import tabs from './tools/tabs.js';
-import screen from './tools/screen.js';
+import screenshot from './tools/screenshot.js';
 import testing from './tools/testing.js';
+import vision from './tools/vision.js';
+import wait from './tools/wait.js';
 
 import type { Tool } from './tools/tool.js';
 
@@ -40,12 +42,14 @@ export const snapshotTools: Tool<any>[] = [
   ...navigate(true),
   ...network,
   ...pdf,
+  ...screenshot,
   ...snapshot,
   ...tabs(true),
   ...testing,
+  ...wait(true),
 ];
 
-export const screenshotTools: Tool<any>[] = [
+export const visionTools: Tool<any>[] = [
   ...common(false),
   ...console,
   ...dialogs(false),
@@ -55,7 +59,8 @@ export const screenshotTools: Tool<any>[] = [
   ...navigate(false),
   ...network,
   ...pdf,
-  ...screen,
   ...tabs(false),
   ...testing,
+  ...vision,
+  ...wait(false),
 ];
