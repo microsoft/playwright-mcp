@@ -160,6 +160,9 @@ npx @playwright/mcp@latest --config path/to/config.json
     // Browser type to use (chromium, firefox, or webkit)
     browserName?: 'chromium' | 'firefox' | 'webkit';
 
+    // Keep the browser profile in memory, do not save it to disk.
+    ephemeral?: boolean;
+
     // Path to user data directory for browser profile persistence
     userDataDir?: string;
 

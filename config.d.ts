@@ -29,6 +29,11 @@ export type Config = {
     browserName?: 'chromium' | 'firefox' | 'webkit';
 
     /**
+     * Keep the browser profile in memory, do not save it to disk.
+     */
+    ephemeral?: boolean;
+
+    /**
      * Path to a user data directory for browser profile persistence.
      * Temporary directory is created by default.
      */

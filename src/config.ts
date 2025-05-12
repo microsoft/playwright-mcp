@@ -28,6 +28,7 @@ export type CLIOptions = {
   browser?: string;
   caps?: string;
   cdpEndpoint?: string;
+  ephemeral?: boolean;
   executablePath?: string;
   headless?: boolean;
   device?: string;
@@ -106,6 +107,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   return {
     browser: {
       browserName,
+      ephemeral: cliOptions.ephemeral,
       userDataDir: cliOptions.userDataDir,
       launchOptions,
       contextOptions,

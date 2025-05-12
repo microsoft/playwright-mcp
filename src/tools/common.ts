@@ -31,7 +31,7 @@ const close = defineTool({
   handle: async context => {
     await context.close();
     return {
-      code: [`// Internal to close the page`],
+      code: [`await page.close()`],
       captureSnapshot: false,
       waitForNetwork: false,
     };

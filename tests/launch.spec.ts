@@ -40,3 +40,64 @@ test('executable path', async ({ startClient, server }) => {
   });
   expect(response).toContainTextContent(`executable doesn't exist`);
 });
+
+test('persistent context', async ({ startClient, server }) => {
+  server.setContent('/', `
+    <body>
+    </body>
+    <script>
+      document.body.textContent = localStorage.getItem('test') ? 'Storage: YES' : 'Storage: NO';
+      localStorage.setItem('test', 'test');
+    </script>
+  `, 'text/html');
+
+  const client = await startClient();
+  const response = await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+  expect(response).toContainTextContent(`Storage: NO`);
+
+  await new Promise(resolve => setTimeout(resolve, 3000));
+
+  await client.callTool({
+    name: 'browser_close',
+  });
+
+  const client2 = await startClient();
+  const response2 = await client2.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  expect(response2).toContainTextContent(`Storage: YES`);
+});
+
+test('ephemeral context', async ({ startClient, server }) => {
+  server.setContent('/', `
+    <body>
+    </body>
+    <script>
+      document.body.textContent = localStorage.getItem('test') ? 'Storage: YES' : 'Storage: NO';
+      localStorage.setItem('test', 'test');
+    </script>
+  `, 'text/html');
+
+  const client = await startClient({ args: [`--ephemeral`] });
+  const response = await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+  expect(response).toContainTextContent(`Storage: NO`);
+
+  await client.callTool({
+    name: 'browser_close',
+  });
+
+  const client2 = await startClient({ args: [`--ephemeral`] });
+  const response2 = await client2.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+  expect(response2).toContainTextContent(`Storage: NO`);
+});

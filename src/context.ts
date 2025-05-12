@@ -34,12 +34,15 @@ type PendingAction = {
   dialogShown: ManualPromise<void>;
 };
 
+type BrowserContextAndBrowser = {
+  browser?: playwright.Browser;
+  browserContext: playwright.BrowserContext;
+};
+
 export class Context {
   readonly tools: Tool[];
   readonly config: Config;
-  private _browser: playwright.Browser | undefined;
-  private _browserContext: playwright.BrowserContext | undefined;
-  private _createBrowserContextPromise: Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> | undefined;
+  private _browserContextPromise: Promise<BrowserContextAndBrowser> | undefined;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
@@ -85,7 +88,7 @@ export class Context {
   }
 
   async newTab(): Promise<Tab> {
-    const browserContext = await this._ensureBrowserContext();
+    const { browserContext } = await this._ensureBrowserContext();
     const page = await browserContext.newPage();
     this._currentTab = this._tabs.find(t => t.page === page)!;
     return this._currentTab;
@@ -97,9 +100,9 @@ export class Context {
   }
 
   async ensureTab(): Promise<Tab> {
-    const context = await this._ensureBrowserContext();
+    const { browserContext } = await this._ensureBrowserContext();
     if (!this._currentTab)
-      await context.newPage();
+      await browserContext.newPage();
     return this._currentTab!;
   }
 
@@ -273,22 +276,22 @@ ${code.join('\n')}
 
     if (this._currentTab === tab)
       this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
-    if (this._browserContext && !this._tabs.length)
+    if (!this._tabs.length)
       void this.close();
   }
 
   async close() {
-    if (!this._browserContext)
+    if (!this._browserContextPromise)
       return;
-    const browserContext = this._browserContext;
-    const browser = this._browser;
-    this._createBrowserContextPromise = undefined;
-    this._browserContext = undefined;
-    this._browser = undefined;
 
-    await browserContext?.close().then(async () => {
-      await browser?.close();
-    }).catch(() => {});
+    const promise = this._browserContextPromise;
+    this._browserContextPromise = undefined;
+
+    await promise.then(async ({ browserContext, browser }) => {
+      await browserContext.close().then(async () => {
+        await browser?.close();
+      }).catch(() => {});
+    });
   }
 
   private async _setupRequestInterception(context: playwright.BrowserContext) {
@@ -305,30 +308,26 @@ ${code.join('\n')}
     }
   }
 
-  private async _ensureBrowserContext() {
-    if (!this._browserContext) {
-      const context = await this._createBrowserContext();
-      this._browser = context.browser;
-      this._browserContext = context.browserContext;
-      await this._setupRequestInterception(this._browserContext);
-      for (const page of this._browserContext.pages())
-        this._onPageCreated(page);
-      this._browserContext.on('page', page => this._onPageCreated(page));
-    }
-    return this._browserContext;
-  }
-
-  private async _createBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
-    if (!this._createBrowserContextPromise) {
-      this._createBrowserContextPromise = this._innerCreateBrowserContext();
-      void this._createBrowserContextPromise.catch(() => {
-        this._createBrowserContextPromise = undefined;
+  private _ensureBrowserContext() {
+    if (!this._browserContextPromise) {
+      this._browserContextPromise = this._setupBrowserContext();
+      this._browserContextPromise.catch(() => {
+        this._browserContextPromise = undefined;
       });
     }
-    return this._createBrowserContextPromise;
+    return this._browserContextPromise;
   }
 
-  private async _innerCreateBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
+  private async _setupBrowserContext(): Promise<BrowserContextAndBrowser> {
+    const { browser, browserContext } = await this._createBrowserContext();
+    await this._setupRequestInterception(browserContext);
+    for (const page of browserContext.pages())
+      this._onPageCreated(page);
+    browserContext.on('page', page => this._onPageCreated(page));
+    return { browser, browserContext };
+  }
+
+  private async _createBrowserContext(): Promise<BrowserContextAndBrowser> {
     if (this.config.browser?.remoteEndpoint) {
       const url = new URL(this.config.browser?.remoteEndpoint);
       if (this.config.browser.browserName)
@@ -342,21 +341,37 @@ ${code.join('\n')}
 
     if (this.config.browser?.cdpEndpoint) {
       const browser = await playwright.chromium.connectOverCDP(this.config.browser.cdpEndpoint);
-      const browserContext = browser.contexts()[0];
+      const browserContext = this.config.browser.ephemeral ? await browser.newContext() : browser.contexts()[0];
       return { browser, browserContext };
     }
 
-    const browserContext = await launchPersistentContext(this.config.browser);
-    return { browserContext };
+    return this.config.browser?.ephemeral ?
+      await launchEphemeralContext(this.config.browser) :
+      await launchPersistentContext(this.config.browser);
   }
 }
 
-async function launchPersistentContext(browserConfig: Config['browser']): Promise<playwright.BrowserContext> {
+async function launchEphemeralContext(browserConfig: Config['browser']): Promise<BrowserContextAndBrowser> {
+  try {
+    const browserName = browserConfig?.browserName ?? 'chromium';
+    const browserType = playwright[browserName];
+    const browser = await browserType.launch(browserConfig?.launchOptions);
+    const browserContext = await browser.newContext();
+    return { browser, browserContext };
+  } catch (error: any) {
+    if (error.message.includes('Executable doesn\'t exist'))
+      throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
+    throw error;
+  }
+}
+
+async function launchPersistentContext(browserConfig: Config['browser']): Promise<BrowserContextAndBrowser> {
   try {
     const browserName = browserConfig?.browserName ?? 'chromium';
     const userDataDir = browserConfig?.userDataDir ?? await createUserDataDir({ ...browserConfig, browserName });
     const browserType = playwright[browserName];
-    return await browserType.launchPersistentContext(userDataDir, { ...browserConfig?.launchOptions, ...browserConfig?.contextOptions });
+    const browserContext = await browserType.launchPersistentContext(userDataDir, { ...browserConfig?.launchOptions, ...browserConfig?.contextOptions });
+    return { browserContext };
   } catch (error: any) {
     if (error.message.includes('Executable doesn\'t exist'))
       throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);

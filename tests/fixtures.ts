@@ -183,6 +183,7 @@ function createTransport(args: string[], mcpMode: TestOptions['mcpMode']) {
     command: 'node',
     args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
     cwd: path.join(path.dirname(__filename), '..'),
+    env: process.env as Record<string, string>,
   });
 }
 
