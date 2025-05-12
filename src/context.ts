@@ -125,7 +125,7 @@ export class Context {
 
   async run(tool: Tool, params: Record<string, unknown> | undefined) {
     // Tab management is done outside of the action() call.
-    const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params));
+    const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params || {}));
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
     const racingAction = action ? () => this._raceAgainstModalDialogs(action) : undefined;
 

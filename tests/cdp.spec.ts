@@ -37,7 +37,6 @@ test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
 
   expect(await client.callTool({
     name: 'browser_snapshot',
-    arguments: {},
   })).toHaveTextContent(`
 - Ran Playwright code:
 \`\`\`js

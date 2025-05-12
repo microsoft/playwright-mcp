@@ -175,7 +175,6 @@ test('browser_type', async ({ client, server }) => {
   });
   expect(await client.callTool({
     name: 'browser_console_messages',
-    arguments: {},
   })).toHaveTextContent('[LOG] Key pressed: Enter , Text: Hi!');
 });
 
@@ -202,7 +201,6 @@ test('browser_type (slowly)', async ({ client, server }) => {
   });
   expect(await client.callTool({
     name: 'browser_console_messages',
-    arguments: {},
   })).toHaveTextContent([
     '[LOG] Key pressed: H Text: ',
     '[LOG] Key pressed: i Text: H',
@@ -237,5 +235,5 @@ test('browser_resize', async ({ client, server }) => {
 // Resize browser window to 390x780
 await page.setViewportSize({ width: 390, height: 780 });
 \`\`\``);
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot', arguments: {} })).toContainTextContent('Window size: 390x780');
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent('Window size: 390x780');
 });

@@ -36,7 +36,6 @@ test('browser_console_messages', async ({ client, server }) => {
 
   const resource = await client.callTool({
     name: 'browser_console_messages',
-    arguments: {},
   });
   expect(resource).toHaveTextContent([
     '[LOG] Hello, world!',

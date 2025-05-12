@@ -26,7 +26,6 @@ test('browser_take_screenshot (viewport)', async ({ client, server }) => {
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
-    arguments: {},
   })).toEqual({
     content: [
       {
@@ -81,7 +80,6 @@ test('--output-dir should work', async ({ startClient, localOutputPath, server }
 
   await client.callTool({
     name: 'browser_take_screenshot',
-    arguments: {},
   });
 
   expect(fs.existsSync(outputDir)).toBeTruthy();
@@ -180,12 +178,10 @@ test('browser_take_screenshot (noImageResponses)', async ({ startClient, server 
 
   await client.callTool({
     name: 'browser_take_screenshot',
-    arguments: {},
   });
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
-    arguments: {},
   })).toEqual({
     content: [
       {
@@ -206,12 +202,10 @@ test('browser_take_screenshot (cursor)', async ({ startClient, server }) => {
 
   await client.callTool({
     name: 'browser_take_screenshot',
-    arguments: {},
   });
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
-    arguments: {},
   })).toEqual({
     content: [
       {

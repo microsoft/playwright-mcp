@@ -20,6 +20,5 @@ test('browser_install', async ({ client, mcpBrowser }) => {
   test.skip(mcpBrowser !== 'chromium', 'Test only chromium');
   expect(await client.callTool({
     name: 'browser_install',
-    arguments: {},
   })).toContainTextContent(`No open pages available.`);
 });

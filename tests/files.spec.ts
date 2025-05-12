@@ -121,7 +121,7 @@ test('clicking on download link emits download', async ({ startClient, localOutp
       ref: 'e2',
     },
   });
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot', arguments: {} })).toContainTextContent(`
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent(`
 ### Downloads
 - Downloaded file test.txt to ${path.join(outputDir, 'test.txt')}`);
 });

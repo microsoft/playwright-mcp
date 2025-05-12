@@ -32,7 +32,6 @@ async function createTab(client: Client, title: string, body: string) {
 test('list initial tabs', async ({ client }) => {
   expect(await client.callTool({
     name: 'browser_tab_list',
-    arguments: {},
   })).toHaveTextContent(`### Open tabs
 - 1: (current) [] (about:blank)`);
 });
@@ -41,7 +40,6 @@ test('list first tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   expect(await client.callTool({
     name: 'browser_tab_list',
-    arguments: {},
   })).toHaveTextContent(`### Open tabs
 - 1: [] (about:blank)
 - 2: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`);
