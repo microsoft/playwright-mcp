@@ -110,8 +110,8 @@ Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user),
 
 Playwright MCP server supports following arguments. They can be provided in the JSON configuration above, as a part of the `"args"` list:
 
-- `--allowed-origins <origins>`: Semicolon-separated list of origins to allow the browser to request. Default is to allow all. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked.
-- `--blocked-origins <origins>`: Semicolon-separated list of origins to block the browser to request. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked.
+- `--allowed-origins <origins>`: Semicolon-separated list of origins to allow the browser to request. Default is to allow all. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked
+- `--blocked-origins <origins>`: Semicolon-separated list of origins to block the browser to request. Origins matching both `--allowed-origins` and `--blocked-origins` will be blocked
 - `--block-service-workers`: Block service workers
 - `--browser <browser>`: Browser or chrome channel to use. Possible values:
   - `chrome`, `firefox`, `webkit`, `msedge`
@@ -124,13 +124,16 @@ Playwright MCP server supports following arguments. They can be provided in the 
 - `--device`: Emulate mobile device
 - `--executable-path <path>`: Path to the browser executable
 - `--headless`: Run browser in headless mode (headed by default)
-- `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
+- `--host <host>`: Host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces
 - `--ignore-https-errors`: Ignore https errors
 - `--isolated`: Keep the browser profile in memory, do not save it to disk
+- `--no-image-responses`: Do not send image responses to the client
+- `--no-sandbox`: Disable the sandbox for all process types that are normally sandboxed
 - `--output-dir`: Directory for output files
 - `--port <port>`: Port to listen on for SSE transport
 - `--proxy-bypass <bypass>`: Comma-separated domains to bypass proxy, for example ".com,chromium.org,.domain.com"'
 - `--proxy-server <proxy>`: Proxy server, for example "http://myproxy:3128" or "socks5://myproxy:8080"'
+- `--storage-state <path>`: Path to the storage state file for isolated sessions
 - `--user-agent <ua string>`: Specify user agent string
 - `--user-data-dir <path>`: Path to the user data directory. If not specified, a temporary directory will be created
 - `--viewport-size <size>`: Specify browser viewport size in pixels, for example "1280, 720"

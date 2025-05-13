@@ -39,6 +39,7 @@ export type CLIOptions = {
   ignoreHttpsErrors?: boolean;
   isolated?: boolean;
   noImageResponses?: boolean;
+  sandbox?: boolean;
   outputDir?: string;
   port?: number;
   proxyBypass?: string;
@@ -56,6 +57,7 @@ const defaultConfig: Config = {
     launchOptions: {
       channel: 'chrome',
       headless: os.platform() === 'linux' && !process.env.DISPLAY,
+      chromiumSandbox: true,
     },
     contextOptions: {
       viewport: null,
@@ -107,8 +109,11 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     headless: cliOptions.headless,
   };
 
-  if (browserName === 'chromium')
+  if (browserName === 'chromium') {
     (launchOptions as any).cdpPort = await findFreePort();
+    if (cliOptions.sandbox === false)
+      launchOptions.chromiumSandbox = false;
+  }
 
   if (cliOptions.proxyServer) {
     launchOptions.proxy = {
