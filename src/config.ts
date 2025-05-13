@@ -25,23 +25,29 @@ import type { BrowserContextOptions, LaunchOptions } from 'playwright';
 import { sanitizeForFilePath } from './tools/utils.js';
 
 export type CLIOptions = {
+  allowedOrigins?: string[];
+  blockedOrigins?: string[];
+  blockServiceWorkers?: boolean;
   browser?: string;
   caps?: string;
   cdpEndpoint?: string;
-  isolated?: boolean;
+  config?: string;
+  device?: string;
   executablePath?: string;
   headless?: boolean;
-  device?: string;
-  userDataDir?: string;
-  storageState?: string;
-  port?: number;
   host?: string;
-  vision?: boolean;
-  config?: string;
-  allowedOrigins?: string[];
-  blockedOrigins?: string[];
-  outputDir?: string;
+  ignoreHttpsErrors?: boolean;
+  isolated?: boolean;
   noImageResponses?: boolean;
+  outputDir?: string;
+  port?: number;
+  proxyBypass?: string;
+  proxyServer?: string;
+  storageState?: string;
+  userAgent?: string;
+  userDataDir?: string;
+  viewportSize?: string;
+  vision?: boolean;
 };
 
 const defaultConfig: Config = {
@@ -94,6 +100,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
       channel = 'chrome';
   }
 
+  // Launch options
   const launchOptions: LaunchOptions = {
     channel,
     executablePath: cliOptions.executablePath,
@@ -103,9 +110,38 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   if (browserName === 'chromium')
     (launchOptions as any).cdpPort = await findFreePort();
 
+  if (cliOptions.proxyServer) {
+    launchOptions.proxy = {
+      server: cliOptions.proxyServer
+    };
+    if (cliOptions.proxyBypass)
+      launchOptions.proxy.bypass = cliOptions.proxyBypass;
+  }
+
+  // Context options
   const contextOptions: BrowserContextOptions = cliOptions.device ? devices[cliOptions.device] : {};
   if (cliOptions.storageState)
     contextOptions.storageState = cliOptions.storageState;
+
+  if (cliOptions.userAgent)
+    contextOptions.userAgent = cliOptions.userAgent;
+
+  if (cliOptions.viewportSize) {
+    try {
+      const [width, height] = cliOptions.viewportSize.split(',').map(n => +n);
+      if (isNaN(width) || isNaN(height))
+        throw new Error('bad values');
+      contextOptions.viewport = { width, height };
+    } catch (e) {
+      throw new Error('Invalid viewport size format: use "width,height", for example --viewport-size="800,600"');
+    }
+  }
+
+  if (cliOptions.ignoreHttpsErrors)
+    contextOptions.ignoreHTTPSErrors = true;
+
+  if (cliOptions.blockServiceWorkers)
+    contextOptions.serviceWorkers = 'block';
 
   return {
     browser: {
