@@ -65,6 +65,8 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
     await use(async options => {
       const args = ['--user-data-dir', path.relative(configDir, userDataDir)];
+      if (process.env.CI && process.platform === 'linux')
+        args.push('--no-sandbox');
       if (mcpHeadless)
         args.push('--headless');
       if (mcpBrowser)

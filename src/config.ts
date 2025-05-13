@@ -38,8 +38,8 @@ export type CLIOptions = {
   host?: string;
   ignoreHttpsErrors?: boolean;
   isolated?: boolean;
-  noImageResponses?: boolean;
-  sandbox?: boolean;
+  imageResponses: boolean;
+  sandbox: boolean;
   outputDir?: string;
   port?: number;
   proxyBypass?: string;
@@ -111,8 +111,10 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
 
   if (browserName === 'chromium') {
     (launchOptions as any).cdpPort = await findFreePort();
-    if (cliOptions.sandbox === false)
+    if (!cliOptions.sandbox) {
+      // --no-sandbox was passed, disable the sandbox
       launchOptions.chromiumSandbox = false;
+    }
   }
 
   if (cliOptions.proxyServer) {
@@ -148,7 +150,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   if (cliOptions.blockServiceWorkers)
     contextOptions.serviceWorkers = 'block';
 
-  return {
+  const result: Config = {
     browser: {
       browserName,
       isolated: cliOptions.isolated,
@@ -169,6 +171,13 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     outputDir: cliOptions.outputDir,
   };
+
+  if (!cliOptions.imageResponses) {
+    // --no-image-responses was passed, disable image responses
+    result.noImageResponses = true;
+  }
+
+  return result;
 }
 
 async function findFreePort() {
