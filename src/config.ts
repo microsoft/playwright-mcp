@@ -28,11 +28,12 @@ export type CLIOptions = {
   browser?: string;
   caps?: string;
   cdpEndpoint?: string;
-  ephemeral?: boolean;
+  isolated?: boolean;
   executablePath?: string;
   headless?: boolean;
   device?: string;
   userDataDir?: string;
+  storageState?: string;
   port?: number;
   host?: string;
   vision?: boolean;
@@ -102,12 +103,14 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   if (browserName === 'chromium')
     (launchOptions as any).cdpPort = await findFreePort();
 
-  const contextOptions: BrowserContextOptions | undefined = cliOptions.device ? devices[cliOptions.device] : undefined;
+  const contextOptions: BrowserContextOptions = cliOptions.device ? devices[cliOptions.device] : {};
+  if (cliOptions.storageState)
+    contextOptions.storageState = cliOptions.storageState;
 
   return {
     browser: {
       browserName,
-      ephemeral: cliOptions.ephemeral,
+      isolated: cliOptions.isolated,
       userDataDir: cliOptions.userDataDir,
       launchOptions,
       contextOptions,

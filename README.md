@@ -117,6 +117,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
   - Default: `chrome`
 - `--caps <caps>`: Comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.
 - `--cdp-endpoint <endpoint>`: CDP endpoint to connect to
+- `--isolated`: Keep the browser profile in memory, do not save it to disk
 - `--executable-path <path>`: Path to the browser executable
 - `--headless`: Run browser in headless mode (headed by default)
 - `--device`: Emulate mobile device
@@ -131,15 +132,45 @@ Playwright MCP server supports following arguments. They can be provided in the 
 
 ### User profile
 
-Playwright MCP will launch the browser with the new profile, located at
+You can run Playwright MCP with persistent profile like a regular browser (default), or in the isolated contexts for the testing sessions.
 
-```
-- `%USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-profile` on Windows
-- `~/Library/Caches/ms-playwright/mcp-{channel}-profile` on macOS
-- `~/.cache/ms-playwright/mcp-{channel}-profile` on Linux
+**Persistent profile**
+
+All the logged in information will be stored in the persistent profile, you can delete it between sessions if you'd like to clear the offline state.
+Persistent profile is located at the following locations and you can override it with the `--user-data-dir` argument.
+
+```bash
+# Windows
+%USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-profile
+
+# macOS
+- ~/Library/Caches/ms-playwright/mcp-{channel}-profile
+
+# Linux
+- ~/.cache/ms-playwright/mcp-{channel}-profile
 ```
 
-All the logged in information will be stored in that profile, you can delete it between sessions if you'd like to clear the offline state.
+**Isolated**
+
+In the isolated mode, each session is started in the isolated profile. Every time you ask MCP to close the browser,
+the session is closed and all the storage state for this session is lost. You can provide initial storage state
+to the browser via the config's `contextOptions` or via the `--storage-state` argument. Learn more about the storage
+state [here](https://playwright.dev/docs/auth).
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--isolated",
+        "--storage-state={path/to/storage.json}
+      ]
+    }
+  }
+}
+```
 
 ### Configuration file
 
@@ -161,7 +192,7 @@ npx @playwright/mcp@latest --config path/to/config.json
     browserName?: 'chromium' | 'firefox' | 'webkit';
 
     // Keep the browser profile in memory, do not save it to disk.
-    ephemeral?: boolean;
+    isolated?: boolean;
 
     // Path to user data directory for browser profile persistence
     userDataDir?: string;

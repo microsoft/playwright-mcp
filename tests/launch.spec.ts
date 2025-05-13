@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
+
 import { test, expect } from './fixtures.js';
 
 test('test reopen browser', async ({ client, server }) => {
@@ -73,7 +75,7 @@ test('persistent context', async ({ startClient, server }) => {
   expect(response2).toContainTextContent(`Storage: YES`);
 });
 
-test('ephemeral context', async ({ startClient, server }) => {
+test('isolated context', async ({ startClient, server }) => {
   server.setContent('/', `
     <body>
     </body>
@@ -83,7 +85,7 @@ test('ephemeral context', async ({ startClient, server }) => {
     </script>
   `, 'text/html');
 
-  const client = await startClient({ args: [`--ephemeral`] });
+  const client = await startClient({ args: [`--isolated`] });
   const response = await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
@@ -94,10 +96,40 @@ test('ephemeral context', async ({ startClient, server }) => {
     name: 'browser_close',
   });
 
-  const client2 = await startClient({ args: [`--ephemeral`] });
+  const client2 = await startClient({ args: [`--isolated`] });
   const response2 = await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
   expect(response2).toContainTextContent(`Storage: NO`);
+});
+
+test('isolated context with storage state', async ({ startClient, server, localOutputPath }) => {
+  const storageStatePath = localOutputPath('storage-state.json');
+  await fs.promises.writeFile(storageStatePath, JSON.stringify({
+    origins: [
+      {
+        origin: server.PREFIX,
+        localStorage: [{ name: 'test', value: 'session-value' }],
+      },
+    ],
+  }));
+
+  server.setContent('/', `
+    <body>
+    </body>
+    <script>
+      document.body.textContent = 'Storage: ' + localStorage.getItem('test');
+    </script>
+  `, 'text/html');
+
+  const client = await startClient({ args: [
+    `--isolated`,
+    `--storage-state=${storageStatePath}`,
+  ] });
+  const response = await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+  expect(response).toContainTextContent(`Storage: session-value`);
 });

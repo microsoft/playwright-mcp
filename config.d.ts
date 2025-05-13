@@ -31,7 +31,7 @@ export type Config = {
     /**
      * Keep the browser profile in memory, do not save it to disk.
      */
-    ephemeral?: boolean;
+    isolated?: boolean;
 
     /**
      * Path to a user data directory for browser profile persistence.

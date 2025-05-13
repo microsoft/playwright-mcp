@@ -341,22 +341,22 @@ ${code.join('\n')}
 
     if (this.config.browser?.cdpEndpoint) {
       const browser = await playwright.chromium.connectOverCDP(this.config.browser.cdpEndpoint);
-      const browserContext = this.config.browser.ephemeral ? await browser.newContext() : browser.contexts()[0];
+      const browserContext = this.config.browser.isolated ? await browser.newContext() : browser.contexts()[0];
       return { browser, browserContext };
     }
 
-    return this.config.browser?.ephemeral ?
-      await launchEphemeralContext(this.config.browser) :
+    return this.config.browser?.isolated ?
+      await createIsolatedContext(this.config.browser) :
       await launchPersistentContext(this.config.browser);
   }
 }
 
-async function launchEphemeralContext(browserConfig: Config['browser']): Promise<BrowserContextAndBrowser> {
+async function createIsolatedContext(browserConfig: Config['browser']): Promise<BrowserContextAndBrowser> {
   try {
     const browserName = browserConfig?.browserName ?? 'chromium';
     const browserType = playwright[browserName];
     const browser = await browserType.launch(browserConfig?.launchOptions);
-    const browserContext = await browser.newContext();
+    const browserContext = await browser.newContext(browserConfig?.contextOptions);
     return { browser, browserContext };
   } catch (error: any) {
     if (error.message.includes('Executable doesn\'t exist'))
