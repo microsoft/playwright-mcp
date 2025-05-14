@@ -147,11 +147,10 @@ const type = defineTool({
   schema: {
     name: 'browser_type',
     title: 'Type text',
-    description: 'Type text into editable element',
+    description: 'Type text into editable element such as <input>, <textarea> and [contenteditable] elements',
     inputSchema: typeSchema,
     type: 'destructive',
   },
-
   handle: async (context, params) => {
     const snapshot = context.currentTabOrDie().snapshotOrDie();
     const locator = snapshot.refLocator(params.ref);
