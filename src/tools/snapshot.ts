@@ -151,6 +151,7 @@ const type = defineTool({
     inputSchema: typeSchema,
     type: 'destructive',
   },
+
   handle: async (context, params) => {
     const snapshot = context.currentTabOrDie().snapshotOrDie();
     const locator = snapshot.refLocator(params.ref);
