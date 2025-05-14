@@ -21,7 +21,7 @@ import path from 'node:path';
 
 import * as playwright from 'playwright';
 
-import { waitForCompletion } from './tools/utils.js';
+import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 import { ManualPromise } from './manualPromise.js';
 import { Tab } from './tab.js';
 import { outputFile } from './config.js';
@@ -112,7 +112,7 @@ export class Context {
     const lines: string[] = ['### Open tabs'];
     for (let i = 0; i < this._tabs.length; i++) {
       const tab = this._tabs[i];
-      const title = await tab.page.title();
+      const title = await tab.title();
       const url = tab.page.url();
       const current = tab === this._currentTab ? ' (current)' : '';
       lines.push(`- ${i + 1}:${current} [${title}] (${url})`);
@@ -149,7 +149,7 @@ export class Context {
     let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
     try {
       if (waitForNetwork)
-        actionResult = await waitForCompletion(this, tab.page, async () => racingAction?.()) ?? undefined;
+        actionResult = await waitForCompletion(this, tab, async () => racingAction?.()) ?? undefined;
       else
         actionResult = await racingAction?.() ?? undefined;
     } finally {
@@ -193,7 +193,7 @@ ${code.join('\n')}
 
     result.push(
         `- Page URL: ${tab.page.url()}`,
-        `- Page Title: ${await tab.page.title()}`
+        `- Page Title: ${await tab.title()}`
     );
 
     if (captureSnapshot && tab.hasSnapshot())
@@ -213,10 +213,14 @@ ${code.join('\n')}
   }
 
   async waitForTimeout(time: number) {
-    if (this._currentTab && !this._javaScriptBlocked())
-      await this._currentTab.page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
-    else
+    if (!this._currentTab || this._javaScriptBlocked()) {
       await new Promise(f => setTimeout(f, time));
+      return;
+    }
+
+    await callOnPageNoTrace(this._currentTab.page, page => {
+      return page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
+    });
   }
 
   private async _raceAgainstModalDialogs(action: () => Promise<ToolActionResult>): Promise<ToolActionResult> {
@@ -288,6 +292,8 @@ ${code.join('\n')}
     this._browserContextPromise = undefined;
 
     await promise.then(async ({ browserContext, browser }) => {
+      if (this.config.saveTrace)
+        await browserContext.tracing.stop();
       await browserContext.close().then(async () => {
         await browser?.close();
       }).catch(() => {});
@@ -324,6 +330,14 @@ ${code.join('\n')}
     for (const page of browserContext.pages())
       this._onPageCreated(page);
     browserContext.on('page', page => this._onPageCreated(page));
+    if (this.config.saveTrace) {
+      await browserContext.tracing.start({
+        name: 'trace',
+        screenshots: false,
+        snapshots: true,
+        sources: false,
+      });
+    }
     return { browser, browserContext };
   }
 
@@ -392,10 +406,6 @@ async function createUserDataDir(browserConfig: FullConfig['browser']) {
   const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserConfig.launchOptions?.channel ?? browserConfig?.browserName}-profile`);
   await fs.promises.mkdir(result, { recursive: true });
   return result;
-}
-
-export async function generateLocator(locator: playwright.Locator): Promise<string> {
-  return (locator as any)._generateLocatorString();
 }
 
 const __filename = url.fileURLToPath(import.meta.url);

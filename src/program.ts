@@ -44,6 +44,7 @@ program
     .option('--port <port>', 'port to listen on for SSE transport.')
     .option('--proxy-bypass <bypass>', 'comma-separated domains to bypass proxy, for example ".com,chromium.org,.domain.com"')
     .option('--proxy-server <proxy>', 'specify proxy server, for example "http://myproxy:3128" or "socks5://myproxy:8080"')
+    .option('--save-trace', 'Whether to save the Playwright Trace of the session into the output directory.')
     .option('--storage-state <path>', 'path to the storage state file for isolated sessions.')
     .option('--user-agent <ua string>', 'specify user agent string')
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')

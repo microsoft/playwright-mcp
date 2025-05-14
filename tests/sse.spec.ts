@@ -65,11 +65,17 @@ test('streamable http transport', async ({ serverEndpoint }) => {
   expect(transport.sessionId, 'has session support').toBeDefined();
 });
 
-test('sse transport via public API', async ({ server }) => {
+test('sse transport via public API', async ({ server, localOutputPath }) => {
+  const userDataDir = localOutputPath('user-data-dir');
   const sessions = new Map<string, SSEServerTransport>();
   const mcpServer = http.createServer(async (req, res) => {
     if (req.method === 'GET') {
-      const connection = await createConnection({ browser: { launchOptions: { headless: true } } });
+      const connection = await createConnection({
+        browser: {
+          userDataDir,
+          launchOptions: { headless: true }
+        },
+      });
       const transport = new SSEServerTransport('/sse', res);
       sessions.set(transport.sessionId, transport);
       await connection.connect(transport);

@@ -19,6 +19,7 @@ import * as playwright from 'playwright';
 import { PageSnapshot } from './pageSnapshot.js';
 
 import type { Context } from './context.js';
+import { callOnPageNoTrace } from './tools/utils.js';
 
 export class Tab {
   readonly context: Context;
@@ -61,10 +62,18 @@ export class Tab {
     this._onPageClose(this);
   }
 
+  async title(): Promise<string> {
+    return await callOnPageNoTrace(this.page, page => page.title());
+  }
+
+  async waitForLoadState(state: 'load', options?: { timeout?: number }): Promise<void> {
+    await callOnPageNoTrace(this.page, page => page.waitForLoadState(state, options).catch(() => {}));
+  }
+
   async navigate(url: string) {
     this._clearCollectedArtifacts();
 
-    const downloadEvent = this.page.waitForEvent('download').catch(() => {});
+    const downloadEvent = callOnPageNoTrace(this.page, page => page.waitForEvent('download').catch(() => {}));
     try {
       await this.page.goto(url, { waitUntil: 'domcontentloaded' });
     } catch (_e: unknown) {
@@ -85,7 +94,7 @@ export class Tab {
     }
 
     // Cap load event to 5 seconds, the page is operational at this point.
-    await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
+    await this.waitForLoadState('load', { timeout: 5000 });
   }
 
   hasSnapshot(): boolean {

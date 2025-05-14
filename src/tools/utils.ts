@@ -16,8 +16,9 @@
 
 import type * as playwright from 'playwright';
 import type { Context } from '../context.js';
+import type { Tab } from '../tab.js';
 
-export async function waitForCompletion<R>(context: Context, page: playwright.Page, callback: () => Promise<R>): Promise<R> {
+export async function waitForCompletion<R>(context: Context, tab: Tab, callback: () => Promise<R>): Promise<R> {
   const requests = new Set<playwright.Request>();
   let frameNavigated = false;
   let waitCallback: () => void = () => {};
@@ -36,9 +37,7 @@ export async function waitForCompletion<R>(context: Context, page: playwright.Pa
     frameNavigated = true;
     dispose();
     clearTimeout(timeout);
-    void frame.waitForLoadState('load').then(() => {
-      waitCallback();
-    });
+    void tab.waitForLoadState('load').then(waitCallback);
   };
 
   const onTimeout = () => {
@@ -46,15 +45,15 @@ export async function waitForCompletion<R>(context: Context, page: playwright.Pa
     waitCallback();
   };
 
-  page.on('request', requestListener);
-  page.on('requestfinished', requestFinishedListener);
-  page.on('framenavigated', frameNavigateListener);
+  tab.page.on('request', requestListener);
+  tab.page.on('requestfinished', requestFinishedListener);
+  tab.page.on('framenavigated', frameNavigateListener);
   const timeout = setTimeout(onTimeout, 10000);
 
   const dispose = () => {
-    page.off('request', requestListener);
-    page.off('requestfinished', requestFinishedListener);
-    page.off('framenavigated', frameNavigateListener);
+    tab.page.off('request', requestListener);
+    tab.page.off('requestfinished', requestFinishedListener);
+    tab.page.off('framenavigated', frameNavigateListener);
     clearTimeout(timeout);
   };
 
@@ -79,5 +78,9 @@ export function sanitizeForFilePath(s: string) {
 }
 
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
-  return (locator as any)._generateLocatorString();
+  return (locator as any)._frame._wrapApiCall(() => (locator as any)._generateLocatorString(), true);
+}
+
+export async function callOnPageNoTrace<T>(page: playwright.Page, callback: (page: playwright.Page) => Promise<T>): Promise<T> {
+  return await (page as any)._wrapApiCall(() => callback(page), true);
 }

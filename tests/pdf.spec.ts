@@ -30,7 +30,12 @@ test('save as pdf unavailable', async ({ startClient, server }) => {
   })).toHaveTextContent(/Tool \"browser_pdf_save\" not found/);
 });
 
-test('save as pdf', async ({ client, mcpBrowser, server }) => {
+test('save as pdf', async ({ startClient, mcpBrowser, server, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
+  const client = await startClient({
+    config: { outputDir },
+  });
+
   test.skip(!!mcpBrowser && !['chromium', 'chrome', 'msedge'].includes(mcpBrowser), 'Save as PDF is only supported in Chromium.');
 
   expect(await client.callTool({

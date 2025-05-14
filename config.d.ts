@@ -95,6 +95,11 @@ export type Config = {
   vision?: boolean;
 
   /**
+   * Whether to save the Playwright trace of the session into the output directory.
+   */
+  saveTrace?: boolean;
+
+  /**
    * The directory to save output files.
    */
   outputDir?: string;

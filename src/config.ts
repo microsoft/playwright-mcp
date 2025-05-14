@@ -44,6 +44,7 @@ export type CLIOptions = {
   port?: number;
   proxyBypass?: string;
   proxyServer?: string;
+  saveTrace?: boolean;
   storageState?: string;
   userAgent?: string;
   userDataDir?: string;
@@ -67,7 +68,7 @@ const defaultConfig: FullConfig = {
     allowedOrigins: undefined,
     blockedOrigins: undefined,
   },
-  outputDir: path.join(os.tmpdir(), 'playwright-mcp-output'),
+  outputDir: path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString())),
 };
 
 type BrowserUserConfig = NonNullable<Config['browser']>;
@@ -91,7 +92,8 @@ export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConf
   const cliOverrides = await configFromCLIOptions(cliOptions);
   const result = mergeConfig(mergeConfig(defaultConfig, configInFile), cliOverrides);
   // Derive artifact output directory from config.outputDir
-  result.browser.launchOptions.tracesDir = path.join(result.outputDir, 'traces');
+  if (result.saveTrace)
+    result.browser.launchOptions.tracesDir = path.join(result.outputDir, 'traces');
   return result;
 }
 
@@ -189,6 +191,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,
     },
+    saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
   };
 
@@ -262,7 +265,6 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
     network: {
       ...pickDefined(base.network),
       ...pickDefined(overrides.network),
-    },
-    outputDir: overrides.outputDir ?? base.outputDir ?? defaultConfig.outputDir,
-  };
+    }
+  } as FullConfig;
 }

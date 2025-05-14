@@ -15,6 +15,11 @@
  */
 
 import * as playwright from 'playwright';
+import { callOnPageNoTrace } from './tools/utils.js';
+
+type PageEx = playwright.Page & {
+  _snapshotForAI: () => Promise<string>;
+};
 
 export class PageSnapshot {
   private _page: playwright.Page;
@@ -35,11 +40,11 @@ export class PageSnapshot {
   }
 
   private async _build() {
-    const yamlDocument = await (this._page as any)._snapshotForAI();
+    const snapshot = await callOnPageNoTrace(this._page, page => (page as PageEx)._snapshotForAI());
     this._text = [
       `- Page Snapshot`,
       '```yaml',
-      yamlDocument.toString({ indentSeq: false }).trim(),
+      snapshot,
       '```',
     ].join('\n');
   }

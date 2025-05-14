@@ -18,7 +18,11 @@ import fs from 'fs';
 
 import { test, expect } from './fixtures.js';
 
-test('browser_take_screenshot (viewport)', async ({ client, server }) => {
+test('browser_take_screenshot (viewport)', async ({ startClient, server, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
+  const client = await startClient({
+    args: ['--output-dir', outputDir],
+  });
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -41,7 +45,11 @@ test('browser_take_screenshot (viewport)', async ({ client, server }) => {
   });
 });
 
-test('browser_take_screenshot (element)', async ({ client, server }) => {
+test('browser_take_screenshot (element)', async ({ startClient, server, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
+  const client = await startClient({
+    args: ['--output-dir', outputDir],
+  });
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -166,9 +174,10 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, 
   expect(files[0]).toMatch(/^output\.jpeg$/);
 });
 
-test('browser_take_screenshot (noImageResponses)', async ({ startClient, server }) => {
+test('browser_take_screenshot (noImageResponses)', async ({ startClient, server, localOutputPath }) => {
   const client = await startClient({
     config: {
+      outputDir: localOutputPath('output'),
       noImageResponses: true,
     },
   });
@@ -194,8 +203,12 @@ test('browser_take_screenshot (noImageResponses)', async ({ startClient, server 
   });
 });
 
-test('browser_take_screenshot (cursor)', async ({ startClient, server }) => {
-  const client = await startClient({ clientName: 'cursor:vscode' });
+test('browser_take_screenshot (cursor)', async ({ startClient, server, localOutputPath }) => {
+  const outputDir = localOutputPath('output');
+  const client = await startClient({
+    clientName: 'cursor:vscode',
+    config: { outputDir },
+  });
 
   expect(await client.callTool({
     name: 'browser_navigate',
