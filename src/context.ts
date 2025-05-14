@@ -24,11 +24,11 @@ import * as playwright from 'playwright';
 import { waitForCompletion } from './tools/utils.js';
 import { ManualPromise } from './manualPromise.js';
 import { Tab } from './tab.js';
+import { outputFile } from './config.js';
 
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
-import type { Config } from '../config.js';
-import { outputFile } from './config.js';
+import type { FullConfig } from './config.js';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
@@ -41,7 +41,7 @@ type BrowserContextAndBrowser = {
 
 export class Context {
   readonly tools: Tool[];
-  readonly config: Config;
+  readonly config: FullConfig;
   private _browserContextPromise: Promise<BrowserContextAndBrowser> | undefined;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
@@ -49,7 +49,7 @@ export class Context {
   private _pendingAction: PendingAction | undefined;
   private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
 
-  constructor(tools: Tool[], config: Config) {
+  constructor(tools: Tool[], config: FullConfig) {
     this.tools = tools;
     this.config = config;
   }
@@ -351,12 +351,12 @@ ${code.join('\n')}
   }
 }
 
-async function createIsolatedContext(browserConfig: Config['browser']): Promise<BrowserContextAndBrowser> {
+async function createIsolatedContext(browserConfig: FullConfig['browser']): Promise<BrowserContextAndBrowser> {
   try {
     const browserName = browserConfig?.browserName ?? 'chromium';
     const browserType = playwright[browserName];
-    const browser = await browserType.launch(browserConfig?.launchOptions);
-    const browserContext = await browser.newContext(browserConfig?.contextOptions);
+    const browser = await browserType.launch(browserConfig.launchOptions);
+    const browserContext = await browser.newContext(browserConfig.contextOptions);
     return { browser, browserContext };
   } catch (error: any) {
     if (error.message.includes('Executable doesn\'t exist'))
@@ -365,12 +365,12 @@ async function createIsolatedContext(browserConfig: Config['browser']): Promise<
   }
 }
 
-async function launchPersistentContext(browserConfig: Config['browser']): Promise<BrowserContextAndBrowser> {
+async function launchPersistentContext(browserConfig: FullConfig['browser']): Promise<BrowserContextAndBrowser> {
   try {
-    const browserName = browserConfig?.browserName ?? 'chromium';
-    const userDataDir = browserConfig?.userDataDir ?? await createUserDataDir({ ...browserConfig, browserName });
+    const browserName = browserConfig.browserName ?? 'chromium';
+    const userDataDir = browserConfig.userDataDir ?? await createUserDataDir({ ...browserConfig, browserName });
     const browserType = playwright[browserName];
-    const browserContext = await browserType.launchPersistentContext(userDataDir, { ...browserConfig?.launchOptions, ...browserConfig?.contextOptions });
+    const browserContext = await browserType.launchPersistentContext(userDataDir, { ...browserConfig.launchOptions, ...browserConfig.contextOptions });
     return { browserContext };
   } catch (error: any) {
     if (error.message.includes('Executable doesn\'t exist'))
@@ -379,7 +379,7 @@ async function launchPersistentContext(browserConfig: Config['browser']): Promis
   }
 }
 
-async function createUserDataDir(browserConfig: Config['browser']) {
+async function createUserDataDir(browserConfig: FullConfig['browser']) {
   let cacheDirectory: string;
   if (process.platform === 'linux')
     cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
@@ -389,7 +389,7 @@ async function createUserDataDir(browserConfig: Config['browser']) {
     cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
   else
     throw new Error('Unsupported platform: ' + process.platform);
-  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserConfig?.launchOptions?.channel ?? browserConfig?.browserName}-profile`);
+  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserConfig.launchOptions?.channel ?? browserConfig?.browserName}-profile`);
   await fs.promises.mkdir(result, { recursive: true });
   return result;
 }

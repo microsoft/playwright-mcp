@@ -17,7 +17,7 @@
 import { program } from 'commander';
 
 import { startHttpTransport, startStdioTransport } from './transport.js';
-import { resolveConfig } from './config.js';
+import { resolveCLIConfig } from './config.js';
 
 import type { Connection } from './connection.js';
 import { packageJSON } from './context.js';
@@ -50,7 +50,7 @@ program
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .action(async options => {
-      const config = await resolveConfig(options);
+      const config = await resolveCLIConfig(options);
       const connectionList: Connection[] = [];
       setupExitWatchdog(connectionList);
 

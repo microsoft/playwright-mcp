@@ -73,6 +73,7 @@ test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser, ser
   const files = [...fs.readdirSync(outputDir)];
 
   expect(fs.existsSync(outputDir)).toBeTruthy();
-  expect(files).toHaveLength(1);
-  expect(files[0]).toMatch(/^output.pdf$/);
+  const pdfFiles = files.filter(f => f.endsWith('.pdf'));
+  expect(pdfFiles).toHaveLength(1);
+  expect(pdfFiles[0]).toMatch(/^output.pdf$/);
 });

@@ -83,7 +83,9 @@ test('--output-dir should work', async ({ startClient, localOutputPath, server }
   });
 
   expect(fs.existsSync(outputDir)).toBeTruthy();
-  expect([...fs.readdirSync(outputDir)]).toHaveLength(1);
+  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.jpeg'));
+  expect(files).toHaveLength(1);
+  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.jpeg$/);
 });
 
 for (const raw of [undefined, true]) {
@@ -117,7 +119,7 @@ for (const raw of [undefined, true]) {
       ],
     });
 
-    const files = [...fs.readdirSync(outputDir)];
+    const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith(`.${ext}`));
 
     expect(fs.existsSync(outputDir)).toBeTruthy();
     expect(files).toHaveLength(1);
@@ -157,11 +159,11 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, 
     ],
   });
 
-  const files = [...fs.readdirSync(outputDir)];
+  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.jpeg'));
 
   expect(fs.existsSync(outputDir)).toBeTruthy();
   expect(files).toHaveLength(1);
-  expect(files[0]).toMatch(/^output.jpeg$/);
+  expect(files[0]).toMatch(/^output\.jpeg$/);
 });
 
 test('browser_take_screenshot (noImageResponses)', async ({ startClient, server }) => {

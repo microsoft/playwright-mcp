@@ -24,16 +24,16 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import { createConnection } from './connection.js';
 
-import type { Config } from '../config.js';
 import type { Connection } from './connection.js';
+import type { FullConfig } from './config.js';
 
-export async function startStdioTransport(config: Config, connectionList: Connection[]) {
+export async function startStdioTransport(config: FullConfig, connectionList: Connection[]) {
   const connection = await createConnection(config);
   await connection.connect(new StdioServerTransport());
   connectionList.push(connection);
 }
 
-async function handleSSE(config: Config, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>, connectionList: Connection[]) {
+async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>, connectionList: Connection[]) {
   if (req.method === 'POST') {
     const sessionId = url.searchParams.get('sessionId');
     if (!sessionId) {
@@ -68,7 +68,7 @@ async function handleSSE(config: Config, req: http.IncomingMessage, res: http.Se
   res.end('Method not allowed');
 }
 
-async function handleStreamable(config: Config, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, StreamableHTTPServerTransport>, connectionList: Connection[]) {
+async function handleStreamable(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, StreamableHTTPServerTransport>, connectionList: Connection[]) {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (sessionId) {
     const transport = sessions.get(sessionId);
@@ -104,7 +104,7 @@ async function handleStreamable(config: Config, req: http.IncomingMessage, res: 
   res.end('Invalid request');
 }
 
-export function startHttpTransport(config: Config, port: number, hostname: string | undefined, connectionList: Connection[]) {
+export function startHttpTransport(config: FullConfig, port: number, hostname: string | undefined, connectionList: Connection[]) {
   const sseSessions = new Map<string, SSEServerTransport>();
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {

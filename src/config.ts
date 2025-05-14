@@ -51,7 +51,7 @@ export type CLIOptions = {
   vision?: boolean;
 };
 
-const defaultConfig: Config = {
+const defaultConfig: FullConfig = {
   browser: {
     browserName: 'chromium',
     launchOptions: {
@@ -67,12 +67,32 @@ const defaultConfig: Config = {
     allowedOrigins: undefined,
     blockedOrigins: undefined,
   },
+  outputDir: path.join(os.tmpdir(), 'playwright-mcp-output'),
 };
 
-export async function resolveConfig(cliOptions: CLIOptions): Promise<Config> {
-  const config = await loadConfig(cliOptions.config);
+type BrowserUserConfig = NonNullable<Config['browser']>;
+
+export type FullConfig = Config & {
+  browser: BrowserUserConfig & {
+    browserName: NonNullable<BrowserUserConfig['browserName']>;
+    launchOptions: NonNullable<BrowserUserConfig['launchOptions']>;
+    contextOptions: NonNullable<BrowserUserConfig['contextOptions']>;
+  },
+  network: NonNullable<Config['network']>,
+  outputDir: string;
+};
+
+export async function resolveConfig(config: Config): Promise<FullConfig> {
+  return mergeConfig(defaultConfig, config);
+}
+
+export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConfig> {
+  const configInFile = await loadConfig(cliOptions.config);
   const cliOverrides = await configFromCLIOptions(cliOptions);
-  return mergeConfig(defaultConfig, mergeConfig(config, cliOverrides));
+  const result = mergeConfig(mergeConfig(defaultConfig, configInFile), cliOverrides);
+  // Derive artifact output directory from config.outputDir
+  result.browser.launchOptions.tracesDir = path.join(result.outputDir, 'traces');
+  return result;
 }
 
 export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Config> {
@@ -202,11 +222,10 @@ async function loadConfig(configFile: string | undefined): Promise<Config> {
   }
 }
 
-export async function outputFile(config: Config, name: string): Promise<string> {
-  const result = config.outputDir ?? os.tmpdir();
-  await fs.promises.mkdir(result, { recursive: true });
+export async function outputFile(config: FullConfig, name: string): Promise<string> {
+  await fs.promises.mkdir(config.outputDir, { recursive: true });
   const fileName = sanitizeForFilePath(name);
-  return path.join(result, fileName);
+  return path.join(config.outputDir, fileName);
 }
 
 function pickDefined<T extends object>(obj: T | undefined): Partial<T> {
@@ -215,10 +234,10 @@ function pickDefined<T extends object>(obj: T | undefined): Partial<T> {
   ) as Partial<T>;
 }
 
-function mergeConfig(base: Config, overrides: Config): Config {
-  const browser: Config['browser'] = {
-    ...pickDefined(base.browser),
-    ...pickDefined(overrides.browser),
+function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
+  const browser: FullConfig['browser'] = {
+    browserName: overrides.browser?.browserName ?? base.browser?.browserName ?? 'chromium',
+    isolated: overrides.browser?.isolated ?? base.browser?.isolated ?? false,
     launchOptions: {
       ...pickDefined(base.browser?.launchOptions),
       ...pickDefined(overrides.browser?.launchOptions),
@@ -228,6 +247,9 @@ function mergeConfig(base: Config, overrides: Config): Config {
       ...pickDefined(base.browser?.contextOptions),
       ...pickDefined(overrides.browser?.contextOptions),
     },
+    userDataDir: overrides.browser?.userDataDir ?? base.browser?.userDataDir,
+    cdpEndpoint: overrides.browser?.cdpEndpoint ?? base.browser?.cdpEndpoint,
+    remoteEndpoint: overrides.browser?.remoteEndpoint ?? base.browser?.remoteEndpoint,
   };
 
   if (browser.browserName !== 'chromium' && browser.launchOptions)
@@ -241,5 +263,6 @@ function mergeConfig(base: Config, overrides: Config): Config {
       ...pickDefined(base.network),
       ...pickDefined(overrides.network),
     },
+    outputDir: overrides.outputDir ?? base.outputDir ?? defaultConfig.outputDir,
   };
 }

@@ -15,9 +15,11 @@
  */
 
 import { Connection, createConnection as createConnectionImpl } from './connection.js';
+import { resolveConfig } from './config.js';
 
 import type { Config } from '../config.js';
 
-export async function createConnection(config: Config = {}): Promise<Connection> {
+export async function createConnection(userConfig: Config = {}): Promise<Connection> {
+  const config = await resolveConfig(userConfig);
   return createConnectionImpl(config);
 }
