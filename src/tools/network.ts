@@ -34,7 +34,7 @@ const requests = defineTool({
     const requests = context.currentTabOrDie().requests();
     const log = [...requests.entries()].map(([request, response]) => renderRequest(request, response)).join('\n');
     return {
-      code: [`// <internal code to list network requests>`],
+      code: [],
       action: async () => {
         return {
           content: [{ type: 'text', text: log }]

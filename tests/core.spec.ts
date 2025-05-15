@@ -19,11 +19,13 @@ import { test, expect } from './fixtures.js';
 test('browser_navigate', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
+    arguments: { url: server.HELLO_WORLD,
+      intent: 'Navigate to the page',
+    },
   })).toHaveTextContent(`
 - Ran Playwright code:
 \`\`\`js
-// Navigate to ${server.HELLO_WORLD}
+// Navigate to the page
 await page.goto('${server.HELLO_WORLD}');
 \`\`\`
 
@@ -45,7 +47,9 @@ test('browser_click', async ({ client, server }) => {
 
   await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: { url: server.PREFIX,
+      intent: 'Navigate to the page',
+    },
   });
 
   expect(await client.callTool({
@@ -53,6 +57,7 @@ test('browser_click', async ({ client, server }) => {
     arguments: {
       element: 'Submit button',
       ref: 'e2',
+      intent: 'Click Submit button',
     },
   })).toHaveTextContent(`
 - Ran Playwright code:
@@ -81,7 +86,9 @@ test('browser_select_option', async ({ client, server }) => {
 
   await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: { url: server.PREFIX,
+      intent: 'Navigate to the page',
+    },
   });
 
   expect(await client.callTool({
@@ -90,11 +97,12 @@ test('browser_select_option', async ({ client, server }) => {
       element: 'Select',
       ref: 'e2',
       values: ['bar'],
+      intent: 'Select bar in Select',
     },
   })).toHaveTextContent(`
 - Ran Playwright code:
 \`\`\`js
-// Select options [bar] in Select
+// Select bar in Select
 await page.getByRole('combobox').selectOption(['bar']);
 \`\`\`
 
@@ -121,7 +129,9 @@ test('browser_select_option (multiple)', async ({ client, server }) => {
 
   await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: { url: server.PREFIX,
+      intent: 'Navigate to the page',
+    },
   });
 
   expect(await client.callTool({
@@ -130,11 +140,12 @@ test('browser_select_option (multiple)', async ({ client, server }) => {
       element: 'Select',
       ref: 'e2',
       values: ['bar', 'baz'],
+      intent: 'Select bar and baz in Select',
     },
   })).toHaveTextContent(`
 - Ran Playwright code:
 \`\`\`js
-// Select options [bar, baz] in Select
+// Select bar and baz in Select
 await page.getByRole('listbox').selectOption(['bar', 'baz']);
 \`\`\`
 
@@ -162,6 +173,7 @@ test('browser_type', async ({ client, server }) => {
     name: 'browser_navigate',
     arguments: {
       url: server.PREFIX,
+      intent: 'Navigate to the page',
     },
   });
   await client.callTool({
@@ -171,6 +183,7 @@ test('browser_type', async ({ client, server }) => {
       ref: 'e2',
       text: 'Hi!',
       submit: true,
+      intent: 'Type Hi! in textbox',
     },
   });
   expect(await client.callTool({
@@ -187,6 +200,7 @@ test('browser_type (slowly)', async ({ client, server }) => {
     name: 'browser_navigate',
     arguments: {
       url: server.PREFIX,
+      intent: 'Navigate to the page',
     },
   });
   await client.callTool({
@@ -197,6 +211,7 @@ test('browser_type (slowly)', async ({ client, server }) => {
       text: 'Hi!',
       submit: true,
       slowly: true,
+      intent: 'Type Hi! in textbox',
     },
   });
   expect(await client.callTool({
@@ -220,7 +235,9 @@ test('browser_resize', async ({ client, server }) => {
   `, 'text/html');
   await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: { url: server.PREFIX,
+      intent: 'Navigate to the page',
+    },
   });
 
   const response = await client.callTool({
@@ -228,6 +245,7 @@ test('browser_resize', async ({ client, server }) => {
     arguments: {
       width: 390,
       height: 780,
+      intent: 'Resize browser window to 390x780',
     },
   });
   expect(response).toContainTextContent(`- Ran Playwright code:

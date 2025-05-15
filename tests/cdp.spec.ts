@@ -32,15 +32,19 @@ test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
     arguments: {
       element: 'Hello, world!',
       ref: 'f0',
+      intent: 'Click Hello, world!',
     },
   })).toHaveTextContent(`Error: No current snapshot available. Capture a snapshot of navigate to a new location first.`);
 
   expect(await client.callTool({
     name: 'browser_snapshot',
+    arguments: {
+      intent: 'Capture accessibility snapshot',
+    },
   })).toHaveTextContent(`
 - Ran Playwright code:
 \`\`\`js
-// <internal code to capture accessibility snapshot>
+// Capture accessibility snapshot
 \`\`\`
 
 - Page URL: data:text/html,hello world

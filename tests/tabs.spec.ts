@@ -25,6 +25,7 @@ async function createTab(client: Client, title: string, body: string) {
     name: 'browser_tab_new',
     arguments: {
       url: `data:text/html,<title>${title}</title><body>${body}</body>`,
+      intent: 'Create a new tab',
     },
   });
 }
@@ -32,6 +33,7 @@ async function createTab(client: Client, title: string, body: string) {
 test('list initial tabs', async ({ client }) => {
   expect(await client.callTool({
     name: 'browser_tab_list',
+    intent: 'List initial tabs',
   })).toHaveTextContent(`### Open tabs
 - 1: (current) [] (about:blank)`);
 });
@@ -40,6 +42,7 @@ test('list first tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   expect(await client.callTool({
     name: 'browser_tab_list',
+    intent: 'List first tab',
   })).toHaveTextContent(`### Open tabs
 - 1: [] (about:blank)
 - 2: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`);
@@ -49,7 +52,7 @@ test('create new tab', async ({ client }) => {
   expect(await createTab(client, 'Tab one', 'Body one')).toHaveTextContent(`
 - Ran Playwright code:
 \`\`\`js
-// <internal code to open a new tab>
+// Create a new tab
 \`\`\`
 
 ### Open tabs
@@ -67,7 +70,7 @@ test('create new tab', async ({ client }) => {
   expect(await createTab(client, 'Tab two', 'Body two')).toHaveTextContent(`
 - Ran Playwright code:
 \`\`\`js
-// <internal code to open a new tab>
+// Create a new tab
 \`\`\`
 
 ### Open tabs
@@ -91,11 +94,12 @@ test('select tab', async ({ client }) => {
     name: 'browser_tab_select',
     arguments: {
       index: 2,
+      intent: 'Select tab 2',
     },
   })).toHaveTextContent(`
 - Ran Playwright code:
 \`\`\`js
-// <internal code to select tab 2>
+// Select tab 2
 \`\`\`
 
 ### Open tabs
@@ -119,11 +123,12 @@ test('close tab', async ({ client }) => {
     name: 'browser_tab_close',
     arguments: {
       index: 3,
+      intent: 'Close tab 3',
     },
   })).toHaveTextContent(`
 - Ran Playwright code:
 \`\`\`js
-// <internal code to close tab 3>
+// Close tab 3
 \`\`\`
 
 ### Open tabs

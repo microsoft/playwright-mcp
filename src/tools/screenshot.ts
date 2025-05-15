@@ -28,11 +28,6 @@ const screenshotSchema = z.object({
   filename: z.string().optional().describe('File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified.'),
   element: z.string().optional().describe('Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.'),
   ref: z.string().optional().describe('Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.'),
-}).refine(data => {
-  return !!data.element === !!data.ref;
-}, {
-  message: 'Both element and ref must be provided or neither.',
-  path: ['ref', 'element']
 });
 
 const screenshot = defineTool({
@@ -51,12 +46,7 @@ const screenshot = defineTool({
     const fileType = params.raw ? 'png' : 'jpeg';
     const fileName = await outputFile(context.config, params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
     const options: playwright.PageScreenshotOptions = { type: fileType, quality: fileType === 'png' ? undefined : 50, scale: 'css', path: fileName };
-    const isElementScreenshot = params.element && params.ref;
-
-    const code = [
-      `// Screenshot ${isElementScreenshot ? params.element : 'viewport'} and save it as ${fileName}`,
-    ];
-
+    const code = [];
     const locator = params.ref ? snapshot.refLocator(params.ref) : null;
 
     if (locator)

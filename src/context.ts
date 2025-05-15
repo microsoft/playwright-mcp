@@ -157,10 +157,11 @@ export class Context {
         await tab.captureSnapshot();
     }
 
+    const comment = params?.intent ? `// ${params.intent}` : '';
     const result: string[] = [];
     result.push(`- Ran Playwright code:
 \`\`\`js
-${code.join('\n')}
+${[comment, ...code].join('\n')}
 \`\`\`
 `);
 

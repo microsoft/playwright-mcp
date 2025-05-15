@@ -43,12 +43,8 @@ const handleDialog: ToolFactory = captureSnapshot => defineTool({
 
     context.clearModalState(dialogState);
 
-    const code = [
-      `// <internal code to handle "${dialogState.dialog.type()}" dialog>`,
-    ];
-
     return {
-      code,
+      code: [],
       captureSnapshot,
       waitForNetwork: false,
     };

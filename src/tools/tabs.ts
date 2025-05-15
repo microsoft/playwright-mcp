@@ -31,7 +31,7 @@ const listTabs = defineTool({
   handle: async context => {
     await context.ensureTab();
     return {
-      code: [`// <internal code to list tabs>`],
+      code: [],
       captureSnapshot: false,
       waitForNetwork: false,
       resultOverride: {
@@ -59,12 +59,9 @@ const selectTab: ToolFactory = captureSnapshot => defineTool({
 
   handle: async (context, params) => {
     await context.selectTab(params.index);
-    const code = [
-      `// <internal code to select tab ${params.index}>`,
-    ];
 
     return {
-      code,
+      code: [],
       captureSnapshot,
       waitForNetwork: false
     };
@@ -89,11 +86,8 @@ const newTab: ToolFactory = captureSnapshot => defineTool({
     if (params.url)
       await context.currentTabOrDie().navigate(params.url);
 
-    const code = [
-      `// <internal code to open a new tab>`,
-    ];
     return {
-      code,
+      code: [],
       captureSnapshot,
       waitForNetwork: false
     };
@@ -115,11 +109,8 @@ const closeTab: ToolFactory = captureSnapshot => defineTool({
 
   handle: async (context, params) => {
     await context.closeTab(params.index);
-    const code = [
-      `// <internal code to close tab ${params.index}>`,
-    ];
     return {
-      code,
+      code: [],
       captureSnapshot,
       waitForNetwork: false
     };

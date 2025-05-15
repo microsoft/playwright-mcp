@@ -22,11 +22,14 @@ test('save as pdf unavailable', async ({ startClient, server }) => {
   const client = await startClient({ args: ['--caps="no-pdf"'] });
   await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
+    arguments: { url: server.HELLO_WORLD, intent: 'Navigate to the page' },
   });
 
   expect(await client.callTool({
     name: 'browser_pdf_save',
+    arguments: {
+      intent: 'Save page as PDF',
+    },
   })).toHaveTextContent(/Tool \"browser_pdf_save\" not found/);
 });
 
@@ -40,13 +43,19 @@ test('save as pdf', async ({ startClient, mcpBrowser, server, localOutputPath })
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
+    arguments: {
+      url: server.HELLO_WORLD,
+      intent: 'Navigate to the page'
+    },
   })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
 
   const response = await client.callTool({
     name: 'browser_pdf_save',
+    arguments: {
+      intent: 'Save page as PDF',
+    },
   });
-  expect(response).toHaveTextContent(/Save page as.*page-[^:]+.pdf/);
+  expect(response).toContainTextContent('Save page as PDF');
 });
 
 test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser, server, localOutputPath }) => {
@@ -58,13 +67,14 @@ test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser, ser
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
+    arguments: { url: server.HELLO_WORLD, intent: 'Navigate to the page' },
   })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
 
   expect(await client.callTool({
     name: 'browser_pdf_save',
     arguments: {
       filename: 'output.pdf',
+      intent: 'Save page as PDF',
     },
   })).toEqual({
     content: [

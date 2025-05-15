@@ -38,7 +38,6 @@ const screenshot = defineTool({
     const options = { type: 'jpeg' as 'jpeg', quality: 50, scale: 'css' as 'css' };
 
     const code = [
-      `// Take a screenshot of the current page`,
       `await page.screenshot(${javascript.formatObject(options)});`,
     ];
 
@@ -73,7 +72,6 @@ const moveMouse = defineTool({
   handle: async (context, params) => {
     const tab = context.currentTabOrDie();
     const code = [
-      `// Move mouse to (${params.x}, ${params.y})`,
       `await page.mouse.move(${params.x}, ${params.y});`,
     ];
     const action = () => tab.page.mouse.move(params.x, params.y);
@@ -102,7 +100,6 @@ const click = defineTool({
   handle: async (context, params) => {
     const tab = context.currentTabOrDie();
     const code = [
-      `// Click mouse at coordinates (${params.x}, ${params.y})`,
       `await page.mouse.move(${params.x}, ${params.y});`,
       `await page.mouse.down();`,
       `await page.mouse.up();`,
@@ -140,7 +137,6 @@ const drag = defineTool({
     const tab = context.currentTabOrDie();
 
     const code = [
-      `// Drag mouse from (${params.startX}, ${params.startY}) to (${params.endX}, ${params.endY})`,
       `await page.mouse.move(${params.startX}, ${params.startY});`,
       `await page.mouse.down();`,
       `await page.mouse.move(${params.endX}, ${params.endY});`,
@@ -180,7 +176,6 @@ const type = defineTool({
     const tab = context.currentTabOrDie();
 
     const code = [
-      `// Type ${params.text}`,
       `await page.keyboard.type('${params.text}');`,
     ];
 
@@ -190,10 +185,8 @@ const type = defineTool({
         await tab.page.keyboard.press('Enter');
     };
 
-    if (params.submit) {
-      code.push(`// Submit text`);
+    if (params.submit)
       code.push(`await page.keyboard.press('Enter');`);
-    }
 
     return {
       code,

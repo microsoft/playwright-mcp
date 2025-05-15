@@ -23,7 +23,10 @@ test('alert dialog', async ({ client, server }) => {
   server.setContent('/', `<button onclick="alert('Alert')">Button</button>`, 'text/html');
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: {
+      url: server.PREFIX,
+      intent: 'Navigate to the page'
+    },
   })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
@@ -31,6 +34,7 @@ test('alert dialog', async ({ client, server }) => {
     arguments: {
       element: 'Button',
       ref: 'e2',
+      intent: 'Click Button',
     },
   })).toHaveTextContent(`- Ran Playwright code:
 \`\`\`js
@@ -45,13 +49,14 @@ await page.getByRole('button', { name: 'Button' }).click();
     name: 'browser_handle_dialog',
     arguments: {
       accept: true,
+      intent: 'Handle alert dialog',
     },
   });
 
   expect(result).not.toContainTextContent('### Modal state');
   expect(result).toHaveTextContent(`- Ran Playwright code:
 \`\`\`js
-// <internal code to handle "alert" dialog>
+// Handle alert dialog
 \`\`\`
 
 - Page URL: ${server.PREFIX}
@@ -75,7 +80,10 @@ test('two alert dialogs', async ({ client, server }) => {
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: {
+      url: server.PREFIX,
+      intent: 'Navigate to the page',
+    },
   })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
@@ -83,6 +91,7 @@ test('two alert dialogs', async ({ client, server }) => {
     arguments: {
       element: 'Button',
       ref: 'e2',
+      intent: 'Click Button',
     },
   })).toHaveTextContent(`- Ran Playwright code:
 \`\`\`js
@@ -113,7 +122,10 @@ test('confirm dialog (true)', async ({ client, server }) => {
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: {
+      url: server.PREFIX,
+      intent: 'Navigate to the page',
+    },
   })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
@@ -121,6 +133,7 @@ test('confirm dialog (true)', async ({ client, server }) => {
     arguments: {
       element: 'Button',
       ref: 'e2',
+      intent: 'Click Button',
     },
   })).toContainTextContent(`### Modal state
 - ["confirm" dialog with message "Confirm"]: can be handled by the "browser_handle_dialog" tool`);
@@ -129,11 +142,12 @@ test('confirm dialog (true)', async ({ client, server }) => {
     name: 'browser_handle_dialog',
     arguments: {
       accept: true,
+      intent: 'Handle confirm dialog',
     },
   });
 
   expect(result).not.toContainTextContent('### Modal state');
-  expect(result).toContainTextContent('// <internal code to handle "confirm" dialog>');
+  expect(result).toContainTextContent('// Handle confirm dialog');
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
 - generic [ref=e1]: "true"
@@ -150,7 +164,10 @@ test('confirm dialog (false)', async ({ client, server }) => {
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: {
+      url: server.PREFIX,
+      intent: 'Navigate to the page',
+    },
   })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
@@ -158,6 +175,7 @@ test('confirm dialog (false)', async ({ client, server }) => {
     arguments: {
       element: 'Button',
       ref: 'e2',
+      intent: 'Click Button',
     },
   })).toContainTextContent(`### Modal state
 - ["confirm" dialog with message "Confirm"]: can be handled by the "browser_handle_dialog" tool`);
@@ -166,6 +184,7 @@ test('confirm dialog (false)', async ({ client, server }) => {
     name: 'browser_handle_dialog',
     arguments: {
       accept: false,
+      intent: 'Handle confirm dialog',
     },
   });
 
@@ -185,7 +204,10 @@ test('prompt dialog', async ({ client, server }) => {
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: {
+      url: server.PREFIX,
+      intent: 'Navigate to the page',
+    },
   })).toContainTextContent('- button "Button" [ref=e2]');
 
   expect(await client.callTool({
@@ -193,6 +215,7 @@ test('prompt dialog', async ({ client, server }) => {
     arguments: {
       element: 'Button',
       ref: 'e2',
+      intent: 'Click Button',
     },
   })).toContainTextContent(`### Modal state
 - ["prompt" dialog with message "Prompt"]: can be handled by the "browser_handle_dialog" tool`);
@@ -202,6 +225,7 @@ test('prompt dialog', async ({ client, server }) => {
     arguments: {
       accept: true,
       promptText: 'Answer',
+      intent: 'Handle prompt dialog',
     },
   });
 

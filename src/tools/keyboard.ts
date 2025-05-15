@@ -34,7 +34,6 @@ const pressKey: ToolFactory = captureSnapshot => defineTool({
     const tab = context.currentTabOrDie();
 
     const code = [
-      `// Press ${params.key}`,
       `await page.keyboard.press('${params.key}');`,
     ];
 

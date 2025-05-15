@@ -30,7 +30,7 @@ const console = defineTool({
     const messages = context.currentTabOrDie().consoleMessages();
     const log = messages.map(message => `[${message.type().toUpperCase()}] ${message.text()}`).join('\n');
     return {
-      code: [`// <internal code to get console messages>`],
+      code: [],
       action: async () => {
         return {
           content: [{ type: 'text', text: log }]

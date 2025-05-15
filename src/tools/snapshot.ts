@@ -34,7 +34,7 @@ const snapshot = defineTool({
     await context.ensureTab();
 
     return {
-      code: [`// <internal code to capture accessibility snapshot>`],
+      code: [],
       captureSnapshot: true,
       waitForNetwork: false,
     };
@@ -61,7 +61,6 @@ const click = defineTool({
     const locator = tab.snapshotOrDie().refLocator(params.ref);
 
     const code = [
-      `// Click ${params.element}`,
       `await page.${await generateLocator(locator)}.click();`
     ];
 
@@ -95,7 +94,6 @@ const drag = defineTool({
     const endLocator = snapshot.refLocator(params.endRef);
 
     const code = [
-      `// Drag ${params.startElement} to ${params.endElement}`,
       `await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`
     ];
 
@@ -123,7 +121,6 @@ const hover = defineTool({
     const locator = snapshot.refLocator(params.ref);
 
     const code = [
-      `// Hover over ${params.element}`,
       `await page.${await generateLocator(locator)}.hover();`
     ];
 
@@ -160,17 +157,14 @@ const type = defineTool({
     const steps: (() => Promise<void>)[] = [];
 
     if (params.slowly) {
-      code.push(`// Press "${params.text}" sequentially into "${params.element}"`);
       code.push(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
       steps.push(() => locator.pressSequentially(params.text));
     } else {
-      code.push(`// Fill "${params.text}" into "${params.element}"`);
       code.push(`await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`);
       steps.push(() => locator.fill(params.text));
     }
 
     if (params.submit) {
-      code.push(`// Submit text`);
       code.push(`await page.${await generateLocator(locator)}.press('Enter');`);
       steps.push(() => locator.press('Enter'));
     }
@@ -203,7 +197,6 @@ const selectOption = defineTool({
     const locator = snapshot.refLocator(params.ref);
 
     const code = [
-      `// Select options [${params.values.join(', ')}] in ${params.element}`,
       `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(params.values)});`
     ];
 

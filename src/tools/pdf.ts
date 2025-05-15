@@ -40,7 +40,6 @@ const pdf = defineTool({
     const fileName = await outputFile(context.config, params.filename ?? `page-${new Date().toISOString()}.pdf`);
 
     const code = [
-      `// Save page as ${fileName}`,
       `await page.pdf(${javascript.formatObject({ path: fileName })});`,
     ];
 

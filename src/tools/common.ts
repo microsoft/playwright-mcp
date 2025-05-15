@@ -55,7 +55,6 @@ const resize: ToolFactory = captureSnapshot => defineTool({
     const tab = context.currentTabOrDie();
 
     const code = [
-      `// Resize browser window to ${params.width}x${params.height}`,
       `await page.setViewportSize({ width: ${params.width}, height: ${params.height} });`
     ];
 

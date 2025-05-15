@@ -51,7 +51,7 @@ const install = defineTool({
       });
     });
     return {
-      code: [`// Browser ${channel} installed`],
+      code: [],
       captureSnapshot: false,
       waitForNetwork: false,
     };

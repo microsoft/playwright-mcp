@@ -16,6 +16,7 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Context, packageJSON } from './context.js';
@@ -40,7 +41,9 @@ export async function createConnection(config: FullConfig): Promise<Connection> 
       tools: tools.map(tool => ({
         name: tool.schema.name,
         description: tool.schema.description,
-        inputSchema: zodToJsonSchema(tool.schema.inputSchema),
+        inputSchema: zodToJsonSchema(tool.schema.inputSchema.extend({
+          intent: z.string().describe('Short description of the intent of the tool call'),
+        })),
         annotations: {
           title: tool.schema.title,
           readOnlyHint: tool.schema.type === 'readOnly',

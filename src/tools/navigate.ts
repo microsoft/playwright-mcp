@@ -35,7 +35,6 @@ const navigate: ToolFactory = captureSnapshot => defineTool({
     await tab.navigate(params.url);
 
     const code = [
-      `// Navigate to ${params.url}`,
       `await page.goto('${params.url}');`,
     ];
 
@@ -61,7 +60,6 @@ const goBack: ToolFactory = captureSnapshot => defineTool({
     const tab = await context.ensureTab();
     await tab.page.goBack();
     const code = [
-      `// Navigate back`,
       `await page.goBack();`,
     ];
 
@@ -86,7 +84,6 @@ const goForward: ToolFactory = captureSnapshot => defineTool({
     const tab = context.currentTabOrDie();
     await tab.page.goForward();
     const code = [
-      `// Navigate forward`,
       `await page.goForward();`,
     ];
     return {

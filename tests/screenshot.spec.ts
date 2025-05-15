@@ -25,11 +25,17 @@ test('browser_take_screenshot (viewport)', async ({ startClient, server, localOu
   });
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`Navigate to http://localhost`);
+    arguments: {
+      url: server.HELLO_WORLD,
+      intent: 'Navigate to the page',
+    },
+  })).toContainTextContent(`Navigate to the page`);
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
+    arguments: {
+      intent: 'Take screenshot of the page',
+    },
   })).toEqual({
     content: [
       {
@@ -38,7 +44,7 @@ test('browser_take_screenshot (viewport)', async ({ startClient, server, localOu
         type: 'image',
       },
       {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        text: expect.stringContaining(`Take screenshot of the page`),
         type: 'text',
       },
     ],
@@ -52,7 +58,9 @@ test('browser_take_screenshot (element)', async ({ startClient, server, localOut
   });
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
+    arguments: { url: server.HELLO_WORLD,
+      intent: 'Navigate to the page',
+    },
   })).toContainTextContent(`[ref=e1]`);
 
   expect(await client.callTool({
@@ -60,6 +68,7 @@ test('browser_take_screenshot (element)', async ({ startClient, server, localOut
     arguments: {
       element: 'hello button',
       ref: 'e1',
+      intent: 'Take screenshot of hello button',
     },
   })).toEqual({
     content: [
@@ -83,8 +92,11 @@ test('--output-dir should work', async ({ startClient, localOutputPath, server }
   });
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`Navigate to http://localhost`);
+    arguments: {
+      url: server.HELLO_WORLD,
+      intent: 'Navigate to the page',
+    },
+  })).toContainTextContent(`Navigate to the page`);
 
   await client.callTool({
     name: 'browser_take_screenshot',
@@ -105,12 +117,17 @@ for (const raw of [undefined, true]) {
     });
     expect(await client.callTool({
       name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
-    })).toContainTextContent(`Navigate to http://localhost`);
+      arguments: {
+        url: server.PREFIX,
+        intent: 'Navigate to the page',
+      },
+    })).toContainTextContent(`Navigate to the page`);
 
     expect(await client.callTool({
       name: 'browser_take_screenshot',
-      arguments: { raw },
+      arguments: { raw,
+        intent: 'Take screenshot of the page',
+      },
     })).toEqual({
       content: [
         {
@@ -145,13 +162,17 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, 
   });
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`Navigate to http://localhost`);
+    arguments: {
+      url: server.HELLO_WORLD,
+      intent: 'Navigate to the page',
+    },
+  })).toContainTextContent(`Navigate to the page`);
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
     arguments: {
       filename: 'output.jpeg',
+      intent: 'Take screenshot of the page',
     },
   })).toEqual({
     content: [
@@ -184,19 +205,21 @@ test('browser_take_screenshot (noImageResponses)', async ({ startClient, server,
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`Navigate to http://localhost`);
-
-  await client.callTool({
-    name: 'browser_take_screenshot',
-  });
+    arguments: {
+      url: server.HELLO_WORLD,
+      intent: 'Navigate to the page',
+    },
+  })).toContainTextContent(`Navigate to the page`);
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
+    arguments: {
+      intent: 'Take screenshot of the page',
+    },
   })).toEqual({
     content: [
       {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        text: expect.stringContaining(`Take screenshot of the page`),
         type: 'text',
       },
     ],
@@ -212,19 +235,21 @@ test('browser_take_screenshot (cursor)', async ({ startClient, server, localOutp
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`Navigate to http://localhost`);
-
-  await client.callTool({
-    name: 'browser_take_screenshot',
-  });
+    arguments: {
+      url: server.HELLO_WORLD,
+      intent: 'Navigate to the page',
+    },
+  })).toContainTextContent(`Navigate to the page`);
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
+    arguments: {
+      intent: 'Take screenshot of the page',
+    },
   })).toEqual({
     content: [
       {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        text: expect.stringContaining(`Take screenshot of the page`),
         type: 'text',
       },
     ],

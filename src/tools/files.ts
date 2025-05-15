@@ -35,17 +35,13 @@ const uploadFile: ToolFactory = captureSnapshot => defineTool({
     if (!modalState)
       throw new Error('No file chooser visible');
 
-    const code = [
-      `// <internal code to chose files ${params.paths.join(', ')}`,
-    ];
-
     const action = async () => {
       await modalState.fileChooser.setFiles(params.paths);
       context.clearModalState(modalState);
     };
 
     return {
-      code,
+      code: [],
       action,
       captureSnapshot,
       waitForNetwork: true,

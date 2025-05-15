@@ -21,6 +21,7 @@ test('stitched aria frames', async ({ client }) => {
     name: 'browser_navigate',
     arguments: {
       url: `data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button><main><iframe src='data:text/html,<p>Nested</p>'></iframe></main>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>`,
+      intent: 'Navigate to the page',
     },
   })).toContainTextContent(`
 \`\`\`yaml
@@ -39,6 +40,7 @@ test('stitched aria frames', async ({ client }) => {
     arguments: {
       element: 'World',
       ref: 'f1e2',
+      intent: 'Click World',
     },
   })).toContainTextContent(`// Click World`);
 });
