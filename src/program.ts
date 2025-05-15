@@ -18,6 +18,8 @@ import { program } from 'commander';
 
 import { startHttpTransport, startStdioTransport } from './transport.js';
 import { resolveCLIConfig } from './config.js';
+// @ts-ignore
+import { startTraceViewerServer } from 'playwright-core/lib/server';
 
 import type { Connection } from './connection.js';
 import { packageJSON } from './context.js';
@@ -59,6 +61,14 @@ program
         startHttpTransport(config, +options.port, options.host, connectionList);
       else
         await startStdioTransport(config, connectionList);
+
+      if (config.saveTrace) {
+        const server = await startTraceViewerServer();
+        const urlPrefix = server.urlPrefix('human-readable');
+        const url = urlPrefix + '/trace/index.html?trace=' + config.browser.launchOptions.tracesDir + '/trace.json';
+        // eslint-disable-next-line no-console
+        console.error('\nTrace viewer listening on ' + url);
+      }
     });
 
 function setupExitWatchdog(connectionList: Connection[]) {

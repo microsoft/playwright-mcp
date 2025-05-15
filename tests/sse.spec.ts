@@ -35,10 +35,10 @@ const test = baseTest.extend<{ serverEndpoint: string }>({
   serverEndpoint: async ({}, use) => {
     const cp = spawn('node', [path.join(path.dirname(__filename), '../cli.js'), '--port', '0'], { stdio: 'pipe' });
     try {
-      let stdout = '';
-      const url = await new Promise<string>(resolve => cp.stdout?.on('data', data => {
-        stdout += data.toString();
-        const match = stdout.match(/Listening on (http:\/\/.*)/);
+      let stderr = '';
+      const url = await new Promise<string>(resolve => cp.stderr?.on('data', data => {
+        stderr += data.toString();
+        const match = stderr.match(/Listening on (http:\/\/.*)/);
         if (match)
           resolve(match[1]);
       }));

@@ -140,6 +140,6 @@ export function startHttpTransport(config: FullConfig, port: number, hostname: s
       'If your client supports streamable HTTP, you can use the /mcp endpoint instead.',
     ].join('\n');
     // eslint-disable-next-line no-console
-    console.log(message);
+    console.error(message);
   });
 }
