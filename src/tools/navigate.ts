@@ -97,8 +97,33 @@ const goForward: ToolFactory = captureSnapshot => defineTool({
   },
 });
 
+const refresh: ToolFactory = captureSnapshot => defineTool({
+  capability: 'history',
+  schema: {
+    name: 'browser_refresh',
+    title: 'Refresh page',
+    description: 'Refresh the current page',
+    inputSchema: z.object({}),
+    type: 'readOnly',
+  },
+  handle: async context => {
+    const tab = context.currentTabOrDie();
+    await tab.page.reload();
+    const code = [
+      `// Refresh the current page`,
+      `await page.reload();`,
+    ];
+    return {
+      code,
+      captureSnapshot,
+      waitForNetwork: false,
+    };
+  },
+});
+
 export default (captureSnapshot: boolean) => [
   navigate(captureSnapshot),
   goBack(captureSnapshot),
   goForward(captureSnapshot),
+  refresh(captureSnapshot),
 ];
