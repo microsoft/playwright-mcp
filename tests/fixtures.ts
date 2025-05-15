@@ -22,14 +22,19 @@ import { chromium } from 'playwright';
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { TestServer } from './testserver/index.ts';
 
 import type { Config } from '../config';
+import type { BrowserContext } from 'playwright';
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
   mcpMode: 'docker' | undefined;
+};
+
+type CDPServer = {
+  endpoint: string;
+  start: () => Promise<BrowserContext>;
 };
 
 type TestFixtures = {
@@ -37,7 +42,7 @@ type TestFixtures = {
   visionClient: Client;
   startClient: (options?: { clientName?: string, args?: string[], config?: Config }) => Promise<Client>;
   wsEndpoint: string;
-  cdpEndpoint: (port?: number) => Promise<string>;
+  cdpServer: CDPServer;
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
@@ -95,39 +100,25 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await browserServer.close();
   },
 
-  cdpEndpoint: async ({ }, use, testInfo) => {
-    let browserProcess: ChildProcessWithoutNullStreams | undefined;
+  cdpServer: async ({ mcpBrowser }, use, testInfo) => {
+    test.skip(!['chrome', 'msedge', 'chromium'].includes(mcpBrowser!), 'CDP is not supported for non-Chromium browsers');
 
-    await use(async port => {
-      if (!port)
-        port = 3200 + test.info().parallelIndex;
-      if (browserProcess)
-        return `http://localhost:${port}`;
-      browserProcess = spawn(chromium.executablePath(), [
-        `--user-data-dir=${testInfo.outputPath('user-data-dir')}`,
-        `--remote-debugging-port=${port}`,
-        `--no-first-run`,
-        `--no-sandbox`,
-        `--headless`,
-        '--use-mock-keychain',
-        `data:text/html,hello world`,
-      ], {
-        stdio: 'pipe',
-      });
-      await new Promise<void>(resolve => {
-        browserProcess!.stderr.on('data', data => {
-          if (data.toString().includes('DevTools listening on '))
-            resolve();
+    let browserContext: BrowserContext | undefined;
+    const port = 3200 + test.info().parallelIndex;
+    await use({
+      endpoint: `http://localhost:${port}`,
+      start: async () => {
+        browserContext = await chromium.launchPersistentContext(testInfo.outputPath('cdp-user-data-dir'), {
+          channel: mcpBrowser,
+          headless: true,
+          args: [
+            `--remote-debugging-port=${port}`,
+          ],
         });
-      });
-      return `http://localhost:${port}`;
+        return browserContext;
+      }
     });
-    await new Promise<void>(resolve => {
-      if (!browserProcess)
-        return resolve();
-      browserProcess.on('exit', () => resolve());
-      browserProcess.kill();
-    });
+    await browserContext?.close();
   },
 
   mcpHeadless: async ({ headless }, use) => {
