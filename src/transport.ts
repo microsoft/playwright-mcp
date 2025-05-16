@@ -34,6 +34,16 @@ export async function startStdioTransport(config: FullConfig, connectionList: Co
 }
 
 async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>, connectionList: Connection[]) {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5001');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Max-Age', 2592000);
+  res.setHeader('Access-Control-Allow-Headers', 'mcp-session-id, content-type');
+
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    return res.end();
+  }
+
   if (req.method === 'POST') {
     const sessionId = url.searchParams.get('sessionId');
     if (!sessionId) {
@@ -50,6 +60,7 @@ async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: htt
     return await transport.handlePostMessage(req, res);
   } else if (req.method === 'GET') {
     const transport = new SSEServerTransport('/sse', res);
+    console.log('SSE session initialized', transport.sessionId);
     sessions.set(transport.sessionId, transport);
     const connection = await createConnection(config);
     await connection.connect(transport);
@@ -69,6 +80,8 @@ async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: htt
 }
 
 async function handleStreamable(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, StreamableHTTPServerTransport>, connectionList: Connection[]) {
+  console.log('Streamable request', req.method, req.url);
+  console.log('Raw request headers', req.rawHeaders);
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (sessionId) {
     const transport = sessions.get(sessionId);
@@ -80,10 +93,22 @@ async function handleStreamable(config: FullConfig, req: http.IncomingMessage, r
     return await transport.handleRequest(req, res);
   }
 
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5001');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Max-Age', 2592000);
+  res.setHeader('Access-Control-Allow-Headers', 'mcp-session-id, content-type');
+
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    return res.end();
+  }
+
   if (req.method === 'POST') {
+    console.log('Handling POST request', req.method, req.url);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: sessionId => {
+        console.log('Streamable session initialized', sessionId);
         sessions.set(sessionId, transport);
       }
     });
@@ -93,6 +118,8 @@ async function handleStreamable(config: FullConfig, req: http.IncomingMessage, r
     };
     const connection = await createConnection(config);
     connectionList.push(connection);
+    console.log('Connection created', connection);
+    console.log('Streamable session connecting', transport.sessionId);
     await Promise.all([
       connection.connect(transport),
       transport.handleRequest(req, res),

@@ -190,6 +190,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     outputDir: cliOptions.outputDir,
     imageResponses: cliOptions.imageResponses,
   };
+  console.log(`Config: ${JSON.stringify(result, null, 2)}`);
 
   return result;
 }
