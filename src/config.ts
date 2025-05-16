@@ -50,6 +50,8 @@ export type CLIOptions = {
   userDataDir?: string;
   viewportSize?: string;
   vision?: boolean;
+  navigationTimeout?: number;
+  timeout?: number;
 };
 
 const defaultConfig: FullConfig = {
@@ -180,6 +182,8 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
       launchOptions,
       contextOptions,
       cdpEndpoint: cliOptions.cdpEndpoint,
+      navigationTimeout: cliOptions.navigationTimeout,
+      timeout: cliOptions.timeout
     },
     server: {
       port: cliOptions.port,

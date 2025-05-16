@@ -157,6 +157,10 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                example "1280, 720"
   --vision                     Run server that uses screenshots (Aria snapshots
                                are used by default)
+  --navigation-timeout <ms>    Maximum time to wait for navigation/load events, 
+                               in milliseconds (default: 60000)
+  --timeout <ms>               Default timeout for all locator-and‑waitFor 
+                               operations, in milliseconds (default: 5000)
 ```
 
 <!--- End of options generated section -->

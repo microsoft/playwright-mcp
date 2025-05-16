@@ -52,6 +52,8 @@ program
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--navigation-timeout <ms>', 'Maximum time to wait for navigation/load events, in milliseconds (default: 60000)')
+    .option('--timeout <ms>', 'Default timeout for all locator-and‑waitFor operations, in milliseconds (default: 5000)')
     .action(async options => {
       const config = await resolveCLIConfig(options);
       const connectionList: Connection[] = [];

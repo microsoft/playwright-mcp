@@ -48,8 +48,8 @@ export class Tab {
     page.on('download', download => {
       void this.context.downloadStarted(this, download);
     });
-    page.setDefaultNavigationTimeout(60000);
-    page.setDefaultTimeout(5000);
+    page.setDefaultNavigationTimeout(this.context.config.browser.navigationTimeout || 60000);
+    page.setDefaultTimeout(this.context.config.browser.timeout || 5000);
   }
 
   private _clearCollectedArtifacts() {
