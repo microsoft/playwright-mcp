@@ -37,15 +37,15 @@ const test = baseTest.extend<{ serverEndpoint: URL }>({
     const msPlaywrightDir = testInfo.outputPath('ms-playwright');
     await fs.promises.mkdir(msPlaywrightDir, { recursive: true });
     const cp = spawn(
-      'node',
-      [path.join(path.dirname(__filename), '../cli.js'), '--port', '0'],
-      {
-        stdio: 'pipe',
-        env: {
-          ...process.env,
-          PW_MS_PLAYWRIGHT_DIR: msPlaywrightDir,
+        'node',
+        [path.join(path.dirname(__filename), '../cli.js'), '--port', '0'],
+        {
+          stdio: 'pipe',
+          env: {
+            ...process.env,
+            PW_MS_PLAYWRIGHT_DIR: msPlaywrightDir,
+          }
         }
-      }
     );
     try {
       let stderr = '';

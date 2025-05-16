@@ -140,7 +140,7 @@ export function startHttpTransport(config: FullConfig, port: number, hostname: s
 
     const sseURL = new URL('./sse', url);
     sseURL.searchParams.set('secret', secret);
-    
+
     const message = [
       `Listening on ${url}`,
       'Put this in your client config:',
