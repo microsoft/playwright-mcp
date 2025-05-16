@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import path from 'node:path';
+import os from 'node:os';
 import type * as playwright from 'playwright';
 import type { Context } from '../context.js';
 import type { Tab } from '../tab.js';
@@ -83,4 +85,17 @@ export async function generateLocator(locator: playwright.Locator): Promise<stri
 
 export async function callOnPageNoTrace<T>(page: playwright.Page, callback: (page: playwright.Page) => Promise<T>): Promise<T> {
   return await (page as any)._wrapApiCall(() => callback(page), true);
+}
+
+export function getMSPlaywrightDir() {
+  let cacheDirectory: string;
+  if (process.platform === 'linux')
+    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+  else if (process.platform === 'darwin')
+    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
+  else if (process.platform === 'win32')
+    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+  else
+    throw new Error('Unsupported platform: ' + process.platform);
+  return path.join(cacheDirectory, 'ms-playwright');
 }

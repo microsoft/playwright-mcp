@@ -16,12 +16,11 @@
 
 import fs from 'node:fs';
 import url from 'node:url';
-import os from 'node:os';
 import path from 'node:path';
 
 import * as playwright from 'playwright';
 
-import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
+import { callOnPageNoTrace, getMSPlaywrightDir, waitForCompletion } from './tools/utils.js';
 import { ManualPromise } from './manualPromise.js';
 import { Tab } from './tab.js';
 import { outputFile } from './config.js';
@@ -394,16 +393,7 @@ async function launchPersistentContext(browserConfig: FullConfig['browser']): Pr
 }
 
 async function createUserDataDir(browserConfig: FullConfig['browser']) {
-  let cacheDirectory: string;
-  if (process.platform === 'linux')
-    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
-  else if (process.platform === 'darwin')
-    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
-  else if (process.platform === 'win32')
-    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-  else
-    throw new Error('Unsupported platform: ' + process.platform);
-  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserConfig.launchOptions?.channel ?? browserConfig?.browserName}-profile`);
+  const result = path.join(getMSPlaywrightDir(), `mcp-${browserConfig.launchOptions?.channel ?? browserConfig?.browserName}-profile`);
   await fs.promises.mkdir(result, { recursive: true });
   return result;
 }
