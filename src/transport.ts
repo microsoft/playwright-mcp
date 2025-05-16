@@ -17,6 +17,8 @@
 import http from 'node:http';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs';
 
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -26,6 +28,7 @@ import { createConnection } from './connection.js';
 
 import type { Connection } from './connection.js';
 import type { FullConfig } from './config.js';
+import { getMSPlaywrightDir } from './tools/utils.js';
 
 export async function startStdioTransport(config: FullConfig, connectionList: Connection[]) {
   const connection = await createConnection(config);
@@ -49,7 +52,7 @@ async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: htt
 
     return await transport.handlePostMessage(req, res);
   } else if (req.method === 'GET') {
-    const transport = new SSEServerTransport('/sse', res);
+    const transport = new SSEServerTransport('/sse?' + new URLSearchParams({ secret: url.searchParams.get('secret')! }), res);
     sessions.set(transport.sessionId, transport);
     const connection = await createConnection(config);
     await connection.connect(transport);
@@ -105,10 +108,17 @@ async function handleStreamable(config: FullConfig, req: http.IncomingMessage, r
 }
 
 export function startHttpTransport(config: FullConfig, port: number, hostname: string | undefined, connectionList: Connection[]) {
+  const secret = config.server?.secret ?? getDefaultSecret();
+
   const sseSessions = new Map<string, SSEServerTransport>();
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);
+    if (url.searchParams.get('secret') !== secret) {
+      res.statusCode = 401;
+      return res.end();
+    }
+
     if (url.pathname.startsWith('/mcp'))
       await handleStreamable(config, req, res, streamableSessions, connectionList);
     else
@@ -127,13 +137,17 @@ export function startHttpTransport(config: FullConfig, port: number, hostname: s
         resolvedHost = 'localhost';
       url = `http://${resolvedHost}:${resolvedPort}`;
     }
+
+    const sseURL = new URL('./sse', url);
+    sseURL.searchParams.set('secret', secret);
+    
     const message = [
       `Listening on ${url}`,
       'Put this in your client config:',
       JSON.stringify({
         'mcpServers': {
           'playwright': {
-            'url': `${url}/sse`
+            'url': `${sseURL}`
           }
         }
       }, undefined, 2),
@@ -142,4 +156,15 @@ export function startHttpTransport(config: FullConfig, port: number, hostname: s
     // eslint-disable-next-line no-console
     console.error(message);
   });
+}
+
+function getDefaultSecret() {
+  const dir = getMSPlaywrightDir();
+  const file = path.join(dir, 'mcp-transport-secret');
+  if (fs.existsSync(file))
+    return fs.readFileSync(file, 'utf8');
+  const secret = crypto.randomUUID();
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(file, secret);
+  return secret;
 }

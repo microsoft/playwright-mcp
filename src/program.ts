@@ -44,6 +44,7 @@ program
     .option('--no-sandbox', 'disable the sandbox for all process types that are normally sandboxed.')
     .option('--output-dir <path>', 'path to the directory for output files.')
     .option('--port <port>', 'port to listen on for SSE transport.')
+    .option('--secret <secret>', 'secret to secure the server.')
     .option('--proxy-bypass <bypass>', 'comma-separated domains to bypass proxy, for example ".com,chromium.org,.domain.com"')
     .option('--proxy-server <proxy>', 'specify proxy server, for example "http://myproxy:3128" or "socks5://myproxy:8080"')
     .option('--save-trace', 'Whether to save the Playwright Trace of the session into the output directory.')

@@ -18,6 +18,7 @@ import url from 'node:url';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import fs from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
@@ -31,16 +32,29 @@ import { test as baseTest, expect } from './fixtures.js';
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
 
-const test = baseTest.extend<{ serverEndpoint: string }>({
-  serverEndpoint: async ({}, use) => {
-    const cp = spawn('node', [path.join(path.dirname(__filename), '../cli.js'), '--port', '0'], { stdio: 'pipe' });
+const test = baseTest.extend<{ serverEndpoint: URL }>({
+  serverEndpoint: async ({}, use, testInfo) => {
+    const cacheDir = testInfo.outputPath('cache');
+    await fs.promises.mkdir(cacheDir, { recursive: true });
+    const cp = spawn(
+      'node',
+      [path.join(path.dirname(__filename), '../cli.js'), '--port', '0'],
+      {
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          PW_CACHE_DIR: cacheDir,
+        }
+      }
+    );
     try {
       let stderr = '';
-      const url = await new Promise<string>(resolve => cp.stderr?.on('data', data => {
+      const url = await new Promise<URL>(resolve => cp.stderr?.on('data', data => {
         stderr += data.toString();
-        const match = stderr.match(/Listening on (http:\/\/.*)/);
-        if (match)
-          resolve(match[1]);
+        try {
+          const config = JSON.parse(stderr.slice(stderr.indexOf('{'), stderr.lastIndexOf('}') + 1));
+          resolve(new URL(config.mcpServers.playwright.url));
+        } catch {}
       }));
 
       await use(url);
@@ -51,18 +65,34 @@ const test = baseTest.extend<{ serverEndpoint: string }>({
 });
 
 test('sse transport', async ({ serverEndpoint }) => {
-  const transport = new SSEClientTransport(new URL(serverEndpoint));
+  const transport = new SSEClientTransport(serverEndpoint);
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
   await client.ping();
 });
 
+test('sse transport without secret', async ({ serverEndpoint }) => {
+  serverEndpoint.searchParams.delete('secret');
+  const transport = new SSEClientTransport(serverEndpoint);
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await expect(client.connect(transport)).rejects.toThrow();
+});
+
 test('streamable http transport', async ({ serverEndpoint }) => {
-  const transport = new StreamableHTTPClientTransport(new URL('/mcp', serverEndpoint));
+  serverEndpoint.pathname = '/mcp';
+  const transport = new StreamableHTTPClientTransport(serverEndpoint);
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
   await client.ping();
   expect(transport.sessionId, 'has session support').toBeDefined();
+});
+
+test('streamable http transport without secret', async ({ serverEndpoint }) => {
+  serverEndpoint.pathname = '/mcp';
+  serverEndpoint.searchParams.delete('secret');
+  const transport = new StreamableHTTPClientTransport(serverEndpoint);
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await expect(client.connect(transport)).rejects.toThrow();
 });
 
 test('sse transport via public API', async ({ server, localOutputPath }) => {

@@ -75,6 +75,11 @@ export type Config = {
      * The host to bind the server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
      */
     host?: string;
+
+    /**
+     * The secret used to secure the server. Defaults to random UUID that's stable across restarts.
+     */
+    secret?: string;
   },
 
   /**
