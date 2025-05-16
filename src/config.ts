@@ -194,6 +194,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
   };
+  console.log(`Config: ${JSON.stringify(result, null, 2)}`);
 
   if (!cliOptions.imageResponses) {
     // --no-image-responses was passed, disable image responses
