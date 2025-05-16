@@ -34,8 +34,8 @@ const __filename = url.fileURLToPath(import.meta.url);
 
 const test = baseTest.extend<{ serverEndpoint: URL }>({
   serverEndpoint: async ({}, use, testInfo) => {
-    const cacheDir = testInfo.outputPath('cache');
-    await fs.promises.mkdir(cacheDir, { recursive: true });
+    const msPlaywrightDir = testInfo.outputPath('ms-playwright');
+    await fs.promises.mkdir(msPlaywrightDir, { recursive: true });
     const cp = spawn(
       'node',
       [path.join(path.dirname(__filename), '../cli.js'), '--port', '0'],
@@ -43,7 +43,7 @@ const test = baseTest.extend<{ serverEndpoint: URL }>({
         stdio: 'pipe',
         env: {
           ...process.env,
-          PW_CACHE_DIR: cacheDir,
+          PW_MS_PLAYWRIGHT_DIR: msPlaywrightDir,
         }
       }
     );

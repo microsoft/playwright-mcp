@@ -88,10 +88,11 @@ export async function callOnPageNoTrace<T>(page: playwright.Page, callback: (pag
 }
 
 export function getMSPlaywrightDir() {
+  if (process.env.PW_MS_PLAYWRIGHT_DIR)
+    return process.env.PW_MS_PLAYWRIGHT_DIR;
+
   let cacheDirectory: string;
-  if (process.env.PW_CACHE_DIR)
-    cacheDirectory = process.env.PW_CACHE_DIR;
-  else if (process.platform === 'linux')
+  if (process.platform === 'linux')
     cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
   else if (process.platform === 'darwin')
     cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
