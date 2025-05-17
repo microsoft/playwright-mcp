@@ -42,6 +42,7 @@ export type CLIOptions = {
   sandbox: boolean;
   outputDir?: string;
   port?: number;
+  secret?: string;
   proxyBypass?: string;
   proxyServer?: string;
   saveTrace?: boolean;
@@ -184,6 +185,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     server: {
       port: cliOptions.port,
       host: cliOptions.host,
+      secret: cliOptions.secret,
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
@@ -265,6 +267,10 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
     network: {
       ...pickDefined(base.network),
       ...pickDefined(overrides.network),
+    },
+    server: {
+      ...pickDefined(base.server),
+      ...pickDefined(overrides.server),
     }
   } as FullConfig;
 }
