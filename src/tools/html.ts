@@ -18,7 +18,10 @@ import { z } from 'zod';
 import { defineTool } from './tool.js';
 
 const elementSchema = z.object({
-  element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
+  element: z
+    .string()
+    .describe('Human-readable element description used to obtain permission to interact with the element')
+    .optional()
 });
 
 const html = defineTool({
@@ -28,12 +31,12 @@ const html = defineTool({
     title: 'Get HTML',
     description: 'Get the HTML content of the current page',
     inputSchema: elementSchema,
-    type: 'readOnly',
+    type: 'readOnly'
   },
 
   handle: async (context, params) => {
     const tab = context.currentTabOrDie();
-    let element = params.element ? params.element : 'body';
+    const element = params.element || 'body';
     const snapshot = await tab.page.$eval(element, (el: { outerHTML: string }) => el.outerHTML);
     return {
       content: [{ type: 'text', text: '```html\n' + snapshot + '\n```', mimeType: 'text/html' }],
