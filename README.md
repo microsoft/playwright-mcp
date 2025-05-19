@@ -595,6 +595,15 @@ X Y coordinate space, based on the provided screenshot.
     - `height` (number): Height of the browser window
   - Read-only: **true**
 
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_evaluate_javascript**
+  - Title: Evaluate a JavaScript command
+  - Description: Evaluate a JavaScript command
+  - Parameters:
+    - `command` (string): The JavaScript command to evaluate
+  - Read-only: **false**
+
 </details>
 
 <details>
