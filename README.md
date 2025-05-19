@@ -599,11 +599,11 @@ X Y coordinate space, based on the provided screenshot.
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_evaluate_javascript**
-  - Title: Evaluate JavaScript in browser
-  - Description: Evaluate a given Javascript command in the browser
+- **browser_evaluate**
+  - Title: Run a JavaScript command
+  - Description: Execute a Javascript command in the browser
   - Parameters:
-    - `command` (string): The command to evaluate
+    - `script` (string): The script to evaluate
   - Read-only: **false**
 
 </details>
