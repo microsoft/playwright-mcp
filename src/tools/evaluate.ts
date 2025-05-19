@@ -20,27 +20,27 @@ import { defineTool, type ToolFactory } from './tool.js';
 const evaluate: ToolFactory = captureSnapshot => defineTool({
   capability: 'core',
   schema: {
-    name: 'browser_evaluate_javascript',
-    title: 'Evaluate JavaScript in browser',
-    description: 'Evaluate a given Javascript command in the browser',
+    name: 'browser_evaluate',
+    title: 'Run a JavaScript command',
+    description: 'Execute a Javascript command in the browser',
     inputSchema: z.object({
-      command: z.string().describe('The command to evaluate'),
+      script: z.string().describe('The script to evaluate'),
     }),
     type: 'destructive',
   },
   handle: async (context, params) => {
     const tab = await context.ensureTab();
-    await tab.page.evaluate(params.command);
+    await tab.page.evaluate(params.script);
 
     const code = [
       `// Execute a javascript command in the console`,
-      `await page.evaluate(${params.command});`
+      `await page.evaluate('${params.script}');`
     ];
 
     return {
       code,
       captureSnapshot,
-      waitForNetwork: false,
+      waitForNetwork: true,
     };
   },
 });
