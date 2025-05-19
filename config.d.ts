@@ -95,8 +95,6 @@ export type Config = {
   vision?: boolean;
 
   /**
-   * Run server that uses screenshots (Aria snapshots are used by default).
-  /**
    * Whether to save the Playwright trace of the session into the output directory.
    */
   saveTrace?: boolean;
