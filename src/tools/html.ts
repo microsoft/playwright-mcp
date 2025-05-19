@@ -17,19 +17,24 @@
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 
+const elementSchema = z.object({
+  element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
+});
+
 const html = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_html_snapshot',
     title: 'Get HTML',
     description: 'Get the HTML content of the current page',
-    inputSchema: z.object({}),
+    inputSchema: elementSchema,
     type: 'readOnly',
   },
 
   handle: async (context, params) => {
     const tab = context.currentTabOrDie();
-    const snapshot = await tab.page.$eval('body', (body: { innerHTML: any }) => body.innerHTML);
+    let element = params.element ? params.element : 'body';
+    const snapshot = await tab.page.$eval(element, (el: { outerHTML: string }) => el.outerHTML);
     return {
       content: [{ type: 'text', text: '```html\n' + snapshot + '\n```', mimeType: 'text/html' }],
       code: ['// Get page HTML content', `${snapshot}`],
