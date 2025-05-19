@@ -55,7 +55,7 @@ export const visionTools: Tool<any>[] = [
   ...common(false),
   ...console,
   ...dialogs(false),
-  ...evaluate(true),
+  ...evaluate(false),
   ...files(false),
   ...install,
   ...keyboard(false),
