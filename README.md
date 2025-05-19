@@ -711,6 +711,14 @@ X Y coordinate space, based on the provided screenshot.
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_html_snapshot**
+  - Title: Get HTML
+  - Description: Get the HTML content of the current page
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_press_key**
   - Title: Press a key
   - Description: Press a key on the keyboard

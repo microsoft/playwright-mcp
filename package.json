@@ -1,11 +1,16 @@
 {
-  "name": "@playwright/mcp",
-  "version": "0.0.25",
+  "name": "@kravchenkoeu/playwright-mcp",
+  "version": "v1.0.6",
   "description": "Playwright Tools for MCP",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/microsoft/playwright-mcp.git"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "homepage": "https://playwright.dev",
   "engines": {

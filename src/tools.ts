@@ -29,12 +29,15 @@ import screenshot from './tools/screenshot.js';
 import testing from './tools/testing.js';
 import vision from './tools/vision.js';
 import wait from './tools/wait.js';
+import html from './tools/html.js';
 
 import type { Tool } from './tools/tool.js';
+
 
 export const snapshotTools: Tool<any>[] = [
   ...common(true),
   ...console,
+  ...html,
   ...dialogs(true),
   ...files(true),
   ...install,
@@ -62,5 +65,6 @@ export const visionTools: Tool<any>[] = [
   ...tabs(false),
   ...testing,
   ...vision,
+  ...html,
   ...wait(false),
 ];
