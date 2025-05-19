@@ -157,6 +157,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                example "1280, 720"
   --vision                     Run server that uses screenshots (Aria snapshots
                                are used by default)
+  --vision-with-snapshot       Run server that uses screenshots and Aria
+                               snapshots
 ```
 
 <!--- End of options generated section -->
@@ -598,10 +600,10 @@ X Y coordinate space, based on the provided screenshot.
 <!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_evaluate_javascript**
-  - Title: Evaluate a JavaScript command
-  - Description: Evaluate a JavaScript command
+  - Title: Evaluate JavaScript in browser
+  - Description: Evaluate a given Javascript command in the browser
   - Parameters:
-    - `command` (string): The JavaScript command to evaluate
+    - `command` (string): The command to evaluate
   - Read-only: **false**
 
 </details>

@@ -67,3 +67,21 @@ export const visionTools: Tool<any>[] = [
   ...vision,
   ...wait(false),
 ];
+
+export const visionWithSnapshotTools: Tool<any>[] = [
+  ...common(true),
+  ...console,
+  ...dialogs(false),
+  ...evaluate(true),
+  ...files(false),
+  ...install,
+  ...keyboard(false),
+  ...navigate(false),
+  ...network,
+  ...pdf,
+  ...snapshot,
+  ...tabs(false),
+  ...testing,
+  ...vision,
+  ...wait(false),
+];
