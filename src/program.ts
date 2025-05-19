@@ -52,6 +52,7 @@ program
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--vision-with-snapshot', 'Run server that uses screenshots and Aria snapshots')
     .action(async options => {
       const config = await resolveCLIConfig(options);
       const connectionList: Connection[] = [];
