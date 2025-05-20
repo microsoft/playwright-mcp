@@ -33,13 +33,29 @@ export async function startStdioTransport(config: FullConfig, connectionList: Co
   connectionList.push(connection);
 }
 
-async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>, connectionList: Connection[]) {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5001');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Max-Age', 2592000);
-  res.setHeader('Access-Control-Allow-Headers', 'mcp-session-id, content-type');
+function checkCors(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse): boolean {
+  if (config.network?.corsAllowOrigins === undefined) {
+    return false;
+  }
 
-  if (req.method === 'OPTIONS') {
+  const origin = req.headers.origin;
+  if (!origin) {
+    return false;
+  }
+
+  if (config.network.corsAllowOrigins.some(re => re.test(origin))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Max-Age', 2592000);
+    res.setHeader('Access-Control-Allow-Headers', 'mcp-session-id, content-type');
+    return true;
+  }
+
+  return false;
+}
+
+async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>, connectionList: Connection[]) {
+  if (checkCors(config, req, res) && req.method === 'OPTIONS') {
     res.statusCode = 204;
     return res.end();
   }
@@ -93,12 +109,7 @@ async function handleStreamable(config: FullConfig, req: http.IncomingMessage, r
     return await transport.handleRequest(req, res);
   }
 
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5001');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Max-Age', 2592000);
-  res.setHeader('Access-Control-Allow-Headers', 'mcp-session-id, content-type');
-
-  if (req.method === 'OPTIONS') {
+  if (checkCors(config, req, res) && req.method === 'OPTIONS') {
     res.statusCode = 204;
     return res.end();
   }

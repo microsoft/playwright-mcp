@@ -32,6 +32,7 @@ export type CLIOptions = {
   caps?: string;
   cdpEndpoint?: string;
   config?: string;
+  corsAllowOrigins?: string[];
   device?: string;
   executablePath?: string;
   headless?: boolean;
@@ -67,6 +68,7 @@ const defaultConfig: FullConfig = {
   network: {
     allowedOrigins: undefined,
     blockedOrigins: undefined,
+    corsAllowOrigins: undefined,
   },
   outputDir: path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString())),
 };
@@ -185,6 +187,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     network: {
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,
+      corsAllowOrigins: cliOptions.corsAllowOrigins ? cliOptions.corsAllowOrigins.map(o => new RegExp(o, "i")) : undefined,
     },
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,

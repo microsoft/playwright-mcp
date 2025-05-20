@@ -114,6 +114,11 @@ export type Config = {
      * List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
      */
     blockedOrigins?: string[];
+
+    /**
+     * Origins to allow by CORS policy. Can be regex.
+     */
+    corsAllowOrigins?: RegExp[];
   };
 
   /**
