@@ -154,6 +154,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --storage-state <path>       path to the storage state file for isolated
                                sessions.
   --user-agent <ua string>     specify user agent string
+
   --user-data-dir <path>       path to the user data directory. If not
                                specified, a temporary directory will be created.
   --viewport-size <size>       specify browser viewport size in pixels, for

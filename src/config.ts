@@ -187,7 +187,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     network: {
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,
-      corsAllowOrigins: cliOptions.corsAllowOrigins ? cliOptions.corsAllowOrigins.map(o => new RegExp(o, "i")) : undefined,
+      corsAllowOrigins: cliOptions.corsAllowOrigins ? cliOptions.corsAllowOrigins.map(o => new RegExp(o, 'i')) : undefined,
     },
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,

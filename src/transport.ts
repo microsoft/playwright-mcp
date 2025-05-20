@@ -34,14 +34,12 @@ export async function startStdioTransport(config: FullConfig, connectionList: Co
 }
 
 function checkCors(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse): boolean {
-  if (config.network?.corsAllowOrigins === undefined) {
+  if (config.network?.corsAllowOrigins === undefined)
     return false;
-  }
 
   const origin = req.headers.origin;
-  if (!origin) {
+  if (origin === undefined)
     return false;
-  }
 
   if (config.network.corsAllowOrigins.some(re => re.test(origin))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
