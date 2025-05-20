@@ -95,8 +95,6 @@ async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: htt
 }
 
 async function handleStreamable(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, StreamableHTTPServerTransport>, connectionList: Connection[]) {
-  console.log('Streamable request', req.method, req.url);
-  console.log('Raw request headers', req.rawHeaders);
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (sessionId) {
     const transport = sessions.get(sessionId);
