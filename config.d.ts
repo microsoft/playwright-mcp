@@ -75,6 +75,11 @@ export type Config = {
      * The host to bind the server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
      */
     host?: string;
+
+    /**
+     * Origins to allow by CORS policy. Can be regex.
+     */
+    corsAllowOrigins?: RegExp[];
   },
 
   /**
@@ -114,11 +119,6 @@ export type Config = {
      * List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
      */
     blockedOrigins?: string[];
-
-    /**
-     * Origins to allow by CORS policy. Can be regex.
-     */
-    corsAllowOrigins?: RegExp[];
   };
 
   /**
