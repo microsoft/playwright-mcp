@@ -68,7 +68,6 @@ const defaultConfig: FullConfig = {
   network: {
     allowedOrigins: undefined,
     blockedOrigins: undefined,
-    corsAllowOrigins: undefined,
   },
   outputDir: path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString())),
 };
@@ -181,13 +180,13 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     server: {
       port: cliOptions.port,
       host: cliOptions.host,
+      corsAllowOrigins: cliOptions.corsAllowOrigins ? cliOptions.corsAllowOrigins.map(o => new RegExp(o, 'i')) : undefined,
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
     network: {
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,
-      corsAllowOrigins: cliOptions.corsAllowOrigins ? cliOptions.corsAllowOrigins.map(o => new RegExp(o, 'i')) : undefined,
     },
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
