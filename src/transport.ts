@@ -76,7 +76,6 @@ async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: htt
     return await transport.handlePostMessage(req, res);
   } else if (req.method === 'GET') {
     const transport = new SSEServerTransport('/sse', res);
-    console.log('SSE session initialized', transport.sessionId);
     sessions.set(transport.sessionId, transport);
     const connection = await createConnection(config);
     await connection.connect(transport);
@@ -115,11 +114,9 @@ async function handleStreamable(config: FullConfig, req: http.IncomingMessage, r
   }
 
   if (req.method === 'POST') {
-    console.log('Handling POST request', req.method, req.url);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: sessionId => {
-        console.log('Streamable session initialized', sessionId);
         sessions.set(sessionId, transport);
       }
     });
@@ -129,8 +126,6 @@ async function handleStreamable(config: FullConfig, req: http.IncomingMessage, r
     };
     const connection = await createConnection(config);
     connectionList.push(connection);
-    console.log('Connection created', connection);
-    console.log('Streamable session connecting', transport.sessionId);
     await Promise.all([
       connection.connect(transport),
       transport.handleRequest(req, res),
