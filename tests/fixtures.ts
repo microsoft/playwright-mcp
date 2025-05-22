@@ -63,7 +63,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(await startClient({ args: ['--vision'] }));
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode, localOutputPath }, use, testInfo) => {
     const userDataDir = testInfo.outputPath('user-data-dir');
     const configDir = path.dirname(test.info().config.configFile!);
     let client: Client | undefined;
@@ -79,7 +79,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       if (options?.args)
         args.push(...options.args);
       if (options?.config) {
-        const configFile = testInfo.outputPath('config.json');
+        const configFile = localOutputPath('config.json');
         await fs.promises.writeFile(configFile, JSON.stringify(options.config, null, 2));
         args.push(`--config=${path.relative(configDir, configFile)}`);
       }
