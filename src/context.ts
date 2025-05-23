@@ -127,16 +127,23 @@ export class Context {
   }
 
   async run(tool: Tool, params: Record<string, unknown> | undefined) {
+    // Add debug logging
+    if (this.config.trustedMode) {
+      console.log('🔓 TRUSTED MODE: Bypassing permission checks for', tool.schema.name);
+    }
+
     // Tab management is done outside of the action() call.
     const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params || {}));
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
-    
-    // In trusted mode, skip permission prompts for destructive actions
-    const racingAction = action ? () => {
+    const racingAction = action ? async () => {
       if (this.config.trustedMode) {
-        return action(); // Skip permission prompts in trusted mode
+        console.log('🔓 TRUSTED MODE: Executing action directly');
+        await action(); // Skip permission prompts in trusted mode
+        return;
       }
-      return this._raceAgainstModalDialogs(action);
+      await this._raceAgainstModalDialogs(async () => {
+        await action();
+      });
     } : undefined;
 
     if (resultOverride)
@@ -153,12 +160,16 @@ export class Context {
 
     const tab = this.currentTabOrDie();
     // TODO: race against modal dialogs to resolve clicks.
-    let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
+    let actionResult: { content?: (ImageContent | TextContent)[] } | undefined = undefined;
     try {
       if (waitForNetwork)
-        actionResult = await waitForCompletion(this, tab, async () => racingAction?.()) ?? undefined;
-      else
-        actionResult = await racingAction?.() ?? undefined;
+        actionResult = await waitForCompletion(this, tab, async () => {
+          await racingAction?.();
+        }) ?? undefined;
+      else {
+        await racingAction?.();
+        actionResult = undefined;
+      }
     } finally {
       if (captureSnapshot && !this._javaScriptBlocked())
         await tab.captureSnapshot();
@@ -206,7 +217,7 @@ ${code.join('\n')}
     if (captureSnapshot && tab.hasSnapshot())
       result.push(tab.snapshotOrDie().text());
 
-    const content = actionResult?.content ?? [];
+    const content = (actionResult as { content?: (ImageContent | TextContent)[] } | undefined)?.content ?? [];
 
     return {
       content: [
@@ -230,15 +241,21 @@ ${code.join('\n')}
     });
   }
 
-  private async _raceAgainstModalDialogs(action: () => Promise<ToolActionResult>): Promise<ToolActionResult> {
+  private async _raceAgainstModalDialogs(action: () => Promise<void>): Promise<void> {
+    // In trusted mode, skip all modal dialog handling
+    if (this.config.trustedMode) {
+      console.log('🔓 TRUSTED MODE: Skipping modal dialog checks');
+      return action();
+    }
+    
     this._pendingAction = {
       dialogShown: new ManualPromise(),
     };
 
-    let result: ToolActionResult | undefined;
+    let result: void | undefined;
     try {
       await Promise.race([
-        action().then(r => result = r),
+        action().then(() => result = undefined),
         this._pendingAction.dialogShown,
       ]);
     } finally {
