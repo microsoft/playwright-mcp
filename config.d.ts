@@ -120,4 +120,10 @@ export type Config = {
    * Do not send image responses to the client.
    */
   noImageResponses?: boolean;
+
+  /**
+   * Enable trusted mode to bypass permission prompts for actions.
+   * WARNING: Only use this for testing trusted internal software.
+   */
+  trustedMode?: boolean;
 };

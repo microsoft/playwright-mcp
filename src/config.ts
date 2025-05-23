@@ -50,6 +50,7 @@ export type CLIOptions = {
   userDataDir?: string;
   viewportSize?: string;
   vision?: boolean;
+  trustedMode?: boolean;
 };
 
 const defaultConfig: FullConfig = {
@@ -68,6 +69,7 @@ const defaultConfig: FullConfig = {
     allowedOrigins: undefined,
     blockedOrigins: undefined,
   },
+  trustedMode: false,
   outputDir: path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString())),
 };
 
@@ -193,6 +195,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
+    trustedMode: cliOptions.trustedMode,
   };
 
   if (!cliOptions.imageResponses) {

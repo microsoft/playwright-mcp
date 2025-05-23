@@ -130,7 +130,14 @@ export class Context {
     // Tab management is done outside of the action() call.
     const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params || {}));
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
-    const racingAction = action ? () => this._raceAgainstModalDialogs(action) : undefined;
+    
+    // In trusted mode, skip permission prompts for destructive actions
+    const racingAction = action ? () => {
+      if (this.config.trustedMode) {
+        return action(); // Skip permission prompts in trusted mode
+      }
+      return this._raceAgainstModalDialogs(action);
+    } : undefined;
 
     if (resultOverride)
       return resultOverride;

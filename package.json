@@ -1,13 +1,13 @@
 {
-  "name": "@playwright/mcp",
-  "version": "0.0.26",
-  "description": "Playwright Tools for MCP",
+  "name": "@jmulcahy-wyn/playwright-mcp-trusted",
+  "version": "1.0.0",
+  "description": "Playwright Tools for MCP (with trusted mode support)",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+    "url": "git+https://github.com/yourusername/your-repo-name.git"
   },
-  "homepage": "https://playwright.dev",
+  "homepage": "https://github.com/yourusername/your-repo-name",
   "engines": {
     "node": ">=18"
   },
@@ -55,6 +55,6 @@
     "typescript": "^5.8.2"
   },
   "bin": {
-    "mcp-server-playwright": "cli.js"
+    "mcp-server-playwright-trusted": "cli.js"
   }
 }

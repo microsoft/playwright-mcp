@@ -48,12 +48,19 @@ program
     .option('--proxy-server <proxy>', 'specify proxy server, for example "http://myproxy:3128" or "socks5://myproxy:8080"')
     .option('--save-trace', 'Whether to save the Playwright Trace of the session into the output directory.')
     .option('--storage-state <path>', 'path to the storage state file for isolated sessions.')
+    .option('--trusted-mode', 'Enable trusted mode to bypass permission prompts (WARNING: Only use for testing trusted software)')
     .option('--user-agent <ua string>', 'specify user agent string')
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .action(async options => {
       const config = await resolveCLIConfig(options);
+      
+      if (config.trustedMode) {
+        console.warn('⚠️  WARNING: Trusted mode is enabled. All permission prompts will be bypassed.');
+        console.warn('   Only use this mode when testing trusted internal software.');
+      }
+      
       const connectionList: Connection[] = [];
       setupExitWatchdog(connectionList);
 

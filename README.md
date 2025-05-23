@@ -1,3 +1,13 @@
+# Playwright MCP (Trusted Mode Fork)
+
+A fork of Microsoft's Playwright MCP server with added trusted mode support for bypassing permission prompts during internal software testing.
+
+## Differences from Original
+- Added `--trusted-mode` flag to bypass permission prompts
+- Ideal for automated testing of trusted internal software
+
+Based on [Microsoft's Playwright MCP](https://github.com/microsoft/playwright-mcp).
+
 ## Playwright MCP
 
 A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
