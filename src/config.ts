@@ -128,7 +128,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     channel,
     executablePath: cliOptions.executablePath,
     headless: cliOptions.headless,
-    chromiumSandbox: !!cliOptions.sandbox,
+    chromiumSandbox: cliOptions.sandbox ? undefined : false, // --no-sandbox was passed, disable the sandbox
   };
 
   if (cliOptions.proxyServer) {
