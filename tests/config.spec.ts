@@ -16,6 +16,7 @@
 
 import fs from 'node:fs';
 
+import { Config } from '../config.js';
 import { test, expect } from './fixtures.js';
 
 test('config user data dir', async ({ startClient, localOutputPath, server }) => {
@@ -23,27 +24,37 @@ test('config user data dir', async ({ startClient, localOutputPath, server }) =>
     <title>Title</title>
     <body>Hello, world!</body>
   `, 'text/html');
-  const userDataDir = localOutputPath('user-data-dir');
-  const client = await startClient({ config: { browser: { userDataDir } } });
+
+  const config: Config = {
+    browser: {
+      userDataDir: localOutputPath('user-data-dir'),
+    },
+  };
+  const configPath = localOutputPath('config.json');
+  await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
+
+  const client = await startClient({ args: ['--config', configPath] });
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   })).toContainTextContent(`Hello, world!`);
 
-  const files = await fs.promises.readdir(userDataDir);
+  const files = await fs.promises.readdir(config.browser!.userDataDir!);
   expect(files.length).toBeGreaterThan(0);
 });
 
 test.describe(() => {
   test.use({ mcpBrowser: '' });
-  test('browserName', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/458' } }, async ({ startClient }) => {
-    const client = await startClient({
-      config: {
-        browser: {
-          browserName: 'firefox',
-        },
-      }
-    });
+  test('browserName', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/458' } }, async ({ startClient, localOutputPath }) => {
+    const config: Config = {
+      browser: {
+        browserName: 'firefox',
+      },
+    };
+    const configPath = localOutputPath('config.json');
+    await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
+
+    const client = await startClient({ args: ['--config', configPath] });
     expect(await client.callTool({
       name: 'browser_navigate',
       arguments: { url: 'data:text/html,<script>document.title = navigator.userAgent</script>' },
