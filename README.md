@@ -142,6 +142,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                are normally sandboxed.
   --output-dir <path>          path to the directory for output files.
   --port <port>                port to listen on for SSE transport.
+  --secret <secret>            secret to secure the server.
   --proxy-bypass <bypass>      comma-separated domains to bypass proxy, for
                                example ".com,chromium.org,.domain.com"
   --proxy-server <proxy>       specify proxy server, for example
@@ -255,6 +256,7 @@ npx @playwright/mcp@latest --config path/to/config.json
   server?: {
     port?: number;  // Port to listen on
     host?: string;  // Host to bind to (default: localhost)
+    secret?: string; // Secret to secure the server
   },
 
   // List of enabled capabilities
@@ -307,7 +309,7 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 {
   "mcpServers": {
     "playwright": {
-      "url": "http://localhost:8931/sse"
+      "url": "http://localhost:8931/sse?secret=<replace with secret shown in the logs>"
     }
   }
 }
