@@ -52,7 +52,7 @@ export class PageSnapshot {
     ].join('\n');
   }
 
-  refLocator(ref: string): playwright.Locator {
-    return this._page.locator(`aria-ref=${ref}`);
+  refLocator(params: { element: string, ref: string }): playwright.Locator {
+    return this._page.locator(`aria-ref=${params.ref}`);
   }
 }

@@ -57,7 +57,7 @@ const screenshot = defineTool({
       `// Screenshot ${isElementScreenshot ? params.element : 'viewport'} and save it as ${fileName}`,
     ];
 
-    const locator = params.ref ? snapshot.refLocator(params.ref) : null;
+    const locator = params.ref ? snapshot.refLocator({ element: params.element || '', ref: params.ref }) : null;
 
     if (locator)
       code.push(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);

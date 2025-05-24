@@ -104,8 +104,8 @@ test('isolated context', async ({ startClient, server }) => {
   expect(response2).toContainTextContent(`Storage: NO`);
 });
 
-test('isolated context with storage state', async ({ startClient, server, localOutputPath }) => {
-  const storageStatePath = localOutputPath('storage-state.json');
+test('isolated context with storage state', async ({ startClient, server }, testInfo) => {
+  const storageStatePath = testInfo.outputPath('storage-state.json');
   await fs.promises.writeFile(storageStatePath, JSON.stringify({
     origins: [
       {

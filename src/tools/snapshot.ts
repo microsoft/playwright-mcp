@@ -58,7 +58,7 @@ const click = defineTool({
 
   handle: async (context, params) => {
     const tab = context.currentTabOrDie();
-    const locator = tab.snapshotOrDie().refLocator(params.ref);
+    const locator = tab.snapshotOrDie().refLocator(params);
 
     const code = [
       `// Click ${params.element}`,
@@ -91,8 +91,8 @@ const drag = defineTool({
 
   handle: async (context, params) => {
     const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const startLocator = snapshot.refLocator(params.startRef);
-    const endLocator = snapshot.refLocator(params.endRef);
+    const startLocator = snapshot.refLocator({ ref: params.startRef, element: params.startElement });
+    const endLocator = snapshot.refLocator({ ref: params.endRef, element: params.endElement });
 
     const code = [
       `// Drag ${params.startElement} to ${params.endElement}`,
@@ -120,7 +120,7 @@ const hover = defineTool({
 
   handle: async (context, params) => {
     const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const locator = snapshot.refLocator(params.ref);
+    const locator = snapshot.refLocator(params);
 
     const code = [
       `// Hover over ${params.element}`,
@@ -154,7 +154,7 @@ const type = defineTool({
 
   handle: async (context, params) => {
     const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const locator = snapshot.refLocator(params.ref);
+    const locator = snapshot.refLocator(params);
 
     const code: string[] = [];
     const steps: (() => Promise<void>)[] = [];
@@ -200,7 +200,7 @@ const selectOption = defineTool({
 
   handle: async (context, params) => {
     const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const locator = snapshot.refLocator(params.ref);
+    const locator = snapshot.refLocator(params);
 
     const code = [
       `// Select options [${params.values.join(', ')}] in ${params.element}`,

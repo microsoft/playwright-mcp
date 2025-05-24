@@ -18,10 +18,9 @@ import fs from 'fs';
 
 import { test, expect } from './fixtures.js';
 
-test('browser_take_screenshot (viewport)', async ({ startClient, server, localOutputPath }) => {
-  const outputDir = localOutputPath('output');
+test('browser_take_screenshot (viewport)', async ({ startClient, server }, testInfo) => {
   const client = await startClient({
-    args: ['--output-dir', outputDir],
+    config: { outputDir: testInfo.outputPath('output') },
   });
   expect(await client.callTool({
     name: 'browser_navigate',
@@ -45,10 +44,9 @@ test('browser_take_screenshot (viewport)', async ({ startClient, server, localOu
   });
 });
 
-test('browser_take_screenshot (element)', async ({ startClient, server, localOutputPath }) => {
-  const outputDir = localOutputPath('output');
+test('browser_take_screenshot (element)', async ({ startClient, server }, testInfo) => {
   const client = await startClient({
-    args: ['--output-dir', outputDir],
+    config: { outputDir: testInfo.outputPath('output') },
   });
   expect(await client.callTool({
     name: 'browser_navigate',
@@ -76,10 +74,10 @@ test('browser_take_screenshot (element)', async ({ startClient, server, localOut
   });
 });
 
-test('--output-dir should work', async ({ startClient, localOutputPath, server }) => {
-  const outputDir = localOutputPath('output');
+test('--output-dir should work', async ({ startClient, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
   const client = await startClient({
-    args: ['--output-dir', outputDir],
+    config: { outputDir },
   });
   expect(await client.callTool({
     name: 'browser_navigate',
@@ -97,9 +95,9 @@ test('--output-dir should work', async ({ startClient, localOutputPath, server }
 });
 
 for (const raw of [undefined, true]) {
-  test(`browser_take_screenshot (raw: ${raw})`, async ({ startClient, localOutputPath, server }) => {
+  test(`browser_take_screenshot (raw: ${raw})`, async ({ startClient, server }, testInfo) => {
+    const outputDir = testInfo.outputPath('output');
     const ext = raw ? 'png' : 'jpeg';
-    const outputDir = localOutputPath('output');
     const client = await startClient({
       config: { outputDir },
     });
@@ -138,8 +136,8 @@ for (const raw of [undefined, true]) {
 
 }
 
-test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, localOutputPath, server }) => {
-  const outputDir = localOutputPath('output');
+test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
   const client = await startClient({
     config: { outputDir },
   });
@@ -174,10 +172,11 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, 
   expect(files[0]).toMatch(/^output\.jpeg$/);
 });
 
-test('browser_take_screenshot (noImageResponses)', async ({ startClient, server, localOutputPath }) => {
+test('browser_take_screenshot (noImageResponses)', async ({ startClient, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
   const client = await startClient({
     config: {
-      outputDir: localOutputPath('output'),
+      outputDir,
       noImageResponses: true,
     },
   });
@@ -203,8 +202,9 @@ test('browser_take_screenshot (noImageResponses)', async ({ startClient, server,
   });
 });
 
-test('browser_take_screenshot (cursor)', async ({ startClient, server, localOutputPath }) => {
-  const outputDir = localOutputPath('output');
+test('browser_take_screenshot (cursor)', async ({ startClient, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+
   const client = await startClient({
     clientName: 'cursor:vscode',
     config: { outputDir },

@@ -46,7 +46,6 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
-  localOutputPath: (filePath: string) => string;
 };
 
 type WorkerFixtures = {
@@ -128,13 +127,6 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   mcpBrowser: ['chrome', { option: true }],
 
   mcpMode: [undefined, { option: true }],
-
-  localOutputPath: async ({ mcpMode }, use, testInfo) => {
-    await use(filePath => {
-      test.skip(mcpMode === 'docker', 'Mounting files is not supported in docker mode');
-      return testInfo.outputPath(filePath);
-    });
-  },
 
   _workerServers: [async ({}, use, workerInfo) => {
     const port = 8907 + workerInfo.workerIndex * 4;
