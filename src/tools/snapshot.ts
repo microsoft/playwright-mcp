@@ -74,6 +74,41 @@ const click = defineTool({
   },
 });
 
+const clickMouseForce = defineTool({
+  capability: 'core',
+  schema: {
+    name: 'browser_click_mouse_force',
+    title: 'Force click with mouse',
+    description: 'Force click on element using direct mouse actions at element center',
+    inputSchema: elementSchema,
+    type: 'destructive',
+  },
+
+  handle: async (context, params) => {
+    const tab = context.currentTabOrDie();
+    const locator = tab.snapshotOrDie().refLocator(params);
+
+    const code = [
+      `// Get bounding box and force click ${params.element} with mouse`,
+      `const box = await page.${await generateLocator(locator)}.boundingBox();`,
+      `await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);`
+    ];
+
+    const action = async () => {
+      const box = await locator.boundingBox();
+      if (!box) throw new Error(`Element ${params.element} not visible or has no bounding box`);
+      await tab.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    };
+
+    return {
+      code,
+      action,
+      captureSnapshot: true,
+      waitForNetwork: true,
+    };
+  },
+});
+
 const drag = defineTool({
   capability: 'core',
   schema: {
@@ -219,6 +254,7 @@ const selectOption = defineTool({
 export default [
   snapshot,
   click,
+  clickMouseForce,
   drag,
   hover,
   type,
