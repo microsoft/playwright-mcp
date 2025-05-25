@@ -33,7 +33,31 @@ export async function startStdioTransport(config: FullConfig, connectionList: Co
   connectionList.push(connection);
 }
 
+function checkCors(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse): boolean {
+  if (config.server?.corsAllowOrigins === undefined)
+    return false;
+
+  const origin = req.headers.origin;
+  if (origin === undefined)
+    return false;
+
+  if (config.server.corsAllowOrigins.some(re => re.test(origin))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Max-Age', 2592000);
+    res.setHeader('Access-Control-Allow-Headers', 'mcp-session-id, content-type');
+    return true;
+  }
+
+  return false;
+}
+
 async function handleSSE(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>, connectionList: Connection[]) {
+  if (checkCors(config, req, res) && req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    return res.end();
+  }
+
   if (req.method === 'POST') {
     const sessionId = url.searchParams.get('sessionId');
     if (!sessionId) {
@@ -78,6 +102,11 @@ async function handleStreamable(config: FullConfig, req: http.IncomingMessage, r
       return;
     }
     return await transport.handleRequest(req, res);
+  }
+
+  if (checkCors(config, req, res) && req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    return res.end();
   }
 
   if (req.method === 'POST') {
