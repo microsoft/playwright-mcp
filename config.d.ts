@@ -63,6 +63,16 @@ export type Config = {
      * Remote endpoint to connect to an existing Playwright server.
      */
     remoteEndpoint?: string;
+
+    /**
+     * Maximum time to wait for navigation/load events, in milliseconds (default: 60000)
+     */
+    navigationTimeout?: number;
+
+    /**
+     * Default timeout for all locator-and‑waitFor operations, in milliseconds (default: 5000)
+     */
+    timeout?: number;
   },
 
   server?: {
