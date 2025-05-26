@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { test, expect } from './fixtures.js';
+import fs from 'node:fs/promises';
+import child_process from 'node:child_process';
 
-import { createConnection } from './lib/index.js';
-export { createConnection };
+test('library can be used from CommonJS', async ({}, testInfo) => {
+  const file = testInfo.outputPath('main.cjs');
+  await fs.writeFile(file, `
+    const playwrightMCP = require('@playwright/mcp');
+    playwrightMCP.createConnection().then(() => console.log('OK'));
+ `);
+  expect(child_process.execSync(`node ${file}`, { encoding: 'utf-8' })).toContain('OK');
+});
