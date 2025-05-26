@@ -17,7 +17,7 @@ import { test, expect } from './fixtures.js';
 import fs from 'node:fs/promises';
 import child_process from 'node:child_process';
 
-test('library can be used from CommonJS', async ({}, testInfo) => {
+test('library can be used from CommonJS', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/456' } }, async ({}, testInfo) => {
   const file = testInfo.outputPath('main.cjs');
   await fs.writeFile(file, `
     const playwrightMCP = require('@playwright/mcp');
