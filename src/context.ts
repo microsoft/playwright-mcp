@@ -48,10 +48,19 @@ export class Context {
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
   private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
+  clientVersion: { name: string; version: string; } | undefined;
 
   constructor(tools: Tool[], config: FullConfig) {
     this.tools = tools;
     this.config = config;
+  }
+
+  clientSupportsImages(): boolean {
+    if (this.config.imageResponses === 'allow')
+      return true;
+    if (this.config.imageResponses === 'omit')
+      return false;
+    return !this.clientVersion?.name.includes('cursor');
   }
 
   modalStates(): ModalState[] {

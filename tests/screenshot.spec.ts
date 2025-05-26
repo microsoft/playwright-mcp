@@ -172,12 +172,12 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, 
   expect(files[0]).toMatch(/^output\.jpeg$/);
 });
 
-test('browser_take_screenshot (noImageResponses)', async ({ startClient, server }, testInfo) => {
+test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, server }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
   const client = await startClient({
     config: {
       outputDir,
-      noImageResponses: true,
+      imageResponses: 'omit',
     },
   });
 

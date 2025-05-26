@@ -38,7 +38,7 @@ export type CLIOptions = {
   host?: string;
   ignoreHttpsErrors?: boolean;
   isolated?: boolean;
-  imageResponses: boolean;
+  imageResponses?: 'allow' | 'omit' | 'auto';
   sandbox: boolean;
   outputDir?: string;
   port?: number;
@@ -188,12 +188,8 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
+    imageResponses: cliOptions.imageResponses,
   };
-
-  if (!cliOptions.imageResponses) {
-    // --no-image-responses was passed, disable image responses
-    result.noImageResponses = true;
-  }
 
   return result;
 }

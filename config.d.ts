@@ -117,7 +117,7 @@ export type Config = {
   };
 
   /**
-   * Do not send image responses to the client.
+   * Whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.
    */
-  noImageResponses?: boolean;
+  imageResponses?: 'allow' | 'omit' | 'auto';
 };
