@@ -40,9 +40,6 @@ export class PageSnapshot {
   }
 
   private async _build() {
-    // FIXME: Rountrip evaluate to ensure _snapshotForAI works.
-    // This probably broke once we moved off locator snapshots
-    await this._page.evaluate(() => 1);
     const snapshot = await callOnPageNoTrace(this._page, page => (page as PageEx)._snapshotForAI());
     this._text = [
       `- Page Snapshot`,
@@ -53,6 +50,6 @@ export class PageSnapshot {
   }
 
   refLocator(params: { element: string, ref: string }): playwright.Locator {
-    return this._page.locator(`aria-ref=${params.ref}`);
+    return this._page.locator(`aria-ref=${params.ref}`).describe(params.element);
   }
 }
