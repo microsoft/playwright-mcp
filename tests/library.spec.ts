@@ -20,8 +20,9 @@ import child_process from 'node:child_process';
 test('library can be used from CommonJS', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/456' } }, async ({}, testInfo) => {
   const file = testInfo.outputPath('main.cjs');
   await fs.writeFile(file, `
-    const playwrightMCP = require('@playwright/mcp');
-    playwrightMCP.createConnection().then(() => console.log('OK'));
+    import('@playwright/mcp')
+      .then(playwrightMCP => playwrightMCP.createConnection())
+      .then(() => console.log('OK'));
  `);
   expect(child_process.execSync(`node ${file}`, { encoding: 'utf-8' })).toContain('OK');
 });
