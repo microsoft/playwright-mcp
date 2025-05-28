@@ -18,6 +18,7 @@ import http from 'node:http';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
 
+import debug from 'debug';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -27,6 +28,8 @@ import type { Server } from './server.js';
 export async function startStdioTransport(server: Server) {
   await server.createConnection(new StdioServerTransport());
 }
+
+const testDebug = debug('pw:mcp:test');
 
 async function handleSSE(server: Server, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>) {
   if (req.method === 'POST') {
@@ -46,8 +49,10 @@ async function handleSSE(server: Server, req: http.IncomingMessage, res: http.Se
   } else if (req.method === 'GET') {
     const transport = new SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
+    testDebug(`create SSE session: ${transport.sessionId}`);
     const connection = await server.createConnection(transport);
     res.on('close', () => {
+      testDebug(`delete SSE session: ${transport.sessionId}`);
       sessions.delete(transport.sessionId);
       // eslint-disable-next-line no-console
       void connection.close().catch(e => console.error(e));

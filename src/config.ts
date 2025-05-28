@@ -74,8 +74,8 @@ const defaultConfig: FullConfig = {
 type BrowserUserConfig = NonNullable<Config['browser']>;
 
 export type FullConfig = Config & {
-  browser: BrowserUserConfig & {
-    browserName: NonNullable<BrowserUserConfig['browserName']>;
+  browser: Omit<BrowserUserConfig, 'browserName'> & {
+    browserName: 'chromium' | 'firefox' | 'webkit';
     launchOptions: NonNullable<BrowserUserConfig['launchOptions']>;
     contextOptions: NonNullable<BrowserUserConfig['contextOptions']>;
   },

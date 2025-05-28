@@ -24,11 +24,13 @@ import { packageJSON } from './package.js';
 
 import { FullConfig } from './config.js';
 
-export function createConnection(config: FullConfig): Connection {
+import type { BrowserContextFactory } from './browserContextFactory.js';
+
+export function createConnection(config: FullConfig, browserContextFactory: BrowserContextFactory): Connection {
   const allTools = config.vision ? visionTools : snapshotTools;
   const tools = allTools.filter(tool => !config.capabilities || tool.capability === 'core' || config.capabilities.includes(tool.capability));
 
-  const context = new Context(tools, config);
+  const context = new Context(tools, config, browserContextFactory);
   const server = new McpServer({ name: 'Playwright', version: packageJSON.version }, {
     capabilities: {
       tools: {},

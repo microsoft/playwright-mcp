@@ -37,6 +37,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.0",
     "commander": "^13.1.0",
+    "debug": "^4.4.1",
     "playwright": "1.53.0-alpha-2025-05-27",
     "zod-to-json-schema": "^3.24.4"
   },
@@ -45,6 +46,7 @@
     "@eslint/js": "^9.19.0",
     "@playwright/test": "1.53.0-alpha-2025-05-27",
     "@stylistic/eslint-plugin": "^3.0.1",
+    "@types/debug": "^4.1.12",
     "@types/node": "^22.13.10",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",

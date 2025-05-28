@@ -15,21 +15,27 @@
  */
 
 import { createConnection } from './connection.js';
+import { contextFactory } from './browserContextFactory.js';
 
 import type { FullConfig } from './config.js';
 import type { Connection } from './connection.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { BrowserContextFactory } from './browserContextFactory.js';
 
 export class Server {
   readonly config: FullConfig;
   private _connectionList: Connection[] = [];
+  private _browserConfig: FullConfig['browser'];
+  private _contextFactory: BrowserContextFactory;
 
   constructor(config: FullConfig) {
     this.config = config;
+    this._browserConfig = config.browser;
+    this._contextFactory = contextFactory(this._browserConfig);
   }
 
   async createConnection(transport: Transport): Promise<Connection> {
-    const connection = createConnection(this.config);
+    const connection = createConnection(this.config, this._contextFactory);
     this._connectionList.push(connection);
     await connection.server.connect(transport);
     return connection;
