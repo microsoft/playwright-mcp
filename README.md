@@ -199,7 +199,7 @@ state [here](https://playwright.dev/docs/auth).
       "args": [
         "@playwright/mcp@latest",
         "--isolated",
-        "--storage-state={path/to/storage.json}
+        "--storage-state={path/to/storage.json}"
       ]
     }
   }
