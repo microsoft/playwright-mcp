@@ -121,37 +121,6 @@ const click = defineTool({
   },
 });
 
-const clickForce = defineTool({
-  capability: 'core',
-  schema: {
-    name: 'browser_screen_click_force',
-    title: 'Force click',
-    description: 'Force click at coordinates, bypassing any interactive checks',
-    inputSchema: elementSchema.extend({
-      x: z.number().describe('X coordinate'),
-      y: z.number().describe('Y coordinate'),
-    }),
-    type: 'destructive',
-  },
-
-  handle: async (context, params) => {
-    const tab = context.currentTabOrDie();
-    const code = [
-      `// Force click at coordinates (${params.x}, ${params.y})`,
-      `await page.locator('body').click({ position: { x: ${params.x}, y: ${params.y} }, force: true });`,
-    ];
-    const action = async () => {
-      await tab.page.locator('body').click({ position: { x: params.x, y: params.y }, force: true });
-    };
-    return {
-      code,
-      action,
-      captureSnapshot: false,
-      waitForNetwork: true,
-    };
-  },
-});
-
 const drag = defineTool({
   capability: 'core',
   schema: {
@@ -239,7 +208,6 @@ export default [
   screenshot,
   moveMouse,
   click,
-  clickForce,
   drag,
   type,
 ];

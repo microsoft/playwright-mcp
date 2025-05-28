@@ -698,17 +698,6 @@ X Y coordinate space, based on the provided screenshot.
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_screen_click_force**
-  - Title: Force click
-  - Description: Force click at coordinates, bypassing any interactive checks
-  - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
-    - `x` (number): X coordinate
-    - `y` (number): Y coordinate
-  - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
 - **browser_screen_drag**
   - Title: Drag mouse
   - Description: Drag left mouse button
