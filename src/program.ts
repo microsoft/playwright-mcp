@@ -15,14 +15,13 @@
  */
 
 import { program } from 'commander';
-
-import { startHttpTransport, startStdioTransport } from './transport.js';
-import { resolveCLIConfig } from './config.js';
 // @ts-ignore
 import { startTraceViewerServer } from 'playwright-core/lib/server';
 
-import type { Connection } from './connection.js';
-import { packageJSON } from './context.js';
+import { startHttpTransport, startStdioTransport } from './transport.js';
+import { resolveCLIConfig } from './config.js';
+import { Server } from './server.js';
+import { packageJSON } from './package.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -54,13 +53,13 @@ program
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .action(async options => {
       const config = await resolveCLIConfig(options);
-      const connectionList: Connection[] = [];
-      setupExitWatchdog(connectionList);
+      const server = new Server(config);
+      server.setupExitWatchdog();
 
       if (options.port)
-        startHttpTransport(config, +options.port, options.host, connectionList);
+        startHttpTransport(server, +options.port, options.host);
       else
-        await startStdioTransport(config, connectionList);
+        await startStdioTransport(server);
 
       if (config.saveTrace) {
         const server = await startTraceViewerServer();
@@ -71,21 +70,8 @@ program
       }
     });
 
-function setupExitWatchdog(connectionList: Connection[]) {
-  const handleExit = async () => {
-    setTimeout(() => process.exit(0), 15000);
-    for (const connection of connectionList)
-      await connection.close();
-    process.exit(0);
-  };
-
-  process.stdin.on('close', handleExit);
-  process.on('SIGINT', handleExit);
-  process.on('SIGTERM', handleExit);
-}
-
 function semicolonSeparatedList(value: string): string[] {
   return value.split(';').map(v => v.trim());
 }
 
-program.parse(process.argv);
+void program.parseAsync(process.argv);
