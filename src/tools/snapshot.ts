@@ -96,7 +96,8 @@ const clickMouseForce = defineTool({
 
     const action = async () => {
       const box = await locator.boundingBox();
-      if (!box) throw new Error(`Element ${params.element} not visible or has no bounding box`);
+      if (!box)
+        throw new Error(`Element ${params.element} not visible or has no bounding box`);
       await tab.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     };
 

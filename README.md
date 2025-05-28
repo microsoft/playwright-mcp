@@ -409,9 +409,9 @@ X Y coordinate space, based on the provided screenshot.
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_click_force**
-  - Title: Force click
-  - Description: Force click on element, bypassing any interactive checks
+- **browser_click_mouse_force**
+  - Title: Force click with mouse
+  - Description: Force click on element using direct mouse actions at element center
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
