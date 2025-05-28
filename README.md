@@ -141,7 +141,6 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --ignore-https-errors            ignore https errors
   --isolated                       keep the browser profile in memory, do not
                                    save it to disk.
-  --no-image-responses             do not send image responses to the client.
   --image-responses <mode>         whether to send image responses to the
                                    client. Can be "allow", "omit", or "auto".
                                    Defaults to "auto", which sends images if the
