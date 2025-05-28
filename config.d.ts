@@ -77,9 +77,9 @@ export type Config = {
     host?: string;
 
     /**
-     * Origins to allow by CORS policy. Can be regex.
+     * Origins to allow by CORS policy.
      */
-    corsAllowOrigins?: RegExp[];
+    corsAllowedOrigins?: string[];
   },
 
   /**

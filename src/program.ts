@@ -34,7 +34,7 @@ program
     .option('--caps <caps>', 'comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.')
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .option('--config <path>', 'path to the configuration file.')
-    .option('--cors-allow-origins <origin>', 'semicolon-separated list of allowed origins by CORS policy. Can be regex.', semicolonSeparatedList)
+    .option('--cors-allowed-origins <origin>', 'semicolon-separated list of allowed origins by CORS policy.', semicolonSeparatedList)
     .option('--device <device>', 'device to emulate, for example: "iPhone 15"')
     .option('--executable-path <path>', 'path to the browser executable.')
     .option('--headless', 'run browser in headless mode, headed by default')

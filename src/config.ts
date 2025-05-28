@@ -32,7 +32,7 @@ export type CLIOptions = {
   caps?: string;
   cdpEndpoint?: string;
   config?: string;
-  corsAllowOrigins?: string[];
+  corsAllowedOrigins?: string[];
   device?: string;
   executablePath?: string;
   headless?: boolean;
@@ -180,7 +180,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     server: {
       port: cliOptions.port,
       host: cliOptions.host,
-      corsAllowOrigins: cliOptions.corsAllowOrigins ? cliOptions.corsAllowOrigins.map(o => new RegExp(o, 'i')) : undefined,
+      corsAllowedOrigins: cliOptions.corsAllowedOrigins ? cliOptions.corsAllowedOrigins : undefined,
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
