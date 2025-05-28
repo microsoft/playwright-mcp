@@ -16,16 +16,21 @@
 
 import { test, expect } from './fixtures.js';
 
-test('cdp server', async ({ cdpEndpoint, startClient, server }) => {
-  const client = await startClient({ args: [`--cdp-endpoint=${await cdpEndpoint()}`] });
+test('cdp server', async ({ cdpServer, startClient, server }) => {
+  await cdpServer.start();
+  const client = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
 });
 
-test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
-  const client = await startClient({ args: [`--cdp-endpoint=${await cdpEndpoint()}`] });
+test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
+  const browserContext = await cdpServer.start();
+  const client = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
+
+  const [page] = browserContext.pages();
+  await page.goto(server.HELLO_WORLD);
 
   expect(await client.callTool({
     name: 'browser_click',
@@ -43,18 +48,17 @@ test('cdp server reuse tab', async ({ cdpEndpoint, startClient }) => {
 // <internal code to capture accessibility snapshot>
 \`\`\`
 
-- Page URL: data:text/html,hello world
-- Page Title: 
+- Page URL: ${server.HELLO_WORLD}
+- Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: hello world
+- generic [ref=e1]: Hello, world!
 \`\`\`
 `);
 });
 
-test('should throw connection error and allow re-connecting', async ({ cdpEndpoint, startClient, server }) => {
-  const port = 3200 + test.info().parallelIndex;
-  const client = await startClient({ args: [`--cdp-endpoint=http://localhost:${port}`] });
+test('should throw connection error and allow re-connecting', async ({ cdpServer, startClient, server }) => {
+  const client = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
 
   server.setContent('/', `
     <title>Title</title>
@@ -65,7 +69,7 @@ test('should throw connection error and allow re-connecting', async ({ cdpEndpoi
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   })).toContainTextContent(`Error: browserType.connectOverCDP: connect ECONNREFUSED`);
-  await cdpEndpoint(port);
+  await cdpServer.start();
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },

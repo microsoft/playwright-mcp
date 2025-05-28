@@ -92,8 +92,7 @@ export class Connection {
     await new Promise<void>(resolve => {
       this.server.oninitialized = () => resolve();
     });
-    if (this.server.getClientVersion()?.name.includes('cursor'))
-      this.context.config.noImageResponses = true;
+    this.context.clientVersion = this.server.getClientVersion();
   }
 
   async close() {

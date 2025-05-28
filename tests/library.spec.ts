@@ -13,23 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import fs from 'fs';
-import path from 'path';
-
 import { test, expect } from './fixtures.js';
+import fs from 'node:fs/promises';
+import child_process from 'node:child_process';
 
-test('check that trace is saved', async ({ startClient, server }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
-
-  const client = await startClient({
-    args: ['--save-trace', `--output-dir=${outputDir}`],
-  });
-
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`Navigate to http://localhost`);
-
-  expect(fs.existsSync(path.join(outputDir, 'traces', 'trace.trace'))).toBeTruthy();
+test('library can be used from CommonJS', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/456' } }, async ({}, testInfo) => {
+  const file = testInfo.outputPath('main.cjs');
+  await fs.writeFile(file, `
+    import('@playwright/mcp')
+      .then(playwrightMCP => playwrightMCP.createConnection())
+      .then(() => console.log('OK'));
+ `);
+  expect(child_process.execSync(`node ${file}`, { encoding: 'utf-8' })).toContain('OK');
 });

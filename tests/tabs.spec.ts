@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import { chromium } from 'playwright';
-
 import { test, expect } from './fixtures.js';
 
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -139,17 +137,14 @@ test('close tab', async ({ client }) => {
 \`\`\``);
 });
 
-test('reuse first tab when navigating', async ({ startClient, cdpEndpoint, server }) => {
-  server.setContent('/', `<title>Title</title><body>Body</body>`, 'text/html');
+test('reuse first tab when navigating', async ({ startClient, cdpServer, server }) => {
+  const browserContext = await cdpServer.start();
+  const pages = browserContext.pages();
 
-  const browser = await chromium.connectOverCDP(await cdpEndpoint());
-  const [context] = browser.contexts();
-  const pages = context.pages();
-
-  const client = await startClient({ args: [`--cdp-endpoint=${await cdpEndpoint()}`] });
+  const client = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
   await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: { url: server.HELLO_WORLD },
   });
 
   expect(pages.length).toBe(1);

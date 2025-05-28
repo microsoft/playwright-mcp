@@ -80,11 +80,11 @@ export function sanitizeForFilePath(s: string) {
 }
 
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
-  return (locator as any)._frame._wrapApiCall(() => (locator as any)._generateLocatorString(), true);
+  return (locator as any)._generateLocatorString();
 }
 
 export async function callOnPageNoTrace<T>(page: playwright.Page, callback: (page: playwright.Page) => Promise<T>): Promise<T> {
-  return await (page as any)._wrapApiCall(() => callback(page), true);
+  return await (page as any)._wrapApiCall(() => callback(page), { internal: true });
 }
 
 export function getMSPlaywrightDir() {

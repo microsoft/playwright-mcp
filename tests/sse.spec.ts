@@ -95,8 +95,8 @@ test('streamable http transport without secret', async ({ serverEndpoint }) => {
   await expect(client.connect(transport)).rejects.toThrow();
 });
 
-test('sse transport via public API', async ({ server, localOutputPath }) => {
-  const userDataDir = localOutputPath('user-data-dir');
+test('sse transport via public API', async ({ server }, testInfo) => {
+  const userDataDir = testInfo.outputPath('user-data-dir');
   const sessions = new Map<string, SSEServerTransport>();
   const mcpServer = http.createServer(async (req, res) => {
     if (req.method === 'GET') {

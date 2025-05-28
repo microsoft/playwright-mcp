@@ -1,4 +1,4 @@
-Generate test for scenario:
+Use Playwright tools to generate test for scenario:
 
 ## GitHub PR Checks Navigation Checklist
 

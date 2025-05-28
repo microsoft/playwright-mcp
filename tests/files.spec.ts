@@ -16,9 +16,8 @@
 
 import { test, expect } from './fixtures.js';
 import fs from 'fs/promises';
-import path from 'path';
 
-test('browser_file_upload', async ({ client, localOutputPath, server }) => {
+test('browser_file_upload', async ({ client, server }, testInfo) => {
   server.setContent('/', `
     <input type="file" />
     <button>Button</button>
@@ -54,7 +53,7 @@ The tool "browser_file_upload" can only be used when there is related modal stat
   })).toContainTextContent(`### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
 
-  const filePath = localOutputPath('test.txt');
+  const filePath = testInfo.outputPath('test.txt');
   await fs.writeFile(filePath, 'Hello, world!');
 
   {
@@ -101,10 +100,9 @@ The tool "browser_file_upload" can only be used when there is related modal stat
   }
 });
 
-test('clicking on download link emits download', async ({ startClient, localOutputPath, server }) => {
-  const outputDir = localOutputPath('output');
+test('clicking on download link emits download', async ({ startClient, server }, testInfo) => {
   const client = await startClient({
-    config: { outputDir },
+    config: { outputDir: testInfo.outputPath('output') },
   });
 
   server.setContent('/', `<a href="/download" download="test.txt">Download</a>`, 'text/html');
@@ -123,13 +121,12 @@ test('clicking on download link emits download', async ({ startClient, localOutp
   });
   await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent(`
 ### Downloads
-- Downloaded file test.txt to ${path.join(outputDir, 'test.txt')}`);
+- Downloaded file test.txt to ${testInfo.outputPath('output', 'test.txt')}`);
 });
 
-test('navigating to download link emits download', async ({ startClient, localOutputPath, mcpBrowser, server }) => {
-  const outputDir = localOutputPath('output');
+test('navigating to download link emits download', async ({ startClient, server, mcpBrowser }, testInfo) => {
   const client = await startClient({
-    args: ['--output-dir', outputDir],
+    config: { outputDir: testInfo.outputPath('output') },
   });
 
   test.skip(mcpBrowser === 'webkit' && process.platform === 'linux', 'https://github.com/microsoft/playwright/blob/8e08fdb52c27bb75de9bf87627bf740fadab2122/tests/library/download.spec.ts#L436');
