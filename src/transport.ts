@@ -22,6 +22,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
+import type { FullConfig } from './config.js';
 import type { Server } from './server.js';
 
 export async function startStdioTransport(server: Server) {
@@ -48,7 +49,7 @@ function checkCors(config: FullConfig, req: http.IncomingMessage, res: http.Serv
 }
 
 async function handleSSE(server: Server, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>) {
-  if (checkCors(config, req, res) && req.method === 'OPTIONS') {
+  if (checkCors(server.config, req, res) && req.method === 'OPTIONS') {
     res.statusCode = 204;
     return res.end();
   }
@@ -95,7 +96,7 @@ async function handleStreamable(server: Server, req: http.IncomingMessage, res: 
     return await transport.handleRequest(req, res);
   }
 
-  if (checkCors(config, req, res) && req.method === 'OPTIONS') {
+  if (checkCors(server.config, req, res) && req.method === 'OPTIONS') {
     res.statusCode = 204;
     return res.end();
   }
