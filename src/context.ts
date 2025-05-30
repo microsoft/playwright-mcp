@@ -15,7 +15,6 @@
  */
 
 import fs from 'node:fs';
-import url from 'node:url';
 import path from 'node:path';
 
 import * as playwright from 'playwright';
@@ -406,6 +405,3 @@ async function createUserDataDir(browserConfig: FullConfig['browser']) {
   await fs.promises.mkdir(result, { recursive: true });
   return result;
 }
-
-const __filename = url.fileURLToPath(import.meta.url);
-export const packageJSON = JSON.parse(fs.readFileSync(path.join(path.dirname(__filename), '..', 'package.json'), 'utf8'));
