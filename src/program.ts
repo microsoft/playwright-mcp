@@ -56,8 +56,8 @@ program
       const server = new Server(config);
       server.setupExitWatchdog();
 
-      if (options.port)
-        startHttpTransport(server, +options.port, options.host);
+      if (config.server.port !== undefined)
+        startHttpTransport(server);
       else
         await startStdioTransport(server);
 

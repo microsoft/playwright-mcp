@@ -96,7 +96,7 @@ async function handleStreamable(server: Server, req: http.IncomingMessage, res: 
   res.end('Invalid request');
 }
 
-export function startHttpTransport(server: Server, port: number, hostname: string | undefined) {
+export function startHttpTransport(server: Server) {
   const sseSessions = new Map<string, SSEServerTransport>();
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
@@ -106,7 +106,8 @@ export function startHttpTransport(server: Server, port: number, hostname: strin
     else
       await handleSSE(server, req, res, url, sseSessions);
   });
-  httpServer.listen(port, hostname, () => {
+  const { host, port } = server.config.server;
+  httpServer.listen(port, host, () => {
     const address = httpServer.address();
     assert(address, 'Could not bind server socket');
     let url: string;

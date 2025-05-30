@@ -68,6 +68,7 @@ const defaultConfig: FullConfig = {
     allowedOrigins: undefined,
     blockedOrigins: undefined,
   },
+  server: {},
   outputDir: path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString())),
 };
 
@@ -81,6 +82,7 @@ export type FullConfig = Config & {
   },
   network: NonNullable<Config['network']>,
   outputDir: string;
+  server: NonNullable<Config['server']>,
 };
 
 export async function resolveConfig(config: Config): Promise<FullConfig> {
@@ -256,6 +258,10 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
     network: {
       ...pickDefined(base.network),
       ...pickDefined(overrides.network),
-    }
+    },
+    server: {
+      ...pickDefined(base.server),
+      ...pickDefined(overrides.server),
+    },
   } as FullConfig;
 }

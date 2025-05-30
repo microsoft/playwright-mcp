@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+import fs from 'node:fs';
 import url from 'node:url';
+
 import { ChildProcess, spawn } from 'node:child_process';
 import path from 'node:path';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
@@ -22,24 +24,25 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 import { test as baseTest, expect } from './fixtures.js';
+import type { Config } from '../config.d.ts';
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
 
-const test = baseTest.extend<{ serverEndpoint: (args?: string[]) => Promise<{ url: URL, stderr: () => string }> }>({
+const test = baseTest.extend<{ serverEndpoint: (options?: { args?: string[], noPort?: boolean }) => Promise<{ url: URL, stderr: () => string }> }>({
   serverEndpoint: async ({ mcpHeadless }, use, testInfo) => {
     let cp: ChildProcess | undefined;
     const userDataDir = testInfo.outputPath('user-data-dir');
-    await use(async (args?: string[]) => {
+    await use(async (options?: { args?: string[], noPort?: boolean }) => {
       if (cp)
         throw new Error('Process already running');
 
       cp = spawn('node', [
         path.join(path.dirname(__filename), '../cli.js'),
-        '--port=0',
+        ...(options?.noPort ? [] : ['--port=0']),
         '--user-data-dir=' + userDataDir,
         ...(mcpHeadless ? ['--headless'] : []),
-        ...(args || []),
+        ...(options?.args || []),
       ], {
         stdio: 'pipe',
         env: {
@@ -71,8 +74,24 @@ test('sse transport', async ({ serverEndpoint }) => {
   await client.ping();
 });
 
+test('sse transport (config)', async ({ serverEndpoint }) => {
+  const config: Config = {
+    server: {
+      port: 0,
+    }
+  };
+  const configFile = test.info().outputPath('config.json');
+  await fs.promises.writeFile(configFile, JSON.stringify(config, null, 2));
+
+  const { url } = await serverEndpoint({ noPort: true, args: ['--config=' + configFile] });
+  const transport = new SSEClientTransport(url);
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await client.connect(transport);
+  await client.ping();
+});
+
 test('sse transport browser lifecycle (isolated)', async ({ serverEndpoint, server }) => {
-  const { url, stderr } = await serverEndpoint(['--isolated']);
+  const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
   const transport1 = new SSEClientTransport(url);
   const client1 = new Client({ name: 'test', version: '1.0.0' });
@@ -109,7 +128,7 @@ test('sse transport browser lifecycle (isolated)', async ({ serverEndpoint, serv
 });
 
 test('sse transport browser lifecycle (isolated, multiclient)', async ({ serverEndpoint, server }) => {
-  const { url, stderr } = await serverEndpoint(['--isolated']);
+  const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
   const transport1 = new SSEClientTransport(url);
   const client1 = new Client({ name: 'test', version: '1.0.0' });
