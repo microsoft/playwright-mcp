@@ -95,6 +95,16 @@ export function startHttpTransport(server: Server, port: number, hostname: strin
   const sseSessions = new Map<string, SSEServerTransport>();
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://claude.ai');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id, sentry-trace, baggage');
+
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 200;
+      res.end();
+      return;
+    }
+
     const url = new URL(`http://localhost${req.url}`);
     if (url.pathname.startsWith('/mcp'))
       await handleStreamable(server, req, res, streamableSessions);
