@@ -16,9 +16,10 @@
 
 import fs from 'fs';
 
-import { test, expect } from './fixtures.js';
+import { test, expect, formatOutput } from './fixtures.js';
 
-test('test reopen browser', async ({ client, server }) => {
+test('test reopen browser', async ({ startClient, server }) => {
+  const { client, stderr } = await startClient();
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -32,10 +33,31 @@ test('test reopen browser', async ({ client, server }) => {
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
+
+  await client.close();
+
+  if (process.platform === 'win32')
+    return;
+
+  await expect.poll(() => formatOutput(stderr()), { timeout: 0 }).toEqual([
+    'create context',
+    'create browser context (persistent)',
+    'lock user data dir',
+    'close context',
+    'close browser context (persistent)',
+    'release user data dir',
+    'close browser context complete (persistent)',
+    'create browser context (persistent)',
+    'lock user data dir',
+    'close context',
+    'close browser context (persistent)',
+    'release user data dir',
+    'close browser context complete (persistent)',
+  ]);
 });
 
 test('executable path', async ({ startClient, server }) => {
-  const client = await startClient({ args: [`--executable-path=bogus`] });
+  const { client } = await startClient({ args: [`--executable-path=bogus`] });
   const response = await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -53,7 +75,7 @@ test('persistent context', async ({ startClient, server }) => {
     </script>
   `, 'text/html');
 
-  const client = await startClient();
+  const { client } = await startClient();
   const response = await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
@@ -66,7 +88,7 @@ test('persistent context', async ({ startClient, server }) => {
     name: 'browser_close',
   });
 
-  const client2 = await startClient();
+  const { client: client2 } = await startClient();
   const response2 = await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
@@ -85,18 +107,18 @@ test('isolated context', async ({ startClient, server }) => {
     </script>
   `, 'text/html');
 
-  const client = await startClient({ args: [`--isolated`] });
-  const response = await client.callTool({
+  const { client: client1 } = await startClient({ args: [`--isolated`] });
+  const response = await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
   expect(response).toContainTextContent(`Storage: NO`);
 
-  await client.callTool({
+  await client1.callTool({
     name: 'browser_close',
   });
 
-  const client2 = await startClient({ args: [`--isolated`] });
+  const { client: client2 } = await startClient({ args: [`--isolated`] });
   const response2 = await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
@@ -123,7 +145,7 @@ test('isolated context with storage state', async ({ startClient, server }, test
     </script>
   `, 'text/html');
 
-  const client = await startClient({ args: [
+  const { client } = await startClient({ args: [
     `--isolated`,
     `--storage-state=${storageStatePath}`,
   ] });

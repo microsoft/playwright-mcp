@@ -40,7 +40,7 @@ type CDPServer = {
 type TestFixtures = {
   client: Client;
   visionClient: Client;
-  startClient: (options?: { clientName?: string, args?: string[], config?: Config }) => Promise<Client>;
+  startClient: (options?: { clientName?: string, args?: string[], config?: Config }) => Promise<{ client: Client, stderr: () => string }>;
   wsEndpoint: string;
   cdpServer: CDPServer;
   server: TestServer;
@@ -55,11 +55,13 @@ type WorkerFixtures = {
 export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>({
 
   client: async ({ startClient }, use) => {
-    await use(await startClient());
+    const { client } = await startClient();
+    await use(client);
   },
 
   visionClient: async ({ startClient }, use) => {
-    await use(await startClient({ args: ['--vision'] }));
+    const { client } = await startClient({ args: ['--vision'] });
+    await use(client);
   },
 
   startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
@@ -85,9 +87,13 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
       client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' });
       const transport = createTransport(args, mcpMode);
+      let stderr = '';
+      transport.stderr?.on('data', data => {
+        stderr += data.toString();
+      });
       await client.connect(transport);
       await client.ping();
-      return client;
+      return { client, stderr: () => stderr };
     });
 
     await client?.close();
@@ -168,7 +174,13 @@ function createTransport(args: string[], mcpMode: TestOptions['mcpMode']) {
     command: 'node',
     args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
     cwd: path.join(path.dirname(__filename), '..'),
-    env: process.env as Record<string, string>,
+    stderr: 'pipe',
+    env: {
+      ...process.env,
+      DEBUG: 'pw:mcp:test',
+      DEBUG_COLORS: '0',
+      DEBUG_HIDE_DATE: '1',
+    },
   });
 }
 
@@ -225,3 +237,7 @@ export const expect = baseExpect.extend({
     };
   },
 });
+
+export function formatOutput(output: string): string[] {
+  return output.split('\n').map(line => line.replace(/^pw:mcp:test /, '').replace(/test-results.*/, '').trim()).filter(Boolean);
+}
