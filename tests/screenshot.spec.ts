@@ -19,7 +19,7 @@ import fs from 'fs';
 import { test, expect } from './fixtures.js';
 
 test('browser_take_screenshot (viewport)', async ({ startClient, server }, testInfo) => {
-  const client = await startClient({
+  const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
   expect(await client.callTool({
@@ -45,7 +45,7 @@ test('browser_take_screenshot (viewport)', async ({ startClient, server }, testI
 });
 
 test('browser_take_screenshot (element)', async ({ startClient, server }, testInfo) => {
-  const client = await startClient({
+  const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
   expect(await client.callTool({
@@ -76,7 +76,7 @@ test('browser_take_screenshot (element)', async ({ startClient, server }, testIn
 
 test('--output-dir should work', async ({ startClient, server }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
-  const client = await startClient({
+  const { client } = await startClient({
     config: { outputDir },
   });
   expect(await client.callTool({
@@ -98,7 +98,7 @@ for (const raw of [undefined, true]) {
   test(`browser_take_screenshot (raw: ${raw})`, async ({ startClient, server }, testInfo) => {
     const outputDir = testInfo.outputPath('output');
     const ext = raw ? 'png' : 'jpeg';
-    const client = await startClient({
+    const { client } = await startClient({
       config: { outputDir },
     });
     expect(await client.callTool({
@@ -138,7 +138,7 @@ for (const raw of [undefined, true]) {
 
 test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, server }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
-  const client = await startClient({
+  const { client } = await startClient({
     config: { outputDir },
   });
   expect(await client.callTool({
@@ -174,7 +174,7 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, 
 
 test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, server }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
-  const client = await startClient({
+  const { client } = await startClient({
     config: {
       outputDir,
       imageResponses: 'omit',
@@ -205,7 +205,7 @@ test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, serv
 test('browser_take_screenshot (cursor)', async ({ startClient, server }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
 
-  const client = await startClient({
+  const { client } = await startClient({
     clientName: 'cursor:vscode',
     config: { outputDir },
   });

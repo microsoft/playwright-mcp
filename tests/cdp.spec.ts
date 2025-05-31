@@ -18,7 +18,7 @@ import { test, expect } from './fixtures.js';
 
 test('cdp server', async ({ cdpServer, startClient, server }) => {
   await cdpServer.start();
-  const client = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
+  const { client } = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -27,7 +27,7 @@ test('cdp server', async ({ cdpServer, startClient, server }) => {
 
 test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
   const browserContext = await cdpServer.start();
-  const client = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
+  const { client } = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
 
   const [page] = browserContext.pages();
   await page.goto(server.HELLO_WORLD);
@@ -58,7 +58,7 @@ test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
 });
 
 test('should throw connection error and allow re-connecting', async ({ cdpServer, startClient, server }) => {
-  const client = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
+  const { client } = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
 
   server.setContent('/', `
     <title>Title</title>

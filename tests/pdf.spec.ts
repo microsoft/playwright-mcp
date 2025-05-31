@@ -19,7 +19,7 @@ import fs from 'fs';
 import { test, expect } from './fixtures.js';
 
 test('save as pdf unavailable', async ({ startClient, server }) => {
-  const client = await startClient({ args: ['--caps="no-pdf"'] });
+  const { client } = await startClient({ args: ['--caps="no-pdf"'] });
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -31,7 +31,7 @@ test('save as pdf unavailable', async ({ startClient, server }) => {
 });
 
 test('save as pdf', async ({ startClient, mcpBrowser, server }, testInfo) => {
-  const client = await startClient({
+  const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
 
@@ -51,7 +51,7 @@ test('save as pdf', async ({ startClient, mcpBrowser, server }, testInfo) => {
 test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser, server }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
   test.skip(!!mcpBrowser && !['chromium', 'chrome', 'msedge'].includes(mcpBrowser), 'Save as PDF is only supported in Chromium.');
-  const client = await startClient({
+  const { client } = await startClient({
     config: { outputDir },
   });
 

@@ -141,7 +141,7 @@ test('reuse first tab when navigating', async ({ startClient, cdpServer, server 
   const browserContext = await cdpServer.start();
   const pages = browserContext.pages();
 
-  const client = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
+  const { client } = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },

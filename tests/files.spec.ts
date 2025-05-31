@@ -101,7 +101,7 @@ The tool "browser_file_upload" can only be used when there is related modal stat
 });
 
 test('clicking on download link emits download', async ({ startClient, server }, testInfo) => {
-  const client = await startClient({
+  const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
 
@@ -125,7 +125,7 @@ test('clicking on download link emits download', async ({ startClient, server },
 });
 
 test('navigating to download link emits download', async ({ startClient, server, mcpBrowser }, testInfo) => {
-  const client = await startClient({
+  const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
 
