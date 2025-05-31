@@ -98,7 +98,11 @@ class IsolatedContextFactory extends BaseContextFactory {
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
     const browserType = playwright[this.browserConfig.browserName];
-    return browserType.launch(this.browserConfig.launchOptions).catch(error => {
+    return browserType.launch({
+      ...this.browserConfig.launchOptions,
+      handleSIGINT: false,
+      handleSIGTERM: false,
+    }).catch(error => {
       if (error.message.includes('Executable doesn\'t exist'))
         throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
       throw error;
@@ -160,7 +164,12 @@ class PersistentContextFactory implements BrowserContextFactory {
     const browserType = playwright[this.browserConfig.browserName];
     for (let i = 0; i < 5; i++) {
       try {
-        const browserContext = await browserType.launchPersistentContext(userDataDir, { ...this.browserConfig.launchOptions, ...this.browserConfig.contextOptions });
+        const browserContext = await browserType.launchPersistentContext(userDataDir, {
+          ...this.browserConfig.launchOptions,
+          ...this.browserConfig.contextOptions,
+          handleSIGINT: false,
+          handleSIGTERM: false,
+        });
         const close = () => this._closeBrowserContext(browserContext, userDataDir);
         return { browserContext, close };
       } catch (error: any) {

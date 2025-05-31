@@ -42,7 +42,11 @@ export class Server {
   }
 
   setupExitWatchdog() {
+    let isExiting = false;
     const handleExit = async () => {
+      if (isExiting)
+        return;
+      isExiting = true;
       setTimeout(() => process.exit(0), 15000);
       await Promise.all(this._connectionList.map(connection => connection.close()));
       process.exit(0);
