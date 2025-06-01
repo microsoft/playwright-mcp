@@ -164,11 +164,13 @@ export class Context {
     }
 
     const result: string[] = [];
+    /*
     result.push(`- Ran Playwright code:
 \`\`\`js
 ${code.join('\n')}
 \`\`\`
 `);
+    */
 
     if (this.modalStates().length) {
       result.push(...this.modalStatesMarkdown());
