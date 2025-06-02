@@ -17,7 +17,7 @@
 import { test, expect } from './fixtures.js';
 
 test('--device should work', async ({ startClient, server }) => {
-  const client = await startClient({
+  const { client } = await startClient({
     args: ['--device', 'iPhone 15'],
   });
 

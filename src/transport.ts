@@ -18,6 +18,7 @@ import http from 'node:http';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
 
+import debug from 'debug';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -28,6 +29,8 @@ import type { Server } from './server.js';
 export async function startStdioTransport(server: Server) {
   await server.createConnection(new StdioServerTransport());
 }
+
+const testDebug = debug('pw:mcp:test');
 
 function checkCors(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse): boolean {
   if (config.server?.corsAllowedOrigins === undefined)
@@ -71,8 +74,10 @@ async function handleSSE(server: Server, req: http.IncomingMessage, res: http.Se
   } else if (req.method === 'GET') {
     const transport = new SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
+    testDebug(`create SSE session: ${transport.sessionId}`);
     const connection = await server.createConnection(transport);
     res.on('close', () => {
+      testDebug(`delete SSE session: ${transport.sessionId}`);
       sessions.delete(transport.sessionId);
       // eslint-disable-next-line no-console
       void connection.close().catch(e => console.error(e));
@@ -121,7 +126,7 @@ async function handleStreamable(server: Server, req: http.IncomingMessage, res: 
   res.end('Invalid request');
 }
 
-export function startHttpTransport(server: Server, port: number, hostname: string | undefined) {
+export function startHttpTransport(server: Server) {
   const sseSessions = new Map<string, SSEServerTransport>();
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
@@ -131,7 +136,8 @@ export function startHttpTransport(server: Server, port: number, hostname: strin
     else
       await handleSSE(server, req, res, url, sseSessions);
   });
-  httpServer.listen(port, hostname, () => {
+  const { host, port } = server.config.server;
+  httpServer.listen(port, host, () => {
     const address = httpServer.address();
     assert(address, 'Could not bind server socket');
     let url: string;

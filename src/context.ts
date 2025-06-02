@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
+import debug from 'debug';
 import * as playwright from 'playwright';
 
 import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
@@ -28,20 +25,19 @@ import { outputFile } from './config.js';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
 import type { FullConfig } from './config.js';
+import type { BrowserContextFactory } from './browserContextFactory.js';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
 };
 
-type BrowserContextAndBrowser = {
-  browser?: playwright.Browser;
-  browserContext: playwright.BrowserContext;
-};
+const testDebug = debug('pw:mcp:test');
 
 export class Context {
   readonly tools: Tool[];
   readonly config: FullConfig;
-  private _browserContextPromise: Promise<BrowserContextAndBrowser> | undefined;
+  private _browserContextPromise: Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> | undefined;
+  private _browserContextFactory: BrowserContextFactory;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
@@ -49,9 +45,11 @@ export class Context {
   private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
   clientVersion: { name: string; version: string; } | undefined;
 
-  constructor(tools: Tool[], config: FullConfig) {
+  constructor(tools: Tool[], config: FullConfig, browserContextFactory: BrowserContextFactory) {
     this.tools = tools;
     this.config = config;
+    this._browserContextFactory = browserContextFactory;
+    testDebug('create context');
   }
 
   clientSupportsImages(): boolean {
@@ -296,15 +294,15 @@ ${code.join('\n')}
     if (!this._browserContextPromise)
       return;
 
+    testDebug('close context');
+
     const promise = this._browserContextPromise;
     this._browserContextPromise = undefined;
 
-    await promise.then(async ({ browserContext, browser }) => {
+    await promise.then(async ({ browserContext, close }) => {
       if (this.config.saveTrace)
         await browserContext.tracing.stop();
-      await browserContext.close().then(async () => {
-        await browser?.close();
-      }).catch(() => {});
+      await close();
     });
   }
 
@@ -332,8 +330,10 @@ ${code.join('\n')}
     return this._browserContextPromise;
   }
 
-  private async _setupBrowserContext(): Promise<BrowserContextAndBrowser> {
-    const { browser, browserContext } = await this._createBrowserContext();
+  private async _setupBrowserContext(): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
+    // TODO: move to the browser context factory to make it based on isolation mode.
+    const result = await this._browserContextFactory.createContext();
+    const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
     for (const page of browserContext.pages())
       this._onPageCreated(page);
@@ -346,72 +346,6 @@ ${code.join('\n')}
         sources: false,
       });
     }
-    return { browser, browserContext };
+    return result;
   }
-
-  private async _createBrowserContext(): Promise<BrowserContextAndBrowser> {
-    if (this.config.browser?.remoteEndpoint) {
-      const url = new URL(this.config.browser?.remoteEndpoint);
-      if (this.config.browser.browserName)
-        url.searchParams.set('browser', this.config.browser.browserName);
-      if (this.config.browser.launchOptions)
-        url.searchParams.set('launch-options', JSON.stringify(this.config.browser.launchOptions));
-      const browser = await playwright[this.config.browser?.browserName ?? 'chromium'].connect(String(url));
-      const browserContext = await browser.newContext();
-      return { browser, browserContext };
-    }
-
-    if (this.config.browser?.cdpEndpoint) {
-      const browser = await playwright.chromium.connectOverCDP(this.config.browser.cdpEndpoint);
-      const browserContext = this.config.browser.isolated ? await browser.newContext() : browser.contexts()[0];
-      return { browser, browserContext };
-    }
-
-    return this.config.browser?.isolated ?
-      await createIsolatedContext(this.config.browser) :
-      await launchPersistentContext(this.config.browser);
-  }
-}
-
-async function createIsolatedContext(browserConfig: FullConfig['browser']): Promise<BrowserContextAndBrowser> {
-  try {
-    const browserName = browserConfig?.browserName ?? 'chromium';
-    const browserType = playwright[browserName];
-    const browser = await browserType.launch(browserConfig.launchOptions);
-    const browserContext = await browser.newContext(browserConfig.contextOptions);
-    return { browser, browserContext };
-  } catch (error: any) {
-    if (error.message.includes('Executable doesn\'t exist'))
-      throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
-    throw error;
-  }
-}
-
-async function launchPersistentContext(browserConfig: FullConfig['browser']): Promise<BrowserContextAndBrowser> {
-  try {
-    const browserName = browserConfig.browserName ?? 'chromium';
-    const userDataDir = browserConfig.userDataDir ?? await createUserDataDir({ ...browserConfig, browserName });
-    const browserType = playwright[browserName];
-    const browserContext = await browserType.launchPersistentContext(userDataDir, { ...browserConfig.launchOptions, ...browserConfig.contextOptions });
-    return { browserContext };
-  } catch (error: any) {
-    if (error.message.includes('Executable doesn\'t exist'))
-      throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
-    throw error;
-  }
-}
-
-async function createUserDataDir(browserConfig: FullConfig['browser']) {
-  let cacheDirectory: string;
-  if (process.platform === 'linux')
-    cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
-  else if (process.platform === 'darwin')
-    cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
-  else if (process.platform === 'win32')
-    cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-  else
-    throw new Error('Unsupported platform: ' + process.platform);
-  const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${browserConfig.launchOptions?.channel ?? browserConfig?.browserName}-profile`);
-  await fs.promises.mkdir(result, { recursive: true });
-  return result;
 }

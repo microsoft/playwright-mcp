@@ -16,10 +16,30 @@
 
 import { Connection, createConnection as createConnectionImpl } from './connection.js';
 import { resolveConfig } from './config.js';
+import { contextFactory } from './browserContextFactory.js';
 
 import type { Config } from '../config.js';
+import type { BrowserContext } from 'playwright';
+import type { BrowserContextFactory } from './browserContextFactory.js';
 
-export async function createConnection(userConfig: Config = {}): Promise<Connection> {
+export async function createConnection(userConfig: Config = {}, contextGetter?: () => Promise<BrowserContext>): Promise<Connection> {
   const config = await resolveConfig(userConfig);
-  return createConnectionImpl(config);
+  const factory = contextGetter ? new SimpleBrowserContextFactory(contextGetter) : contextFactory(config.browser);
+  return createConnectionImpl(config, factory);
+}
+
+class SimpleBrowserContextFactory implements BrowserContextFactory {
+  private readonly _contextGetter: () => Promise<BrowserContext>;
+
+  constructor(contextGetter: () => Promise<BrowserContext>) {
+    this._contextGetter = contextGetter;
+  }
+
+  async createContext(): Promise<{ browserContext: BrowserContext, close: () => Promise<void> }> {
+    const browserContext = await this._contextGetter();
+    return {
+      browserContext,
+      close: () => browserContext.close()
+    };
+  }
 }

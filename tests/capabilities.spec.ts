@@ -77,7 +77,7 @@ test('test vision tool list', async ({ visionClient }) => {
 });
 
 test('test capabilities', async ({ startClient }) => {
-  const client = await startClient({
+  const { client } = await startClient({
     args: ['--caps="core"'],
   });
   const { tools } = await client.listTools();
