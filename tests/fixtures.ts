@@ -17,7 +17,7 @@
 import fs from 'fs';
 import url from 'url';
 import path from 'path';
-import { chromium } from 'playwright';
+import { chromium, Page } from 'playwright';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -29,7 +29,7 @@ import type { BrowserContext } from 'playwright';
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
-  mcpMode: 'docker' | undefined;
+  mcpMode: 'docker' | 'extension' | undefined;
 };
 
 type CDPServer = {
@@ -46,6 +46,7 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
+  mcpExtensionPage: { page: Page, connect: () => Promise<void> } | undefined;
 };
 
 type WorkerFixtures = {
@@ -64,12 +65,14 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(client);
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode, mcpExtensionPage }, use, testInfo) => {
     const userDataDir = testInfo.outputPath('user-data-dir');
     const configDir = path.dirname(test.info().config.configFile!);
     let client: Client | undefined;
 
     await use(async options => {
+      if (client)
+        throw new Error('Client already started');
       const args = ['--user-data-dir', path.relative(configDir, userDataDir)];
       if (process.env.CI && process.platform === 'linux')
         args.push('--no-sandbox');
@@ -77,6 +80,8 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
         args.push('--headless');
       if (mcpBrowser)
         args.push(`--browser=${mcpBrowser}`);
+      if (mcpMode === 'extension')
+        args.push('--extension');
       if (options?.args)
         args.push(...options.args);
       if (options?.config) {
@@ -92,6 +97,8 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
         stderr += data.toString();
       });
       await client.connect(transport);
+      if (mcpMode === 'extension' && mcpExtensionPage)
+        await mcpExtensionPage.connect();
       await client.ping();
       return { client, stderr: () => stderr };
     });
@@ -134,7 +141,38 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
   mcpMode: [undefined, { option: true }],
 
-  _workerServers: [async ({}, use, workerInfo) => {
+  mcpExtensionPage: async ({ mcpMode, mcpHeadless }, use) => {
+    if (mcpMode !== 'extension')
+      return await use(undefined);
+    const cdpPort = 8900 + test.info().parallelIndex * 4;
+    const pathToExtension = path.join(url.fileURLToPath(import.meta.url), '../../extension');
+    const context = await chromium.launchPersistentContext('', {
+      headless: mcpHeadless,
+      args: [
+        `--disable-extensions-except=${pathToExtension}`,
+        `--load-extension=${pathToExtension}`,
+        '--enable-features=AllowContentInitiatedDataUrlNavigations',
+      ],
+      channel: 'chromium',
+      ...{ assistantMode: true, cdpPort },
+    });
+    const popupPage = await context.newPage();
+    const page = context.pages()[0];
+    await page.bringToFront();
+    // Do not auto dismiss dialogs.
+    page.on('dialog', () => { });
+    await expect.poll(() => context?.serviceWorkers()).toHaveLength(1);
+    await use({
+      page,
+      connect: async () => {
+        await popupPage.goto(new URL('/popup.html', context.serviceWorkers()[0].url()).toString());
+        await popupPage.getByRole('button', { name: 'Share This Tab' }).click();
+      }
+    });
+    await context?.close();
+  },
+
+  _workerServers: [async ({ }, use, workerInfo) => {
     const port = 8907 + workerInfo.workerIndex * 4;
     const server = await TestServer.create(port);
 
