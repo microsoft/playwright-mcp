@@ -18,7 +18,9 @@ import fs from 'fs';
 
 import { test, expect, formatOutput } from './fixtures.js';
 
-test('test reopen browser', async ({ startClient, server }) => {
+test.skip(({ mcpMode }) => mcpMode === 'extension', 'launch scenarios are not supported with --extension - the browser is already launched');
+
+test('test reopen browser', async ({ startClient, server, mcpMode }) => {
   const { client, stderr } = await startClient();
   await client.callTool({
     name: 'browser_navigate',

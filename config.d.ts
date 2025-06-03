@@ -100,6 +100,11 @@ export type Config = {
   saveTrace?: boolean;
 
   /**
+   * Run server that is able to connect to the 'Playwright MCP' Chrome extension.
+   */
+  extension?: boolean;
+
+  /**
    * The directory to save output files.
    */
   outputDir?: string;

@@ -27,6 +27,8 @@ async function createTab(client: Client, title: string, body: string) {
   });
 }
 
+test.skip(({ mcpMode }) => mcpMode === 'extension', 'Multi-tab scenarios are not supported with --extension');
+
 test('list initial tabs', async ({ client }) => {
   expect(await client.callTool({
     name: 'browser_tab_list',
