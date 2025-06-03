@@ -38,6 +38,7 @@
     "@modelcontextprotocol/sdk": "^1.11.0",
     "commander": "^13.1.0",
     "debug": "^4.4.1",
+    "mime": "^4.0.7",
     "playwright": "1.53.0-alpha-2025-05-27",
     "zod-to-json-schema": "^3.24.4"
   },
