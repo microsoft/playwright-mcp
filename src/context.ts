@@ -89,7 +89,7 @@ export class Context {
 
   currentTabOrDie(): Tab {
     if (!this._currentTab)
-      throw new Error('No current snapshot available. Capture a snapshot of navigate to a new location first.');
+      throw new Error('No current snapshot available. Capture a snapshot or navigate to a new location first.');
     return this._currentTab;
   }
 
