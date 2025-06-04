@@ -38,7 +38,7 @@ test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
       element: 'Hello, world!',
       ref: 'f0',
     },
-  })).toHaveTextContent(`Error: No current snapshot available. Capture a snapshot of navigate to a new location first.`);
+  })).toHaveTextContent(`Error: No current snapshot available. Capture a snapshot or navigate to a new location first.`);
 
   expect(await client.callTool({
     name: 'browser_snapshot',

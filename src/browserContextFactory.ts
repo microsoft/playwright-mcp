@@ -15,13 +15,16 @@
  */
 
 import fs from 'node:fs';
-import os from 'node:os';
+import net from 'node:net';
 import path from 'node:path';
+import os from 'node:os';
 
 import debug from 'debug';
 import * as playwright from 'playwright';
+import { userDataDir } from './fileUtils.js';
 
 import type { FullConfig } from './config.js';
+import type { BrowserInfo, LaunchBrowserRequest } from './browserAgent.js';
 
 const testDebug = debug('pw:mcp:test');
 
@@ -32,6 +35,8 @@ export function contextFactory(browserConfig: FullConfig['browser']): BrowserCon
     return new CdpContextFactory(browserConfig);
   if (browserConfig.isolated)
     return new IsolatedContextFactory(browserConfig);
+  if (browserConfig.browserAgent)
+    return new AgentContextFactory(browserConfig);
   return new PersistentContextFactory(browserConfig);
 }
 
@@ -97,6 +102,7 @@ class IsolatedContextFactory extends BaseContextFactory {
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
+    await injectCdpPort(this.browserConfig);
     const browserType = playwright[this.browserConfig.browserName];
     return browserType.launch({
       ...this.browserConfig.launchOptions,
@@ -155,6 +161,7 @@ class PersistentContextFactory implements BrowserContextFactory {
   }
 
   async createContext(): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
+    await injectCdpPort(this.browserConfig);
     testDebug('create browser context (persistent)');
     const userDataDir = this.browserConfig.userDataDir ?? await this._createUserDataDir();
 
@@ -208,4 +215,52 @@ class PersistentContextFactory implements BrowserContextFactory {
     await fs.promises.mkdir(result, { recursive: true });
     return result;
   }
+}
+
+export class AgentContextFactory extends BaseContextFactory {
+  constructor(browserConfig: FullConfig['browser']) {
+    super('persistent', browserConfig);
+  }
+
+  protected override async _doObtainBrowser(): Promise<playwright.Browser> {
+    const response = await fetch(new URL(`/json/launch`, this.browserConfig.browserAgent), {
+      method: 'POST',
+      body: JSON.stringify({
+        browserType: this.browserConfig.browserName,
+        userDataDir: this.browserConfig.userDataDir ?? await this._createUserDataDir(),
+        launchOptions: this.browserConfig.launchOptions,
+        contextOptions: this.browserConfig.contextOptions,
+      } as LaunchBrowserRequest),
+    });
+    const info = await response.json() as BrowserInfo;
+    if (info.error)
+      throw new Error(info.error);
+    return await playwright.chromium.connectOverCDP(`http://localhost:${info.cdpPort}/`);
+  }
+
+  protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
+    return this.browserConfig.isolated ? await browser.newContext() : browser.contexts()[0];
+  }
+
+  private async _createUserDataDir() {
+    const dir = await userDataDir(this.browserConfig);
+    await fs.promises.mkdir(dir, { recursive: true });
+    return dir;
+  }
+}
+
+async function injectCdpPort(browserConfig: FullConfig['browser']) {
+  if (browserConfig.browserName === 'chromium')
+    (browserConfig.launchOptions as any).cdpPort = await findFreePort();
+}
+
+async function findFreePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(0, () => {
+      const { port } = server.address() as net.AddressInfo;
+      server.close(() => resolve(port));
+    });
+    server.on('error', reject);
+  });
 }
