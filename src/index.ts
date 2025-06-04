@@ -21,6 +21,7 @@ import { contextFactory } from './browserContextFactory.js';
 import type { Config } from '../config.js';
 import type { BrowserContext } from 'playwright';
 import type { BrowserContextFactory } from './browserContextFactory.js';
+import { Tool } from './tools/tool.js';
 
 export async function createConnection(userConfig: Config = {}, contextGetter?: () => Promise<BrowserContext>): Promise<Connection> {
   const config = await resolveConfig(userConfig);

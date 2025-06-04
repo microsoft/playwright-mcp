@@ -23,6 +23,7 @@ import { snapshotTools, visionTools } from './tools.js';
 import { packageJSON } from './package.js';
 
 import { FullConfig } from './config.js';
+import { Tool } from './tools/tool.js';
 
 import type { BrowserContextFactory } from './browserContextFactory.js';
 

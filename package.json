@@ -30,8 +30,8 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./index.d.ts",
-      "default": "./index.js"
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
     }
   },
   "dependencies": {
@@ -54,7 +54,7 @@
     "eslint": "^9.19.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-notice": "^1.0.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   },
   "bin": {
     "mcp-server-playwright": "cli.js"

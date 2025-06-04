@@ -29,6 +29,7 @@ import screenshot from './tools/screenshot.js';
 import testing from './tools/testing.js';
 import vision from './tools/vision.js';
 import wait from './tools/wait.js';
+import customAgentTools from './tools/customAgentTools.js';
 
 import type { Tool } from './tools/tool.js';
 
@@ -47,6 +48,7 @@ export const snapshotTools: Tool<any>[] = [
   ...tabs(true),
   ...testing,
   ...wait(true),
+  ...customAgentTools
 ];
 
 export const visionTools: Tool<any>[] = [
