@@ -31,7 +31,7 @@ const test = baseTest.extend<{ agentEndpoint: (options?: { args?: string[] }) =>
         throw new Error('Process already running');
 
       cp = spawn('node', [
-        path.join(path.dirname(__filename), '../lib/browserAgent.js'),
+        path.join(path.dirname(__filename), '../lib/browserServer.js'),
         ...(options?.args || []),
       ], {
         stdio: 'pipe',

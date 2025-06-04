@@ -24,7 +24,7 @@ import * as playwright from 'playwright';
 import { userDataDir } from './fileUtils.js';
 
 import type { FullConfig } from './config.js';
-import type { BrowserInfo, LaunchBrowserRequest } from './browserAgent.js';
+import type { BrowserInfo, LaunchBrowserRequest } from './browserServer.js';
 
 const testDebug = debug('pw:mcp:test');
 
@@ -36,7 +36,7 @@ export function contextFactory(browserConfig: FullConfig['browser']): BrowserCon
   if (browserConfig.isolated)
     return new IsolatedContextFactory(browserConfig);
   if (browserConfig.browserAgent)
-    return new AgentContextFactory(browserConfig);
+    return new BrowserServerContextFactory(browserConfig);
   return new PersistentContextFactory(browserConfig);
 }
 
@@ -217,7 +217,7 @@ class PersistentContextFactory implements BrowserContextFactory {
   }
 }
 
-export class AgentContextFactory extends BaseContextFactory {
+export class BrowserServerContextFactory extends BaseContextFactory {
   constructor(browserConfig: FullConfig['browser']) {
     super('persistent', browserConfig);
   }
