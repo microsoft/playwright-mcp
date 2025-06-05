@@ -6,3 +6,7 @@ playwright-report/
 
 .idea
 .DS_Store
+context/
+logs
+CLAUDE.md
+.mcp.json

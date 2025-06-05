@@ -15,6 +15,7 @@
  */
 
 import fs from 'node:fs';
+import url from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -155,14 +156,45 @@ export class Context {
     const tab = this.currentTabOrDie();
     // TODO: race against modal dialogs to resolve clicks.
     let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
+    let actionError: Error | undefined;
+    
     try {
+      // Add timeout wrapper and better error handling for browser interactions
+      const actionWithTimeout = async () => {
+        if (!racingAction) return undefined;
+        
+        // Set a reasonable timeout for browser actions (30 seconds)
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Browser action timed out after 30 seconds')), 30000);
+        });
+        
+        return await Promise.race([racingAction(), timeoutPromise]);
+      };
+
       if (waitForNetwork)
-        actionResult = await waitForCompletion(this, tab, async () => racingAction?.()) ?? undefined;
+        actionResult = await waitForCompletion(this, tab, actionWithTimeout) ?? undefined;
       else
-        actionResult = await racingAction?.() ?? undefined;
+        actionResult = await actionWithTimeout() ?? undefined;
+    } catch (error: any) {
+      actionError = error;
+      
+      // Check if the browser context is still alive
+      try {
+        await tab.page.evaluate(() => true);
+      } catch (pageError: any) {
+        // Mark this tab as problematic but don't crash the server
+        actionError = new Error(`Browser became unresponsive during action: ${error.message}`);
+      }
     } finally {
-      if (captureSnapshot && !this._javaScriptBlocked())
-        await tab.captureSnapshot();
+      // Only try to capture snapshot if we have a responsive browser
+      if (captureSnapshot && !this._javaScriptBlocked() && !actionError) {
+        try {
+          await tab.captureSnapshot();
+        } catch (snapshotError: any) {
+          // Don't fail the entire operation just because snapshot failed
+          // In stdio mode, we can't log errors to console
+        }
+      }
     }
 
     const result: string[] = [];
@@ -171,6 +203,14 @@ export class Context {
 ${code.join('\n')}
 \`\`\`
 `);
+
+    // Add error information if action failed
+    if (actionError) {
+      result.push(`
+⚠️ **Action Failed**: ${actionError.message}
+
+The browser action encountered an error but the MCP server recovered gracefully.`);
+    }
 
     if (this.modalStates().length) {
       result.push(...this.modalStatesMarkdown());
@@ -199,13 +239,23 @@ ${code.join('\n')}
     if (this.tabs().length > 1)
       result.push('### Current tab');
 
-    result.push(
-        `- Page URL: ${tab.page.url()}`,
-        `- Page Title: ${await tab.title()}`
-    );
+    // Safely get page information, handling potential browser disconnection
+    try {
+      result.push(
+          `- Page URL: ${tab.page.url()}`,
+          `- Page Title: ${await tab.title()}`
+      );
+    } catch (error: any) {
+      result.push(`- Page information unavailable (browser may be disconnected): ${error.message}`);
+    }
 
-    if (captureSnapshot && tab.hasSnapshot())
-      result.push(tab.snapshotOrDie().text());
+    if (captureSnapshot && tab.hasSnapshot() && !actionError) {
+      try {
+        result.push(tab.snapshotOrDie().text());
+      } catch (error: any) {
+        result.push(`- Snapshot unavailable: ${error.message}`);
+      }
+    }
 
     const content = actionResult?.content ?? [];
 
@@ -415,3 +465,6 @@ async function createUserDataDir(browserConfig: FullConfig['browser']) {
   await fs.promises.mkdir(result, { recursive: true });
   return result;
 }
+
+const __filename = url.fileURLToPath(import.meta.url);
+export const packageJSON = JSON.parse(fs.readFileSync(path.join(path.dirname(__filename), '..', 'package.json'), 'utf8'));

@@ -20,6 +20,7 @@ import { PageSnapshot } from './pageSnapshot.js';
 
 import type { Context } from './context.js';
 import { callOnPageNoTrace } from './tools/utils.js';
+import { logger } from './logger.js';
 
 export class Tab {
   readonly context: Context;
@@ -58,6 +59,11 @@ export class Tab {
   }
 
   private _onClose() {
+    logger.error('Browser page closed unexpectedly', { 
+      url: this.page.url(),
+      title: this.page.url(),
+      timestamp: new Date().toISOString()
+    });
     this._clearCollectedArtifacts();
     this._onPageClose(this);
   }

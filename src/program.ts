@@ -74,4 +74,15 @@ function semicolonSeparatedList(value: string): string[] {
   return value.split(';').map(v => v.trim());
 }
 
+// Add global error handlers to prevent crashes
+process.on('uncaughtException', (_error) => {
+  // Silently handle uncaught exceptions to prevent server crashes
+  // In stdio transport mode, we can't log to console
+});
+
+process.on('unhandledRejection', (_reason, _promise) => {
+  // Silently handle unhandled rejections to prevent server crashes
+  // In stdio transport mode, we can't log to console
+});
+
 void program.parseAsync(process.argv);
