@@ -91,6 +91,8 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       const transport = createTransport(args, mcpMode);
       let stderr = '';
       transport.stderr?.on('data', data => {
+        if (process.env.PWMCP_DEBUG)
+          process.stderr.write(data);
         stderr += data.toString();
       });
       await client.connect(transport);
