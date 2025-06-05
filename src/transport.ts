@@ -23,6 +23,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
+import type { FullConfig } from './config.js';
 import type { Server } from './server.js';
 
 export async function startStdioTransport(server: Server) {
@@ -31,7 +32,31 @@ export async function startStdioTransport(server: Server) {
 
 const testDebug = debug('pw:mcp:test');
 
+function checkCors(config: FullConfig, req: http.IncomingMessage, res: http.ServerResponse): boolean {
+  if (config.server?.corsAllowedOrigins === undefined)
+    return false;
+
+  const origin = req.headers.origin;
+  if (origin === undefined)
+    return false;
+
+  if (config.server.corsAllowedOrigins.some(o => o === origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Max-Age', 2592000);
+    res.setHeader('Access-Control-Allow-Headers', 'mcp-session-id, content-type');
+    return true;
+  }
+
+  return false;
+}
+
 async function handleSSE(server: Server, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>) {
+  if (checkCors(server.config, req, res) && req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    return res.end();
+  }
+
   if (req.method === 'POST') {
     const sessionId = url.searchParams.get('sessionId');
     if (!sessionId) {
@@ -74,6 +99,11 @@ async function handleStreamable(server: Server, req: http.IncomingMessage, res: 
       return;
     }
     return await transport.handleRequest(req, res);
+  }
+
+  if (checkCors(server.config, req, res) && req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    return res.end();
   }
 
   if (req.method === 'POST') {
