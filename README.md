@@ -106,6 +106,27 @@ Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user),
 ```
 </details>
 
+<details>
+<summary><b>Install in Qodo Gen</b></summary>
+
+Open [Qodo Gen](https://docs.qodo.ai/qodo-documentation/qodo-gen) chat panel in VSCode or IntelliJ → Connect more tools → + Add new MCP → Paste the following configuration:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+
+Click <code>Save</code>.
+</details>
+
 ### Configuration
 
 Playwright MCP server supports following arguments. They can be provided in the JSON configuration above, as a part of the `"args"` list:
