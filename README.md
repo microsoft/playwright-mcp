@@ -52,6 +52,12 @@ After installation, the Playwright MCP server will be available for use with you
 <details>
 <summary><b>Install in Cursor</b></summary>
 
+#### Click the button to install:
+
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=playwright&config=eyJjb21tYW5kIjoibnB4IEBwbGF5d3JpZ2h0L21jcEBsYXRlc3QifQ%3D%3D)
+
+#### Or install manually:
+
 Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, use `command` type with the command `npx @playwright/mcp`. You can also verify config or add command like arguments via clicking `Edit`.
 
 ```js
