@@ -355,7 +355,7 @@ http.createServer(async (req, res) => {
   // Creates a headless Playwright MCP server with SSE transport
   const connection = await createConnection({ browser: { launchOptions: { headless: true } } });
   const transport = new SSEServerTransport('/messages', res);
-  await connection.connect(transport);
+  await connection.sever.connect(transport);
 
   // ...
 });
