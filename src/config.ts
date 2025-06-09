@@ -50,6 +50,7 @@ export type CLIOptions = {
   userDataDir?: string;
   viewportSize?: string;
   vision?: boolean;
+  extension?: boolean;
 };
 
 const defaultConfig: FullConfig = {
@@ -99,6 +100,13 @@ export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConf
   return result;
 }
 
+export function validateConfig(config: Config) {
+  if (config.extension) {
+    if (config.browser?.browserName !== 'chromium')
+      throw new Error('Extension mode is only supported for Chromium browsers.');
+  }
+}
+
 export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Config> {
   let browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
   let channel: string | undefined;
@@ -142,6 +150,11 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
       launchOptions.proxy.bypass = cliOptions.proxyBypass;
   }
 
+  if (cliOptions.device && cliOptions.cdpEndpoint)
+    throw new Error('Device emulation is not supported with cdpEndpoint.');
+  if (cliOptions.device && cliOptions.extension)
+    throw new Error('Device emulation is not supported with extension mode.');
+
   // Context options
   const contextOptions: BrowserContextOptions = cliOptions.device ? devices[cliOptions.device] : {};
   if (cliOptions.storageState)
@@ -183,6 +196,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
+    extension: !!cliOptions.extension,
     network: {
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,

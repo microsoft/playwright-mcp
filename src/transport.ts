@@ -96,7 +96,7 @@ async function handleStreamable(server: Server, req: http.IncomingMessage, res: 
   res.end('Invalid request');
 }
 
-export function startHttpTransport(server: Server) {
+export async function startHttpTransport(server: Server): Promise<http.Server> {
   const sseSessions = new Map<string, SSEServerTransport>();
   const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
   const httpServer = http.createServer(async (req, res) => {
@@ -107,32 +107,32 @@ export function startHttpTransport(server: Server) {
       await handleSSE(server, req, res, url, sseSessions);
   });
   const { host, port } = server.config.server;
-  httpServer.listen(port, host, () => {
-    const address = httpServer.address();
-    assert(address, 'Could not bind server socket');
-    let url: string;
-    if (typeof address === 'string') {
-      url = address;
-    } else {
-      const resolvedPort = address.port;
-      let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
-      if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
-        resolvedHost = 'localhost';
-      url = `http://${resolvedHost}:${resolvedPort}`;
-    }
-    const message = [
-      `Listening on ${url}`,
-      'Put this in your client config:',
-      JSON.stringify({
-        'mcpServers': {
-          'playwright': {
-            'url': `${url}/sse`
-          }
+  await new Promise<void>(resolve => httpServer.listen(port, host, resolve));
+  const address = httpServer.address();
+  assert(address, 'Could not bind server socket');
+  let url: string;
+  if (typeof address === 'string') {
+    url = address;
+  } else {
+    const resolvedPort = address.port;
+    let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
+    if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
+      resolvedHost = 'localhost';
+    url = `http://${resolvedHost}:${resolvedPort}`;
+  }
+  const message = [
+    `Listening on ${url}`,
+    'Put this in your client config:',
+    JSON.stringify({
+      'mcpServers': {
+        'playwright': {
+          'url': `${url}/sse`
         }
-      }, undefined, 2),
-      'If your client supports streamable HTTP, you can use the /mcp endpoint instead.',
-    ].join('\n');
+      }
+    }, undefined, 2),
+    'If your client supports streamable HTTP, you can use the /mcp endpoint instead.',
+  ].join('\n');
     // eslint-disable-next-line no-console
-    console.error(message);
-  });
+  console.error(message);
+  return httpServer;
 }

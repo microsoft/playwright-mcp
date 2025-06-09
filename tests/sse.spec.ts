@@ -29,6 +29,8 @@ import type { Config } from '../config.d.ts';
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
 
+baseTest.skip(({ mcpMode }) => mcpMode === 'extension', 'Extension tests run via SSE anyways');
+
 const test = baseTest.extend<{ serverEndpoint: (options?: { args?: string[], noPort?: boolean }) => Promise<{ url: URL, stderr: () => string }> }>({
   serverEndpoint: async ({ mcpHeadless }, use, testInfo) => {
     let cp: ChildProcess | undefined;

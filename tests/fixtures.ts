@@ -17,19 +17,23 @@
 import fs from 'fs';
 import url from 'url';
 import path from 'path';
-import { chromium } from 'playwright';
+import { chromium, Page } from 'playwright';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { TestServer } from './testserver/index.ts';
 
 import type { Config } from '../config';
 import type { BrowserContext } from 'playwright';
+import { fork } from 'child_process';
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { ManualPromise } from '../src/manualPromise.js';
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
-  mcpMode: 'docker' | undefined;
+  mcpMode: 'docker' | 'extension' | undefined;
 };
 
 type CDPServer = {
@@ -46,11 +50,14 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
+  mcpExtensionPage: { page: Page, connect: () => Promise<void> } | undefined;
 };
 
 type WorkerFixtures = {
   _workerServers: { server: TestServer, httpsServer: TestServer };
 };
+
+const kTransportPort = Symbol('kTransportPort');
 
 export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>({
 
@@ -64,12 +71,15 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(client);
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode, mcpExtensionPage }, use, testInfo) => {
     const userDataDir = mcpMode !== 'docker' ? testInfo.outputPath('user-data-dir') : undefined;
     const configDir = path.dirname(test.info().config.configFile!);
     let client: Client | undefined;
+    let dispose: (() => void) | undefined;
 
     await use(async options => {
+      if (client)
+        throw new Error('Client already started');
       const args: string[] = [];
       if (userDataDir)
         args.push('--user-data-dir', userDataDir);
@@ -79,6 +89,8 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
         args.push('--headless');
       if (mcpBrowser)
         args.push(`--browser=${mcpBrowser}`);
+      if (mcpMode === 'extension')
+        args.push('--extension');
       if (options?.args)
         args.push(...options.args);
       if (options?.config) {
@@ -88,19 +100,17 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       }
 
       client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' });
-      const transport = createTransport(args, mcpMode);
-      let stderr = '';
-      transport.stderr?.on('data', data => {
-        if (process.env.PWMCP_DEBUG)
-          process.stderr.write(data);
-        stderr += data.toString();
-      });
+      const { transport, stderr, disposeTransport } = await createTransport(args, mcpMode);
+      dispose = disposeTransport;
       await client.connect(transport);
+      if (mcpMode === 'extension' && mcpExtensionPage)
+        await mcpExtensionPage.connect();
       await client.ping();
-      return { client, stderr: () => stderr };
+      return { client, stderr };
     });
 
     await client?.close();
+    dispose?.();
   },
 
   wsEndpoint: async ({ }, use) => {
@@ -138,7 +148,40 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
   mcpMode: [undefined, { option: true }],
 
-  _workerServers: [async ({}, use, workerInfo) => {
+  mcpExtensionPage: async ({ mcpMode, mcpHeadless }, use) => {
+    if (mcpMode !== 'extension')
+      return await use(undefined);
+    const cdpPort = 8900 + test.info().parallelIndex * 4;
+    const pathToExtension = path.join(url.fileURLToPath(import.meta.url), '../../extension');
+    const context = await chromium.launchPersistentContext('', {
+      headless: mcpHeadless,
+      args: [
+        `--disable-extensions-except=${pathToExtension}`,
+        `--load-extension=${pathToExtension}`,
+        '--enable-features=AllowContentInitiatedDataUrlNavigations',
+      ],
+      channel: 'chromium',
+      ...{ assistantMode: true, cdpPort },
+    });
+    const popupPage = await context.newPage();
+    const page = context.pages()[0];
+    await page.bringToFront();
+    // Do not auto dismiss dialogs.
+    page.on('dialog', () => { });
+    await expect.poll(() => context?.serviceWorkers()).toHaveLength(1);
+    await use({
+      page,
+      connect: async () => {
+        await popupPage.goto(new URL('/popup.html', context.serviceWorkers()[0].url()).toString());
+        await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).clear();
+        await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).fill(test[kTransportPort]);
+        await popupPage.getByRole('button', { name: 'Share This Tab' }).click();
+      }
+    });
+    await context?.close();
+  },
+
+  _workerServers: [async ({ }, use, workerInfo) => {
     const port = 8907 + workerInfo.workerIndex * 4;
     const server = await TestServer.create(port);
 
@@ -164,28 +207,74 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   },
 });
 
-function createTransport(args: string[], mcpMode: TestOptions['mcpMode']) {
+async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']): Promise<{
+  transport: Transport,
+  disposeTransport?: () => void,
+  stderr: () => string,
+}> {
+  let stderrBuffer = '';
+  const stderr = () => stderrBuffer;
   // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
   const __filename = url.fileURLToPath(import.meta.url);
   if (mcpMode === 'docker') {
     const dockerArgs = ['run', '--rm', '-i', '--network=host', '-v', `${test.info().project.outputDir}:/app/test-results`];
-    return new StdioClientTransport({
+    const transport = new StdioClientTransport({
       command: 'docker',
       args: [...dockerArgs, 'playwright-mcp-dev:latest', ...args],
     });
+    transport.stderr?.on('data', data => {
+      stderrBuffer += data.toString();
+    });
+    return {
+      transport,
+      stderr,
+    };
   }
-  return new StdioClientTransport({
-    command: 'node',
-    args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
-    cwd: path.join(path.dirname(__filename), '..'),
-    stderr: 'pipe',
-    env: {
-      ...process.env,
-      DEBUG: 'pw:mcp:test',
-      DEBUG_COLORS: '0',
-      DEBUG_HIDE_DATE: '1',
-    },
-  });
+  if (mcpMode === 'extension') {
+    const cp = fork(path.join(__filename, '../../cli.js'), [...args, '--port=0'], {
+      stdio: 'pipe'
+    });
+    const cdpRelayServerReady = new ManualPromise<string>();
+    const sseEndpointPromise = new ManualPromise<string>();
+    cp.stderr?.on('data', data => {
+      if (process.env.MCPDEBUG)
+        // eslint-disable-next-line no-console
+        console.error(data.toString());
+      const match = data.toString().match(/Listening on (http:\/\/.*)/);
+      if (match)
+        sseEndpointPromise.resolve(match[1].toString());
+      const extensionMatch = data.toString().match(/CDP relay server started on (ws:\/\/.*\/extension)/);
+      if (extensionMatch)
+        cdpRelayServerReady.resolve(extensionMatch[1].toString());
+    });
+    cp.on('exit', () => sseEndpointPromise.reject(new Error(`Process exited`)));
+    test[kTransportPort] = await cdpRelayServerReady;
+    return {
+      transport: new SSEClientTransport(new URL(await sseEndpointPromise)), disposeTransport: () => new Promise<void>((resolve => {
+        if (cp.exitCode)
+          resolve();
+        cp.on('exit', () => cp.kill());
+        cp.kill();
+      })),
+      stderr,
+    };
+  }
+
+  return {
+    transport: new StdioClientTransport({
+      command: 'node',
+      args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
+      cwd: path.join(path.dirname(__filename), '..'),
+      stderr: 'pipe',
+      env: {
+        ...process.env,
+        DEBUG: 'pw:mcp:test',
+        DEBUG_COLORS: '0',
+        DEBUG_HIDE_DATE: '1',
+      },
+    }),
+    stderr,
+  };
 }
 
 type Response = Awaited<ReturnType<Client['callTool']>>;

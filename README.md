@@ -188,6 +188,9 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                example "1280, 720"
   --vision                     Run server that uses screenshots (Aria snapshots
                                are used by default)
+  --extension                  Allow connecting to a running browser instance
+                               (Edge/Chrome only). Requires the 'Playwright MCP'
+                               browser extension to be installed.
 ```
 
 <!--- End of options generated section -->

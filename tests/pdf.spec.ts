@@ -30,7 +30,7 @@ test('save as pdf unavailable', async ({ startClient, server }) => {
   })).toHaveTextContent(/Tool \"browser_pdf_save\" not found/);
 });
 
-test('save as pdf', async ({ startClient, mcpBrowser, server }, testInfo) => {
+test('save as pdf', async ({ startClient, mcpBrowser, server, mcpExtensionPage }, testInfo) => {
   const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
@@ -41,7 +41,6 @@ test('save as pdf', async ({ startClient, mcpBrowser, server }, testInfo) => {
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
-
   const response = await client.callTool({
     name: 'browser_pdf_save',
   });

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type http from 'http';
 import { program } from 'commander';
 // @ts-ignore
 import { startTraceViewerServer } from 'playwright-core/lib/server';
@@ -22,6 +23,8 @@ import { startHttpTransport, startStdioTransport } from './transport.js';
 import { resolveCLIConfig } from './config.js';
 import { Server } from './server.js';
 import { packageJSON } from './package.js';
+import { CDPBridgeServer } from './cdp-relay.js';
+import { AddressInfo } from 'net';
 
 program
     .version('Version ' + packageJSON.version)
@@ -52,13 +55,19 @@ program
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--extension', 'Allow connecting to a running browser instance (Edge/Chrome only). Requires the \'Playwright MCP\' browser extension to be installed.')
     .action(async options => {
       const config = await resolveCLIConfig(options);
+      if (config.extension)
+        // TODO: The issue is that inside 'new Server' we create the ContextFactory
+        // instances based on if there is a CDP address given.
+        config.browser.cdpEndpoint = '1';
       const server = new Server(config);
       server.setupExitWatchdog();
 
+      let httpServer: http.Server | undefined = undefined;
       if (config.server.port !== undefined)
-        startHttpTransport(server);
+        httpServer = await startHttpTransport(server);
       else
         await startStdioTransport(server);
 
@@ -68,6 +77,14 @@ program
         const url = urlPrefix + '/trace/index.html?trace=' + config.browser.launchOptions.tracesDir + '/trace.json';
         // eslint-disable-next-line no-console
         console.error('\nTrace viewer listening on ' + url);
+      }
+      if (config.extension && httpServer) {
+        config.browser.cdpEndpoint = `ws://127.0.0.1:${(httpServer.address() as AddressInfo).port}/cdp`;
+        const cdpRelayServer = new CDPBridgeServer(httpServer);
+        // TODO: use watchdog to stop the server on exit
+        process.on('exit', () => cdpRelayServer.stop());
+        // eslint-disable-next-line no-console
+        console.error(`CDP relay server started on ws://127.0.0.1:${(httpServer.address() as AddressInfo).port}/extension - Connect to it using the browser extension.`);
       }
     });
 
