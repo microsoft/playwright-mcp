@@ -80,6 +80,11 @@ export type Config = {
      * The host to bind the server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
      */
     host?: string;
+
+    /**
+     * Origins to allow by CORS policy.
+     */
+    corsAllowedOrigins?: string[];
   },
 
   /**
