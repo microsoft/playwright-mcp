@@ -33,13 +33,10 @@ export class CDPBridgeServer extends EventEmitter {
   private _wss: WebSocketServer;
   private _playwrightSocket: WebSocket | null = null;
   private _extensionSocket: WebSocket | null = null;
-  private _pendingCommands = new Map<number, any>();
   private _connectionInfo: {
-    tabId?: number;
-    targetId?: string;
-    browserContextId?: string;
-    targetInfo?: any;
-  } = {};
+    targetInfo: any;
+    sessionId: string;
+  } | undefined;
 
   public readonly CDP_PATH = '/cdp';
   public readonly EXTENSION_PATH = '/extension';
@@ -166,28 +163,18 @@ export class CDPBridgeServer extends EventEmitter {
   private _handleExtensionMessage(message: any): void {
     // Handle connection info from extension
     if (message.type === 'connection_info') {
-      debugLogger('Received connection info from extension:', message);
+      debugLogger('← Extension connected to tab:', message);
       this._connectionInfo = {
-        tabId: message.tabId,
-        targetId: message.targetId,
-        browserContextId: message.browserContextId,
-        targetInfo: message.targetInfo
+        targetInfo: message.targetInfo,
+        // Page sessionId that should be used by this connection.
+        sessionId: message.sessionId
       };
       return;
     }
 
-    if (message.method) {
-      // CDP event from extension
-      debugLogger('← Extension event:', message.method);
-      this._forwardToPlaywright(message);
-    } else if (message.id !== undefined) {
-      // Command response from extension
-      debugLogger('← Extension response:', message.id);
-      this._forwardToPlaywright(message);
-    } else {
-      debugLogger('← Extension unknown message:', message);
-      this._forwardToPlaywright(message);
-    }
+    // CDP event from extension
+    debugLogger(`← Extension message: ${message.method ?? (message.id && `response(id=${message.id})`) ?? 'unknown'}`);
+    this._sendToPlaywright(message);
   }
 
   /**
@@ -226,20 +213,15 @@ export class CDPBridgeServer extends EventEmitter {
     switch (message.method) {
       case 'Target.setAutoAttach':
         // Simulate auto-attach behavior with real target info
-        if (this._connectionInfo.targetId && this._connectionInfo.browserContextId && !message.sessionId) {
+        if (this._connectionInfo && !message.sessionId) {
           debugLogger('Simulating auto-attach for target:', JSON.stringify(message));
           this._sendToPlaywright({
             method: 'Target.attachedToTarget',
             params: {
-              sessionId: 'bridge-session-1',
+              sessionId: this._connectionInfo.sessionId,
               targetInfo: {
-                targetId: this._connectionInfo.targetId,
-                browserContextId: this._connectionInfo.browserContextId,
-                type: 'page',
-                title: this._connectionInfo.targetInfo?.title || 'Browser Tab',
-                url: this._connectionInfo.targetInfo?.url || 'about:blank',
+                ...this._connectionInfo.targetInfo,
                 attached: true,
-                canAccessOpener: false
               },
               waitingForDebugger: false
             }
@@ -256,25 +238,10 @@ export class CDPBridgeServer extends EventEmitter {
       case 'Target.getTargets':
         const targetInfos = [];
 
-        if (this._connectionInfo.targetId) {
+        if (this._connectionInfo) {
           targetInfos.push({
-            targetId: this._connectionInfo.targetId,
-            browserContextId: this._connectionInfo.browserContextId,
-            type: 'page',
-            title: this._connectionInfo.targetInfo?.title || 'Browser Tab',
-            url: this._connectionInfo.targetInfo?.url || 'about:blank',
+            ...this._connectionInfo.targetInfo,
             attached: true,
-            canAccessOpener: false
-          });
-        } else {
-          // Fallback
-          targetInfos.push({
-            targetId: 'bridge-target-1',
-            type: 'page',
-            title: 'Bridge Target',
-            url: 'about:blank',
-            attached: true,
-            canAccessOpener: false
           });
         }
 
@@ -296,10 +263,6 @@ export class CDPBridgeServer extends EventEmitter {
     if (this._extensionSocket?.readyState === WebSocket.OPEN) {
       debugLogger('→ Extension:', message.method || `command(${message.id})`);
       this._extensionSocket.send(JSON.stringify(message));
-
-      if (message.id)
-        this._pendingCommands.set(message.id, Date.now());
-
     } else {
       debugLogger('Extension not connected, cannot forward message');
       if (message.id) {
@@ -314,20 +277,11 @@ export class CDPBridgeServer extends EventEmitter {
   /**
    * Forward message to Playwright
    */
-  private _forwardToPlaywright(message: any): void {
+  private _sendToPlaywright(message: any): void {
     if (this._playwrightSocket?.readyState === WebSocket.OPEN) {
       debugLogger('→ Playwright:', JSON.stringify(message));
       this._playwrightSocket.send(JSON.stringify(message));
-
-      if (message.id)
-        this._pendingCommands.delete(message.id);
-
     }
-  }
-
-  private _sendToPlaywright(message: any): void {
-    debugLogger('→ Playwright:', message.method, `response(${message.id})`);
-    this._forwardToPlaywright(message);
   }
 }
 

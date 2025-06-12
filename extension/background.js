@@ -117,8 +117,7 @@ class TabShareExtension {
         debuggee,
         socket,
         tabId,
-        targetId: targetInfo?.targetInfo?.targetId,
-        browserContextId: targetInfo?.targetInfo?.browserContextId
+        sessionId: `pw-tab-${tabId}`
       };
 
       await new Promise((resolve, reject) => {
@@ -127,9 +126,7 @@ class TabShareExtension {
           // Send initial connection info to bridge
           socket.send(JSON.stringify({
             type: 'connection_info',
-            tabId,
-            targetId: connection.targetId,
-            browserContextId: connection.browserContextId,
+            sessionId: connection.sessionId,
             targetInfo: targetInfo?.targetInfo
           }));
           resolve(undefined);
@@ -169,7 +166,7 @@ class TabShareExtension {
    * @param {Object} connection 
    */
   setupMessageHandling(connection) {
-    const { debuggee, socket, tabId } = connection;
+    const { debuggee, socket, tabId, sessionId } = connection;
 
     // WebSocket -> chrome.debugger
     socket.onmessage = async (event) => {
@@ -231,12 +228,12 @@ class TabShareExtension {
     // chrome.debugger events -> WebSocket
     const eventListener = (source, method, params) => {
       if (source.tabId === tabId && socket.readyState === WebSocket.OPEN) {
+        // There is only one session per tab, and the relay server will
+        // has a connection info for each tab.
         const event = {
+          sessionId,
           method,
           params,
-          sessionId: 'bridge-session-1',
-          targetId: connection.targetId,
-          browserContextId: connection.browserContextId
         };
         debugLog('Forwarding CDP event:', event);
         socket.send(JSON.stringify(event));
