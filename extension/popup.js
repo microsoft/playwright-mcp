@@ -156,7 +156,7 @@ class PopupController {
     
     // Save URL to storage
     await chrome.storage.sync.set({ bridgeUrl: url });
-    
+
     // Send connect message to background script
     const response = await chrome.runtime.sendMessage({
       type: 'connect',

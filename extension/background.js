@@ -173,8 +173,21 @@ class TabShareExtension {
 
     // WebSocket -> chrome.debugger
     socket.onmessage = async (event) => {
+      let message;
       try {
-        const message = JSON.parse(event.data);
+        message = JSON.parse(event.data);
+      } catch (error) {
+        debugLog('Error parsing message:', error);
+        socket.send(JSON.stringify({
+          error: {
+            code: -32700,
+            message: `Error parsing message: ${error.message}`
+          }
+        }));
+        return;
+      }
+
+      try {
         debugLog('Received from bridge:', message);
         
         // Forward CDP command to chrome.debugger
@@ -188,18 +201,30 @@ class TabShareExtension {
           // Send response back to bridge
           const response = {
             id: message.id,
-            result: result || {},
-            sessionId: message.sessionId
+            sessionId: message.sessionId,
+            result
           };
           
           if (chrome.runtime.lastError) {
-            response.error = { message: chrome.runtime.lastError.message };
+            response.error = {
+              code: -32000,
+              message: chrome.runtime.lastError.message,
+            };
           }
           
           socket.send(JSON.stringify(response));
         }
       } catch (error) {
         debugLog('Error processing WebSocket message:', error);
+        const response = {
+          id: message.id,
+          sessionId: message.sessionId,
+          error: {
+            code: -32000,
+            message: error.message,
+          },
+        };
+        socket.send(JSON.stringify(response));
       }
     };
 

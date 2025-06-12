@@ -33,7 +33,6 @@ export class CDPBridgeServer extends EventEmitter {
   private _wss: WebSocketServer;
   private _playwrightSocket: WebSocket | null = null;
   private _extensionSocket: WebSocket | null = null;
-  private _messageId = 0;
   private _pendingCommands = new Map<number, any>();
   private _connectionInfo: {
     tabId?: number;
@@ -185,6 +184,9 @@ export class CDPBridgeServer extends EventEmitter {
       // Command response from extension
       debugLogger('← Extension response:', message.id);
       this._forwardToPlaywright(message);
+    } else {
+      debugLogger('← Extension unknown message:', message);
+      this._forwardToPlaywright(message);
     }
   }
 
@@ -326,14 +328,6 @@ export class CDPBridgeServer extends EventEmitter {
   private _sendToPlaywright(message: any): void {
     debugLogger('→ Playwright:', message.method, `response(${message.id})`);
     this._forwardToPlaywright(message);
-  }
-
-  private _sendToBrowser(message: any): void {
-    this._forwardToExtension(message);
-  }
-
-  private _generateMessageId(): number {
-    return ++this._messageId;
   }
 }
 
