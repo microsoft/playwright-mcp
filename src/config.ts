@@ -19,9 +19,17 @@ import os from 'os';
 import path from 'path';
 import { devices } from 'playwright';
 
-import type { Config, ToolCapability } from '../config.js';
+import type { Config as PublicConfig, ToolCapability } from '../config.js';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';
 import { sanitizeForFilePath } from './tools/utils.js';
+
+type Config = PublicConfig & {
+  /**
+   * TODO: Move to PublicConfig once we are ready to release this feature.
+   * Run server that is able to connect to the 'Playwright MCP' Chrome extension.
+   */
+  extension?: boolean;
+};
 
 export type CLIOptions = {
   allowedOrigins?: string[];

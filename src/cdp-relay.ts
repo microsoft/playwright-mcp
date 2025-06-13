@@ -38,8 +38,8 @@ export class CDPBridgeServer extends EventEmitter {
     sessionId: string;
   } | undefined;
 
-  public readonly CDP_PATH = '/cdp';
-  public readonly EXTENSION_PATH = '/extension';
+  public static readonly CDP_PATH = '/cdp';
+  public static readonly EXTENSION_PATH = '/extension';
 
   constructor(server: http.Server) {
     super();
@@ -57,9 +57,9 @@ export class CDPBridgeServer extends EventEmitter {
 
     debugLogger(`New connection to ${url.pathname}`);
 
-    if (url.pathname === this.CDP_PATH) {
+    if (url.pathname === CDPBridgeServer.CDP_PATH) {
       this._handlePlaywrightConnection(ws);
-    } else if (url.pathname === this.EXTENSION_PATH) {
+    } else if (url.pathname === CDPBridgeServer.EXTENSION_PATH) {
       this._handleExtensionConnection(ws);
     } else {
       debugLogger(`Invalid path: ${url.pathname}`);
@@ -293,8 +293,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const server = new CDPBridgeServer(httpServer);
 
   console.error(`CDP Bridge Server listening on ws://localhost:${port}`);
-  console.error(`- Playwright MCP: ws://localhost:${port}${server.CDP_PATH}`);
-  console.error(`- Extension: ws://localhost:${port}${server.EXTENSION_PATH}`);
+  console.error(`- Playwright MCP: ws://localhost:${port}${CDPBridgeServer.CDP_PATH}`);
+  console.error(`- Extension: ws://localhost:${port}${CDPBridgeServer.EXTENSION_PATH}`);
 
   process.on('SIGINT', () => {
     debugLogger('\nShutting down bridge server...');

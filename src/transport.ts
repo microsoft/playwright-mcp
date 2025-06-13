@@ -15,6 +15,7 @@
  */
 
 import http from 'node:http';
+import type { AddressInfo } from 'node:net';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
 
@@ -108,18 +109,7 @@ export async function startHttpTransport(server: Server): Promise<http.Server> {
   });
   const { host, port } = server.config.server;
   await new Promise<void>(resolve => httpServer.listen(port, host, resolve));
-  const address = httpServer.address();
-  assert(address, 'Could not bind server socket');
-  let url: string;
-  if (typeof address === 'string') {
-    url = address;
-  } else {
-    const resolvedPort = address.port;
-    let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
-    if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
-      resolvedHost = 'localhost';
-    url = `http://${resolvedHost}:${resolvedPort}`;
-  }
+  const url = httpAddressToString(httpServer.address());
   const message = [
     `Listening on ${url}`,
     'Put this in your client config:',
@@ -135,4 +125,15 @@ export async function startHttpTransport(server: Server): Promise<http.Server> {
     // eslint-disable-next-line no-console
   console.error(message);
   return httpServer;
+}
+
+export function httpAddressToString(address: string | AddressInfo | null): string {
+  assert(address, 'Could not bind server socket');
+  if (typeof address === 'string')
+    return address;
+  const resolvedPort = address.port;
+  let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
+  if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
+    resolvedHost = 'localhost';
+  return `http://${resolvedHost}:${resolvedPort}`;
 }

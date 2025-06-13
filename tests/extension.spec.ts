@@ -15,7 +15,6 @@
  */
 import url from 'url';
 import path from 'path';
-import assert from 'assert';
 import { spawnSync } from 'child_process';
 
 import { test, expect } from './fixtures.js';
@@ -24,44 +23,10 @@ import { createConnection } from '@playwright/mcp';
 
 test.skip(({ mcpMode }) => mcpMode !== 'extension');
 
-test.skip('allow re-connecting to a browser', async ({ client, mcpExtensionPage }) => {
-  assert(mcpExtensionPage, 'mcpExtensionPage is required for this test');
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, planet!</body></html>',
-    },
-  });
-  await expect(mcpExtensionPage.page.locator('body')).toHaveText('Hello, planet!');
-
-  expect(await client.callTool({
-    name: 'browser_close',
-    arguments: {},
-  })).toContainTextContent('No open pages available');
-
-  // await mcpExtensionPage.connect();
-
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent('Error: Please use browser_connect before launching the browser');
-  await mcpExtensionPage.connect();
-
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
-  await expect(mcpExtensionPage.page.locator('body')).toHaveText('Hello, world!');
-});
-
 test('does not allow --cdp-endpoint', async ({  startClient }) => {
   await expect(createConnection({
     browser: { browserName: 'firefox' },
-    extension: true,
+    ...({ extension: true })
   })).rejects.toThrow(/Extension mode is only supported for Chromium browsers/);
 });
 

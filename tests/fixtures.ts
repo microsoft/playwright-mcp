@@ -78,8 +78,6 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     let dispose: (() => void) | undefined;
 
     await use(async options => {
-      if (client)
-        throw new Error('Client already started');
       const args: string[] = [];
       if (userDataDir)
         args.push('--user-data-dir', userDataDir);
@@ -89,8 +87,6 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
         args.push('--headless');
       if (mcpBrowser)
         args.push(`--browser=${mcpBrowser}`);
-      if (mcpMode === 'extension')
-        args.push('--extension');
       if (options?.args)
         args.push(...options.args);
       if (options?.config) {
@@ -176,7 +172,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
         await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).clear();
         await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).fill(test[kTransportPort]);
         await popupPage.getByRole('button', { name: 'Share This Tab' }).click();
-      }
+      },
     });
     await context?.close();
   },
@@ -222,16 +218,13 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
       command: 'docker',
       args: [...dockerArgs, 'playwright-mcp-dev:latest', ...args],
     });
-    transport.stderr?.on('data', data => {
-      stderrBuffer += data.toString();
-    });
     return {
       transport,
       stderr,
     };
   }
   if (mcpMode === 'extension') {
-    const cp = fork(path.join(__filename, '../../cli.js'), [...args, '--port=0'], {
+    const cp = fork(path.join(__filename, '../../cli.js'), [...args, '--extension', '--port=0'], {
       stdio: 'pipe'
     });
     const cdpRelayServerReady = new ManualPromise<string>();
@@ -260,19 +253,23 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
     };
   }
 
+  const transport = new StdioClientTransport({
+    command: 'node',
+    args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
+    cwd: path.join(path.dirname(__filename), '..'),
+    stderr: 'pipe',
+    env: {
+      ...process.env,
+      DEBUG: 'pw:mcp:test',
+      DEBUG_COLORS: '0',
+      DEBUG_HIDE_DATE: '1',
+    },
+  });
+  transport.stderr?.on('data', data => {
+    stderrBuffer += data.toString();
+  });
   return {
-    transport: new StdioClientTransport({
-      command: 'node',
-      args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
-      cwd: path.join(path.dirname(__filename), '..'),
-      stderr: 'pipe',
-      env: {
-        ...process.env,
-        DEBUG: 'pw:mcp:test',
-        DEBUG_COLORS: '0',
-        DEBUG_HIDE_DATE: '1',
-      },
-    }),
+    transport,
     stderr,
   };
 }

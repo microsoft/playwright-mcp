@@ -5,7 +5,7 @@
  */
 
 function debugLog(...args) {
-  const enabled = true;
+  const enabled = false;
   if (enabled) {
     console.log('[Extension]', ...args);
   }

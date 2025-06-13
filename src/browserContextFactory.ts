@@ -28,10 +28,10 @@ import type { BrowserInfo, LaunchBrowserRequest } from './browserServer.js';
 
 const testDebug = debug('pw:mcp:test');
 
-export function contextFactory(browserConfig: FullConfig['browser']): BrowserContextFactory {
+export function contextFactory(browserConfig: FullConfig['browser'], { forceCdp }: { forceCdp?: boolean } = {}): BrowserContextFactory {
   if (browserConfig.remoteEndpoint)
     return new RemoteContextFactory(browserConfig);
-  if (browserConfig.cdpEndpoint)
+  if (browserConfig.cdpEndpoint || forceCdp)
     return new CdpContextFactory(browserConfig);
   if (browserConfig.isolated)
     return new IsolatedContextFactory(browserConfig);
