@@ -29,7 +29,7 @@ import { TestServer } from './testserver/index.ts';
 import { ManualPromise } from '../src/manualPromise.js';
 
 import type { Config } from '../config';
-import type { BrowserContext, Page } from 'playwright';
+import type { BrowserContext } from 'playwright';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { Stream } from 'stream';
 
@@ -52,14 +52,12 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
-  startMcpExtension: () => Promise<void>;
+  startMcpExtension: (relayServerURL: string) => Promise<void>;
 };
 
 type WorkerFixtures = {
   _workerServers: { server: TestServer, httpsServer: TestServer };
 };
-
-const kTransportPort = Symbol('kTransportPort');
 
 export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>({
 
@@ -97,16 +95,16 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       }
 
       client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' });
-      const { transport, stderr } = await createTransport(args, mcpMode);
+      const { transport, stderr, relayServerURL } = await createTransport(args, mcpMode);
       let stderrBuffer = '';
-      stderr.on('data', data => {
+      stderr?.on('data', data => {
         if (process.env.PWMCP_DEBUG)
           process.stderr.write(data);
         stderrBuffer += data.toString();
       });
       await client.connect(transport);
       if (mcpMode === 'extension')
-        await startMcpExtension();
+        await startMcpExtension(relayServerURL!);
       await client.ping();
       return { client, stderr: () => stderrBuffer };
     });
@@ -151,7 +149,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
   startMcpExtension: async ({ mcpMode, mcpHeadless }, use) => {
     let context: BrowserContext | undefined;
-    await use(async () => {
+    await use(async (relayServerURL: string) => {
       if (mcpMode !== 'extension')
         throw new Error('Must be running in MCP extension mode to use this fixture.');
       const cdpPort = await findFreePort();
@@ -175,7 +173,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       // Connect to the relay server.
       await popupPage.goto(new URL('/popup.html', context.serviceWorkers()[0].url()).toString());
       await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).clear();
-      await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).fill(test[kTransportPort]);
+      await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).fill(relayServerURL);
       await popupPage.getByRole('button', { name: 'Share This Tab' }).click();
     });
     await context?.close();
@@ -209,7 +207,8 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
 async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']): Promise<{
   transport: Transport,
-  stderr: Stream,
+  stderr: Stream | null,
+  relayServerURL?: string,
 }> {
   // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
   const __filename = url.fileURLToPath(import.meta.url);
@@ -221,7 +220,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
     });
     return {
       transport,
-      stderr: transport.stderr!,
+      stderr: transport.stderr,
     };
   }
   if (mcpMode === 'extension') {
@@ -244,7 +243,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
       sseEndpointPromise.reject(new Error(`Process exited`));
       cdpRelayServerReady.reject(new Error(`Process exited`));
     });
-    test[kTransportPort] = await cdpRelayServerReady;
+    const relayServerURL = await cdpRelayServerReady;
     const sseEndpoint = await sseEndpointPromise;
 
     const transport = new SSEClientTransport(new URL(sseEndpoint));
@@ -257,6 +256,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
     return {
       transport,
       stderr: relay.stderr!,
+      relayServerURL,
     };
   }
 
