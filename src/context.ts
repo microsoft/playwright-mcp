@@ -335,6 +335,13 @@ ${code.join('\n')}
     const result = await this._browserContextFactory.createContext();
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
+    
+    // Setup video recording if configured
+    if (this.config.browser.recordVideo && this.config.browser.recordVideo.mode !== 'off') {
+      // For individual context video recording, we need to configure each page separately
+      // since the recordVideo option is for new contexts, we'll handle this when creating pages
+    }
+    
     for (const page of browserContext.pages())
       this._onPageCreated(page);
     browserContext.on('page', page => this._onPageCreated(page));
