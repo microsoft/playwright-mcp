@@ -17,19 +17,21 @@
 import fs from 'fs';
 import url from 'url';
 import path from 'path';
-import { chromium, Page } from 'playwright';
+import net from 'net';
+import { chromium } from 'playwright';
+import { fork } from 'child_process';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { TestServer } from './testserver/index.ts';
+import { ManualPromise } from '../src/manualPromise.js';
 
 import type { Config } from '../config';
-import type { BrowserContext } from 'playwright';
-import { fork } from 'child_process';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { ManualPromise } from '../src/manualPromise.js';
+import type { BrowserContext, Page } from 'playwright';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { Stream } from 'stream';
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
@@ -50,7 +52,7 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
-  mcpExtensionPage: { page: Page, connect: () => Promise<void> } | undefined;
+  startMcpExtension: () => Promise<void>;
 };
 
 type WorkerFixtures = {
@@ -71,11 +73,10 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(client);
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode, mcpExtensionPage }, use, testInfo) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode, startMcpExtension }, use, testInfo) => {
     const userDataDir = mcpMode !== 'docker' ? testInfo.outputPath('user-data-dir') : undefined;
     const configDir = path.dirname(test.info().config.configFile!);
     let client: Client | undefined;
-    let dispose: (() => void) | undefined;
 
     await use(async options => {
       const args: string[] = [];
@@ -96,17 +97,21 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       }
 
       client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' });
-      const { transport, stderr, disposeTransport } = await createTransport(args, mcpMode);
-      dispose = disposeTransport;
+      const { transport, stderr } = await createTransport(args, mcpMode);
+      let stderrBuffer = '';
+      stderr.on('data', data => {
+        if (process.env.PWMCP_DEBUG)
+          process.stderr.write(data);
+        stderrBuffer += data.toString();
+      });
       await client.connect(transport);
-      if (mcpMode === 'extension' && mcpExtensionPage)
-        await mcpExtensionPage.connect();
+      if (mcpMode === 'extension')
+        await startMcpExtension();
       await client.ping();
-      return { client, stderr };
+      return { client, stderr: () => stderrBuffer };
     });
 
     await client?.close();
-    dispose?.();
   },
 
   wsEndpoint: async ({ }, use) => {
@@ -144,35 +149,34 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
   mcpMode: [undefined, { option: true }],
 
-  mcpExtensionPage: async ({ mcpMode, mcpHeadless }, use) => {
-    if (mcpMode !== 'extension')
-      return await use(undefined);
-    const cdpPort = 8900 + test.info().parallelIndex * 4;
-    const pathToExtension = path.join(url.fileURLToPath(import.meta.url), '../../extension');
-    const context = await chromium.launchPersistentContext('', {
-      headless: mcpHeadless,
-      args: [
-        `--disable-extensions-except=${pathToExtension}`,
-        `--load-extension=${pathToExtension}`,
-        '--enable-features=AllowContentInitiatedDataUrlNavigations',
-      ],
-      channel: 'chromium',
-      ...{ assistantMode: true, cdpPort },
-    });
-    const popupPage = await context.newPage();
-    const page = context.pages()[0];
-    await page.bringToFront();
-    // Do not auto dismiss dialogs.
-    page.on('dialog', () => { });
-    await expect.poll(() => context?.serviceWorkers()).toHaveLength(1);
-    await use({
-      page,
-      connect: async () => {
-        await popupPage.goto(new URL('/popup.html', context.serviceWorkers()[0].url()).toString());
-        await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).clear();
-        await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).fill(test[kTransportPort]);
-        await popupPage.getByRole('button', { name: 'Share This Tab' }).click();
-      },
+  startMcpExtension: async ({ mcpMode, mcpHeadless }, use) => {
+    let context: BrowserContext | undefined;
+    await use(async () => {
+      if (mcpMode !== 'extension')
+        throw new Error('Must be running in MCP extension mode to use this fixture.');
+      const cdpPort = await findFreePort();
+      const pathToExtension = path.join(url.fileURLToPath(import.meta.url), '../../extension');
+      context = await chromium.launchPersistentContext('', {
+        headless: mcpHeadless,
+        args: [
+          `--disable-extensions-except=${pathToExtension}`,
+          `--load-extension=${pathToExtension}`,
+          '--enable-features=AllowContentInitiatedDataUrlNavigations',
+        ],
+        channel: 'chromium',
+        ...{ assistantMode: true, cdpPort },
+      });
+      const popupPage = await context.newPage();
+      const page = context.pages()[0];
+      await page.bringToFront();
+      // Do not auto dismiss dialogs.
+      page.on('dialog', () => { });
+      await expect.poll(() => context?.serviceWorkers()).toHaveLength(1);
+      // Connect to the relay server.
+      await popupPage.goto(new URL('/popup.html', context.serviceWorkers()[0].url()).toString());
+      await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).clear();
+      await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).fill(test[kTransportPort]);
+      await popupPage.getByRole('button', { name: 'Share This Tab' }).click();
     });
     await context?.close();
   },
@@ -205,11 +209,8 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
 async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']): Promise<{
   transport: Transport,
-  disposeTransport?: () => void,
-  stderr: () => string,
+  stderr: Stream,
 }> {
-  let stderrBuffer = '';
-  const stderr = () => stderrBuffer;
   // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
   const __filename = url.fileURLToPath(import.meta.url);
   if (mcpMode === 'docker') {
@@ -220,36 +221,42 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
     });
     return {
       transport,
-      stderr,
+      stderr: transport.stderr!,
     };
   }
   if (mcpMode === 'extension') {
-    const cp = fork(path.join(__filename, '../../cli.js'), [...args, '--extension', '--port=0'], {
+    const relay = fork(path.join(__filename, '../../cli.js'), [...args, '--extension', '--port=0'], {
       stdio: 'pipe'
     });
     const cdpRelayServerReady = new ManualPromise<string>();
     const sseEndpointPromise = new ManualPromise<string>();
-    cp.stderr?.on('data', data => {
-      if (process.env.MCPDEBUG)
-        // eslint-disable-next-line no-console
-        console.error(data.toString());
-      const match = data.toString().match(/Listening on (http:\/\/.*)/);
+    let stderrBuffer = '';
+    relay.stderr!.on('data', data => {
+      stderrBuffer += data.toString();
+      const match = stderrBuffer.match(/Listening on (http:\/\/.*)/);
       if (match)
         sseEndpointPromise.resolve(match[1].toString());
-      const extensionMatch = data.toString().match(/CDP relay server started on (ws:\/\/.*\/extension)/);
+      const extensionMatch = stderrBuffer.match(/CDP relay server started on (ws:\/\/.*\/extension)/);
       if (extensionMatch)
         cdpRelayServerReady.resolve(extensionMatch[1].toString());
     });
-    cp.on('exit', () => sseEndpointPromise.reject(new Error(`Process exited`)));
+    relay.on('exit', () => {
+      sseEndpointPromise.reject(new Error(`Process exited`));
+      cdpRelayServerReady.reject(new Error(`Process exited`));
+    });
     test[kTransportPort] = await cdpRelayServerReady;
+    const sseEndpoint = await sseEndpointPromise;
+
+    const transport = new SSEClientTransport(new URL(sseEndpoint));
+    // We cannot just add  transport.onclose here as Client.connect() overrides it.
+    const origClose = transport.close;
+    transport.close = async () => {
+      await origClose.call(transport);
+      relay.kill();
+    };
     return {
-      transport: new SSEClientTransport(new URL(await sseEndpointPromise)), disposeTransport: () => new Promise<void>((resolve => {
-        if (cp.exitCode)
-          resolve();
-        cp.on('exit', () => cp.kill());
-        cp.kill();
-      })),
-      stderr,
+      transport,
+      stderr: relay.stderr!,
     };
   }
 
@@ -265,12 +272,9 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
       DEBUG_HIDE_DATE: '1',
     },
   });
-  transport.stderr?.on('data', data => {
-    stderrBuffer += data.toString();
-  });
   return {
     transport,
-    stderr,
+    stderr: transport.stderr!,
   };
 }
 
@@ -327,6 +331,17 @@ export const expect = baseExpect.extend({
     };
   },
 });
+
+async function findFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(0, () => {
+      const { port } = server.address() as net.AddressInfo;
+      server.close(() => resolve(port));
+    });
+    server.on('error', reject);
+  });
+}
 
 export function formatOutput(output: string): string[] {
   return output.split('\n').map(line => line.replace(/^pw:mcp:test /, '').replace(/user data dir.*/, 'user data dir').trim()).filter(Boolean);
