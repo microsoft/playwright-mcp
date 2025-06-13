@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Bridge Server - Standalone WebSocket server that bridges Playwright MCP and Chrome Extension
  *
@@ -21,6 +21,8 @@
  * - /cdp - Full CDP interface for Playwright MCP
  * - /extension - Extension connection for chrome.debugger forwarding
  */
+
+/* eslint-disable no-console */
 
 import { WebSocket, WebSocketServer } from 'ws';
 import http from 'node:http';

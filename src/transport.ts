@@ -15,7 +15,6 @@
  */
 
 import http from 'node:http';
-import type { AddressInfo } from 'node:net';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
 
@@ -24,6 +23,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
+import type { AddressInfo } from 'node:net';
 import type { Server } from './server.js';
 
 export async function startStdioTransport(server: Server) {
