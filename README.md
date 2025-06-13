@@ -177,6 +177,9 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                example ".com,chromium.org,.domain.com"
   --proxy-server <proxy>       specify proxy server, for example
                                "http://myproxy:3128" or "socks5://myproxy:8080"
+  --record-video <mode>        record video mode: "off", "on",
+                               "retain-on-failure", or "on-first-retry"
+  --record-video-size <size>   video size in pixels, for example "800,600"
   --save-trace                 Whether to save the Playwright Trace of the
                                session into the output directory.
   --storage-state <path>       path to the storage state file for isolated
@@ -273,6 +276,13 @@ npx @playwright/mcp@latest --config path/to/config.json
     contextOptions?: {
       viewport?: { width: number, height: number };
       // ... other Playwright context options
+    };
+
+    // Video recording configuration
+    // @see https://playwright.dev/docs/videos
+    recordVideo?: {
+      mode: 'off' | 'on' | 'retain-on-failure' | 'on-first-retry';
+      size?: { width: number, height: number };
     };
 
     // CDP endpoint for connecting to existing browser

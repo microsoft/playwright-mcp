@@ -44,6 +44,8 @@ export type CLIOptions = {
   port?: number;
   proxyBypass?: string;
   proxyServer?: string;
+  recordVideo?: string;
+  recordVideoSize?: string;
   saveTrace?: boolean;
   storageState?: string;
   userAgent?: string;
@@ -167,6 +169,28 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   if (cliOptions.blockServiceWorkers)
     contextOptions.serviceWorkers = 'block';
 
+  // Video recording configuration
+  let recordVideo: { mode: 'off' | 'on' | 'retain-on-failure' | 'on-first-retry'; size?: { width: number; height: number } } | undefined;
+  if (cliOptions.recordVideo) {
+    const mode = cliOptions.recordVideo as 'off' | 'on' | 'retain-on-failure' | 'on-first-retry';
+    if (!['off', 'on', 'retain-on-failure', 'on-first-retry'].includes(mode)) {
+      throw new Error('Invalid video mode. Use "off", "on", "retain-on-failure", or "on-first-retry"');
+    }
+    
+    recordVideo = { mode };
+    
+    if (cliOptions.recordVideoSize) {
+      try {
+        const [width, height] = cliOptions.recordVideoSize.split(',').map(n => +n);
+        if (isNaN(width) || isNaN(height))
+          throw new Error('bad values');
+        recordVideo.size = { width, height };
+      } catch (e) {
+        throw new Error('Invalid video size format: use "width,height", for example --record-video-size="800,600"');
+      }
+    }
+  }
+
   const result: Config = {
     browser: {
       browserAgent: cliOptions.browserAgent ?? process.env.PW_BROWSER_AGENT,
@@ -175,6 +199,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
       userDataDir: cliOptions.userDataDir,
       launchOptions,
       contextOptions,
+      recordVideo,
       cdpEndpoint: cliOptions.cdpEndpoint,
     },
     server: {

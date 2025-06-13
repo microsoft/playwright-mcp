@@ -60,6 +60,29 @@ export type Config = {
     contextOptions?: playwright.BrowserContextOptions;
 
     /**
+     * Video recording configuration for browser contexts.
+     * @see https://playwright.dev/docs/videos
+     */
+    recordVideo?: {
+      /**
+       * Video recording mode:
+       * - 'off': Do not record video
+       * - 'on': Record video for each test
+       * - 'retain-on-failure': Record video but remove successful recordings
+       * - 'on-first-retry': Record video only on retries
+       */
+      mode: 'off' | 'on' | 'retain-on-failure' | 'on-first-retry';
+      
+      /**
+       * Video size configuration
+       */
+      size?: {
+        width: number;
+        height: number;
+      };
+    };
+
+    /**
      * Chrome DevTools Protocol endpoint to connect to an existing browser instance in case of Chromium family browsers.
      */
     cdpEndpoint?: string;

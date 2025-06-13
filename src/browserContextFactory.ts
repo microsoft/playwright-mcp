@@ -28,6 +28,10 @@ import type { BrowserInfo, LaunchBrowserRequest } from './browserServer.js';
 
 const testDebug = debug('pw:mcp:test');
 
+function getVideoDir(outputDir?: string): string {
+  return path.join(outputDir || process.cwd(), 'videos');
+}
+
 export function contextFactory(browserConfig: FullConfig['browser']): BrowserContextFactory {
   if (browserConfig.remoteEndpoint)
     return new RemoteContextFactory(browserConfig);
@@ -116,7 +120,17 @@ class IsolatedContextFactory extends BaseContextFactory {
   }
 
   protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
-    return browser.newContext(this.browserConfig.contextOptions);
+    const contextOptions = { ...this.browserConfig.contextOptions };
+    
+    // Apply video recording configuration if specified
+    if (this.browserConfig.recordVideo && this.browserConfig.recordVideo.mode !== 'off') {
+      contextOptions.recordVideo = {
+        dir: getVideoDir(),
+        size: this.browserConfig.recordVideo.size,
+      };
+    }
+    
+    return browser.newContext(contextOptions);
   }
 }
 
@@ -171,12 +185,22 @@ class PersistentContextFactory implements BrowserContextFactory {
     const browserType = playwright[this.browserConfig.browserName];
     for (let i = 0; i < 5; i++) {
       try {
-        const browserContext = await browserType.launchPersistentContext(userDataDir, {
+        const contextOptions = {
           ...this.browserConfig.launchOptions,
           ...this.browserConfig.contextOptions,
           handleSIGINT: false,
           handleSIGTERM: false,
-        });
+        };
+        
+        // Apply video recording configuration if specified
+        if (this.browserConfig.recordVideo && this.browserConfig.recordVideo.mode !== 'off') {
+          contextOptions.recordVideo = {
+            dir: getVideoDir(),
+            size: this.browserConfig.recordVideo.size,
+          };
+        }
+        
+        const browserContext = await browserType.launchPersistentContext(userDataDir, contextOptions);
         const close = () => this._closeBrowserContext(browserContext, userDataDir);
         return { browserContext, close };
       } catch (error: any) {
