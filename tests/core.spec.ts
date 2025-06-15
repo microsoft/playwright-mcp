@@ -150,6 +150,88 @@ await page.getByRole('listbox').selectOption(['bar', 'baz']);
 `);
 });
 
+test('browser_insert_environment_variable should report an error for an unset secret', async ({ client, server }) => {
+    server.setContent('/', `
+      <title>Title</title>
+      <input type='text' id='password-input'></input>
+    `, 'text/html');
+
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.PREFIX },
+    });
+
+    const result = await client.callTool({
+      name: 'browser_insert_environment_variable',
+      arguments: {
+        selector: '#password-input',
+        text: 'env(MCP_TEST_PASSWORD)',
+      },
+    });
+
+    // Check that the tool returns the correct error message.
+    expect(result).toHaveTextContent(`Error: The environment variable 'MCP_TEST_PASSWORD' specified in browser_type is not set.`);
+});
+
+test('browser_insert_environment_variable should fill with regular text', async ({ client, server }) => {
+    server.setContent('/', `
+      <title>Title</title>
+      <input type='text' id='username-input'></input>
+    `, 'text/html');
+
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.PREFIX },
+    });
+
+    const result = await client.callTool({
+      name: 'browser_insert_environment_variable',
+      arguments: {
+        selector: '#username-input',
+        text: 'testuser',
+      },
+    });
+
+    // Check the generated code and the snapshot for regular text.
+    expect(result).toHaveTextContent(`
+- Ran Playwright code:
+\`\`\`js
+// Typing text into '#username-input'
+await page.locator('#username-input').fill('testuser');
+\`\`\`
+
+- Page URL: ${server.PREFIX}
+- Page Title: Title
+- Page Snapshot
+\`\`\`yaml
+- textbox [ref=e2]: testuser
+\`\`\`
+`);
+});
+
+test('browser_insert_environment_variable should return an error for non-existent variables', async ({ client, server }) => {
+    server.setContent('/', `
+      <title>Title</title>
+      <input type='text' id='api-key-input'></input>
+    `, 'text/html');
+
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.PREFIX },
+    });
+
+    const result = await client.callTool({
+      name: 'browser_insert_environment_variable',
+      arguments: {
+        selector: '#api-key-input',
+        text: 'env(NON_EXISTENT_API_KEY)',
+      },
+    });
+
+    expect(result).toHaveTextContent(`Error: The environment variable 'NON_EXISTENT_API_KEY' specified in browser_type is not set.`);
+});
+
+
 test('browser_type', async ({ client, server }) => {
   server.setContent('/', `
     <!DOCTYPE html>

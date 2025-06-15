@@ -27,6 +27,7 @@ test('test snapshot tool list', async ({ client }) => {
     'browser_handle_dialog',
     'browser_hover',
     'browser_select_option',
+    'browser_insert_environment_variable',
     'browser_type',
     'browser_close',
     'browser_install',

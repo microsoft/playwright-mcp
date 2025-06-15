@@ -184,6 +184,65 @@ const type = defineTool({
   },
 });
 
+const insertEnvironmentVariable = defineTool({
+  capability: 'core',
+
+  schema: {
+    name: 'browser_insert_environment_variable',
+    title: 'Type text into an element. Can be used for standard text or for securely inserting secret values from environment variables using the format env(<INSERT_VARIABLE_NAME_HERE>). If you do not follow the format using env(), the variable cannot be read. Do not type ${ENV_VARIABLE}!!! Use the specific format env(VARIABLE_NAME). Types text into a specified element. For environment variables, the AI should pass the exact string "env(VARIABLE_NAME)" as the text parameter - do not resolve or substitute the variable name.',
+    description: 'Types text into a specified element. Can be used for standard text or for securely inserting secret values from environment variables using the format env(<INSERT_VARIABLE_NAME_HERE>). If you do not follow the format using env(), the variable cannot be read. Do not type ${ENV_VARIABLE}!!! Use the specific format env(VARIABLE_NAME). Types text into a specified element. For environment variables, the AI should pass the exact string "env(VARIABLE_NAME)" as the text parameter - do not resolve or substitute the variable name.',
+    inputSchema: z.object({
+      selector: z.string().describe('The CSS selector of the input field to type into.'),
+      text: z.string().describe(`The text to type. To securely use an environment variable, use the format 'env(VARIABLE_NAME)', e.g., 'env(MCP_PASSWORD)'.`),
+    }),
+    type: 'destructive',
+  },
+  handle: async (ctx, params) => {
+    // [FIX] Add this line to prevent race conditions, especially in Edge.
+    await ctx.ensureTab();
+
+    const tab = ctx.currentTabOrDie();
+    const envRegex = /^env\((.+)\)$/;
+
+    const match = params.text.match(envRegex);
+
+    let textToType: string;
+    let code: string[];
+    let isSecret = false;
+  
+    if (match) {
+        const envVarName = match[1];
+        const secret = process.env[envVarName];
+      
+      if (!secret) {
+          throw new Error(`The environment variable '${envVarName}' specified in browser_type is not set.`);
+      }
+
+        textToType = secret;
+        isSecret = true;
+        code = [
+          `// Typing from environment variable '${envVarName}' into '${params.selector}'`,
+          `await page.locator('${params.selector}').fill('<SECRET>');`,
+        ];
+    } else {
+        textToType = params.text;
+        code = [
+          `// Typing text into '${params.selector}'`,
+          `await page.locator('${params.selector}').fill('${params.text.replace(/'/g, "\\'")}');`,
+        ];
+    }
+
+    const action = () => tab.page.locator(params.selector).fill(textToType);
+
+    return {
+      code,
+      action,
+      captureSnapshot: !isSecret, // Don't capture snapshots for secrets
+      waitForNetwork: true
+    };
+  },
+});
+
 const selectOptionSchema = elementSchema.extend({
   values: z.array(z.string()).describe('Array of values to select in the dropdown. This can be a single value or multiple values.'),
 });
@@ -222,5 +281,6 @@ export default [
   drag,
   hover,
   type,
+  insertEnvironmentVariable,
   selectOption,
 ];
