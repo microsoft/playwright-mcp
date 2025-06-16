@@ -1,18 +1,18 @@
 {
-  "name": "@playwright/mcp",
-  "version": "0.0.29",
-  "description": "Playwright Tools for MCP",
+  "name": "@verto-fx/playwright-mcp",
+  "version": "0.0.30",
+  "description": "Playwright Tools for MCP - Verto-FX Fork",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+    "url": "git+https://github.com/Verto-FX/playwright-mcp.git"
   },
-  "homepage": "https://playwright.dev",
+  "homepage": "https://github.com/Verto-FX/playwright-mcp",
   "engines": {
     "node": ">=18"
   },
   "author": {
-    "name": "Microsoft Corporation"
+    "name": "Verto-FX"
   },
   "license": "Apache-2.0",
   "scripts": {
@@ -59,6 +59,7 @@
     "typescript": "^5.8.2"
   },
   "bin": {
-    "mcp-server-playwright": "cli.js"
+    "mcp-server-playwright": "cli.js",
+    "verto-playwright-mcp": "cli.js"
   }
 }
