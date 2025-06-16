@@ -37,6 +37,8 @@ export function contextFactory(browserConfig: FullConfig['browser']): BrowserCon
     return new IsolatedContextFactory(browserConfig);
   if (browserConfig.browserAgent)
     return new BrowserServerContextFactory(browserConfig);
+  if (browserConfig.browserServer)
+    return new CoreBrowserServerContextFactory(browserConfig);
   return new PersistentContextFactory(browserConfig);
 }
 
@@ -246,6 +248,45 @@ export class BrowserServerContextFactory extends BaseContextFactory {
     const dir = await userDataDir(this.browserConfig);
     await fs.promises.mkdir(dir, { recursive: true });
     return dir;
+  }
+}
+
+interface BrowserListEntry {
+  browserName: 'chromium' | 'firefox' | 'webkit';
+  reuseGroup?: string;
+  wsPath: string;
+  context: {
+    pages: {
+      url: string;
+    }[];
+  }[];
+}
+
+export class CoreBrowserServerContextFactory extends BaseContextFactory {
+  constructor(browserConfig: FullConfig['browser']) {
+    super('browser-server', browserConfig);
+  }
+
+  protected override async _doObtainBrowser(): Promise<playwright.Browser> {
+    const list = await fetch(new URL(`/json/list`, this.browserConfig.browserServer));
+    if (!list.ok)
+      throw new Error(`Failed to fetch browser list from ${this.browserConfig.browserServer}: ${list.status} ${list.statusText}`);
+    const runningBrowsers = await list.json() as BrowserListEntry[];
+    // TODO: allow picking from multiple browsers.
+    const browser = runningBrowsers[0];
+    if (!browser)
+      throw new Error(`No browser found in the browser server at ${this.browserConfig.browserServer}`);
+    const browserType = playwright[browser.browserName];
+    const wsURL = new URL(browser.wsPath, this.browserConfig.browserServer);
+    wsURL.protocol = 'ws';
+    return await browserType.connect(wsURL.toString());
+  }
+
+  protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
+    // TODO: allow picking from multiple contexts.
+    if (browser.contexts().length > 0)
+      return browser.contexts()[0];
+    return await browser.newContext();
   }
 }
 
