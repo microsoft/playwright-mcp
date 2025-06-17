@@ -78,7 +78,13 @@ export function sanitizeForFilePath(s: string) {
 }
 
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
-  return (locator as any)._generateLocatorString();
+  try {
+    return await (locator as any)._generateLocatorString();
+  } catch (e) {
+    if (e instanceof Error && /locator._generateLocatorString: Timeout .* exceeded/.test(e.message))
+      throw new Error('Ref not found, likely because element was removed. Use browser_snapshot to see what elements are currently on the page.');
+    throw e;
+  }
 }
 
 export async function callOnPageNoTrace<T>(page: playwright.Page, callback: (page: playwright.Page) => Promise<T>): Promise<T> {
