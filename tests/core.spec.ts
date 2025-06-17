@@ -237,3 +237,41 @@ await page.setViewportSize({ width: 390, height: 780 });
 \`\`\``);
   await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent('Window size: 390x780');
 });
+
+test('old locator error message', async ({ client, server }) => {
+  server.setContent('/', `
+    <button>Button 1</button>
+    <button>Button 2</button>
+    <script>
+      document.querySelector('button').addEventListener('click', () => {
+        document.querySelectorAll('button')[1].remove();
+      });
+    </script>
+  `, 'text/html');
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX,
+    },
+  })).toContainTextContent(`
+  - button "Button 1" [ref=e2]
+  - button "Button 2" [ref=e3]
+  `.trim());
+
+  await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Button 1',
+      ref: 'e2',
+    },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Button 2',
+      ref: 'e3',
+    },
+  })).toContainTextContent('Ref not found');
+});
