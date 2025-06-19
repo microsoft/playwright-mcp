@@ -253,6 +253,23 @@ using the `--config` command line option:
 npx @playwright/mcp@latest --config path/to/config.json
 ```
 
+```json
+// path/to/config.json
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/playwright-mcp/main/config.schema.json",
+  "browser": {
+    "browserName": "chromium",
+    "launchOptions": {
+      "channel": "msedge"
+    },
+    "contextOptions": {
+      "timezoneId": "Europe/Berlin",
+      "locale": "de-DE"
+    }
+  }
+}
+```
+
 <details>
 <summary>Configuration file schema</summary>
 

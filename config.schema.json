@@ -1,0 +1,692 @@
+{
+  "type": "object",
+  "properties": {
+    "browser": {
+      "description": "The browser to use.",
+      "type": "object",
+      "properties": {
+        "browserAgent": {
+          "description": "Use browser agent (experimental).",
+          "type": "string"
+        },
+        "browserName": {
+          "description": "The type of browser to use.",
+          "enum": [
+            "chromium",
+            "firefox",
+            "webkit"
+          ],
+          "type": "string"
+        },
+        "isolated": {
+          "description": "Keep the browser profile in memory, do not save it to disk.",
+          "type": "boolean"
+        },
+        "userDataDir": {
+          "description": "Path to a user data directory for browser profile persistence.\nTemporary directory is created by default.",
+          "type": "string"
+        },
+        "launchOptions": {
+          "$ref": "#/definitions/LaunchOptions",
+          "description": "Launch options passed to"
+        },
+        "contextOptions": {
+          "$ref": "#/definitions/BrowserContextOptions",
+          "description": "Context options for the browser context.\n\nThis is useful for settings options like `viewport`."
+        },
+        "cdpEndpoint": {
+          "description": "Chrome DevTools Protocol endpoint to connect to an existing browser instance in case of Chromium family browsers.",
+          "type": "string"
+        },
+        "remoteEndpoint": {
+          "description": "Remote endpoint to connect to an existing Playwright server.",
+          "type": "string"
+        }
+      }
+    },
+    "server": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "description": "The port to listen on for SSE or MCP transport.",
+          "type": "number"
+        },
+        "host": {
+          "description": "The host to bind the server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.",
+          "type": "string"
+        }
+      }
+    },
+    "capabilities": {
+      "description": "List of enabled tool capabilities. Possible values:\n  - 'core': Core browser automation features.\n  - 'tabs': Tab management features.\n  - 'pdf': PDF generation and manipulation.\n  - 'history': Browser history access.\n  - 'wait': Wait and timing utilities.\n  - 'files': File upload/download support.\n  - 'install': Browser installation utilities.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ToolCapability"
+      }
+    },
+    "vision": {
+      "description": "Run server that uses screenshots (Aria snapshots are used by default).",
+      "type": "boolean"
+    },
+    "saveTrace": {
+      "description": "Whether to save the Playwright trace of the session into the output directory.",
+      "type": "boolean"
+    },
+    "outputDir": {
+      "description": "The directory to save output files.",
+      "type": "string"
+    },
+    "network": {
+      "type": "object",
+      "properties": {
+        "allowedOrigins": {
+          "description": "List of origins to allow the browser to request. Default is to allow all. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blockedOrigins": {
+          "description": "List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "imageResponses": {
+      "description": "Whether to send image responses to the client. Can be \"allow\", \"omit\", or \"auto\". Defaults to \"auto\", which sends images if the client can display them.",
+      "enum": [
+        "allow",
+        "auto",
+        "omit"
+      ],
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "LaunchOptions": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "description": "Browser distribution channel.\n\nUse \"chromium\" to [opt in to new headless mode](https://playwright.dev/docs/browsers#chromium-new-headless-mode).\n\nUse \"chrome\", \"chrome-beta\", \"chrome-dev\", \"chrome-canary\", \"msedge\", \"msedge-beta\", \"msedge-dev\", or\n\"msedge-canary\" to use branded [Google Chrome and Microsoft Edge](https://playwright.dev/docs/browsers#google-chrome--microsoft-edge).",
+          "type": "string"
+        },
+        "timeout": {
+          "description": "Maximum time in milliseconds to wait for the browser instance to start. Defaults to `30000` (30 seconds). Pass `0`\nto disable timeout.",
+          "type": "number"
+        },
+        "proxy": {
+          "description": "Network proxy settings.",
+          "type": "object",
+          "properties": {
+            "server": {
+              "description": "Proxy to be used for all requests. HTTP and SOCKS proxies are supported, for example `http://myproxy.com:3128` or\n`socks5://myproxy.com:3128`. Short form `myproxy.com:3128` is considered an HTTP proxy.",
+              "type": "string"
+            },
+            "bypass": {
+              "description": "Optional comma-separated domains to bypass proxy, for example `\".com, chromium.org, .domain.com\"`.",
+              "type": "string"
+            },
+            "username": {
+              "description": "Optional username to use if HTTP proxy requires authentication.",
+              "type": "string"
+            },
+            "password": {
+              "description": "Optional password to use if HTTP proxy requires authentication.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "server"
+          ]
+        },
+        "args": {
+          "description": "**NOTE** Use custom browser args at your own risk, as some of them may break Playwright functionality.\n\nAdditional arguments to pass to the browser instance. The list of Chromium flags can be found\n[here](https://peter.sh/experiments/chromium-command-line-switches/).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "chromiumSandbox": {
+          "description": "Enable Chromium sandboxing. Defaults to `false`.",
+          "type": "boolean"
+        },
+        "devtools": {
+          "description": "**Chromium-only** Whether to auto-open a Developer Tools panel for each tab. If this option is `true`, the\n[`headless`](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-option-headless) option will be\nset `false`.",
+          "type": "boolean"
+        },
+        "downloadsPath": {
+          "description": "If specified, accepted downloads are downloaded into this directory. Otherwise, temporary directory is created and\nis deleted when browser is closed. In either case, the downloads are deleted when the browser context they were\ncreated in is closed.",
+          "type": "string"
+        },
+        "env": {
+          "description": "Specify environment variables that will be visible to the browser. Defaults to `process.env`.",
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "executablePath": {
+          "description": "Path to a browser executable to run instead of the bundled one. If\n[`executablePath`](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-option-executable-path) is\na relative path, then it is resolved relative to the current working directory. Note that Playwright only works\nwith the bundled Chromium, Firefox or WebKit, use at your own risk.",
+          "type": "string"
+        },
+        "firefoxUserPrefs": {
+          "description": "Firefox user preferences. Learn more about the Firefox user preferences at\n[`about:config`](https://support.mozilla.org/en-US/kb/about-config-editor-firefox).\n\nYou can also provide a path to a custom [`policies.json` file](https://mozilla.github.io/policy-templates/) via\n`PLAYWRIGHT_FIREFOX_POLICIES_JSON` environment variable.",
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "headless": {
+          "description": "Whether to run browser in headless mode. More details for\n[Chromium](https://developers.google.com/web/updates/2017/04/headless-chrome) and\n[Firefox](https://hacks.mozilla.org/2017/12/using-headless-mode-in-firefox/). Defaults to `true` unless the\n[`devtools`](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-option-devtools) option is\n`true`.",
+          "type": "boolean"
+        },
+        "ignoreDefaultArgs": {
+          "description": "If `true`, Playwright does not pass its own configurations args and only uses the ones from\n[`args`](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-option-args). If an array is given,\nthen filters out the given default arguments. Dangerous option; use with care. Defaults to `false`.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "slowMo": {
+          "description": "Slows down Playwright operations by the specified amount of milliseconds. Useful so that you can see what is going\non.",
+          "type": "number"
+        },
+        "tracesDir": {
+          "description": "If specified, traces are saved into this directory.",
+          "type": "string"
+        }
+      }
+    },
+    "BrowserContextOptions": {
+      "type": "object",
+      "properties": {
+        "clientCertificates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ClientCertificate"
+          }
+        },
+        "recordHar": {
+          "$ref": "#/definitions/RecordHar",
+          "description": "Enables [HAR](http://www.softwareishard.com/blog/har-12-spec) recording for all pages into `recordHar.path` file.\nIf not specified, the HAR is not recorded. Make sure to await\n[browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for\nthe HAR to be saved."
+        },
+        "geolocation": {
+          "$ref": "#/definitions/Geolocation"
+        },
+        "colorScheme": {
+          "description": "Emulates [prefers-colors-scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme)\nmedia feature, supported values are `'light'` and `'dark'`. See\n[page.emulateMedia([options])](https://playwright.dev/docs/api/class-page#page-emulate-media) for more details.\nPassing `null` resets emulation to system defaults. Defaults to `'light'`.",
+          "enum": [
+            "dark",
+            "light",
+            "no-preference"
+          ],
+          "type": "string"
+        },
+        "screen": {
+          "description": "Emulates consistent window screen size available inside web page via `window.screen`. Is only used when the\n[`viewport`](https://playwright.dev/docs/api/class-browser#browser-new-context-option-viewport) is set.",
+          "type": "object",
+          "properties": {
+            "width": {
+              "description": "page width in pixels.",
+              "type": "number"
+            },
+            "height": {
+              "description": "page height in pixels.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "height",
+            "width"
+          ]
+        },
+        "offline": {
+          "description": "Whether to emulate network being offline. Defaults to `false`. Learn more about\n[network emulation](https://playwright.dev/docs/emulation#offline).",
+          "type": "boolean"
+        },
+        "proxy": {
+          "description": "Network proxy settings to use with this context. Defaults to none.",
+          "type": "object",
+          "properties": {
+            "server": {
+              "description": "Proxy to be used for all requests. HTTP and SOCKS proxies are supported, for example `http://myproxy.com:3128` or\n`socks5://myproxy.com:3128`. Short form `myproxy.com:3128` is considered an HTTP proxy.",
+              "type": "string"
+            },
+            "bypass": {
+              "description": "Optional comma-separated domains to bypass proxy, for example `\".com, chromium.org, .domain.com\"`.",
+              "type": "string"
+            },
+            "username": {
+              "description": "Optional username to use if HTTP proxy requires authentication.",
+              "type": "string"
+            },
+            "password": {
+              "description": "Optional password to use if HTTP proxy requires authentication.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "server"
+          ]
+        },
+        "acceptDownloads": {
+          "description": "Whether to automatically download all the attachments. Defaults to `true` where all the downloads are accepted.",
+          "type": "boolean"
+        },
+        "baseURL": {
+          "description": "When using [page.goto(url[, options])](https://playwright.dev/docs/api/class-page#page-goto),\n[page.route(url, handler[, options])](https://playwright.dev/docs/api/class-page#page-route),\n[page.waitForURL(url[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-url),\n[page.waitForRequest(urlOrPredicate[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-request),\nor\n[page.waitForResponse(urlOrPredicate[, options])](https://playwright.dev/docs/api/class-page#page-wait-for-response)\nit takes the base URL in consideration by using the\n[`URL()`](https://developer.mozilla.org/en-US/docs/Web/API/URL/URL) constructor for building the corresponding URL.\nUnset by default. Examples:\n- baseURL: `http://localhost:3000` and navigating to `/bar.html` results in `http://localhost:3000/bar.html`\n- baseURL: `http://localhost:3000/foo/` and navigating to `./bar.html` results in\n  `http://localhost:3000/foo/bar.html`\n- baseURL: `http://localhost:3000/foo` (without trailing slash) and navigating to `./bar.html` results in\n  `http://localhost:3000/bar.html`",
+          "type": "string"
+        },
+        "bypassCSP": {
+          "description": "Toggles bypassing page's Content-Security-Policy. Defaults to `false`.",
+          "type": "boolean"
+        },
+        "contrast": {
+          "description": "Emulates `'prefers-contrast'` media feature, supported values are `'no-preference'`, `'more'`. See\n[page.emulateMedia([options])](https://playwright.dev/docs/api/class-page#page-emulate-media) for more details.\nPassing `null` resets emulation to system defaults. Defaults to `'no-preference'`.",
+          "enum": [
+            "more",
+            "no-preference"
+          ],
+          "type": "string"
+        },
+        "deviceScaleFactor": {
+          "description": "Specify device scale factor (can be thought of as dpr). Defaults to `1`. Learn more about\n[emulating devices with device scale factor](https://playwright.dev/docs/emulation#devices).",
+          "type": "number"
+        },
+        "extraHTTPHeaders": {
+          "description": "An object containing additional HTTP headers to be sent with every request. Defaults to none.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "forcedColors": {
+          "description": "Emulates `'forced-colors'` media feature, supported values are `'active'`, `'none'`. See\n[page.emulateMedia([options])](https://playwright.dev/docs/api/class-page#page-emulate-media) for more details.\nPassing `null` resets emulation to system defaults. Defaults to `'none'`.",
+          "enum": [
+            "active",
+            "none"
+          ],
+          "type": "string"
+        },
+        "hasTouch": {
+          "description": "Specifies if viewport supports touch events. Defaults to false. Learn more about\n[mobile emulation](https://playwright.dev/docs/emulation#devices).",
+          "type": "boolean"
+        },
+        "httpCredentials": {
+          "$ref": "#/definitions/HTTPCredentials",
+          "description": "Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication). If no\norigin is specified, the username and password are sent to any servers upon unauthorized responses."
+        },
+        "ignoreHTTPSErrors": {
+          "description": "Whether to ignore HTTPS errors when sending network requests. Defaults to `false`.",
+          "type": "boolean"
+        },
+        "isMobile": {
+          "description": "Whether the `meta viewport` tag is taken into account and touch events are enabled. isMobile is a part of device,\nso you don't actually need to set it manually. Defaults to `false` and is not supported in Firefox. Learn more\nabout [mobile emulation](https://playwright.dev/docs/emulation#ismobile).",
+          "type": "boolean"
+        },
+        "javaScriptEnabled": {
+          "description": "Whether or not to enable JavaScript in the context. Defaults to `true`. Learn more about\n[disabling JavaScript](https://playwright.dev/docs/emulation#javascript-enabled).",
+          "type": "boolean"
+        },
+        "locale": {
+          "description": "Specify user locale, for example `en-GB`, `de-DE`, etc. Locale will affect `navigator.language` value,\n`Accept-Language` request header value as well as number and date formatting rules. Defaults to the system default\nlocale. Learn more about emulation in our [emulation guide](https://playwright.dev/docs/emulation#locale--timezone).",
+          "type": "string"
+        },
+        "permissions": {
+          "description": "A list of permissions to grant to all pages in this context. See\n[browserContext.grantPermissions(permissions[, options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions)\nfor more details. Defaults to none.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recordVideo": {
+          "description": "Enables video recording for all pages into `recordVideo.dir` directory. If not specified videos are not recorded.\nMake sure to await\n[browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for\nvideos to be saved.",
+          "type": "object",
+          "properties": {
+            "dir": {
+              "description": "Path to the directory to put videos into.",
+              "type": "string"
+            },
+            "size": {
+              "description": "Optional dimensions of the recorded videos. If not specified the size will be equal to `viewport` scaled down to\nfit into 800x800. If `viewport` is not configured explicitly the video size defaults to 800x450. Actual picture of\neach page will be scaled down if necessary to fit the specified size.",
+              "type": "object",
+              "properties": {
+                "width": {
+                  "description": "Video frame width.",
+                  "type": "number"
+                },
+                "height": {
+                  "description": "Video frame height.",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "height",
+                "width"
+              ]
+            }
+          },
+          "required": [
+            "dir"
+          ]
+        },
+        "reducedMotion": {
+          "description": "Emulates `'prefers-reduced-motion'` media feature, supported values are `'reduce'`, `'no-preference'`. See\n[page.emulateMedia([options])](https://playwright.dev/docs/api/class-page#page-emulate-media) for more details.\nPassing `null` resets emulation to system defaults. Defaults to `'no-preference'`.",
+          "enum": [
+            "no-preference",
+            "reduce"
+          ],
+          "type": "string"
+        },
+        "serviceWorkers": {
+          "description": "Whether to allow sites to register Service workers. Defaults to `'allow'`.\n- `'allow'`: [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) can be\n  registered.\n- `'block'`: Playwright will block all registration of Service Workers.",
+          "enum": [
+            "allow",
+            "block"
+          ],
+          "type": "string"
+        },
+        "storageState": {
+          "description": "Learn more about [storage state and auth](https://playwright.dev/docs/auth).\n\nPopulates context with given storage state. This option can be used to initialize context with logged-in\ninformation obtained via\n[browserContext.storageState([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-storage-state).",
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "cookies": {
+                  "description": "Cookies to set for context",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "domain": {
+                        "description": "Domain and path are required. For the cookie to apply to all subdomains as well, prefix domain with a dot, like\nthis: \".example.com\"",
+                        "type": "string"
+                      },
+                      "path": {
+                        "description": "Domain and path are required",
+                        "type": "string"
+                      },
+                      "expires": {
+                        "description": "Unix time in seconds.",
+                        "type": "number"
+                      },
+                      "httpOnly": {
+                        "type": "boolean"
+                      },
+                      "secure": {
+                        "type": "boolean"
+                      },
+                      "sameSite": {
+                        "description": "sameSite flag",
+                        "enum": [
+                          "Lax",
+                          "None",
+                          "Strict"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "domain",
+                      "expires",
+                      "httpOnly",
+                      "name",
+                      "path",
+                      "sameSite",
+                      "secure",
+                      "value"
+                    ]
+                  }
+                },
+                "origins": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "origin": {
+                        "type": "string"
+                      },
+                      "localStorage": {
+                        "description": "localStorage to set for context",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "value"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "localStorage",
+                      "origin"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "cookies",
+                "origins"
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "strictSelectors": {
+          "description": "If set to true, enables strict selectors mode for this context. In the strict selectors mode all operations on\nselectors that imply single target DOM element will throw when more than one element matches the selector. This\noption does not affect any Locator APIs (Locators are always strict). Defaults to `false`. See\n[Locator](https://playwright.dev/docs/api/class-locator) to learn more about the strict mode.",
+          "type": "boolean"
+        },
+        "timezoneId": {
+          "description": "Changes the timezone of the context. See\n[ICU's metaZones.txt](https://cs.chromium.org/chromium/src/third_party/icu/source/data/misc/metaZones.txt?rcl=faee8bc70570192d82d2978a71e2a615788597d1)\nfor a list of supported timezone IDs. Defaults to the system timezone.",
+          "type": "string"
+        },
+        "userAgent": {
+          "description": "Specific user agent to use in this context.",
+          "type": "string"
+        },
+        "videoSize": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "description": "Video frame width.",
+              "type": "number"
+            },
+            "height": {
+              "description": "Video frame height.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "height",
+            "width"
+          ]
+        },
+        "videosPath": {
+          "type": "string"
+        },
+        "viewport": {
+          "$ref": "#/definitions/ViewportSize",
+          "description": "Emulates consistent viewport for each page. Defaults to an 1280x720 viewport. Use `null` to disable the consistent\nviewport emulation. Learn more about [viewport emulation](https://playwright.dev/docs/emulation#viewport).\n\n**NOTE** The `null` value opts out from the default presets, makes viewport depend on the host window size defined\nby the operating system. It makes the execution of the tests non-deterministic."
+        }
+      }
+    },
+    "ClientCertificate": {
+      "type": "object",
+      "properties": {
+        "origin": {
+          "description": "Exact origin that the certificate is valid for. Origin includes `https` protocol, a hostname and optionally a port.",
+          "type": "string"
+        },
+        "certPath": {
+          "description": "Path to the file with the certificate in PEM format.",
+          "type": "string"
+        },
+        "keyPath": {
+          "description": "Path to the file with the private key in PEM format.",
+          "type": "string"
+        },
+        "pfxPath": {
+          "description": "Path to the PFX or PKCS12 encoded private key and certificate chain.",
+          "type": "string"
+        },
+        "passphrase": {
+          "description": "Passphrase for the private key (PEM or PFX).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "origin"
+      ]
+    },
+    "RecordHar": {
+      "type": "object",
+      "properties": {
+        "urlFilter": {
+          "type": "string"
+        },
+        "content": {
+          "description": "Optional setting to control resource content management. If `omit` is specified, content is not persisted. If\n`attach` is specified, resources are persisted as separate files or entries in the ZIP archive. If `embed` is\nspecified, content is stored inline the HAR file as per HAR specification. Defaults to `attach` for `.zip` output\nfiles and to `embed` for all other file extensions.",
+          "enum": [
+            "attach",
+            "embed",
+            "omit"
+          ],
+          "type": "string"
+        },
+        "path": {
+          "description": "Path on the filesystem to write the HAR file to. If the file name ends with `.zip`, `content: 'attach'` is used by\ndefault.",
+          "type": "string"
+        },
+        "omitContent": {
+          "description": "Optional setting to control whether to omit request content from the HAR. Defaults to `false`. Deprecated, use\n`content` policy instead.",
+          "type": "boolean"
+        },
+        "mode": {
+          "description": "When set to `minimal`, only record information necessary for routing from HAR. This omits sizes, timing, page,\ncookies, security and other types of HAR information that are not used when replaying from HAR. Defaults to `full`.",
+          "enum": [
+            "full",
+            "minimal"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "Geolocation": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "description": "Latitude between -90 and 90.",
+          "type": "number"
+        },
+        "longitude": {
+          "description": "Longitude between -180 and 180.",
+          "type": "number"
+        },
+        "accuracy": {
+          "description": "Non-negative accuracy value. Defaults to `0`.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "HTTPCredentials": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "origin": {
+          "description": "Restrain sending http credentials on specific origin (scheme://host:port).",
+          "type": "string"
+        },
+        "send": {
+          "description": "This option only applies to the requests sent from corresponding\n[APIRequestContext](https://playwright.dev/docs/api/class-apirequestcontext) and does not affect requests sent from\nthe browser. `'always'` - `Authorization` header with basic authentication credentials will be sent with the each\nAPI request. `'unauthorized` - the credentials are only sent when 401 (Unauthorized) response with\n`WWW-Authenticate` header is received. Defaults to `'unauthorized'`.",
+          "enum": [
+            "always",
+            "unauthorized"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "password",
+        "username"
+      ]
+    },
+    "ViewportSize": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "description": "page width in pixels.",
+          "type": "number"
+        },
+        "height": {
+          "description": "page height in pixels.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "height",
+        "width"
+      ]
+    },
+    "ToolCapability": {
+      "enum": [
+        "core",
+        "files",
+        "history",
+        "install",
+        "pdf",
+        "tabs",
+        "testing",
+        "wait"
+      ],
+      "type": "string"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

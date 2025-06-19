@@ -18,6 +18,32 @@ import type * as playwright from 'playwright';
 
 export type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install' | 'testing';
 
+type LaunchOptions = Omit<
+  playwright.LaunchOptions,
+    'handleSIGHUP'
+  | 'handleSIGINT'
+  | 'handleSIGTERM'
+  | 'logger'
+>;
+
+type ClientCertificate = Omit<
+  NonNullable<playwright.BrowserContextOptions['clientCertificates']>[number],
+    'cert' | 'key' | 'pfx'
+>;
+
+interface RecordHar extends Omit<NonNullable<playwright.BrowserContextOptions['recordHar']>, 'urlFilter'> {
+  urlFilter?: string;
+}
+
+interface BrowserContextOptions extends Omit<
+  playwright.BrowserContextOptions,
+    'logger'
+  | 'clientCertificates'
+> {
+  clientCertificates?: ClientCertificate[];
+  recordHar?: RecordHar;
+}
+
 export type Config = {
   /**
    * The browser to use.
@@ -50,14 +76,14 @@ export type Config = {
      *
      * This is useful for settings options like `channel`, `headless`, `executablePath`, etc.
      */
-    launchOptions?: playwright.LaunchOptions;
+    launchOptions?: LaunchOptions;
 
     /**
      * Context options for the browser context.
      *
      * This is useful for settings options like `viewport`.
      */
-    contextOptions?: playwright.BrowserContextOptions;
+    contextOptions?: BrowserContextOptions;
 
     /**
      * Chrome DevTools Protocol endpoint to connect to an existing browser instance in case of Chromium family browsers.

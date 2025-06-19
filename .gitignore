@@ -6,3 +6,4 @@ playwright-report/
 
 .idea
 .DS_Store
+config.json
