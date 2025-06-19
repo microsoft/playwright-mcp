@@ -125,9 +125,9 @@ claude mcp add playwright npx @playwright/mcp@latest
 <details>
 <summary><b>Install in Goose</b></summary>
 
-#### Click the button to install:
+#### Click the link to install:
 
-[Install in Goose](goose://extension?cmd=npx&arg=%40playwright%2Fmcp%40latest&id=playwright&name=Playwright&description=Interact%20with%20web%20pages%20through%20structured%20accessibility%20snapshots%20using%20Playwright)
+[Install in Goose](https://block.github.io/goose/extension?cmd=npx&arg=%40playwright%2Fmcp%40latest&id=playwright&name=Playwright&description=Interact%20with%20web%20pages%20through%20structured%20accessibility%20snapshots%20using%20Playwright)
 
 #### Or install manually:
 
