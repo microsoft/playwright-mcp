@@ -8,7 +8,7 @@ const program = TJS.getProgramFromFiles([path.resolve(root, 'config.d.ts')]);
 
 const schema = TJS.generateSchema(
     program,
-    "Config",
+    "JsonConfig.Config",
     {
         required: true,
     }

@@ -27,11 +27,11 @@
           "type": "string"
         },
         "launchOptions": {
-          "$ref": "#/definitions/LaunchOptions",
+          "$ref": "#/definitions/JsonConfig.LaunchOptions",
           "description": "Launch options passed to"
         },
         "contextOptions": {
-          "$ref": "#/definitions/BrowserContextOptions",
+          "$ref": "#/definitions/JsonConfig.BrowserContextOptions",
           "description": "Context options for the browser context.\n\nThis is useful for settings options like `viewport`."
         },
         "cdpEndpoint": {
@@ -106,7 +106,7 @@
     }
   },
   "definitions": {
-    "LaunchOptions": {
+    "JsonConfig.LaunchOptions": {
       "type": "object",
       "properties": {
         "channel": {
@@ -215,17 +215,17 @@
         }
       }
     },
-    "BrowserContextOptions": {
+    "JsonConfig.BrowserContextOptions": {
       "type": "object",
       "properties": {
         "clientCertificates": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ClientCertificate"
+            "$ref": "#/definitions/JsonConfig.ClientCertificate"
           }
         },
         "recordHar": {
-          "$ref": "#/definitions/RecordHar",
+          "$ref": "#/definitions/JsonConfig.RecordHar",
           "description": "Enables [HAR](http://www.softwareishard.com/blog/har-12-spec) recording for all pages into `recordHar.path` file.\nIf not specified, the HAR is not recorded. Make sure to await\n[browserContext.close([options])](https://playwright.dev/docs/api/class-browsercontext#browser-context-close) for\nthe HAR to be saved."
         },
         "geolocation": {
@@ -545,7 +545,7 @@
         }
       }
     },
-    "ClientCertificate": {
+    "JsonConfig.ClientCertificate": {
       "type": "object",
       "properties": {
         "origin": {
@@ -573,7 +573,7 @@
         "origin"
       ]
     },
-    "RecordHar": {
+    "JsonConfig.RecordHar": {
       "type": "object",
       "properties": {
         "urlFilter": {

@@ -18,33 +18,37 @@ import type * as playwright from 'playwright';
 
 export type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install' | 'testing';
 
-type LaunchOptions = Omit<
-  playwright.LaunchOptions,
-    'handleSIGHUP'
-  | 'handleSIGINT'
-  | 'handleSIGTERM'
-  | 'logger'
->;
+declare namespace JsonConfig {
+  type LaunchOptions = Omit<
+    playwright.LaunchOptions,
+      'handleSIGHUP'
+    | 'handleSIGINT'
+    | 'handleSIGTERM'
+    | 'logger'
+  >;
 
-type ClientCertificate = Omit<
-  NonNullable<playwright.BrowserContextOptions['clientCertificates']>[number],
-    'cert' | 'key' | 'pfx'
->;
+  type ClientCertificate = Omit<
+    NonNullable<playwright.BrowserContextOptions['clientCertificates']>[number],
+      'cert' | 'key' | 'pfx'
+  >;
 
-interface RecordHar extends Omit<NonNullable<playwright.BrowserContextOptions['recordHar']>, 'urlFilter'> {
-  urlFilter?: string;
+  interface RecordHar extends Omit<NonNullable<playwright.BrowserContextOptions['recordHar']>, 'urlFilter'> {
+    urlFilter?: string;
+  }
+
+  interface BrowserContextOptions extends Omit<
+    playwright.BrowserContextOptions,
+      'logger'
+    | 'clientCertificates'
+  > {
+    clientCertificates?: ClientCertificate[];
+    recordHar?: RecordHar;
+  }
+
+  type Config = BaseConfig<LaunchOptions, BrowserContextOptions>;
 }
 
-interface BrowserContextOptions extends Omit<
-  playwright.BrowserContextOptions,
-    'logger'
-  | 'clientCertificates'
-> {
-  clientCertificates?: ClientCertificate[];
-  recordHar?: RecordHar;
-}
-
-export type Config = {
+type BaseConfig<LaunchOptions, BrowserContextOptions> = {
   /**
    * The browser to use.
    */
@@ -152,3 +156,5 @@ export type Config = {
    */
   imageResponses?: 'allow' | 'omit' | 'auto';
 };
+
+export type Config = BaseConfig<playwright.LaunchOptions, playwright.BrowserContextOptions>;
