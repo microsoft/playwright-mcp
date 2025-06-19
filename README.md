@@ -253,7 +253,7 @@ using the `--config` command line option:
 npx @playwright/mcp@latest --config path/to/config.json
 ```
 
-```json
+```jsonc
 // path/to/config.json
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/playwright-mcp/main/config.schema.json",
