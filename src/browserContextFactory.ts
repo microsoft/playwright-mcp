@@ -37,6 +37,8 @@ export function contextFactory(browserConfig: FullConfig['browser']): BrowserCon
     return new IsolatedContextFactory(browserConfig);
   if (browserConfig.browserAgent)
     return new BrowserServerContextFactory(browserConfig);
+  if (browserConfig.browserServer)
+    return new CoreBrowserServerContextFactory(browserConfig);
   return new PersistentContextFactory(browserConfig);
 }
 
@@ -149,6 +151,23 @@ class RemoteContextFactory extends BaseContextFactory {
 
   protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
     return browser.newContext();
+  }
+}
+
+class CoreBrowserServerContextFactory extends BaseContextFactory {
+  constructor(browserConfig: FullConfig['browser']) {
+    super('browserServer', browserConfig);
+  }
+
+  protected override async _doObtainBrowser(): Promise<playwright.Browser> {
+    const url = new URL(this.browserConfig.browserServer!);
+    url.searchParams.set('connect', 'first');
+    url.searchParams.set('launch-options', JSON.stringify(this.browserConfig.launchOptions));
+    return playwright[this.browserConfig.browserName].connect(url.toString());
+  }
+
+  protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
+    return browser.contexts()[0] ?? await browser.newContext(this.browserConfig.contextOptions);
   }
 }
 
