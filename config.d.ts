@@ -29,6 +29,11 @@ export type Config = {
     browserAgent?: string;
 
     /**
+     * Use browser server (experimental).
+     */
+    browserServer?: string;
+
+    /**
      * The type of browser to use.
      */
     browserName?: 'chromium' | 'firefox' | 'webkit';
