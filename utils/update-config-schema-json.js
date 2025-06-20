@@ -1,8 +1,11 @@
 import * as TJS from "typescript-json-schema";
 import path from "node:path";
 import fs from "node:fs";
+import url from "node:url";
 
-const root = path.resolve(import.meta.dirname, '..');
+// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
+const __filename = url.fileURLToPath(import.meta.url);
+const root = path.resolve(__filename, '..', '..');
 
 const program = TJS.getProgramFromFiles([path.resolve(root, 'config.d.ts')]);
 
