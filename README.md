@@ -259,13 +259,7 @@ npx @playwright/mcp@latest --config path/to/config.json
   "$schema": "https://raw.githubusercontent.com/microsoft/playwright-mcp/main/config.schema.json",
   "browser": {
     "browserName": "chromium",
-    "launchOptions": {
-      "channel": "msedge"
-    },
-    "contextOptions": {
-      "timezoneId": "Europe/Berlin",
-      "locale": "de-DE"
-    }
+    "isolated": false
   }
 }
 ```
@@ -288,6 +282,7 @@ npx @playwright/mcp@latest --config path/to/config.json
 
     // Browser launch options (see Playwright docs)
     // @see https://playwright.dev/docs/api/class-browsertype#browser-type-launch
+    // use with caution. some configurations might break MCP functionality or go away in the future.
     launchOptions?: {
       channel?: string;        // Browser channel (e.g. 'chrome')
       headless?: boolean;      // Run in headless mode
@@ -297,6 +292,7 @@ npx @playwright/mcp@latest --config path/to/config.json
 
     // Browser context options
     // @see https://playwright.dev/docs/api/class-browser#browser-new-context
+    // use with caution. some configurations might break MCP functionality or go away in the future.
     contextOptions?: {
       viewport?: { width: number, height: number };
       // ... other Playwright context options
