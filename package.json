@@ -17,8 +17,9 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsc",
-    "lint": "npm run update-readme && eslint . && tsc --noEmit",
+    "lint": "npm run update-readme && npm run update-schema && eslint . && tsc --noEmit",
     "update-readme": "node utils/update-readme.js",
+    "update-schema": "node utils/update-config-schema-json.js",
     "watch": "tsc --watch",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
@@ -60,7 +61,8 @@
     "eslint": "^9.19.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-notice": "^1.0.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "typescript-json-schema": "^0.65.1"
   },
   "bin": {
     "mcp-server-playwright": "cli.js"
