@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import type { Config } from './config.js';
-import type { BrowserContext } from 'playwright';
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import type { Config } from "./config.js";
+import type { BrowserContext } from "playwright";
+import { Context } from "./lib/context.js";
 
 export type Connection = {
   server: Server;
+  context: Context;
   close(): Promise<void>;
 };
 
-export declare function createConnection(config?: Config, contextGetter?: () => Promise<BrowserContext>): Promise<Connection>;
+export declare function createConnection(
+  config?: Config,
+  contextGetter?: () => Promise<BrowserContext>
+): Promise<Connection>;
 export {};
