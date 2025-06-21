@@ -379,8 +379,11 @@ ${code.join("\n")}
     const result = await this._browserContextFactory.createContext();
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
-    for (const page of browserContext.pages()) this._onPageCreated(page);
-    browserContext.on("page", (page) => this._onPageCreated(page));
+    for (const page of browserContext.pages()) {
+      await this._onPageCreated(page);
+    }
+
+    browserContext.on("page", async (page) => await this._onPageCreated(page));
     if (this.config.saveTrace) {
       await browserContext.tracing.start({
         name: "trace",
@@ -476,7 +479,7 @@ ${code.join("\n")}
       await popupPage.close();
     } catch (error) {
       // If conversion fails, fall back to using the popup as-is
-      this._onPageCreated(popupPage);
+      await this._onPageCreated(popupPage);
     } finally {
       this.isHandlingPopup = false;
     }
