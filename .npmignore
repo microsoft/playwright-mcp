@@ -5,3 +5,5 @@ LICENSE
 !cli.js
 !index.*
 !config.d.ts
+!context.d.ts
+!tab.d.ts
