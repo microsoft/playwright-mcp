@@ -3,6 +3,7 @@
   "version": "0.0.29-1",
   "description": "Playwright Tools for MCP",
   "type": "module",
+  "private": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/asteroidai/playwright-mcp.git"
