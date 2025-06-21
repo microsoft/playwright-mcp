@@ -1,5 +1,5 @@
 {
-  "name": "@asteroid_ai/playwright-mcp",
+  "name": "asteroid-playwright-mcp",
   "version": "0.0.29-1",
   "description": "Playwright Tools for MCP",
   "type": "module",
