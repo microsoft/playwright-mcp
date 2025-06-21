@@ -311,9 +311,13 @@ ${code.join("\n")}
   }
 
   private async _onPageCreated(page: playwright.Page) {
-    const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
-    this._tabs.push(tab);
-    if (!this._currentTab) this._currentTab = tab;
+    if (!this.isHandlingPopup && (await this._detectPopup(page))) {
+      await this._convertPopupToTab(page);
+    } else {
+      const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
+      this._tabs.push(tab);
+      if (!this._currentTab) this._currentTab = tab;
+    }
   }
 
   private _onPageClosed(tab: Tab) {
