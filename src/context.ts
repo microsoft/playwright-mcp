@@ -55,6 +55,7 @@ export class Context {
     finished: boolean;
     outputFile: string;
   }[] = [];
+  private _isHandlingPopup = false;
   clientVersion: { name: string; version: string } | undefined;
 
   constructor(
@@ -309,10 +310,14 @@ ${code.join("\n")}
     entry.finished = true;
   }
 
-  private _onPageCreated(page: playwright.Page) {
-    const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
-    this._tabs.push(tab);
-    if (!this._currentTab) this._currentTab = tab;
+  private async _onPageCreated(page: playwright.Page) {
+    if (!this._isHandlingPopup && (await this._detectPopup(page))) {
+      await this._convertPopupToTab(page);
+    } else {
+      const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
+      this._tabs.push(tab);
+      if (!this._currentTab) this._currentTab = tab;
+    }
   }
 
   private _onPageClosed(tab: Tab) {
@@ -461,7 +466,7 @@ ${code.join("\n")}
    * Converts a popup to a new tab by opening the same URL in a new tab and closing the popup
    */
   private async _convertPopupToTab(popupPage: playwright.Page): Promise<void> {
-    this.isHandlingPopup = true;
+    this._isHandlingPopup = true;
 
     try {
       const popupUrl = popupPage.url();
@@ -476,7 +481,7 @@ ${code.join("\n")}
       // If conversion fails, fall back to using the popup as-is
       await this._onPageCreated(popupPage);
     } finally {
-      this.isHandlingPopup = false;
+      this._isHandlingPopup = false;
     }
   }
 }
