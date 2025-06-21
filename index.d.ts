@@ -18,7 +18,7 @@
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import type { Config } from "./config.js";
 import type { BrowserContext } from "playwright";
-import type { Context } from "./lib/context.js";
+import type { Context } from "./lib/context.d.ts";
 
 export type Connection = {
   server: Server;
