@@ -326,9 +326,6 @@ ${code.join("\n")}
    */
   private async _handlePopup(popupPage: playwright.Page): Promise<void> {
     try {
-      // Wait for the popup to navigate to its initial URL
-      await popupPage.waitForLoadState("domcontentloaded", { timeout: 10000 });
-
       // Wait to ensure that the `context.on("page")` event has fired
       await new Promise((resolve) => setTimeout(resolve, 200));
 
