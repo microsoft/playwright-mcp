@@ -55,7 +55,6 @@ export class Context {
     finished: boolean;
     outputFile: string;
   }[] = [];
-  private _isHandlingPopup = false;
   clientVersion: { name: string; version: string } | undefined;
 
   constructor(
@@ -311,12 +310,108 @@ ${code.join("\n")}
   }
 
   private async _onPageCreated(page: playwright.Page) {
-    if (!this._isHandlingPopup && (await this._detectPopup(page))) {
-      await this._convertPopupToTab(page);
-    } else {
-      const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
-      this._tabs.push(tab);
-      if (!this._currentTab) this._currentTab = tab;
+    // Set up popup event listener for this page
+    page.on("popup", async (popupPage) => {
+      await this._handlePopup(popupPage);
+    });
+
+    const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
+    this._tabs.push(tab);
+    if (!this._currentTab) this._currentTab = tab;
+  }
+
+  /**
+   * Handles popup windows by converting them to tabs
+   * Only converts popup windows, not new tabs
+   */
+  private async _handlePopup(popupPage: playwright.Page): Promise<void> {
+    try {
+      // Wait for the popup to navigate to its initial URL
+      await popupPage.waitForLoadState("domcontentloaded", { timeout: 10000 });
+
+      // Wait to ensure that the `context.on("page")` event has fired
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Check if this is actually a popup window (not just a new tab)
+      const isPopupWindow = await this._isPopupWindow(popupPage);
+      if (!isPopupWindow) {
+        // If it's not a popup window, we don't need to do anything, since
+        // the context.on("page") event will handle it.
+        return;
+      }
+
+      const popupUrl = popupPage.url();
+
+      // Only convert if we have a valid URL
+      if (
+        !popupUrl ||
+        popupUrl === "about:blank" ||
+        popupUrl.startsWith("data:")
+      ) {
+        // For data URLs or blank pages, just close the popup
+        await popupPage.close();
+        return;
+      }
+
+      // Open the same URL in a new tab
+      const newTab = await this.newTab();
+
+      try {
+        await newTab.page.goto(popupUrl, {
+          waitUntil: "domcontentloaded",
+          timeout: 10000,
+        });
+      } catch (navigationError) {
+        // If navigation fails, just close the popup and keep the new tab
+        // The new tab will remain open but empty, which is better than losing it
+      }
+
+      // Close the popup
+      await popupPage.close();
+    } catch (error) {
+      // If conversion fails, just close the popup
+      try {
+        await popupPage.close();
+      } catch (closeError) {
+        // Ignore close errors
+      }
+    }
+  }
+
+  /**
+   * Checks if a page is a popup window (not just a new tab)
+   */
+  private async _isPopupWindow(page: playwright.Page): Promise<boolean> {
+    try {
+      const indicators = await page.evaluate(() => {
+        // Check if window has popup-like features
+        const hasOpener = window.opener !== null;
+        const windowName = window.name || "";
+        const hasSpecificName = windowName !== "" && windowName !== "_blank";
+
+        // Check window size - popups are often smaller
+        const { width, height } = window.screen;
+        const windowWidth = window.outerWidth;
+        const windowHeight = window.outerHeight;
+        const isSmallWindow =
+          windowWidth < width * 0.8 || windowHeight < height * 0.8;
+
+        return {
+          hasOpener,
+          hasSpecificName,
+          isSmallWindow,
+          windowName,
+        };
+      });
+
+      // Consider it a popup window if it has multiple indicators
+      return (
+        indicators.hasOpener ||
+        (indicators.hasSpecificName && indicators.isSmallWindow)
+      );
+    } catch (error) {
+      // If we can't determine, assume it's not a popup window
+      return false;
     }
   }
 
@@ -379,11 +474,16 @@ ${code.join("\n")}
     const result = await this._browserContextFactory.createContext();
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
+
+    // Handle initial pages that exist when the context is created
     for (const page of browserContext.pages()) {
       await this._onPageCreated(page);
     }
 
-    browserContext.on("page", async (page) => await this._onPageCreated(page));
+    browserContext.on("page", async (page) => {
+      // All new pages should be handled normally
+      await this._onPageCreated(page);
+    });
     if (this.config.saveTrace) {
       await browserContext.tracing.start({
         name: "trace",
@@ -393,95 +493,5 @@ ${code.join("\n")}
       });
     }
     return result;
-  }
-
-  /**
-   * Detects if a page is a popup by checking window properties
-   * TODO (ed) - this should maybe be on each pages `popup` event
-   */
-  private async _detectPopup(page: playwright.Page): Promise<boolean> {
-    try {
-      // Wait for the page to be ready before evaluating
-      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
-
-      // Check if the page has popup-like characteristics
-      const popupIndicators = await page.evaluate(() => {
-        // Check window size - popups are often smaller than normal tabs
-        const { width, height } = window.screen;
-        const windowWidth = window.outerWidth;
-        const windowHeight = window.outerHeight;
-
-        // Check if window is significantly smaller than screen (popup indicator)
-        const isSmallWindow =
-          windowWidth < width * 0.8 || windowHeight < height * 0.8;
-
-        // Check if window has popup-like features
-        const hasPopupFeatures =
-          window.opener !== null ||
-          window.name.includes("popup") ||
-          window.name.includes("modal") ||
-          window.name.includes("dialog") ||
-          window.name.includes("auth") ||
-          window.name.includes("login") ||
-          window.name.includes("oauth");
-
-        // Check if window was opened with specific features
-        const hasWindowFeatures =
-          window.name !== "" && window.name !== "_blank";
-
-        return {
-          isSmallWindow,
-          hasPopupFeatures,
-          hasWindowFeatures,
-          windowName: window.name,
-          windowWidth,
-          windowHeight,
-          screenWidth: width,
-          screenHeight: height,
-        };
-      });
-
-      // Consider it a popup if it has multiple popup indicators
-      return (
-        popupIndicators.isSmallWindow ||
-        popupIndicators.hasPopupFeatures ||
-        popupIndicators.hasWindowFeatures
-      );
-    } catch (error) {
-      // Handle various error cases gracefully
-      if (
-        error instanceof Error &&
-        (error.message.includes("Execution context was destroyed") ||
-          error.message.includes("Target closed") ||
-          error.message.includes("Navigation timeout"))
-      )
-        return false; // Assume it's not a popup to be safe
-
-      // If we can't detect, assume it's not a popup to be safe
-      return false;
-    }
-  }
-
-  /**
-   * Converts a popup to a new tab by opening the same URL in a new tab and closing the popup
-   */
-  private async _convertPopupToTab(popupPage: playwright.Page): Promise<void> {
-    this._isHandlingPopup = true;
-
-    try {
-      const popupUrl = popupPage.url();
-
-      // Open the same URL in a new tab
-      const newTab = await this.newTab();
-      await newTab.page.goto(popupUrl);
-
-      // Close the popup
-      await popupPage.close();
-    } catch (error) {
-      // If conversion fails, fall back to using the popup as-is
-      await this._onPageCreated(popupPage);
-    } finally {
-      this._isHandlingPopup = false;
-    }
   }
 }
