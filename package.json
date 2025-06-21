@@ -1,18 +1,18 @@
 {
-  "name": "@playwright/mcp",
+  "name": "@asteroid_ai/playwright-mcp",
   "version": "0.0.29",
   "description": "Playwright Tools for MCP",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+    "url": "git+https://github.com/asteroidai/playwright-mcp.git"
   },
-  "homepage": "https://playwright.dev",
+  "homepage": "https://github.com/asteroidai/playwright-mcp",
   "engines": {
     "node": ">=18"
   },
   "author": {
-    "name": "Microsoft Corporation"
+    "name": "Asteroid AI"
   },
   "license": "Apache-2.0",
   "scripts": {
