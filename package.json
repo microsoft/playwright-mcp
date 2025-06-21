@@ -1,6 +1,6 @@
 {
   "name": "@asteroid_ai/playwright-mcp",
-  "version": "0.0.29",
+  "version": "0.0.29-1",
   "description": "Playwright Tools for MCP",
   "type": "module",
   "repository": {
