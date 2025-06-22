@@ -42,7 +42,9 @@
     "debug": "^4.4.1",
     "mime": "^4.0.7",
     "playwright": "1.53.0",
+    "playwright-core": "^1.53.1",
     "ws": "^8.18.1",
+    "zod": "^3.25.67",
     "zod-to-json-schema": "^3.24.4"
   },
   "devDependencies": {
