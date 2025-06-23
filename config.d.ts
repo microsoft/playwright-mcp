@@ -18,6 +18,9 @@ import type * as playwright from 'playwright';
 
 export type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install' | 'testing';
 
+
+// variant of Config with all non-JSON-compatible removed.
+// used update-config-schema-json.js
 declare namespace JsonConfig {
   type LaunchOptions = Omit<
     playwright.LaunchOptions,
@@ -29,11 +32,11 @@ declare namespace JsonConfig {
 
   type ClientCertificate = Omit<
     NonNullable<playwright.BrowserContextOptions['clientCertificates']>[number],
-      'cert' | 'key' | 'pfx'
+      'cert' | 'key' | 'pfx' // JSON schema does not support Node.js Buffer types
   >;
 
   interface RecordHar extends Omit<NonNullable<playwright.BrowserContextOptions['recordHar']>, 'urlFilter'> {
-    urlFilter?: string;
+    urlFilter?: string; // JSON schema does not support RegExp type
   }
 
   interface BrowserContextOptions extends Omit<
