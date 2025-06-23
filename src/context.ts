@@ -305,8 +305,14 @@ ${code.join("\n")}
       outputFile: await outputFile(this.config, download.suggestedFilename()),
     };
     this._downloads.push(entry);
-    await download.saveAs(entry.outputFile);
-    entry.finished = true;
+
+    try {
+      await download.saveAs(entry.outputFile);
+    } catch (error) {
+      console.warn("Error saving download:", error);
+    } finally {
+      entry.finished = true;
+    }
   }
 
   private async _onPageCreated(page: playwright.Page) {
