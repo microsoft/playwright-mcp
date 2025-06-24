@@ -57,9 +57,11 @@
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",
     "@typescript-eslint/utils": "^8.26.1",
+    "dotenv": "^16.5.0",
     "eslint": "^9.19.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-notice": "^1.0.0",
+    "openai": "^5.7.0",
     "typescript": "^5.8.2"
   },
   "bin": {

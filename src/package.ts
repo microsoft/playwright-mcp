@@ -19,4 +19,9 @@ import url from 'node:url';
 import path from 'node:path';
 
 const __filename = url.fileURLToPath(import.meta.url);
+
 export const packageJSON = JSON.parse(fs.readFileSync(path.join(path.dirname(__filename), '..', 'package.json'), 'utf8'));
+
+export function resolveFromRoot(file: string) {
+  return path.resolve(path.dirname(__filename), '..', file);
+}
