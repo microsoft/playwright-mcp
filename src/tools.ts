@@ -64,3 +64,5 @@ export const visionTools: Tool<any>[] = [
   ...vision,
   ...wait(false),
 ];
+
+export const everyTool: Tool<any>[] = [...snapshotTools, ...visionTools];
