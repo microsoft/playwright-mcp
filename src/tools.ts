@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-import common from './tools/common.js';
-import console from './tools/console.js';
-import dialogs from './tools/dialogs.js';
-import files from './tools/files.js';
-import install from './tools/install.js';
-import keyboard from './tools/keyboard.js';
-import navigate from './tools/navigate.js';
-import network from './tools/network.js';
-import pdf from './tools/pdf.js';
-import snapshot from './tools/snapshot.js';
-import tabs from './tools/tabs.js';
-import screenshot from './tools/screenshot.js';
-import testing from './tools/testing.js';
-import vision from './tools/vision.js';
-import wait from './tools/wait.js';
+import common from "./tools/common.js";
+import console from "./tools/console.js";
+import dialogs from "./tools/dialogs.js";
+import files from "./tools/files.js";
+import install from "./tools/install.js";
+import keyboard from "./tools/keyboard.js";
+import navigate from "./tools/navigate.js";
+import network from "./tools/network.js";
+import pdf from "./tools/pdf.js";
+import snapshot from "./tools/snapshot.js";
+import tabs from "./tools/tabs.js";
+import screenshot from "./tools/screenshot.js";
+import testing from "./tools/testing.js";
+import vision from "./tools/vision.js";
+import wait from "./tools/wait.js";
 
-import type { Tool } from './tools/tool.js';
+import type { Tool } from "./tools/tool.js";
 
 export const snapshotTools: Tool<any>[] = [
   ...common(true),
@@ -65,4 +65,15 @@ export const visionTools: Tool<any>[] = [
   ...wait(false),
 ];
 
-export const everyTool: Tool<any>[] = [...snapshotTools, ...visionTools];
+// Merge the two, preferring to keep the vision tools (i.e. capturing snapshots)
+// over the vision (not capturing snapshots) tools where their names are the
+// same.
+export const everyTool: Tool<any>[] = [
+  ...snapshotTools,
+  ...visionTools.filter(
+      visionTool =>
+        !snapshotTools.some(
+            snapshotTool => snapshotTool.schema.name === visionTool.schema.name
+        )
+  ),
+];
