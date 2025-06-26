@@ -467,7 +467,17 @@ ${code.join("\n")}
 
     if (this._currentTab === tab)
       this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
-    if (!this._tabs.length) void this.close();
+    if (!this._tabs.length) {
+      console.log("No tabs left, closing context");
+
+      // Note that its likely here that the context is already dead :(
+      // so we wrap this in a try catch
+      try {
+        void this.close();
+      } catch (error) {
+        console.error("Error closing context:", error);
+      }
+    }
   }
 
   async close() {
