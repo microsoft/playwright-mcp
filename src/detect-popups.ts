@@ -1,9 +1,9 @@
 import { Page } from "playwright";
 
-const THRESHOLD = 40;
-
 export const popupAnalysis = async (page: Page) => {
   return await page.evaluate(() => {
+    const THRESHOLD = 40;
+
     const analysis = {
       isPopup: false,
       confidence: 0,
