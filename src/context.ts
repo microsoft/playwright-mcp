@@ -330,7 +330,8 @@ ${code.join("\n")}
 
     const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
     this._tabs.push(tab);
-    if (!this._currentTab) this._currentTab = tab;
+    // Always switch to the new tab
+    this._currentTab = tab;
   }
 
   /**
@@ -356,7 +357,7 @@ ${code.join("\n")}
       await popupPage.waitForLoadState("domcontentloaded");
 
       // Some popups take a while to fully resolve a URL
-      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       let popupUrl: string | undefined;
       let attempts = 0;
