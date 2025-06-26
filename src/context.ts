@@ -318,6 +318,7 @@ ${code.join("\n")}
   private async _onPageCreated(page: playwright.Page) {
     // Set up popup event listener for this page
     page.on("popup", async (popupPage) => {
+      console.log("Popup event received");
       await this._handlePopup(popupPage);
     });
 
@@ -338,11 +339,13 @@ ${code.join("\n")}
       // Check if this is actually a popup window (not just a new tab)
       const isPopupWindow = await this._isPopupWindow(popupPage);
       if (!isPopupWindow) {
+        console.log("Not a popup window");
         // If it's not a popup window, we don't need to do anything, since
         // the context.on("page") event will handle it.
         return;
       }
 
+      console.log("Is a popup window, opening in new tab");
       const popupUrl = popupPage.url();
 
       // Only convert if we have a valid URL
@@ -371,6 +374,7 @@ ${code.join("\n")}
 
       // Close the popup
       await popupPage.close();
+      console.log("Popup closed");
     } catch (error) {
       // If conversion fails, just close the popup
       try {
