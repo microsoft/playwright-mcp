@@ -26,7 +26,7 @@ import type { BrowserContextFactory } from './browserContextFactory.js';
 export async function createConnection(userConfig: Config = {}, contextGetter?: () => Promise<BrowserContext>): Promise<Connection> {
   const config = await resolveConfig(userConfig);
   const factory = contextGetter ? new SimpleBrowserContextFactory(contextGetter) : contextFactory(config.browser);
-  return createConnectionImpl(config, factory);
+  return createConnectionImpl(config, factory) as unknown as Connection;
 }
 
 class SimpleBrowserContextFactory implements BrowserContextFactory {
