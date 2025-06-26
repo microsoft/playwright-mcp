@@ -360,17 +360,19 @@ ${code.join("\n")}
         return;
       }
 
-      // Open the same URL in a new tab
-      const newTab = await this.newTab();
+      // Create a new page directly and navigate to the popup URL
+      const { browserContext } = await this._ensureBrowserContext();
+      const newPage = await browserContext.newPage();
 
       try {
-        await newTab.page.goto(popupUrl, {
+        await newPage.goto(popupUrl, {
           waitUntil: "domcontentloaded",
           timeout: 10000,
         });
       } catch (navigationError) {
-        // If navigation fails, just close the popup and keep the new tab
-        // The new tab will remain open but empty, which is better than losing it
+        // If navigation fails, just close the popup and keep the new page
+        // The new page will remain open but empty, which is better than losing it
+        console.warn("Navigation to popup URL failed:", navigationError);
       }
 
       // Close the popup
