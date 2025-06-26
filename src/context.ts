@@ -349,11 +349,28 @@ ${code.join("\n")}
         return;
       }
 
-      console.log("Is a popup window, opening in new tab");
+      console.log("Is a popup window, getting URL");
 
       await popupPage.waitForLoadState("domcontentloaded");
-      // Get the popup URL with a timeout
-      const popupUrl = await popupPage.url();
+
+      let popupUrl: string | undefined;
+      let attempts = 0;
+      while (!popupUrl && attempts < 3) {
+        try {
+          popupUrl = await popupPage.url();
+        } catch (error) {
+          console.log("Failed to get popup URL, retrying");
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        if (popupUrl === "about:blank") {
+          popupUrl = undefined;
+          console.log("Popup URL is about:blank, retrying");
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        attempts++;
+      }
 
       console.log("Popup URL:", popupUrl);
 
