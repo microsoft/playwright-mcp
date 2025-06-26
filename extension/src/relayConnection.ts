@@ -22,14 +22,21 @@ export function debugLog(...args: unknown[]): void {
   }
 }
 
-export type ProtocolCommand = {
+type ProtocolCommand = {
   id: number;
-  sessionId?: string;
   method: string;
   params?: any;
 };
 
-export class Connection {
+type ProtocolResponse = {
+  id?: number;
+  method?: string;
+  params?: any;
+  result?: any;
+  error?: string;
+};
+
+export class RelayConnection {
   private _debuggee: chrome.debugger.Debuggee;
   private _rootSessionId: string;
   private _ws: WebSocket;
@@ -61,21 +68,23 @@ export class Connection {
   private _onDebuggerEvent(source: chrome.debugger.DebuggerSession, method: string, params: any): void {
     if (source.tabId !== this._debuggee.tabId)
       return;
-    // If the sessionId is not provided, use the root sessionId.
-    const event = {
-      sessionId: source.sessionId || this._rootSessionId,
-      method,
-      params,
-    };
-    debugLog('Forwarding CDP event:', event);
-    this._ws.send(JSON.stringify(event));
+    debugLog('Forwarding CDP event:', method, params);
+    const sessionId = source.sessionId || this._rootSessionId;
+    this._sendMessage({
+      method: 'forwardCDPEvent',
+      params: {
+        sessionId,
+        method,
+        params,
+      },
+    });
   }
 
   private _onDebuggerDetach(source: chrome.debugger.Debuggee, reason: string): void {
     if (source.tabId !== this._debuggee.tabId)
       return;
     this._sendMessage({
-      method: 'PWExtension.detachedFromTab',
+      method: 'detachedFromTab',
       params: {
         tabId: this._debuggee.tabId,
         reason,
@@ -99,29 +108,21 @@ export class Connection {
 
     debugLog('Received message:', message);
 
-    const sessionId = message.sessionId;
-    const response: { id: any; sessionId: any; result?: any; error?: { code: number; message: string } } = {
+    const response: ProtocolResponse = {
       id: message.id,
-      sessionId,
     };
     try {
-      if (message.method.startsWith('PWExtension.'))
-        response.result = await this._handleExtensionCommand(message);
-      else
-        response.result = await this._handleCDPCommand(message);
+      response.result = await this._handleCommand(message);
     } catch (error: any) {
-      debugLog('Error handling message:', error);
-      response.error = {
-        code: -32000,
-        message: error.message,
-      };
+      debugLog('Error handling command:', error);
+      response.error = error.message;
     }
     debugLog('Sending response:', response);
     this._sendMessage(response);
   }
 
-  private async _handleExtensionCommand(message: ProtocolCommand): Promise<any> {
-    if (message.method === 'PWExtension.attachToTab') {
+  private async _handleCommand(message: ProtocolCommand): Promise<any> {
+    if (message.method === 'attachToTab') {
       debugLog('Attaching debugger to tab:', this._debuggee);
       await chrome.debugger.attach(this._debuggee, '1.3');
       const result: any = await chrome.debugger.sendCommand(this._debuggee, 'Target.getTargetInfo');
@@ -130,26 +131,24 @@ export class Connection {
         targetInfo: result?.targetInfo,
       };
     }
-    if (message.method === 'PWExtension.detachFromTab') {
+    if (message.method === 'detachFromTab') {
       debugLog('Detaching debugger from tab:', this._debuggee);
-      await this.detachDebugger();
-      return;
+      return await this.detachDebugger();
     }
-  }
-
-  private async _handleCDPCommand(message: ProtocolCommand): Promise<any> {
-    const sessionId = message.sessionId;
-    const debuggerSession: chrome.debugger.DebuggerSession = { ...this._debuggee };
-    // Pass session id, unless it's the root session.
-    if (sessionId && sessionId !== this._rootSessionId)
-      debuggerSession.sessionId = sessionId;
-    // Forward CDP command to chrome.debugger
-    const result = await chrome.debugger.sendCommand(
-        debuggerSession,
-        message.method,
-        message.params
-    );
-    return result;
+    if (message.method === 'forwardCDPCommand') {
+      const { sessionId, method, params } = message.params;
+      debugLog('CDP command:', method, params);
+      const debuggerSession: chrome.debugger.DebuggerSession = { ...this._debuggee };
+      // Pass session id, unless it's the root session.
+      if (sessionId && sessionId !== this._rootSessionId)
+        debuggerSession.sessionId = sessionId;
+      // Forward CDP command to chrome.debugger
+      return await chrome.debugger.sendCommand(
+          debuggerSession,
+          method,
+          params
+      );
+    }
   }
 
   private _sendError(code: number, message: string): void {
@@ -161,7 +160,7 @@ export class Connection {
     });
   }
 
-  private _sendMessage(message: object): void {
+  private _sendMessage(message: any): void {
     this._ws.send(JSON.stringify(message));
   }
 }

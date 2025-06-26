@@ -26,7 +26,6 @@
 
 import { WebSocket, WebSocketServer } from 'ws';
 import http from 'node:http';
-import { EventEmitter } from 'node:events';
 import debug from 'debug';
 import { httpAddressToString } from './transport.js';
 
@@ -35,14 +34,23 @@ const debugLogger = debug('pw:mcp:relay');
 const CDP_PATH = '/cdp';
 const EXTENSION_PATH = '/extension';
 
-export type ProtocolCommand = {
+type CDPCommand = {
   id: number;
   sessionId?: string;
   method: string;
   params?: any;
 };
 
-export class CDPRelayServer extends EventEmitter {
+type CDPResponse = {
+  id?: number;
+  sessionId?: string;
+  method?: string;
+  params?: any;
+  result?: any;
+  error?: { code?: number; message: string };
+};
+
+export class CDPRelayServer {
   private _wss: WebSocketServer;
   private _playwrightSocket: WebSocket | null = null;
   private _extensionConnection: ExtensionConnection | null = null;
@@ -53,7 +61,6 @@ export class CDPRelayServer extends EventEmitter {
   } | undefined;
 
   constructor(server: http.Server) {
-    super();
     this._wss = new WebSocketServer({ server });
     this._wss.on('connection', this._onConnection.bind(this));
   }
@@ -65,9 +72,7 @@ export class CDPRelayServer extends EventEmitter {
 
   private _onConnection(ws: WebSocket, request: http.IncomingMessage): void {
     const url = new URL(`http://localhost${request.url}`);
-
     debugLogger(`New connection to ${url.pathname}`);
-
     if (url.pathname === CDP_PATH) {
       this._handlePlaywrightConnection(ws);
     } else if (url.pathname === EXTENSION_PATH) {
@@ -86,10 +91,8 @@ export class CDPRelayServer extends EventEmitter {
       debugLogger('Closing previous Playwright connection');
       this._playwrightSocket.close(1000, 'New connection established');
     }
-
     this._playwrightSocket = ws;
     debugLogger('Playwright MCP connected');
-
     ws.on('message', async data => {
       try {
         const message = JSON.parse(data.toString());
@@ -98,16 +101,13 @@ export class CDPRelayServer extends EventEmitter {
         debugLogger('Error parsing Playwright message:', error);
       }
     });
-
     ws.on('close', () => {
       if (this._playwrightSocket === ws) {
         void this._detachDebugger();
         this._playwrightSocket = null;
       }
-
       debugLogger('Playwright MCP disconnected');
     });
-
     ws.on('error', error => {
       debugLogger('Playwright WebSocket error:', error);
     });
@@ -115,7 +115,7 @@ export class CDPRelayServer extends EventEmitter {
 
   private async _detachDebugger() {
     this._connectionInfo = undefined;
-    await this._extensionConnection?.send('PWExtension.detachFromTab', {});
+    await this._extensionConnection?.send('detachFromTab', {});
   }
 
   private _handleExtensionConnection(ws: WebSocket): void {
@@ -129,14 +129,16 @@ export class CDPRelayServer extends EventEmitter {
     this._extensionConnection.onmessage = this._handleExtensionMessage.bind(this);
   }
 
-  private _handleExtensionMessage(sessionId: string | undefined, method: string, params: any) {
-    if (!method.startsWith('PWExtension.')) {
-      this._sendToPlaywright({ sessionId, method, params });
-      return;
-    }
-
+  private _handleExtensionMessage(method: string, params: any) {
     switch (method) {
-      case 'PWExtension.detachedFromTab':
+      case 'forwardCDPEvent':
+        this._sendToPlaywright({
+          sessionId: params.sessionId,
+          method: params.method,
+          params: params.params
+        });
+        break;
+      case 'detachedFromTab':
         debugLogger('← Debugger detached from tab:', params);
         this._connectionInfo = undefined;
         this._extensionConnection?.close();
@@ -145,10 +147,7 @@ export class CDPRelayServer extends EventEmitter {
     }
   }
 
-  /**
-   * Handle messages from Playwright MCP
-   */
-  private async _handlePlaywrightMessage(message: ProtocolCommand): Promise<void> {
+  private async _handlePlaywrightMessage(message: CDPCommand): Promise<void> {
     debugLogger('← Playwright:', `${message.method} (id=${message.id})`);
     if (!this._extensionConnection) {
       debugLogger('Extension not connected, sending error to Playwright');
@@ -158,29 +157,14 @@ export class CDPRelayServer extends EventEmitter {
       });
       return;
     }
-
-    // Handle Browser domain methods locally
-    if (message.method?.startsWith('Browser.')) {
-      await this._handleBrowserDomainMethod(message);
+    if (await this._interceptCDPCommand(message))
       return;
-    }
-
-    // Handle Target domain methods
-    if (message.method?.startsWith('Target.')) {
-      await this._handleTargetDomainMethod(message);
-      return;
-    }
-
-    // Forward other commands to extension
     await this._forwardToExtension(message);
   }
 
-  /**
-   * Handle Browser domain methods locally
-   */
-  private async _handleBrowserDomainMethod(message: any): Promise<void> {
+  private async _interceptCDPCommand(message: CDPCommand): Promise<boolean> {
     switch (message.method) {
-      case 'Browser.getVersion':
+      case 'Browser.getVersion': {
         this._sendToPlaywright({
           id: message.id,
           result: {
@@ -189,30 +173,19 @@ export class CDPRelayServer extends EventEmitter {
             userAgent: 'CDP-Bridge-Server/1.0.0',
           }
         });
-        break;
-
-      case 'Browser.setDownloadBehavior':
+        return true;
+      }
+      case 'Browser.setDownloadBehavior': {
         this._sendToPlaywright({
           id: message.id
         });
-        break;
-
-      default:
-        // Forward unknown Browser methods to extension
-        await this._forwardToExtension(message);
-    }
-  }
-
-  /**
-   * Handle Target domain methods
-   */
-  private async _handleTargetDomainMethod(message: any): Promise<void> {
-    switch (message.method) {
-      case 'Target.setAutoAttach':
+        return true;
+      }
+      case 'Target.setAutoAttach': {
         // Simulate auto-attach behavior with real target info
         if (!message.sessionId) {
-          this._connectionInfo = await this._extensionConnection!.send('PWExtension.attachToTab');
-          debugLogger('Simulating auto-attach for target:', JSON.stringify(message));
+          this._connectionInfo = await this._extensionConnection!.send('attachToTab');
+          debugLogger('Simulating auto-attach for target:', message);
           this._sendToPlaywright({
             method: 'Target.attachedToTarget',
             params: {
@@ -230,31 +203,27 @@ export class CDPRelayServer extends EventEmitter {
         } else {
           await this._forwardToExtension(message);
         }
-        break;
-
-      case 'Target.getTargetInfo':
+        return true;
+      }
+      case 'Target.getTargetInfo': {
         debugLogger('Target.getTargetInfo', message);
         this._sendToPlaywright({
           id: message.id,
           result: this._connectionInfo?.targetInfo
         });
-        break;
-
-      default:
-        await this._forwardToExtension(message);
+        return true;
+      }
     }
+    return false;
   }
 
-  private async _forwardToExtension(message: any): Promise<void> {
+  private async _forwardToExtension(message: CDPCommand): Promise<void> {
     try {
       if (!this._extensionConnection)
         throw new Error('Extension not connected');
-      const result = await this._extensionConnection.send(message.method, message.params, message.sessionId);
-      this._sendToPlaywright({
-        id: message.id,
-        sessionId: message.sessionId,
-        result,
-      });
+      const { id, sessionId, method, params } = message;
+      const result = await this._extensionConnection.send('forwardCDPCommand', { sessionId, method, params });
+      this._sendToPlaywright({ id, sessionId, result });
     } catch (e) {
       debugLogger('Error in the extension:', e);
       this._sendToPlaywright({
@@ -265,10 +234,7 @@ export class CDPRelayServer extends EventEmitter {
     }
   }
 
-  /**
-   * Forward message to Playwright
-   */
-  private _sendToPlaywright(message: any): void {
+  private _sendToPlaywright(message: CDPResponse): void {
     debugLogger('→ Playwright:', `${message.method ?? `response(id=${message.id})`}`);
     this._playwrightSocket?.send(JSON.stringify(message));
   }
@@ -306,7 +272,7 @@ class ExtensionConnection {
   private readonly _callbacks = new Map<number, { resolve: (o: any) => void, reject: (e: Error) => void }>();
   private _lastId = 0;
 
-  onmessage?: (sessionId: string | undefined, method: string, params: any) => void;
+  onmessage?: (method: string, params: any) => void;
   onclose?: (self: ExtensionConnection) => void;
 
   constructor(ws: WebSocket) {
@@ -361,7 +327,7 @@ class ExtensionConnection {
     } else if (object.id) {
       debugLogger('← Extension: unexpected response', object);
     } else {
-      this.onmessage?.(object.sessionId, object.method, object.params);
+      this.onmessage?.(object.method, object.params);
     }
   }
 

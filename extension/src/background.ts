@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Connection, debugLog } from './connection.js';
+import { RelayConnection, debugLog } from './relayConnection.js';
 
 /**
  * Simple Chrome Extension that pumps CDP messages between chrome.debugger and WebSocket
@@ -29,7 +29,7 @@ type PopupMessage = {
 type SendResponse = (response: any) => void;
 
 class TabShareExtension {
-  private activeConnections: Map<number, Connection>;
+  private activeConnections: Map<number, RelayConnection>;
 
   constructor() {
     this.activeConnections = new Map(); // tabId -> connection
@@ -75,7 +75,7 @@ class TabShareExtension {
     let activeTabId: number | null = null;
 
     if (isConnected) {
-      const [tabId] = this.activeConnections.entries().next().value as [number, Connection];
+      const [tabId] = this.activeConnections.entries().next().value as [number, RelayConnection];
       activeTabId = tabId;
 
       // Get tab info
@@ -123,14 +123,14 @@ class TabShareExtension {
       // Store connection
       this.activeConnections.set(tabId, info);
 
-      void this._updateUI(tabId, { text: '●', color: '#4CAF50', title: 'Disconnect from Playwright MCP' });
+      await this._updateUI(tabId, { text: '●', color: '#4CAF50', title: 'Disconnect from Playwright MCP' });
       debugLog(`Tab ${tabId} connected successfully`);
     } catch (error: any) {
       debugLog(`Failed to connect tab ${tabId}:`, error.message);
       await this._cleanupConnection(tabId);
 
       // Show error to user
-      void this._updateUI(tabId, { text: '!', color: '#F44336', title: `Connection failed: ${error.message}` });
+      await this._updateUI(tabId, { text: '!', color: '#F44336', title: `Connection failed: ${error.message}` });
 
       throw error;
     }
@@ -143,8 +143,8 @@ class TabShareExtension {
     await chrome.action.setTitle({ tabId, title });
   }
 
-  private _createConnection(tabId: number, socket: WebSocket): Connection {
-    const connection = new Connection(tabId, socket);
+  private _createConnection(tabId: number, socket: WebSocket): RelayConnection {
+    const connection = new RelayConnection(tabId, socket);
     socket.onclose = () => {
       debugLog(`WebSocket closed for tab ${tabId}`);
       void this.disconnectTab(tabId);

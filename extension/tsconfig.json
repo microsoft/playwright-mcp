@@ -7,7 +7,7 @@
     "module": "ESNext",
     "rootDir": "src",
     "outDir": "./lib",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
   },
   "include": [
     "src",

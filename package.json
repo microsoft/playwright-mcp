@@ -29,7 +29,7 @@
     "wtest": "playwright test --project=webkit",
     "etest": "playwright test --project=chromium-extension",
     "run-server": "node lib/browserServer.js",
-    "clean": "rm -rf lib",
+    "clean": "rm -rf lib && rm -rf extension/lib",
     "npm-publish": "npm run clean && npm run build && npm run test && npm publish"
   },
   "exports": {
