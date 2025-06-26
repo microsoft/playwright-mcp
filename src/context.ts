@@ -357,7 +357,7 @@ ${code.join("\n")}
       await popupPage.waitForLoadState("domcontentloaded");
 
       // Some popups take a while to fully resolve a URL
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 4000));
 
       let popupUrl: string | undefined;
       let attempts = 0;
