@@ -402,6 +402,7 @@ ${code.join("\n")}
 
       return analysis.isPopup;
     } catch (error) {
+      console.error("Error checking if page is a popup window:", error);
       // If we can't determine, assume it's not a popup window
       return false;
     }
