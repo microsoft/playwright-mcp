@@ -387,10 +387,24 @@ ${code.join("\n")}
    * Checks if a page is a popup window (not just a new tab)
    */
   private async _isPopupWindow(page: playwright.Page): Promise<boolean> {
-    const STANDARD_TARGETS = new Set(["_blank", "_self", "_parent", "_top"]);
+    const STANDARD_TARGETS = new Set([
+      "_blank",
+      "_self",
+      "_parent",
+      "_top",
+      "",
+    ]);
 
     try {
       const indicators = await page.evaluate(() => {
+        // Pre-compiled regex patterns for performance
+        const POPUP_FEATURES_REGEX =
+          /(?:width|height|left|top|screenx|screeny)\s*=\s*\d+/i;
+        const POPUP_CHROME_REGEX =
+          /(?:toolbar|menubar|scrollbars|resizable|location|directories|status)\s*=\s*(?:no|0|false)/i;
+        const POPUP_NAME_REGEX =
+          /(?:popup|modal|dialog|window|auth|login|oauth)/i;
+
         // Check if window has popup-like features
         const hasOpener = window.opener !== null;
         const windowName = window.name || "";
@@ -404,19 +418,44 @@ ${code.join("\n")}
         const isSmallWindow =
           windowWidth < width * 0.8 || windowHeight < height * 0.8;
 
+        // Check for popup-related naming patterns
+        const hasPopupName = windowName && POPUP_NAME_REGEX.test(windowName);
+
+        // Check if window was opened with specific features (this would be detected
+        // by looking at the window's current state since we can't access the original open() call)
+        const hasPopupFeatures =
+          windowWidth !== window.screen.availWidth ||
+          windowHeight !== window.screen.availHeight ||
+          window.outerWidth !== window.innerWidth ||
+          window.outerHeight !== window.innerHeight;
+
+        // Check for browser chrome removal indicators
+        const hasMinimalChrome =
+          window.outerWidth === window.innerWidth ||
+          window.outerHeight === window.innerHeight;
+
         return {
           hasOpener,
           hasSpecificName,
           isSmallWindow,
+          hasPopupName,
+          hasPopupFeatures,
+          hasMinimalChrome,
           windowName,
         };
       });
 
       // Consider it a popup window if it has multiple indicators
-      return (
-        indicators.hasOpener ||
-        (indicators.hasSpecificName && indicators.isSmallWindow)
-      );
+      const popupIndicators = [
+        indicators.hasOpener,
+        indicators.hasSpecificName && indicators.isSmallWindow,
+        indicators.hasPopupName,
+        indicators.hasPopupFeatures,
+        indicators.hasMinimalChrome,
+      ].filter(Boolean);
+
+      // Return true if we have at least 2 strong indicators
+      return popupIndicators.length >= 2;
     } catch (error) {
       // If we can't determine, assume it's not a popup window
       return false;
