@@ -391,7 +391,7 @@ ${code.join("\n")}
     try {
       await page.waitForLoadState();
 
-      const analysis = popupAnalysis(page);
+      const analysis = await popupAnalysis(page);
 
       console.log("Popup analysis:", analysis);
 
