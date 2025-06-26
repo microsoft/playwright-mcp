@@ -472,11 +472,9 @@ ${code.join("\n")}
 
       // Note that its likely here that the context is already dead :(
       // so we wrap this in a try catch
-      try {
-        void this.close();
-      } catch (error) {
+      this.close().catch((error) => {
         console.error("Error closing context:", error);
-      }
+      });
     }
   }
 
