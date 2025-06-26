@@ -6,7 +6,7 @@ export const popupAnalysis = (page: Page) => {
   const analysis = {
     isPopup: false,
     confidence: 0,
-    reasons: [],
+    reasons: [] as string[],
   };
 
   // Check window opener
@@ -49,7 +49,7 @@ export const popupAnalysis = (page: Page) => {
   }
 
   // Check if window is resizable
-  if (window.resizeTo) {
+  if (!!window.resizeTo) {
     analysis.reasons.push("Window is resizable");
     analysis.confidence += 5;
   }
