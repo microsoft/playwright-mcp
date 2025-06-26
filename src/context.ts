@@ -352,19 +352,7 @@ ${code.join("\n")}
       console.log("Is a popup window, opening in new tab");
 
       // Get the popup URL with a timeout
-      let popupUrl: string;
-      try {
-        popupUrl = await Promise.race([
-          popupPage.url(),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("URL fetch timeout")), 2000)
-          ),
-        ]);
-      } catch (error) {
-        console.log("Failed to get popup URL, closing popup");
-        await popupPage.close();
-        return;
-      }
+      const popupUrl = await popupPage.url();
 
       console.log("Popup URL:", popupUrl);
 
