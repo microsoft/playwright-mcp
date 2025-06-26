@@ -320,7 +320,9 @@ ${code.join("\n")}
     console.log("Page created, checking for popup");
 
     try {
-      await this._handlePopup(page);
+      const isPopup = await this._handlePopup(page);
+      // If it was a popup, we don't want to add it to the tabs list
+      if (isPopup) return;
     } catch (error) {
       console.error("Error handling popup:", error);
       // Continue with normal page creation even if popup handling fails
@@ -335,7 +337,7 @@ ${code.join("\n")}
    * Handles popup windows by converting them to tabs
    * Only converts popup windows, not new tabs
    */
-  private async _handlePopup(popupPage: playwright.Page): Promise<void> {
+  private async _handlePopup(popupPage: playwright.Page): Promise<boolean> {
     try {
       // Wait to ensure that the `context.on("page")` event has fired
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -346,30 +348,24 @@ ${code.join("\n")}
         console.log("Not a popup window");
         // If it's not a popup window, we don't need to do anything, since
         // the context.on("page") event will handle it.
-        return;
+        return false;
       }
 
       console.log("Is a popup window, getting URL");
 
       await popupPage.waitForLoadState("domcontentloaded");
 
+      // Some popups take a while to fully resolve a URL
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       let popupUrl: string | undefined;
-      let attempts = 0;
-      while (!popupUrl && attempts < 3) {
-        try {
-          popupUrl = await popupPage.url();
-        } catch (error) {
-          console.log("Failed to get popup URL, retrying");
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+      try {
+        popupUrl = await popupPage.url();
+      } catch (error) {
+        console.log("Failed to get popup URL, closing popup");
 
-        if (popupUrl === "about:blank") {
-          popupUrl = undefined;
-          console.log("Popup URL is about:blank, retrying");
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-
-        attempts++;
+        await popupPage.close();
+        return false;
       }
 
       console.log("Popup URL:", popupUrl);
@@ -382,7 +378,7 @@ ${code.join("\n")}
       ) {
         // For data URLs or blank pages, just close the popup
         await popupPage.close();
-        return;
+        return false;
       }
 
       // Create a new page directly and navigate to the popup URL
@@ -409,8 +405,11 @@ ${code.join("\n")}
         await popupPage.close();
       } catch (closeError) {
         // Ignore close errors
+        console.warn("Error closing popup:", closeError);
       }
     }
+
+    return true;
   }
 
   /**
