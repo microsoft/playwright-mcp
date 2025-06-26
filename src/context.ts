@@ -316,11 +316,8 @@ ${code.join("\n")}
   }
 
   private async _onPageCreated(page: playwright.Page) {
-    // Set up popup event listener for this page
-    page.on("popup", async (popupPage) => {
-      console.log("Popup event received");
-      await this._handlePopup(popupPage);
-    });
+    console.log("Page created, checking for popup");
+    await this._handlePopup(page);
 
     const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
     this._tabs.push(tab);
@@ -346,6 +343,7 @@ ${code.join("\n")}
       }
 
       console.log("Is a popup window, opening in new tab");
+
       const popupUrl = popupPage.url();
 
       // Only convert if we have a valid URL
@@ -389,12 +387,15 @@ ${code.join("\n")}
    * Checks if a page is a popup window (not just a new tab)
    */
   private async _isPopupWindow(page: playwright.Page): Promise<boolean> {
+    const STANDARD_TARGETS = new Set(["_blank", "_self", "_parent", "_top"]);
+
     try {
       const indicators = await page.evaluate(() => {
         // Check if window has popup-like features
         const hasOpener = window.opener !== null;
         const windowName = window.name || "";
-        const hasSpecificName = windowName !== "" && windowName !== "_blank";
+        const hasSpecificName =
+          windowName !== "" && !STANDARD_TARGETS.has(windowName);
 
         // Check window size - popups are often smaller
         const { width, height } = window.screen;
