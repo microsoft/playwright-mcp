@@ -18,9 +18,11 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsc",
+    "build:extension": "tsc --project extension",
     "lint": "npm run update-readme && eslint . --fix && tsc --noEmit",
     "update-readme": "node utils/update-readme.js",
     "watch": "tsc --watch",
+    "watch:extension": "tsc --watch --project extension",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
     "ftest": "playwright test --project=firefox",

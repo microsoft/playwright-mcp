@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-import { Connection } from './connection.js';
+import { Connection, debugLog } from './connection.js';
 
 /**
  * Simple Chrome Extension that pumps CDP messages between chrome.debugger and WebSocket
  */
 
-// @ts-check
+type PopupMessage = {
+  type: 'getStatus' | 'connect' | 'disconnect';
+  tabId: number;
+  bridgeUrl?: string;
+};
 
-function debugLog(...args) {
-  const enabled = true;
-  if (enabled) {
-    console.log('[Extension]', ...args);
-  }
-}
+type SendResponse = (response: any) => void;
 
 class TabShareExtension {
+  private activeConnections: Map<number, Connection>;
+
   constructor() {
-    this.activeConnections = new Map(); // tabId -> connection info
+    this.activeConnections = new Map(); // tabId -> connection
 
     // Remove page action click handler since we now use popup
     chrome.tabs.onRemoved.addListener(this.onTabRemoved.bind(this));
@@ -42,27 +43,24 @@ class TabShareExtension {
 
   /**
    * Handle messages from popup
-   * @param {any} message
-   * @param {chrome.runtime.MessageSender} sender
-   * @param {Function} sendResponse
    */
-  onMessage(message, sender, sendResponse) {
+  onMessage(message: PopupMessage, sender: chrome.runtime.MessageSender, sendResponse: SendResponse): boolean {
     switch (message.type) {
       case 'getStatus':
         this.getStatus(message.tabId, sendResponse);
         return true; // Will respond asynchronously
 
       case 'connect':
-        this.connectTab(message.tabId, message.bridgeUrl).then(
-          () => sendResponse({ success: true }),
-          (error) => sendResponse({ success: false, error: error.message })
+        this.connectTab(message.tabId, message.bridgeUrl!).then(
+            () => sendResponse({ success: true }),
+            (error: Error) => sendResponse({ success: false, error: error.message })
         );
         return true; // Will respond asynchronously
 
       case 'disconnect':
         this.disconnectTab(message.tabId).then(
-          () => sendResponse({ success: true }),
-          (error) => sendResponse({ success: false, error: error.message })
+            () => sendResponse({ success: true }),
+            (error: Error) => sendResponse({ success: false, error: error.message })
         );
         return true; // Will respond asynchronously
     }
@@ -71,20 +69,17 @@ class TabShareExtension {
 
   /**
    * Get connection status for popup
-   * @param {number} requestedTabId
-   * @param {Function} sendResponse
    */
-  getStatus(requestedTabId, sendResponse) {
+  getStatus(requestedTabId: number, sendResponse: SendResponse): void {
     const isConnected = this.activeConnections.size > 0;
-    let activeTabId = null;
-    let activeTabInfo = null;
+    let activeTabId: number | null = null;
 
     if (isConnected) {
-      const [tabId, connection] = this.activeConnections.entries().next().value;
+      const [tabId] = this.activeConnections.entries().next().value as [number, Connection];
       activeTabId = tabId;
 
       // Get tab info
-      chrome.tabs.get(tabId, (tab) => {
+      chrome.tabs.get(tabId, tab => {
         if (chrome.runtime.lastError) {
           sendResponse({
             isConnected: false,
@@ -112,17 +107,15 @@ class TabShareExtension {
 
   /**
    * Connect a tab to the bridge server
-   * @param {number} tabId
-   * @param {string} bridgeUrl
    */
-  async connectTab(tabId, bridgeUrl) {
+  async connectTab(tabId: number, bridgeUrl: string): Promise<void> {
     try {
       debugLog(`Connecting tab ${tabId} to bridge at ${bridgeUrl}`);
       // Connect to bridge server
       const socket = new WebSocket(bridgeUrl);
-      await new Promise((resolve, reject) => {
-        socket.onopen = () => resolve(undefined);
-        socket.onerror = reject;
+      await new Promise<void>((resolve, reject) => {
+        socket.onopen = () => resolve();
+        socket.onerror = () => reject(new Error('WebSocket error'));
         setTimeout(() => reject(new Error('Connection timeout')), 5000);
       });
 
@@ -130,64 +123,64 @@ class TabShareExtension {
       // Store connection
       this.activeConnections.set(tabId, info);
 
-      this._updateUI(tabId, { text: '●', color: '#4CAF50', title: 'Disconnect from Playwright MCP' });
+      void this._updateUI(tabId, { text: '●', color: '#4CAF50', title: 'Disconnect from Playwright MCP' });
       debugLog(`Tab ${tabId} connected successfully`);
-    } catch (error) {
+    } catch (error: any) {
       debugLog(`Failed to connect tab ${tabId}:`, error.message);
       await this._cleanupConnection(tabId);
 
       // Show error to user
-      this._updateUI(tabId, { text: '!', color: '#F44336', title: `Connection failed: ${error.message}` });
+      void this._updateUI(tabId, { text: '!', color: '#F44336', title: `Connection failed: ${error.message}` });
 
-      throw error; // Re-throw for popup to handle
+      throw error;
     }
   }
 
-  _updateUI(tabId, { text, color, title }) {
-    chrome.action.setBadgeText({ tabId, text });
+  private async _updateUI(tabId: number, { text, color, title }: { text: string; color: string | null; title: string }): Promise<void> {
+    await chrome.action.setBadgeText({ tabId, text });
     if (color)
-      chrome.action.setBadgeBackgroundColor({ tabId, color });
-    chrome.action.setTitle({ tabId, title });
+      await chrome.action.setBadgeBackgroundColor({ tabId, color });
+    await chrome.action.setTitle({ tabId, title });
   }
 
-  _createConnection(tabId, socket) {
+  private _createConnection(tabId: number, socket: WebSocket): Connection {
     const connection = new Connection(tabId, socket);
     socket.onclose = () => {
       debugLog(`WebSocket closed for tab ${tabId}`);
-      this.disconnectTab(tabId);
+      void this.disconnectTab(tabId);
     };
-    socket.onerror = (error) => {
+    socket.onerror = error => {
       debugLog(`WebSocket error for tab ${tabId}:`, error);
-      this.disconnectTab(tabId);
+      void this.disconnectTab(tabId);
     };
-    return { connection };
+    return connection;
   }
 
   /**
    * Disconnect a tab from the bridge
-   * @param {number} tabId
    */
-  async disconnectTab(tabId) {
+  async disconnectTab(tabId: number): Promise<void> {
     await this._cleanupConnection(tabId);
-    this._updateUI(tabId, { text: '', color: null, title: 'Share tab with Playwright MCP' });
+    await this._updateUI(tabId, { text: '', color: null, title: 'Share tab with Playwright MCP' });
     debugLog(`Tab ${tabId} disconnected`);
   }
 
   /**
    * Clean up connection resources
-   * @param {number} tabId
    */
-  async _cleanupConnection(tabId) {
-    const info = this.activeConnections.get(tabId);
-    if (!info) return;
+  async _cleanupConnection(tabId: number): Promise<void> {
+    const connection = this.activeConnections.get(tabId);
+    if (!connection)
+      return;
+
     this.activeConnections.delete(tabId);
 
     // Close WebSocket
-    info.connection.close();
+    connection.close();
 
     // Detach debugger
     try {
-      await info.connection.detachDebugger();
+      await connection.detachDebugger();
     } catch (error) {
       // Ignore detach errors - might already be detached
       debugLog('Error while detaching debugger:', error);
@@ -196,9 +189,8 @@ class TabShareExtension {
 
   /**
    * Handle tab removal
-   * @param {number} tabId
    */
-  async onTabRemoved(tabId) {
+  async onTabRemoved(tabId: number): Promise<void> {
     if (this.activeConnections.has(tabId))
       await this._cleanupConnection(tabId);
   }

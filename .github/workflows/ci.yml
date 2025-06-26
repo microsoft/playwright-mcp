@@ -48,6 +48,8 @@ jobs:
       run: npx playwright install msedge
     - name: Build
       run: npm run build
+    - name: Build Chrome extension
+      run: npm run build:extension
     - name: Run tests
       run: npm test
 

@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-// @ts-check
-
-/**
- * Popup script for Playwright MCP Bridge extension
- */
-
 class PopupController {
+  private currentTab: chrome.tabs.Tab | null;
+  private readonly bridgeUrlInput: HTMLInputElement;
+  private readonly connectBtn: HTMLButtonElement;
+  private readonly statusContainer: HTMLElement;
+  private readonly actionContainer: HTMLElement;
+
   constructor() {
     this.currentTab = null;
-    this.bridgeUrlInput = /** @type {HTMLInputElement} */ (document.getElementById('bridge-url'));
-    this.connectBtn = /** @type {HTMLButtonElement} */ (document.getElementById('connect-btn'));
-    this.statusContainer = /** @type {HTMLElement} */ (document.getElementById('status-container'));
-    this.actionContainer = /** @type {HTMLElement} */ (document.getElementById('action-container'));
+    this.bridgeUrlInput = document.getElementById('bridge-url') as HTMLInputElement;
+    this.connectBtn = document.getElementById('connect-btn') as HTMLButtonElement;
+    this.statusContainer = document.getElementById('status-container') as HTMLElement;
+    this.actionContainer = document.getElementById('action-container') as HTMLElement;
 
-    this.init();
+    void this.init();
   }
 
-  async init() {
+  async init(): Promise<void> {
     // Get current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     this.currentTab = tab;
@@ -39,19 +39,24 @@ class PopupController {
     // Load saved bridge URL
     const result = await chrome.storage.sync.get(['bridgeUrl']);
     const savedUrl = result.bridgeUrl || 'ws://localhost:9223/extension';
-    this.bridgeUrlInput.value = savedUrl;
-    this.bridgeUrlInput.disabled = false;
+    if (this.bridgeUrlInput) {
+      this.bridgeUrlInput.value = savedUrl;
+      this.bridgeUrlInput.disabled = false;
+    }
 
     // Set up event listeners
-    this.bridgeUrlInput.addEventListener('input', this.onUrlChange.bind(this));
-    this.connectBtn.addEventListener('click', this.onConnectClick.bind(this));
+    if (this.bridgeUrlInput)
+      this.bridgeUrlInput.addEventListener('input', this.onUrlChange.bind(this));
+    if (this.connectBtn)
+      this.connectBtn.addEventListener('click', this.onConnectClick.bind(this));
 
     // Update UI based on current state
     await this.updateUI();
   }
 
-  async updateUI() {
-    if (!this.currentTab?.id) return;
+  async updateUI(): Promise<void> {
+    if (!this.currentTab?.id)
+      return;
 
     // Get connection status from background script
     const response = await chrome.runtime.sendMessage({
@@ -59,9 +64,15 @@ class PopupController {
       tabId: this.currentTab.id
     });
 
-    const { isConnected, activeTabId, activeTabInfo, error } = response;
+    const { isConnected, activeTabId, activeTabInfo, error } = response as {
+      isConnected: boolean;
+      activeTabId: number | undefined;
+      activeTabInfo?: { title?: string; url?: string };
+      error?: string;
+    };
 
-    if (!this.statusContainer || !this.actionContainer) return;
+    if (!this.statusContainer || !this.actionContainer)
+      return;
 
     this.statusContainer.innerHTML = '';
     this.actionContainer.innerHTML = '';
@@ -84,21 +95,24 @@ class PopupController {
     }
   }
 
-  showStatus(type, message) {
+  showStatus(type: string, message: string): void {
+    if (!this.statusContainer)
+      return;
     const statusDiv = document.createElement('div');
     statusDiv.className = `status ${type}`;
     statusDiv.textContent = message;
     this.statusContainer.appendChild(statusDiv);
   }
 
-  showConnectButton() {
-    if (!this.actionContainer) return;
+  showConnectButton(): void {
+    if (!this.actionContainer)
+      return;
 
     this.actionContainer.innerHTML = `
       <button id="connect-btn" class="button">Share This Tab</button>
     `;
 
-    const connectBtn = /** @type {HTMLButtonElement} */ (document.getElementById('connect-btn'));
+    const connectBtn = document.getElementById('connect-btn') as HTMLButtonElement | null;
     if (connectBtn) {
       connectBtn.addEventListener('click', this.onConnectClick.bind(this));
 
@@ -108,21 +122,22 @@ class PopupController {
     }
   }
 
-  showDisconnectButton() {
-    if (!this.actionContainer) return;
+  showDisconnectButton(): void {
+    if (!this.actionContainer)
+      return;
 
     this.actionContainer.innerHTML = `
       <button id="disconnect-btn" class="button disconnect">Stop Sharing</button>
     `;
 
-    const disconnectBtn = /** @type {HTMLButtonElement} */ (document.getElementById('disconnect-btn'));
-    if (disconnectBtn) {
+    const disconnectBtn = document.getElementById('disconnect-btn') as HTMLButtonElement | null;
+    if (disconnectBtn)
       disconnectBtn.addEventListener('click', this.onDisconnectClick.bind(this));
-    }
   }
 
-  showActiveTabInfo(tabInfo) {
-    if (!tabInfo) return;
+  showActiveTabInfo(tabInfo?: { title?: string; url?: string }): void {
+    if (!tabInfo || !this.statusContainer)
+      return;
 
     const tabDiv = document.createElement('div');
     tabDiv.className = 'tab-info';
@@ -133,36 +148,36 @@ class PopupController {
     this.statusContainer.appendChild(tabDiv);
   }
 
-  showFocusButton(activeTabId) {
-    if (!this.actionContainer) return;
+  showFocusButton(activeTabId?: number): void {
+    if (!this.actionContainer)
+      return;
 
     this.actionContainer.innerHTML = `
       <button id="focus-btn" class="button focus-button">Switch to Shared Tab</button>
     `;
 
-    const focusBtn = /** @type {HTMLButtonElement} */ (document.getElementById('focus-btn'));
-    if (focusBtn) {
+    const focusBtn = document.getElementById('focus-btn') as HTMLButtonElement | null;
+    if (focusBtn && activeTabId !== undefined)
       focusBtn.addEventListener('click', () => this.onFocusClick(activeTabId));
-    }
   }
 
-  onUrlChange() {
-    if (!this.bridgeUrlInput) return;
+  onUrlChange(): void {
+    if (!this.bridgeUrlInput)
+      return;
 
     const isValid = this.isValidWebSocketUrl(this.bridgeUrlInput.value);
-    const connectBtn = /** @type {HTMLButtonElement} */ (document.getElementById('connect-btn'));
-    if (connectBtn) {
+    const connectBtn = document.getElementById('connect-btn') as HTMLButtonElement | null;
+    if (connectBtn)
       connectBtn.disabled = !isValid;
-    }
 
     // Save URL to storage
-    if (isValid) {
-      chrome.storage.sync.set({ bridgeUrl: this.bridgeUrlInput.value });
-    }
+    if (isValid)
+      void chrome.storage.sync.set({ bridgeUrl: this.bridgeUrlInput.value });
   }
 
-  async onConnectClick() {
-    if (!this.bridgeUrlInput || !this.currentTab?.id) return;
+  async onConnectClick(): Promise<void> {
+    if (!this.bridgeUrlInput || !this.currentTab?.id)
+      return;
 
     const url = this.bridgeUrlInput.value.trim();
     if (!this.isValidWebSocketUrl(url)) {
@@ -180,29 +195,28 @@ class PopupController {
       bridgeUrl: url
     });
 
-    if (response.success) {
+    if (response.success)
       await this.updateUI();
-    } else {
+    else
       this.showStatus('error', response.error || 'Failed to connect');
-    }
   }
 
-  async onDisconnectClick() {
-    if (!this.currentTab?.id) return;
+  async onDisconnectClick(): Promise<void> {
+    if (!this.currentTab?.id)
+      return;
 
     const response = await chrome.runtime.sendMessage({
       type: 'disconnect',
       tabId: this.currentTab.id
     });
 
-    if (response.success) {
+    if (response.success)
       await this.updateUI();
-    } else {
+    else
       this.showStatus('error', response.error || 'Failed to disconnect');
-    }
   }
 
-  async onFocusClick(activeTabId) {
+  async onFocusClick(activeTabId: number): Promise<void> {
     try {
       await chrome.tabs.update(activeTabId, { active: true });
       window.close(); // Close popup after switching
@@ -211,8 +225,9 @@ class PopupController {
     }
   }
 
-  isValidWebSocketUrl(url) {
-    if (!url) return false;
+  isValidWebSocketUrl(url: string): boolean {
+    if (!url)
+      return false;
     try {
       const parsed = new URL(url);
       return parsed.protocol === 'ws:' || parsed.protocol === 'wss:';
