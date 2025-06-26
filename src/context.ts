@@ -347,6 +347,8 @@ ${code.join("\n")}
 
       const popupUrl = popupPage.url();
 
+      console.log("Popup URL:", popupUrl);
+
       // Only convert if we have a valid URL
       if (
         !popupUrl ||
