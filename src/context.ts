@@ -359,16 +359,28 @@ ${code.join("\n")}
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       let popupUrl: string | undefined;
-      try {
-        popupUrl = await popupPage.url();
-      } catch (error) {
-        console.log("Failed to get popup URL, closing popup");
+      let attempts = 0;
 
-        await popupPage.close();
-        return false;
+      while (!popupUrl && attempts < 3) {
+        try {
+          popupUrl = popupPage.url();
+
+          if (popupUrl === "about:blank") {
+            popupUrl = undefined;
+          }
+        } catch (error) {
+          console.log("Failed to get popup URL, retrying");
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        attempts++;
       }
 
-      console.log("Popup URL:", popupUrl);
+      if (!popupUrl) {
+        console.log("Failed to get popup URL, closing popup");
+        await popupPage.close();
+        return true;
+      }
 
       // Only convert if we have a valid URL
       if (
@@ -378,7 +390,7 @@ ${code.join("\n")}
       ) {
         // For data URLs or blank pages, just close the popup
         await popupPage.close();
-        return false;
+        return true;
       }
 
       // Create a new page directly and navigate to the popup URL
@@ -398,7 +410,6 @@ ${code.join("\n")}
 
       // Close the popup
       await popupPage.close();
-      console.log("Popup closed");
     } catch (error) {
       // If conversion fails, just close the popup
       try {
