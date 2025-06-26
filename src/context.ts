@@ -351,6 +351,7 @@ ${code.join("\n")}
 
       console.log("Is a popup window, opening in new tab");
 
+      await popupPage.waitForLoadState("domcontentloaded");
       // Get the popup URL with a timeout
       const popupUrl = await popupPage.url();
 
