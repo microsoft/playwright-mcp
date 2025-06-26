@@ -210,3 +210,31 @@ test('prompt dialog', async ({ client, server }) => {
 - generic [ref=e1]: Answer
 \`\`\``);
 });
+
+
+test('alert dialog repro', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/595' } }, async ({ client, server }) => {
+  server.setContent('/', `
+    <form>
+        <button id="button" type="submit">Login</button>
+    </form>
+    <script>
+    document.getElementById('button').addEventListener('click', async function(event) {
+        event.preventDefault();
+        setTimeout(() => {
+            alert('invalid password');
+        }, 1000); // Simulate delay for invalid login
+    });
+    </script>
+  `, 'text/html');
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  })).toContainTextContent('- button "Login" [ref=e3]');
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Login',
+      ref: 'e3',
+    },
+  })).toContainTextContent(`"alert" dialog`);
+});

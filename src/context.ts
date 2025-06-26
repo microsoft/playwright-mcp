@@ -136,7 +136,6 @@ export class Context {
     // Tab management is done outside of the action() call.
     const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params || {}));
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
-    const racingAction = action ? () => this._raceAgainstModalDialogs(action) : undefined;
 
     if (resultOverride)
       return resultOverride;
@@ -151,17 +150,19 @@ export class Context {
     }
 
     const tab = this.currentTabOrDie();
-    // TODO: race against modal dialogs to resolve clicks.
     let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
-    try {
-      if (waitForNetwork)
-        actionResult = await waitForCompletion(this, tab, async () => racingAction?.()) ?? undefined;
-      else
-        actionResult = await racingAction?.() ?? undefined;
-    } finally {
-      if (captureSnapshot && !this._javaScriptBlocked())
-        await tab.captureSnapshot();
-    }
+    await this._raceAgainstModalDialogs(async () => {
+      try {
+        if (waitForNetwork)
+          actionResult = await waitForCompletion(this, tab, async () => action?.()) ?? undefined;
+        else
+          actionResult = await action?.() ?? undefined;
+      } finally {
+        if (captureSnapshot && !this._javaScriptBlocked())
+          await tab.captureSnapshot();
+      }
+    });
+
 
     const result: string[] = [];
     result.push(`- Ran Playwright code:
