@@ -13,16 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { test, expect } from './fixtures.js';
-import fs from 'node:fs/promises';
-import child_process from 'node:child_process';
+import { test, expect } from "./fixtures.js";
+import fs from "node:fs/promises";
+import child_process from "node:child_process";
 
-test('library can be used from CommonJS', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/456' } }, async ({}, testInfo) => {
-  const file = testInfo.outputPath('main.cjs');
-  await fs.writeFile(file, `
-    import('@playwright/mcp')
+test(
+  "library can be used from CommonJS",
+  {
+    annotation: {
+      type: "issue",
+      description: "https://github.com/microsoft/playwright-mcp/issues/456",
+    },
+  },
+  async ({}, testInfo) => {
+    const file = testInfo.outputPath("main.cjs");
+    await fs.writeFile(
+      file,
+      `
+    import('asteroid-playwright-mcp')
       .then(playwrightMCP => playwrightMCP.createConnection())
       .then(() => console.log('OK'));
- `);
-  expect(child_process.execSync(`node ${file}`, { encoding: 'utf-8' })).toContain('OK');
-});
+ `
+    );
+    expect(
+      child_process.execSync(`node ${file}`, { encoding: "utf-8" })
+    ).toContain("OK");
+  }
+);

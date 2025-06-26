@@ -318,7 +318,13 @@ ${code.join("\n")}
 
   private async _onPageCreated(page: playwright.Page) {
     console.log("Page created, checking for popup");
-    await this._handlePopup(page);
+
+    try {
+      await this._handlePopup(page);
+    } catch (error) {
+      console.error("Error handling popup:", error);
+      // Continue with normal page creation even if popup handling fails
+    }
 
     const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
     this._tabs.push(tab);
@@ -345,7 +351,20 @@ ${code.join("\n")}
 
       console.log("Is a popup window, opening in new tab");
 
-      const popupUrl = popupPage.url();
+      // Get the popup URL with a timeout
+      let popupUrl: string;
+      try {
+        popupUrl = await Promise.race([
+          popupPage.url(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("URL fetch timeout")), 2000)
+          ),
+        ]);
+      } catch (error) {
+        console.log("Failed to get popup URL, closing popup");
+        await popupPage.close();
+        return;
+      }
 
       console.log("Popup URL:", popupUrl);
 
@@ -393,9 +412,16 @@ ${code.join("\n")}
    */
   private async _isPopupWindow(page: playwright.Page): Promise<boolean> {
     try {
-      await page.waitForLoadState();
+      // Wait for the page to be ready, but with a timeout
+      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
 
-      const analysis = await popupAnalysis(page);
+      // Use a timeout for the popup analysis to prevent hanging
+      const analysis = await Promise.race([
+        popupAnalysis(page),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Popup analysis timeout")), 3000)
+        ),
+      ]);
 
       console.log("Popup analysis:", analysis);
 
@@ -406,7 +432,11 @@ ${code.join("\n")}
 
       return analysis.isPopup;
     } catch (error) {
-      console.error("Error checking if page is a popup window:", error);
+      // Check if it's a navigation-related error
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      console.error("Error checking if page is a popup window:", errorMessage);
       // If we can't determine, assume it's not a popup window
       return false;
     }
