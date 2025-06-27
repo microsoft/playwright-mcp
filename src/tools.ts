@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import assert from './tools/assert.js';
 import common from './tools/common.js';
 import console from './tools/console.js';
 import dialogs from './tools/dialogs.js';
@@ -32,7 +33,10 @@ import wait from './tools/wait.js';
 
 import type { Tool } from './tools/tool.js';
 
+const assertTools = process.env.PWMCP_INCLUDE_ASSERTS ? assert : [];
+
 export const snapshotTools: Tool<any>[] = [
+  ...assertTools,
   ...common(true),
   ...console,
   ...dialogs(true),

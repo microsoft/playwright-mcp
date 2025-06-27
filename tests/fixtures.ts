@@ -210,6 +210,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
   stderr: Stream | null,
   relayServerURL?: string,
 }> {
+  const env = { ...process.env, PWMCP_INCLUDE_ASSERTS: '1' } as Record<string, string>;
   // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
   const __filename = url.fileURLToPath(import.meta.url);
   if (mcpMode === 'docker') {
@@ -217,6 +218,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
     const transport = new StdioClientTransport({
       command: 'docker',
       args: [...dockerArgs, 'playwright-mcp-dev:latest', ...args],
+      env,
     });
     return {
       transport,
@@ -225,7 +227,8 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
   }
   if (mcpMode === 'extension') {
     const relay = fork(path.join(__filename, '../../cli.js'), [...args, '--extension', '--port=0'], {
-      stdio: 'pipe'
+      stdio: 'pipe',
+      env,
     });
     const cdpRelayServerReady = new ManualPromise<string>();
     const sseEndpointPromise = new ManualPromise<string>();
@@ -266,7 +269,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
     cwd: path.join(path.dirname(__filename), '..'),
     stderr: 'pipe',
     env: {
-      ...process.env,
+      ...env,
       DEBUG: 'pw:mcp:test',
       DEBUG_COLORS: '0',
       DEBUG_HIDE_DATE: '1',
@@ -315,9 +318,9 @@ export const expect = baseExpect.extend({
       const texts = (response.content as any).map(c => c.text);
       for (let i = 0; i < texts.length; i++) {
         if (isNot)
-          expect(texts[i]).not.toContain(content[i]);
+          expect(texts[i].trim()).not.toContain(content[i].trim());
         else
-          expect(texts[i]).toContain(content[i]);
+          expect(texts[i].trim()).toContain(content[i].trim());
       }
     } catch (e) {
       return {
