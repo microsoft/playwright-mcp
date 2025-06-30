@@ -100,6 +100,11 @@ export type Config = {
   vision?: boolean;
 
   /**
+   * Run server that uses hybrid version (vision and classic) (Aria snapshots are used by default).
+   */
+  hybrid?: boolean;
+
+  /**
    * Whether to save the Playwright trace of the session into the output directory.
    */
   saveTrace?: boolean;

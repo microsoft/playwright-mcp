@@ -46,6 +46,7 @@ type CDPServer = {
 type TestFixtures = {
   client: Client;
   visionClient: Client;
+  hybridClient: Client;
   startClient: (options?: { clientName?: string, args?: string[], config?: Config }) => Promise<{ client: Client, stderr: () => string }>;
   wsEndpoint: string;
   cdpServer: CDPServer;
@@ -68,6 +69,11 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
   visionClient: async ({ startClient }, use) => {
     const { client } = await startClient({ args: ['--vision'] });
+    await use(client);
+  },
+
+  hybridClient: async ({ startClient }, use) => {
+    const { client } = await startClient({ args: ['--hybrid'] });
     await use(client);
   },
 

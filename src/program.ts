@@ -53,6 +53,7 @@ program
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--hybrid', 'Run server that combines Snapshot and Vision Modes')
     .addOption(new Option('--extension', 'Allow connecting to a running browser instance (Edge/Chrome only). Requires the \'Playwright MCP\' browser extension to be installed.').hideHelp())
     .action(async options => {
       const config = await resolveCLIConfig(options);
