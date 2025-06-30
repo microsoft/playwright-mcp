@@ -40,6 +40,7 @@ program
     .option('--headless', 'run browser in headless mode, headed by default')
     .option('--host <host>', 'host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--ignore-https-errors', 'ignore https errors')
+    .option('--auto-ignore-localhost-https-errors', 'automatically ignore https errors for localhost URLs')
     .option('--isolated', 'keep the browser profile in memory, do not save it to disk.')
     .option('--image-responses <mode>', 'whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.')
     .option('--no-sandbox', 'disable the sandbox for all process types that are normally sandboxed.')

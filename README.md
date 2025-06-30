@@ -151,53 +151,65 @@ Playwright MCP server supports following arguments. They can be provided in the 
 
 ```
 > npx @playwright/mcp@latest --help
-  --allowed-origins <origins>  semicolon-separated list of origins to allow the
-                               browser to request. Default is to allow all.
-  --blocked-origins <origins>  semicolon-separated list of origins to block the
-                               browser from requesting. Blocklist is evaluated
-                               before allowlist. If used without the allowlist,
-                               requests not matching the blocklist are still
-                               allowed.
-  --block-service-workers      block service workers
-  --browser <browser>          browser or chrome channel to use, possible
-                               values: chrome, firefox, webkit, msedge.
-  --browser-agent <endpoint>   Use browser agent (experimental).
-  --caps <caps>                comma-separated list of capabilities to enable,
-                               possible values: tabs, pdf, history, wait, files,
-                               install. Default is all.
-  --cdp-endpoint <endpoint>    CDP endpoint to connect to.
-  --config <path>              path to the configuration file.
-  --device <device>            device to emulate, for example: "iPhone 15"
-  --executable-path <path>     path to the browser executable.
-  --headless                   run browser in headless mode, headed by default
-  --host <host>                host to bind server to. Default is localhost. Use
-                               0.0.0.0 to bind to all interfaces.
-  --ignore-https-errors        ignore https errors
-  --isolated                   keep the browser profile in memory, do not save
-                               it to disk.
-  --image-responses <mode>     whether to send image responses to the client.
-                               Can be "allow", "omit", or "auto". Defaults to
-                               "auto", which sends images if the client can
-                               display them.
-  --no-sandbox                 disable the sandbox for all process types that
-                               are normally sandboxed.
-  --output-dir <path>          path to the directory for output files.
-  --port <port>                port to listen on for SSE transport.
-  --proxy-bypass <bypass>      comma-separated domains to bypass proxy, for
-                               example ".com,chromium.org,.domain.com"
-  --proxy-server <proxy>       specify proxy server, for example
-                               "http://myproxy:3128" or "socks5://myproxy:8080"
-  --save-trace                 Whether to save the Playwright Trace of the
-                               session into the output directory.
-  --storage-state <path>       path to the storage state file for isolated
-                               sessions.
-  --user-agent <ua string>     specify user agent string
-  --user-data-dir <path>       path to the user data directory. If not
-                               specified, a temporary directory will be created.
-  --viewport-size <size>       specify browser viewport size in pixels, for
-                               example "1280, 720"
-  --vision                     Run server that uses screenshots (Aria snapshots
-                               are used by default)
+  --allowed-origins <origins>           semicolon-separated list of origins to
+                                        allow the browser to request. Default is
+                                        to allow all.
+  --blocked-origins <origins>           semicolon-separated list of origins to
+                                        block the browser from requesting.
+                                        Blocklist is evaluated before allowlist.
+                                        If used without the allowlist, requests
+                                        not matching the blocklist are still
+                                        allowed.
+  --block-service-workers               block service workers
+  --browser <browser>                   browser or chrome channel to use,
+                                        possible values: chrome, firefox,
+                                        webkit, msedge.
+  --browser-agent <endpoint>            Use browser agent (experimental).
+  --caps <caps>                         comma-separated list of capabilities to
+                                        enable, possible values: tabs, pdf,
+                                        history, wait, files, install. Default
+                                        is all.
+  --cdp-endpoint <endpoint>             CDP endpoint to connect to.
+  --config <path>                       path to the configuration file.
+  --device <device>                     device to emulate, for example: "iPhone
+                                        15"
+  --executable-path <path>              path to the browser executable.
+  --headless                            run browser in headless mode, headed by
+                                        default
+  --host <host>                         host to bind server to. Default is
+                                        localhost. Use 0.0.0.0 to bind to all
+                                        interfaces.
+  --ignore-https-errors                 ignore https errors
+  --auto-ignore-localhost-https-errors  automatically ignore https errors for
+                                        localhost URLs
+  --isolated                            keep the browser profile in memory, do
+                                        not save it to disk.
+  --image-responses <mode>              whether to send image responses to the
+                                        client. Can be "allow", "omit", or
+                                        "auto". Defaults to "auto", which sends
+                                        images if the client can display them.
+  --no-sandbox                          disable the sandbox for all process
+                                        types that are normally sandboxed.
+  --output-dir <path>                   path to the directory for output files.
+  --port <port>                         port to listen on for SSE transport.
+  --proxy-bypass <bypass>               comma-separated domains to bypass proxy,
+                                        for example
+                                        ".com,chromium.org,.domain.com"
+  --proxy-server <proxy>                specify proxy server, for example
+                                        "http://myproxy:3128" or
+                                        "socks5://myproxy:8080"
+  --save-trace                          Whether to save the Playwright Trace of
+                                        the session into the output directory.
+  --storage-state <path>                path to the storage state file for
+                                        isolated sessions.
+  --user-agent <ua string>              specify user agent string
+  --user-data-dir <path>                path to the user data directory. If not
+                                        specified, a temporary directory will be
+                                        created.
+  --viewport-size <size>                specify browser viewport size in pixels,
+                                        for example "1280, 720"
+  --vision                              Run server that uses screenshots (Aria
+                                        snapshots are used by default)
 ```
 
 <!--- End of options generated section -->

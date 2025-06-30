@@ -29,6 +29,10 @@ type Config = PublicConfig & {
    * Run server that is able to connect to the 'Playwright MCP' Chrome extension.
    */
   extension?: boolean;
+  /**
+   * Automatically ignore HTTPS errors for localhost URLs.
+   */
+  autoIgnoreLocalhostHttpsErrors?: boolean;
 };
 
 export type CLIOptions = {
@@ -45,6 +49,7 @@ export type CLIOptions = {
   headless?: boolean;
   host?: string;
   ignoreHttpsErrors?: boolean;
+  autoIgnoreLocalhostHttpsErrors?: boolean;
   isolated?: boolean;
   imageResponses?: 'allow' | 'omit' | 'auto';
   sandbox: boolean;
@@ -185,6 +190,11 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   if (cliOptions.ignoreHttpsErrors)
     contextOptions.ignoreHTTPSErrors = true;
 
+  // When autoIgnoreLocalhostHttpsErrors is enabled, we enable ignoreHTTPSErrors globally
+  // This is because Playwright requires ignoreHTTPSErrors to be set at context creation time
+  if (cliOptions.autoIgnoreLocalhostHttpsErrors)
+    contextOptions.ignoreHTTPSErrors = true;
+
   if (cliOptions.blockServiceWorkers)
     contextOptions.serviceWorkers = 'block';
 
@@ -212,6 +222,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
     imageResponses: cliOptions.imageResponses,
+    autoIgnoreLocalhostHttpsErrors: cliOptions.autoIgnoreLocalhostHttpsErrors,
   };
 
   return result;

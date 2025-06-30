@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import debug from 'debug';
 import * as playwright from 'playwright';
 
 import { PageSnapshot } from './pageSnapshot.js';
@@ -72,6 +73,17 @@ export class Tab {
 
   async navigate(url: string) {
     this._clearCollectedArtifacts();
+
+    // Check if we're navigating to localhost with autoIgnoreLocalhostHttpsErrors enabled
+    if (this.context.config.autoIgnoreLocalhostHttpsErrors) {
+      try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1' || urlObj.hostname === '[::1]')
+          debug('pw:mcp:navigate')(`Navigating to localhost with HTTPS errors ignored due to --auto-ignore-localhost-https-errors flag`);
+      } catch (e) {
+        // Invalid URL, ignore
+      }
+    }
 
     const downloadEvent = callOnPageNoTrace(this.page, page => page.waitForEvent('download').catch(() => {}));
     try {
