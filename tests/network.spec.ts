@@ -43,3 +43,39 @@ test('browser_network_requests', async ({ client, server }) => {
   })).toHaveTextContent(`[GET] ${`${server.PREFIX}`} => [200] OK
 [GET] ${`${server.PREFIX}json`} => [200] OK`);
 });
+
+test('browser_network_request_detail', async ({ client, server }) => {
+  const responseData = { name: 'John Doe' };
+
+  // Setup server
+  server.setContent('/', `<button onclick="fetch('/json')">Click me</button>`, 'text/html');
+  server.setContent('/json', JSON.stringify(responseData), 'application/json');
+
+  // Navigate and trigger request
+  await client.callTool({ name: 'browser_navigate', arguments: { url: server.PREFIX } });
+  await client.callTool({ name: 'browser_click', arguments: { element: 'Click me button', ref: 'e2' } });
+
+  // Wait for the request to appear
+  await expect.poll(() => client.callTool({
+    name: 'browser_network_requests',
+  })).toHaveTextContent(
+    [`[GET] ${server.PREFIX} => [200] OK`, `[GET] ${server.PREFIX}json => [200] OK`].join('\n')
+  );
+
+  // Get the detail for the /json request
+  const detail = await client.callTool({
+    name: 'browser_network_request_detail',
+    arguments: { url: `${server.PREFIX}json` },
+  });
+
+  // Type assertion to avoid linter error
+  const detailText = (detail.content as any)[0].text;
+  [
+    'Request:',
+    'Method: GET',
+    `${server.PREFIX}json`,
+    'Response:',
+    'Status: 200 OK',
+    JSON.stringify(responseData),
+  ].forEach(expected => expect(detailText).toContain(expected));
+});
