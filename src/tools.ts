@@ -64,3 +64,20 @@ export const visionTools: Tool<any>[] = [
   ...vision,
   ...wait(false),
 ];
+export const hybridTools: Tool<any>[] = [
+  ...common(true),
+  ...console,
+  ...dialogs(true),
+  ...files(true),
+  ...install,
+  ...keyboard(true),
+  ...navigate(true),
+  ...network,
+  ...pdf,
+  ...screenshot,
+  ...snapshot,
+  ...tabs(true),
+  ...testing,
+  ...vision,
+  ...wait(true),
+];

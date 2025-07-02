@@ -72,13 +72,20 @@ const categories = {
     ...filesTools(false),
     ...dialogsTools(false),
   ],
+  'Hybrid mode': [
+    ...visionTools,
+    ...keyboardTools(),
+    ...waitTools(true),
+    ...filesTools(true),
+    ...dialogsTools(true),
+  ],
 };
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
 
 /**
- * @param {import('../src/tools/tool.js').ToolSchema<any>} tool 
+ * @param {import('../src/tools/tool.js').ToolSchema<any>} tool
  * @returns {string[]}
  */
 function formatToolForReadme(tool) {

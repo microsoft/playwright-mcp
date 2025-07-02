@@ -58,6 +58,7 @@ export type CLIOptions = {
   userDataDir?: string;
   viewportSize?: string;
   vision?: boolean;
+  hybrid?: boolean;
   extension?: boolean;
 };
 
@@ -204,6 +205,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
+    hybrid: !!cliOptions.hybrid,
     extension: !!cliOptions.extension,
     network: {
       allowedOrigins: cliOptions.allowedOrigins,

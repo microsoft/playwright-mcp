@@ -19,7 +19,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Context } from './context.js';
-import { snapshotTools, visionTools } from './tools.js';
+import { snapshotTools, visionTools , hybridTools } from './tools.js';
 import { packageJSON } from './package.js';
 
 import { FullConfig, validateConfig } from './config.js';
@@ -27,7 +27,7 @@ import { FullConfig, validateConfig } from './config.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
 
 export function createConnection(config: FullConfig, browserContextFactory: BrowserContextFactory): Connection {
-  const allTools = config.vision ? visionTools : snapshotTools;
+  const allTools = config.vision ? visionTools : config.hybrid ? hybridTools: snapshotTools;
   const tools = allTools.filter(tool => !config.capabilities || tool.capability === 'core' || config.capabilities.includes(tool.capability));
   validateConfig(config);
   const context = new Context(tools, config, browserContextFactory);
