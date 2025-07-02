@@ -34,6 +34,12 @@ const close = defineTool({
       code: [`await page.close()`],
       captureSnapshot: false,
       waitForNetwork: false,
+      resultOverride: {
+        content: [{
+          type: 'text',
+          text: 'Browser closed successfully.',
+        }],
+      },
     };
   },
 });

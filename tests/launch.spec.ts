@@ -29,7 +29,7 @@ test('test reopen browser', async ({ startClient, server, mcpMode }) => {
 
   expect(await client.callTool({
     name: 'browser_close',
-  })).toContainTextContent('No open pages available');
+  })).toContainTextContent('Browser closed successfully.');
 
   expect(await client.callTool({
     name: 'browser_navigate',
