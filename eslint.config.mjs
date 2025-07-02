@@ -33,6 +33,8 @@ const plugins = {
 };
 
 export const baseRules = {
+  "import/extensions": ["error", "ignorePackages", {ts: "always"}],
+  "@typescript-eslint/no-floating-promises": "error",
   "@typescript-eslint/no-unused-vars": [
     2,
     { args: "none", caughtErrors: "none" },
@@ -178,12 +180,16 @@ export const baseRules = {
 
   // react
   "react/react-in-jsx-scope": 0,
+  "no-console": 2,
 };
 
 const languageOptions = {
   parser: tsParser,
   ecmaVersion: 9,
   sourceType: "module",
+  parserOptions: {
+    project: path.join(fileURLToPath(import.meta.url), "..", "tsconfig.all.json"),
+  }
 };
 
 export default [

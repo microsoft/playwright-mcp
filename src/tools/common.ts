@@ -15,80 +15,52 @@
  */
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool, type ToolFactory } from './tool.js';
 
-import type { Tool, ToolFactory } from './tool';
-
-const waitSchema = z.object({
-  time: z.number().describe('The time to wait in seconds'),
-});
-
-const wait: ToolFactory = captureSnapshot => ({
-  capability: 'wait',
-
-  schema: {
-    name: 'browser_wait',
-    description: 'Wait for a specified time in seconds',
-    inputSchema: zodToJsonSchema(waitSchema),
-  },
-
-  handle: async (context, params) => {
-    const validatedParams = waitSchema.parse(params);
-    await new Promise(f => setTimeout(f, Math.min(10000, validatedParams.time * 1000)));
-    return {
-      code: [`// Waited for ${validatedParams.time} seconds`],
-      captureSnapshot,
-      waitForNetwork: false,
-    };
-  },
-});
-
-const closeSchema = z.object({});
-
-const close: Tool = {
+const close = defineTool({
   capability: 'core',
 
   schema: {
     name: 'browser_close',
+    title: 'Close browser',
     description: 'Close the page',
-    inputSchema: zodToJsonSchema(closeSchema),
+    inputSchema: z.object({}),
+    type: 'readOnly',
   },
 
   handle: async context => {
     await context.close();
     return {
-      code: [`// Internal to close the page`],
+      code: [`await page.close()`],
       captureSnapshot: false,
       waitForNetwork: false,
     };
   },
-};
-
-const resizeSchema = z.object({
-  width: z.number().describe('Width of the browser window'),
-  height: z.number().describe('Height of the browser window'),
 });
 
-const resize: ToolFactory = captureSnapshot => ({
+const resize: ToolFactory = captureSnapshot => defineTool({
   capability: 'core',
   schema: {
     name: 'browser_resize',
+    title: 'Resize browser window',
     description: 'Resize the browser window',
-    inputSchema: zodToJsonSchema(resizeSchema),
+    inputSchema: z.object({
+      width: z.number().describe('Width of the browser window'),
+      height: z.number().describe('Height of the browser window'),
+    }),
+    type: 'readOnly',
   },
 
   handle: async (context, params) => {
-    const validatedParams = resizeSchema.parse(params);
-
     const tab = context.currentTabOrDie();
 
     const code = [
-      `// Resize browser window to ${validatedParams.width}x${validatedParams.height}`,
-      `await page.setViewportSize({ width: ${validatedParams.width}, height: ${validatedParams.height} });`
+      `// Resize browser window to ${params.width}x${params.height}`,
+      `await page.setViewportSize({ width: ${params.width}, height: ${params.height} });`
     ];
 
     const action = async () => {
-      await tab.page.setViewportSize({ width: validatedParams.width, height: validatedParams.height });
+      await tab.page.setViewportSize({ width: params.width, height: params.height });
     };
 
     return {
@@ -102,6 +74,5 @@ const resize: ToolFactory = captureSnapshot => ({
 
 export default (captureSnapshot: boolean) => [
   close,
-  wait(captureSnapshot),
   resize(captureSnapshot)
 ];

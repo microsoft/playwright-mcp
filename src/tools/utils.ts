@@ -15,9 +15,10 @@
  */
 
 import type * as playwright from 'playwright';
-import type { Context } from '../context';
+import type { Context } from '../context.js';
+import type { Tab } from '../tab.js';
 
-export async function waitForCompletion<R>(context: Context, page: playwright.Page, callback: () => Promise<R>): Promise<R> {
+export async function waitForCompletion<R>(context: Context, tab: Tab, callback: () => Promise<R>): Promise<R> {
   const requests = new Set<playwright.Request>();
   let frameNavigated = false;
   let waitCallback: () => void = () => {};
@@ -36,9 +37,7 @@ export async function waitForCompletion<R>(context: Context, page: playwright.Pa
     frameNavigated = true;
     dispose();
     clearTimeout(timeout);
-    void frame.waitForLoadState('load').then(() => {
-      waitCallback();
-    });
+    void tab.waitForLoadState('load').then(waitCallback);
   };
 
   const onTimeout = () => {
@@ -46,15 +45,15 @@ export async function waitForCompletion<R>(context: Context, page: playwright.Pa
     waitCallback();
   };
 
-  page.on('request', requestListener);
-  page.on('requestfinished', requestFinishedListener);
-  page.on('framenavigated', frameNavigateListener);
+  tab.page.on('request', requestListener);
+  tab.page.on('requestfinished', requestFinishedListener);
+  tab.page.on('framenavigated', frameNavigateListener);
   const timeout = setTimeout(onTimeout, 10000);
 
   const dispose = () => {
-    page.off('request', requestListener);
-    page.off('requestfinished', requestFinishedListener);
-    page.off('framenavigated', frameNavigateListener);
+    tab.page.off('request', requestListener);
+    tab.page.off('requestfinished', requestFinishedListener);
+    tab.page.off('framenavigated', frameNavigateListener);
     clearTimeout(timeout);
   };
 
@@ -71,5 +70,23 @@ export async function waitForCompletion<R>(context: Context, page: playwright.Pa
 }
 
 export function sanitizeForFilePath(s: string) {
-  return s.replace(/[\x00-\x2C\x2E-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F]+/g, '-');
+  const sanitize = (s: string) => s.replace(/[\x00-\x2C\x2E-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F]+/g, '-');
+  const separator = s.lastIndexOf('.');
+  if (separator === -1)
+    return sanitize(s);
+  return sanitize(s.substring(0, separator)) + '.' + sanitize(s.substring(separator + 1));
+}
+
+export async function generateLocator(locator: playwright.Locator): Promise<string> {
+  try {
+    return await (locator as any)._generateLocatorString();
+  } catch (e) {
+    if (e instanceof Error && /locator._generateLocatorString: Timeout .* exceeded/.test(e.message))
+      throw new Error('Ref not found, likely because element was removed. Use browser_snapshot to see what elements are currently on the page.');
+    throw e;
+  }
+}
+
+export async function callOnPageNoTrace<T>(page: playwright.Page, callback: (page: playwright.Page) => Promise<T>): Promise<T> {
+  return await (page as any)._wrapApiCall(() => callback(page), { internal: true });
 }

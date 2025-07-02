@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "skipLibCheck": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "strict": true,
-    "module": "CommonJS",
-    "outDir": "./lib"
+    "module": "NodeNext",
+    "rootDir": "src",
+    "outDir": "./lib",
+    "resolveJsonModule": true
   },
   "include": [
     "src",

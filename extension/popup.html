@@ -1,0 +1,173 @@
+<!--
+  Copyright (c) Microsoft Corporation.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .header {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .header h3 {
+      margin: 0 0 8px 0;
+      color: #333;
+    }
+
+    .section {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+      color: #555;
+    }
+
+    input[type="url"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    input[type="url"]:focus {
+      outline: none;
+      border-color: #4CAF50;
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+
+    .button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .button:hover {
+      background: #45a049;
+    }
+
+    .button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+
+    .button.disconnect {
+      background: #f44336;
+    }
+
+    .button.disconnect:hover {
+      background: #da190b;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .status.connected {
+      background: #e8f5e8;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+
+    .status.error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #f44336;
+    }
+
+    .status.warning {
+      background: #fff3e0;
+      color: #ef6c00;
+      border: 1px solid #ff9800;
+    }
+
+    .tab-info {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .tab-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .tab-url {
+      font-size: 12px;
+      color: #666;
+      word-break: break-all;
+    }
+
+    .focus-button {
+      background: #2196F3;
+      margin-top: 8px;
+    }
+
+    .focus-button:hover {
+      background: #1976D2;
+    }
+
+    .small-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h3>Playwright MCP Bridge</h3>
+  </div>
+
+  <div id="status-container"></div>
+
+  <div class="section">
+    <label for="bridge-url">Bridge Server URL:</label>
+    <input type="url" id="bridge-url" disabled placeholder="ws://localhost:9223/extension" />
+    <div class="small-text">Enter the WebSocket URL of your MCP bridge server</div>
+  </div>
+
+  <div id="action-container">
+    <button id="connect-btn" class="button">Share This Tab</button>
+  </div>
+
+  <script src="lib/popup.js"></script>
+</body>
+</html>

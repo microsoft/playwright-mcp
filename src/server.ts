@@ -14,113 +14,46 @@
  * limitations under the License.
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListResourcesRequestSchema, ListToolsRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { createConnection } from './connection.js';
+import { contextFactory } from './browserContextFactory.js';
 
-import { Context } from './context';
+import type { FullConfig } from './config.js';
+import type { Connection } from './connection.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { BrowserContextFactory } from './browserContextFactory.js';
 
-import type { Tool } from './tools/tool';
-import type { Resource } from './resources/resource';
-import type { ContextOptions } from './context';
+export class Server {
+  readonly config: FullConfig;
+  private _connectionList: Connection[] = [];
+  private _browserConfig: FullConfig['browser'];
+  private _contextFactory: BrowserContextFactory;
 
-type Options = ContextOptions & {
-  name: string;
-  version: string;
-  tools: Tool[];
-  resources: Resource[],
-};
-
-export function createServerWithTools(options: Options): Server {
-  const { name, version, tools, resources } = options;
-  const context = new Context(tools, options);
-  const server = new Server({ name, version }, {
-    capabilities: {
-      tools: {},
-      resources: {},
-    }
-  });
-
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
-    return { tools: tools.map(tool => tool.schema) };
-  });
-
-  server.setRequestHandler(ListResourcesRequestSchema, async () => {
-    return { resources: resources.map(resource => resource.schema) };
-  });
-
-  server.setRequestHandler(CallToolRequestSchema, async request => {
-    const tool = tools.find(tool => tool.schema.name === request.params.name);
-    if (!tool) {
-      return {
-        content: [{ type: 'text', text: `Tool "${request.params.name}" not found` }],
-        isError: true,
-      };
-    }
-
-    const modalStates = context.modalStates().map(state => state.type);
-    if ((tool.clearsModalState && !modalStates.includes(tool.clearsModalState)) ||
-        (!tool.clearsModalState && modalStates.length)) {
-      const text = [
-        `Tool "${request.params.name}" does not handle the modal state.`,
-        ...context.modalStatesMarkdown(),
-      ].join('\n');
-      return {
-        content: [{ type: 'text', text }],
-        isError: true,
-      };
-    }
-
-    try {
-      return await context.run(tool, request.params.arguments);
-    } catch (error) {
-      return {
-        content: [{ type: 'text', text: String(error) }],
-        isError: true,
-      };
-    }
-  });
-
-  server.setRequestHandler(ReadResourceRequestSchema, async request => {
-    const resource = resources.find(resource => resource.schema.uri === request.params.uri);
-    if (!resource)
-      return { contents: [] };
-
-    const contents = await resource.read(context, request.params.uri);
-    return { contents };
-  });
-
-  const oldClose = server.close.bind(server);
-
-  server.close = async () => {
-    await oldClose();
-    await context.close();
-  };
-
-  return server;
-}
-
-export class ServerList {
-  private _servers: Server[] = [];
-  private _serverFactory: () => Promise<Server>;
-
-  constructor(serverFactory: () => Promise<Server>) {
-    this._serverFactory = serverFactory;
+  constructor(config: FullConfig) {
+    this.config = config;
+    this._browserConfig = config.browser;
+    this._contextFactory = contextFactory(this._browserConfig);
   }
 
-  async create() {
-    const server = await this._serverFactory();
-    this._servers.push(server);
-    return server;
+  async createConnection(transport: Transport): Promise<Connection> {
+    const connection = createConnection(this.config, this._contextFactory);
+    this._connectionList.push(connection);
+    await connection.server.connect(transport);
+    return connection;
   }
 
-  async close(server: Server) {
-    const index = this._servers.indexOf(server);
-    if (index !== -1)
-      this._servers.splice(index, 1);
-    await server.close();
-  }
+  setupExitWatchdog() {
+    let isExiting = false;
+    const handleExit = async () => {
+      if (isExiting)
+        return;
+      isExiting = true;
+      setTimeout(() => process.exit(0), 15000);
+      await Promise.all(this._connectionList.map(connection => connection.close()));
+      process.exit(0);
+    };
 
-  async closeAll() {
-    await Promise.all(this._servers.map(server => server.close()));
+    process.stdin.on('close', handleExit);
+    process.on('SIGINT', handleExit);
+    process.on('SIGTERM', handleExit);
   }
 }

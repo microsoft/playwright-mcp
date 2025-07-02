@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import fs from 'fs';
 
-test('test reopen browser', async ({ client }) => {
+import { test, expect, formatOutput } from './fixtures.js';
+
+test.skip(({ mcpMode }) => mcpMode === 'extension', 'launch scenarios are not supported with --extension - the browser is already launched');
+
+test('test reopen browser', async ({ startClient, server, mcpMode }) => {
+  const { client, stderr } = await startClient();
   await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
+    arguments: { url: server.HELLO_WORLD },
   });
 
   expect(await client.callTool({
@@ -30,19 +33,127 @@ test('test reopen browser', async ({ client }) => {
 
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`- text: Hello, world!`);
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
+
+  await client.close();
+
+  if (process.platform === 'win32')
+    return;
+
+  await expect.poll(() => formatOutput(stderr()), { timeout: 0 }).toEqual([
+    'create context',
+    'create browser context (persistent)',
+    'lock user data dir',
+    'close context',
+    'close browser context (persistent)',
+    'release user data dir',
+    'close browser context complete (persistent)',
+    'create browser context (persistent)',
+    'lock user data dir',
+    'close context',
+    'close browser context (persistent)',
+    'release user data dir',
+    'close browser context complete (persistent)',
+  ]);
 });
 
-test('executable path', async ({ startClient }) => {
-  const client = await startClient({ args: [`--executable-path=bogus`] });
+test('executable path', async ({ startClient, server }) => {
+  const { client } = await startClient({ args: [`--executable-path=bogus`] });
   const response = await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
+    arguments: { url: server.HELLO_WORLD },
   });
   expect(response).toContainTextContent(`executable doesn't exist`);
+});
+
+test('persistent context', async ({ startClient, server }) => {
+  server.setContent('/', `
+    <body>
+    </body>
+    <script>
+      document.body.textContent = localStorage.getItem('test') ? 'Storage: YES' : 'Storage: NO';
+      localStorage.setItem('test', 'test');
+    </script>
+  `, 'text/html');
+
+  const { client } = await startClient();
+  const response = await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+  expect(response).toContainTextContent(`Storage: NO`);
+
+  await new Promise(resolve => setTimeout(resolve, 3000));
+
+  await client.callTool({
+    name: 'browser_close',
+  });
+
+  const { client: client2 } = await startClient();
+  const response2 = await client2.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  expect(response2).toContainTextContent(`Storage: YES`);
+});
+
+test('isolated context', async ({ startClient, server }) => {
+  server.setContent('/', `
+    <body>
+    </body>
+    <script>
+      document.body.textContent = localStorage.getItem('test') ? 'Storage: YES' : 'Storage: NO';
+      localStorage.setItem('test', 'test');
+    </script>
+  `, 'text/html');
+
+  const { client: client1 } = await startClient({ args: [`--isolated`] });
+  const response = await client1.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+  expect(response).toContainTextContent(`Storage: NO`);
+
+  await client1.callTool({
+    name: 'browser_close',
+  });
+
+  const { client: client2 } = await startClient({ args: [`--isolated`] });
+  const response2 = await client2.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+  expect(response2).toContainTextContent(`Storage: NO`);
+});
+
+test('isolated context with storage state', async ({ startClient, server }, testInfo) => {
+  const storageStatePath = testInfo.outputPath('storage-state.json');
+  await fs.promises.writeFile(storageStatePath, JSON.stringify({
+    origins: [
+      {
+        origin: server.PREFIX,
+        localStorage: [{ name: 'test', value: 'session-value' }],
+      },
+    ],
+  }));
+
+  server.setContent('/', `
+    <body>
+    </body>
+    <script>
+      document.body.textContent = 'Storage: ' + localStorage.getItem('test');
+    </script>
+  `, 'text/html');
+
+  const { client } = await startClient({ args: [
+    `--isolated`,
+    `--storage-state=${storageStatePath}`,
+  ] });
+  const response = await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+  expect(response).toContainTextContent(`Storage: session-value`);
 });

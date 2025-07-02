@@ -14,27 +14,46 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 import fs from 'fs/promises';
 
-test('browser_file_upload', async ({ client }) => {
+test('browser_file_upload', async ({ client, server }, testInfo) => {
+  server.setContent('/', `
+    <input type="file" />
+    <button>Button</button>
+  `, 'text/html');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><input type="file" /><button>Button</button></html>',
-    },
-  })).toContainTextContent('- textbox [ref=s1e3]');
+    arguments: { url: server.PREFIX },
+  })).toContainTextContent(`
+\`\`\`yaml
+- generic [ref=e1]:
+  - button "Choose File" [ref=e2]
+  - button "Button" [ref=e3]
+\`\`\``);
+
+  {
+    expect(await client.callTool({
+      name: 'browser_file_upload',
+      arguments: { paths: [] },
+    })).toHaveTextContent(`
+The tool "browser_file_upload" can only be used when there is related modal state present.
+### Modal state
+- There is no modal state present
+      `.trim());
+  }
 
   expect(await client.callTool({
     name: 'browser_click',
     arguments: {
       element: 'Textbox',
-      ref: 's1e3',
+      ref: 'e2',
     },
   })).toContainTextContent(`### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
 
-  const filePath = test.info().outputPath('test.txt');
+  const filePath = testInfo.outputPath('test.txt');
   await fs.writeFile(filePath, 'Hello, world!');
 
   {
@@ -46,7 +65,12 @@ test('browser_file_upload', async ({ client }) => {
     });
 
     expect(response).not.toContainTextContent('### Modal state');
-    expect(response).toContainTextContent('textbox [ref=s3e3]: C:\\fakepath\\test.txt');
+    expect(response).toContainTextContent(`
+\`\`\`yaml
+- generic [ref=e1]:
+  - button "Choose File" [ref=e2]
+  - button "Button" [ref=e3]
+\`\`\``);
   }
 
   {
@@ -54,7 +78,7 @@ test('browser_file_upload', async ({ client }) => {
       name: 'browser_click',
       arguments: {
         element: 'Textbox',
-        ref: 's3e3',
+        ref: 'e2',
       },
     });
 
@@ -66,7 +90,7 @@ test('browser_file_upload', async ({ client }) => {
       name: 'browser_click',
       arguments: {
         element: 'Button',
-        ref: 's4e4',
+        ref: 'e3',
       },
     });
 
@@ -74,4 +98,52 @@ test('browser_file_upload', async ({ client }) => {
 ### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
   }
+});
+
+test('clicking on download link emits download', async ({ startClient, server, mcpMode }, testInfo) => {
+  test.fixme(mcpMode === 'extension', 'Downloads are on the Browser CDP domain and not supported with --extension');
+  const { client } = await startClient({
+    config: { outputDir: testInfo.outputPath('output') },
+  });
+
+  server.setContent('/', `<a href="/download" download="test.txt">Download</a>`, 'text/html');
+  server.setContent('/download', 'Data', 'text/plain');
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  })).toContainTextContent('- link "Download" [ref=e2]');
+  await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Download link',
+      ref: 'e2',
+    },
+  });
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent(`
+### Downloads
+- Downloaded file test.txt to ${testInfo.outputPath('output', 'test.txt')}`);
+});
+
+test('navigating to download link emits download', async ({ startClient, server, mcpBrowser, mcpMode }, testInfo) => {
+  test.fixme(mcpMode === 'extension', 'Downloads are on the Browser CDP domain and not supported with --extension');
+  const { client } = await startClient({
+    config: { outputDir: testInfo.outputPath('output') },
+  });
+
+  test.skip(mcpBrowser === 'webkit' && process.platform === 'linux', 'https://github.com/microsoft/playwright/blob/8e08fdb52c27bb75de9bf87627bf740fadab2122/tests/library/download.spec.ts#L436');
+  server.route('/download', (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain',
+      'Content-Disposition': 'attachment; filename=test.txt',
+    });
+    res.end('Hello world!');
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX + 'download',
+    },
+  })).toContainTextContent('### Downloads');
 });

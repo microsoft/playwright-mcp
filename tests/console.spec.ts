@@ -14,19 +14,28 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures.js';
 
-test('browser_console_messages', async ({ client }) => {
+test('browser_console_messages', async ({ client, server }) => {
+  server.setContent('/', `
+    <!DOCTYPE html>
+    <html>
+      <script>
+        console.log("Hello, world!");
+        console.error("Error");
+      </script>
+    </html>
+  `, 'text/html');
+
   await client.callTool({
     name: 'browser_navigate',
     arguments: {
-      url: 'data:text/html,<html><script>console.log("Hello, world!");console.error("Error"); </script></html>',
+      url: server.PREFIX,
     },
   });
 
   const resource = await client.callTool({
     name: 'browser_console_messages',
-    arguments: {},
   });
   expect(resource).toHaveTextContent([
     '[LOG] Hello, world!',

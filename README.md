@@ -4,18 +4,22 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Key Features
 
-- **Fast and lightweight**: Uses Playwright's accessibility tree, not pixel-based input.
-- **LLM-friendly**: No vision models needed, operates purely on structured data.
-- **Deterministic tool application**: Avoids ambiguity common with screenshot-based approaches.
+- **Fast and lightweight**. Uses Playwright's accessibility tree, not pixel-based input.
+- **LLM-friendly**. No vision models needed, operates purely on structured data.
+- **Deterministic tool application**. Avoids ambiguity common with screenshot-based approaches.
 
-### Use Cases
+### Requirements
+- Node.js 18 or newer
+- VS Code, Cursor, Windsurf, Claude Desktop or any other MCP client
 
-- Web navigation and form-filling
-- Data extraction from structured content
-- Automated testing driven by LLMs
-- General-purpose browser interaction for agents
+<!--
+// Generate using:
+node utils/generate-links.js
+-->
 
-### Example config
+### Getting started
+
+First, install the Playwright MCP server with your client. A typical configuration looks like this:
 
 ```js
 {
@@ -30,68 +34,200 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 }
 ```
 
+[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D) [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)
 
-#### Installation in VS Code
 
-Install the Playwright MCP server in VS Code using one of these buttons:
+<details><summary><b>Install in VS Code</b></summary>
 
-<!--
-// Generate using?:
-const config = JSON.stringify({ name: 'playwright', command: 'npx', args: ["-y", "@playwright/mcp@latest"] });
-const urlForWebsites = `vscode:mcp/install?${encodeURIComponent(config)}`;
-// Github markdown does not allow linking to `vscode:` directly, so you can use our redirect:
-const urlForGithub = `https://insiders.vscode.dev/redirect?url=${encodeURIComponent(urlForWebsites)}`;
--->
-
-[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)  [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522%2540playwright%252Fmcp%2540latest%2522%255D%257D)
-
-Alternatively, you can install the Playwright MCP server using the VS Code CLI:
+You can also install the Playwright MCP server using the VS Code CLI:
 
 ```bash
 # For VS Code
 code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
 ```
 
-```bash
-# For VS Code Insiders
-code-insiders --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
-```
-
 After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
+</details>
 
-### CLI Options
+<details>
+<summary><b>Install in Cursor</b></summary>
 
-The Playwright MCP server supports the following command-line options:
+#### Click the button to install:
 
-- `--browser <browser>`: Browser or chrome channel to use. Possible values:
-  - `chrome`, `firefox`, `webkit`, `msedge`
-  - Chrome channels: `chrome-beta`, `chrome-canary`, `chrome-dev`
-  - Edge channels: `msedge-beta`, `msedge-canary`, `msedge-dev`
-  - Default: `chrome`
-- `--caps <caps>`: Comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.
-- `--cdp-endpoint <endpoint>`: CDP endpoint to connect to
-- `--executable-path <path>`: Path to the browser executable
-- `--headless`: Run browser in headless mode (headed by default)
-- `--port <port>`: Port to listen on for SSE transport
-- `--user-data-dir <path>`: Path to the user data directory
-- `--vision`: Run server that uses screenshots (Aria snapshots are used by default)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=playwright&config=eyJjb21tYW5kIjoibnB4IEBwbGF5d3JpZ2h0L21jcEBsYXRlc3QifQ%3D%3D)
 
-### User data directory
+#### Or install manually:
 
-Playwright MCP will launch the browser with the new profile, located at
+Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, use `command` type with the command `npx @playwright/mcp`. You can also verify config or add command like arguments via clicking `Edit`.
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><b>Install in Windsurf</b></summary>
+
+Follow Windsuff MCP [documentation](https://docs.windsurf.com/windsurf/cascade/mcp). Use following configuration:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><b>Install in Claude Desktop</b></summary>
+
+Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user), use following configuration:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><b>Install in Claude Code</b></summary>
+
+Use the Claude Code CLI to add the Playwright MCP server:
+
+```bash
+claude mcp add playwright npx @playwright/mcp@latest
+```
+</details>
+
+<details>
+<summary><b>Install in Qodo Gen</b></summary>
+
+Open [Qodo Gen](https://docs.qodo.ai/qodo-documentation/qodo-gen) chat panel in VSCode or IntelliJ → Connect more tools → + Add new MCP → Paste the following configuration:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+
+Click <code>Save</code>.
+</details>
+
+### Configuration
+
+Playwright MCP server supports following arguments. They can be provided in the JSON configuration above, as a part of the `"args"` list:
+
+<!--- Options generated by update-readme.js -->
 
 ```
-- `%USERPROFILE%\AppData\Local\ms-playwright\mcp-chrome-profile` on Windows
-- `~/Library/Caches/ms-playwright/mcp-chrome-profile` on macOS
-- `~/.cache/ms-playwright/mcp-chrome-profile` on Linux
+> npx @playwright/mcp@latest --help
+  --allowed-origins <origins>  semicolon-separated list of origins to allow the
+                               browser to request. Default is to allow all.
+  --blocked-origins <origins>  semicolon-separated list of origins to block the
+                               browser from requesting. Blocklist is evaluated
+                               before allowlist. If used without the allowlist,
+                               requests not matching the blocklist are still
+                               allowed.
+  --block-service-workers      block service workers
+  --browser <browser>          browser or chrome channel to use, possible
+                               values: chrome, firefox, webkit, msedge.
+  --browser-agent <endpoint>   Use browser agent (experimental).
+  --caps <caps>                comma-separated list of capabilities to enable,
+                               possible values: tabs, pdf, history, wait, files,
+                               install. Default is all.
+  --cdp-endpoint <endpoint>    CDP endpoint to connect to.
+  --config <path>              path to the configuration file.
+  --device <device>            device to emulate, for example: "iPhone 15"
+  --executable-path <path>     path to the browser executable.
+  --headless                   run browser in headless mode, headed by default
+  --host <host>                host to bind server to. Default is localhost. Use
+                               0.0.0.0 to bind to all interfaces.
+  --ignore-https-errors        ignore https errors
+  --isolated                   keep the browser profile in memory, do not save
+                               it to disk.
+  --image-responses <mode>     whether to send image responses to the client.
+                               Can be "allow", "omit", or "auto". Defaults to
+                               "auto", which sends images if the client can
+                               display them.
+  --no-sandbox                 disable the sandbox for all process types that
+                               are normally sandboxed.
+  --output-dir <path>          path to the directory for output files.
+  --port <port>                port to listen on for SSE transport.
+  --proxy-bypass <bypass>      comma-separated domains to bypass proxy, for
+                               example ".com,chromium.org,.domain.com"
+  --proxy-server <proxy>       specify proxy server, for example
+                               "http://myproxy:3128" or "socks5://myproxy:8080"
+  --save-trace                 Whether to save the Playwright Trace of the
+                               session into the output directory.
+  --storage-state <path>       path to the storage state file for isolated
+                               sessions.
+  --user-agent <ua string>     specify user agent string
+  --user-data-dir <path>       path to the user data directory. If not
+                               specified, a temporary directory will be created.
+  --viewport-size <size>       specify browser viewport size in pixels, for
+                               example "1280, 720"
+  --vision                     Run server that uses screenshots (Aria snapshots
+                               are used by default)
 ```
 
-All the logged in information will be stored in that profile, you can delete it between sessions if you'd like to clear the offline state.
+<!--- End of options generated section -->
 
+### User profile
 
-### Running headless browser (Browser without GUI).
+You can run Playwright MCP with persistent profile like a regular browser (default), or in the isolated contexts for the testing sessions.
 
-This mode is useful for background or batch operations.
+**Persistent profile**
+
+All the logged in information will be stored in the persistent profile, you can delete it between sessions if you'd like to clear the offline state.
+Persistent profile is located at the following locations and you can override it with the `--user-data-dir` argument.
+
+```bash
+# Windows
+%USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-profile
+
+# macOS
+- ~/Library/Caches/ms-playwright/mcp-{channel}-profile
+
+# Linux
+- ~/.cache/ms-playwright/mcp-{channel}-profile
+```
+
+**Isolated**
+
+In the isolated mode, each session is started in the isolated profile. Every time you ask MCP to close the browser,
+the session is closed and all the storage state for this session is lost. You can provide initial storage state
+to the browser via the config's `contextOptions` or via the `--storage-state` argument. Learn more about the storage
+state [here](https://playwright.dev/docs/auth).
 
 ```js
 {
@@ -100,14 +236,104 @@ This mode is useful for background or batch operations.
       "command": "npx",
       "args": [
         "@playwright/mcp@latest",
-        "--headless"
+        "--isolated",
+        "--storage-state={path/to/storage.json}"
       ]
     }
   }
 }
 ```
 
-### Running headed browser on Linux w/o DISPLAY
+### Configuration file
+
+The Playwright MCP server can be configured using a JSON configuration file. You can specify the configuration file
+using the `--config` command line option:
+
+```bash
+npx @playwright/mcp@latest --config path/to/config.json
+```
+
+<details>
+<summary>Configuration file schema</summary>
+
+```typescript
+{
+  // Browser configuration
+  browser?: {
+    // Browser type to use (chromium, firefox, or webkit)
+    browserName?: 'chromium' | 'firefox' | 'webkit';
+
+    // Keep the browser profile in memory, do not save it to disk.
+    isolated?: boolean;
+
+    // Path to user data directory for browser profile persistence
+    userDataDir?: string;
+
+    // Browser launch options (see Playwright docs)
+    // @see https://playwright.dev/docs/api/class-browsertype#browser-type-launch
+    launchOptions?: {
+      channel?: string;        // Browser channel (e.g. 'chrome')
+      headless?: boolean;      // Run in headless mode
+      executablePath?: string; // Path to browser executable
+      // ... other Playwright launch options
+    };
+
+    // Browser context options
+    // @see https://playwright.dev/docs/api/class-browser#browser-new-context
+    contextOptions?: {
+      viewport?: { width: number, height: number };
+      // ... other Playwright context options
+    };
+
+    // CDP endpoint for connecting to existing browser
+    cdpEndpoint?: string;
+
+    // Remote Playwright server endpoint
+    remoteEndpoint?: string;
+  },
+
+  // Server configuration
+  server?: {
+    port?: number;  // Port to listen on
+    host?: string;  // Host to bind to (default: localhost)
+  },
+
+  // List of enabled capabilities
+  capabilities?: Array<
+    'core' |    // Core browser automation
+    'tabs' |    // Tab management
+    'pdf' |     // PDF generation
+    'history' | // Browser history
+    'wait' |    // Wait utilities
+    'files' |   // File handling
+    'install' | // Browser installation
+    'testing'   // Testing
+  >;
+
+  // Enable vision mode (screenshots instead of accessibility snapshots)
+  vision?: boolean;
+
+  // Directory for output files
+  outputDir?: string;
+
+  // Network configuration
+  network?: {
+    // List of origins to allow the browser to request. Default is to allow all. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
+    allowedOrigins?: string[];
+
+    // List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
+    blockedOrigins?: string[];
+  };
+ 
+  /**
+   * Do not send image responses to the client.
+   */
+  noImageResponses?: boolean;
+}
+```
+</details>
+
+### Standalone MCP server
 
 When running headed browser on system w/o display or from worker processes of the IDEs,
 run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
@@ -128,7 +354,52 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 }
 ```
 
-### Tool Modes
+<details>
+<summary><b>Docker</b></summary>
+
+**NOTE:** The Docker implementation only supports headless chromium at the moment.
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "--init", "--pull=always", "mcr.microsoft.com/playwright/mcp"]
+    }
+  }
+}
+```
+
+You can build the Docker image yourself.
+
+```
+docker build -t mcr.microsoft.com/playwright/mcp .
+```
+</details>
+
+<details>
+<summary><b>Programmatic usage</b></summary>
+
+```js
+import http from 'http';
+
+import { createConnection } from '@playwright/mcp';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+
+http.createServer(async (req, res) => {
+  // ...
+
+  // Creates a headless Playwright MCP server with SSE transport
+  const connection = await createConnection({ browser: { launchOptions: { headless: true } } });
+  const transport = new SSEServerTransport('/messages', res);
+  await connection.sever.connect(transport);
+
+  // ...
+});
+```
+</details>
+
+### Tools
 
 The tools are available in two modes:
 
@@ -154,43 +425,55 @@ To use Vision Mode, add the `--vision` flag when starting the server:
 Vision Mode works best with the computer use models that are able to interact with elements using
 X Y coordinate space, based on the provided screenshot.
 
-### Programmatic usage with custom transports
+<!--- Tools generated by update-readme.js -->
 
-```js
-import { createServer } from '@playwright/mcp';
+<details>
+<summary><b>Interactions</b></summary>
 
-// ...
+<!-- NOTE: This has been generated via update-readme.js -->
 
-const server = createServer({
-  launchOptions: { headless: true }
-});
-transport = new SSEServerTransport("/messages", res);
-server.connect(transport);
-```
+- **browser_snapshot**
+  - Title: Page snapshot
+  - Description: Capture accessibility snapshot of the current page, this is better than screenshot
+  - Parameters: None
+  - Read-only: **true**
 
-### Snapshot-based Interactions
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_click**
+  - Title: Click
   - Description: Perform click on a web page
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_drag**
+  - Title: Drag mouse
+  - Description: Perform drag and drop between two elements
+  - Parameters:
+    - `startElement` (string): Human-readable source element description used to obtain the permission to interact with the element
+    - `startRef` (string): Exact source element reference from the page snapshot
+    - `endElement` (string): Human-readable target element description used to obtain the permission to interact with the element
+    - `endRef` (string): Exact target element reference from the page snapshot
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_hover**
+  - Title: Hover mouse
   - Description: Hover over element on page
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
+  - Read-only: **true**
 
-- **browser_drag**
-  - Description: Perform drag and drop between two elements
-  - Parameters:
-    - `startElement` (string): Human-readable source element description used to obtain permission to interact with the element
-    - `startRef` (string): Exact source element reference from the page snapshot
-    - `endElement` (string): Human-readable target element description used to obtain permission to interact with the element
-    - `endRef` (string): Exact target element reference from the page snapshot
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_type**
+  - Title: Type text
   - Description: Type text into editable element
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
@@ -198,44 +481,256 @@ server.connect(transport);
     - `text` (string): Text to type into the element
     - `submit` (boolean, optional): Whether to submit entered text (press Enter after)
     - `slowly` (boolean, optional): Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_select_option**
+  - Title: Select option
   - Description: Select an option in a dropdown
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
     - `values` (array): Array of values to select in the dropdown. This can be a single value or multiple values.
+  - Read-only: **false**
 
-- **browser_snapshot**
-  - Description: Capture accessibility snapshot of the current page, this is better than screenshot
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_press_key**
+  - Title: Press a key
+  - Description: Press a key on the keyboard
+  - Parameters:
+    - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_wait_for**
+  - Title: Wait for
+  - Description: Wait for text to appear or disappear or a specified time to pass
+  - Parameters:
+    - `time` (number, optional): The time to wait in seconds
+    - `text` (string, optional): The text to wait for
+    - `textGone` (string, optional): The text to wait for to disappear
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_file_upload**
+  - Title: Upload files
+  - Description: Upload one or multiple files
+  - Parameters:
+    - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_handle_dialog**
+  - Title: Handle a dialog
+  - Description: Handle a dialog
+  - Parameters:
+    - `accept` (boolean): Whether to accept the dialog.
+    - `promptText` (string, optional): The text of the prompt in case of a prompt dialog.
+  - Read-only: **false**
+
+</details>
+
+<details>
+<summary><b>Navigation</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_navigate**
+  - Title: Navigate to a URL
+  - Description: Navigate to a URL
+  - Parameters:
+    - `url` (string): The URL to navigate to
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_navigate_back**
+  - Title: Go back
+  - Description: Go back to the previous page
   - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_navigate_forward**
+  - Title: Go forward
+  - Description: Go forward to the next page
+  - Parameters: None
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Resources</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_take_screenshot**
+  - Title: Take a screenshot
   - Description: Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.
   - Parameters:
     - `raw` (boolean, optional): Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.
+    - `filename` (string, optional): File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified.
+    - `element` (string, optional): Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.
+    - `ref` (string, optional): Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.
+  - Read-only: **true**
 
-### Vision-based Interactions
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_pdf_save**
+  - Title: Save as PDF
+  - Description: Save page as PDF
+  - Parameters:
+    - `filename` (string, optional): File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_network_requests**
+  - Title: List network requests
+  - Description: Returns all network requests since loading the page
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_console_messages**
+  - Title: Get console messages
+  - Description: Returns all console messages
+  - Parameters: None
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Utilities</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_install**
+  - Title: Install the browser specified in the config
+  - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
+  - Parameters: None
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_close**
+  - Title: Close browser
+  - Description: Close the page
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_resize**
+  - Title: Resize browser window
+  - Description: Resize the browser window
+  - Parameters:
+    - `width` (number): Width of the browser window
+    - `height` (number): Height of the browser window
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Tabs</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_tab_list**
+  - Title: List tabs
+  - Description: List browser tabs
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_tab_new**
+  - Title: Open a new tab
+  - Description: Open a new tab
+  - Parameters:
+    - `url` (string, optional): The URL to navigate to in the new tab. If not provided, the new tab will be blank.
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_tab_select**
+  - Title: Select a tab
+  - Description: Select a tab by index
+  - Parameters:
+    - `index` (number): The index of the tab to select
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_tab_close**
+  - Title: Close a tab
+  - Description: Close a tab
+  - Parameters:
+    - `index` (number, optional): The index of the tab to close. Closes current tab if not provided.
+  - Read-only: **false**
+
+</details>
+
+<details>
+<summary><b>Testing</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_generate_playwright_test**
+  - Title: Generate a Playwright test
+  - Description: Generate a Playwright test for given scenario
+  - Parameters:
+    - `name` (string): The name of the test
+    - `description` (string): The description of the test
+    - `steps` (array): The steps of the test
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Vision mode</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_screen_capture**
+  - Title: Take a screenshot
+  - Description: Take a screenshot of the current page
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_screen_move_mouse**
+  - Title: Move mouse
   - Description: Move mouse to a given position
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
     - `y` (number): Y coordinate
+  - Read-only: **true**
 
-- **browser_screen_capture**
-  - Description: Take a screenshot of the current page
-  - Parameters: None
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_screen_click**
+  - Title: Click
   - Description: Click left mouse button
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
     - `y` (number): Y coordinate
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_screen_drag**
+  - Title: Drag mouse
   - Description: Drag left mouse button
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
@@ -243,101 +738,58 @@ server.connect(transport);
     - `startY` (number): Start Y coordinate
     - `endX` (number): End X coordinate
     - `endY` (number): End Y coordinate
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_screen_type**
+  - Title: Type text
   - Description: Type text
   - Parameters:
-    - `text` (string): Text to type
+    - `text` (string): Text to type into the element
     - `submit` (boolean, optional): Whether to submit entered text (press Enter after)
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_press_key**
+  - Title: Press a key
   - Description: Press a key on the keyboard
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
+  - Read-only: **false**
 
-### Tab Management
+<!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_tab_list**
-  - Description: List browser tabs
-  - Parameters: None
-
-- **browser_tab_new**
-  - Description: Open a new tab
+- **browser_wait_for**
+  - Title: Wait for
+  - Description: Wait for text to appear or disappear or a specified time to pass
   - Parameters:
-    - `url` (string, optional): The URL to navigate to in the new tab. If not provided, the new tab will be blank.
+    - `time` (number, optional): The time to wait in seconds
+    - `text` (string, optional): The text to wait for
+    - `textGone` (string, optional): The text to wait for to disappear
+  - Read-only: **true**
 
-- **browser_tab_select**
-  - Description: Select a tab by index
-  - Parameters:
-    - `index` (number): The index of the tab to select
-
-- **browser_tab_close**
-  - Description: Close a tab
-  - Parameters:
-    - `index` (number, optional): The index of the tab to close. Closes current tab if not provided.
-
-### Navigation
-
-- **browser_navigate**
-  - Description: Navigate to a URL
-  - Parameters:
-    - `url` (string): The URL to navigate to
-
-- **browser_navigate_back**
-  - Description: Go back to the previous page
-  - Parameters: None
-
-- **browser_navigate_forward**
-  - Description: Go forward to the next page
-  - Parameters: None
-
-### Keyboard
-
-- **browser_press_key**
-  - Description: Press a key on the keyboard
-  - Parameters:
-    - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
-
-### Console
-
-- **browser_console_messages**
-  - Description: Returns all console messages
-  - Parameters: None
-
-### Files and Media
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_file_upload**
-  - Description: Choose one or multiple files to upload
+  - Title: Upload files
+  - Description: Upload one or multiple files
   - Parameters:
     - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
+  - Read-only: **false**
 
-- **browser_pdf_save**
-  - Description: Save page as PDF
-  - Parameters: None
-
-### Utilities
-
-- **browser_wait**
-  - Description: Wait for a specified time in seconds
-  - Parameters:
-    - `time` (number): The time to wait in seconds (capped at 10 seconds)
-
-- **browser_resize**
-  - Description: Resize the browser window
-  - Parameters:
-    - `width` (number): The desired width of the browser window
-    - `height` (number): The desired height of the browser window
+<!-- NOTE: This has been generated via update-readme.js -->
 
 - **browser_handle_dialog**
-  - Description: Handle browser dialogs (alert, confirm, prompt)
+  - Title: Handle a dialog
+  - Description: Handle a dialog
   - Parameters:
-    - `accept` (boolean): Whether to accept or dismiss the dialog
-    - `promptText` (string, optional): Text to enter in case of prompt dialogs
+    - `accept` (boolean): Whether to accept the dialog.
+    - `promptText` (string, optional): The text of the prompt in case of a prompt dialog.
+  - Read-only: **false**
 
-- **browser_close**
-  - Description: Close the page
-  - Parameters: None
+</details>
 
-- **browser_install**
-  - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
-  - Parameters: None
+
+<!--- End of tools generated section -->

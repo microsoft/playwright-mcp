@@ -15,31 +15,28 @@
  */
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool, type ToolFactory } from './tool.js';
 
-import type { ToolFactory } from './tool';
-
-const navigateSchema = z.object({
-  url: z.string().describe('The URL to navigate to'),
-});
-
-const navigate: ToolFactory = captureSnapshot => ({
+const navigate: ToolFactory = captureSnapshot => defineTool({
   capability: 'core',
 
   schema: {
     name: 'browser_navigate',
+    title: 'Navigate to a URL',
     description: 'Navigate to a URL',
-    inputSchema: zodToJsonSchema(navigateSchema),
+    inputSchema: z.object({
+      url: z.string().describe('The URL to navigate to'),
+    }),
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
-    const validatedParams = navigateSchema.parse(params);
     const tab = await context.ensureTab();
-    await tab.navigate(validatedParams.url);
+    await tab.navigate(params.url);
 
     const code = [
-      `// Navigate to ${validatedParams.url}`,
-      `await page.goto('${validatedParams.url}');`,
+      `// Navigate to ${params.url}`,
+      `await page.goto('${params.url}');`,
     ];
 
     return {
@@ -50,14 +47,14 @@ const navigate: ToolFactory = captureSnapshot => ({
   },
 });
 
-const goBackSchema = z.object({});
-
-const goBack: ToolFactory = captureSnapshot => ({
+const goBack: ToolFactory = captureSnapshot => defineTool({
   capability: 'history',
   schema: {
     name: 'browser_navigate_back',
+    title: 'Go back',
     description: 'Go back to the previous page',
-    inputSchema: zodToJsonSchema(goBackSchema),
+    inputSchema: z.object({}),
+    type: 'readOnly',
   },
 
   handle: async context => {
@@ -76,14 +73,14 @@ const goBack: ToolFactory = captureSnapshot => ({
   },
 });
 
-const goForwardSchema = z.object({});
-
-const goForward: ToolFactory = captureSnapshot => ({
+const goForward: ToolFactory = captureSnapshot => defineTool({
   capability: 'history',
   schema: {
     name: 'browser_navigate_forward',
+    title: 'Go forward',
     description: 'Go forward to the next page',
-    inputSchema: zodToJsonSchema(goForwardSchema),
+    inputSchema: z.object({}),
+    type: 'readOnly',
   },
   handle: async context => {
     const tab = context.currentTabOrDie();

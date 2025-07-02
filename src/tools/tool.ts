@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
-import type { JsonSchema7Type } from 'zod-to-json-schema';
-import type { Context } from '../context';
+import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
+import type { z } from 'zod';
+import type { Context } from '../context.js';
 import type * as playwright from 'playwright';
-export type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install';
+import type { ToolCapability } from '../../config.js';
 
-export type ToolSchema = {
+export type ToolSchema<Input extends InputType> = {
   name: string;
+  title: string;
   description: string;
-  inputSchema: JsonSchema7Type;
+  inputSchema: Input;
+  type: 'readOnly' | 'destructive';
 };
+
+type InputType = z.Schema;
 
 export type FileUploadModalState = {
   type: 'fileChooser';
@@ -50,11 +54,15 @@ export type ToolResult = {
   resultOverride?: ToolActionResult;
 };
 
-export type Tool = {
+export type Tool<Input extends InputType = InputType> = {
   capability: ToolCapability;
-  schema: ToolSchema;
+  schema: ToolSchema<Input>;
   clearsModalState?: ModalState['type'];
-  handle: (context: Context, params?: Record<string, any>) => Promise<ToolResult>;
+  handle: (context: Context, params: z.output<Input>) => Promise<ToolResult>;
 };
 
-export type ToolFactory = (snapshot: boolean) => Tool;
+export type ToolFactory = (snapshot: boolean) => Tool<any>;
+
+export function defineTool<Input extends InputType>(tool: Tool<Input>): Tool<Input> {
+  return tool;
+}

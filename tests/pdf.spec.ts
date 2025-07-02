@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import fs from 'fs';
 
-test('save as pdf unavailable', async ({ startClient }) => {
-  const client = await startClient({ args: ['--caps="no-pdf"'] });
+import { test, expect } from './fixtures.js';
+
+test('save as pdf unavailable', async ({ startClient, server }) => {
+  const { client } = await startClient({ args: ['--caps="no-pdf"'] });
   await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
+    arguments: { url: server.HELLO_WORLD },
   });
 
   expect(await client.callTool({
@@ -30,17 +30,54 @@ test('save as pdf unavailable', async ({ startClient }) => {
   })).toHaveTextContent(/Tool \"browser_pdf_save\" not found/);
 });
 
-test('save as pdf', async ({ client, mcpBrowser }) => {
+test('save as pdf', async ({ startClient, mcpBrowser, server }, testInfo) => {
+  const { client } = await startClient({
+    config: { outputDir: testInfo.outputPath('output') },
+  });
+
   test.skip(!!mcpBrowser && !['chromium', 'chrome', 'msedge'].includes(mcpBrowser), 'Save as PDF is only supported in Chromium.');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: {
-      url: 'data:text/html,<html><title>Title</title><body>Hello, world!</body></html>',
-    },
-  })).toContainTextContent(`- text: Hello, world!`);
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
 
   const response = await client.callTool({
     name: 'browser_pdf_save',
   });
   expect(response).toHaveTextContent(/Save page as.*page-[^:]+.pdf/);
+});
+
+test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  test.skip(!!mcpBrowser && !['chromium', 'chrome', 'msedge'].includes(mcpBrowser), 'Save as PDF is only supported in Chromium.');
+  const { client } = await startClient({
+    config: { outputDir },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
+
+  expect(await client.callTool({
+    name: 'browser_pdf_save',
+    arguments: {
+      filename: 'output.pdf',
+    },
+  })).toEqual({
+    content: [
+      {
+        type: 'text',
+        text: expect.stringContaining(`output.pdf`),
+      },
+    ],
+  });
+
+  const files = [...fs.readdirSync(outputDir)];
+
+  expect(fs.existsSync(outputDir)).toBeTruthy();
+  const pdfFiles = files.filter(f => f.endsWith('.pdf'));
+  expect(pdfFiles).toHaveLength(1);
+  expect(pdfFiles[0]).toMatch(/^output.pdf$/);
 });

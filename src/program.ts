@@ -14,197 +14,75 @@
  * limitations under the License.
  */
 
-import http from 'http';
+import { Option, program } from 'commander';
+// @ts-ignore
+import { startTraceViewerServer } from 'playwright-core/lib/server';
 
-import { program } from 'commander';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-
-import { createServer } from './index';
-import { ServerList } from './server';
-
-import assert from 'assert';
-import { ToolCapability } from './tools/tool';
-
-const packageJSON = require('../package.json');
+import { startHttpServer, startHttpTransport, startStdioTransport } from './transport.js';
+import { resolveCLIConfig } from './config.js';
+import { Server } from './server.js';
+import { packageJSON } from './package.js';
+import { startCDPRelayServer } from './cdpRelay.js';
 
 program
     .version('Version ' + packageJSON.version)
     .name(packageJSON.name)
-    .option('--browser <browser>', 'Browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.')
-    .option('--caps <caps>', 'Comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.')
+    .option('--allowed-origins <origins>', 'semicolon-separated list of origins to allow the browser to request. Default is to allow all.', semicolonSeparatedList)
+    .option('--blocked-origins <origins>', 'semicolon-separated list of origins to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed.', semicolonSeparatedList)
+    .option('--block-service-workers', 'block service workers')
+    .option('--browser <browser>', 'browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.')
+    .option('--browser-agent <endpoint>', 'Use browser agent (experimental).')
+    .option('--caps <caps>', 'comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.')
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
-    .option('--executable-path <path>', 'Path to the browser executable.')
-    .option('--headless', 'Run browser in headless mode, headed by default')
-    .option('--port <port>', 'Port to listen on for SSE transport.')
-    .option('--user-data-dir <path>', 'Path to the user data directory')
+    .option('--config <path>', 'path to the configuration file.')
+    .option('--device <device>', 'device to emulate, for example: "iPhone 15"')
+    .option('--executable-path <path>', 'path to the browser executable.')
+    .option('--headless', 'run browser in headless mode, headed by default')
+    .option('--host <host>', 'host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
+    .option('--ignore-https-errors', 'ignore https errors')
+    .option('--isolated', 'keep the browser profile in memory, do not save it to disk.')
+    .option('--image-responses <mode>', 'whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.')
+    .option('--no-sandbox', 'disable the sandbox for all process types that are normally sandboxed.')
+    .option('--output-dir <path>', 'path to the directory for output files.')
+    .option('--port <port>', 'port to listen on for SSE transport.')
+    .option('--proxy-bypass <bypass>', 'comma-separated domains to bypass proxy, for example ".com,chromium.org,.domain.com"')
+    .option('--proxy-server <proxy>', 'specify proxy server, for example "http://myproxy:3128" or "socks5://myproxy:8080"')
+    .option('--save-trace', 'Whether to save the Playwright Trace of the session into the output directory.')
+    .option('--storage-state <path>', 'path to the storage state file for isolated sessions.')
+    .option('--user-agent <ua string>', 'specify user agent string')
+    .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
+    .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .addOption(new Option('--extension', 'Allow connecting to a running browser instance (Edge/Chrome only). Requires the \'Playwright MCP\' browser extension to be installed.').hideHelp())
     .action(async options => {
-      const serverList = new ServerList(() => createServer({
-        browser: options.browser,
-        userDataDir: options.userDataDir,
-        headless: options.headless,
-        executablePath: options.executablePath,
-        vision: !!options.vision,
-        cdpEndpoint: options.cdpEndpoint,
-        capabilities: options.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
-      }));
-      setupExitWatchdog(serverList);
+      const config = await resolveCLIConfig(options);
+      const httpServer = config.server.port !== undefined ? await startHttpServer(config.server) : undefined;
+      if (config.extension) {
+        if (!httpServer)
+          throw new Error('--port parameter is required for extension mode');
+        // Point CDP endpoint to the relay server.
+        config.browser.cdpEndpoint = await startCDPRelayServer(httpServer);
+      }
 
-      if (options.port) {
-        startSSEServer(+options.port, serverList);
-      } else {
-        const server = await serverList.create();
-        await server.connect(new StdioServerTransport());
+      const server = new Server(config);
+      server.setupExitWatchdog();
+
+      if (httpServer)
+        await startHttpTransport(httpServer, server);
+      else
+        await startStdioTransport(server);
+
+      if (config.saveTrace) {
+        const server = await startTraceViewerServer();
+        const urlPrefix = server.urlPrefix('human-readable');
+        const url = urlPrefix + '/trace/index.html?trace=' + config.browser.launchOptions.tracesDir + '/trace.json';
+        // eslint-disable-next-line no-console
+        console.error('\nTrace viewer listening on ' + url);
       }
     });
 
-function setupExitWatchdog(serverList: ServerList) {
-  const handleExit = async () => {
-    setTimeout(() => process.exit(0), 15000);
-    await serverList.closeAll();
-    process.exit(0);
-  };
-
-  process.stdin.on('close', handleExit);
-  process.on('SIGINT', handleExit);
-  process.on('SIGTERM', handleExit);
+function semicolonSeparatedList(value: string): string[] {
+  return value.split(';').map(v => v.trim());
 }
 
-program.parse(process.argv);
-
-// A custom SSEServerTransport that allows setting a specific sessionId
-class ReattachableSSEServerTransport extends SSEServerTransport {
-  constructor(path: string, res: http.ServerResponse, sessionId?: string) {
-    super(path, res);
-    // If a sessionId is provided, override the auto-generated one
-    if (sessionId) {
-      // @ts-ignore - Accessing private field
-      this._sessionId = sessionId;
-    }
-  }
-}
-
-async function startSSEServer(port: number, serverList: ServerList) {
-  type Session = { server: Server, transport: SSEServerTransport, lastSeen: number, isReattaching?: boolean };
-  const sessions = new Map<string, Session>();
-  // Add a lock map to prevent concurrent session reattachment
-  const sessionLocks = new Map<string, boolean>();
-
-  const httpServer = http.createServer(async (req, res) => {
-    if (req.method === 'POST') {
-      const searchParams = new URL(`http://localhost${req.url}`).searchParams;
-      const sessionId = searchParams.get('sessionId');
-      if (!sessionId) {
-        res.statusCode = 400;
-        res.end('Missing sessionId');
-        return;
-      }
-      const session = sessions.get(sessionId);
-      if (!session) {
-        res.statusCode = 404;
-        res.end('Session not found');
-        return;
-      }
-
-      session.lastSeen = Date.now();
-      await session.transport.handlePostMessage(req, res);
-      return;
-    } else if (req.method === 'GET') {
-      const url = new URL(`http://localhost${req.url}`);
-      const requestedId = url.searchParams.get('sessionId');
-
-      // Reuse existing session if sessionId is provided and valid
-      if (requestedId && sessions.has(requestedId)) {
-        // Acquire a lock for this session to prevent concurrent reattachment
-        if (sessionLocks.get(requestedId)) {
-          res.statusCode = 423; // Locked
-          res.end('Session is currently being reattached by another request');
-          return;
-        }
-        sessionLocks.set(requestedId, true);
-        try {
-          const session = sessions.get(requestedId)!;
-          // Create transport with the requested sessionId to ensure consistency
-          const transport = new ReattachableSSEServerTransport('/sse', res, requestedId);
-          // Mark this session as reattaching to handle special case in event emission
-          session.isReattaching = true;
-          // Update session
-          session.transport = transport;
-          session.lastSeen = Date.now();
-
-          res.on('close', () => {
-            session.lastSeen = Date.now();
-            session.isReattaching = false;
-          });
-          console.log(`Reattaching to existing session: ${requestedId}`);
-          await session.server.connect(transport);
-          return;
-        } finally {
-          // Release the lock
-          sessionLocks.delete(requestedId);
-        }
-      }
-
-      // Create new session (original logic)
-      const transport = new SSEServerTransport('/sse', res);
-      const server = await serverList.create();
-      sessions.set(transport.sessionId, { server, transport, lastSeen: Date.now() });
-
-      res.on('close', () => {
-        // Only mark last seen time, don't destroy server
-        const session = sessions.get(transport.sessionId);
-        if (session)
-          session.lastSeen = Date.now();
-      });
-      console.log(`Created new session: ${transport.sessionId}`);
-      await server.connect(transport);
-      return;
-    } else {
-      res.statusCode = 405;
-      res.end('Method not allowed');
-    }
-  });
-
-  httpServer.listen(port, () => {
-    const address = httpServer.address();
-    assert(address, 'Could not bind server socket');
-    let url: string;
-    if (typeof address === 'string') {
-      url = address;
-    } else {
-      const resolvedPort = address.port;
-      let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
-      if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
-        resolvedHost = 'localhost';
-      url = `http://${resolvedHost}:${resolvedPort}`;
-    }
-    console.log(`Listening on ${url}`);
-    console.log('Put this in your client config:');
-    console.log(JSON.stringify({
-      'mcpServers': {
-        'playwright': {
-          'url': `${url}/sse`
-        }
-      }
-    }, undefined, 2));
-  });
-
-  // Cleanup idle sessions periodically
-  setInterval(() => {
-    const TTL = 30 * 60_000;  // 30 minutes
-    const now = Date.now();
-    for (const [id, session] of sessions) {
-      if (now - session.lastSeen > TTL) {
-        // Don't clean up sessions that are currently being reattached
-        if (!session.isReattaching && !sessionLocks.get(id)) {
-          sessions.delete(id);
-          sessionLocks.delete(id);
-          session.server.close().catch(() => {});
-          console.log(`Closed idle session: ${id}`);
-        }
-      }
-    }
-  }, 10 * 60_000);  // Check every 10 minutes
-}
+void program.parseAsync(process.argv);

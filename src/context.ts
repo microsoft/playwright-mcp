@@ -14,42 +14,50 @@
  * limitations under the License.
  */
 
+import debug from 'debug';
 import * as playwright from 'playwright';
-import yaml from 'yaml';
 
-import { waitForCompletion } from './tools/utils';
-import { ManualPromise } from './manualPromise';
+import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
+import { ManualPromise } from './manualPromise.js';
+import { Tab } from './tab.js';
+import { outputFile } from './config.js';
 
-import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
-import type { ModalState, Tool, ToolActionResult } from './tools/tool';
-
-export type ContextOptions = {
-  browserName?: 'chromium' | 'firefox' | 'webkit';
-  userDataDir: string;
-  launchOptions?: playwright.LaunchOptions;
-  cdpEndpoint?: string;
-  remoteEndpoint?: string;
-};
-
-type PageOrFrameLocator = playwright.Page | playwright.FrameLocator;
+import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
+import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
+import type { FullConfig } from './config.js';
+import type { BrowserContextFactory } from './browserContextFactory.js';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
 };
 
+const testDebug = debug('pw:mcp:test');
+
 export class Context {
   readonly tools: Tool[];
-  readonly options: ContextOptions;
-  private _browser: playwright.Browser | undefined;
-  private _browserContext: playwright.BrowserContext | undefined;
+  readonly config: FullConfig;
+  private _browserContextPromise: Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> | undefined;
+  private _browserContextFactory: BrowserContextFactory;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
+  private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
+  clientVersion: { name: string; version: string; } | undefined;
 
-  constructor(tools: Tool[], options: ContextOptions) {
+  constructor(tools: Tool[], config: FullConfig, browserContextFactory: BrowserContextFactory) {
     this.tools = tools;
-    this.options = options;
+    this.config = config;
+    this._browserContextFactory = browserContextFactory;
+    testDebug('create context');
+  }
+
+  clientSupportsImages(): boolean {
+    if (this.config.imageResponses === 'allow')
+      return true;
+    if (this.config.imageResponses === 'omit')
+      return false;
+    return !this.clientVersion?.name.includes('cursor');
   }
 
   modalStates(): ModalState[] {
@@ -66,6 +74,8 @@ export class Context {
 
   modalStatesMarkdown(): string[] {
     const result: string[] = ['### Modal state'];
+    if (this._modalStates.length === 0)
+      result.push('- There is no modal state present');
     for (const state of this._modalStates) {
       const tool = this.tools.find(tool => tool.clearsModalState === state.type);
       result.push(`- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`);
@@ -79,12 +89,12 @@ export class Context {
 
   currentTabOrDie(): Tab {
     if (!this._currentTab)
-      throw new Error('No current snapshot available. Capture a snapshot of navigate to a new location first.');
+      throw new Error('No current snapshot available. Capture a snapshot or navigate to a new location first.');
     return this._currentTab;
   }
 
   async newTab(): Promise<Tab> {
-    const browserContext = await this._ensureBrowserContext();
+    const { browserContext } = await this._ensureBrowserContext();
     const page = await browserContext.newPage();
     this._currentTab = this._tabs.find(t => t.page === page)!;
     return this._currentTab;
@@ -96,9 +106,9 @@ export class Context {
   }
 
   async ensureTab(): Promise<Tab> {
-    const context = await this._ensureBrowserContext();
+    const { browserContext } = await this._ensureBrowserContext();
     if (!this._currentTab)
-      await context.newPage();
+      await browserContext.newPage();
     return this._currentTab!;
   }
 
@@ -108,7 +118,7 @@ export class Context {
     const lines: string[] = ['### Open tabs'];
     for (let i = 0; i < this._tabs.length; i++) {
       const tab = this._tabs[i];
-      const title = await tab.page.title();
+      const title = await tab.title();
       const url = tab.page.url();
       const current = tab === this._currentTab ? ' (current)' : '';
       lines.push(`- ${i + 1}:${current} [${title}] (${url})`);
@@ -124,7 +134,7 @@ export class Context {
 
   async run(tool: Tool, params: Record<string, unknown> | undefined) {
     // Tab management is done outside of the action() call.
-    const toolResult = await tool.handle(this, params);
+    const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params || {}));
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
     const racingAction = action ? () => this._raceAgainstModalDialogs(action) : undefined;
 
@@ -145,7 +155,7 @@ export class Context {
     let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
     try {
       if (waitForNetwork)
-        actionResult = await waitForCompletion(this, tab.page, async () => racingAction?.()) ?? undefined;
+        actionResult = await waitForCompletion(this, tab, async () => racingAction?.()) ?? undefined;
       else
         actionResult = await racingAction?.() ?? undefined;
     } finally {
@@ -170,6 +180,17 @@ ${code.join('\n')}
       };
     }
 
+    if (this._downloads.length) {
+      result.push('', '### Downloads');
+      for (const entry of this._downloads) {
+        if (entry.finished)
+          result.push(`- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`);
+        else
+          result.push(`- Downloading file ${entry.download.suggestedFilename()} ...`);
+      }
+      result.push('');
+    }
+
     if (this.tabs().length > 1)
       result.push(await this.listTabsMarkdown(), '');
 
@@ -178,7 +199,7 @@ ${code.join('\n')}
 
     result.push(
         `- Page URL: ${tab.page.url()}`,
-        `- Page Title: ${await tab.page.title()}`
+        `- Page Title: ${await tab.title()}`
     );
 
     if (captureSnapshot && tab.hasSnapshot())
@@ -198,10 +219,14 @@ ${code.join('\n')}
   }
 
   async waitForTimeout(time: number) {
-    if (this._currentTab && !this._javaScriptBlocked())
-      await this._currentTab.page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
-    else
+    if (!this._currentTab || this._javaScriptBlocked()) {
       await new Promise(f => setTimeout(f, time));
+      return;
+    }
+
+    await callOnPageNoTrace(this._currentTab.page, page => {
+      return page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
+    });
   }
 
   private async _raceAgainstModalDialogs(action: () => Promise<ToolActionResult>): Promise<ToolActionResult> {
@@ -234,6 +259,17 @@ ${code.join('\n')}
     this._pendingAction?.dialogShown.resolve();
   }
 
+  async downloadStarted(tab: Tab, download: playwright.Download) {
+    const entry = {
+      download,
+      finished: false,
+      outputFile: await outputFile(this.config, download.suggestedFilename())
+    };
+    this._downloads.push(entry);
+    await download.saveAs(entry.outputFile);
+    entry.finished = true;
+  }
+
   private _onPageCreated(page: playwright.Page) {
     const tab = new Tab(this, page, tab => this._onPageClosed(tab));
     this._tabs.push(tab);
@@ -250,209 +286,66 @@ ${code.join('\n')}
 
     if (this._currentTab === tab)
       this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
-    if (this._browserContext && !this._tabs.length)
+    if (!this._tabs.length)
       void this.close();
   }
 
   async close() {
-    if (!this._browserContext)
+    if (!this._browserContextPromise)
       return;
-    const browserContext = this._browserContext;
-    const browser = this._browser;
-    this._browserContext = undefined;
-    this._browser = undefined;
 
-    await browserContext?.close().then(async () => {
-      await browser?.close();
-    }).catch(() => {});
-  }
+    testDebug('close context');
 
-  private async _ensureBrowserContext() {
-    if (!this._browserContext) {
-      const context = await this._createBrowserContext();
-      this._browser = context.browser;
-      this._browserContext = context.browserContext;
-      for (const page of this._browserContext.pages())
-        this._onPageCreated(page);
-      this._browserContext.on('page', page => this._onPageCreated(page));
-    }
-    return this._browserContext;
-  }
+    const promise = this._browserContextPromise;
+    this._browserContextPromise = undefined;
 
-  private async _createBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
-    if (this.options.remoteEndpoint) {
-      const url = new URL(this.options.remoteEndpoint);
-      if (this.options.browserName)
-        url.searchParams.set('browser', this.options.browserName);
-      if (this.options.launchOptions)
-        url.searchParams.set('launch-options', JSON.stringify(this.options.launchOptions));
-      const browser = await playwright[this.options.browserName ?? 'chromium'].connect(String(url));
-      const browserContext = await browser.newContext();
-      return { browser, browserContext };
-    }
-
-    if (this.options.cdpEndpoint) {
-      const browser = await playwright.chromium.connectOverCDP(this.options.cdpEndpoint);
-      const browserContext = browser.contexts()[0];
-      return { browser, browserContext };
-    }
-
-    const browserContext = await this._launchPersistentContext();
-    return { browserContext };
-  }
-
-  private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
-    try {
-      const browserType = this.options.browserName ? playwright[this.options.browserName] : playwright.chromium;
-      return await browserType.launchPersistentContext(this.options.userDataDir, this.options.launchOptions);
-    } catch (error: any) {
-      if (error.message.includes('Executable doesn\'t exist'))
-        throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
-      throw error;
-    }
-  }
-}
-
-export class Tab {
-  readonly context: Context;
-  readonly page: playwright.Page;
-  private _console: playwright.ConsoleMessage[] = [];
-  private _snapshot: PageSnapshot | undefined;
-  private _onPageClose: (tab: Tab) => void;
-
-  constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void) {
-    this.context = context;
-    this.page = page;
-    this._onPageClose = onPageClose;
-    page.on('console', event => this._console.push(event));
-    page.on('framenavigated', frame => {
-      if (!frame.parentFrame())
-        this._console.length = 0;
+    await promise.then(async ({ browserContext, close }) => {
+      if (this.config.saveTrace)
+        await browserContext.tracing.stop();
+      await close();
     });
-    page.on('close', () => this._onClose());
-    page.on('filechooser', chooser => {
-      this.context.setModalState({
-        type: 'fileChooser',
-        description: 'File chooser',
-        fileChooser: chooser,
-      }, this);
-    });
-    page.on('dialog', dialog => this.context.dialogShown(this, dialog));
-    page.setDefaultNavigationTimeout(60000);
-    page.setDefaultTimeout(5000);
   }
 
-  private _onClose() {
-    this._console.length = 0;
-    this._onPageClose(this);
-  }
+  private async _setupRequestInterception(context: playwright.BrowserContext) {
+    if (this.config.network?.allowedOrigins?.length) {
+      await context.route('**', route => route.abort('blockedbyclient'));
 
-  async navigate(url: string) {
-    await this.page.goto(url, { waitUntil: 'domcontentloaded' });
-    // Cap load event to 5 seconds, the page is operational at this point.
-    await this.page.waitForLoadState('load', { timeout: 5000 }).catch(() => {});
-  }
-
-  hasSnapshot(): boolean {
-    return !!this._snapshot;
-  }
-
-  snapshotOrDie(): PageSnapshot {
-    if (!this._snapshot)
-      throw new Error('No snapshot available');
-    return this._snapshot;
-  }
-
-  async console(): Promise<playwright.ConsoleMessage[]> {
-    return this._console;
-  }
-
-  async captureSnapshot() {
-    this._snapshot = await PageSnapshot.create(this.page);
-  }
-}
-
-class PageSnapshot {
-  private _frameLocators: PageOrFrameLocator[] = [];
-  private _text!: string;
-
-  constructor() {
-  }
-
-  static async create(page: playwright.Page): Promise<PageSnapshot> {
-    const snapshot = new PageSnapshot();
-    await snapshot._build(page);
-    return snapshot;
-  }
-
-  text(): string {
-    return this._text;
-  }
-
-  private async _build(page: playwright.Page) {
-    const yamlDocument = await this._snapshotFrame(page);
-    this._text = [
-      `- Page Snapshot`,
-      '```yaml',
-      yamlDocument.toString({ indentSeq: false }).trim(),
-      '```',
-    ].join('\n');
-  }
-
-  private async _snapshotFrame(frame: playwright.Page | playwright.FrameLocator) {
-    const frameIndex = this._frameLocators.push(frame) - 1;
-    const snapshotString = await frame.locator('body').ariaSnapshot({ ref: true });
-    const snapshot = yaml.parseDocument(snapshotString);
-
-    const visit = async (node: any): Promise<unknown> => {
-      if (yaml.isPair(node)) {
-        await Promise.all([
-          visit(node.key).then(k => node.key = k),
-          visit(node.value).then(v => node.value = v)
-        ]);
-      } else if (yaml.isSeq(node) || yaml.isMap(node)) {
-        node.items = await Promise.all(node.items.map(visit));
-      } else if (yaml.isScalar(node)) {
-        if (typeof node.value === 'string') {
-          const value = node.value;
-          if (frameIndex > 0)
-            node.value = value.replace('[ref=', `[ref=f${frameIndex}`);
-          if (value.startsWith('iframe ')) {
-            const ref = value.match(/\[ref=(.*)\]/)?.[1];
-            if (ref) {
-              try {
-                const childSnapshot = await this._snapshotFrame(frame.frameLocator(`aria-ref=${ref}`));
-                return snapshot.createPair(node.value, childSnapshot);
-              } catch (error) {
-                return snapshot.createPair(node.value, '<could not take iframe snapshot>');
-              }
-            }
-          }
-        }
-      }
-
-      return node;
-    };
-    await visit(snapshot.contents);
-    return snapshot;
-  }
-
-  refLocator(ref: string): playwright.Locator {
-    let frame = this._frameLocators[0];
-    const match = ref.match(/^f(\d+)(.*)/);
-    if (match) {
-      const frameIndex = parseInt(match[1], 10);
-      frame = this._frameLocators[frameIndex];
-      ref = match[2];
+      for (const origin of this.config.network.allowedOrigins)
+        await context.route(`*://${origin}/**`, route => route.continue());
     }
 
-    if (!frame)
-      throw new Error(`Frame does not exist. Provide ref from the most current snapshot.`);
-
-    return frame.locator(`aria-ref=${ref}`);
+    if (this.config.network?.blockedOrigins?.length) {
+      for (const origin of this.config.network.blockedOrigins)
+        await context.route(`*://${origin}/**`, route => route.abort('blockedbyclient'));
+    }
   }
-}
 
-export async function generateLocator(locator: playwright.Locator): Promise<string> {
-  return (locator as any)._generateLocatorString();
+  private _ensureBrowserContext() {
+    if (!this._browserContextPromise) {
+      this._browserContextPromise = this._setupBrowserContext();
+      this._browserContextPromise.catch(() => {
+        this._browserContextPromise = undefined;
+      });
+    }
+    return this._browserContextPromise;
+  }
+
+  private async _setupBrowserContext(): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
+    // TODO: move to the browser context factory to make it based on isolation mode.
+    const result = await this._browserContextFactory.createContext();
+    const { browserContext } = result;
+    await this._setupRequestInterception(browserContext);
+    for (const page of browserContext.pages())
+      this._onPageCreated(page);
+    browserContext.on('page', page => this._onPageCreated(page));
+    if (this.config.saveTrace) {
+      await browserContext.tracing.start({
+        name: 'trace',
+        screenshots: false,
+        snapshots: true,
+        sources: false,
+      });
+    }
+    return result;
+  }
 }

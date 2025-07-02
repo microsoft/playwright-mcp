@@ -15,21 +15,19 @@
  */
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool } from './tool.js';
 
-import type { Tool } from './tool';
-
-const consoleSchema = z.object({});
-
-const console: Tool = {
+const console = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_console_messages',
+    title: 'Get console messages',
     description: 'Returns all console messages',
-    inputSchema: zodToJsonSchema(consoleSchema),
+    inputSchema: z.object({}),
+    type: 'readOnly',
   },
   handle: async context => {
-    const messages = await context.currentTabOrDie().console();
+    const messages = context.currentTabOrDie().consoleMessages();
     const log = messages.map(message => `[${message.type().toUpperCase()}] ${message.text()}`).join('\n');
     return {
       code: [`// <internal code to get console messages>`],
@@ -42,7 +40,7 @@ const console: Tool = {
       waitForNetwork: false,
     };
   },
-};
+});
 
 export default [
   console,

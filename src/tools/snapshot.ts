@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-import path from 'path';
-import os from 'os';
-
 import { z } from 'zod';
-import zodToJsonSchema from 'zod-to-json-schema';
 
-import { sanitizeForFilePath } from './utils';
-import { generateLocator } from '../context';
-import * as javascript from '../javascript';
+import { defineTool } from './tool.js';
+import * as javascript from '../javascript.js';
+import { generateLocator } from './utils.js';
 
-import type * as playwright from 'playwright';
-import type { Tool } from './tool';
-
-const snapshot: Tool = {
+const snapshot = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_snapshot',
+    title: 'Page snapshot',
     description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
-    inputSchema: zodToJsonSchema(z.object({})),
+    inputSchema: z.object({}),
+    type: 'readOnly',
   },
 
   handle: async context => {
@@ -44,28 +39,29 @@ const snapshot: Tool = {
       waitForNetwork: false,
     };
   },
-};
+});
 
 const elementSchema = z.object({
   element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
   ref: z.string().describe('Exact target element reference from the page snapshot'),
 });
 
-const click: Tool = {
+const click = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_click',
+    title: 'Click',
     description: 'Perform click on a web page',
-    inputSchema: zodToJsonSchema(elementSchema),
+    inputSchema: elementSchema,
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
-    const validatedParams = elementSchema.parse(params);
     const tab = context.currentTabOrDie();
-    const locator = tab.snapshotOrDie().refLocator(validatedParams.ref);
+    const locator = tab.snapshotOrDie().refLocator(params);
 
     const code = [
-      `// Click ${validatedParams.element}`,
+      `// Click ${params.element}`,
       `await page.${await generateLocator(locator)}.click();`
     ];
 
@@ -76,31 +72,30 @@ const click: Tool = {
       waitForNetwork: true,
     };
   },
-};
-
-const dragSchema = z.object({
-  startElement: z.string().describe('Human-readable source element description used to obtain the permission to interact with the element'),
-  startRef: z.string().describe('Exact source element reference from the page snapshot'),
-  endElement: z.string().describe('Human-readable target element description used to obtain the permission to interact with the element'),
-  endRef: z.string().describe('Exact target element reference from the page snapshot'),
 });
 
-const drag: Tool = {
+const drag = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_drag',
+    title: 'Drag mouse',
     description: 'Perform drag and drop between two elements',
-    inputSchema: zodToJsonSchema(dragSchema),
+    inputSchema: z.object({
+      startElement: z.string().describe('Human-readable source element description used to obtain the permission to interact with the element'),
+      startRef: z.string().describe('Exact source element reference from the page snapshot'),
+      endElement: z.string().describe('Human-readable target element description used to obtain the permission to interact with the element'),
+      endRef: z.string().describe('Exact target element reference from the page snapshot'),
+    }),
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
-    const validatedParams = dragSchema.parse(params);
     const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const startLocator = snapshot.refLocator(validatedParams.startRef);
-    const endLocator = snapshot.refLocator(validatedParams.endRef);
+    const startLocator = snapshot.refLocator({ ref: params.startRef, element: params.startElement });
+    const endLocator = snapshot.refLocator({ ref: params.endRef, element: params.endElement });
 
     const code = [
-      `// Drag ${validatedParams.startElement} to ${validatedParams.endElement}`,
+      `// Drag ${params.startElement} to ${params.endElement}`,
       `await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`
     ];
 
@@ -111,23 +106,24 @@ const drag: Tool = {
       waitForNetwork: true,
     };
   },
-};
+});
 
-const hover: Tool = {
+const hover = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_hover',
+    title: 'Hover mouse',
     description: 'Hover over element on page',
-    inputSchema: zodToJsonSchema(elementSchema),
+    inputSchema: elementSchema,
+    type: 'readOnly',
   },
 
   handle: async (context, params) => {
-    const validatedParams = elementSchema.parse(params);
     const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const locator = snapshot.refLocator(validatedParams.ref);
+    const locator = snapshot.refLocator(params);
 
     const code = [
-      `// Hover over ${validatedParams.element}`,
+      `// Hover over ${params.element}`,
       `await page.${await generateLocator(locator)}.hover();`
     ];
 
@@ -138,7 +134,7 @@ const hover: Tool = {
       waitForNetwork: true,
     };
   },
-};
+});
 
 const typeSchema = elementSchema.extend({
   text: z.string().describe('Text to type into the element'),
@@ -146,33 +142,34 @@ const typeSchema = elementSchema.extend({
   slowly: z.boolean().optional().describe('Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'),
 });
 
-const type: Tool = {
+const type = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_type',
+    title: 'Type text',
     description: 'Type text into editable element',
-    inputSchema: zodToJsonSchema(typeSchema),
+    inputSchema: typeSchema,
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
-    const validatedParams = typeSchema.parse(params);
     const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const locator = snapshot.refLocator(validatedParams.ref);
+    const locator = snapshot.refLocator(params);
 
     const code: string[] = [];
     const steps: (() => Promise<void>)[] = [];
 
-    if (validatedParams.slowly) {
-      code.push(`// Press "${validatedParams.text}" sequentially into "${validatedParams.element}"`);
-      code.push(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(validatedParams.text)});`);
-      steps.push(() => locator.pressSequentially(validatedParams.text));
+    if (params.slowly) {
+      code.push(`// Press "${params.text}" sequentially into "${params.element}"`);
+      code.push(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
+      steps.push(() => locator.pressSequentially(params.text));
     } else {
-      code.push(`// Fill "${validatedParams.text}" into "${validatedParams.element}"`);
-      code.push(`await page.${await generateLocator(locator)}.fill(${javascript.quote(validatedParams.text)});`);
-      steps.push(() => locator.fill(validatedParams.text));
+      code.push(`// Fill "${params.text}" into "${params.element}"`);
+      code.push(`await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`);
+      steps.push(() => locator.fill(params.text));
     }
 
-    if (validatedParams.submit) {
+    if (params.submit) {
       code.push(`// Submit text`);
       code.push(`await page.${await generateLocator(locator)}.press('Enter');`);
       steps.push(() => locator.press('Enter'));
@@ -185,98 +182,39 @@ const type: Tool = {
       waitForNetwork: true,
     };
   },
-};
+});
 
 const selectOptionSchema = elementSchema.extend({
   values: z.array(z.string()).describe('Array of values to select in the dropdown. This can be a single value or multiple values.'),
 });
 
-const selectOption: Tool = {
+const selectOption = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_select_option',
+    title: 'Select option',
     description: 'Select an option in a dropdown',
-    inputSchema: zodToJsonSchema(selectOptionSchema),
+    inputSchema: selectOptionSchema,
+    type: 'destructive',
   },
 
   handle: async (context, params) => {
-    const validatedParams = selectOptionSchema.parse(params);
     const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const locator = snapshot.refLocator(validatedParams.ref);
+    const locator = snapshot.refLocator(params);
 
     const code = [
-      `// Select options [${validatedParams.values.join(', ')}] in ${validatedParams.element}`,
-      `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(validatedParams.values)});`
+      `// Select options [${params.values.join(', ')}] in ${params.element}`,
+      `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(params.values)});`
     ];
 
     return {
       code,
-      action: () => locator.selectOption(validatedParams.values).then(() => {}),
+      action: () => locator.selectOption(params.values).then(() => {}),
       captureSnapshot: true,
       waitForNetwork: true,
     };
   },
-};
-
-const screenshotSchema = z.object({
-  raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
-  element: z.string().optional().describe('Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.'),
-  ref: z.string().optional().describe('Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.'),
-}).refine(data => {
-  return !!data.element === !!data.ref;
-}, {
-  message: 'Both element and ref must be provided or neither.',
-  path: ['ref', 'element']
 });
-
-const screenshot: Tool = {
-  capability: 'core',
-  schema: {
-    name: 'browser_take_screenshot',
-    description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
-    inputSchema: zodToJsonSchema(screenshotSchema),
-  },
-
-  handle: async (context, params) => {
-    const validatedParams = screenshotSchema.parse(params);
-    const tab = context.currentTabOrDie();
-    const snapshot = tab.snapshotOrDie();
-    const fileType = validatedParams.raw ? 'png' : 'jpeg';
-    const fileName = path.join(os.tmpdir(), sanitizeForFilePath(`page-${new Date().toISOString()}`)) + `.${fileType}`;
-    const options: playwright.PageScreenshotOptions = { type: fileType, quality: fileType === 'png' ? undefined : 50, scale: 'css', path: fileName };
-    const isElementScreenshot = validatedParams.element && validatedParams.ref;
-
-    const code = [
-      `// Screenshot ${isElementScreenshot ? validatedParams.element : 'viewport'} and save it as ${fileName}`,
-    ];
-
-    const locator = validatedParams.ref ? snapshot.refLocator(validatedParams.ref) : null;
-
-    if (locator)
-      code.push(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
-    else
-      code.push(`await page.screenshot(${javascript.formatObject(options)});`);
-
-    const action = async () => {
-      const screenshot = locator ? await locator.screenshot(options) : await tab.page.screenshot(options);
-      return {
-        content: [{
-          type: 'image' as 'image',
-          data: screenshot.toString('base64'),
-          mimeType: fileType === 'png' ? 'image/png' : 'image/jpeg',
-        }]
-      };
-    };
-
-    return {
-      code,
-      action,
-      captureSnapshot: true,
-      waitForNetwork: false,
-    };
-  }
-};
-
 
 export default [
   snapshot,
@@ -285,5 +223,4 @@ export default [
   hover,
   type,
   selectOption,
-  screenshot,
 ];

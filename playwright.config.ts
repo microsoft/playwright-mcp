@@ -16,9 +16,9 @@
 
 import { defineConfig } from '@playwright/test';
 
-import type { Project } from '@playwright/test';
+import type { TestOptions } from './tests/fixtures.js';
 
-export default defineConfig({
+export default defineConfig<TestOptions>({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -29,7 +29,16 @@ export default defineConfig({
     { name: 'chrome' },
     { name: 'msedge', use: { mcpBrowser: 'msedge' } },
     { name: 'chromium', use: { mcpBrowser: 'chromium' } },
+    ...process.env.MCP_IN_DOCKER ? [{
+      name: 'chromium-docker',
+      grep: /browser_navigate|browser_click/,
+      use: {
+        mcpBrowser: 'chromium',
+        mcpMode: 'docker' as const
+      }
+    }] : [],
     { name: 'firefox', use: { mcpBrowser: 'firefox' } },
     { name: 'webkit', use: { mcpBrowser: 'webkit' } },
-  ].filter(Boolean) as Project[],
+    { name: 'chromium-extension', use: { mcpBrowser: 'chromium', mcpMode: 'extension' } },
+  ],
 });

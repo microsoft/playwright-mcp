@@ -18,22 +18,25 @@ import { fork } from 'child_process';
 import path from 'path';
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { defineTool } from './tool.js';
 
-import type { Tool } from './tool';
+import { fileURLToPath } from 'node:url';
 
-const install: Tool = {
+const install = defineTool({
   capability: 'install',
   schema: {
     name: 'browser_install',
+    title: 'Install the browser specified in the config',
     description: 'Install the browser specified in the config. Call this if you get an error about the browser not being installed.',
-    inputSchema: zodToJsonSchema(z.object({})),
+    inputSchema: z.object({}),
+    type: 'destructive',
   },
 
   handle: async context => {
-    const channel = context.options.launchOptions?.channel ?? context.options.browserName ?? 'chrome';
-    const cli = path.join(require.resolve('playwright/package.json'), '..', 'cli.js');
-    const child = fork(cli, ['install', channel], {
+    const channel = context.config.browser?.launchOptions?.channel ?? context.config.browser?.browserName ?? 'chrome';
+    const cliUrl = import.meta.resolve('playwright/package.json');
+    const cliPath = path.join(fileURLToPath(cliUrl), '..', 'cli.js');
+    const child = fork(cliPath, ['install', channel], {
       stdio: 'pipe',
     });
     const output: string[] = [];
@@ -53,7 +56,7 @@ const install: Tool = {
       waitForNetwork: false,
     };
   },
-};
+});
 
 export default [
   install,

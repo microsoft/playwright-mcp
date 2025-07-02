@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-const { createServer } = require('./lib/index');
-module.exports = { createServer };
+import { createConnection } from './lib/index.js';
+export { createConnection };
