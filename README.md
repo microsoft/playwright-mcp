@@ -702,7 +702,8 @@ X Y coordinate space, based on the provided screenshot.
 - **browser_screen_capture**
   - Title: Take a screenshot
   - Description: Take a screenshot of the current page
-  - Parameters: None
+  - Parameters:
+    - `fullPage` (boolean, optional): Whether the whole page should be screenshotted, or only the current viewport
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->

@@ -29,13 +29,23 @@ const screenshot = defineTool({
     name: 'browser_screen_capture',
     title: 'Take a screenshot',
     description: 'Take a screenshot of the current page',
-    inputSchema: z.object({}),
+    inputSchema: z.object({
+      fullPage: z.boolean().optional().describe('Whether the whole page should be screenshotted, or only the current viewport'),
+    }),
     type: 'readOnly',
   },
 
-  handle: async context => {
+  handle: async (context, params) => {
     const tab = await context.ensureTab();
-    const options = { type: 'jpeg' as 'jpeg', quality: 50, scale: 'css' as 'css' };
+    const options = {
+      type: 'jpeg' as 'jpeg',
+      quality: 50,
+      scale: 'css' as 'css',
+    };
+
+    if (params.fullPage) {
+      Object.assign(options, { fullPage: true });
+    }
 
     const code = [
       `// Take a screenshot of the current page`,
