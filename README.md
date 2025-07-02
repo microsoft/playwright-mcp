@@ -143,6 +143,25 @@ Open [Qodo Gen](https://docs.qodo.ai/qodo-documentation/qodo-gen) chat panel in 
 Click <code>Save</code>.
 </details>
 
+<details>
+<summary><b>Install in Gemini CLI</b></summary>
+
+Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md#configure-the-mcp-server-in-settingsjson), use following configuration:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+</details>
+
 ### Configuration
 
 Playwright MCP server supports following arguments. They can be provided in the JSON configuration above, as a part of the `"args"` list:
