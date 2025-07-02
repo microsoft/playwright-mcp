@@ -10,7 +10,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Requirements
 - Node.js 18 or newer
-- VS Code, Cursor, Windsurf, Claude Desktop or any other MCP client
+- VS Code, Cursor, Windsurf, Claude Desktop, LM Studio, or any other MCP client
 
 <!--
 // Generate using:
@@ -141,6 +141,34 @@ Open [Qodo Gen](https://docs.qodo.ai/qodo-documentation/qodo-gen) chat panel in 
 ```
 
 Click <code>Save</code>.
+</details>
+
+<details>
+  <summary><b>Install in LM Studio</b></summary>
+  
+  #### Click the button to install:
+
+  *Ensure that you have node.js installed before installing Playwright!*
+
+  [![Add MCP Server playwright to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=playwright&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAcGxheXdyaWdodC9tY3BAbGF0ZXN0Il19)
+
+  #### Or install manually:
+
+  Pop out the right sidebar in a chat window, then go to `Program` -> `Install` -> `Edit mcp.json`. Use the following configuration:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+
 </details>
 
 ### Configuration
