@@ -146,7 +146,7 @@ Click <code>Save</code>.
 <details>
 <summary><b>Install in Gemini CLI</b></summary>
 
-Edit `~/.gemini/settings.json`, and add the following configuration:
+Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md#configure-the-mcp-server-in-settingsjson), use following configuration:
 
 ```js
 {
