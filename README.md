@@ -10,7 +10,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Requirements
 - Node.js 18 or newer
-- VS Code, Cursor, Windsurf, Claude Desktop or any other MCP client
+- VS Code, Cursor, Windsurf, Claude Desktop, Goose or any other MCP client
 
 <!--
 // Generate using:
@@ -120,6 +120,18 @@ Use the Claude Code CLI to add the Playwright MCP server:
 ```bash
 claude mcp add playwright npx @playwright/mcp@latest
 ```
+</details>
+
+<details>
+<summary><b>Install in Goose</b></summary>
+
+#### Click the button to install:
+
+[![Install in Goose](https://block.github.io/goose/img/extension-install-dark.svg)](https://block.github.io/goose/extension?cmd=npx&arg=%40playwright%2Fmcp%40latest&id=playwright&name=Playwright&description=Interact%20with%20web%20pages%20through%20structured%20accessibility%20snapshots%20using%20Playwright)
+
+#### Or install manually:
+
+Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to your liking, use type `STDIO`, and set the `command` to `npx @playwright/mcp`. Click "Add Extension".
 </details>
 
 <details>
