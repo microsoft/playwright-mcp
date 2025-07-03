@@ -70,6 +70,79 @@ await page.getByRole('button', { name: 'Submit' }).click();
 `);
 });
 
+test('browser_click with testid', async ({ client, server }) => {
+  server.setContent('/', `
+    <title>Title</title>
+    <button data-testid="submit-btn">Submit</button>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Submit button',
+      ref: 'e2',
+    },
+  })).toHaveTextContent(`
+- Ran Playwright code:
+\`\`\`js
+// Click Submit button
+await page.getByTestId('submit-btn').click();
+\`\`\`
+
+- Page URL: ${server.PREFIX}
+- Page Title: Title
+- Page Snapshot
+\`\`\`yaml
+- button "Submit" [ref=e2]
+\`\`\`
+`);
+});
+
+test('browser_click with custom testid', async ({ startClient, server }) => {
+  const { client } = await startClient({
+    config: {
+      browser: {
+        testIdAttribute: 'data-custom-testid',
+      }
+    }
+  });
+  server.setContent('/', `
+    <title>Title</title>
+    <button data-custom-testid="submit-btn">Submit</button>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Submit button',
+      ref: 'e2',
+    },
+  })).toHaveTextContent(`
+- Ran Playwright code:
+\`\`\`js
+// Click Submit button
+await page.getByTestId('submit-btn').click();
+\`\`\`
+
+- Page URL: ${server.PREFIX}
+- Page Title: Title
+- Page Snapshot
+\`\`\`yaml
+- button "Submit" [ref=e2]
+\`\`\`
+`);
+});
+
 test('browser_select_option', async ({ client, server }) => {
   server.setContent('/', `
     <title>Title</title>

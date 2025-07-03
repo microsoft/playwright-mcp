@@ -68,6 +68,11 @@ export type Config = {
      * Remote endpoint to connect to an existing Playwright server.
      */
     remoteEndpoint?: string;
+
+    /**
+     * The attribute to use for test IDs. Defaults to "data-testid".
+     */
+    testIdAttribute?: string;
   },
 
   server?: {

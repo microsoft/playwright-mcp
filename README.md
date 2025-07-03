@@ -290,6 +290,9 @@ npx @playwright/mcp@latest --config path/to/config.json
 
     // Remote Playwright server endpoint
     remoteEndpoint?: string;
+
+    // testIdAttribute to use. Defaults to "data-testid"
+    testIdAttribute?: string;
   },
 
   // Server configuration
