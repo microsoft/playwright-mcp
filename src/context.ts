@@ -346,6 +346,8 @@ ${code.join('\n')}
         sources: false,
       });
     }
+    if (this.config.browser?.testIdAttribute)
+      playwright.selectors.setTestIdAttribute(this.config.browser.testIdAttribute);
     return result;
   }
 }
