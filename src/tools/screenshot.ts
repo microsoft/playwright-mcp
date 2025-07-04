@@ -24,6 +24,7 @@ import { generateLocator } from './utils.js';
 import type * as playwright from 'playwright';
 
 const screenshotSchema = z.object({
+  fullPage: z.boolean().optional().describe('Whether the whole page should be screenshotted, or only the current viewport'),
   raw: z.boolean().optional().describe('Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.'),
   filename: z.string().optional().describe('File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified.'),
   element: z.string().optional().describe('Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.'),
@@ -51,6 +52,9 @@ const screenshot = defineTool({
     const fileType = params.raw ? 'png' : 'jpeg';
     const fileName = await outputFile(context.config, params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
     const options: playwright.PageScreenshotOptions = { type: fileType, quality: fileType === 'png' ? undefined : 50, scale: 'css', path: fileName };
+    if (params.fullPage)
+      options.fullPage = true;
+
     const isElementScreenshot = params.element && params.ref;
 
     const code = [
