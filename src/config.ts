@@ -59,6 +59,8 @@ export type CLIOptions = {
   viewportSize?: string;
   vision?: boolean;
   extension?: boolean;
+  loadExtension?: string;
+  disableExtensionsExcept?: string;
 };
 
 const defaultConfig: FullConfig = {
@@ -158,10 +160,28 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
       launchOptions.proxy.bypass = cliOptions.proxyBypass;
   }
 
+  // Extension loading support (Chrome/Chromium only)
+  if (cliOptions.loadExtension || cliOptions.disableExtensionsExcept) {
+    if (browserName !== 'chromium') {
+      throw new Error('Extension loading is only supported for Chromium browsers.');
+    }
+    launchOptions.args = launchOptions.args || [];
+    
+    if (cliOptions.loadExtension) {
+      launchOptions.args.push(`--load-extension=${cliOptions.loadExtension}`);
+    }
+    
+    if (cliOptions.disableExtensionsExcept) {
+      launchOptions.args.push(`--disable-extensions-except=${cliOptions.disableExtensionsExcept}`);
+    }
+  }
+
   if (cliOptions.device && cliOptions.cdpEndpoint)
     throw new Error('Device emulation is not supported with cdpEndpoint.');
   if (cliOptions.device && cliOptions.extension)
     throw new Error('Device emulation is not supported with extension mode.');
+  if ((cliOptions.loadExtension || cliOptions.disableExtensionsExcept) && cliOptions.isolated)
+    throw new Error('Extension loading is not supported with isolated mode. Extensions require persistent context.');
 
   // Context options
   const contextOptions: BrowserContextOptions = cliOptions.device ? devices[cliOptions.device] : {};

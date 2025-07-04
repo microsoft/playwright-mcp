@@ -54,6 +54,8 @@ program
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
     .addOption(new Option('--extension', 'Allow connecting to a running browser instance (Edge/Chrome only). Requires the \'Playwright MCP\' browser extension to be installed.').hideHelp())
+    .option('--load-extension <path>', 'path to unpacked extension directory to load (Chrome/Chromium only)')
+    .option('--disable-extensions-except <path>', 'disable all extensions except the one at the specified path (Chrome/Chromium only)')
     .action(async options => {
       const config = await resolveCLIConfig(options);
       const httpServer = config.server.port !== undefined ? await startHttpServer(config.server) : undefined;
