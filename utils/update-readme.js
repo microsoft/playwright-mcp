@@ -25,6 +25,7 @@ import commonTools from '../lib/tools/common.js';
 import consoleTools from '../lib/tools/console.js';
 import dialogsTools from '../lib/tools/dialogs.js';
 import filesTools from '../lib/tools/files.js';
+import harTools from '../lib/tools/har.js';
 import installTools from '../lib/tools/install.js';
 import keyboardTools from '../lib/tools/keyboard.js';
 import navigateTools from '../lib/tools/navigate.js';
@@ -52,6 +53,7 @@ const categories = {
   'Resources': [
     ...screenshotTools,
     ...pdfTools,
+    ...harTools,
     ...networkTools,
     ...consoleTools,
   ],

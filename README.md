@@ -164,7 +164,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --browser-agent <endpoint>   Use browser agent (experimental).
   --caps <caps>                comma-separated list of capabilities to enable,
                                possible values: tabs, pdf, history, wait, files,
-                               install. Default is all.
+                               install, har. Default is all.
   --cdp-endpoint <endpoint>    CDP endpoint to connect to.
   --config <path>              path to the configuration file.
   --device <device>            device to emulate, for example: "iPhone 15"
@@ -587,6 +587,15 @@ X Y coordinate space, based on the provided screenshot.
   - Description: Save page as PDF
   - Parameters:
     - `filename` (string, optional): File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_har_save**
+  - Title: Save HAR file
+  - Description: Save HTTP Archive (HAR) file of all network traffic captured during the browser session
+  - Parameters:
+    - `filename` (string, optional): File name to save the HAR to. Defaults to `session-{timestamp}.har` if not specified.
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
