@@ -44,6 +44,7 @@ jobs:
       - name: Login to ACR
         run: az acr login --name playwright
       - name: Build and push Docker image
+        id: build-push
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -53,3 +54,17 @@ jobs:
           tags: |
             playwright.azurecr.io/public/playwright/mcp:${{ github.event.release.tag_name }}
             playwright.azurecr.io/public/playwright/mcp:latest
+      - uses: oras-project/setup-oras@v1
+      - name: Set oras tags
+        run: |
+          attach_eol_manifest() {
+            local image="$1"
+            local today=$(date -u +'%Y-%m-%d')
+            # oras is re-using Docker credentials, so we don't need to login.
+            # Following the advice in https://portal.microsofticm.com/imp/v3/incidents/incident/476783820/summary
+            oras attach --artifact-type application/vnd.microsoft.artifact.lifecycle --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$today" $image
+          }
+          # for each tag, attach the eol manifest
+          for tag in $(echo ${{ steps.build-push.outputs.metadata['image.name'] }} | tr ',' '\n'); do
+            attach_eol_manifest $tag
+          done
