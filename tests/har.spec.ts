@@ -331,11 +331,12 @@ test('HAR captures large number of requests', async ({ startClient, server }, te
   // Should have main page + all CSS files
   expect(harContent.log.entries.length).toBeGreaterThanOrEqual(resourceCount);
 
-  // Verify CSS files are captured
+  // Verify CSS files are captured (check unique URLs since browsers may make duplicate requests)
   const cssRequests = harContent.log.entries.filter(e =>
     e.request.url.includes('/css/style') && e.request.url.endsWith('.css')
   );
-  expect(cssRequests.length).toBe(resourceCount);
+  const uniqueCssUrls = new Set(cssRequests.map(req => req.request.url));
+  expect(uniqueCssUrls.size).toBe(resourceCount);
 });
 
 test('HAR saving in new tab', async ({ startClient, server, mcpMode }, testInfo) => {
