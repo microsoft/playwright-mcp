@@ -18,6 +18,7 @@ import common from './tools/common.js';
 import console from './tools/console.js';
 import dialogs from './tools/dialogs.js';
 import files from './tools/files.js';
+import har from './tools/har.js';
 import install from './tools/install.js';
 import keyboard from './tools/keyboard.js';
 import navigate from './tools/navigate.js';
@@ -37,6 +38,7 @@ export const snapshotTools: Tool<any>[] = [
   ...console,
   ...dialogs(true),
   ...files(true),
+  ...har,
   ...install,
   ...keyboard(true),
   ...navigate(true),
@@ -54,6 +56,7 @@ export const visionTools: Tool<any>[] = [
   ...console,
   ...dialogs(false),
   ...files(false),
+  ...har,
   ...install,
   ...keyboard(false),
   ...navigate(false),

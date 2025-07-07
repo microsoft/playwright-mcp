@@ -26,6 +26,7 @@ import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.
 import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
 import type { FullConfig } from './config.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
+import { HARRecorder } from './harRecorder.js';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
@@ -43,6 +44,7 @@ export class Context {
   private _modalStates: (ModalState & { tab: Tab })[] = [];
   private _pendingAction: PendingAction | undefined;
   private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
+  private _harRecorder: HARRecorder | undefined;
   clientVersion: { name: string; version: string; } | undefined;
 
   constructor(tools: Tool[], config: FullConfig, browserContextFactory: BrowserContextFactory) {
@@ -81,6 +83,10 @@ export class Context {
       result.push(`- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`);
     }
     return result;
+  }
+
+  getHARRecorder(): HARRecorder | undefined {
+    return this._harRecorder;
   }
 
   tabs(): Tab[] {
@@ -335,6 +341,10 @@ ${code.join('\n')}
     const result = await this._browserContextFactory.createContext();
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
+    
+    // Initialize HAR recorder
+    this._harRecorder = new HARRecorder(browserContext);
+    
     for (const page of browserContext.pages())
       this._onPageCreated(page);
     browserContext.on('page', page => this._onPageCreated(page));
