@@ -375,3 +375,194 @@ test('HAR saving in new tab', async ({ startClient, server, mcpMode }, testInfo)
   expect(urls.some(url => url.includes('/hello-world'))).toBeTruthy();
   expect(urls.some(url => url.includes('/about'))).toBeTruthy();
 });
+
+test('HAR filtering by content type', async ({ startClient, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const { client } = await startClient({
+    config: { outputDir },
+  });
+
+  // Setup test page with multiple resource types
+  server.setContent('/', `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Filter Test</title>
+        <link rel="stylesheet" href="/style.css">
+      </head>
+      <body>
+        <h1>Content Type Filter Test</h1>
+        <script src="/script.js"></script>
+        <img src="/image.png" alt="test">
+      </body>
+    </html>
+  `, 'text/html');
+
+  server.setContent('/style.css', 'body { color: blue; }', 'text/css');
+  server.setContent('/script.js', 'console.log("hello");', 'application/javascript');
+  server.setContent('/image.png', 'fake-png-data', 'image/png');
+
+  // Navigate to trigger all requests
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  // Save HAR filtered by JavaScript content type
+  const response = await client.callTool({
+    name: 'browser_har_save',
+    arguments: {
+      filename: 'javascript-only.har',
+      contentTypes: ['application/javascript']
+    },
+  });
+
+  // Verify response indicates filtering
+  expect(response).toHaveTextContent(/Filters applied:.*application\/javascript/);
+
+  // Verify HAR file was created and filtered correctly
+  const harContent = JSON.parse(fs.readFileSync(`${outputDir}/javascript-only.har`, 'utf8'));
+  const entries = harContent.log.entries;
+
+  // Should only contain JavaScript file
+  expect(entries.length).toBe(1);
+  expect(entries[0].request.url).toMatch(/\/script\.js$/);
+  expect(entries[0].response.content.mimeType).toBe('application/javascript');
+
+  // Verify HAR comment includes filter info
+  expect(harContent.log.comment).toContain('application/javascript');
+});
+
+test('HAR filtering by URL pattern', async ({ startClient, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const { client } = await startClient({
+    config: { outputDir },
+  });
+
+  // Setup test page with API and static resources
+  server.setContent('/', `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <script src="/api/config.js"></script>
+        <script src="/static/app.js"></script>
+      </head>
+      <body>
+        <h1>URL Pattern Test</h1>
+        <p>Page loaded with API and static resources</p>
+      </body>
+    </html>
+  `, 'text/html');
+
+  server.setContent('/static/app.js', 'console.log("app");', 'application/javascript');
+  server.setContent('/api/config.js', 'window.config = {version: "1.0"};', 'application/javascript');
+
+  // Navigate to trigger all requests automatically
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  // Save HAR filtered by API pattern
+  const response = await client.callTool({
+    name: 'browser_har_save',
+    arguments: {
+      filename: 'api-only.har',
+      urlPattern: '*/api/*'
+    },
+  });
+
+  // Verify response indicates filtering
+  expect(response).toHaveTextContent(/Filters applied:.*\/api\//);
+
+  // Verify HAR file was created and filtered correctly
+  const harContent = JSON.parse(fs.readFileSync(`${outputDir}/api-only.har`, 'utf8'));
+  const entries = harContent.log.entries;
+
+  // Should only contain API requests
+  expect(entries.length).toBe(1);
+  expect(entries.every(entry => entry.request.url.includes('/api/'))).toBeTruthy();
+
+  const urls = entries.map(entry => entry.request.url);
+  expect(urls.some(url => url.includes('/api/config.js'))).toBeTruthy();
+});
+
+test('HAR filtering with combined filters', async ({ startClient, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const { client } = await startClient({
+    config: { outputDir },
+  });
+
+  // Setup test page
+  server.setContent('/', `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <h1>Combined Filter Test</h1>
+        <script src="/api/config.js"></script>
+        <script src="/static/app.js"></script>
+      </body>
+    </html>
+  `, 'text/html');
+
+  server.setContent('/api/config.js', 'window.config = {};', 'application/javascript');
+  server.setContent('/static/app.js', 'console.log("app");', 'application/javascript');
+
+  // Navigate to trigger requests
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  // Save HAR with both content type and URL pattern filters
+  const response = await client.callTool({
+    name: 'browser_har_save',
+    arguments: {
+      filename: 'api-js-only.har',
+      contentTypes: ['application/javascript'],
+      urlPattern: '*/api/*'
+    },
+  });
+
+  // Verify response indicates both filters
+  expect(response).toHaveTextContent(/Filters applied:.*application\/javascript.*\/api\//);
+
+  // Verify HAR file was created and filtered correctly
+  const harContent = JSON.parse(fs.readFileSync(`${outputDir}/api-js-only.har`, 'utf8'));
+  const entries = harContent.log.entries;
+
+  // Should only contain the API JavaScript file
+  expect(entries.length).toBe(1);
+  expect(entries[0].request.url).toMatch(/\/api\/config\.js$/);
+  expect(entries[0].response.content.mimeType).toBe('application/javascript');
+});
+
+test('HAR filtering with no matches', async ({ startClient, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const { client } = await startClient({
+    config: { outputDir },
+  });
+
+  // Setup simple page
+  server.setContent('/', '<html><body>Empty Test</body></html>', 'text/html');
+
+  // Navigate to trigger request
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  // Save HAR with filter that matches nothing
+  await client.callTool({
+    name: 'browser_har_save',
+    arguments: {
+      filename: 'no-matches.har',
+      contentTypes: ['application/pdf']
+    },
+  });
+
+  // Verify HAR file was created with empty entries
+  const harContent = JSON.parse(fs.readFileSync(`${outputDir}/no-matches.har`, 'utf8'));
+  expect(harContent.log.entries).toHaveLength(0);
+  expect(harContent.log.comment).toContain('application/pdf');
+});

@@ -403,6 +403,82 @@ export class HARRecorder {
     return har;
   }
 
+  generateFilteredHAR(options: { contentTypes?: string[]; urlPattern?: string }): HAR {
+    let filteredEntries = this.entries;
+
+    // Filter by content types if specified
+    if (options.contentTypes && options.contentTypes.length > 0) {
+      filteredEntries = filteredEntries.filter(entry => {
+        const mimeType = entry.response.content.mimeType;
+        return options.contentTypes!.some(contentType =>
+          mimeType.includes(contentType) || contentType.includes(mimeType)
+        );
+      });
+    }
+
+    // Filter by URL pattern if specified
+    if (options.urlPattern) {
+      const pattern = this.createUrlMatcher(options.urlPattern);
+      filteredEntries = filteredEntries.filter(entry =>
+        pattern.test(entry.request.url)
+      );
+    }
+
+    const har: HAR = {
+      log: {
+        version: '1.2',
+        creator: {
+          name: 'Playwright MCP',
+          version: '1.0.0',
+          comment: 'HAR exported by Playwright MCP Server with filtering'
+        },
+        browser: {
+          name: 'Playwright',
+          version: this.getPlaywrightVersion(),
+          comment: `Browser: ${this.getBrowserName()}`
+        },
+        pages: [], // Pages are not tracked in this implementation
+        entries: filteredEntries,
+        comment: this.createFilterComment(options)
+      }
+    };
+
+    // Validate the HAR before returning
+    const validation = this.validator.validateHAR(har);
+    if (!validation.valid) {
+      // HAR validation failed - log errors in development mode
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('Generated filtered HAR is not valid:', validation.errors);
+      }
+    }
+
+    return har;
+  }
+
+  private createUrlMatcher(pattern: string): RegExp {
+    // Convert wildcard pattern to regex
+    // Escape special regex characters except * and ?
+    const escaped = pattern
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+        .replace(/\*/g, '.*')
+        .replace(/\?/g, '.');
+
+    return new RegExp(`^${escaped}$`, 'i');
+  }
+
+  private createFilterComment(options: { contentTypes?: string[]; urlPattern?: string }): string {
+    const filters: string[] = [];
+
+    if (options.contentTypes && options.contentTypes.length > 0)
+      filters.push(`Content types: ${options.contentTypes.join(', ')}`);
+
+    if (options.urlPattern)
+      filters.push(`URL pattern: ${options.urlPattern}`);
+
+    return filters.length > 0 ? `Filtered by: ${filters.join('; ')}` : '';
+  }
+
   private getPlaywrightVersion(): string {
     try {
       // Try to get Playwright version from package.json or environment

@@ -25,9 +25,11 @@ const save = defineTool({
   schema: {
     name: 'browser_har_save',
     title: 'Save HAR file',
-    description: 'Save HTTP Archive (HAR) file of all network traffic captured during the browser session',
+    description: 'Save HTTP Archive (HAR) file of all network traffic captured during the browser session. Supports filtering by content type and URL patterns.',
     inputSchema: z.object({
       filename: z.string().optional().describe('File name to save the HAR to. Defaults to `session-{timestamp}.har` if not specified.'),
+      contentTypes: z.array(z.string()).optional().describe('Array of MIME types to include (e.g., ["application/javascript", "text/css"]). If not specified, all content types are included.'),
+      urlPattern: z.string().optional().describe('URL pattern to match (supports wildcards with * and ?). Only requests matching this pattern will be included. If not specified, all URLs are included.'),
     }),
     type: 'readOnly',
   },
@@ -57,9 +59,26 @@ const save = defineTool({
       };
     }
 
-    // Generate and save HAR data
-    const harData = harRecorder.generateHAR();
+    // Generate and save HAR data with filtering if specified
+    const filterOptions = {
+      contentTypes: args.contentTypes,
+      urlPattern: args.urlPattern
+    };
+
+    const harData = (args.contentTypes || args.urlPattern)
+      ? harRecorder.generateFilteredHAR(filterOptions)
+      : harRecorder.generateHAR();
+
     await fs.writeFile(harPath, JSON.stringify(harData, null, 2), 'utf-8');
+
+    // Create result message with filter information
+    const filterInfo = [];
+    if (args.contentTypes && args.contentTypes.length > 0)
+      filterInfo.push(`Content types: ${args.contentTypes.join(', ')}`);
+    if (args.urlPattern)
+      filterInfo.push(`URL pattern: ${args.urlPattern}`);
+
+    const filterMessage = filterInfo.length > 0 ? `\nFilters applied: ${filterInfo.join('; ')}` : '';
 
     // Return success with resultOverride to bypass tab requirement
     return {
@@ -74,7 +93,7 @@ const save = defineTool({
 await browserContext.saveHAR({ path: '${harPath}' });
 \`\`\`
 
-Saved HAR file to ${harPath}`
+Saved HAR file to ${harPath}${filterMessage}`
         }]
       }
     };

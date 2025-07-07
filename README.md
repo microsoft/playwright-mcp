@@ -593,9 +593,11 @@ X Y coordinate space, based on the provided screenshot.
 
 - **browser_har_save**
   - Title: Save HAR file
-  - Description: Save HTTP Archive (HAR) file of all network traffic captured during the browser session
+  - Description: Save HTTP Archive (HAR) file of all network traffic captured during the browser session. Supports filtering by content type and URL patterns.
   - Parameters:
     - `filename` (string, optional): File name to save the HAR to. Defaults to `session-{timestamp}.har` if not specified.
+    - `contentTypes` (array, optional): Array of MIME types to include (e.g., ["application/javascript", "text/css"]). If not specified, all content types are included.
+    - `urlPattern` (string, optional): URL pattern to match (supports wildcards with * and ?). Only requests matching this pattern will be included. If not specified, all URLs are included.
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
