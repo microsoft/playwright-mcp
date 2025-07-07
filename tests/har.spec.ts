@@ -130,7 +130,7 @@ test('HAR file contains expected network requests', async ({ startClient, server
     name: 'browser_navigate',
     arguments: { url: `${server.PREFIX}api/users` },
   });
-  
+
   // Navigate back to main page
   await client.callTool({
     name: 'browser_navigate_back',
@@ -145,9 +145,9 @@ test('HAR file contains expected network requests', async ({ startClient, server
   // Read and parse HAR file
   const harPath = `${outputDir}/test.har`;
   expect(fs.existsSync(harPath)).toBeTruthy();
-  
+
   const harContent = JSON.parse(fs.readFileSync(harPath, 'utf8'));
-  
+
   // Verify HAR structure
   expect(harContent).toHaveProperty('log');
   expect(harContent.log).toHaveProperty('version');
@@ -203,7 +203,7 @@ test('HAR captures requests across multiple navigations', async ({ startClient, 
   // Verify HAR contains all navigations
   const harContent = JSON.parse(fs.readFileSync(`${outputDir}/multi-nav.har`, 'utf8'));
   const urls = harContent.log.entries.map(entry => entry.request.url);
-  
+
   expect(urls).toContain(`${server.PREFIX}page1`);
   expect(urls).toContain(`${server.PREFIX}page2`);
   expect(urls).toContain(`${server.PREFIX}page3`);
@@ -211,7 +211,7 @@ test('HAR captures requests across multiple navigations', async ({ startClient, 
 
 test('HAR saving unavailable when capability disabled', async ({ startClient, server }) => {
   const { client } = await startClient({ args: ['--caps="no-har"'] });
-  
+
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -246,7 +246,7 @@ test('HAR file follows proper format specification', async ({ startClient, serve
   expect(harContent.log.version).toBe('1.2');
   expect(harContent.log.creator).toHaveProperty('name');
   expect(harContent.log.creator).toHaveProperty('version');
-  
+
   // Verify entry structure
   const entry = harContent.log.entries[0];
   expect(entry).toHaveProperty('startedDateTime');
@@ -298,12 +298,12 @@ test('HAR captures large number of requests', async ({ startClient, server }, te
   // Setup page with many resources
   const resourceCount = 50;
   let htmlContent = '<html><head>';
-  
+
   for (let i = 0; i < resourceCount; i++) {
     htmlContent += `<link rel="stylesheet" href="/css/style${i}.css">`;
     server.setContent(`/css/style${i}.css`, `/* Style ${i} */`, 'text/css');
   }
-  
+
   htmlContent += '</head><body>Many Resources</body></html>';
   server.setContent('/', htmlContent, 'text/html');
 
@@ -327,12 +327,12 @@ test('HAR captures large number of requests', async ({ startClient, server }, te
 
   // Verify all requests were captured
   const harContent = JSON.parse(fs.readFileSync(`${outputDir}/large-session.har`, 'utf8'));
-  
+
   // Should have main page + all CSS files
   expect(harContent.log.entries.length).toBeGreaterThanOrEqual(resourceCount);
-  
+
   // Verify CSS files are captured
-  const cssRequests = harContent.log.entries.filter(e => 
+  const cssRequests = harContent.log.entries.filter(e =>
     e.request.url.includes('/css/style') && e.request.url.endsWith('.css')
   );
   expect(cssRequests.length).toBe(resourceCount);
@@ -340,7 +340,7 @@ test('HAR captures large number of requests', async ({ startClient, server }, te
 
 test('HAR saving in new tab', async ({ startClient, server, mcpMode }, testInfo) => {
   test.skip(mcpMode === 'extension', 'Multi-tab scenarios are not supported with --extension');
-  
+
   const outputDir = testInfo.outputPath('output');
   const { client } = await startClient({
     config: { outputDir },
@@ -370,7 +370,7 @@ test('HAR saving in new tab', async ({ startClient, server, mcpMode }, testInfo)
   // Verify HAR contains requests from both tabs
   const harContent = JSON.parse(fs.readFileSync(`${outputDir}/multi-tab.har`, 'utf8'));
   const urls = harContent.log.entries.map(entry => entry.request.url);
-  
+
   expect(urls.some(url => url.includes('/hello-world'))).toBeTruthy();
   expect(urls.some(url => url.includes('/about'))).toBeTruthy();
 });

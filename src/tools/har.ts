@@ -38,10 +38,10 @@ const save = defineTool({
 
     // Ensure we have a browser context (creates one if needed)
     await context.ensureTab();
-    
+
     // Get the HAR recorder
     const harRecorder = context.getHARRecorder();
-    
+
     if (!harRecorder) {
       // This should not happen after ensureTab, but handle it just in case
       return {

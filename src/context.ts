@@ -341,10 +341,10 @@ ${code.join('\n')}
     const result = await this._browserContextFactory.createContext();
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
-    
+
     // Initialize HAR recorder
     this._harRecorder = new HARRecorder(browserContext);
-    
+
     for (const page of browserContext.pages())
       this._onPageCreated(page);
     browserContext.on('page', page => this._onPageCreated(page));
