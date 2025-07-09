@@ -72,7 +72,46 @@ const resize: ToolFactory = captureSnapshot => defineTool({
   },
 });
 
+const restartWithProxy: ToolFactory = captureSnapshot => defineTool({
+  capability: 'core',
+  schema: {
+    name: 'browser_restart_with_proxy',
+    title: 'Restart browser with proxy',
+    description: 'Restart the browser with a new proxy configuration',
+    inputSchema: z.object({
+      proxyServer: z.string().describe('Proxy server URL (e.g., "http://proxy.example.com:8080", "socks5://proxy.example.com:1080")'),
+      proxyBypass: z.string().optional().describe('Comma-separated list of domains to bypass proxy (e.g., "example.com,localhost,127.0.0.1")')
+    }),
+    type: 'destructive',
+  },
+
+  handle: async (context, params) => {
+    const result = await context.restartWithProxy(params.proxyServer, params.proxyBypass);
+
+    const code = [
+      `// Restart browser with proxy: ${params.proxyServer}`,
+      `await browserContext.close();`,
+      `const browser = await playwright.chromium.launch({`,
+      `  proxy: {`,
+      `    server: '${params.proxyServer}'${params.proxyBypass ? `,` : ''}`,
+      ...(params.proxyBypass ? [`    bypass: '${params.proxyBypass}'`] : []),
+      `  }`,
+      `});`,
+      `const context = await browser.newContext();`,
+      `const page = await context.newPage();`
+    ];
+
+    return {
+      code,
+      captureSnapshot,
+      waitForNetwork: false,
+      resultOverride: result
+    };
+  },
+});
+
 export default (captureSnapshot: boolean) => [
   close,
-  resize(captureSnapshot)
+  resize(captureSnapshot),
+  restartWithProxy(captureSnapshot)
 ];

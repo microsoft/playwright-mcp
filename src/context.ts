@@ -306,6 +306,42 @@ ${code.join('\n')}
     });
   }
 
+  async restartWithProxy(proxyServer: string, proxyBypass?: string): Promise<{ content: { type: 'text'; text: string }[] }> {
+    testDebug('restart context with proxy');
+
+    await this.close();
+
+    this._tabs = [];
+    this._currentTab = undefined;
+    this._modalStates = [];
+    this._downloads = [];
+
+    const updatedBrowserConfig = {
+      ...this.config.browser,
+      launchOptions: {
+        ...this.config.browser.launchOptions,
+        proxy: {
+          server: proxyServer,
+          ...(proxyBypass && { bypass: proxyBypass })
+        }
+      }
+    };
+
+    const { contextFactory } = await import('./browserContextFactory.js');
+    this._browserContextFactory = contextFactory(updatedBrowserConfig);
+
+    const { browserContext } = await this._ensureBrowserContext();
+
+    await browserContext.newPage();
+
+    return {
+      content: [{
+        type: 'text' as const,
+        text: `Browser restarted with proxy: ${proxyServer}${proxyBypass ? ` (bypass: ${proxyBypass})` : ''}`
+      }]
+    };
+  }
+
   private async _setupRequestInterception(context: playwright.BrowserContext) {
     if (this.config.network?.allowedOrigins?.length) {
       await context.route('**', route => route.abort('blockedbyclient'));
