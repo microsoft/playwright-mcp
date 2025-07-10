@@ -275,3 +275,22 @@ test('old locator error message', async ({ client, server }) => {
     },
   })).toContainTextContent('Ref not found');
 });
+
+test('visibility: hidden > visible should be shown', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/535' } }, async ({ client, server }) => {
+  server.setContent('/', `
+    <div style="visibility: hidden;">
+      <div style="visibility: visible;">
+        <button>Button</button>
+      </div>
+    </div>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_snapshot'
+  })).toContainTextContent('- button "Button"');
+});
