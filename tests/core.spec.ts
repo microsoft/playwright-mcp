@@ -31,7 +31,7 @@ await page.goto('${server.HELLO_WORLD}');
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: Hello, world!
+- generic [active] [ref=e1]: Hello, world!
 \`\`\`
 `
   );
@@ -65,7 +65,7 @@ await page.getByRole('button', { name: 'Submit' }).click();
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- button "Submit" [ref=e2]
+- button "Submit" [active] [ref=e2]
 \`\`\`
 `);
 });

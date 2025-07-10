@@ -34,7 +34,7 @@ test('test reopen browser', async ({ startClient, server, mcpMode }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
+  })).toContainTextContent(`- generic [active] [ref=e1]: Hello, world!`);
 
   await client.close();
 

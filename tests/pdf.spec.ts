@@ -40,7 +40,7 @@ test('save as pdf', async ({ startClient, mcpBrowser, server }, testInfo) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
+  })).toContainTextContent(`- generic [active] [ref=e1]: Hello, world!`);
 
   const response = await client.callTool({
     name: 'browser_pdf_save',
@@ -58,7 +58,7 @@ test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser, ser
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- generic [ref=e1]: Hello, world!`);
+  })).toContainTextContent(`- generic [active] [ref=e1]: Hello, world!`);
 
   expect(await client.callTool({
     name: 'browser_pdf_save',
