@@ -37,7 +37,7 @@ await page.goto('${server.HELLO_WORLD}');
   );
 });
 
-test('browser_click', async ({ client, server }) => {
+test('browser_click', async ({ client, server, mcpBrowser }) => {
   server.setContent('/', `
     <title>Title</title>
     <button>Submit</button>
@@ -65,7 +65,7 @@ await page.getByRole('button', { name: 'Submit' }).click();
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- button "Submit" [active] [ref=e2]
+- button "Submit" ${mcpBrowser === 'webkit' ? '' : '[active] '}[ref=e2]
 \`\`\`
 `);
 });
