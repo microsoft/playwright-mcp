@@ -61,7 +61,7 @@ test('create new tab', async ({ client }) => {
 - Page Title: Tab one
 - Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: Body one
+- generic [active] [ref=e1]: Body one
 \`\`\``);
 
   expect(await createTab(client, 'Tab two', 'Body two')).toHaveTextContent(`
@@ -80,7 +80,7 @@ test('create new tab', async ({ client }) => {
 - Page Title: Tab two
 - Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: Body two
+- generic [active] [ref=e1]: Body two
 \`\`\``);
 });
 
@@ -108,7 +108,7 @@ test('select tab', async ({ client }) => {
 - Page Title: Tab one
 - Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: Body one
+- generic [active] [ref=e1]: Body one
 \`\`\``);
 });
 
@@ -135,7 +135,7 @@ test('close tab', async ({ client }) => {
 - Page Title: Tab one
 - Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: Body one
+- generic [active] [ref=e1]: Body one
 \`\`\``);
 });
 

@@ -81,7 +81,7 @@ export async function generateLocator(locator: playwright.Locator): Promise<stri
   try {
     return await (locator as any)._generateLocatorString();
   } catch (e) {
-    if (e instanceof Error && /locator._generateLocatorString: Timeout .* exceeded/.test(e.message))
+    if (e instanceof Error && /locator._generateLocatorString: No element matching locator/.test(e.message))
       throw new Error('Ref not found, likely because element was removed. Use browser_snapshot to see what elements are currently on the page.');
     throw e;
   }

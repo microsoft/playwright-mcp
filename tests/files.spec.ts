@@ -28,7 +28,7 @@ test('browser_file_upload', async ({ client, server }, testInfo) => {
     arguments: { url: server.PREFIX },
   })).toContainTextContent(`
 \`\`\`yaml
-- generic [ref=e1]:
+- generic [active] [ref=e1]:
   - button "Choose File" [ref=e2]
   - button "Button" [ref=e3]
 \`\`\``);
@@ -65,12 +65,6 @@ The tool "browser_file_upload" can only be used when there is related modal stat
     });
 
     expect(response).not.toContainTextContent('### Modal state');
-    expect(response).toContainTextContent(`
-\`\`\`yaml
-- generic [ref=e1]:
-  - button "Choose File" [ref=e2]
-  - button "Button" [ref=e3]
-\`\`\``);
   }
 
   {

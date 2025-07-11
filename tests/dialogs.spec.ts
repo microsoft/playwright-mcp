@@ -58,7 +58,7 @@ await page.getByRole('button', { name: 'Button' }).click();
 - Page Title: 
 - Page Snapshot
 \`\`\`yaml
-- button "Button" [ref=e2]
+- button "Button" [active] [ref=e2]
 \`\`\`
 `);
 });
@@ -136,7 +136,7 @@ test('confirm dialog (true)', async ({ client, server }) => {
   expect(result).toContainTextContent('// <internal code to handle "confirm" dialog>');
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: "true"
+- generic [active] [ref=e1]: "true"
 \`\`\``);
 });
 
@@ -171,7 +171,7 @@ test('confirm dialog (false)', async ({ client, server }) => {
 
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: "false"
+- generic [active] [ref=e1]: "false"
 \`\`\``);
 });
 
@@ -207,6 +207,6 @@ test('prompt dialog', async ({ client, server }) => {
 
   expect(result).toContainTextContent(`- Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: Answer
+- generic [active] [ref=e1]: Answer
 \`\`\``);
 });

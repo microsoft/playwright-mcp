@@ -31,13 +31,13 @@ await page.goto('${server.HELLO_WORLD}');
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- generic [ref=e1]: Hello, world!
+- generic [active] [ref=e1]: Hello, world!
 \`\`\`
 `
   );
 });
 
-test('browser_click', async ({ client, server }) => {
+test('browser_click', async ({ client, server, mcpBrowser }) => {
   server.setContent('/', `
     <title>Title</title>
     <button>Submit</button>
@@ -65,7 +65,7 @@ await page.getByRole('button', { name: 'Submit' }).click();
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- button "Submit" [ref=e2]
+- button "Submit" ${mcpBrowser === 'webkit' ? '' : '[active] '}[ref=e2]
 \`\`\`
 `);
 });
@@ -313,4 +313,23 @@ test('old locator error message', async ({ client, server }) => {
       ref: 'e3',
     },
   })).toContainTextContent('Ref not found');
+});
+
+test('visibility: hidden > visible should be shown', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/535' } }, async ({ client, server }) => {
+  server.setContent('/', `
+    <div style="visibility: hidden;">
+      <div style="visibility: visible;">
+        <button>Button</button>
+      </div>
+    </div>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_snapshot'
+  })).toContainTextContent('- button "Button"');
 });
