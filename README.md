@@ -478,6 +478,7 @@ X Y coordinate space, based on the provided screenshot.
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
+    - `doubleClick` (boolean, optional): Whether to perform a double click instead of a single click
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->

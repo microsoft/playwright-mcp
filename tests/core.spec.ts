@@ -70,6 +70,45 @@ await page.getByRole('button', { name: 'Submit' }).click();
 `);
 });
 
+test('browser_click (double)', async ({ client, server }) => {
+  server.setContent('/', `
+    <title>Title</title>
+    <script>
+      function handle() {
+        document.querySelector('h1').textContent = 'Double clicked';
+      }
+    </script>
+    <h1 ondblclick="handle()">Click me</h1>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Click me',
+      ref: 'e2',
+      doubleClick: true,
+    },
+  })).toHaveTextContent(`
+- Ran Playwright code:
+\`\`\`js
+// Double click Click me
+await page.getByRole('heading', { name: 'Click me' }).dblclick();
+\`\`\`
+
+- Page URL: ${server.PREFIX}
+- Page Title: Title
+- Page Snapshot
+\`\`\`yaml
+- heading "Double clicked" [level=1] [ref=e3]
+\`\`\`
+`);
+});
+
 test('browser_select_option', async ({ client, server }) => {
   server.setContent('/', `
     <title>Title</title>
