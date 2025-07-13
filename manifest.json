@@ -1,0 +1,205 @@
+{
+  "dxt_version": "0.1",
+  "name": "playwright-mcp",
+  "version": "0.0.29",
+  "description": "Browser automation MCP server using Playwright for LLM-friendly web interaction",
+  "display_name": "Playwright MCP",
+  "long_description": "An extension that provides browser automation capabilities using Playwright. This enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.",
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "icon": "extension/icons/icon-128.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/playwright-mcp.git"
+  },
+  "homepage": "https://playwright.dev",
+  "documentation": "https://github.com/microsoft/playwright-mcp#readme",
+  "license": "Apache-2.0",
+  "keywords": [
+    "playwright",
+    "browser-automation",
+    "web-scraping",
+    "testing",
+    "mcp",
+    "model-context-protocol",
+    "accessibility"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "cli.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["cli.js"]
+    }
+  },
+  "tools": [
+    {
+      "name": "playwright_navigate",
+      "description": "Navigate to a URL in the browser"
+    },
+    {
+      "name": "playwright_screenshot",
+      "description": "Take a screenshot of the current page"
+    },
+    {
+      "name": "playwright_click",
+      "description": "Click on an element in the page"
+    },
+    {
+      "name": "playwright_fill",
+      "description": "Fill text into an input field"
+    },
+    {
+      "name": "playwright_select",
+      "description": "Select an option from a dropdown"
+    },
+    {
+      "name": "playwright_wait",
+      "description": "Wait for page conditions"
+    },
+    {
+      "name": "playwright_press",
+      "description": "Press keyboard keys"
+    },
+    {
+      "name": "playwright_download",
+      "description": "Handle file downloads"
+    },
+    {
+      "name": "playwright_upload",
+      "description": "Upload files to the page"
+    },
+    {
+      "name": "playwright_evaluate",
+      "description": "Execute JavaScript in the page context"
+    },
+    {
+      "name": "playwright_snapshot",
+      "description": "Get accessibility tree snapshot of the page"
+    }
+  ],
+  "user_config": {
+    "browserName": {
+      "type": "string",
+      "title": "Browser Type",
+      "description": "The type of browser to use (chromium, firefox, or webkit)",
+      "default": "chromium"
+    },
+    "headless": {
+      "type": "boolean",
+      "title": "Headless Mode",
+      "description": "Run browser in headless mode (no visible window)",
+      "default": false
+    },
+    "userDataDir": {
+      "type": "directory",
+      "title": "User Data Directory",
+      "description": "Path to a directory for browser profile persistence"
+    },
+    "viewport": {
+      "type": "string",
+      "title": "Viewport Size",
+      "description": "Browser viewport dimensions as 'width,height' (e.g., '1280,720')"
+    },
+    "userAgent": {
+      "type": "string",
+      "title": "User Agent",
+      "description": "Custom user agent string for the browser"
+    },
+    "ignoreHttpsErrors": {
+      "type": "boolean",
+      "title": "Ignore HTTPS Errors",
+      "description": "Ignore HTTPS errors during navigation",
+      "default": false
+    },
+    "storageState": {
+      "type": "file",
+      "title": "Storage State",
+      "description": "Path to browser storage state file (cookies, localStorage, etc.)"
+    },
+    "proxyServer": {
+      "type": "string",
+      "title": "Proxy Server",
+      "description": "Network proxy server URL"
+    },
+    "proxyBypass": {
+      "type": "string",
+      "title": "Proxy Bypass",
+      "description": "Comma-separated list of hosts to bypass proxy"
+    },
+    "port": {
+      "type": "number",
+      "title": "Server Port",
+      "description": "Port to listen on for SSE or MCP transport",
+      "min": 1,
+      "max": 65535
+    },
+    "host": {
+      "type": "string",
+      "title": "Server Host",
+      "description": "Host to bind the server to (use 0.0.0.0 for all interfaces)",
+      "default": "localhost"
+    },
+    "vision": {
+      "type": "boolean",
+      "title": "Vision Mode",
+      "description": "Use screenshots instead of accessibility snapshots",
+      "default": false
+    },
+    "saveTrace": {
+      "type": "boolean",
+      "title": "Save Trace",
+      "description": "Save Playwright trace of the session for debugging",
+      "default": false
+    },
+    "outputDir": {
+      "type": "directory",
+      "title": "Output Directory",
+      "description": "Directory to save output files (traces, downloads, etc.)"
+    },
+    "allowedOrigins": {
+      "type": "string",
+      "title": "Allowed Origins",
+      "description": "Comma-separated list of origins to allow browser requests to"
+    },
+    "blockedOrigins": {
+      "type": "string",
+      "title": "Blocked Origins",
+      "description": "Comma-separated list of origins to block browser requests to"
+    },
+    "imageResponses": {
+      "type": "string",
+      "title": "Image Responses",
+      "description": "Whether to send image responses: 'allow', 'omit', or 'auto'",
+      "default": "auto"
+    },
+    "capabilities": {
+      "type": "string",
+      "title": "Tool Capabilities",
+      "description": "Comma-separated list of enabled tools: core,tabs,pdf,history,wait,files,install,testing",
+      "default": "core,tabs,pdf,history,wait,files,install,testing"
+    },
+    "cdpEndpoint": {
+      "type": "string",
+      "title": "CDP Endpoint",
+      "description": "Chrome DevTools Protocol endpoint to connect to existing browser"
+    },
+    "executablePath": {
+      "type": "file",
+      "title": "Browser Executable",
+      "description": "Path to a specific browser executable to use"
+    },
+    "channel": {
+      "type": "string",
+      "title": "Browser Channel",
+      "description": "Browser channel to use (chrome, chrome-beta, msedge, etc.)"
+    },
+    "blockServiceWorkers": {
+      "type": "boolean",
+      "title": "Block Service Workers",
+      "description": "Block service workers in the browser",
+      "default": false
+    }
+  }
+}
