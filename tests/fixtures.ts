@@ -17,16 +17,12 @@
 import fs from 'fs';
 import url from 'url';
 import path from 'path';
-import net from 'net';
 import { chromium } from 'playwright';
-import { fork } from 'child_process';
 
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { TestServer } from './testserver/index.ts';
-import { ManualPromise } from '../src/manualPromise.js';
 
 import type { Config } from '../config';
 import type { BrowserContext } from 'playwright';
@@ -35,7 +31,7 @@ import type { Stream } from 'stream';
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
-  mcpMode: 'docker' | 'extension' | undefined;
+  mcpMode: 'docker' | undefined;
 };
 
 type CDPServer = {
@@ -52,7 +48,6 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
-  startMcpExtension: (relayServerURL: string) => Promise<void>;
 };
 
 type WorkerFixtures = {
@@ -71,7 +66,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(client);
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode, startMcpExtension }, use, testInfo) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
     const userDataDir = mcpMode !== 'docker' ? testInfo.outputPath('user-data-dir') : undefined;
     const configDir = path.dirname(test.info().config.configFile!);
     let client: Client | undefined;
@@ -95,7 +90,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       }
 
       client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' });
-      const { transport, stderr, relayServerURL } = await createTransport(args, mcpMode);
+      const { transport, stderr } = await createTransport(args, mcpMode);
       let stderrBuffer = '';
       stderr?.on('data', data => {
         if (process.env.PWMCP_DEBUG)
@@ -103,8 +98,6 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
         stderrBuffer += data.toString();
       });
       await client.connect(transport);
-      if (mcpMode === 'extension')
-        await startMcpExtension(relayServerURL!);
       await client.ping();
       return { client, stderr: () => stderrBuffer };
     });
@@ -147,38 +140,6 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
   mcpMode: [undefined, { option: true }],
 
-  startMcpExtension: async ({ mcpMode, mcpHeadless }, use) => {
-    let context: BrowserContext | undefined;
-    await use(async (relayServerURL: string) => {
-      if (mcpMode !== 'extension')
-        throw new Error('Must be running in MCP extension mode to use this fixture.');
-      const cdpPort = await findFreePort();
-      const pathToExtension = path.join(url.fileURLToPath(import.meta.url), '../../extension');
-      context = await chromium.launchPersistentContext('', {
-        headless: mcpHeadless,
-        args: [
-          `--disable-extensions-except=${pathToExtension}`,
-          `--load-extension=${pathToExtension}`,
-          '--enable-features=AllowContentInitiatedDataUrlNavigations',
-        ],
-        channel: 'chromium',
-        ...{ assistantMode: true, cdpPort },
-      });
-      const popupPage = await context.newPage();
-      const page = context.pages()[0];
-      await page.bringToFront();
-      // Do not auto dismiss dialogs.
-      page.on('dialog', () => { });
-      await expect.poll(() => context?.serviceWorkers()).toHaveLength(1);
-      // Connect to the relay server.
-      await popupPage.goto(new URL('/popup.html', context.serviceWorkers()[0].url()).toString());
-      await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).clear();
-      await popupPage.getByRole('textbox', { name: 'Bridge Server URL:' }).fill(relayServerURL);
-      await popupPage.getByRole('button', { name: 'Share This Tab' }).click();
-    });
-    await context?.close();
-  },
-
   _workerServers: [async ({ }, use, workerInfo) => {
     const port = 8907 + workerInfo.workerIndex * 4;
     const server = await TestServer.create(port);
@@ -208,7 +169,6 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']): Promise<{
   transport: Transport,
   stderr: Stream | null,
-  relayServerURL?: string,
 }> {
   // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
   const __filename = url.fileURLToPath(import.meta.url);
@@ -221,42 +181,6 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
     return {
       transport,
       stderr: transport.stderr,
-    };
-  }
-  if (mcpMode === 'extension') {
-    const relay = fork(path.join(__filename, '../../cli.js'), [...args, '--extension', '--port=0'], {
-      stdio: 'pipe'
-    });
-    const cdpRelayServerReady = new ManualPromise<string>();
-    const sseEndpointPromise = new ManualPromise<string>();
-    let stderrBuffer = '';
-    relay.stderr!.on('data', data => {
-      stderrBuffer += data.toString();
-      const match = stderrBuffer.match(/Listening on (http:\/\/.*)/);
-      if (match)
-        sseEndpointPromise.resolve(match[1].toString());
-      const extensionMatch = stderrBuffer.match(/CDP relay server started on (ws:\/\/.*\/extension)/);
-      if (extensionMatch)
-        cdpRelayServerReady.resolve(extensionMatch[1].toString());
-    });
-    relay.on('exit', () => {
-      sseEndpointPromise.reject(new Error(`Process exited`));
-      cdpRelayServerReady.reject(new Error(`Process exited`));
-    });
-    const relayServerURL = await cdpRelayServerReady;
-    const sseEndpoint = await sseEndpointPromise;
-
-    const transport = new SSEClientTransport(new URL(sseEndpoint));
-    // We cannot just add  transport.onclose here as Client.connect() overrides it.
-    const origClose = transport.close;
-    transport.close = async () => {
-      await origClose.call(transport);
-      relay.kill();
-    };
-    return {
-      transport,
-      stderr: relay.stderr!,
-      relayServerURL,
     };
   }
 
@@ -331,17 +255,6 @@ export const expect = baseExpect.extend({
     };
   },
 });
-
-async function findFreePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.listen(0, () => {
-      const { port } = server.address() as net.AddressInfo;
-      server.close(() => resolve(port));
-    });
-    server.on('error', reject);
-  });
-}
 
 export function formatOutput(output: string): string[] {
   return output.split('\n').map(line => line.replace(/^pw:mcp:test /, '').replace(/user data dir.*/, 'user data dir').trim()).filter(Boolean);

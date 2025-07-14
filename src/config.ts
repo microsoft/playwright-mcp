@@ -19,17 +19,9 @@ import os from 'os';
 import path from 'path';
 import { devices } from 'playwright';
 
-import type { Config as PublicConfig, ToolCapability } from '../config.js';
+import type { Config, ToolCapability } from '../config.js';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';
 import { sanitizeForFilePath } from './tools/utils.js';
-
-type Config = PublicConfig & {
-  /**
-   * TODO: Move to PublicConfig once we are ready to release this feature.
-   * Run server that is able to connect to the 'Playwright MCP' Chrome extension.
-   */
-  extension?: boolean;
-};
 
 export type CLIOptions = {
   allowedOrigins?: string[];
@@ -58,7 +50,6 @@ export type CLIOptions = {
   userDataDir?: string;
   viewportSize?: string;
   vision?: boolean;
-  extension?: boolean;
 };
 
 const defaultConfig: FullConfig = {
@@ -108,13 +99,6 @@ export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConf
   return result;
 }
 
-export function validateConfig(config: Config) {
-  if (config.extension) {
-    if (config.browser?.browserName !== 'chromium')
-      throw new Error('Extension mode is only supported for Chromium browsers.');
-  }
-}
-
 export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Config> {
   let browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
   let channel: string | undefined;
@@ -160,8 +144,6 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
 
   if (cliOptions.device && cliOptions.cdpEndpoint)
     throw new Error('Device emulation is not supported with cdpEndpoint.');
-  if (cliOptions.device && cliOptions.extension)
-    throw new Error('Device emulation is not supported with extension mode.');
 
   // Context options
   const contextOptions: BrowserContextOptions = cliOptions.device ? devices[cliOptions.device] : {};
@@ -204,7 +186,6 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     },
     capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
     vision: !!cliOptions.vision,
-    extension: !!cliOptions.extension,
     network: {
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,

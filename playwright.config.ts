@@ -39,6 +39,5 @@ export default defineConfig<TestOptions>({
     }] : [],
     { name: 'firefox', use: { mcpBrowser: 'firefox' } },
     { name: 'webkit', use: { mcpBrowser: 'webkit' } },
-    { name: 'chromium-extension', use: { mcpBrowser: 'chromium', mcpMode: 'extension' } },
   ],
 });

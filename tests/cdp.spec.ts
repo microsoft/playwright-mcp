@@ -19,8 +19,6 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test, expect } from './fixtures.js';
 
-test.skip(({ mcpMode }) => mcpMode === 'extension', 'Connecting to CDP server is not supported in combination with --extension');
-
 test('cdp server', async ({ cdpServer, startClient, server }) => {
   await cdpServer.start();
   const { client } = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });

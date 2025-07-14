@@ -95,7 +95,6 @@ The tool "browser_file_upload" can only be used when there is related modal stat
 });
 
 test('clicking on download link emits download', async ({ startClient, server, mcpMode }, testInfo) => {
-  test.fixme(mcpMode === 'extension', 'Downloads are on the Browser CDP domain and not supported with --extension');
   const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
@@ -120,7 +119,6 @@ test('clicking on download link emits download', async ({ startClient, server, m
 });
 
 test('navigating to download link emits download', async ({ startClient, server, mcpBrowser, mcpMode }, testInfo) => {
-  test.fixme(mcpMode === 'extension', 'Downloads are on the Browser CDP domain and not supported with --extension');
   const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
