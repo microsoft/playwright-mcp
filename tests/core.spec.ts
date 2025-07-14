@@ -65,7 +65,7 @@ await page.getByRole('button', { name: 'Submit' }).click();
 - Page Title: Title
 - Page Snapshot
 \`\`\`yaml
-- button "Submit" ${mcpBrowser === 'webkit' ? '' : '[active] '}[ref=e2]
+- button "Submit" ${mcpBrowser !== 'webkit' || process.platform === 'linux' ? '[active] ' : ''}[ref=e2]
 \`\`\`
 `);
 });
