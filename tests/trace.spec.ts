@@ -20,8 +20,6 @@ import path from 'path';
 import { test, expect } from './fixtures.js';
 
 test('check that trace is saved', async ({ startClient, server, mcpMode }, testInfo) => {
-  test.fixme(mcpMode === 'extension', 'Tracing is not supported via CDP');
-
   const outputDir = testInfo.outputPath('output');
 
   const { client } = await startClient({

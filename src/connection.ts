@@ -22,7 +22,7 @@ import { Context } from './context.js';
 import { snapshotTools, visionTools, everyTool } from './tools.js';
 import { packageJSON } from './package.js';
 
-import { FullConfig, validateConfig } from './config.js';
+import { FullConfig } from './config.js';
 
 import type { BrowserContextFactory } from './browserContextFactory.js';
 
@@ -33,7 +33,6 @@ export function createConnection(config: FullConfig, browserContextFactory: Brow
     allTools = config.vision ? visionTools : snapshotTools;
 
   const tools = allTools.filter(tool => !config.capabilities || tool.capability === 'core' || config.capabilities.includes(tool.capability));
-  validateConfig(config);
   const context = new Context(tools, config, browserContextFactory);
   const server = new McpServer({ name: 'Playwright', version: packageJSON.version }, {
     capabilities: {

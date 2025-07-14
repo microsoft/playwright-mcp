@@ -20,7 +20,6 @@ import { Config } from '../config.js';
 import { test, expect } from './fixtures.js';
 
 test('config user data dir', async ({ startClient, server, mcpMode }, testInfo) => {
-  test.skip(mcpMode === 'extension', 'Connecting to CDP server does not use user data dir');
   server.setContent('/', `
     <title>Title</title>
     <body>Hello, world!</body>
@@ -47,7 +46,6 @@ test('config user data dir', async ({ startClient, server, mcpMode }, testInfo) 
 test.describe(() => {
   test.use({ mcpBrowser: '' });
   test('browserName', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/458' } }, async ({ startClient, mcpMode }, testInfo) => {
-    test.skip(mcpMode === 'extension', 'Extension mode only supports Chromium');
     const config: Config = {
       browser: {
         browserName: 'firefox',
