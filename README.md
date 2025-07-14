@@ -174,6 +174,27 @@ Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/
 ```
 </details>
 
+<details>
+<summary><b>Install in Zencoder</b></summary>
+
+1. Go to the Zencoder menu (...)
+2. From the dropdown menu, select `Agent Tools`
+3. Click on the `Add Custom MCP`
+4. Add the name (i.e. `Playwright`) and server configuration from below, and make sure to hit the `Install` button
+
+Alternatively, you can also search for `Playwright` by clicking on the `MCP Library` in the `Agent Tools` tab and selecting it from there. It's available in both VS Code or JetBrains IDEs.
+
+```json
+{
+  "command": "npx",
+  "args": [
+    "@playwright/mcp@latest"
+  ]
+}
+```
+</details>
+
+
 ### Configuration
 
 Playwright MCP server supports following arguments. They can be provided in the JSON configuration above, as a part of the `"args"` list:
