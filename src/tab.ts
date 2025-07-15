@@ -17,14 +17,14 @@
 import * as playwright from 'playwright';
 
 import { PageSnapshot } from './pageSnapshot.js';
+import { callOnPageNoTrace } from './tools/utils.js';
 
 import type { Context } from './context.js';
-import { callOnPageNoTrace } from './tools/utils.js';
 
 export class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
-  private _consoleMessages: playwright.ConsoleMessage[] = [];
+  private _consoleMessages: ConsoleMessage[] = [];
   private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
   private _snapshot: PageSnapshot | undefined;
   private _onPageClose: (tab: Tab) => void;
@@ -33,7 +33,8 @@ export class Tab {
     this.context = context;
     this.page = page;
     this._onPageClose = onPageClose;
-    page.on('console', event => this._consoleMessages.push(event));
+    page.on('console', event => this._consoleMessages.push(messageToConsoleMessage(event)));
+    page.on('pageerror', error => this._consoleMessages.push(pageErrorToConsoleMessage(error)));
     page.on('request', request => this._requests.set(request, null));
     page.on('response', response => this._requests.set(response.request(), response));
     page.on('close', () => this._onClose());
@@ -106,7 +107,7 @@ export class Tab {
     return this._snapshot;
   }
 
-  consoleMessages(): playwright.ConsoleMessage[] {
+  consoleMessages(): ConsoleMessage[] {
     return this._consoleMessages;
   }
 
@@ -117,4 +118,33 @@ export class Tab {
   async captureSnapshot() {
     this._snapshot = await PageSnapshot.create(this.page);
   }
+}
+
+export type ConsoleMessage = {
+  type: ReturnType<playwright.ConsoleMessage['type']> | undefined;
+  text: string;
+  toString(): string;
+};
+
+function messageToConsoleMessage(message: playwright.ConsoleMessage): ConsoleMessage {
+  return {
+    type: message.type(),
+    text: message.text(),
+    toString: () => `[${message.type().toUpperCase()}] ${message.text()} @ ${message.location().url}:${message.location().lineNumber}`,
+  };
+}
+
+function pageErrorToConsoleMessage(errorOrValue: Error | any): ConsoleMessage {
+  if (errorOrValue instanceof Error) {
+    return {
+      type: undefined,
+      text: errorOrValue.message,
+      toString: () => errorOrValue.stack || errorOrValue.message,
+    };
+  }
+  return {
+    type: undefined,
+    text: String(errorOrValue),
+    toString: () => String(errorOrValue),
+  };
 }
