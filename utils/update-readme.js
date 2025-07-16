@@ -24,6 +24,7 @@ import zodToJsonSchema from "zod-to-json-schema";
 import commonTools from '../lib/tools/common.js';
 import consoleTools from '../lib/tools/console.js';
 import dialogsTools from '../lib/tools/dialogs.js';
+import evaluateTools from '../lib/tools/evaluate.js';
 import filesTools from '../lib/tools/files.js';
 import installTools from '../lib/tools/install.js';
 import keyboardTools from '../lib/tools/keyboard.js';
@@ -46,6 +47,9 @@ const categories = {
     ...dialogsTools(true),
   ],
   Navigation: [...navigateTools(true)],
+  'Evaluation': [
+    ...evaluateTools,
+  ],
   Resources: [
     ...screenshotTools,
     ...pdfTools,

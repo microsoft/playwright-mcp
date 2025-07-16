@@ -224,19 +224,19 @@ ${code.join('\n')}
       result.push('');
     }
 
-    if (this.tabs().length > 1)
-      result.push(await this.listTabsMarkdown(), '');
+    if (captureSnapshot && tab.hasSnapshot()) {
+      if (this.tabs().length > 1)
+        result.push(await this.listTabsMarkdown(), '');
 
-    if (this.tabs().length > 1)
-      result.push('### Current tab');
+      if (this.tabs().length > 1)
+        result.push('### Current tab');
 
-    result.push(
-        `- Page URL: ${tab.page.url()}`,
-        `- Page Title: ${await tab.title()}`
-    );
-
-    if (captureSnapshot && tab.hasSnapshot())
+      result.push(
+          `- Page URL: ${tab.page.url()}`,
+          `- Page Title: ${await tab.title()}`
+      );
       result.push(tab.snapshotOrDie().text());
+    }
 
     const content = actionResult?.content ?? [];
 

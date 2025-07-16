@@ -17,6 +17,7 @@
 import common from './tools/common.js';
 import console from './tools/console.js';
 import dialogs from './tools/dialogs.js';
+import evaluate from './tools/evaluate.js';
 import files from './tools/files.js';
 import install from './tools/install.js';
 import keyboard from './tools/keyboard.js';
@@ -35,6 +36,7 @@ export const snapshotTools: Tool<any>[] = [
   ...common(true),
   ...console,
   ...dialogs(true),
+  ...evaluate,
   ...files(true),
   ...install,
   ...keyboard(true),
