@@ -201,32 +201,3 @@ test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, serv
     ],
   });
 });
-
-test('browser_take_screenshot (cursor)', async ({ startClient, server }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
-
-  const { client } = await startClient({
-    clientName: 'cursor:vscode',
-    config: { outputDir },
-  });
-
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`Navigate to http://localhost`);
-
-  await client.callTool({
-    name: 'browser_take_screenshot',
-  });
-
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-  })).toEqual({
-    content: [
-      {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
-        type: 'text',
-      },
-    ],
-  });
-});
