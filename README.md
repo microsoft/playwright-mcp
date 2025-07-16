@@ -599,6 +599,22 @@ X Y coordinate space, based on the provided screenshot.
 </details>
 
 <details>
+<summary><b>Evaluation</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_evaluate**
+  - Title: Evaluate JavaScript
+  - Description: Evaluate JavaScript expression on page or element
+  - Parameters:
+    - `function` (string): () => { /* code */ } or (element) => { /* code */ } when element is provided
+    - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
+    - `ref` (string, optional): Exact target element reference from the page snapshot
+  - Read-only: **false**
+
+</details>
+
+<details>
 <summary><b>Resources</b></summary>
 
 <!-- NOTE: This has been generated via update-readme.js -->

@@ -232,17 +232,14 @@ export const expect = baseExpect.extend({
     };
   },
 
-  toContainTextContent(response: Response, content: string | string[]) {
+  toContainTextContent(response: Response, content: string) {
     const isNot = this.isNot;
     try {
-      content = Array.isArray(content) ? content : [content];
-      const texts = (response.content as any).map(c => c.text);
-      for (let i = 0; i < texts.length; i++) {
-        if (isNot)
-          expect(texts[i]).not.toContain(content[i]);
-        else
-          expect(texts[i]).toContain(content[i]);
-      }
+      const texts = (response.content as any).map(c => c.text).join('\n');
+      if (isNot)
+        expect(texts).not.toContain(content);
+      else
+        expect(texts).toContain(content);
     } catch (e) {
       return {
         pass: isNot,
