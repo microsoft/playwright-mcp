@@ -22,7 +22,6 @@ import { ManualPromise } from './manualPromise.js';
 import { Tab } from './tab.js';
 import { outputFile } from './config.js';
 
-import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
 import type { FullConfig } from './config.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
@@ -136,7 +135,6 @@ export class Context {
     // Tab management is done outside of the action() call.
     const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params || {}));
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
-    const racingAction = action ? () => this._raceAgainstModalDialogs(action) : undefined;
 
     if (resultOverride)
       return resultOverride;
@@ -152,16 +150,17 @@ export class Context {
 
     const tab = this.currentTabOrDie();
     // TODO: race against modal dialogs to resolve clicks.
-    let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
-    try {
-      if (waitForNetwork)
-        actionResult = await waitForCompletion(this, tab, async () => racingAction?.()) ?? undefined;
-      else
-        actionResult = await racingAction?.() ?? undefined;
-    } finally {
-      if (captureSnapshot && !this._javaScriptBlocked())
-        await tab.captureSnapshot();
-    }
+    const actionResult = await this._raceAgainstModalDialogs(async () => {
+      try {
+        if (waitForNetwork)
+          return await waitForCompletion(this, tab, async () => action?.()) ?? undefined;
+        else
+          return await action?.() ?? undefined;
+      } finally {
+        if (captureSnapshot && !this._javaScriptBlocked())
+          await tab.captureSnapshot();
+      }
+    });
 
     const result: string[] = [];
     result.push(`- Ran Playwright code:
