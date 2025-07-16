@@ -192,7 +192,6 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --block-service-workers      block service workers
   --browser <browser>          browser or chrome channel to use, possible
                                values: chrome, firefox, webkit, msedge.
-  --browser-agent <endpoint>   Use browser agent (experimental).
   --caps <caps>                comma-separated list of additional capabilities
                                to enable, possible values: vision, pdf.
   --cdp-endpoint <endpoint>    CDP endpoint to connect to.

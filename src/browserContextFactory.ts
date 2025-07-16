@@ -21,10 +21,8 @@ import os from 'node:os';
 
 import debug from 'debug';
 import * as playwright from 'playwright';
-import { userDataDir } from './fileUtils.js';
 
 import type { FullConfig } from './config.js';
-import type { BrowserInfo, LaunchBrowserRequest } from './browserServer.js';
 
 const testDebug = debug('pw:mcp:test');
 
@@ -35,8 +33,6 @@ export function contextFactory(browserConfig: FullConfig['browser']): BrowserCon
     return new CdpContextFactory(browserConfig);
   if (browserConfig.isolated)
     return new IsolatedContextFactory(browserConfig);
-  if (browserConfig.browserAgent)
-    return new BrowserServerContextFactory(browserConfig);
   return new PersistentContextFactory(browserConfig);
 }
 
@@ -214,38 +210,6 @@ class PersistentContextFactory implements BrowserContextFactory {
     const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${this.browserConfig.launchOptions?.channel ?? this.browserConfig?.browserName}-profile`);
     await fs.promises.mkdir(result, { recursive: true });
     return result;
-  }
-}
-
-export class BrowserServerContextFactory extends BaseContextFactory {
-  constructor(browserConfig: FullConfig['browser']) {
-    super('persistent', browserConfig);
-  }
-
-  protected override async _doObtainBrowser(): Promise<playwright.Browser> {
-    const response = await fetch(new URL(`/json/launch`, this.browserConfig.browserAgent), {
-      method: 'POST',
-      body: JSON.stringify({
-        browserType: this.browserConfig.browserName,
-        userDataDir: this.browserConfig.userDataDir ?? await this._createUserDataDir(),
-        launchOptions: this.browserConfig.launchOptions,
-        contextOptions: this.browserConfig.contextOptions,
-      } as LaunchBrowserRequest),
-    });
-    const info = await response.json() as BrowserInfo;
-    if (info.error)
-      throw new Error(info.error);
-    return await playwright.chromium.connectOverCDP(`http://localhost:${info.cdpPort}/`);
-  }
-
-  protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
-    return this.browserConfig.isolated ? await browser.newContext() : browser.contexts()[0];
-  }
-
-  private async _createUserDataDir() {
-    const dir = await userDataDir(this.browserConfig);
-    await fs.promises.mkdir(dir, { recursive: true });
-    return dir;
   }
 }
 
