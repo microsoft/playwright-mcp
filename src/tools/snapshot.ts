@@ -41,7 +41,7 @@ const snapshot = defineTool({
   },
 });
 
-const elementSchema = z.object({
+export const elementSchema = z.object({
   element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
   ref: z.string().describe('Exact target element reference from the page snapshot'),
 });
@@ -144,54 +144,6 @@ const hover = defineTool({
   },
 });
 
-const typeSchema = elementSchema.extend({
-  text: z.string().describe('Text to type into the element'),
-  submit: z.boolean().optional().describe('Whether to submit entered text (press Enter after)'),
-  slowly: z.boolean().optional().describe('Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'),
-});
-
-const type = defineTool({
-  capability: 'core',
-  schema: {
-    name: 'browser_type',
-    title: 'Type text',
-    description: 'Type text into editable element',
-    inputSchema: typeSchema,
-    type: 'destructive',
-  },
-
-  handle: async (context, params) => {
-    const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const locator = snapshot.refLocator(params);
-
-    const code: string[] = [];
-    const steps: (() => Promise<void>)[] = [];
-
-    if (params.slowly) {
-      code.push(`// Press "${params.text}" sequentially into "${params.element}"`);
-      code.push(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
-      steps.push(() => locator.pressSequentially(params.text));
-    } else {
-      code.push(`// Fill "${params.text}" into "${params.element}"`);
-      code.push(`await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`);
-      steps.push(() => locator.fill(params.text));
-    }
-
-    if (params.submit) {
-      code.push(`// Submit text`);
-      code.push(`await page.${await generateLocator(locator)}.press('Enter');`);
-      steps.push(() => locator.press('Enter'));
-    }
-
-    return {
-      code,
-      action: () => steps.reduce((acc, step) => acc.then(step), Promise.resolve()),
-      captureSnapshot: true,
-      waitForNetwork: true,
-    };
-  },
-});
-
 const selectOptionSchema = elementSchema.extend({
   values: z.array(z.string()).describe('Array of values to select in the dropdown. This can be a single value or multiple values.'),
 });
@@ -229,6 +181,5 @@ export default [
   click,
   drag,
   hover,
-  type,
   selectOption,
 ];

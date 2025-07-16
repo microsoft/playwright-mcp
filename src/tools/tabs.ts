@@ -15,10 +15,10 @@
  */
 
 import { z } from 'zod';
-import { defineTool, type ToolFactory } from './tool.js';
+import { defineTool } from './tool.js';
 
 const listTabs = defineTool({
-  capability: 'tabs',
+  capability: 'core-tabs',
 
   schema: {
     name: 'browser_tab_list',
@@ -44,8 +44,8 @@ const listTabs = defineTool({
   },
 });
 
-const selectTab: ToolFactory = captureSnapshot => defineTool({
-  capability: 'tabs',
+const selectTab = defineTool({
+  capability: 'core-tabs',
 
   schema: {
     name: 'browser_tab_select',
@@ -65,14 +65,14 @@ const selectTab: ToolFactory = captureSnapshot => defineTool({
 
     return {
       code,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: false
     };
   },
 });
 
-const newTab: ToolFactory = captureSnapshot => defineTool({
-  capability: 'tabs',
+const newTab = defineTool({
+  capability: 'core-tabs',
 
   schema: {
     name: 'browser_tab_new',
@@ -94,14 +94,14 @@ const newTab: ToolFactory = captureSnapshot => defineTool({
     ];
     return {
       code,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: false
     };
   },
 });
 
-const closeTab: ToolFactory = captureSnapshot => defineTool({
-  capability: 'tabs',
+const closeTab = defineTool({
+  capability: 'core-tabs',
 
   schema: {
     name: 'browser_tab_close',
@@ -120,15 +120,15 @@ const closeTab: ToolFactory = captureSnapshot => defineTool({
     ];
     return {
       code,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: false
     };
   },
 });
 
-export default (captureSnapshot: boolean) => [
+export default [
   listTabs,
-  newTab(captureSnapshot),
-  selectTab(captureSnapshot),
-  closeTab(captureSnapshot),
+  newTab,
+  selectTab,
+  closeTab,
 ];

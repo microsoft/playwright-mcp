@@ -34,7 +34,6 @@ test('test snapshot tool list', async ({ client }) => {
     'browser_navigate_forward',
     'browser_navigate',
     'browser_network_requests',
-    'browser_pdf_save',
     'browser_press_key',
     'browser_resize',
     'browser_snapshot',
@@ -47,45 +46,33 @@ test('test snapshot tool list', async ({ client }) => {
   ]));
 });
 
-test('test vision tool list', async ({ visionClient }) => {
-  const { tools: visionTools } = await visionClient.listTools();
-  expect(new Set(visionTools.map(t => t.name))).toEqual(new Set([
-    'browser_close',
-    'browser_console_messages',
-    'browser_file_upload',
-    'browser_handle_dialog',
-    'browser_install',
-    'browser_navigate_back',
-    'browser_navigate_forward',
-    'browser_navigate',
-    'browser_network_requests',
-    'browser_pdf_save',
-    'browser_press_key',
-    'browser_resize',
-    'browser_screen_capture',
-    'browser_screen_click',
-    'browser_screen_drag',
-    'browser_screen_move_mouse',
-    'browser_screen_type',
-    'browser_tab_close',
-    'browser_tab_list',
-    'browser_tab_new',
-    'browser_tab_select',
-    'browser_wait_for',
-  ]));
-});
-
-test('test capabilities', async ({ startClient }) => {
+test('test capabilities (pdf)', async ({ startClient }) => {
   const { client } = await startClient({
-    args: ['--caps="core"'],
+    args: ['--caps=pdf'],
   });
   const { tools } = await client.listTools();
   const toolNames = tools.map(t => t.name);
-  expect(toolNames).not.toContain('browser_file_upload');
-  expect(toolNames).not.toContain('browser_pdf_save');
-  expect(toolNames).not.toContain('browser_screen_capture');
-  expect(toolNames).not.toContain('browser_screen_click');
-  expect(toolNames).not.toContain('browser_screen_drag');
-  expect(toolNames).not.toContain('browser_screen_move_mouse');
-  expect(toolNames).not.toContain('browser_screen_type');
+  expect(toolNames).toContain('browser_pdf_save');
+});
+
+test('test capabilities (vision)', async ({ startClient }) => {
+  const { client } = await startClient({
+    args: ['--caps=vision'],
+  });
+  const { tools } = await client.listTools();
+  const toolNames = tools.map(t => t.name);
+  expect(toolNames).toContain('browser_mouse_move_xy');
+  expect(toolNames).toContain('browser_mouse_click_xy');
+  expect(toolNames).toContain('browser_mouse_drag_xy');
+});
+
+test('support for legacy --vision option', async ({ startClient }) => {
+  const { client } = await startClient({
+    args: ['--vision'],
+  });
+  const { tools } = await client.listTools();
+  const toolNames = tools.map(t => t.name);
+  expect(toolNames).toContain('browser_mouse_move_xy');
+  expect(toolNames).toContain('browser_mouse_click_xy');
+  expect(toolNames).toContain('browser_mouse_drag_xy');
 });

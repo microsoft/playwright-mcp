@@ -15,7 +15,7 @@
  */
 
 import { z } from 'zod';
-import { defineTool, type ToolFactory } from './tool.js';
+import { defineTool } from './tool.js';
 
 const close = defineTool({
   capability: 'core',
@@ -38,7 +38,7 @@ const close = defineTool({
   },
 });
 
-const resize: ToolFactory = captureSnapshot => defineTool({
+const resize = defineTool({
   capability: 'core',
   schema: {
     name: 'browser_resize',
@@ -66,13 +66,13 @@ const resize: ToolFactory = captureSnapshot => defineTool({
     return {
       code,
       action,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: true
     };
   },
 });
 
-export default (captureSnapshot: boolean) => [
+export default [
   close,
-  resize(captureSnapshot)
+  resize
 ];

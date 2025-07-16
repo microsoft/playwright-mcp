@@ -27,52 +27,25 @@ import pdf from './tools/pdf.js';
 import snapshot from './tools/snapshot.js';
 import tabs from './tools/tabs.js';
 import screenshot from './tools/screenshot.js';
-import vision from './tools/vision.js';
 import wait from './tools/wait.js';
+import mouse from './tools/mouse.js';
 
 import type { Tool } from './tools/tool.js';
 
-export const snapshotTools: Tool<any>[] = [
-  ...common(true),
+export const allTools: Tool<any>[] = [
+  ...common,
   ...console,
-  ...dialogs(true),
+  ...dialogs,
   ...evaluate,
-  ...files(true),
+  ...files,
   ...install,
-  ...keyboard(true),
-  ...navigate(true),
+  ...keyboard,
+  ...navigate,
   ...network,
+  ...mouse,
   ...pdf,
   ...screenshot,
   ...snapshot,
-  ...tabs(true),
-  ...wait(true),
-];
-
-export const visionTools: Tool<any>[] = [
-  ...common(false),
-  ...console,
-  ...dialogs(false),
-  ...files(false),
-  ...install,
-  ...keyboard(false),
-  ...navigate(false),
-  ...network,
-  ...pdf,
-  ...tabs(false),
-  ...vision,
-  ...wait(false),
-];
-
-// Merge the two, preferring to keep the vision tools (i.e. capturing snapshots)
-// over the vision (not capturing snapshots) tools where their names are the
-// same.
-export const everyTool: Tool<any>[] = [
-  ...snapshotTools,
-  ...visionTools.filter(
-      visionTool =>
-        !snapshotTools.some(
-            snapshotTool => snapshotTool.schema.name === visionTool.schema.name
-        )
-  ),
+  ...tabs,
+  ...wait,
 ];

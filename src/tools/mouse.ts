@@ -17,50 +17,14 @@
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 
-import * as javascript from '../javascript.js';
-
 const elementSchema = z.object({
   element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
 });
 
-const screenshot = defineTool({
-  capability: 'core',
+const mouseMove = defineTool({
+  capability: 'vision',
   schema: {
-    name: 'browser_screen_capture',
-    title: 'Take a screenshot',
-    description: 'Take a screenshot of the current page',
-    inputSchema: z.object({}),
-    type: 'readOnly',
-  },
-
-  handle: async context => {
-    const tab = await context.ensureTab();
-    const options = { type: 'jpeg' as 'jpeg', quality: 50, scale: 'css' as 'css' };
-
-    const code = [
-      `// Take a screenshot of the current page`,
-      `await page.screenshot(${javascript.formatObject(options)});`,
-    ];
-
-    const action = () => tab.page.screenshot(options).then(buffer => {
-      return {
-        content: [{ type: 'image' as 'image', data: buffer.toString('base64'), mimeType: 'image/jpeg' }],
-      };
-    });
-
-    return {
-      code,
-      action,
-      captureSnapshot: false,
-      waitForNetwork: false
-    };
-  },
-});
-
-const moveMouse = defineTool({
-  capability: 'core',
-  schema: {
-    name: 'browser_screen_move_mouse',
+    name: 'browser_mouse_move_xy',
     title: 'Move mouse',
     description: 'Move mouse to a given position',
     inputSchema: elementSchema.extend({
@@ -86,12 +50,12 @@ const moveMouse = defineTool({
   },
 });
 
-const click = defineTool({
-  capability: 'core',
+const mouseClick = defineTool({
+  capability: 'vision',
   schema: {
-    name: 'browser_screen_click',
+    name: 'browser_mouse_click_xy',
     title: 'Click',
-    description: 'Click left mouse button',
+    description: 'Click left mouse button at a given position',
     inputSchema: elementSchema.extend({
       x: z.number().describe('X coordinate'),
       y: z.number().describe('Y coordinate'),
@@ -121,12 +85,12 @@ const click = defineTool({
   },
 });
 
-const drag = defineTool({
-  capability: 'core',
+const mouseDrag = defineTool({
+  capability: 'vision',
   schema: {
-    name: 'browser_screen_drag',
+    name: 'browser_mouse_drag_xy',
     title: 'Drag mouse',
-    description: 'Drag left mouse button',
+    description: 'Drag left mouse button to a given position',
     inputSchema: elementSchema.extend({
       startX: z.number().describe('Start X coordinate'),
       startY: z.number().describe('Start Y coordinate'),
@@ -163,51 +127,8 @@ const drag = defineTool({
   },
 });
 
-const type = defineTool({
-  capability: 'core',
-  schema: {
-    name: 'browser_screen_type',
-    title: 'Type text',
-    description: 'Type text',
-    inputSchema: z.object({
-      text: z.string().describe('Text to type into the element'),
-      submit: z.boolean().optional().describe('Whether to submit entered text (press Enter after)'),
-    }),
-    type: 'destructive',
-  },
-
-  handle: async (context, params) => {
-    const tab = context.currentTabOrDie();
-
-    const code = [
-      `// Type ${params.text}`,
-      `await page.keyboard.type('${params.text}');`,
-    ];
-
-    const action = async () => {
-      await tab.page.keyboard.type(params.text);
-      if (params.submit)
-        await tab.page.keyboard.press('Enter');
-    };
-
-    if (params.submit) {
-      code.push(`// Submit text`);
-      code.push(`await page.keyboard.press('Enter');`);
-    }
-
-    return {
-      code,
-      action,
-      captureSnapshot: false,
-      waitForNetwork: true,
-    };
-  },
-});
-
 export default [
-  screenshot,
-  moveMouse,
-  click,
-  drag,
-  type,
+  mouseMove,
+  mouseClick,
+  mouseDrag,
 ];

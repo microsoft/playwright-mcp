@@ -61,8 +61,6 @@ export type Tool<Input extends InputType = InputType> = {
   handle: (context: Context, params: z.output<Input>) => Promise<ToolResult>;
 };
 
-export type ToolFactory = (snapshot: boolean) => Tool<any>;
-
 export function defineTool<Input extends InputType>(tool: Tool<Input>): Tool<Input> {
   return tool;
 }

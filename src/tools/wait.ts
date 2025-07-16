@@ -15,10 +15,10 @@
  */
 
 import { z } from 'zod';
-import { defineTool, type ToolFactory } from './tool.js';
+import { defineTool } from './tool.js';
 
-const wait: ToolFactory = captureSnapshot => defineTool({
-  capability: 'wait',
+const wait = defineTool({
+  capability: 'core',
 
   schema: {
     name: 'browser_wait_for',
@@ -40,7 +40,7 @@ const wait: ToolFactory = captureSnapshot => defineTool({
 
     if (params.time) {
       code.push(`await new Promise(f => setTimeout(f, ${params.time!} * 1000));`);
-      await new Promise(f => setTimeout(f, Math.min(10000, params.time! * 1000)));
+      await new Promise(f => setTimeout(f, Math.min(30000, params.time! * 1000)));
     }
 
     const tab = context.currentTabOrDie();
@@ -59,12 +59,12 @@ const wait: ToolFactory = captureSnapshot => defineTool({
 
     return {
       code,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: false,
     };
   },
 });
 
-export default (captureSnapshot: boolean) => [
-  wait(captureSnapshot),
+export default [
+  wait,
 ];

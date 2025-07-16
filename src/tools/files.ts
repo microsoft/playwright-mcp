@@ -15,10 +15,10 @@
  */
 
 import { z } from 'zod';
-import { defineTool, type ToolFactory } from './tool.js';
+import { defineTool } from './tool.js';
 
-const uploadFile: ToolFactory = captureSnapshot => defineTool({
-  capability: 'files',
+const uploadFile = defineTool({
+  capability: 'core',
 
   schema: {
     name: 'browser_file_upload',
@@ -47,13 +47,13 @@ const uploadFile: ToolFactory = captureSnapshot => defineTool({
     return {
       code,
       action,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: true,
     };
   },
   clearsModalState: 'fileChooser',
 });
 
-export default (captureSnapshot: boolean) => [
-  uploadFile(captureSnapshot),
+export default [
+  uploadFile,
 ];

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { program } from 'commander';
+import { program, Option } from 'commander';
 // @ts-ignore
 import { startTraceViewerServer } from 'playwright-core/lib/server';
 
@@ -31,7 +31,7 @@ program
     .option('--block-service-workers', 'block service workers')
     .option('--browser <browser>', 'browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.')
     .option('--browser-agent <endpoint>', 'Use browser agent (experimental).')
-    .option('--caps <caps>', 'comma-separated list of capabilities to enable, possible values: tabs, pdf, history, wait, files, install. Default is all.')
+    .option('--caps <caps>', 'comma-separated list of additional capabilities to enable, possible values: vision, pdf.')
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .option('--config <path>', 'path to the configuration file.')
     .option('--device <device>', 'device to emulate, for example: "iPhone 15"')
@@ -51,8 +51,13 @@ program
     .option('--user-agent <ua string>', 'specify user agent string')
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
-    .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
+      if (options.vision) {
+        // eslint-disable-next-line no-console
+        console.error('The --vision option is deprecated, use --caps=vision instead');
+        options.caps = 'vision';
+      }
       const config = await resolveCLIConfig(options);
       const httpServer = config.server.port !== undefined ? await startHttpServer(config.server) : undefined;
 

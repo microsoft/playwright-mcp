@@ -15,9 +15,9 @@
  */
 
 import { z } from 'zod';
-import { defineTool, type ToolFactory } from './tool.js';
+import { defineTool } from './tool.js';
 
-const handleDialog: ToolFactory = captureSnapshot => defineTool({
+const handleDialog = defineTool({
   capability: 'core',
 
   schema: {
@@ -59,7 +59,7 @@ const handleDialog: ToolFactory = captureSnapshot => defineTool({
 
     return {
       code,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: false,
     };
   },
@@ -67,6 +67,6 @@ const handleDialog: ToolFactory = captureSnapshot => defineTool({
   clearsModalState: 'dialog',
 });
 
-export default (captureSnapshot: boolean) => [
-  handleDialog(captureSnapshot),
+export default [
+  handleDialog,
 ];
