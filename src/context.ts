@@ -101,7 +101,7 @@ export class Context {
   }
 
   async selectTab(index: number) {
-    this._currentTab = this._tabs[index - 1];
+    this._currentTab = this._tabs[index];
     await this._currentTab.page.bringToFront();
   }
 
@@ -121,13 +121,13 @@ export class Context {
       const title = await tab.title();
       const url = tab.page.url();
       const current = tab === this._currentTab ? ' (current)' : '';
-      lines.push(`- ${i + 1}:${current} [${title}] (${url})`);
+      lines.push(`- ${i}:${current} [${title}] (${url})`);
     }
     return lines.join('\n');
   }
 
   async closeTab(index: number | undefined) {
-    const tab = index === undefined ? this._currentTab : this._tabs[index - 1];
+    const tab = index === undefined ? this._currentTab : this._tabs[index];
     await tab?.page.close();
     return await this.listTabsMarkdown();
   }
