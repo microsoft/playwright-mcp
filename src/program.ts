@@ -52,6 +52,8 @@ program
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .option('--vision', 'Run server that uses screenshots (Aria snapshots are used by default)')
+    .option('--color <color>', 'inject a color border and label into pages (e.g., "red", "#ff0000", "rgb(255,0,0)")')
+    .option('--agent <name>', 'agent name to display in the color label (defaults to color name)')
     .action(async options => {
       const config = await resolveCLIConfig(options);
       const httpServer = config.server.port !== undefined ? await startHttpServer(config.server) : undefined;

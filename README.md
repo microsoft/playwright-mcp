@@ -1,12 +1,15 @@
-## Playwright MCP
+## Playwright MCP Multiple
 
-A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
+A fork of [Playwright MCP](https://github.com/microsoft/playwright-mcp) with added support for color injection to visually distinguish browser sessions.
+
+This Model Context Protocol (MCP) server provides browser automation capabilities using [Playwright](https://playwright.dev), enabling LLMs to interact with web pages through structured accessibility snapshots.
 
 ### Key Features
 
 - **Fast and lightweight**. Uses Playwright's accessibility tree, not pixel-based input.
 - **LLM-friendly**. No vision models needed, operates purely on structured data.
 - **Deterministic tool application**. Avoids ambiguity common with screenshot-based approaches.
+- **Color injection**. Visually distinguish browser sessions with colored borders and agent labels.
 
 ### Requirements
 - Node.js 18 or newer
@@ -19,7 +22,7 @@ node utils/generate-links.js
 
 ### Getting started
 
-First, install the Playwright MCP server with your client. A typical configuration looks like this:
+First, install the Playwright MCP Multiple server with your client. A typical configuration looks like this:
 
 ```js
 {
@@ -27,7 +30,7 @@ First, install the Playwright MCP server with your client. A typical configurati
     "playwright": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest"
+        "playwright-mcp-multiple@latest"
       ]
     }
   }
@@ -43,7 +46,7 @@ You can also install the Playwright MCP server using the VS Code CLI:
 
 ```bash
 # For VS Code
-code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
+code --add-mcp '{"name":"playwright","command":"npx","args":["playwright-mcp-multiple@latest"]}'
 ```
 
 After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
@@ -232,6 +235,29 @@ Playwright MCP server supports following arguments. They can be provided in the 
 ```
 
 <!--- End of options generated section -->
+
+### Color Injection Feature
+
+The Playwright MCP Multiple fork adds visual distinction to browser sessions using the `--color` and `--agent` options:
+
+```bash
+# Add a red border with default agent name
+npx playwright-mcp-multiple --color red
+
+# Add a blue border with custom agent name
+npx playwright-mcp-multiple --color blue --agent "BLUE-BOT"
+
+# Use hex colors
+npx playwright-mcp-multiple --color "#ff00ff" --agent "MAGENTA-AGENT"
+```
+
+When enabled, this feature:
+- Adds a colored border around all web pages
+- Displays an agent label in the top-right corner
+- Prefixes page titles with an emoji indicator
+- Persists across page navigations and new tabs
+
+This is particularly useful when running multiple browser sessions to easily identify which session you're working with.
 
 ### User profile
 

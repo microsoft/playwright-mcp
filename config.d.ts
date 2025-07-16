@@ -125,4 +125,14 @@ export type Config = {
    * Whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.
    */
   imageResponses?: 'allow' | 'omit' | 'auto';
+
+  /**
+   * Inject a color border and label into pages (e.g., "red", "#ff0000", "rgb(255,0,0)")
+   */
+  color?: string;
+
+  /**
+   * Agent name to display in the color label (defaults to color name)
+   */
+  agent?: string;
 };

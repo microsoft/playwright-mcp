@@ -1,13 +1,13 @@
 {
-  "name": "@playwright/mcp",
-  "version": "0.0.30",
-  "description": "Playwright Tools for MCP",
+  "name": "playwright-mcp-multiple",
+  "version": "0.0.1",
+  "description": "Playwright Tools for MCP with color injection support",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+    "url": "git+https://github.com/trentbrown/playwright-mcp-multiple.git"
   },
-  "homepage": "https://playwright.dev",
+  "homepage": "https://github.com/trentbrown/playwright-mcp-multiple",
   "engines": {
     "node": ">=18"
   },

@@ -21,6 +21,7 @@ import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 import { ManualPromise } from './manualPromise.js';
 import { Tab } from './tab.js';
 import { outputFile } from './config.js';
+import { generateColorInjectionScript, normalizeColor, getDefaultAgentName } from './colorInjectionScript.js';
 
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
@@ -335,6 +336,15 @@ ${code.join('\n')}
     const result = await this._browserContextFactory.createContext();
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
+    
+    // Inject color script if color option is provided
+    if (this.config.color) {
+      const normalizedColor = normalizeColor(this.config.color);
+      const agentName = this.config.agent || getDefaultAgentName(normalizedColor);
+      const colorScript = generateColorInjectionScript(normalizedColor, agentName);
+      await browserContext.addInitScript(colorScript);
+    }
+    
     for (const page of browserContext.pages())
       this._onPageCreated(page);
     browserContext.on('page', page => this._onPageCreated(page));

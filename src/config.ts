@@ -50,6 +50,8 @@ export type CLIOptions = {
   userDataDir?: string;
   viewportSize?: string;
   vision?: boolean;
+  color?: string;
+  agent?: string;
 };
 
 const defaultConfig: FullConfig = {
@@ -83,6 +85,8 @@ export type FullConfig = Config & {
   network: NonNullable<Config['network']>,
   outputDir: string;
   server: NonNullable<Config['server']>,
+  color?: string;
+  agent?: string;
 };
 
 export async function resolveConfig(config: Config): Promise<FullConfig> {
@@ -193,6 +197,8 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
     imageResponses: cliOptions.imageResponses,
+    color: cliOptions.color,
+    agent: cliOptions.agent,
   };
 
   return result;
