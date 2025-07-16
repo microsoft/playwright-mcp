@@ -79,7 +79,7 @@ const screenshot = defineTool({
     return {
       code,
       action,
-      captureSnapshot: true,
+      captureSnapshot: false,
       waitForNetwork: false,
     };
   }

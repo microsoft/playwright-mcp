@@ -20,59 +20,19 @@ import fs from 'node:fs'
 import path from 'node:path'
 import url from 'node:url'
 import zodToJsonSchema from 'zod-to-json-schema'
-
-import commonTools from '../lib/tools/common.js';
-import consoleTools from '../lib/tools/console.js';
-import dialogsTools from '../lib/tools/dialogs.js';
-import evaluateTools from '../lib/tools/evaluate.js';
-import filesTools from '../lib/tools/files.js';
-import installTools from '../lib/tools/install.js';
-import keyboardTools from '../lib/tools/keyboard.js';
-import navigateTools from '../lib/tools/navigate.js';
-import networkTools from '../lib/tools/network.js';
-import pdfTools from '../lib/tools/pdf.js';
-import snapshotTools from '../lib/tools/snapshot.js';
-import tabsTools from '../lib/tools/tabs.js';
-import screenshotTools from '../lib/tools/screenshot.js';
-import visionTools from '../lib/tools/vision.js';
-import waitTools from '../lib/tools/wait.js';
 import { execSync } from 'node:child_process';
 
-const categories = {
-  'Interactions': [
-    ...snapshotTools,
-    ...keyboardTools(true),
-    ...waitTools(true),
-    ...filesTools(true),
-    ...dialogsTools(true),
-  ],
-  'Navigation': [
-    ...navigateTools(true),
-  ],
-  'Evaluation': [
-    ...evaluateTools,
-  ],
-  'Resources': [
-    ...screenshotTools,
-    ...pdfTools,
-    ...networkTools,
-    ...consoleTools,
-  ],
-  'Utilities': [
-    ...installTools,
-    ...commonTools(true),
-  ],
-  'Tabs': [
-    ...tabsTools(true),
-  ],
-  'Vision mode': [
-    ...visionTools,
-    ...keyboardTools(),
-    ...waitTools(false),
-    ...filesTools(false),
-    ...dialogsTools(false),
-  ],
+import { allTools } from '../lib/tools.js';
+
+const capabilities = {
+  'core': 'Core automation',
+  'core-tabs': 'Tab management',
+  'core-install': 'Browser installation',
+  'vision': 'Coordinate-based (opt-in via --caps=vision)',
+  'pdf': 'PDF generation (opt-in via --caps=pdf)',
 };
+
+const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, allTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
@@ -139,14 +99,12 @@ async function updateSection(content, startMarker, endMarker, generatedLines) {
 async function updateTools(content) {
   console.log('Loading tool information from compiled modules...');
 
-  const totalTools = Object.values(categories).flat().length;
-  console.log(`Found ${totalTools} tools`);
-
   const generatedLines = /** @type {string[]} */ ([]);
-  for (const [category, categoryTools] of Object.entries(categories)) {
-    generatedLines.push(`<details>\n<summary><b>${category}</b></summary>`);
+  for (const [capability, tools] of Object.entries(toolsByCapability)) {
+    console.log('Updating tools for capability:', capability);
+    generatedLines.push(`<details>\n<summary><b>${capability}</b></summary>`);
     generatedLines.push('');
-    for (const tool of categoryTools)
+    for (const tool of tools)
       generatedLines.push(...formatToolForReadme(tool.schema));
     generatedLines.push(`</details>`);
     generatedLines.push('');

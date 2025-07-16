@@ -19,7 +19,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Context } from './context.js';
-import { snapshotTools, visionTools } from './tools.js';
+import { allTools } from './tools.js';
 import { packageJSON } from './package.js';
 
 import { FullConfig } from './config.js';
@@ -27,8 +27,7 @@ import { FullConfig } from './config.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
 
 export function createConnection(config: FullConfig, browserContextFactory: BrowserContextFactory): Connection {
-  const allTools = config.vision ? visionTools : snapshotTools;
-  const tools = allTools.filter(tool => !config.capabilities || tool.capability === 'core' || config.capabilities.includes(tool.capability));
+  const tools = allTools.filter(tool => tool.capability.startsWith('core') || config.capabilities?.includes(tool.capability));
   const context = new Context(tools, config, browserContextFactory);
   const server = new McpServer({ name: 'Playwright', version: packageJSON.version }, {
     capabilities: {

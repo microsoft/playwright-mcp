@@ -15,9 +15,9 @@
  */
 
 import { z } from 'zod';
-import { defineTool, type ToolFactory } from './tool.js';
+import { defineTool } from './tool.js';
 
-const navigate: ToolFactory = captureSnapshot => defineTool({
+const navigate = defineTool({
   capability: 'core',
 
   schema: {
@@ -41,14 +41,14 @@ const navigate: ToolFactory = captureSnapshot => defineTool({
 
     return {
       code,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: false,
     };
   },
 });
 
-const goBack: ToolFactory = captureSnapshot => defineTool({
-  capability: 'history',
+const goBack = defineTool({
+  capability: 'core',
   schema: {
     name: 'browser_navigate_back',
     title: 'Go back',
@@ -67,14 +67,14 @@ const goBack: ToolFactory = captureSnapshot => defineTool({
 
     return {
       code,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: false,
     };
   },
 });
 
-const goForward: ToolFactory = captureSnapshot => defineTool({
-  capability: 'history',
+const goForward = defineTool({
+  capability: 'core',
   schema: {
     name: 'browser_navigate_forward',
     title: 'Go forward',
@@ -91,14 +91,14 @@ const goForward: ToolFactory = captureSnapshot => defineTool({
     ];
     return {
       code,
-      captureSnapshot,
+      captureSnapshot: true,
       waitForNetwork: false,
     };
   },
 });
 
-export default (captureSnapshot: boolean) => [
-  navigate(captureSnapshot),
-  goBack(captureSnapshot),
-  goForward(captureSnapshot),
+export default [
+  navigate,
+  goBack,
+  goForward,
 ];
