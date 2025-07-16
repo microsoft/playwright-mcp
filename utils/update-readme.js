@@ -21,22 +21,21 @@ import path from "node:path";
 import url from "node:url";
 import zodToJsonSchema from "zod-to-json-schema";
 
-import commonTools from "../lib/tools/common.js";
-import consoleTools from "../lib/tools/console.js";
-import dialogsTools from "../lib/tools/dialogs.js";
-import filesTools from "../lib/tools/files.js";
-import installTools from "../lib/tools/install.js";
-import keyboardTools from "../lib/tools/keyboard.js";
-import navigateTools from "../lib/tools/navigate.js";
-import networkTools from "../lib/tools/network.js";
-import pdfTools from "../lib/tools/pdf.js";
-import snapshotTools from "../lib/tools/snapshot.js";
-import tabsTools from "../lib/tools/tabs.js";
-import screenshotTools from "../lib/tools/screenshot.js";
-import testTools from "../lib/tools/testing.js";
-import visionTools from "../lib/tools/vision.js";
-import waitTools from "../lib/tools/wait.js";
-import { execSync } from "node:child_process";
+import commonTools from '../lib/tools/common.js';
+import consoleTools from '../lib/tools/console.js';
+import dialogsTools from '../lib/tools/dialogs.js';
+import filesTools from '../lib/tools/files.js';
+import installTools from '../lib/tools/install.js';
+import keyboardTools from '../lib/tools/keyboard.js';
+import navigateTools from '../lib/tools/navigate.js';
+import networkTools from '../lib/tools/network.js';
+import pdfTools from '../lib/tools/pdf.js';
+import snapshotTools from '../lib/tools/snapshot.js';
+import tabsTools from '../lib/tools/tabs.js';
+import screenshotTools from '../lib/tools/screenshot.js';
+import visionTools from '../lib/tools/vision.js';
+import waitTools from '../lib/tools/wait.js';
+import { execSync } from 'node:child_process';
 
 const categories = {
   Interactions: [
@@ -53,10 +52,14 @@ const categories = {
     ...networkTools,
     ...consoleTools,
   ],
-  Utilities: [...installTools, ...commonTools(true)],
-  Tabs: [...tabsTools(true)],
-  Testing: [...testTools],
-  "Vision mode": [
+  'Utilities': [
+    ...installTools,
+    ...commonTools(true),
+  ],
+  'Tabs': [
+    ...tabsTools(true),
+  ],
+  'Vision mode': [
     ...visionTools,
     ...keyboardTools(),
     ...waitTools(false),

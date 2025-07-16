@@ -712,22 +712,6 @@ X Y coordinate space, based on the provided screenshot.
 </details>
 
 <details>
-<summary><b>Testing</b></summary>
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_generate_playwright_test**
-  - Title: Generate a Playwright test
-  - Description: Generate a Playwright test for given scenario
-  - Parameters:
-    - `name` (string): The name of the test
-    - `description` (string): The description of the test
-    - `steps` (array): The steps of the test
-  - Read-only: **true**
-
-</details>
-
-<details>
 <summary><b>Vision mode</b></summary>
 
 <!-- NOTE: This has been generated via update-readme.js -->
