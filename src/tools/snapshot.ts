@@ -48,6 +48,7 @@ export const elementSchema = z.object({
 
 const clickSchema = elementSchema.extend({
   doubleClick: z.boolean().optional().describe('Whether to perform a double click instead of a single click'),
+  button: z.enum(['left', 'right', 'middle']).optional().describe('Button to click, defaults to left'),
 });
 
 const click = defineTool({
@@ -63,19 +64,21 @@ const click = defineTool({
   handle: async (context, params) => {
     const tab = context.currentTabOrDie();
     const locator = tab.snapshotOrDie().refLocator(params);
+    const button = params.button;
+    const buttonAttr = button ? `{ button: '${button}' }` : '';
 
     const code: string[] = [];
     if (params.doubleClick) {
       code.push(`// Double click ${params.element}`);
-      code.push(`await page.${await generateLocator(locator)}.dblclick();`);
+      code.push(`await page.${await generateLocator(locator)}.dblclick(${buttonAttr});`);
     } else {
       code.push(`// Click ${params.element}`);
-      code.push(`await page.${await generateLocator(locator)}.click();`);
+      code.push(`await page.${await generateLocator(locator)}.click(${buttonAttr});`);
     }
 
     return {
       code,
-      action: () => params.doubleClick ? locator.dblclick() : locator.click(),
+      action: () => params.doubleClick ? locator.dblclick({ button }) : locator.click({ button }),
       captureSnapshot: true,
       waitForNetwork: true,
     };

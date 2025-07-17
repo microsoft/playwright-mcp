@@ -18,6 +18,7 @@ import * as playwright from 'playwright';
 
 import { PageSnapshot } from './pageSnapshot.js';
 import { callOnPageNoTrace } from './tools/utils.js';
+import { logUnhandledError } from './log.js';
 
 import type { Context } from './context.js';
 
@@ -68,13 +69,13 @@ export class Tab {
   }
 
   async waitForLoadState(state: 'load', options?: { timeout?: number }): Promise<void> {
-    await callOnPageNoTrace(this.page, page => page.waitForLoadState(state, options).catch(() => {}));
+    await callOnPageNoTrace(this.page, page => page.waitForLoadState(state, options).catch(logUnhandledError));
   }
 
   async navigate(url: string) {
     this._clearCollectedArtifacts();
 
-    const downloadEvent = callOnPageNoTrace(this.page, page => page.waitForEvent('download').catch(() => {}));
+    const downloadEvent = callOnPageNoTrace(this.page, page => page.waitForEvent('download').catch(logUnhandledError));
     try {
       await this.page.goto(url, { waitUntil: 'domcontentloaded' });
     } catch (_e: unknown) {
