@@ -28,7 +28,6 @@ export type CLIOptions = {
   blockedOrigins?: string[];
   blockServiceWorkers?: boolean;
   browser?: string;
-  browserAgent?: string;
   caps?: string;
   cdpEndpoint?: string;
   config?: string;
@@ -171,7 +170,6 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
 
   const result: Config = {
     browser: {
-      browserAgent: cliOptions.browserAgent ?? process.env.PW_BROWSER_AGENT,
       browserName,
       isolated: cliOptions.isolated,
       userDataDir: cliOptions.userDataDir,
