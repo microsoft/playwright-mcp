@@ -42,7 +42,7 @@ export class PageSnapshot {
   private async _build() {
     const snapshot = await callOnPageNoTrace(this._page, page => (page as PageEx)._snapshotForAI());
     this._text = [
-      `- Page Snapshot`,
+      `- Page Snapshot:`,
       '```yaml',
       snapshot,
       '```',

@@ -44,12 +44,7 @@ test('list first tab', async ({ client }) => {
 });
 
 test('create new tab', async ({ client }) => {
-  expect(await createTab(client, 'Tab one', 'Body one')).toHaveTextContent(`
-- Ran Playwright code:
-\`\`\`js
-// <internal code to open a new tab>
-\`\`\`
-
+  expect(await createTab(client, 'Tab one', 'Body one')).toContainTextContent(`
 ### Open tabs
 - 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
@@ -57,17 +52,12 @@ test('create new tab', async ({ client }) => {
 ### Current tab
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
-- Page Snapshot
+- Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body one
 \`\`\``);
 
-  expect(await createTab(client, 'Tab two', 'Body two')).toHaveTextContent(`
-- Ran Playwright code:
-\`\`\`js
-// <internal code to open a new tab>
-\`\`\`
-
+  expect(await createTab(client, 'Tab two', 'Body two')).toContainTextContent(`
 ### Open tabs
 - 0: [] (about:blank)
 - 1: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
@@ -76,7 +66,7 @@ test('create new tab', async ({ client }) => {
 ### Current tab
 - Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
 - Page Title: Tab two
-- Page Snapshot
+- Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body two
 \`\`\``);
@@ -91,7 +81,7 @@ test('select tab', async ({ client }) => {
       index: 1,
     },
   })).toHaveTextContent(`
-- Ran Playwright code:
+### Ran Playwright code
 \`\`\`js
 // <internal code to select tab 1>
 \`\`\`
@@ -104,7 +94,7 @@ test('select tab', async ({ client }) => {
 ### Current tab
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
-- Page Snapshot
+- Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body one
 \`\`\``);
@@ -119,7 +109,7 @@ test('close tab', async ({ client }) => {
       index: 2,
     },
   })).toHaveTextContent(`
-- Ran Playwright code:
+### Ran Playwright code
 \`\`\`js
 // <internal code to close tab 2>
 \`\`\`
@@ -131,7 +121,7 @@ test('close tab', async ({ client }) => {
 ### Current tab
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
-- Page Snapshot
+- Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body one
 \`\`\``);

@@ -26,6 +26,7 @@ export class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
   private _consoleMessages: ConsoleMessage[] = [];
+  private _recentConsoleMessages: ConsoleMessage[] = [];
   private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
   private _snapshot: PageSnapshot | undefined;
   private _onPageClose: (tab: Tab) => void;
@@ -34,8 +35,8 @@ export class Tab {
     this.context = context;
     this.page = page;
     this._onPageClose = onPageClose;
-    page.on('console', event => this._consoleMessages.push(messageToConsoleMessage(event)));
-    page.on('pageerror', error => this._consoleMessages.push(pageErrorToConsoleMessage(error)));
+    page.on('console', event => this._handleConsoleMessage(messageToConsoleMessage(event)));
+    page.on('pageerror', error => this._handleConsoleMessage(pageErrorToConsoleMessage(error)));
     page.on('request', request => this._requests.set(request, null));
     page.on('response', response => this._requests.set(response.request(), response));
     page.on('close', () => this._onClose());
@@ -56,7 +57,13 @@ export class Tab {
 
   private _clearCollectedArtifacts() {
     this._consoleMessages.length = 0;
+    this._recentConsoleMessages.length = 0;
     this._requests.clear();
+  }
+
+  private _handleConsoleMessage(message: ConsoleMessage) {
+    this._consoleMessages.push(message);
+    this._recentConsoleMessages.push(message);
   }
 
   private _onClose() {
@@ -118,6 +125,12 @@ export class Tab {
 
   async captureSnapshot() {
     this._snapshot = await PageSnapshot.create(this.page);
+  }
+
+  takeRecentConsoleMessages(): ConsoleMessage[] {
+    const result = this._recentConsoleMessages.slice();
+    this._recentConsoleMessages.length = 0;
+    return result;
   }
 }
 

@@ -66,3 +66,31 @@ test('browser_console_messages (page error)', async ({ client, server }) => {
   expect(resource).toHaveTextContent(/Error: Error in script/);
   expect(resource).toHaveTextContent(new RegExp(server.PREFIX));
 });
+
+test('recent console messages', async ({ client, server }) => {
+  server.setContent('/', `
+    <!DOCTYPE html>
+    <html>
+      <button onclick="console.log('Hello, world!');">Click me</button>
+    </html>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX,
+    },
+  });
+
+  const response = await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Click me',
+      ref: 'e2',
+    },
+  });
+
+  expect(response).toContainTextContent(`
+### New console messages
+- [LOG] Hello, world! @`);
+});

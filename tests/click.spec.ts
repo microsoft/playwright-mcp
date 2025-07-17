@@ -34,15 +34,16 @@ test('browser_click', async ({ client, server, mcpBrowser }) => {
       ref: 'e2',
     },
   })).toHaveTextContent(`
-- Ran Playwright code:
+### Ran Playwright code
 \`\`\`js
 // Click Submit button
 await page.getByRole('button', { name: 'Submit' }).click();
 \`\`\`
 
+### Page state
 - Page URL: ${server.PREFIX}
 - Page Title: Title
-- Page Snapshot
+- Page Snapshot:
 \`\`\`yaml
 - button "Submit" ${mcpBrowser !== 'webkit' || process.platform === 'linux' ? '[active] ' : ''}[ref=e2]
 \`\`\`
@@ -73,15 +74,16 @@ test('browser_click (double)', async ({ client, server }) => {
       doubleClick: true,
     },
   })).toHaveTextContent(`
-- Ran Playwright code:
+### Ran Playwright code
 \`\`\`js
 // Double click Click me
 await page.getByRole('heading', { name: 'Click me' }).dblclick();
 \`\`\`
 
+### Page state
 - Page URL: ${server.PREFIX}
 - Page Title: Title
-- Page Snapshot
+- Page Snapshot:
 \`\`\`yaml
 - heading "Double clicked" [level=1] [ref=e3]
 \`\`\`

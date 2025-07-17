@@ -29,7 +29,7 @@ test('alert dialog', async ({ client, server }) => {
       element: 'Button',
       ref: 'e2',
     },
-  })).toHaveTextContent(`- Ran Playwright code:
+  })).toHaveTextContent(`### Ran Playwright code
 \`\`\`js
 // Click Button
 await page.getByRole('button', { name: 'Button' }).click();
@@ -46,14 +46,15 @@ await page.getByRole('button', { name: 'Button' }).click();
   });
 
   expect(result).not.toContainTextContent('### Modal state');
-  expect(result).toContainTextContent(`- Ran Playwright code:
+  expect(result).toContainTextContent(`### Ran Playwright code
 \`\`\`js
 // <internal code to handle "alert" dialog>
 \`\`\`
 
+### Page state
 - Page URL: ${server.PREFIX}
 - Page Title: 
-- Page Snapshot
+- Page Snapshot:
 \`\`\`yaml
 - button "Button"`);
 });
@@ -77,7 +78,7 @@ test('two alert dialogs', async ({ client, server }) => {
       element: 'Button',
       ref: 'e2',
     },
-  })).toHaveTextContent(`- Ran Playwright code:
+  })).toHaveTextContent(`### Ran Playwright code
 \`\`\`js
 // Click Button
 await page.getByRole('button', { name: 'Button' }).click();
@@ -138,7 +139,7 @@ test('confirm dialog (true)', async ({ client, server }) => {
 
   expect(result).not.toContainTextContent('### Modal state');
   expect(result).toContainTextContent('// <internal code to handle "confirm" dialog>');
-  expect(result).toContainTextContent(`- Page Snapshot
+  expect(result).toContainTextContent(`- Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: "true"
 \`\`\``);
@@ -173,7 +174,7 @@ test('confirm dialog (false)', async ({ client, server }) => {
     },
   });
 
-  expect(result).toContainTextContent(`- Page Snapshot
+  expect(result).toContainTextContent(`- Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: "false"
 \`\`\``);
@@ -209,7 +210,7 @@ test('prompt dialog', async ({ client, server }) => {
     },
   });
 
-  expect(result).toContainTextContent(`- Page Snapshot
+  expect(result).toContainTextContent(`- Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Answer
 \`\`\``);
@@ -228,7 +229,7 @@ test('alert dialog w/ race', async ({ client, server }) => {
       element: 'Button',
       ref: 'e2',
     },
-  })).toHaveTextContent(`- Ran Playwright code:
+  })).toHaveTextContent(`### Ran Playwright code
 \`\`\`js
 // Click Button
 await page.getByRole('button', { name: 'Button' }).click();
@@ -245,14 +246,15 @@ await page.getByRole('button', { name: 'Button' }).click();
   });
 
   expect(result).not.toContainTextContent('### Modal state');
-  expect(result).toContainTextContent(`- Ran Playwright code:
+  expect(result).toContainTextContent(`### Ran Playwright code
 \`\`\`js
 // <internal code to handle "alert" dialog>
 \`\`\`
 
+### Page state
 - Page URL: ${server.PREFIX}
 - Page Title: 
-- Page Snapshot
+- Page Snapshot:
 \`\`\`yaml
 - button "Button"`);
 });
