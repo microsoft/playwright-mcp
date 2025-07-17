@@ -19,7 +19,7 @@ import { program, Option } from 'commander';
 import { startTraceViewerServer } from 'playwright-core/lib/server';
 
 import { startHttpServer, startHttpTransport, startStdioTransport } from './transport.js';
-import { resolveCLIConfig } from './config.js';
+import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
 import { Server } from './server.js';
 import { packageJSON } from './package.js';
 
@@ -30,7 +30,7 @@ program
     .option('--blocked-origins <origins>', 'semicolon-separated list of origins to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed.', semicolonSeparatedList)
     .option('--block-service-workers', 'block service workers')
     .option('--browser <browser>', 'browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.')
-    .option('--caps <caps>', 'comma-separated list of additional capabilities to enable, possible values: vision, pdf.')
+    .option('--caps <caps>', 'comma-separated list of additional capabilities to enable, possible values: vision, pdf.', commaSeparatedList)
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .option('--config <path>', 'path to the configuration file.')
     .option('--device <device>', 'device to emulate, for example: "iPhone 15"')
@@ -76,9 +76,5 @@ program
         console.error('\nTrace viewer listening on ' + url);
       }
     });
-
-function semicolonSeparatedList(value: string): string[] {
-  return value.split(';').map(v => v.trim());
-}
 
 void program.parseAsync(process.argv);
