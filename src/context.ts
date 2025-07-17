@@ -161,20 +161,26 @@ export class Context {
     });
 
     const result: string[] = [];
-    result.push(`- Ran Playwright code:
+    result.push(`### Ran Playwright code
 \`\`\`js
 ${code.join('\n')}
-\`\`\`
-`);
+\`\`\``);
 
     if (this.modalStates().length) {
-      result.push(...this.modalStatesMarkdown());
+      result.push('', ...this.modalStatesMarkdown());
       return {
         content: [{
           type: 'text',
           text: result.join('\n'),
         }],
       };
+    }
+
+    const messages = tab.takeRecentConsoleMessages();
+    if (messages.length) {
+      result.push('', `### New console messages`);
+      for (const message of messages)
+        result.push(`- ${trim(message.toString(), 100)}`);
     }
 
     if (this._downloads.length) {
@@ -185,15 +191,16 @@ ${code.join('\n')}
         else
           result.push(`- Downloading file ${entry.download.suggestedFilename()} ...`);
       }
-      result.push('');
     }
 
     if (captureSnapshot && tab.hasSnapshot()) {
       if (this.tabs().length > 1)
-        result.push(await this.listTabsMarkdown(), '');
+        result.push('', await this.listTabsMarkdown());
 
       if (this.tabs().length > 1)
-        result.push('### Current tab');
+        result.push('', '### Current tab');
+      else
+        result.push('', '### Page state');
 
       result.push(
           `- Page URL: ${tab.page.url()}`,
@@ -345,4 +352,10 @@ ${code.join('\n')}
     }
     return result;
   }
+}
+
+function trim(text: string, maxLength: number) {
+  if (text.length <= maxLength)
+    return text;
+  return text.slice(0, maxLength) + '...';
 }
