@@ -397,16 +397,6 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_download**
-  - Title: Download file
-  - Description: Download a file from a given URL in the current tab
-  - Parameters:
-    - `url` (string): undefined
-    - `path` (string, optional): undefined
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
 - **browser_drag**
   - Title: Drag mouse
   - Description: Perform drag and drop between two elements
