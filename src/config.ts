@@ -28,7 +28,7 @@ export type CLIOptions = {
   blockedOrigins?: string[];
   blockServiceWorkers?: boolean;
   browser?: string;
-  caps?: string;
+  caps?: string[];
   cdpEndpoint?: string;
   config?: string;
   device?: string;
@@ -38,7 +38,7 @@ export type CLIOptions = {
   ignoreHttpsErrors?: boolean;
   isolated?: boolean;
   imageResponses?: 'allow' | 'omit';
-  sandbox: boolean;
+  sandbox?: boolean;
   outputDir?: string;
   port?: number;
   proxyBypass?: string;
@@ -89,15 +89,19 @@ export async function resolveConfig(config: Config): Promise<FullConfig> {
 
 export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConfig> {
   const configInFile = await loadConfig(cliOptions.config);
-  const cliOverrides = await configFromCLIOptions(cliOptions);
-  const result = mergeConfig(mergeConfig(defaultConfig, configInFile), cliOverrides);
+  const envOverrides = configFromEnv();
+  const cliOverrides = configFromCLIOptions(cliOptions);
+  let result = defaultConfig;
+  result = mergeConfig(result, configInFile);
+  result = mergeConfig(result, envOverrides);
+  result = mergeConfig(result, cliOverrides);
   // Derive artifact output directory from config.outputDir
   if (result.saveTrace)
     result.browser.launchOptions.tracesDir = path.join(result.outputDir, 'traces');
   return result;
 }
 
-export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Config> {
+export function configFromCLIOptions(cliOptions: CLIOptions): Config {
   let browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
   let channel: string | undefined;
   switch (cliOptions.browser) {
@@ -181,7 +185,7 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
       port: cliOptions.port,
       host: cliOptions.host,
     },
-    capabilities: cliOptions.caps?.split(',').map((c: string) => c.trim() as ToolCapability),
+    capabilities: cliOptions.caps as ToolCapability[],
     network: {
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,
@@ -192,6 +196,36 @@ export async function configFromCLIOptions(cliOptions: CLIOptions): Promise<Conf
   };
 
   return result;
+}
+
+function configFromEnv(): Config {
+  const options: CLIOptions = {};
+  options.allowedOrigins = semicolonSeparatedList(process.env.PLAYWRIGHT_MCP_ALLOWED_ORIGINS);
+  options.blockedOrigins = semicolonSeparatedList(process.env.PLAYWRIGHT_MCP_BLOCKED_ORIGINS);
+  options.blockServiceWorkers = envToBoolean(process.env.PLAYWRIGHT_MCP_BLOCK_SERVICE_WORKERS);
+  options.browser = envToString(process.env.PLAYWRIGHT_MCP_BROWSER);
+  options.caps = commaSeparatedList(process.env.PLAYWRIGHT_MCP_CAPS);
+  options.cdpEndpoint = envToString(process.env.PLAYWRIGHT_MCP_CDP_ENDPOINT);
+  options.config = envToString(process.env.PLAYWRIGHT_MCP_CONFIG);
+  options.device = envToString(process.env.PLAYWRIGHT_MCP_DEVICE);
+  options.executablePath = envToString(process.env.PLAYWRIGHT_MCP_EXECUTABLE_PATH);
+  options.headless = envToBoolean(process.env.PLAYWRIGHT_MCP_HEADLESS);
+  options.host = envToString(process.env.PLAYWRIGHT_MCP_HOST);
+  options.ignoreHttpsErrors = envToBoolean(process.env.PLAYWRIGHT_MCP_IGNORE_HTTPS_ERRORS);
+  options.isolated = envToBoolean(process.env.PLAYWRIGHT_MCP_ISOLATED);
+  if (process.env.PLAYWRIGHT_MCP_IMAGE_RESPONSES === 'omit')
+    options.imageResponses = 'omit';
+  options.sandbox = envToBoolean(process.env.PLAYWRIGHT_MCP_SANDBOX);
+  options.outputDir = envToString(process.env.PLAYWRIGHT_MCP_OUTPUT_DIR);
+  options.port = envToNumber(process.env.PLAYWRIGHT_MCP_PORT);
+  options.proxyBypass = envToString(process.env.PLAYWRIGHT_MCP_PROXY_BYPASS);
+  options.proxyServer = envToString(process.env.PLAYWRIGHT_MCP_PROXY_SERVER);
+  options.saveTrace = envToBoolean(process.env.PLAYWRIGHT_MCP_SAVE_TRACE);
+  options.storageState = envToString(process.env.PLAYWRIGHT_MCP_STORAGE_STATE);
+  options.userAgent = envToString(process.env.PLAYWRIGHT_MCP_USER_AGENT);
+  options.userDataDir = envToString(process.env.PLAYWRIGHT_MCP_USER_DATA_DIR);
+  options.viewportSize = envToString(process.env.PLAYWRIGHT_MCP_VIEWPORT_SIZE);
+  return configFromCLIOptions(options);
 }
 
 async function loadConfig(configFile: string | undefined): Promise<Config> {
@@ -250,4 +284,34 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
       ...pickDefined(overrides.server),
     },
   } as FullConfig;
+}
+
+export function semicolonSeparatedList(value: string | undefined): string[] | undefined {
+  if (!value)
+    return undefined;
+  return value.split(';').map(v => v.trim());
+}
+
+export function commaSeparatedList(value: string | undefined): string[] | undefined {
+  if (!value)
+    return undefined;
+  return value.split(',').map(v => v.trim());
+}
+
+function envToNumber(value: string | undefined): number | undefined {
+  if (!value)
+    return undefined;
+  return +value;
+}
+
+function envToBoolean(value: string | undefined): boolean | undefined {
+  if (value === 'true' || value === '1')
+    return true;
+  if (value === 'false' || value === '0')
+    return false;
+  return undefined;
+}
+
+function envToString(value: string | undefined): string | undefined {
+  return value ? value.trim() : undefined;
 }
