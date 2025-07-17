@@ -29,6 +29,7 @@ import tabs from './tools/tabs.js';
 import screenshot from './tools/screenshot.js';
 import wait from './tools/wait.js';
 import mouse from './tools/mouse.js';
+import video from './tools/video.js';
 
 import type { Tool } from './tools/tool.js';
 
@@ -48,4 +49,5 @@ export const allTools: Tool<any>[] = [
   ...snapshot,
   ...tabs,
   ...wait,
+  ...video,
 ];

@@ -454,6 +454,16 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_download**
+  - Title: Download file
+  - Description: Download a file from a given URL in the current tab
+  - Parameters:
+    - `url` (string): undefined
+    - `path` (string, optional): undefined
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_drag**
   - Title: Drag mouse
   - Description: Perform drag and drop between two elements
@@ -599,6 +609,16 @@ http.createServer(async (req, res) => {
     - `submit` (boolean, optional): Whether to submit entered text (press Enter after)
     - `slowly` (boolean, optional): Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.
   - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_video_record**
+  - Title: Record Video
+  - Description: Start or stop video recording of the current page
+  - Parameters:
+    - `action` (string): undefined
+    - `path` (string, optional): undefined
+  - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
