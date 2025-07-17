@@ -205,9 +205,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --isolated                   keep the browser profile in memory, do not save
                                it to disk.
   --image-responses <mode>     whether to send image responses to the client.
-                               Can be "allow", "omit", or "auto". Defaults to
-                               "auto", which sends images if the client can
-                               display them.
+                               Can be "allow" or "omit", Defaults to "allow".
   --no-sandbox                 disable the sandbox for all process types that
                                are normally sandboxed.
   --output-dir <path>          path to the directory for output files.
@@ -346,10 +344,10 @@ npx @playwright/mcp@latest --config path/to/config.json
   };
  
   /**
-   * Whether to send image responses to the client. Can be "allow", "omit", or "auto". 
-   * Defaults to "auto", images are omitted for Cursor clients and sent for all other clients.
+   * Whether to send image responses to the client. Can be "allow" or "omit". 
+   * Defaults to "allow".
    */
-  imageResponses?: 'allow' | 'omit' | 'auto';
+  imageResponses?: 'allow' | 'omit';
 }
 ```
 </details>

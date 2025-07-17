@@ -39,7 +39,7 @@ program
     .option('--host <host>', 'host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--ignore-https-errors', 'ignore https errors')
     .option('--isolated', 'keep the browser profile in memory, do not save it to disk.')
-    .option('--image-responses <mode>', 'whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.')
+    .option('--image-responses <mode>', 'whether to send image responses to the client. Can be "allow" or "omit", Defaults to "allow".')
     .option('--no-sandbox', 'disable the sandbox for all process types that are normally sandboxed.')
     .option('--output-dir <path>', 'path to the directory for output files.')
     .option('--port <port>', 'port to listen on for SSE transport.')

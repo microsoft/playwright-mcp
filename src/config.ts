@@ -37,7 +37,7 @@ export type CLIOptions = {
   host?: string;
   ignoreHttpsErrors?: boolean;
   isolated?: boolean;
-  imageResponses?: 'allow' | 'omit' | 'auto';
+  imageResponses?: 'allow' | 'omit';
   sandbox: boolean;
   outputDir?: string;
   port?: number;

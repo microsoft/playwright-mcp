@@ -66,11 +66,9 @@ export class Context {
   }
 
   clientSupportsImages(): boolean {
-    if (this.config.imageResponses === 'allow')
-      return true;
     if (this.config.imageResponses === 'omit')
       return false;
-    return !this.clientVersion?.name.includes('cursor');
+    return true;
   }
 
   modalStates(): ModalState[] {
