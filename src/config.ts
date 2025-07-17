@@ -228,15 +228,16 @@ function pickDefined<T extends object>(obj: T | undefined): Partial<T> {
 }
 
 function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
+  const isolated = overrides.browser?.isolated ?? base.browser?.isolated ?? false;
   const browser: FullConfig['browser'] = {
     ...pickDefined(base.browser),
     ...pickDefined(overrides.browser),
     browserName: overrides.browser?.browserName ?? base.browser?.browserName ?? 'chromium',
-    isolated: overrides.browser?.isolated ?? base.browser?.isolated ?? false,
+    isolated,
     launchOptions: {
       ...pickDefined(base.browser?.launchOptions),
       ...pickDefined(overrides.browser?.launchOptions),
-      ...{ assistantMode: true },
+      ...(isolated ? {} : { assistantMode: true }),
     },
     contextOptions: {
       ...pickDefined(base.browser?.contextOptions),

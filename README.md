@@ -232,6 +232,10 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                example "1280, 720"
   --vision                     Run server that uses screenshots (Aria snapshots
                                are used by default)
+  --color <color>              inject a color border and label into pages (e.g.,
+                               "red", "#ff0000", "rgb(255,0,0)")
+  --agent <name>               agent name to display in the color label
+                               (defaults to color name)
 ```
 
 <!--- End of options generated section -->
