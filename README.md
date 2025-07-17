@@ -116,6 +116,18 @@ Follow Windsurf MCP [documentation](https://docs.windsurf.com/windsurf/cascade/m
 
 </details>
 
+<details>
+<summary>LM Studio</summary>
+
+#### Click the button to install:
+
+[![Add MCP Server playwright to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=playwright&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAcGxheXdyaWdodC9tY3BAbGF0ZXN0Il19)
+
+#### Or install manually:
+
+Go to `Program` in the right sidebar -> `Install` -> `Edit mcp.json`. Use the standard config above.
+</details>
+
 ### Configuration
 
 Playwright MCP server supports following arguments. They can be provided in the JSON configuration above, as a part of the `"args"` list:
