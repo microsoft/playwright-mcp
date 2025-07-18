@@ -70,4 +70,4 @@ COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
 COPY --from=builder --chown=${USERNAME}:${USERNAME} /app/lib /app/lib
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
-ENTRYPOINT ["sh", "-c", "node cli.js --headless --browser chromium --no-sandbox ${REMOTE_HTTP:+--host 0.0.0.0 --port 8931}"]
+ENTRYPOINT ["sh", "-c", "PLAYWRIGHT_DOCKER=1 node cli.js --headless --browser chromium --no-sandbox ${REMOTE_HTTP:+--host 0.0.0.0 --port 8931}"]

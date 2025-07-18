@@ -320,12 +320,37 @@ And then in MCP client config, set the `url` to the SSE endpoint:
 
 **NOTE:** The Docker implementation only supports headless chromium at the moment.
 
+For running Docker on your local machine, add it to your MCP config as normal:
+
 ```js
 {
   "mcpServers": {
     "playwright": {
       "command": "docker",
       "args": ["run", "-i", "--rm", "--init", "--pull=always", "mcr.microsoft.com/playwright/mcp"]
+    }
+  }
+}
+```
+
+You can also set up Docker to run Playwright MCP remotely, for example using Docker Compose:
+
+```yml
+playwright-mcp:
+  image: mcr.microsoft.com/playwright/mcp
+  ports:
+    - "8931:8931"
+  environment:
+    REMOTE_HTTP: 1
+```
+
+This allows you to connect to this container at port 8931 on your Docker host from your remote machine:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "url": "http://[DOCKER_HOST_IP]:8931/sse"
     }
   }
 }

@@ -143,6 +143,8 @@ export function httpAddressToString(address: string | AddressInfo | null): strin
     return address;
   const resolvedPort = address.port;
   let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
+  if (process.env.PLAYWRIGHT_DOCKER)
+    resolvedHost = '[DOCKER_HOST_IP]';
   if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
     resolvedHost = 'localhost';
   return `http://${resolvedHost}:${resolvedPort}`;
