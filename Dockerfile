@@ -55,6 +55,10 @@ FROM base
 ARG PLAYWRIGHT_BROWSERS_PATH
 ARG USERNAME=node
 ENV NODE_ENV=production
+ENV REMOTE_HTTP=
+
+# Used when REMOTE_HTTP is set
+EXPOSE 8931
 
 # Set the correct ownership for the runtime user on production `node_modules`
 RUN chown -R ${USERNAME}:${USERNAME} node_modules
@@ -66,4 +70,4 @@ COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
 COPY --from=builder --chown=${USERNAME}:${USERNAME} /app/lib /app/lib
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
-ENTRYPOINT ["sh", "-c", "node cli.js --headless --browser chromium --no-sandbox ${PORT:+--port $PORT}"]
+ENTRYPOINT ["sh", "-c", "node cli.js --headless --browser chromium --no-sandbox ${REMOTE_HTTP:+--port 8931}"]
