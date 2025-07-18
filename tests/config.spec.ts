@@ -61,3 +61,20 @@ test.describe(() => {
     })).toContainTextContent(`Firefox`);
   });
 });
+
+test.describe('sandbox configuration', () => {
+  test('should enable sandbox by default (no --no-sandbox flag)', async () => {
+    const { configFromCLIOptions } = await import('../lib/config.js');
+    const config = configFromCLIOptions({ sandbox: undefined });
+    // When --no-sandbox is not passed, chromiumSandbox should not be set to false
+    // This allows the default (true) to be used
+    expect(config.browser?.launchOptions?.chromiumSandbox).toBeUndefined();
+  });
+
+  test('should disable sandbox when --no-sandbox flag is passed', async () => {
+    const { configFromCLIOptions } = await import('../lib/config.js');
+    const config = configFromCLIOptions({ sandbox: false });
+    // When --no-sandbox is passed, chromiumSandbox should be explicitly set to false
+    expect(config.browser?.launchOptions?.chromiumSandbox).toBe(false);
+  });
+});
