@@ -222,7 +222,7 @@ test('browser_take_screenshot (fullPage: true)', async ({ startClient, server },
         type: 'image',
       },
       {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        text: expect.stringContaining(`Screenshot full page and save it as`),
         type: 'text',
       },
     ],

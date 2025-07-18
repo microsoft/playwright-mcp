@@ -65,8 +65,9 @@ const screenshot = defineTool({
     };
     const isElementScreenshot = params.element && params.ref;
 
+    const screenshotTarget = isElementScreenshot ? params.element : (params.fullPage ? 'full page' : 'viewport');
     const code = [
-      `// Screenshot ${isElementScreenshot ? params.element : 'viewport'} and save it as ${fileName}`,
+      `// Screenshot ${screenshotTarget} and save it as ${fileName}`,
     ];
 
     const locator = params.ref ? snapshot.refLocator({ element: params.element || '', ref: params.ref }) : null;
