@@ -341,7 +341,7 @@ playwright-mcp:
   ports:
     - "8931:8931"
   environment:
-    REMOTE_HTTP: 1
+    REMOTE_HTTP: true
 ```
 
 This allows you to connect to this container at port 8931 on your Docker host from your remote machine:
