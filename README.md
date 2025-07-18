@@ -333,7 +333,7 @@ For running Docker on your local machine, add it to your MCP config as normal:
 }
 ```
 
-You can also set up Docker to run Playwright MCP remotely, for example using Docker Compose:
+You can also set up Docker to run Playwright MCP remotely by setting the `REMOTE_HTTP` environment variable, for example using Docker Compose:
 
 ```yml
 playwright-mcp:
