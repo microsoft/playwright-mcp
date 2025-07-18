@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # Mark as running in Docker
 export PLAYWRIGHT_DOCKER=1
 
