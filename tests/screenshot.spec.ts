@@ -201,3 +201,52 @@ test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, serv
     ],
   });
 });
+
+test('browser_take_screenshot (fullPage: true)', async ({ startClient, server }, testInfo) => {
+  const { client } = await startClient({
+    config: { outputDir: testInfo.outputPath('output') },
+  });
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`Navigate to http://localhost`);
+
+  expect(await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: { fullPage: true },
+  })).toEqual({
+    content: [
+      {
+        data: expect.any(String),
+        mimeType: 'image/jpeg',
+        type: 'image',
+      },
+      {
+        text: expect.stringContaining(`Screenshot full page and save it as`),
+        type: 'text',
+      },
+    ],
+  });
+});
+
+test('browser_take_screenshot (fullPage with element should error)', async ({ startClient, server }, testInfo) => {
+  const { client } = await startClient({
+    config: { outputDir: testInfo.outputPath('output') },
+  });
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`[ref=e1]`);
+
+  const result = await client.callTool({
+    name: 'browser_take_screenshot',
+    arguments: {
+      fullPage: true,
+      element: 'hello button',
+      ref: 'e1',
+    },
+  });
+
+  expect(result.isError).toBe(true);
+  expect(result.content?.[0]?.text).toContain('fullPage cannot be used with element screenshots');
+});
