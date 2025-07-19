@@ -19,7 +19,7 @@ import url from 'node:url';
 
 import { ChildProcess, spawn } from 'node:child_process';
 import path from 'node:path';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 import { test as baseTest, expect } from './fixtures.js';
@@ -65,15 +65,15 @@ const test = baseTest.extend<{ serverEndpoint: (options?: { args?: string[], noP
   },
 });
 
-test('sse transport', async ({ serverEndpoint }) => {
+test('http transport', async ({ serverEndpoint }) => {
   const { url } = await serverEndpoint();
-  const transport = new SSEClientTransport(new URL('/sse', url));
+  const transport = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
   await client.ping();
 });
 
-test('sse transport (config)', async ({ serverEndpoint }) => {
+test('http transport (config)', async ({ serverEndpoint }) => {
   const config: Config = {
     server: {
       port: 0,
@@ -83,37 +83,46 @@ test('sse transport (config)', async ({ serverEndpoint }) => {
   await fs.promises.writeFile(configFile, JSON.stringify(config, null, 2));
 
   const { url } = await serverEndpoint({ noPort: true, args: ['--config=' + configFile] });
-  const transport = new SSEClientTransport(new URL('/sse', url));
+  const transport = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
   await client.ping();
 });
 
-test('sse transport browser lifecycle (isolated)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (isolated)', async ({ serverEndpoint, server }) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
+  const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client1 = new Client({ name: 'test', version: '1.0.0' });
   await client1.connect(transport1);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
+  /**
+   * src/client/streamableHttp.ts
+   * Clients that no longer need a particular session
+   * (e.g., because the user is leaving the client application) SHOULD send an
+   * HTTP DELETE to the MCP endpoint with the Mcp-Session-Id header to explicitly
+   * terminate the session.
+   */
+  await transport1.terminateSession();
   await client1.close();
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
+  const transport2 = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client2 = new Client({ name: 'test', version: '1.0.0' });
   await client2.connect(transport2);
   await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
+  await transport2.terminateSession();
   await client2.close();
 
   await expect(async () => {
     const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create SSE session/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/delete SSE session/)).length).toBe(2);
+    expect(lines.filter(line => line.match(/create http session/)).length).toBe(2);
+    expect(lines.filter(line => line.match(/delete http session/)).length).toBe(2);
 
     expect(lines.filter(line => line.match(/create context/)).length).toBe(2);
     expect(lines.filter(line => line.match(/close context/)).length).toBe(2);
@@ -126,10 +135,10 @@ test('sse transport browser lifecycle (isolated)', async ({ serverEndpoint, serv
   }).toPass();
 });
 
-test('sse transport browser lifecycle (isolated, multiclient)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (isolated, multiclient)', async ({ serverEndpoint, server }) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
+  const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client1 = new Client({ name: 'test', version: '1.0.0' });
   await client1.connect(transport1);
   await client1.callTool({
@@ -137,16 +146,17 @@ test('sse transport browser lifecycle (isolated, multiclient)', async ({ serverE
     arguments: { url: server.HELLO_WORLD },
   });
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
+  const transport2 = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client2 = new Client({ name: 'test', version: '1.0.0' });
   await client2.connect(transport2);
   await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
+  await transport1.terminateSession();
   await client1.close();
 
-  const transport3 = new SSEClientTransport(new URL('/sse', url));
+  const transport3 = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client3 = new Client({ name: 'test', version: '1.0.0' });
   await client3.connect(transport3);
   await client3.callTool({
@@ -154,13 +164,15 @@ test('sse transport browser lifecycle (isolated, multiclient)', async ({ serverE
     arguments: { url: server.HELLO_WORLD },
   });
 
+  await transport2.terminateSession();
   await client2.close();
+  await transport3.terminateSession();
   await client3.close();
 
   await expect(async () => {
     const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create SSE session/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/delete SSE session/)).length).toBe(3);
+    expect(lines.filter(line => line.match(/create http session/)).length).toBe(3);
+    expect(lines.filter(line => line.match(/delete http session/)).length).toBe(3);
 
     expect(lines.filter(line => line.match(/create context/)).length).toBe(3);
     expect(lines.filter(line => line.match(/close context/)).length).toBe(3);
@@ -173,31 +185,33 @@ test('sse transport browser lifecycle (isolated, multiclient)', async ({ serverE
   }).toPass();
 });
 
-test('sse transport browser lifecycle (persistent)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (persistent)', async ({ serverEndpoint, server }) => {
   const { url, stderr } = await serverEndpoint();
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
+  const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client1 = new Client({ name: 'test', version: '1.0.0' });
   await client1.connect(transport1);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
+  await transport1.terminateSession();
   await client1.close();
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
+  const transport2 = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client2 = new Client({ name: 'test', version: '1.0.0' });
   await client2.connect(transport2);
   await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
+  await transport2.terminateSession();
   await client2.close();
 
   await expect(async () => {
     const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create SSE session/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/delete SSE session/)).length).toBe(2);
+    expect(lines.filter(line => line.match(/create http session/)).length).toBe(2);
+    expect(lines.filter(line => line.match(/delete http session/)).length).toBe(2);
 
     expect(lines.filter(line => line.match(/create context/)).length).toBe(2);
     expect(lines.filter(line => line.match(/close context/)).length).toBe(2);
@@ -210,10 +224,10 @@ test('sse transport browser lifecycle (persistent)', async ({ serverEndpoint, se
   }).toPass();
 });
 
-test('sse transport browser lifecycle (persistent, multiclient)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (persistent, multiclient)', async ({ serverEndpoint, server }) => {
   const { url } = await serverEndpoint();
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
+  const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client1 = new Client({ name: 'test', version: '1.0.0' });
   await client1.connect(transport1);
   await client1.callTool({
@@ -221,7 +235,7 @@ test('sse transport browser lifecycle (persistent, multiclient)', async ({ serve
     arguments: { url: server.HELLO_WORLD },
   });
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
+  const transport2 = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client2 = new Client({ name: 'test', version: '1.0.0' });
   await client2.connect(transport2);
   const response = await client2.callTool({
@@ -233,4 +247,13 @@ test('sse transport browser lifecycle (persistent, multiclient)', async ({ serve
 
   await client1.close();
   await client2.close();
+});
+
+test('http transport (default)', async ({ serverEndpoint }) => {
+  const { url } = await serverEndpoint();
+  const transport = new StreamableHTTPClientTransport(url);
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await client.connect(transport);
+  await client.ping();
+  expect(transport.sessionId, 'has session support').toBeDefined();
 });
