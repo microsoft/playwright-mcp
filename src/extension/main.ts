@@ -15,24 +15,21 @@
  */
 
 import { resolveCLIConfig } from '../config.js';
-import { Connection } from '../connection.js';
-import { startStdioTransport } from '../transport.js';
+import { startHttpServer, startHttpTransport, startStdioTransport } from '../transport.js';
 import { Server } from '../server.js';
 import { startCDPRelayServer } from './cdpRelay.js';
 
 export async function runWithExtension(options: any) {
   const config = await resolveCLIConfig({ });
+  const contextFactory = await startCDPRelayServer(9225);
 
-  let connection: Connection | null = null;
-  const cdpEndpoint = await startCDPRelayServer({
-    getClientInfo: () => connection!.server.getClientVersion()!,
-    port: 9225,
-  });
-  // Point CDP endpoint to the relay server.
-  config.browser.cdpEndpoint = cdpEndpoint;
-
-  const server = new Server(config);
+  const server = new Server(config, contextFactory);
   server.setupExitWatchdog();
 
-  connection = await startStdioTransport(server);
+  if (options.port !== undefined) {
+    const httpServer = await startHttpServer({ port: options.port });
+    startHttpTransport(httpServer, server);
+  } else {
+    await startStdioTransport(server);
+  }
 }

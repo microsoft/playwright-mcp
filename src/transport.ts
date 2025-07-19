@@ -30,7 +30,7 @@ import type { Server } from './server.js';
 import type { Connection } from './connection.js';
 
 export async function startStdioTransport(server: Server) {
-  return await server.createConnection(new StdioServerTransport());
+  await server.createConnection(new StdioServerTransport());
 }
 
 const testDebug = debug('pw:mcp:test');

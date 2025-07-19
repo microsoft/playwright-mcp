@@ -29,6 +29,8 @@ import debug from 'debug';
 import { promisify } from 'node:util';
 import { exec } from 'node:child_process';
 import { httpAddressToString, startHttpServer } from '../transport.js';
+import { BrowserContextFactory } from '../browserContextFactory.js';
+import { Browser, chromium, type BrowserContext } from 'playwright';
 
 const debugLogger = debug('pw:mcp:relay');
 
@@ -50,7 +52,6 @@ type CDPResponse = {
 
 export class CDPRelayServer {
   private _wsHost: string;
-  private _getClientInfo: () => { name: string, version: string };
   private _cdpPath: string;
   private _extensionPath: string;
   private _wss: WebSocketServer;
@@ -64,8 +65,7 @@ export class CDPRelayServer {
   private _extensionConnectionPromise: Promise<void>;
   private _extensionConnectionResolve: (() => void) | null = null;
 
-  constructor(server: http.Server, getClientInfo: () => { name: string, version: string }) {
-    this._getClientInfo = getClientInfo;
+  constructor(server: http.Server) {
     this._wsHost = httpAddressToString(server.address()).replace(/^http/, 'ws');
 
     const uuid = crypto.randomUUID();
@@ -75,7 +75,7 @@ export class CDPRelayServer {
     this._extensionConnectionPromise = new Promise(resolve => {
       this._extensionConnectionResolve = resolve;
     });
-    this._wss = new WebSocketServer({ server, verifyClient: this._verifyClient.bind(this) });
+    this._wss = new WebSocketServer({ server });
     this._wss.on('connection', this._onConnection.bind(this));
   }
 
@@ -87,26 +87,19 @@ export class CDPRelayServer {
     return `${this._wsHost}${this._extensionPath}`;
   }
 
-  private async _verifyClient(info: { origin: string, req: http.IncomingMessage }, callback: (result: boolean, code?: number, message?: string) => void) {
-    if (info.req.url?.startsWith(this._cdpPath)) {
-      if (this._playwrightConnection) {
-        callback(false, 500, 'Another Playwright connection already established');
-        return;
-      }
-      await this._connectBrowser();
-      await this._extensionConnectionPromise;
-      callback(!!this._extensionConnection);
+  async ensureExtensionConnectionForMCPContext(clientInfo: { name: string, version: string }) {
+    if (this._extensionConnection)
       return;
-    }
-    callback(true);
+    await this._connectBrowser(clientInfo);
+    await this._extensionConnectionPromise;
   }
 
-  private async _connectBrowser() {
+  private async _connectBrowser(clientInfo: { name: string, version: string }) {
     const mcpRelayEndpoint = `${this._wsHost}${this._extensionPath}`;
     // Need to specify "key" in the manifest.json to make the id stable when loading from file.
     const url = new URL('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
     url.searchParams.set('mcpRelayUrl', mcpRelayEndpoint);
-    url.searchParams.set('client', JSON.stringify(this._getClientInfo()));
+    url.searchParams.set('client', JSON.stringify(clientInfo));
     const href = url.toString();
     const command = `'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' '${href}'`;
     try {
@@ -289,18 +282,37 @@ export class CDPRelayServer {
   }
 }
 
-export async function startCDPRelayServer({
-  getClientInfo,
-  port,
-}: {
-  getClientInfo: () => { name: string, version: string };
-  port: number;
-}) {
+class ExtensionContextFactory implements BrowserContextFactory {
+  private _relay: CDPRelayServer;
+  private _browserPromise: Promise<Browser> | undefined;
+
+  constructor(relay: CDPRelayServer) {
+    this._relay = relay;
+  }
+
+  async createContext(clientInfo: { name: string, version: string }): Promise<{ browserContext: BrowserContext, close: () => Promise<void> }> {
+    // First call will establish the connection to the extension.
+    if (!this._browserPromise)
+      this._browserPromise = this._obtainBrowser(clientInfo);
+    const browser = await this._browserPromise;
+    return {
+      browserContext: browser.contexts()[0],
+      close: async () => {}
+    };
+  }
+
+  private async _obtainBrowser(clientInfo: { name: string, version: string }): Promise<Browser> {
+    await this._relay.ensureExtensionConnectionForMCPContext(clientInfo);
+    return await chromium.connectOverCDP(this._relay.cdpEndpoint());
+  }
+}
+
+export async function startCDPRelayServer(port: number) {
   const httpServer = await startHttpServer({ port });
-  const cdpRelayServer = new CDPRelayServer(httpServer, getClientInfo);
+  const cdpRelayServer = new CDPRelayServer(httpServer);
   process.on('exit', () => cdpRelayServer.stop());
   debugLogger(`CDP relay server started, extension endpoint: ${cdpRelayServer.extensionEndpoint()}.`);
-  return cdpRelayServer.cdpEndpoint();
+  return new ExtensionContextFactory(cdpRelayServer);
 }
 
 class ExtensionConnection {

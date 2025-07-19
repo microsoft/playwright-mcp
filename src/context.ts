@@ -531,7 +531,7 @@ ${code.join('\n')}
     close: () => Promise<void>;
   }> {
     // TODO: move to the browser context factory to make it based on isolation mode.
-    const result = await this._browserContextFactory.createContext();
+    const result = await this._browserContextFactory.createContext(this.clientVersion!);
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
 
