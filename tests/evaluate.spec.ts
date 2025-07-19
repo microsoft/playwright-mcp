@@ -49,3 +49,23 @@ test('browser_evaluate (element)', async ({ client, server }) => {
     },
   })).toContainTextContent(`- Result: "red"`);
 });
+
+test('browser_evaluate (error)', async ({ client, server }) => {
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toContainTextContent(`- Page Title: Title`);
+
+  const result = await client.callTool({
+    name: 'browser_evaluate',
+    arguments: {
+      function: '() => nonExistentVariable',
+    },
+  });
+
+  expect(result.isError).toBe(true);
+  expect(result.content?.[0]?.text).toContain('nonExistentVariable');
+  // Check for common error patterns across browsers
+  const errorText = result.content?.[0]?.text || '';
+  expect(errorText).toMatch(/not defined|Can't find variable/);
+});
