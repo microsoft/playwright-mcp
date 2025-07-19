@@ -23,8 +23,11 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
+import { logUnhandledError } from './log.js';
+
 import type { AddressInfo } from 'node:net';
 import type { Server } from './server.js';
+import type { Connection } from './connection.js';
 
 export async function startStdioTransport(server: Server) {
   return await server.createConnection(new StdioServerTransport());
@@ -55,8 +58,7 @@ async function handleSSE(server: Server, req: http.IncomingMessage, res: http.Se
     res.on('close', () => {
       testDebug(`delete SSE session: ${transport.sessionId}`);
       sessions.delete(transport.sessionId);
-      // eslint-disable-next-line no-console
-      void connection.close().catch(e => console.error(e));
+      void connection.close().catch(logUnhandledError);
     });
     return;
   }
@@ -65,10 +67,10 @@ async function handleSSE(server: Server, req: http.IncomingMessage, res: http.Se
   res.end('Method not allowed');
 }
 
-async function handleStreamable(server: Server, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, StreamableHTTPServerTransport>) {
+async function handleStreamable(server: Server, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, { transport: StreamableHTTPServerTransport, connection: Connection }>) {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (sessionId) {
-    const transport = sessions.get(sessionId);
+    const { transport } = sessions.get(sessionId) ?? {};
     if (!transport) {
       res.statusCode = 404;
       res.end('Session not found');
@@ -80,15 +82,22 @@ async function handleStreamable(server: Server, req: http.IncomingMessage, res: 
   if (req.method === 'POST') {
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
-      onsessioninitialized: sessionId => {
-        sessions.set(sessionId, transport);
+      onsessioninitialized: async sessionId => {
+        testDebug(`create http session: ${transport.sessionId}`);
+        const connection = await server.createConnection(transport);
+        sessions.set(sessionId, { transport, connection });
       }
     });
+
     transport.onclose = () => {
-      if (transport.sessionId)
-        sessions.delete(transport.sessionId);
+      const result = transport.sessionId ? sessions.get(transport.sessionId) : undefined;
+      if (!result)
+        return;
+      sessions.delete(result.transport.sessionId!);
+      testDebug(`delete http session: ${transport.sessionId}`);
+      result.connection.close().catch(logUnhandledError);
     };
-    await server.createConnection(transport);
+
     await transport.handleRequest(req, res);
     return;
   }
@@ -112,13 +121,13 @@ export async function startHttpServer(config: { host?: string, port?: number }):
 
 export function startHttpTransport(httpServer: http.Server, mcpServer: Server) {
   const sseSessions = new Map<string, SSEServerTransport>();
-  const streamableSessions = new Map<string, StreamableHTTPServerTransport>();
+  const streamableSessions = new Map();
   httpServer.on('request', async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);
-    if (url.pathname.startsWith('/mcp'))
-      await handleStreamable(mcpServer, req, res, streamableSessions);
-    else
+    if (url.pathname.startsWith('/sse'))
       await handleSSE(mcpServer, req, res, url, sseSessions);
+    else
+      await handleStreamable(mcpServer, req, res, streamableSessions);
   });
   const url = httpAddressToString(httpServer.address());
   const message = [
@@ -127,11 +136,11 @@ export function startHttpTransport(httpServer: http.Server, mcpServer: Server) {
     JSON.stringify({
       'mcpServers': {
         'playwright': {
-          'url': `${url}/sse`
+          'url': `${url}/mcp`
         }
       }
     }, undefined, 2),
-    'If your client supports streamable HTTP, you can use the /mcp endpoint instead.',
+    'For legacy SSE transport support, you can use the /sse endpoint instead.',
   ].join('\n');
     // eslint-disable-next-line no-console
   console.error(message);
