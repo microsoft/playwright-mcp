@@ -17,15 +17,17 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsc",
+    "build:extension": "tsc --project extension",
     "lint": "npm run update-readme && eslint . && tsc --noEmit",
     "update-readme": "node utils/update-readme.js",
     "watch": "tsc --watch",
+    "watch:extension": "tsc --watch --project extension",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
     "ftest": "playwright test --project=firefox",
     "wtest": "playwright test --project=webkit",
     "run-server": "node lib/browserServer.js",
-    "clean": "rm -rf lib",
+    "clean": "rm -rf lib extension/lib",
     "npm-publish": "npm run clean && npm run build && npm run test && npm publish"
   },
   "exports": {

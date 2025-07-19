@@ -27,7 +27,7 @@ import type { AddressInfo } from 'node:net';
 import type { Server } from './server.js';
 
 export async function startStdioTransport(server: Server) {
-  await server.createConnection(new StdioServerTransport());
+  return await server.createConnection(new StdioServerTransport());
 }
 
 const testDebug = debug('pw:mcp:test');
