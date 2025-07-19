@@ -36,7 +36,7 @@ export function contextFactory(browserConfig: FullConfig['browser']): BrowserCon
 }
 
 export interface BrowserContextFactory {
-  createContext(): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }>;
+  createContext(clientInfo: { name: string, version: string }): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }>;
 }
 
 class BaseContextFactory implements BrowserContextFactory {

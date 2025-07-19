@@ -15,7 +15,7 @@
  */
 
 import { createConnection } from './connection.js';
-import { contextFactory } from './browserContextFactory.js';
+import { contextFactory as defaultContextFactory } from './browserContextFactory.js';
 
 import type { FullConfig } from './config.js';
 import type { Connection } from './connection.js';
@@ -28,10 +28,10 @@ export class Server {
   private _browserConfig: FullConfig['browser'];
   private _contextFactory: BrowserContextFactory;
 
-  constructor(config: FullConfig) {
+  constructor(config: FullConfig, contextFactory?: BrowserContextFactory) {
     this.config = config;
     this._browserConfig = config.browser;
-    this._contextFactory = contextFactory(this._browserConfig);
+    this._contextFactory = contextFactory ?? defaultContextFactory(this._browserConfig);
   }
 
   async createConnection(transport: Transport): Promise<Connection> {
