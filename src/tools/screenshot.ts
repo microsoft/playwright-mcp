@@ -52,7 +52,7 @@ const screenshot = defineTool({
   },
 
   handle: async (context, params) => {
-    const tab = await context.ensureTab();
+    const tab = context.currentTabOrDie();
     const fileType = params.raw ? 'png' : 'jpeg';
     const fileName = await outputFile(context.config, params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
     const options: playwright.PageScreenshotOptions = {
