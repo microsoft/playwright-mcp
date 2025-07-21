@@ -16,7 +16,7 @@
 
 import { z } from 'zod';
 
-import { defineTool } from './tool.js';
+import { defineTabTool } from './tool.js';
 import * as javascript from '../javascript.js';
 import { generateLocator } from './utils.js';
 
@@ -28,7 +28,7 @@ const evaluateSchema = z.object({
   ref: z.string().optional().describe('Exact target element reference from the page snapshot'),
 });
 
-const evaluate = defineTool({
+const evaluate = defineTabTool({
   capability: 'core',
   schema: {
     name: 'browser_evaluate',
@@ -38,14 +38,12 @@ const evaluate = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, params) => {
-    const tab = context.currentTabOrDie();
+  handle: async (tab, params) => {
     const code: string[] = [];
 
     let locator: playwright.Locator | undefined;
     if (params.ref && params.element) {
-      const snapshot = tab.snapshotOrDie();
-      locator = snapshot.refLocator({ ref: params.ref, element: params.element });
+      locator = await tab.refLocator({ ref: params.ref, element: params.element });
       code.push(`await page.${await generateLocator(locator)}.evaluate(${javascript.quote(params.function)});`);
     } else {
       code.push(`await page.evaluate(${javascript.quote(params.function)});`);

@@ -37,7 +37,7 @@ const listTabs = defineTool({
       resultOverride: {
         content: [{
           type: 'text',
-          text: await context.listTabsMarkdown(),
+          text: (await context.listTabsMarkdown()).join('\n'),
         }],
       },
     };
@@ -85,9 +85,9 @@ const newTab = defineTool({
   },
 
   handle: async (context, params) => {
-    await context.newTab();
+    const tab = await context.newTab();
     if (params.url)
-      await context.currentTabOrDie().navigate(params.url);
+      await tab.navigate(params.url);
 
     const code = [
       `// <internal code to open a new tab>`,

@@ -38,7 +38,7 @@ test('browser_file_upload', async ({ client, server }, testInfo) => {
       name: 'browser_file_upload',
       arguments: { paths: [] },
     })).toHaveTextContent(`
-The tool "browser_file_upload" can only be used when there is related modal state present.
+Error: The tool "browser_file_upload" can only be used when there is related modal state present.
 ### Modal state
 - There is no modal state present
       `.trim());
@@ -88,7 +88,7 @@ The tool "browser_file_upload" can only be used when there is related modal stat
       },
     });
 
-    expect(response).toContainTextContent(`Tool "browser_click" does not handle the modal state.
+    expect(response).toContainTextContent(`Error: Tool "browser_click" does not handle the modal state.
 ### Modal state
 - [File chooser]: can be handled by the "browser_file_upload" tool`);
   }

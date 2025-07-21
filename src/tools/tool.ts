@@ -19,6 +19,7 @@ import type { z } from 'zod';
 import type { Context } from '../context.js';
 import type * as playwright from 'playwright';
 import type { ToolCapability } from '../../config.js';
+import type { Tab } from '../tab.js';
 
 export type ToolSchema<Input extends InputType> = {
   name: string;
@@ -63,4 +64,26 @@ export type Tool<Input extends InputType = InputType> = {
 
 export function defineTool<Input extends InputType>(tool: Tool<Input>): Tool<Input> {
   return tool;
+}
+
+export type TabTool<Input extends InputType = InputType> = {
+  capability: ToolCapability;
+  schema: ToolSchema<Input>;
+  clearsModalState?: ModalState['type'];
+  handle: (tab: Tab, params: z.output<Input>) => Promise<ToolResult>;
+};
+
+export function defineTabTool<Input extends InputType>(tool: TabTool<Input>): Tool<Input> {
+  return {
+    ...tool,
+    handle: async (context, params) => {
+      const tab = context.currentTabOrDie();
+      const modalStates = tab.modalStates().map(state => state.type);
+      if (tool.clearsModalState && !modalStates.includes(tool.clearsModalState))
+        throw new Error(`The tool "${tool.schema.name}" can only be used when there is related modal state present.\n` + tab.modalStatesMarkdown().join('\n'));
+      if (!tool.clearsModalState && modalStates.length)
+        throw new Error(`Tool "${tool.schema.name}" does not handle the modal state.\n` + tab.modalStatesMarkdown().join('\n'));
+      return tool.handle(tab, params);
+    },
+  };
 }

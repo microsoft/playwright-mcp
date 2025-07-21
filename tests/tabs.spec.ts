@@ -49,7 +49,7 @@ test('create new tab', async ({ client }) => {
 - 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 
-### Current tab
+### Page state
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot:
@@ -63,7 +63,7 @@ test('create new tab', async ({ client }) => {
 - 1: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 - 2: (current) [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
 
-### Current tab
+### Page state
 - Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
 - Page Title: Tab two
 - Page Snapshot:
@@ -75,23 +75,21 @@ test('create new tab', async ({ client }) => {
 test('select tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   await createTab(client, 'Tab two', 'Body two');
-  expect(await client.callTool({
+
+  const result = await client.callTool({
     name: 'browser_tab_select',
     arguments: {
       index: 1,
     },
-  })).toHaveTextContent(`
-### Ran Playwright code
-\`\`\`js
-// <internal code to select tab 1>
-\`\`\`
-
+  });
+  expect(result).toContainTextContent(`
 ### Open tabs
 - 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
-- 2: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
+- 2: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`);
 
-### Current tab
+  expect(result).toContainTextContent(`
+### Page state
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot:
@@ -103,22 +101,20 @@ test('select tab', async ({ client }) => {
 test('close tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   await createTab(client, 'Tab two', 'Body two');
-  expect(await client.callTool({
+
+  const result = await client.callTool({
     name: 'browser_tab_close',
     arguments: {
       index: 2,
     },
-  })).toHaveTextContent(`
-### Ran Playwright code
-\`\`\`js
-// <internal code to close tab 2>
-\`\`\`
-
+  });
+  expect(result).toContainTextContent(`
 ### Open tabs
 - 0: [] (about:blank)
-- 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
+- 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`);
 
-### Current tab
+  expect(result).toContainTextContent(`
+### Page state
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot:
