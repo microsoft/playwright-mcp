@@ -53,7 +53,6 @@ const screenshot = defineTool({
 
   handle: async (context, params) => {
     const tab = context.currentTabOrDie();
-    const snapshot = tab.snapshotOrDie();
     const fileType = params.raw ? 'png' : 'jpeg';
     const fileName = await outputFile(context.config, params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
     const options: playwright.PageScreenshotOptions = {
@@ -70,7 +69,8 @@ const screenshot = defineTool({
       `// Screenshot ${screenshotTarget} and save it as ${fileName}`,
     ];
 
-    const locator = params.ref ? snapshot.refLocator({ element: params.element || '', ref: params.ref }) : null;
+    // Only get snapshot when element screenshot is needed
+    const locator = params.ref ? tab.snapshotOrDie().refLocator({ element: params.element || '', ref: params.ref }) : null;
 
     if (locator)
       code.push(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
