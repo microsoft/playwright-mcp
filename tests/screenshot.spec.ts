@@ -250,3 +250,31 @@ test('browser_take_screenshot (fullPage with element should error)', async ({ st
   expect(result.isError).toBe(true);
   expect(result.content?.[0]?.text).toContain('fullPage cannot be used with element screenshots');
 });
+
+test('browser_take_screenshot (viewport without snapshot)', async ({ startClient, server }, testInfo) => {
+  const { client } = await startClient({
+    config: { outputDir: testInfo.outputPath('output') },
+  });
+
+  // Ensure we have a tab but don't navigate anywhere (no snapshot captured)
+  expect(await client.callTool({
+    name: 'browser_tab_list',
+  })).toContainTextContent('about:blank');
+
+  // This should work without requiring a snapshot since it's a viewport screenshot
+  expect(await client.callTool({
+    name: 'browser_take_screenshot',
+  })).toEqual({
+    content: [
+      {
+        data: expect.any(String),
+        mimeType: 'image/jpeg',
+        type: 'image',
+      },
+      {
+        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        type: 'text',
+      },
+    ],
+  });
+});
