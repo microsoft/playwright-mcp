@@ -22,15 +22,15 @@
  * - /extension/guid - Extension connection for chrome.debugger forwarding
  */
 
+import http from 'http';
+import { promisify } from 'util';
+import { exec } from 'child_process';
 import { WebSocket, WebSocketServer } from 'ws';
-import type websocket from 'ws';
-import http from 'node:http';
 import debug from 'debug';
-import { promisify } from 'node:util';
-import { exec } from 'node:child_process';
+import * as playwright from 'playwright';
 import { httpAddressToString, startHttpServer } from '../transport.js';
 import { BrowserContextFactory } from '../browserContextFactory.js';
-import { Browser, chromium, type BrowserContext } from 'playwright';
+import type websocket from 'ws';
 
 const debugLogger = debug('pw:mcp:relay');
 
@@ -284,13 +284,13 @@ export class CDPRelayServer {
 
 class ExtensionContextFactory implements BrowserContextFactory {
   private _relay: CDPRelayServer;
-  private _browserPromise: Promise<Browser> | undefined;
+  private _browserPromise: Promise<playwright.Browser> | undefined;
 
   constructor(relay: CDPRelayServer) {
     this._relay = relay;
   }
 
-  async createContext(clientInfo: { name: string, version: string }): Promise<{ browserContext: BrowserContext, close: () => Promise<void> }> {
+  async createContext(clientInfo: { name: string, version: string }): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
     // First call will establish the connection to the extension.
     if (!this._browserPromise)
       this._browserPromise = this._obtainBrowser(clientInfo);
@@ -301,9 +301,9 @@ class ExtensionContextFactory implements BrowserContextFactory {
     };
   }
 
-  private async _obtainBrowser(clientInfo: { name: string, version: string }): Promise<Browser> {
+  private async _obtainBrowser(clientInfo: { name: string, version: string }): Promise<playwright.Browser> {
     await this._relay.ensureExtensionConnectionForMCPContext(clientInfo);
-    return await chromium.connectOverCDP(this._relay.cdpEndpoint());
+    return await playwright.chromium.connectOverCDP(this._relay.cdpEndpoint());
   }
 }
 

@@ -192,6 +192,31 @@ const languageOptions = {
   }
 };
 
+const importOrderRules = {
+  "import/order": [
+    2,
+    {
+      groups: [
+        "builtin",
+        "external",
+        "internal",
+        ["parent", "sibling"],
+        "index",
+        "type",
+      ],
+    },
+  ],
+  "import/consistent-type-specifier-style": [2, "prefer-top-level"],
+};
+
+const noFloatingPromisesRules = {
+  "@typescript-eslint/no-floating-promises": "error",
+};
+
+const noBooleanCompareRules = {
+  "@typescript-eslint/no-unnecessary-boolean-literal-compare": 2,
+};
+
 export default [
   {
     ignores: ["**/*.js"],
@@ -200,6 +225,11 @@ export default [
     files: ["**/*.ts", "**/*.tsx"],
     plugins,
     languageOptions,
-    rules: baseRules,
+    rules: {
+      ...baseRules,
+      ...importOrderRules,
+      ...noFloatingPromisesRules,
+      ...noBooleanCompareRules,
+    },
   },
 ];

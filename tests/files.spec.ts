@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
 import fs from 'fs/promises';
+import { test, expect } from './fixtures.js';
 
 test('browser_file_upload', async ({ client, server }, testInfo) => {
   server.setContent('/', `
