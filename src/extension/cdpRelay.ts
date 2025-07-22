@@ -65,6 +65,7 @@ export class CDPRelayServer {
     // Page sessionId that should be used by this connection.
     sessionId: string;
   } | undefined;
+  private _nextSessionId: number = 1;
   private _extensionConnectionPromise: Promise<void>;
   private _extensionConnectionResolve: (() => void) | null = null;
 
@@ -190,8 +191,9 @@ export class CDPRelayServer {
   private _handleExtensionMessage(method: string, params: any) {
     switch (method) {
       case 'forwardCDPEvent':
+        const sessionId = params.sessionId || this._connectedTabInfo?.sessionId;
         this._sendToPlaywright({
-          sessionId: params.sessionId,
+          sessionId,
           method: params.method,
           params: params.params
         });
@@ -236,14 +238,18 @@ export class CDPRelayServer {
         if (sessionId)
           break;
         // Simulate auto-attach behavior with real target info
-        this._connectedTabInfo = await this._extensionConnection!.send('attachToTab');
+        const { targetInfo } = await this._extensionConnection!.send('attachToTab');
+        this._connectedTabInfo = {
+          targetInfo,
+          sessionId: `pw-tab-${this._nextSessionId++}`,
+        };
         debugLogger('Simulating auto-attach');
         this._sendToPlaywright({
           method: 'Target.attachedToTarget',
           params: {
-            sessionId: this._connectedTabInfo!.sessionId,
+            sessionId: this._connectedTabInfo.sessionId,
             targetInfo: {
-              ...this._connectedTabInfo!.targetInfo,
+              ...this._connectedTabInfo.targetInfo,
               attached: true,
             },
             waitingForDebugger: false
@@ -261,6 +267,9 @@ export class CDPRelayServer {
   private async _forwardToExtension(method: string, params: any, sessionId: string | undefined): Promise<any> {
     if (!this._extensionConnection)
       throw new Error('Extension not connected');
+    // Top level sessionId is only passed between the relay and the client.
+    if (this._connectedTabInfo?.sessionId === sessionId)
+      sessionId = undefined;
     return await this._extensionConnection.send('forwardCDPCommand', { sessionId, method, params });
   }
 
