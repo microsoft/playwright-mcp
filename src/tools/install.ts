@@ -16,11 +16,10 @@
 
 import { fork } from 'child_process';
 import path from 'path';
-
+import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 
-import { fileURLToPath } from 'node:url';
 
 const install = defineTool({
   capability: 'core-install',

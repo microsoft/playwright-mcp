@@ -15,10 +15,9 @@
  */
 
 import { createConnection as createConnectionImpl } from './connection.js';
-import type { Connection } from '../index.js';
 import { resolveConfig } from './config.js';
 import { contextFactory } from './browserContextFactory.js';
-
+import type { Connection } from '../index.js';
 import type { Config } from '../config.js';
 import type { BrowserContext } from 'playwright';
 import type { BrowserContextFactory } from './browserContextFactory.js';
