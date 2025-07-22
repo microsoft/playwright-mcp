@@ -143,6 +143,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --caps <caps>                comma-separated list of additional capabilities
                                to enable, possible values: vision, pdf.
   --cdp-endpoint <endpoint>    CDP endpoint to connect to.
+  --cdp-headers <headers>      CDP headers to use when connecting to CDP endpoint. 
+                               Format: JSON string or key:value,key2:value2
   --config <path>              path to the configuration file.
   --device <device>            device to emulate, for example: "iPhone 15"
   --executable-path <path>     path to the browser executable.
@@ -217,6 +219,24 @@ state [here](https://playwright.dev/docs/auth).
 }
 ```
 
+### CDP Headers
+
+When connecting to a CDP endpoint, you can specify headers to be sent with the CDP connection. This is useful for authentication or other custom headers required by your CDP endpoint.
+
+```bash
+# Using JSON format
+npx @playwright/mcp@latest --cdp-endpoint="http://localhost:9222" --cdp-headers='{"Authorization":"Bearer token123","X-Custom-Header":"CustomValue"}'
+
+# Using key:value format
+npx @playwright/mcp@latest --cdp-endpoint="http://localhost:9222" --cdp-headers='Authorization:Bearer token123,X-Custom-Header:CustomValue'
+```
+
+When using Docker:
+
+```bash
+docker run -i --rm --init mcr.microsoft.com/playwright/mcp --cdp-endpoint="http://host.docker.internal:9222" --cdp-headers='{"Authorization":"Bearer token123"}'
+```
+
 ### Configuration file
 
 The Playwright MCP server can be configured using a JSON configuration file. You can specify the configuration file
@@ -260,6 +280,13 @@ npx @playwright/mcp@latest --config path/to/config.json
 
     // CDP endpoint for connecting to existing browser
     cdpEndpoint?: string;
+    
+    // Options for CDP connection
+    connectOptions?: {
+      headers?: Record<string, string>; // Headers to send with CDP connection
+      timeout?: number;                 // Connection timeout in milliseconds
+      slowMo?: number;                  // Slow down operations by the specified amount of milliseconds
+    };
 
     // Remote Playwright server endpoint
     remoteEndpoint?: string;

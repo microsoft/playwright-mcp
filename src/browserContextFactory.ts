@@ -121,7 +121,7 @@ class CdpContextFactory extends BaseContextFactory {
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
-    return playwright.chromium.connectOverCDP(this.browserConfig.cdpEndpoint!);
+    return playwright.chromium.connectOverCDP(this.browserConfig.cdpEndpoint!, this.browserConfig.connectOptions);
   }
 
   protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
@@ -191,7 +191,7 @@ class PersistentContextFactory implements BrowserContextFactory {
   private async _closeBrowserContext(browserContext: playwright.BrowserContext, userDataDir: string) {
     testDebug('close browser context (persistent)');
     testDebug('release user data dir', userDataDir);
-    await browserContext.close().catch(() => {});
+    await browserContext.close().catch(() => { });
     this._userDataDirs.delete(userDataDir);
     testDebug('close browser context complete (persistent)');
   }
