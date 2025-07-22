@@ -31,8 +31,8 @@ const snapshot = defineTool({
   },
 
   handle: async (context, params, response) => {
-    const tab = await context.ensureTab();
-    response.addSnapshot(await tab.captureSnapshot());
+    await context.ensureTab();
+    response.setIncludeSnapshot();
   },
 });
 
@@ -71,12 +71,12 @@ const click = defineTabTool({
       response.addCode(`await page.${await generateLocator(locator)}.click(${buttonAttr});`);
     }
 
-    await tab.run(async () => {
+    await tab.waitForCompletion(async () => {
       if (params.doubleClick)
         await locator.dblclick({ button });
       else
         await locator.click({ button });
-    }, response);
+    });
   },
 });
 
@@ -103,9 +103,9 @@ const drag = defineTabTool({
       { ref: params.endRef, element: params.endElement },
     ]);
 
-    await tab.run(async () => {
+    await tab.waitForCompletion(async () => {
       await startLocator.dragTo(endLocator);
-    }, response);
+    });
 
     response.addCode(`await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`);
   },
@@ -127,9 +127,9 @@ const hover = defineTabTool({
     const locator = await tab.refLocator(params);
     response.addCode(`await page.${await generateLocator(locator)}.hover();`);
 
-    await tab.run(async () => {
+    await tab.waitForCompletion(async () => {
       await locator.hover();
-    }, response);
+    });
   },
 });
 
@@ -154,9 +154,9 @@ const selectOption = defineTabTool({
     response.addCode(`// Select options [${params.values.join(', ')}] in ${params.element}`);
     response.addCode(`await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(params.values)});`);
 
-    await tab.run(async () => {
+    await tab.waitForCompletion(async () => {
       await locator.selectOption(params.values);
-    }, response);
+    });
   },
 });
 

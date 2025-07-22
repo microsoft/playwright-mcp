@@ -45,6 +45,10 @@ export class Context {
     return this._tabs;
   }
 
+  currentTab(): Tab | undefined {
+    return this._currentTab;
+  }
+
   currentTabOrDie(): Tab {
     if (!this._currentTab)
       throw new Error('No open pages available. Use the "browser_navigate" tool to navigate to a page first.');

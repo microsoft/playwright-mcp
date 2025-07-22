@@ -58,7 +58,7 @@ const wait = defineTool({
     }
 
     response.addResult(`Waited for ${params.text || params.textGone || params.time}`);
-    response.addSnapshot(await tab.captureSnapshot());
+    response.setIncludeSnapshot();
   },
 });
 

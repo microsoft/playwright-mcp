@@ -34,9 +34,9 @@ const navigate = defineTool({
     const tab = await context.ensureTab();
     await tab.navigate(params.url);
 
+    response.setIncludeSnapshot();
     response.addCode(`// Navigate to ${params.url}`);
     response.addCode(`await page.goto('${params.url}');`);
-    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 
@@ -54,9 +54,9 @@ const goBack = defineTabTool({
     response.setIncludeSnapshot();
 
     await tab.page.goBack();
+    response.setIncludeSnapshot();
     response.addCode(`// Navigate back`);
     response.addCode(`await page.goBack();`);
-    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 
@@ -73,9 +73,9 @@ const goForward = defineTabTool({
     response.setIncludeSnapshot();
 
     await tab.page.goForward();
+    response.setIncludeSnapshot();
     response.addCode(`// Navigate forward`);
     response.addCode(`await page.goForward();`);
-    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 

@@ -49,11 +49,11 @@ const evaluate = defineTabTool({
       response.addCode(`await page.evaluate(${javascript.quote(params.function)});`);
     }
 
-    await tab.run(async () => {
+    await tab.waitForCompletion(async () => {
       const receiver = locator ?? tab.page as any;
       const result = await receiver._evaluateFunction(params.function);
       response.addResult(JSON.stringify(result, null, 2) || 'undefined');
-    }, response);
+    });
   },
 });
 

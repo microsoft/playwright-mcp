@@ -52,9 +52,9 @@ const resize = defineTabTool({
     response.addCode(`// Resize browser window to ${params.width}x${params.height}`);
     response.addCode(`await page.setViewportSize({ width: ${params.width}, height: ${params.height} });`);
 
-    await tab.run(async () => {
+    await tab.waitForCompletion(async () => {
       await tab.page.setViewportSize({ width: params.width, height: params.height });
-    }, response);
+    });
   },
 });
 
