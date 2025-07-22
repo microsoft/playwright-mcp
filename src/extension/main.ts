@@ -19,9 +19,11 @@ import { startHttpServer, startHttpTransport, startStdioTransport } from '../tra
 import { Server } from '../server.js';
 import { startCDPRelayServer } from './cdpRelay.js';
 
-export async function runWithExtension(options: any) {
-  const config = await resolveCLIConfig({ });
-  const contextFactory = await startCDPRelayServer(9225);
+import type { CLIOptions } from '../config.js';
+
+export async function runWithExtension(options: CLIOptions) {
+  const config = await resolveCLIConfig(options);
+  const contextFactory = await startCDPRelayServer(9225, config.browser.launchOptions.channel || 'chrome');
 
   const server = new Server(config, contextFactory);
   server.setupExitWatchdog();

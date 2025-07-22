@@ -23,13 +23,15 @@
  */
 
 import http from 'http';
-import { promisify } from 'util';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { WebSocket, WebSocketServer } from 'ws';
 import debug from 'debug';
 import * as playwright from 'playwright';
 import { httpAddressToString, startHttpServer } from '../transport.js';
 import { BrowserContextFactory } from '../browserContextFactory.js';
+// @ts-ignore
+const { registry } = await import('playwright-core/lib/server/registry/index');
+
 import type websocket from 'ws';
 
 const debugLogger = debug('pw:mcp:relay');
@@ -52,6 +54,7 @@ type CDPResponse = {
 
 export class CDPRelayServer {
   private _wsHost: string;
+  private _browserChannel: string;
   private _cdpPath: string;
   private _extensionPath: string;
   private _wss: WebSocketServer;
@@ -65,8 +68,9 @@ export class CDPRelayServer {
   private _extensionConnectionPromise: Promise<void>;
   private _extensionConnectionResolve: (() => void) | null = null;
 
-  constructor(server: http.Server) {
+  constructor(server: http.Server, browserChannel: string) {
     this._wsHost = httpAddressToString(server.address()).replace(/^http/, 'ws');
+    this._browserChannel = browserChannel;
 
     const uuid = crypto.randomUUID();
     this._cdpPath = `/cdp/${uuid}`;
@@ -88,10 +92,13 @@ export class CDPRelayServer {
   }
 
   async ensureExtensionConnectionForMCPContext(clientInfo: { name: string, version: string }) {
+    debugLogger('Ensuring extension connection for MCP context');
     if (this._extensionConnection)
       return;
     await this._connectBrowser(clientInfo);
+    debugLogger('Waiting for incoming extension connection');
     await this._extensionConnectionPromise;
+    debugLogger('Extension connection established');
   }
 
   private async _connectBrowser(clientInfo: { name: string, version: string }) {
@@ -101,12 +108,19 @@ export class CDPRelayServer {
     url.searchParams.set('mcpRelayUrl', mcpRelayEndpoint);
     url.searchParams.set('client', JSON.stringify(clientInfo));
     const href = url.toString();
-    const command = `'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' '${href}'`;
-    try {
-      await promisify(exec)(command);
-    } catch (err) {
-      debugLogger('Failed to run command:', err);
-    }
+    const executableInfo = registry.findExecutable(this._browserChannel);
+    if (!executableInfo)
+      throw new Error(`Unsupported channel: "${this._browserChannel}"`);
+    const executablePath = executableInfo.executablePath();
+    if (!executablePath)
+      throw new Error(`"${this._browserChannel}" executable not found. Make sure it is installed at a standard location.`);
+
+    spawn(executablePath, [href], {
+      windowsHide: true,
+      detached: true,
+      shell: false,
+      stdio: 'ignore',
+    });
   }
 
   stop(): void {
@@ -307,9 +321,9 @@ class ExtensionContextFactory implements BrowserContextFactory {
   }
 }
 
-export async function startCDPRelayServer(port: number) {
+export async function startCDPRelayServer(port: number, browserChannel: string) {
   const httpServer = await startHttpServer({ port });
-  const cdpRelayServer = new CDPRelayServer(httpServer);
+  const cdpRelayServer = new CDPRelayServer(httpServer, browserChannel);
   process.on('exit', () => cdpRelayServer.stop());
   debugLogger(`CDP relay server started, extension endpoint: ${cdpRelayServer.extensionEndpoint()}.`);
   return new ExtensionContextFactory(cdpRelayServer);
@@ -332,7 +346,7 @@ class ExtensionConnection {
 
   async send(method: string, params?: any, sessionId?: string): Promise<any> {
     if (this._ws.readyState !== WebSocket.OPEN)
-      throw new Error('WebSocket closed');
+      throw new Error(`Unexpected WebSocket state: ${this._ws.readyState}`);
     const id = ++this._lastId;
     this._ws.send(JSON.stringify({ id, method, params, sessionId }));
     return new Promise((resolve, reject) => {
