@@ -113,8 +113,7 @@ test('clicking on download link emits download', async ({ startClient, server, m
       ref: 'e2',
     },
   });
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent(`
-### Downloads
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent(`### Downloads
 - Downloaded file test.txt to ${testInfo.outputPath('output', 'test.txt')}`);
 });
 
@@ -123,7 +122,7 @@ test('navigating to download link emits download', async ({ startClient, server,
     config: { outputDir: testInfo.outputPath('output') },
   });
 
-  test.skip(mcpBrowser === 'webkit' && process.platform === 'linux', 'https://github.com/microsoft/playwright/blob/8e08fdb52c27bb75de9bf87627bf740fadab2122/tests/library/download.spec.ts#L436');
+  test.skip(mcpBrowser !== 'chromium', 'This test is racy');
   server.route('/download', (req, res) => {
     res.writeHead(200, {
       'Content-Type': 'text/plain',

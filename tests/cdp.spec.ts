@@ -45,13 +45,7 @@ test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
 
   expect(await client.callTool({
     name: 'browser_snapshot',
-  })).toHaveTextContent(`
-### Ran Playwright code
-\`\`\`js
-// <internal code to capture accessibility snapshot>
-\`\`\`
-
-### Page state
+  })).toHaveTextContent(`### Page state
 - Page URL: ${server.HELLO_WORLD}
 - Page Title: Title
 - Page Snapshot:

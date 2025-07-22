@@ -59,8 +59,12 @@ export class Context {
   }
 
   async selectTab(index: number) {
-    this._currentTab = this._tabs[index];
-    await this._currentTab.page.bringToFront();
+    const tab = this._tabs[index];
+    if (!tab)
+      throw new Error(`Tab ${index} not found`);
+    await tab.page.bringToFront();
+    this._currentTab = tab;
+    return tab;
   }
 
   async ensureTab(): Promise<Tab> {
@@ -70,9 +74,18 @@ export class Context {
     return this._currentTab!;
   }
 
-  async listTabsMarkdown(): Promise<string[]> {
-    if (!this._tabs.length)
-      return ['### No tabs open'];
+  async listTabsMarkdown(force: boolean = false): Promise<string[]> {
+    if (this._tabs.length === 1 && !force)
+      return [];
+
+    if (!this._tabs.length) {
+      return [
+        '### No open tabs',
+        'Use the "browser_navigate" tool to navigate to a page first.',
+        '',
+      ];
+    }
+
     const lines: string[] = ['### Open tabs'];
     for (let i = 0; i < this._tabs.length; i++) {
       const tab = this._tabs[i];
@@ -81,62 +94,17 @@ export class Context {
       const current = tab === this._currentTab ? ' (current)' : '';
       lines.push(`- ${i}:${current} [${title}] (${url})`);
     }
+    lines.push('');
     return lines;
   }
 
-  async closeTab(index: number | undefined) {
+  async closeTab(index: number | undefined): Promise<string> {
     const tab = index === undefined ? this._currentTab : this._tabs[index];
-    await tab?.page.close();
-    return await this.listTabsMarkdown();
-  }
-
-  async run(tool: Tool, params: Record<string, unknown> | undefined) {
-    // Tab management is done outside of the action() call.
-    const toolResult = await tool.handle(this, tool.schema.inputSchema.parse(params || {}));
-    const { code, action, waitForNetwork, captureSnapshot, resultOverride } = toolResult;
-
-    if (resultOverride)
-      return resultOverride;
-
-    const tab = this.currentTabOrDie();
-    const { actionResult, snapshot } = await tab.run(action || (() => Promise.resolve()), { waitForNetwork, captureSnapshot });
-
-    const result: string[] = [];
-    result.push(`### Ran Playwright code
-\`\`\`js
-${code.join('\n')}
-\`\`\``);
-
-    if (tab.modalStates().length) {
-      result.push('', ...tab.modalStatesMarkdown());
-      return {
-        content: [{
-          type: 'text',
-          text: result.join('\n'),
-        }],
-      };
-    }
-
-    result.push(...tab.takeRecentConsoleMarkdown());
-    result.push(...tab.listDownloadsMarkdown());
-
-    if (snapshot) {
-      if (this.tabs().length > 1)
-        result.push('', ...(await this.listTabsMarkdown()));
-      result.push('', snapshot);
-    }
-
-    const content = actionResult?.content ?? [];
-
-    return {
-      content: [
-        ...content,
-        {
-          type: 'text',
-          text: result.join('\n'),
-        }
-      ],
-    };
+    if (!tab)
+      throw new Error(`Tab ${index} not found`);
+    const url = tab.page.url();
+    await tab.page.close();
+    return url;
   }
 
   private _onPageCreated(page: playwright.Page) {

@@ -19,6 +19,7 @@
     "build": "tsc",
     "build:extension": "tsc --project extension",
     "lint": "npm run update-readme && eslint . && tsc --noEmit",
+    "lint-fix": "eslint . --fix",
     "update-readme": "node utils/update-readme.js",
     "watch": "tsc --watch",
     "watch:extension": "tsc --watch --project extension",

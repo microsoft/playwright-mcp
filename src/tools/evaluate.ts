@@ -38,29 +38,22 @@ const evaluate = defineTabTool({
     type: 'destructive',
   },
 
-  handle: async (tab, params) => {
-    const code: string[] = [];
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
 
     let locator: playwright.Locator | undefined;
     if (params.ref && params.element) {
       locator = await tab.refLocator({ ref: params.ref, element: params.element });
-      code.push(`await page.${await generateLocator(locator)}.evaluate(${javascript.quote(params.function)});`);
+      response.addCode(`await page.${await generateLocator(locator)}.evaluate(${javascript.quote(params.function)});`);
     } else {
-      code.push(`await page.evaluate(${javascript.quote(params.function)});`);
+      response.addCode(`await page.evaluate(${javascript.quote(params.function)});`);
     }
 
-    return {
-      code,
-      action: async () => {
-        const receiver = locator ?? tab.page as any;
-        const result = await receiver._evaluateFunction(params.function);
-        return {
-          content: [{ type: 'text', text: '- Result: ' + (JSON.stringify(result, null, 2) || 'undefined') }],
-        };
-      },
-      captureSnapshot: false,
-      waitForNetwork: false,
-    };
+    await tab.run(async () => {
+      const receiver = locator ?? tab.page as any;
+      const result = await receiver._evaluateFunction(params.function);
+      response.addResult(JSON.stringify(result, null, 2) || 'undefined');
+    }, response);
   },
 });
 

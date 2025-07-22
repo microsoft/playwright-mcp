@@ -40,6 +40,7 @@ test('browser_network_requests', async ({ client, server }) => {
 
   await expect.poll(() => client.callTool({
     name: 'browser_network_requests',
-  })).toHaveTextContent(`[GET] ${`${server.PREFIX}`} => [200] OK
+  })).toHaveTextContent(`### Result
+[GET] ${`${server.PREFIX}`} => [200] OK
 [GET] ${`${server.PREFIX}json`} => [200] OK`);
 });

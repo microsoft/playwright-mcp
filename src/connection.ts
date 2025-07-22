@@ -19,6 +19,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Context } from './context.js';
+import { Response } from './response.js';
 import { allTools } from './tools.js';
 import { packageJSON } from './package.js';
 
@@ -61,7 +62,9 @@ export function createConnection(config: FullConfig, browserContextFactory: Brow
       return errorResult(`Tool "${request.params.name}" not found`);
 
     try {
-      return await context.run(tool, request.params.arguments);
+      const response = new Response(context);
+      await tool.handle(context, tool.schema.inputSchema.parse(request.params.arguments || {}), response);
+      return await response.serialize();
     } catch (error) {
       return errorResult(String(error));
     }

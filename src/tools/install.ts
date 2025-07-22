@@ -31,7 +31,7 @@ const install = defineTool({
     type: 'destructive',
   },
 
-  handle: async context => {
+  handle: async (context, params, response) => {
     const channel = context.config.browser?.launchOptions?.channel ?? context.config.browser?.browserName ?? 'chrome';
     const cliUrl = import.meta.resolve('playwright/package.json');
     const cliPath = path.join(fileURLToPath(cliUrl), '..', 'cli.js');
@@ -49,11 +49,7 @@ const install = defineTool({
           reject(new Error(`Failed to install browser: ${output.join('')}`));
       });
     });
-    return {
-      code: [`// Browser ${channel} installed`],
-      captureSnapshot: false,
-      waitForNetwork: false,
-    };
+    response.setIncludeTabs();
   },
 });
 

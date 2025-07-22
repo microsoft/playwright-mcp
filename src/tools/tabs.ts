@@ -28,19 +28,9 @@ const listTabs = defineTool({
     type: 'readOnly',
   },
 
-  handle: async context => {
+  handle: async (context, params, response) => {
     await context.ensureTab();
-    return {
-      code: [`// <internal code to list tabs>`],
-      captureSnapshot: false,
-      waitForNetwork: false,
-      resultOverride: {
-        content: [{
-          type: 'text',
-          text: (await context.listTabsMarkdown()).join('\n'),
-        }],
-      },
-    };
+    response.setIncludeTabs();
   },
 });
 
@@ -57,17 +47,10 @@ const selectTab = defineTool({
     type: 'readOnly',
   },
 
-  handle: async (context, params) => {
-    await context.selectTab(params.index);
-    const code = [
-      `// <internal code to select tab ${params.index}>`,
-    ];
-
-    return {
-      code,
-      captureSnapshot: true,
-      waitForNetwork: false
-    };
+  handle: async (context, params, response) => {
+    const tab = await context.selectTab(params.index);
+    response.setIncludeSnapshot();
+    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 
@@ -84,19 +67,13 @@ const newTab = defineTool({
     type: 'readOnly',
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, response) => {
     const tab = await context.newTab();
     if (params.url)
       await tab.navigate(params.url);
 
-    const code = [
-      `// <internal code to open a new tab>`,
-    ];
-    return {
-      code,
-      captureSnapshot: true,
-      waitForNetwork: false
-    };
+    response.setIncludeSnapshot();
+    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 
@@ -113,16 +90,12 @@ const closeTab = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, response) => {
     await context.closeTab(params.index);
-    const code = [
-      `// <internal code to close tab ${params.index}>`,
-    ];
-    return {
-      code,
-      captureSnapshot: true,
-      waitForNetwork: false
-    };
+    response.setIncludeTabs();
+    response.addCode(`await myPage.close();`);
+    if (context.tabs().length)
+      response.addSnapshot(await context.currentTabOrDie().captureSnapshot());
   },
 });
 

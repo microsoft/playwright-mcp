@@ -47,7 +47,8 @@ test('browser_evaluate (element)', async ({ client, server }) => {
       element: 'body',
       ref: 'e1',
     },
-  })).toContainTextContent(`- Result: "red"`);
+  })).toContainTextContent(`### Result
+"red"`);
 });
 
 test('browser_evaluate (error)', async ({ client, server }) => {

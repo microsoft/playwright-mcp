@@ -65,14 +65,7 @@ test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser, ser
     arguments: {
       filename: 'output.pdf',
     },
-  })).toEqual({
-    content: [
-      {
-        type: 'text',
-        text: expect.stringContaining(`output.pdf`),
-      },
-    ],
-  });
+  })).toContainTextContent(`output.pdf`);
 
   const files = [...fs.readdirSync(outputDir)];
 

@@ -51,7 +51,7 @@ const screenshot = defineTabTool({
     type: 'readOnly',
   },
 
-  handle: async (tab, params) => {
+  handle: async (tab, params, response) => {
     const fileType = params.raw ? 'png' : 'jpeg';
     const fileName = await outputFile(tab.context.config, params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
     const options: playwright.PageScreenshotOptions = {
@@ -64,36 +64,22 @@ const screenshot = defineTabTool({
     const isElementScreenshot = params.element && params.ref;
 
     const screenshotTarget = isElementScreenshot ? params.element : (params.fullPage ? 'full page' : 'viewport');
-    const code = [
-      `// Screenshot ${screenshotTarget} and save it as ${fileName}`,
-    ];
+    response.addCode(`// Screenshot ${screenshotTarget} and save it as ${fileName}`);
 
     // Only get snapshot when element screenshot is needed
     const locator = params.ref ? await tab.refLocator({ element: params.element || '', ref: params.ref }) : null;
 
     if (locator)
-      code.push(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
+      response.addCode(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
     else
-      code.push(`await page.screenshot(${javascript.formatObject(options)});`);
+      response.addCode(`await page.screenshot(${javascript.formatObject(options)});`);
 
-    const includeBase64 = tab.context.config.imageResponses !== 'omit';
-    const action = async () => {
-      const screenshot = locator ? await locator.screenshot(options) : await tab.page.screenshot(options);
-      return {
-        content: includeBase64 ? [{
-          type: 'image' as 'image',
-          data: screenshot.toString('base64'),
-          mimeType: fileType === 'png' ? 'image/png' : 'image/jpeg',
-        }] : []
-      };
-    };
-
-    return {
-      code,
-      action,
-      captureSnapshot: false,
-      waitForNetwork: false,
-    };
+    const buffer = locator ? await locator.screenshot(options) : await tab.page.screenshot(options);
+    response.addResult(`Took the ${screenshotTarget} screenshot and saved it as ${fileName}`);
+    response.addImage({
+      contentType: fileType === 'png' ? 'image/png' : 'image/jpeg',
+      data: buffer
+    });
   }
 });
 

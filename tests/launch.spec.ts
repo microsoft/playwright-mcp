@@ -27,7 +27,13 @@ test('test reopen browser', async ({ startClient, server, mcpMode }) => {
 
   expect(await client.callTool({
     name: 'browser_close',
-  })).toContainTextContent('No open pages available');
+  })).toContainTextContent(`### Ran Playwright code
+\`\`\`js
+await page.close()
+\`\`\`
+
+### No open tabs
+Use the "browser_navigate" tool to navigate to a page first.`);
 
   expect(await client.callTool({
     name: 'browser_navigate',

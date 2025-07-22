@@ -32,13 +32,13 @@ test('browser_take_screenshot (viewport)', async ({ startClient, server }, testI
   })).toEqual({
     content: [
       {
+        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        type: 'text',
+      },
+      {
         data: expect.any(String),
         mimeType: 'image/jpeg',
         type: 'image',
-      },
-      {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
-        type: 'text',
       },
     ],
   });
@@ -62,13 +62,13 @@ test('browser_take_screenshot (element)', async ({ startClient, server }, testIn
   })).toEqual({
     content: [
       {
+        text: expect.stringContaining(`page.getByText('Hello, world!').screenshot`),
+        type: 'text',
+      },
+      {
         data: expect.any(String),
         mimeType: 'image/jpeg',
         type: 'image',
-      },
-      {
-        text: expect.stringContaining(`page.getByText('Hello, world!').screenshot`),
-        type: 'text',
       },
     ],
   });
@@ -112,15 +112,15 @@ for (const raw of [undefined, true]) {
     })).toEqual({
       content: [
         {
-          data: expect.any(String),
-          mimeType: `image/${ext}`,
-          type: 'image',
-        },
-        {
           text: expect.stringMatching(
               new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.${ext}`)
           ),
           type: 'text',
+        },
+        {
+          data: expect.any(String),
+          mimeType: `image/${ext}`,
+          type: 'image',
         },
       ],
     });
@@ -154,13 +154,13 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, 
   })).toEqual({
     content: [
       {
+        text: expect.stringContaining(`output.jpeg`),
+        type: 'text',
+      },
+      {
         data: expect.any(String),
         mimeType: 'image/jpeg',
         type: 'image',
-      },
-      {
-        text: expect.stringContaining(`output.jpeg`),
-        type: 'text',
       },
     ],
   });
@@ -217,13 +217,13 @@ test('browser_take_screenshot (fullPage: true)', async ({ startClient, server },
   })).toEqual({
     content: [
       {
+        text: expect.stringContaining(`Screenshot full page and save it as`),
+        type: 'text',
+      },
+      {
         data: expect.any(String),
         mimeType: 'image/jpeg',
         type: 'image',
-      },
-      {
-        text: expect.stringContaining(`Screenshot full page and save it as`),
-        type: 'text',
       },
     ],
   });
@@ -267,13 +267,13 @@ test('browser_take_screenshot (viewport without snapshot)', async ({ startClient
   })).toEqual({
     content: [
       {
+        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        type: 'text',
+      },
+      {
         data: expect.any(String),
         mimeType: 'image/jpeg',
         type: 'image',
-      },
-      {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
-        type: 'text',
       },
     ],
   });
