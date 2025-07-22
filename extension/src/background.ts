@@ -59,7 +59,6 @@ class TabShareExtension {
       });
 
       const connection = new RelayConnection(socket);
-      connection.setConnectedTabId(tabId);
       const connectionClosed = (m: string) => {
         debugLog(m);
         if (this._activeConnection === connection) {
@@ -71,6 +70,7 @@ class TabShareExtension {
       socket.onerror = error => connectionClosed(`WebSocket error: ${error}`);
       this._activeConnection = connection;
 
+      connection.setConnectedTabId(tabId);
       await this._setConnectedTabId(tabId);
       debugLog(`Tab ${tabId} connected successfully`);
     } catch (error: any) {

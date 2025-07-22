@@ -147,8 +147,8 @@ export class CDPRelayServer {
       try {
         const message = JSON.parse(data.toString());
         await this._handlePlaywrightMessage(message);
-      } catch (error) {
-        debugLogger('Error parsing Playwright message:', error);
+      } catch (error: any) {
+        debugLogger(`Error while handling Playwright message\n${data.toString()}\n`, error);
       }
     });
     ws.on('close', () => {
@@ -205,89 +205,63 @@ export class CDPRelayServer {
 
   private async _handlePlaywrightMessage(message: CDPCommand): Promise<void> {
     debugLogger('← Playwright:', `${message.method} (id=${message.id})`);
-    if (!this._extensionConnection) {
-      debugLogger('Extension not connected, sending error to Playwright');
-      this._sendToPlaywright({
-        id: message.id,
-        error: { message: 'Extension not connected' }
-      });
-      return;
-    }
-    if (await this._interceptCDPCommand(message))
-      return;
-    await this._forwardToExtension(message);
-  }
-
-  private async _interceptCDPCommand(message: CDPCommand): Promise<boolean> {
-    switch (message.method) {
-      case 'Browser.getVersion': {
-        this._sendToPlaywright({
-          id: message.id,
-          result: {
-            protocolVersion: '1.3',
-            product: 'Chrome/Extension-Bridge',
-            userAgent: 'CDP-Bridge-Server/1.0.0',
-          }
-        });
-        return true;
-      }
-      case 'Browser.setDownloadBehavior': {
-        this._sendToPlaywright({
-          id: message.id
-        });
-        return true;
-      }
-      case 'Target.setAutoAttach': {
-        // Simulate auto-attach behavior with real target info
-        if (!message.sessionId) {
-          this._connectedTabInfo = await this._extensionConnection!.send('attachToTab');
-          debugLogger('Simulating auto-attach for target:', message);
-          this._sendToPlaywright({
-            method: 'Target.attachedToTarget',
-            params: {
-              sessionId: this._connectedTabInfo!.sessionId,
-              targetInfo: {
-                ...this._connectedTabInfo!.targetInfo,
-                attached: true,
-              },
-              waitingForDebugger: false
-            }
-          });
-          this._sendToPlaywright({
-            id: message.id
-          });
-        } else {
-          await this._forwardToExtension(message);
-        }
-        return true;
-      }
-      case 'Target.getTargetInfo': {
-        debugLogger('Target.getTargetInfo', message);
-        this._sendToPlaywright({
-          id: message.id,
-          result: this._connectedTabInfo?.targetInfo
-        });
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private async _forwardToExtension(message: CDPCommand): Promise<void> {
+    const { id, sessionId, method, params } = message;
     try {
-      if (!this._extensionConnection)
-        throw new Error('Extension not connected');
-      const { id, sessionId, method, params } = message;
-      const result = await this._extensionConnection.send('forwardCDPCommand', { sessionId, method, params });
+      const result = await this._handleCDPCommand(method, params, sessionId);
       this._sendToPlaywright({ id, sessionId, result });
     } catch (e) {
       debugLogger('Error in the extension:', e);
       this._sendToPlaywright({
-        id: message.id,
-        sessionId: message.sessionId,
+        id,
+        sessionId,
         error: { message: (e as Error).message }
       });
     }
+  }
+
+  private async _handleCDPCommand(method: string, params: any, sessionId: string | undefined): Promise<any> {
+    switch (method) {
+      case 'Browser.getVersion': {
+        return {
+          protocolVersion: '1.3',
+          product: 'Chrome/Extension-Bridge',
+          userAgent: 'CDP-Bridge-Server/1.0.0',
+        };
+      }
+      case 'Browser.setDownloadBehavior': {
+        return { };
+      }
+      case 'Target.setAutoAttach': {
+        // Forward child session handling.
+        if (sessionId)
+          break;
+        // Simulate auto-attach behavior with real target info
+        this._connectedTabInfo = await this._extensionConnection!.send('attachToTab');
+        debugLogger('Simulating auto-attach');
+        this._sendToPlaywright({
+          method: 'Target.attachedToTarget',
+          params: {
+            sessionId: this._connectedTabInfo!.sessionId,
+            targetInfo: {
+              ...this._connectedTabInfo!.targetInfo,
+              attached: true,
+            },
+            waitingForDebugger: false
+          }
+        });
+        return { };
+      }
+      case 'Target.getTargetInfo': {
+        return this._connectedTabInfo?.targetInfo;
+      }
+    }
+    return await this._forwardToExtension(method, params, sessionId);
+  }
+
+  private async _forwardToExtension(method: string, params: any, sessionId: string | undefined): Promise<any> {
+    if (!this._extensionConnection)
+      throw new Error('Extension not connected');
+    return await this._extensionConnection.send('forwardCDPCommand', { sessionId, method, params });
   }
 
   private _sendToPlaywright(message: CDPResponse): void {
@@ -329,9 +303,17 @@ export async function startCDPRelayServer(port: number, browserChannel: string) 
   return new ExtensionContextFactory(cdpRelayServer);
 }
 
+type ExtensionResponse = {
+  id?: number;
+  method?: string;
+  params?: any;
+  result?: any;
+  error?: string;
+};
+
 class ExtensionConnection {
   private readonly _ws: WebSocket;
-  private readonly _callbacks = new Map<number, { resolve: (o: any) => void, reject: (e: Error) => void }>();
+  private readonly _callbacks = new Map<number, { resolve: (o: any) => void, reject: (e: Error) => void, error: Error }>();
   private _lastId = 0;
 
   onmessage?: (method: string, params: any) => void;
@@ -349,8 +331,9 @@ class ExtensionConnection {
       throw new Error(`Unexpected WebSocket state: ${this._ws.readyState}`);
     const id = ++this._lastId;
     this._ws.send(JSON.stringify({ id, method, params, sessionId }));
+    const error = new Error(`Protocol error: ${method}`);
     return new Promise((resolve, reject) => {
-      this._callbacks.set(id, { resolve, reject });
+      this._callbacks.set(id, { resolve, reject, error });
     });
   }
 
@@ -378,18 +361,21 @@ class ExtensionConnection {
     }
   }
 
-  private _handleParsedMessage(object: any) {
+  private _handleParsedMessage(object: ExtensionResponse) {
     if (object.id && this._callbacks.has(object.id)) {
       const callback = this._callbacks.get(object.id)!;
       this._callbacks.delete(object.id);
-      if (object.error)
-        callback.reject(new Error(object.error.message));
-      else
+      if (object.error) {
+        const error = callback.error;
+        error.message = object.error;
+        callback.reject(error);
+      } else {
         callback.resolve(object.result);
+      }
     } else if (object.id) {
       debugLogger('← Extension: unexpected response', object);
     } else {
-      this.onmessage?.(object.method, object.params);
+      this.onmessage?.(object.method!, object.params);
     }
   }
 
