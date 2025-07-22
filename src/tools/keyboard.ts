@@ -16,12 +16,12 @@
 
 import { z } from 'zod';
 
-import { defineTool } from './tool.js';
+import { defineTabTool } from './tool.js';
 import { elementSchema } from './snapshot.js';
 import { generateLocator } from './utils.js';
 import * as javascript from '../javascript.js';
 
-const pressKey = defineTool({
+const pressKey = defineTabTool({
   capability: 'core',
 
   schema: {
@@ -34,9 +34,7 @@ const pressKey = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, params) => {
-    const tab = context.currentTabOrDie();
-
+  handle: async (tab, params) => {
     const code = [
       `// Press ${params.key}`,
       `await page.keyboard.press('${params.key}');`,
@@ -59,7 +57,7 @@ const typeSchema = elementSchema.extend({
   slowly: z.boolean().optional().describe('Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'),
 });
 
-const type = defineTool({
+const type = defineTabTool({
   capability: 'core',
   schema: {
     name: 'browser_type',
@@ -69,9 +67,8 @@ const type = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, params) => {
-    const snapshot = context.currentTabOrDie().snapshotOrDie();
-    const locator = snapshot.refLocator(params);
+  handle: async (tab, params) => {
+    const locator = await tab.refLocator(params);
 
     const code: string[] = [];
     const steps: (() => Promise<void>)[] = [];

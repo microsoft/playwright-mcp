@@ -17,19 +17,12 @@
 import debug from 'debug';
 import * as playwright from 'playwright';
 
-import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
-import { ManualPromise } from './manualPromise.js';
 import { Tab } from './tab.js';
-import { outputFile } from './config.js';
 
-import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
+import { popupAnalysis } from './detect-popups.js';
+import type { Tool } from './tools/tool.js';
 import type { FullConfig } from './config.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
-import { popupAnalysis } from './detect-popups.js';
-
-type PendingAction = {
-  dialogShown: ManualPromise<void>;
-};
 
 const testDebug = debug('pw:mcp:test');
 
@@ -45,14 +38,7 @@ export class Context {
   private _browserContextFactory: BrowserContextFactory;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
-  private _modalStates: (ModalState & { tab: Tab })[] = [];
-  private _pendingAction: PendingAction | undefined;
-  private _downloads: {
-    download: playwright.Download;
-    finished: boolean;
-    outputFile: string;
-  }[] = [];
-  clientVersion: { name: string; version: string } | undefined;
+  clientVersion: { name: string; version: string; } | undefined;
 
   constructor(
     tools: Tool[],
@@ -65,51 +51,13 @@ export class Context {
     testDebug('create context');
   }
 
-  clientSupportsImages(): boolean {
-    if (this.config.imageResponses === 'omit')
-      return false;
-    return true;
-  }
-
-  modalStates(): ModalState[] {
-    return this._modalStates;
-  }
-
-  setModalState(modalState: ModalState, inTab: Tab) {
-    this._modalStates.push({ ...modalState, tab: inTab });
-  }
-
-  clearModalState(modalState: ModalState) {
-    this._modalStates = this._modalStates.filter(
-        state => state !== modalState
-    );
-  }
-
-  modalStatesMarkdown(): string[] {
-    const result: string[] = ['### Modal state'];
-    if (this._modalStates.length === 0)
-      result.push('- There is no modal state present');
-    for (const state of this._modalStates) {
-      const tool = this.tools.find(
-          tool => tool.clearsModalState === state.type
-      );
-      result.push(
-          `- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`
-      );
-    }
-    return result;
-  }
-
   tabs(): Tab[] {
     return this._tabs;
   }
 
   currentTabOrDie(): Tab {
-    if (!this._currentTab) {
-      throw new Error(
-          'No current snapshot available. Capture a snapshot or navigate to a new location first.'
-      );
-    }
+    if (!this._currentTab)
+      throw new Error('No open pages available. Use the "browser_navigate" tool to navigate to a page first.');
     return this._currentTab;
   }
 
@@ -132,9 +80,9 @@ export class Context {
     return this._currentTab!;
   }
 
-  async listTabsMarkdown(): Promise<string> {
+  async listTabsMarkdown(): Promise<string[]> {
     if (!this._tabs.length)
-      return '### No tabs open';
+      return ['### No tabs open'];
     const lines: string[] = ['### Open tabs'];
     for (let i = 0; i < this._tabs.length; i++) {
       const tab = this._tabs[i];
@@ -143,7 +91,7 @@ export class Context {
       const current = tab === this._currentTab ? ' (current)' : '';
       lines.push(`- ${i}:${current} [${title}] (${url})`);
     }
-    return lines.join('\n');
+    return lines;
   }
 
   async closeTab(index: number | undefined) {
@@ -160,30 +108,8 @@ export class Context {
     if (resultOverride)
       return resultOverride;
 
-    if (!this._currentTab) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: 'No open pages available. Use the "browser_navigate" tool to navigate to a page first.',
-          },
-        ],
-      };
-    }
-
     const tab = this.currentTabOrDie();
-    // TODO: race against modal dialogs to resolve clicks.
-    const actionResult = await this._raceAgainstModalDialogs(async () => {
-      try {
-        if (waitForNetwork)
-          return await waitForCompletion(this, tab, async () => action?.()) ?? undefined;
-        else
-          return await action?.() ?? undefined;
-      } finally {
-        if (captureSnapshot && !this._javaScriptBlocked())
-          await tab.captureSnapshot();
-      }
-    });
+    const { actionResult, snapshot } = await tab.run(action || (() => Promise.resolve()), { waitForNetwork, captureSnapshot });
 
     const result: string[] = [];
     result.push(`### Ran Playwright code
@@ -191,8 +117,8 @@ export class Context {
 ${code.join('\n')}
 \`\`\``);
 
-    if (this.modalStates().length) {
-      result.push('', ...this.modalStatesMarkdown());
+    if (tab.modalStates().length) {
+      result.push('', ...tab.modalStatesMarkdown());
       return {
         content: [
           {
@@ -203,44 +129,13 @@ ${code.join('\n')}
       };
     }
 
-    const messages = tab.takeRecentConsoleMessages();
-    if (messages.length) {
-      result.push('', `### New console messages`);
-      for (const message of messages)
-        result.push(`- ${trim(message.toString(), 100)}`);
-    }
+    result.push(...tab.takeRecentConsoleMarkdown());
+    result.push(...tab.listDownloadsMarkdown());
 
-    if (this._downloads.length) {
-      result.push('', '### Downloads');
-      for (const entry of this._downloads) {
-        if (entry.finished) {
-          result.push(
-              `- Downloaded file ${entry.download.suggestedFilename()} to ${
-                entry.outputFile
-              }`
-          );
-        } else {
-          result.push(
-              `- Downloading file ${entry.download.suggestedFilename()} ...`
-          );
-        }
-      }
-    }
-
-    if (captureSnapshot && tab.hasSnapshot()) {
+    if (snapshot) {
       if (this.tabs().length > 1)
-        result.push('', await this.listTabsMarkdown());
-
-      if (this.tabs().length > 1)
-        result.push('', '### Current tab');
-      else
-        result.push('', '### Page state');
-
-      result.push(
-          `- Page URL: ${tab.page.url()}`,
-          `- Page Title: ${await tab.title()}`
-      );
-      result.push(tab.snapshotOrDie().text());
+        result.push('', ...(await this.listTabsMarkdown()));
+      result.push('', snapshot);
     }
 
     const content = actionResult?.content ?? [];
@@ -254,69 +149,6 @@ ${code.join('\n')}
         },
       ],
     };
-  }
-
-  async waitForTimeout(time: number) {
-    if (!this._currentTab || this._javaScriptBlocked()) {
-      await new Promise(f => setTimeout(f, time));
-      return;
-    }
-
-    await callOnPageNoTrace(this._currentTab.page, page => {
-      return page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
-    });
-  }
-
-  private async _raceAgainstModalDialogs(
-    action: () => Promise<ToolActionResult>
-  ): Promise<ToolActionResult> {
-    this._pendingAction = {
-      dialogShown: new ManualPromise(),
-    };
-
-    let result: ToolActionResult | undefined;
-    try {
-      await Promise.race([
-        action().then(r => (result = r)),
-        this._pendingAction.dialogShown,
-      ]);
-    } finally {
-      this._pendingAction = undefined;
-    }
-    return result;
-  }
-
-  private _javaScriptBlocked(): boolean {
-    return this._modalStates.some(state => state.type === 'dialog');
-  }
-
-  dialogShown(tab: Tab, dialog: playwright.Dialog) {
-    this.setModalState(
-        {
-          type: 'dialog',
-          description: `"${dialog.type()}" dialog with message "${dialog.message()}"`,
-          dialog,
-        },
-        tab
-    );
-    this._pendingAction?.dialogShown.resolve();
-  }
-
-  async downloadStarted(tab: Tab, download: playwright.Download) {
-    const entry = {
-      download,
-      finished: false,
-      outputFile: await outputFile(this.config, download.suggestedFilename()),
-    };
-    this._downloads.push(entry);
-
-    try {
-      await download.saveAs(entry.outputFile);
-    } catch (error) {
-      // console.warn('Error saving download:', error);
-    } finally {
-      entry.finished = true;
-    }
   }
 
   private async _onPageCreated(page: playwright.Page) {
@@ -464,7 +296,6 @@ ${code.join('\n')}
   }
 
   private _onPageClosed(tab: Tab) {
-    this._modalStates = this._modalStates.filter(state => state.tab !== tab);
     const index = this._tabs.indexOf(tab);
     if (index === -1)
       return;
@@ -554,10 +385,4 @@ ${code.join('\n')}
     }
     return result;
   }
-}
-
-function trim(text: string, maxLength: number) {
-  if (text.length <= maxLength)
-    return text;
-  return text.slice(0, maxLength) + '...';
 }

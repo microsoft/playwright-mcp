@@ -15,11 +15,11 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool.js';
+import { defineTabTool } from './tool.js';
 
 import type * as playwright from 'playwright';
 
-const requests = defineTool({
+const requests = defineTabTool({
   capability: 'core',
 
   schema: {
@@ -30,8 +30,8 @@ const requests = defineTool({
     type: 'readOnly',
   },
 
-  handle: async context => {
-    const requests = context.currentTabOrDie().requests();
+  handle: async tab => {
+    const requests = tab.requests();
     const log = [...requests.entries()].map(([request, response]) => renderRequest(request, response)).join('\n');
     return {
       code: [`// <internal code to list network requests>`],

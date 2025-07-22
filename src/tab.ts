@@ -16,20 +16,33 @@
 
 import * as playwright from 'playwright';
 
-import { PageSnapshot } from './pageSnapshot.js';
-import { callOnPageNoTrace } from './tools/utils.js';
+import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 import { logUnhandledError } from './log.js';
+import { ManualPromise } from './manualPromise.js';
+import { ModalState } from './tools/tool.js';
+import { outputFile } from './config.js';
 
 import type { Context } from './context.js';
+import type { ToolActionResult } from './tools/tool.js';
+
+type PageEx = playwright.Page & {
+  _snapshotForAI: () => Promise<string>;
+};
+
+type PendingAction = {
+  dialogShown: ManualPromise<void>;
+};
 
 export class Tab {
   readonly context: Context;
   readonly page: playwright.Page;
   private _consoleMessages: ConsoleMessage[] = [];
   private _recentConsoleMessages: ConsoleMessage[] = [];
+  private _pendingAction: PendingAction | undefined;
   private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
-  private _snapshot: PageSnapshot | undefined;
   private _onPageClose: (tab: Tab) => void;
+  private _modalStates: ModalState[] = [];
+  private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
 
   constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void) {
     this.context = context;
@@ -41,18 +54,61 @@ export class Tab {
     page.on('response', response => this._requests.set(response.request(), response));
     page.on('close', () => this._onClose());
     page.on('filechooser', chooser => {
-      this.context.setModalState({
+      this.setModalState({
         type: 'fileChooser',
         description: 'File chooser',
         fileChooser: chooser,
-      }, this);
+      });
     });
-    page.on('dialog', dialog => this.context.dialogShown(this, dialog));
+    page.on('dialog', dialog => this._dialogShown(dialog));
     page.on('download', download => {
-      void this.context.downloadStarted(this, download);
+      void this._downloadStarted(download);
     });
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
+  }
+
+  modalStates(): ModalState[] {
+    return this._modalStates;
+  }
+
+  setModalState(modalState: ModalState) {
+    this._modalStates.push(modalState);
+  }
+
+  clearModalState(modalState: ModalState) {
+    this._modalStates = this._modalStates.filter(state => state !== modalState);
+  }
+
+  modalStatesMarkdown(): string[] {
+    const result: string[] = ['### Modal state'];
+    if (this._modalStates.length === 0)
+      result.push('- There is no modal state present');
+    for (const state of this._modalStates) {
+      const tool = this.context.tools.find(tool => tool.clearsModalState === state.type);
+      result.push(`- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`);
+    }
+    return result;
+  }
+
+  private _dialogShown(dialog: playwright.Dialog) {
+    this.setModalState({
+      type: 'dialog',
+      description: `"${dialog.type()}" dialog with message "${dialog.message()}"`,
+      dialog,
+    });
+    this._pendingAction?.dialogShown.resolve();
+  }
+
+  private async _downloadStarted(download: playwright.Download) {
+    const entry = {
+      download,
+      finished: false,
+      outputFile: await outputFile(this.context.config, download.suggestedFilename())
+    };
+    this._downloads.push(entry);
+    await download.saveAs(entry.outputFile);
+    entry.finished = true;
   }
 
   private _clearCollectedArtifacts() {
@@ -105,16 +161,6 @@ export class Tab {
     await this.waitForLoadState('load', { timeout: 5000 });
   }
 
-  hasSnapshot(): boolean {
-    return !!this._snapshot;
-  }
-
-  snapshotOrDie(): PageSnapshot {
-    if (!this._snapshot)
-      throw new Error('No snapshot available');
-    return this._snapshot;
-  }
-
   consoleMessages(): ConsoleMessage[] {
     return this._consoleMessages;
   }
@@ -123,14 +169,101 @@ export class Tab {
     return this._requests;
   }
 
-  async captureSnapshot() {
-    this._snapshot = await PageSnapshot.create(this.page);
+  takeRecentConsoleMarkdown(): string[] {
+    if (!this._recentConsoleMessages.length)
+      return [];
+    const result = this._recentConsoleMessages.map(message => {
+      return `- ${trim(message.toString(), 100)}`;
+    });
+    return ['', `### New console messages`, ...result];
   }
 
-  takeRecentConsoleMessages(): ConsoleMessage[] {
-    const result = this._recentConsoleMessages.slice();
-    this._recentConsoleMessages.length = 0;
+  listDownloadsMarkdown(): string[] {
+    if (!this._downloads.length)
+      return [];
+
+    const result: string[] = ['', '### Downloads'];
+    for (const entry of this._downloads) {
+      if (entry.finished)
+        result.push(`- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`);
+      else
+        result.push(`- Downloading file ${entry.download.suggestedFilename()} ...`);
+    }
     return result;
+  }
+
+  async captureSnapshot(): Promise<string> {
+    const snapshot = await (this.page as PageEx)._snapshotForAI();
+    return [
+      `### Page state`,
+      `- Page URL: ${this.page.url()}`,
+      `- Page Title: ${await this.page.title()}`,
+      `- Page Snapshot:`,
+      '```yaml',
+      snapshot,
+      '```',
+    ].join('\n');
+  }
+
+  private _javaScriptBlocked(): boolean {
+    return this._modalStates.some(state => state.type === 'dialog');
+  }
+
+  private async _raceAgainstModalDialogs<R>(action: () => Promise<R>): Promise<R | undefined> {
+    this._pendingAction = {
+      dialogShown: new ManualPromise(),
+    };
+
+    let result: R | undefined;
+    try {
+      await Promise.race([
+        action().then(r => result = r),
+        this._pendingAction.dialogShown,
+      ]);
+    } finally {
+      this._pendingAction = undefined;
+    }
+    return result;
+  }
+
+  async run(callback: () => Promise<ToolActionResult>, options: { waitForNetwork?: boolean, captureSnapshot?: boolean }): Promise<{ actionResult: ToolActionResult | undefined, snapshot: string | undefined }> {
+    let snapshot: string | undefined;
+    const actionResult = await this._raceAgainstModalDialogs(async () => {
+      try {
+        if (options.waitForNetwork)
+          return await waitForCompletion(this, async () => callback?.()) ?? undefined;
+        else
+          return await callback?.() ?? undefined;
+      } finally {
+        if (options.captureSnapshot && !this._javaScriptBlocked())
+          snapshot = await this.captureSnapshot();
+      }
+    });
+    return { actionResult, snapshot };
+  }
+
+  async refLocator(params: { element: string, ref: string }): Promise<playwright.Locator> {
+    return (await this.refLocators([params]))[0];
+  }
+
+  async refLocators(params: { element: string, ref: string }[]): Promise<playwright.Locator[]> {
+    const snapshot = await this.captureSnapshot();
+    return params.map(param => {
+      if (!snapshot.includes(`[ref=${param.ref}]`))
+        throw new Error(`Ref ${param.ref} not found in the current page snapshot. Try capturing new snapshot.`);
+      return this.page.locator(`aria-ref=${param.ref}`).describe(param.element);
+    });
+  }
+
+  async waitForTimeout(time: number) {
+    if (this._javaScriptBlocked()) {
+      await new Promise(f => setTimeout(f, time));
+      return;
+    }
+
+    await callOnPageNoTrace(this.page, page => {
+      return page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
+    });
   }
 }
 
@@ -161,4 +294,10 @@ function pageErrorToConsoleMessage(errorOrValue: Error | any): ConsoleMessage {
     text: String(errorOrValue),
     toString: () => String(errorOrValue),
   };
+}
+
+function trim(text: string, maxLength: number) {
+  if (text.length <= maxLength)
+    return text;
+  return text.slice(0, maxLength) + '...';
 }

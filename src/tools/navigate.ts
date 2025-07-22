@@ -15,7 +15,7 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool.js';
+import { defineTool, defineTabTool } from './tool.js';
 
 const navigate = defineTool({
   capability: 'core',
@@ -47,7 +47,7 @@ const navigate = defineTool({
   },
 });
 
-const goBack = defineTool({
+const goBack = defineTabTool({
   capability: 'core',
   schema: {
     name: 'browser_navigate_back',
@@ -57,8 +57,7 @@ const goBack = defineTool({
     type: 'readOnly',
   },
 
-  handle: async context => {
-    const tab = await context.ensureTab();
+  handle: async tab => {
     await tab.page.goBack();
     const code = [
       `// Navigate back`,
@@ -73,7 +72,7 @@ const goBack = defineTool({
   },
 });
 
-const goForward = defineTool({
+const goForward = defineTabTool({
   capability: 'core',
   schema: {
     name: 'browser_navigate_forward',
@@ -82,8 +81,7 @@ const goForward = defineTool({
     inputSchema: z.object({}),
     type: 'readOnly',
   },
-  handle: async context => {
-    const tab = context.currentTabOrDie();
+  handle: async tab => {
     await tab.page.goForward();
     const code = [
       `// Navigate forward`,

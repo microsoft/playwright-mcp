@@ -242,7 +242,7 @@ test('old locator error message', async ({ client, server }) => {
       element: 'Button 2',
       ref: 'e3',
     },
-  })).toContainTextContent('Ref not found');
+  })).toContainTextContent('Ref e3 not found in the current page snapshot. Try capturing new snapshot.');
 });
 
 test('visibility: hidden > visible should be shown', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/535' } }, async ({ client, server }) => {

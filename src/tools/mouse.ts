@@ -15,13 +15,13 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool.js';
+import { defineTabTool } from './tool.js';
 
 const elementSchema = z.object({
   element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
 });
 
-const mouseMove = defineTool({
+const mouseMove = defineTabTool({
   capability: 'vision',
   schema: {
     name: 'browser_mouse_move_xy',
@@ -34,8 +34,7 @@ const mouseMove = defineTool({
     type: 'readOnly',
   },
 
-  handle: async (context, params) => {
-    const tab = context.currentTabOrDie();
+  handle: async (tab, params) => {
     const code = [
       `// Move mouse to (${params.x}, ${params.y})`,
       `await page.mouse.move(${params.x}, ${params.y});`,
@@ -50,7 +49,7 @@ const mouseMove = defineTool({
   },
 });
 
-const mouseClick = defineTool({
+const mouseClick = defineTabTool({
   capability: 'vision',
   schema: {
     name: 'browser_mouse_click_xy',
@@ -63,8 +62,7 @@ const mouseClick = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, params) => {
-    const tab = context.currentTabOrDie();
+  handle: async (tab, params) => {
     const code = [
       `// Click mouse at coordinates (${params.x}, ${params.y})`,
       `await page.mouse.move(${params.x}, ${params.y});`,
@@ -85,7 +83,7 @@ const mouseClick = defineTool({
   },
 });
 
-const mouseDrag = defineTool({
+const mouseDrag = defineTabTool({
   capability: 'vision',
   schema: {
     name: 'browser_mouse_drag_xy',
@@ -100,9 +98,7 @@ const mouseDrag = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, params) => {
-    const tab = context.currentTabOrDie();
-
+  handle: async (tab, params) => {
     const code = [
       `// Drag mouse from (${params.startX}, ${params.startY}) to (${params.endX}, ${params.endY})`,
       `await page.mouse.move(${params.startX}, ${params.startY});`,

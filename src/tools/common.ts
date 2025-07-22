@@ -15,7 +15,7 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool.js';
+import { defineTabTool, defineTool } from './tool.js';
 
 const close = defineTool({
   capability: 'core',
@@ -38,7 +38,7 @@ const close = defineTool({
   },
 });
 
-const resize = defineTool({
+const resize = defineTabTool({
   capability: 'core',
   schema: {
     name: 'browser_resize',
@@ -51,9 +51,7 @@ const resize = defineTool({
     type: 'readOnly',
   },
 
-  handle: async (context, params) => {
-    const tab = context.currentTabOrDie();
-
+  handle: async (tab, params) => {
     const code = [
       `// Resize browser window to ${params.width}x${params.height}`,
       `await page.setViewportSize({ width: ${params.width}, height: ${params.height} });`

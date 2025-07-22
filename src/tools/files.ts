@@ -15,9 +15,9 @@
  */
 
 import { z } from 'zod';
-import { defineTool } from './tool.js';
+import { defineTabTool } from './tool.js';
 
-const uploadFile = defineTool({
+const uploadFile = defineTabTool({
   capability: 'core',
 
   schema: {
@@ -30,8 +30,8 @@ const uploadFile = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, params) => {
-    const modalState = context.modalStates().find(state => state.type === 'fileChooser');
+  handle: async (tab, params) => {
+    const modalState = tab.modalStates().find(state => state.type === 'fileChooser');
     if (!modalState)
       throw new Error('No file chooser visible');
 
@@ -41,7 +41,7 @@ const uploadFile = defineTool({
 
     const action = async () => {
       await modalState.fileChooser.setFiles(params.paths);
-      context.clearModalState(modalState);
+      tab.clearModalState(modalState);
     };
 
     return {

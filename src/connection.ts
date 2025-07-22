@@ -60,13 +60,6 @@ export function createConnection(config: FullConfig, browserContextFactory: Brow
     if (!tool)
       return errorResult(`Tool "${request.params.name}" not found`);
 
-
-    const modalStates = context.modalStates().map(state => state.type);
-    if (tool.clearsModalState && !modalStates.includes(tool.clearsModalState))
-      return errorResult(`The tool "${request.params.name}" can only be used when there is related modal state present.`, ...context.modalStatesMarkdown());
-    if (!tool.clearsModalState && modalStates.length)
-      return errorResult(`Tool "${request.params.name}" does not handle the modal state.`, ...context.modalStatesMarkdown());
-
     try {
       return await context.run(tool, request.params.arguments);
     } catch (error) {

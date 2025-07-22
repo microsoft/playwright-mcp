@@ -18,10 +18,9 @@
 import { asLocator } from 'playwright-core/lib/utils';
 
 import type * as playwright from 'playwright';
-import type { Context } from '../context.js';
 import type { Tab } from '../tab.js';
 
-export async function waitForCompletion<R>(context: Context, tab: Tab, callback: () => Promise<R>): Promise<R> {
+export async function waitForCompletion<R>(tab: Tab, callback: () => Promise<R>): Promise<R> {
   const requests = new Set<playwright.Request>();
   let frameNavigated = false;
   let waitCallback: () => void = () => {};
@@ -65,7 +64,7 @@ export async function waitForCompletion<R>(context: Context, tab: Tab, callback:
     if (!requests.size && !frameNavigated)
       waitCallback();
     await waitBarrier;
-    await context.waitForTimeout(1000);
+    await tab.waitForTimeout(1000);
     return result;
   } finally {
     dispose();

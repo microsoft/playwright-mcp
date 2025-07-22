@@ -16,7 +16,7 @@
 
 import { z } from 'zod';
 
-import { defineTool } from './tool.js';
+import { defineTabTool } from './tool.js';
 import * as javascript from '../javascript.js';
 import { outputFile } from '../config.js';
 import { generateLocator } from './utils.js';
@@ -41,7 +41,7 @@ const screenshotSchema = z.object({
   path: ['fullPage']
 });
 
-const screenshot = defineTool({
+const screenshot = defineTabTool({
   capability: 'core',
   schema: {
     name: 'browser_take_screenshot',
@@ -51,10 +51,9 @@ const screenshot = defineTool({
     type: 'readOnly',
   },
 
-  handle: async (context, params) => {
-    const tab = context.currentTabOrDie();
+  handle: async (tab, params) => {
     const fileType = params.raw ? 'png' : 'jpeg';
-    const fileName = await outputFile(context.config, params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
+    const fileName = await outputFile(tab.context.config, params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
     const options: playwright.PageScreenshotOptions = {
       type: fileType,
       quality: fileType === 'png' ? undefined : 50,
@@ -70,14 +69,14 @@ const screenshot = defineTool({
     ];
 
     // Only get snapshot when element screenshot is needed
-    const locator = params.ref ? tab.snapshotOrDie().refLocator({ element: params.element || '', ref: params.ref }) : null;
+    const locator = params.ref ? await tab.refLocator({ element: params.element || '', ref: params.ref }) : null;
 
     if (locator)
       code.push(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
     else
       code.push(`await page.screenshot(${javascript.formatObject(options)});`);
 
-    const includeBase64 = context.clientSupportsImages();
+    const includeBase64 = tab.context.config.imageResponses !== 'omit';
     const action = async () => {
       const screenshot = locator ? await locator.screenshot(options) : await tab.page.screenshot(options);
       return {
