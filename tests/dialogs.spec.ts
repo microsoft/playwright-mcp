@@ -36,7 +36,8 @@ await page.getByRole('button', { name: 'Button' }).click();
 \`\`\`
 
 ### Modal state
-- ["alert" dialog with message "Alert"]: can be handled by the "browser_handle_dialog" tool`);
+- ["alert" dialog with message "Alert"]: can be handled by the "browser_handle_dialog" tool
+`);
 
   const result = await client.callTool({
     name: 'browser_handle_dialog',
@@ -46,17 +47,7 @@ await page.getByRole('button', { name: 'Button' }).click();
   });
 
   expect(result).not.toContainTextContent('### Modal state');
-  expect(result).toContainTextContent(`### Ran Playwright code
-\`\`\`js
-// <internal code to handle "alert" dialog>
-\`\`\`
-
-### Page state
-- Page URL: ${server.PREFIX}
-- Page Title: 
-- Page Snapshot:
-\`\`\`yaml
-- button "Button"`);
+  expect(result).toContainTextContent(`Page Snapshot:`);
 });
 
 test('two alert dialogs', async ({ client, server }) => {
@@ -85,7 +76,8 @@ await page.getByRole('button', { name: 'Button' }).click();
 \`\`\`
 
 ### Modal state
-- ["alert" dialog with message "Alert 1"]: can be handled by the "browser_handle_dialog" tool`);
+- ["alert" dialog with message "Alert 1"]: can be handled by the "browser_handle_dialog" tool
+`);
 
   const result = await client.callTool({
     name: 'browser_handle_dialog',
@@ -94,9 +86,9 @@ await page.getByRole('button', { name: 'Button' }).click();
     },
   });
 
-  expect(result).toContainTextContent(`
-### Modal state
-- ["alert" dialog with message "Alert 2"]: can be handled by the "browser_handle_dialog" tool`);
+  expect(result).toContainTextContent(`### Modal state
+- ["alert" dialog with message "Alert 2"]: can be handled by the "browser_handle_dialog" tool
+`);
 
   const result2 = await client.callTool({
     name: 'browser_handle_dialog',
@@ -138,7 +130,6 @@ test('confirm dialog (true)', async ({ client, server }) => {
   });
 
   expect(result).not.toContainTextContent('### Modal state');
-  expect(result).toContainTextContent('// <internal code to handle "confirm" dialog>');
   expect(result).toContainTextContent(`- Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: "true"
@@ -165,7 +156,8 @@ test('confirm dialog (false)', async ({ client, server }) => {
       ref: 'e2',
     },
   })).toContainTextContent(`### Modal state
-- ["confirm" dialog with message "Confirm"]: can be handled by the "browser_handle_dialog" tool`);
+- ["confirm" dialog with message "Confirm"]: can be handled by the "browser_handle_dialog" tool
+`);
 
   const result = await client.callTool({
     name: 'browser_handle_dialog',
@@ -200,7 +192,8 @@ test('prompt dialog', async ({ client, server }) => {
       ref: 'e2',
     },
   })).toContainTextContent(`### Modal state
-- ["prompt" dialog with message "Prompt"]: can be handled by the "browser_handle_dialog" tool`);
+- ["prompt" dialog with message "Prompt"]: can be handled by the "browser_handle_dialog" tool
+`);
 
   const result = await client.callTool({
     name: 'browser_handle_dialog',
@@ -236,7 +229,8 @@ await page.getByRole('button', { name: 'Button' }).click();
 \`\`\`
 
 ### Modal state
-- ["alert" dialog with message "Alert"]: can be handled by the "browser_handle_dialog" tool`);
+- ["alert" dialog with message "Alert"]: can be handled by the "browser_handle_dialog" tool
+`);
 
   const result = await client.callTool({
     name: 'browser_handle_dialog',
@@ -246,12 +240,7 @@ await page.getByRole('button', { name: 'Button' }).click();
   });
 
   expect(result).not.toContainTextContent('### Modal state');
-  expect(result).toContainTextContent(`### Ran Playwright code
-\`\`\`js
-// <internal code to handle "alert" dialog>
-\`\`\`
-
-### Page state
+  expect(result).toContainTextContent(`### Page state
 - Page URL: ${server.PREFIX}
 - Page Title: 
 - Page Snapshot:

@@ -30,19 +30,9 @@ const requests = defineTabTool({
     type: 'readOnly',
   },
 
-  handle: async tab => {
+  handle: async (tab, params, response) => {
     const requests = tab.requests();
-    const log = [...requests.entries()].map(([request, response]) => renderRequest(request, response)).join('\n');
-    return {
-      code: [`// <internal code to list network requests>`],
-      action: async () => {
-        return {
-          content: [{ type: 'text', text: log }]
-        };
-      },
-      captureSnapshot: false,
-      waitForNetwork: false,
-    };
+    [...requests.entries()].forEach(([req, res]) => response.addResult(renderRequest(req, res)));
   },
 });
 

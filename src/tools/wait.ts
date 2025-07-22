@@ -32,7 +32,7 @@ const wait = defineTool({
     type: 'readOnly',
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, response) => {
     if (!params.text && !params.textGone && !params.time)
       throw new Error('Either time, text or textGone must be provided');
 
@@ -57,11 +57,8 @@ const wait = defineTool({
       await locator.waitFor({ state: 'visible' });
     }
 
-    return {
-      code,
-      captureSnapshot: true,
-      waitForNetwork: false,
-    };
+    response.addResult(`Waited for ${params.text || params.textGone || params.time}`);
+    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 

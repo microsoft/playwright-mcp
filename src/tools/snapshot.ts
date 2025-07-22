@@ -30,14 +30,9 @@ const snapshot = defineTool({
     type: 'readOnly',
   },
 
-  handle: async context => {
-    await context.ensureTab();
-
-    return {
-      code: [`// <internal code to capture accessibility snapshot>`],
-      captureSnapshot: true,
-      waitForNetwork: false,
-    };
+  handle: async (context, params, response) => {
+    const tab = await context.ensureTab();
+    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 
@@ -61,26 +56,27 @@ const click = defineTabTool({
     type: 'destructive',
   },
 
-  handle: async (tab, params) => {
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
+
     const locator = await tab.refLocator(params);
     const button = params.button;
     const buttonAttr = button ? `{ button: '${button}' }` : '';
 
-    const code: string[] = [];
     if (params.doubleClick) {
-      code.push(`// Double click ${params.element}`);
-      code.push(`await page.${await generateLocator(locator)}.dblclick(${buttonAttr});`);
+      response.addCode(`// Double click ${params.element}`);
+      response.addCode(`await page.${await generateLocator(locator)}.dblclick(${buttonAttr});`);
     } else {
-      code.push(`// Click ${params.element}`);
-      code.push(`await page.${await generateLocator(locator)}.click(${buttonAttr});`);
+      response.addCode(`// Click ${params.element}`);
+      response.addCode(`await page.${await generateLocator(locator)}.click(${buttonAttr});`);
     }
 
-    return {
-      code,
-      action: () => params.doubleClick ? locator.dblclick({ button }) : locator.click({ button }),
-      captureSnapshot: true,
-      waitForNetwork: true,
-    };
+    await tab.run(async () => {
+      if (params.doubleClick)
+        await locator.dblclick({ button });
+      else
+        await locator.click({ button });
+    }, response);
   },
 });
 
@@ -99,23 +95,19 @@ const drag = defineTabTool({
     type: 'destructive',
   },
 
-  handle: async (tab, params) => {
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
+
     const [startLocator, endLocator] = await tab.refLocators([
       { ref: params.startRef, element: params.startElement },
       { ref: params.endRef, element: params.endElement },
     ]);
 
-    const code = [
-      `// Drag ${params.startElement} to ${params.endElement}`,
-      `await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`
-    ];
+    await tab.run(async () => {
+      await startLocator.dragTo(endLocator);
+    }, response);
 
-    return {
-      code,
-      action: () => startLocator.dragTo(endLocator),
-      captureSnapshot: true,
-      waitForNetwork: true,
-    };
+    response.addCode(`await page.${await generateLocator(startLocator)}.dragTo(page.${await generateLocator(endLocator)});`);
   },
 });
 
@@ -129,20 +121,15 @@ const hover = defineTabTool({
     type: 'readOnly',
   },
 
-  handle: async (tab, params) => {
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
+
     const locator = await tab.refLocator(params);
+    response.addCode(`await page.${await generateLocator(locator)}.hover();`);
 
-    const code = [
-      `// Hover over ${params.element}`,
-      `await page.${await generateLocator(locator)}.hover();`
-    ];
-
-    return {
-      code,
-      action: () => locator.hover(),
-      captureSnapshot: true,
-      waitForNetwork: true,
-    };
+    await tab.run(async () => {
+      await locator.hover();
+    }, response);
   },
 });
 
@@ -160,20 +147,16 @@ const selectOption = defineTabTool({
     type: 'destructive',
   },
 
-  handle: async (tab, params) => {
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
+
     const locator = await tab.refLocator(params);
+    response.addCode(`// Select options [${params.values.join(', ')}] in ${params.element}`);
+    response.addCode(`await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(params.values)});`);
 
-    const code = [
-      `// Select options [${params.values.join(', ')}] in ${params.element}`,
-      `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(params.values)});`
-    ];
-
-    return {
-      code,
-      action: () => locator.selectOption(params.values).then(() => {}),
-      captureSnapshot: true,
-      waitForNetwork: true,
-    };
+    await tab.run(async () => {
+      await locator.selectOption(params.values);
+    }, response);
   },
 });
 

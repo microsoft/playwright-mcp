@@ -44,11 +44,13 @@ test('list first tab', async ({ client }) => {
 });
 
 test('create new tab', async ({ client }) => {
-  expect(await createTab(client, 'Tab one', 'Body one')).toContainTextContent(`
-### Open tabs
+  const result = await createTab(client, 'Tab one', 'Body one');
+  expect(result).toContainTextContent(`### Open tabs
 - 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
+`);
 
+  expect(result).toContainTextContent(`
 ### Page state
 - Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
@@ -57,12 +59,14 @@ test('create new tab', async ({ client }) => {
 - generic [active] [ref=e1]: Body one
 \`\`\``);
 
-  expect(await createTab(client, 'Tab two', 'Body two')).toContainTextContent(`
-### Open tabs
+  const result2 = await createTab(client, 'Tab two', 'Body two');
+  expect(result2).toContainTextContent(`### Open tabs
 - 0: [] (about:blank)
 - 1: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 - 2: (current) [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
+`);
 
+  expect(result2).toContainTextContent(`
 ### Page state
 - Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
 - Page Title: Tab two
@@ -82,8 +86,7 @@ test('select tab', async ({ client }) => {
       index: 1,
     },
   });
-  expect(result).toContainTextContent(`
-### Open tabs
+  expect(result).toContainTextContent(`### Open tabs
 - 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 - 2: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`);
@@ -108,8 +111,7 @@ test('close tab', async ({ client }) => {
       index: 2,
     },
   });
-  expect(result).toContainTextContent(`
-### Open tabs
+  expect(result).toContainTextContent(`### Open tabs
 - 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`);
 

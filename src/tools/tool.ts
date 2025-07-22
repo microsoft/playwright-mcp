@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod';
 import type { Context } from '../context.js';
 import type * as playwright from 'playwright';
 import type { ToolCapability } from '../../config.js';
 import type { Tab } from '../tab.js';
+import type { Response } from '../response.js';
 
 export type ToolSchema<Input extends InputType> = {
   name: string;
@@ -45,21 +45,30 @@ export type DialogModalState = {
 
 export type ModalState = FileUploadModalState | DialogModalState;
 
-export type ToolActionResult = { content?: (ImageContent | TextContent)[] } | undefined | void;
+export type SnapshotContent = {
+  type: 'snapshot';
+  snapshot: string;
+};
 
-export type ToolResult = {
+export type TextContent = {
+  type: 'text';
+  text: string;
+};
+
+export type ImageContent = {
+  type: 'image';
+  image: string;
+};
+
+export type CodeContent = {
+  type: 'code';
   code: string[];
-  action?: () => Promise<ToolActionResult>;
-  captureSnapshot: boolean;
-  waitForNetwork: boolean;
-  resultOverride?: ToolActionResult;
 };
 
 export type Tool<Input extends InputType = InputType> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
-  clearsModalState?: ModalState['type'];
-  handle: (context: Context, params: z.output<Input>) => Promise<ToolResult>;
+  handle: (context: Context, params: z.output<Input>, response: Response) => Promise<void>;
 };
 
 export function defineTool<Input extends InputType>(tool: Tool<Input>): Tool<Input> {
@@ -70,20 +79,20 @@ export type TabTool<Input extends InputType = InputType> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
   clearsModalState?: ModalState['type'];
-  handle: (tab: Tab, params: z.output<Input>) => Promise<ToolResult>;
+  handle: (tab: Tab, params: z.output<Input>, response: Response) => Promise<void>;
 };
 
 export function defineTabTool<Input extends InputType>(tool: TabTool<Input>): Tool<Input> {
   return {
     ...tool,
-    handle: async (context, params) => {
+    handle: async (context, params, response) => {
       const tab = context.currentTabOrDie();
       const modalStates = tab.modalStates().map(state => state.type);
       if (tool.clearsModalState && !modalStates.includes(tool.clearsModalState))
         throw new Error(`The tool "${tool.schema.name}" can only be used when there is related modal state present.\n` + tab.modalStatesMarkdown().join('\n'));
       if (!tool.clearsModalState && modalStates.length)
         throw new Error(`Tool "${tool.schema.name}" does not handle the modal state.\n` + tab.modalStatesMarkdown().join('\n'));
-      return tool.handle(tab, params);
+      return tool.handle(tab, params, response);
     },
   };
 }

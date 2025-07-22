@@ -31,27 +31,20 @@ const handleDialog = defineTabTool({
     type: 'destructive',
   },
 
-  handle: async (tab, params) => {
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
+
     const dialogState = tab.modalStates().find(state => state.type === 'dialog');
     if (!dialogState)
       throw new Error('No dialog visible');
 
-    if (params.accept)
-      await dialogState.dialog.accept(params.promptText);
-    else
-      await dialogState.dialog.dismiss();
-
     tab.clearModalState(dialogState);
-
-    const code = [
-      `// <internal code to handle "${dialogState.dialog.type()}" dialog>`,
-    ];
-
-    return {
-      code,
-      captureSnapshot: true,
-      waitForNetwork: false,
-    };
+    await tab.run(async () => {
+      if (params.accept)
+        await dialogState.dialog.accept(params.promptText);
+      else
+        await dialogState.dialog.dismiss();
+    }, response);
   },
 
   clearsModalState: 'dialog',

@@ -34,20 +34,14 @@ const pressKey = defineTabTool({
     type: 'destructive',
   },
 
-  handle: async (tab, params) => {
-    const code = [
-      `// Press ${params.key}`,
-      `await page.keyboard.press('${params.key}');`,
-    ];
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
+    response.addCode(`// Press ${params.key}`);
+    response.addCode(`await page.keyboard.press('${params.key}');`);
 
-    const action = () => tab.page.keyboard.press(params.key);
-
-    return {
-      code,
-      action,
-      captureSnapshot: true,
-      waitForNetwork: true
-    };
+    await tab.run(async () => {
+      await tab.page.keyboard.press(params.key);
+    }, response);
   },
 });
 
@@ -67,34 +61,27 @@ const type = defineTabTool({
     type: 'destructive',
   },
 
-  handle: async (tab, params) => {
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
+
     const locator = await tab.refLocator(params);
 
-    const code: string[] = [];
-    const steps: (() => Promise<void>)[] = [];
+    await tab.run(async () => {
+      if (params.slowly) {
+        response.addCode(`// Press "${params.text}" sequentially into "${params.element}"`);
+        response.addCode(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
+        await locator.pressSequentially(params.text);
+      } else {
+        response.addCode(`// Fill "${params.text}" into "${params.element}"`);
+        response.addCode(`await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`);
+        await locator.fill(params.text);
+      }
 
-    if (params.slowly) {
-      code.push(`// Press "${params.text}" sequentially into "${params.element}"`);
-      code.push(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
-      steps.push(() => locator.pressSequentially(params.text));
-    } else {
-      code.push(`// Fill "${params.text}" into "${params.element}"`);
-      code.push(`await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`);
-      steps.push(() => locator.fill(params.text));
-    }
-
-    if (params.submit) {
-      code.push(`// Submit text`);
-      code.push(`await page.${await generateLocator(locator)}.press('Enter');`);
-      steps.push(() => locator.press('Enter'));
-    }
-
-    return {
-      code,
-      action: () => steps.reduce((acc, step) => acc.then(step), Promise.resolve()),
-      captureSnapshot: true,
-      waitForNetwork: true,
-    };
+      if (params.submit) {
+        response.addCode(`await page.${await generateLocator(locator)}.press('Enter');`);
+        await locator.press('Enter');
+      }
+    }, response);
   },
 });
 

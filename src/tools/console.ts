@@ -26,19 +26,8 @@ const console = defineTabTool({
     inputSchema: z.object({}),
     type: 'readOnly',
   },
-  handle: async tab => {
-    const messages = tab.consoleMessages();
-    const log = messages.map(message => message.toString()).join('\n');
-    return {
-      code: [`// <internal code to get console messages>`],
-      action: async () => {
-        return {
-          content: [{ type: 'text', text: log }]
-        };
-      },
-      captureSnapshot: false,
-      waitForNetwork: false,
-    };
+  handle: async (tab, params, response) => {
+    tab.consoleMessages().map(message => response.addResult(message.toString()));
   },
 });
 

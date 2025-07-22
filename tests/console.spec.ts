@@ -38,6 +38,7 @@ test('browser_console_messages', async ({ client, server }) => {
     name: 'browser_console_messages',
   });
   expect(resource).toHaveTextContent([
+    '### Result',
     `[LOG] Hello, world! @ ${server.PREFIX}:4`,
     `[ERROR] Error @ ${server.PREFIX}:5`,
   ].join('\n'));

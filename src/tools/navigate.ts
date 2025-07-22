@@ -30,20 +30,13 @@ const navigate = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, params) => {
+  handle: async (context, params, response) => {
     const tab = await context.ensureTab();
     await tab.navigate(params.url);
 
-    const code = [
-      `// Navigate to ${params.url}`,
-      `await page.goto('${params.url}');`,
-    ];
-
-    return {
-      code,
-      captureSnapshot: true,
-      waitForNetwork: false,
-    };
+    response.addCode(`// Navigate to ${params.url}`);
+    response.addCode(`await page.goto('${params.url}');`);
+    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 
@@ -57,18 +50,13 @@ const goBack = defineTabTool({
     type: 'readOnly',
   },
 
-  handle: async tab => {
-    await tab.page.goBack();
-    const code = [
-      `// Navigate back`,
-      `await page.goBack();`,
-    ];
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
 
-    return {
-      code,
-      captureSnapshot: true,
-      waitForNetwork: false,
-    };
+    await tab.page.goBack();
+    response.addCode(`// Navigate back`);
+    response.addCode(`await page.goBack();`);
+    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 
@@ -81,17 +69,13 @@ const goForward = defineTabTool({
     inputSchema: z.object({}),
     type: 'readOnly',
   },
-  handle: async tab => {
+  handle: async (tab, params, response) => {
+    response.setIncludeSnapshot();
+
     await tab.page.goForward();
-    const code = [
-      `// Navigate forward`,
-      `await page.goForward();`,
-    ];
-    return {
-      code,
-      captureSnapshot: true,
-      waitForNetwork: false,
-    };
+    response.addCode(`// Navigate forward`);
+    response.addCode(`await page.goForward();`);
+    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 

@@ -28,13 +28,10 @@ const close = defineTool({
     type: 'readOnly',
   },
 
-  handle: async context => {
+  handle: async (context, params, response) => {
     await context.close();
-    return {
-      code: [`await page.close()`],
-      captureSnapshot: false,
-      waitForNetwork: false,
-    };
+    response.setIncludeTabs();
+    response.addCode(`await page.close()`);
   },
 });
 
@@ -51,22 +48,13 @@ const resize = defineTabTool({
     type: 'readOnly',
   },
 
-  handle: async (tab, params) => {
-    const code = [
-      `// Resize browser window to ${params.width}x${params.height}`,
-      `await page.setViewportSize({ width: ${params.width}, height: ${params.height} });`
-    ];
+  handle: async (tab, params, response) => {
+    response.addCode(`// Resize browser window to ${params.width}x${params.height}`);
+    response.addCode(`await page.setViewportSize({ width: ${params.width}, height: ${params.height} });`);
 
-    const action = async () => {
+    await tab.run(async () => {
       await tab.page.setViewportSize({ width: params.width, height: params.height });
-    };
-
-    return {
-      code,
-      action,
-      captureSnapshot: true,
-      waitForNetwork: true
-    };
+    }, response);
   },
 });
 

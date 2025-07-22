@@ -23,7 +23,7 @@ import { ModalState } from './tools/tool.js';
 import { outputFile } from './config.js';
 
 import type { Context } from './context.js';
-import type { ToolActionResult } from './tools/tool.js';
+import type { Response } from './response.js';
 
 type PageEx = playwright.Page & {
   _snapshotForAI: () => Promise<string>;
@@ -85,7 +85,7 @@ export class Tab {
     if (this._modalStates.length === 0)
       result.push('- There is no modal state present');
     for (const state of this._modalStates) {
-      const tool = this.context.tools.find(tool => tool.clearsModalState === state.type);
+      const tool = this.context.tools.filter(tool => 'clearsModalState' in tool).find(tool => tool.clearsModalState === state.type);
       result.push(`- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`);
     }
     return result;
@@ -151,10 +151,13 @@ export class Tab {
       // on chromium, the download event is fired *after* page.goto rejects, so we wait a lil bit
       const download = await Promise.race([
         downloadEvent,
-        new Promise(resolve => setTimeout(resolve, 1000)),
+        new Promise(resolve => setTimeout(resolve, 3000)),
       ]);
       if (!download)
         throw e;
+      // Make sure other "download" listeners are notified first.
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return;
     }
 
     // Cap load event to 5 seconds, the page is operational at this point.
@@ -169,40 +172,53 @@ export class Tab {
     return this._requests;
   }
 
-  takeRecentConsoleMarkdown(): string[] {
+  private _takeRecentConsoleMarkdown(): string[] {
     if (!this._recentConsoleMessages.length)
       return [];
     const result = this._recentConsoleMessages.map(message => {
       return `- ${trim(message.toString(), 100)}`;
     });
-    return ['', `### New console messages`, ...result];
+    return [`### New console messages`, ...result, ''];
   }
 
-  listDownloadsMarkdown(): string[] {
+  private _listDownloadsMarkdown(): string[] {
     if (!this._downloads.length)
       return [];
 
-    const result: string[] = ['', '### Downloads'];
+    const result: string[] = ['### Downloads'];
     for (const entry of this._downloads) {
       if (entry.finished)
         result.push(`- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`);
       else
         result.push(`- Downloading file ${entry.download.suggestedFilename()} ...`);
     }
+    result.push('');
     return result;
   }
 
-  async captureSnapshot(): Promise<string> {
+  async captureSnapshot(options: { omitAriaSnapshot?: boolean } = {}): Promise<string> {
+    const result: string[] = [];
+    if (this.modalStates().length) {
+      result.push(...this.modalStatesMarkdown());
+      return result.join('\n');
+    }
+
+    result.push(...this._takeRecentConsoleMarkdown());
+    result.push(...this._listDownloadsMarkdown());
+    if (options.omitAriaSnapshot)
+      return result.join('\n');
+
     const snapshot = await (this.page as PageEx)._snapshotForAI();
-    return [
-      `### Page state`,
-      `- Page URL: ${this.page.url()}`,
-      `- Page Title: ${await this.page.title()}`,
-      `- Page Snapshot:`,
-      '```yaml',
-      snapshot,
-      '```',
-    ].join('\n');
+    result.push(
+        `### Page state`,
+        `- Page URL: ${this.page.url()}`,
+        `- Page Title: ${await this.page.title()}`,
+        `- Page Snapshot:`,
+        '```yaml',
+        snapshot,
+        '```',
+    );
+    return result.join('\n');
   }
 
   private _javaScriptBlocked(): boolean {
@@ -226,20 +242,25 @@ export class Tab {
     return result;
   }
 
-  async run(callback: () => Promise<ToolActionResult>, options: { waitForNetwork?: boolean, captureSnapshot?: boolean }): Promise<{ actionResult: ToolActionResult | undefined, snapshot: string | undefined }> {
+  async run(callback: () => Promise<void>, response: Response) {
     let snapshot: string | undefined;
-    const actionResult = await this._raceAgainstModalDialogs(async () => {
+    await this._raceAgainstModalDialogs(async () => {
       try {
-        if (options.waitForNetwork)
-          return await waitForCompletion(this, async () => callback?.()) ?? undefined;
+        if (response.includeSnapshot())
+          await waitForCompletion(this, callback);
         else
-          return await callback?.() ?? undefined;
+          await callback();
       } finally {
-        if (options.captureSnapshot && !this._javaScriptBlocked())
-          snapshot = await this.captureSnapshot();
+        snapshot = await this.captureSnapshot();
       }
     });
-    return { actionResult, snapshot };
+
+    if (snapshot) {
+      response.addSnapshot(snapshot);
+    } else if (response.includeSnapshot()) {
+      // We are blocked on modal dialog.
+      response.addSnapshot(await this.captureSnapshot({ omitAriaSnapshot: true }));
+    }
   }
 
   async refLocator(params: { element: string, ref: string }): Promise<playwright.Locator> {
@@ -247,7 +268,7 @@ export class Tab {
   }
 
   async refLocators(params: { element: string, ref: string }[]): Promise<playwright.Locator[]> {
-    const snapshot = await this.captureSnapshot();
+    const snapshot = await (this.page as PageEx)._snapshotForAI();
     return params.map(param => {
       if (!snapshot.includes(`[ref=${param.ref}]`))
         throw new Error(`Ref ${param.ref} not found in the current page snapshot. Try capturing new snapshot.`);
