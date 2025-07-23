@@ -162,6 +162,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                example ".com,chromium.org,.domain.com"
   --proxy-server <proxy>       specify proxy server, for example
                                "http://myproxy:3128" or "socks5://myproxy:8080"
+  --save-session               Whether to save the Playwright MCP session into
+                               the output directory.
   --save-trace                 Whether to save the Playwright Trace of the
                                session into the output directory.
   --storage-state <path>       path to the storage state file for isolated

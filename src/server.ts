@@ -35,7 +35,7 @@ export class Server {
   }
 
   async createConnection(transport: Transport): Promise<Connection> {
-    const connection = createConnection(this.config, this._contextFactory);
+    const connection = await createConnection(this.config, this._contextFactory);
     this._connectionList.push(connection);
     await connection.server.connect(transport);
     return connection;
