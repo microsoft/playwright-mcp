@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import fs from 'node:fs';
-import url from 'node:url';
-import path from 'node:path';
+import fs from 'fs';
+import path from 'path';
+import url from 'url';
 
 const __filename = url.fileURLToPath(import.meta.url);
 export const packageJSON = JSON.parse(fs.readFileSync(path.join(path.dirname(__filename), '..', 'package.json'), 'utf8'));
