@@ -40,7 +40,7 @@ class TabShareExtension {
           sendResponse({ success: false, error: 'No tab id' });
           return true;
         }
-        this._connectTab(tabId, message.mcpRelayUrl!).then(
+        this._connectTab(sender.tab!, message.mcpRelayUrl!).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true; // Return true to indicate that the response will be sent asynchronously
@@ -48,9 +48,9 @@ class TabShareExtension {
     return false;
   }
 
-  private async _connectTab(tabId: number, mcpRelayUrl: string): Promise<void> {
+  private async _connectTab(tab: chrome.tabs.Tab, mcpRelayUrl: string): Promise<void> {
     try {
-      debugLog(`Connecting tab ${tabId} to bridge at ${mcpRelayUrl}`);
+      debugLog(`Connecting tab ${tab.id} to bridge at ${mcpRelayUrl}`);
       const socket = new WebSocket(mcpRelayUrl);
       await new Promise<void>((resolve, reject) => {
         socket.onopen = () => resolve();
@@ -58,7 +58,7 @@ class TabShareExtension {
         setTimeout(() => reject(new Error('Connection timeout')), 5000);
       });
 
-      const connection = new RelayConnection(socket);
+      const connection = new RelayConnection(socket, tab.id!);
       const connectionClosed = (m: string) => {
         debugLog(m);
         if (this._activeConnection === connection) {
@@ -70,12 +70,15 @@ class TabShareExtension {
       socket.onerror = error => connectionClosed(`WebSocket error: ${error}`);
       this._activeConnection = connection;
 
-      connection.setConnectedTabId(tabId);
-      await this._setConnectedTabId(tabId);
-      debugLog(`Tab ${tabId} connected successfully`);
+      await Promise.all([
+        this._setConnectedTabId(tab.id!),
+        chrome.tabs.update(tab.id!, { active: true }),
+        chrome.windows.update(tab.windowId, { focused: true }),
+      ]);
+      debugLog(`Connected to MCP bridge`);
     } catch (error: any) {
-      debugLog(`Failed to connect tab ${tabId}:`, error.message);
       await this._setConnectedTabId(null);
+      debugLog(`Failed to connect tab ${tab.id}:`, error.message);
       throw error;
     }
   }
@@ -96,8 +99,11 @@ class TabShareExtension {
   }
 
   private async _onTabRemoved(tabId: number): Promise<void> {
-    if (this._connectedTabId === tabId)
-      this._activeConnection!.setConnectedTabId(null);
+    if (this._connectedTabId !== tabId)
+      return;
+    this._activeConnection?.close('Browser tab closed');
+    this._activeConnection = undefined;
+    this._connectedTabId = null;
   }
 
   private async _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab): Promise<void> {

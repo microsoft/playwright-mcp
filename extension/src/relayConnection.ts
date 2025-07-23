@@ -37,12 +37,13 @@ type ProtocolResponse = {
 };
 
 export class RelayConnection {
-  private _debuggee: chrome.debugger.Debuggee = {};
+  private _debuggee: chrome.debugger.Debuggee;
   private _ws: WebSocket;
   private _eventListener: (source: chrome.debugger.DebuggerSession, method: string, params: any) => void;
   private _detachListener: (source: chrome.debugger.Debuggee, reason: string) => void;
 
-  constructor(ws: WebSocket) {
+  constructor(ws: WebSocket, tabId: number) {
+    this._debuggee = { tabId };
     this._ws = ws;
     this._ws.onmessage = this._onMessage.bind(this);
     // Store listeners for cleanup
@@ -52,18 +53,10 @@ export class RelayConnection {
     chrome.debugger.onDetach.addListener(this._detachListener);
   }
 
-  setConnectedTabId(tabId: number | null): void {
-    if (!tabId) {
-      this._debuggee = { };
-      return;
-    }
-    this._debuggee = { tabId };
-  }
-
-  close(message?: string): void {
+  close(message: string): void {
     chrome.debugger.onEvent.removeListener(this._eventListener);
     chrome.debugger.onDetach.removeListener(this._detachListener);
-    this._ws.close(1000, message || 'Connection closed');
+    this._ws.close(1000, message);
   }
 
   private async _detachDebugger(): Promise<void> {
@@ -95,6 +88,7 @@ export class RelayConnection {
         reason,
       },
     });
+    this._debuggee = { };
   }
 
   private _onMessage(event: MessageEvent): void {

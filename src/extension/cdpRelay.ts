@@ -125,8 +125,8 @@ export class CDPRelayServer {
   }
 
   stop(): void {
-    this._playwrightConnection?.close();
-    this._extensionConnection?.close();
+    this._closePlaywrightConnection('Server stopped');
+    this._closeExtensionConnection('Server stopped');
   }
 
   private _onConnection(ws: WebSocket, request: http.IncomingMessage): void {
@@ -153,11 +153,11 @@ export class CDPRelayServer {
       }
     });
     ws.on('close', () => {
-      if (this._playwrightConnection === ws) {
-        this._playwrightConnection = null;
-        this._closeExtensionConnection();
-        debugLogger('Playwright MCP disconnected');
-      }
+      if (this._playwrightConnection !== ws)
+        return;
+      this._playwrightConnection = null;
+      this._closeExtensionConnection('Playwright client disconnected');
+      debugLogger('Playwright WebSocket closed');
     });
     ws.on('error', error => {
       debugLogger('Playwright WebSocket error:', error);
@@ -165,13 +165,23 @@ export class CDPRelayServer {
     debugLogger('Playwright MCP connected');
   }
 
-  private _closeExtensionConnection() {
+  private _closeExtensionConnection(reason: string) {
+    this._extensionConnection?.close(reason);
+    this._resetExtensionConnection();
+  }
+
+  private _resetExtensionConnection() {
     this._connectedTabInfo = undefined;
-    this._extensionConnection?.close();
     this._extensionConnection = null;
     this._extensionConnectionPromise = new Promise(resolve => {
       this._extensionConnectionResolve = resolve;
     });
+  }
+
+  private _closePlaywrightConnection(reason: string) {
+    if (this._playwrightConnection?.readyState === WebSocket.OPEN)
+      this._playwrightConnection.close(1000, reason);
+    this._playwrightConnection = null;
   }
 
   private _handleExtensionConnection(ws: WebSocket): void {
@@ -180,9 +190,12 @@ export class CDPRelayServer {
       return;
     }
     this._extensionConnection = new ExtensionConnection(ws);
-    this._extensionConnection.onclose = c => {
-      if (this._extensionConnection === c)
-        this._extensionConnection = null;
+    this._extensionConnection.onclose = (c, reason) => {
+      debugLogger('Extension WebSocket closed:', reason, c === this._extensionConnection);
+      if (this._extensionConnection !== c)
+        return;
+      this._resetExtensionConnection();
+      this._closePlaywrightConnection(`Extension disconnected: ${reason}`);
     };
     this._extensionConnection.onmessage = this._handleExtensionMessage.bind(this);
     this._extensionConnectionResolve?.();
@@ -300,7 +313,12 @@ class ExtensionContextFactory implements BrowserContextFactory {
 
   private async _obtainBrowser(clientInfo: { name: string, version: string }): Promise<playwright.Browser> {
     await this._relay.ensureExtensionConnectionForMCPContext(clientInfo);
-    return await playwright.chromium.connectOverCDP(this._relay.cdpEndpoint());
+    const browser = await playwright.chromium.connectOverCDP(this._relay.cdpEndpoint());
+    browser.on('disconnected', () => {
+      this._browserPromise = undefined;
+      debugLogger('Browser disconnected');
+    });
+    return browser;
   }
 }
 
@@ -326,7 +344,7 @@ class ExtensionConnection {
   private _lastId = 0;
 
   onmessage?: (method: string, params: any) => void;
-  onclose?: (self: ExtensionConnection) => void;
+  onclose?: (self: ExtensionConnection, reason: string) => void;
 
   constructor(ws: WebSocket) {
     this._ws = ws;
@@ -346,10 +364,10 @@ class ExtensionConnection {
     });
   }
 
-  close(message?: string) {
+  close(message: string) {
     debugLogger('closing extension connection:', message);
-    this._ws.close(1000, message ?? 'Connection closed');
-    this.onclose?.(this);
+    if (this._ws.readyState === WebSocket.OPEN)
+      this._ws.close(1000, message);
   }
 
   private _onMessage(event: websocket.RawData) {
@@ -391,6 +409,7 @@ class ExtensionConnection {
   private _onClose(event: websocket.CloseEvent) {
     debugLogger(`<ws closed> code=${event.code} reason=${event.reason}`);
     this._dispose();
+    this.onclose?.(this, event.reason);
   }
 
   private _onError(event: websocket.ErrorEvent) {
