@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+import { EventEmitter } from 'events';
 import * as playwright from 'playwright';
-
 import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 import { logUnhandledError } from './log.js';
 import { ManualPromise } from './manualPromise.js';
@@ -23,28 +23,31 @@ import { ModalState } from './tools/tool.js';
 import { outputFile } from './config.js';
 
 import type { Context } from './context.js';
-import type { Response } from './response.js';
 
 type PageEx = playwright.Page & {
   _snapshotForAI: () => Promise<string>;
 };
 
-type PendingAction = {
-  dialogShown: ManualPromise<void>;
+export const TabEvents = {
+  modalState: 'modalState'
 };
 
-export class Tab {
+export type TabEventsInterface = {
+  [TabEvents.modalState]: [modalState: ModalState];
+};
+
+export class Tab extends EventEmitter<TabEventsInterface> {
   readonly context: Context;
   readonly page: playwright.Page;
   private _consoleMessages: ConsoleMessage[] = [];
   private _recentConsoleMessages: ConsoleMessage[] = [];
-  private _pendingAction: PendingAction | undefined;
   private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
   private _onPageClose: (tab: Tab) => void;
   private _modalStates: ModalState[] = [];
   private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
 
   constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void) {
+    super();
     this.context = context;
     this.page = page;
     this._onPageClose = onPageClose;
@@ -74,6 +77,7 @@ export class Tab {
 
   setModalState(modalState: ModalState) {
     this._modalStates.push(modalState);
+    this.emit(TabEvents.modalState, modalState);
   }
 
   clearModalState(modalState: ModalState) {
@@ -97,7 +101,6 @@ export class Tab {
       description: `"${dialog.type()}" dialog with message "${dialog.message()}"`,
       dialog,
     });
-    this._pendingAction?.dialogShown.resolve();
   }
 
   private async _downloadStarted(download: playwright.Download) {
@@ -196,7 +199,7 @@ export class Tab {
     return result;
   }
 
-  async captureSnapshot(options: { omitAriaSnapshot?: boolean } = {}): Promise<string> {
+  async captureSnapshot(): Promise<string> {
     const result: string[] = [];
     if (this.modalStates().length) {
       result.push(...this.modalStatesMarkdown());
@@ -205,19 +208,19 @@ export class Tab {
 
     result.push(...this._takeRecentConsoleMarkdown());
     result.push(...this._listDownloadsMarkdown());
-    if (options.omitAriaSnapshot)
-      return result.join('\n');
 
-    const snapshot = await (this.page as PageEx)._snapshotForAI();
-    result.push(
-        `### Page state`,
-        `- Page URL: ${this.page.url()}`,
-        `- Page Title: ${await this.page.title()}`,
-        `- Page Snapshot:`,
-        '```yaml',
-        snapshot,
-        '```',
-    );
+    await this._raceAgainstModalStates(async () => {
+      const snapshot = await (this.page as PageEx)._snapshotForAI();
+      result.push(
+          `### Page state`,
+          `- Page URL: ${this.page.url()}`,
+          `- Page Title: ${await this.page.title()}`,
+          `- Page Snapshot:`,
+          '```yaml',
+          snapshot,
+          '```',
+      );
+    });
     return result.join('\n');
   }
 
@@ -225,42 +228,25 @@ export class Tab {
     return this._modalStates.some(state => state.type === 'dialog');
   }
 
-  private async _raceAgainstModalDialogs<R>(action: () => Promise<R>): Promise<R | undefined> {
-    this._pendingAction = {
-      dialogShown: new ManualPromise(),
-    };
+  private async _raceAgainstModalStates(action: () => Promise<void>): Promise<ModalState | undefined> {
+    if (this.modalStates().length)
+      return this.modalStates()[0];
 
-    let result: R | undefined;
-    try {
-      await Promise.race([
-        action().then(r => result = r),
-        this._pendingAction.dialogShown,
-      ]);
-    } finally {
-      this._pendingAction = undefined;
-    }
-    return result;
+    const promise = new ManualPromise<ModalState>();
+    const listener = (modalState: ModalState) => promise.resolve(modalState);
+    this.once(TabEvents.modalState, listener);
+
+    return await Promise.race([
+      action().then(() => {
+        this.off(TabEvents.modalState, listener);
+        return undefined;
+      }),
+      promise,
+    ]);
   }
 
-  async run(callback: () => Promise<void>, response: Response) {
-    let snapshot: string | undefined;
-    await this._raceAgainstModalDialogs(async () => {
-      try {
-        if (response.includeSnapshot())
-          await waitForCompletion(this, callback);
-        else
-          await callback();
-      } finally {
-        snapshot = await this.captureSnapshot();
-      }
-    });
-
-    if (snapshot) {
-      response.addSnapshot(snapshot);
-    } else if (response.includeSnapshot()) {
-      // We are blocked on modal dialog.
-      response.addSnapshot(await this.captureSnapshot({ omitAriaSnapshot: true }));
-    }
+  async waitForCompletion(callback: () => Promise<void>) {
+    await this._raceAgainstModalStates(() => waitForCompletion(this, callback));
   }
 
   async refLocator(params: { element: string, ref: string }): Promise<playwright.Locator> {

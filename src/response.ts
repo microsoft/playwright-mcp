@@ -23,7 +23,6 @@ export class Response {
   private _images: { contentType: string, data: Buffer }[] = [];
   private _context: Context;
   private _includeSnapshot = false;
-  private _snapshot: string | undefined;
   private _includeTabs = false;
 
   constructor(context: Context) {
@@ -54,10 +53,6 @@ export class Response {
     return this._includeSnapshot;
   }
 
-  addSnapshot(snapshot: string) {
-    this._snapshot = snapshot;
-  }
-
   async serialize(): Promise<{ content: (TextContent | ImageContent)[] }> {
     const response: string[] = [];
 
@@ -82,8 +77,8 @@ ${this._code.join('\n')}
       response.push(...(await this._context.listTabsMarkdown(this._includeTabs)));
 
     // Add snapshot if provided.
-    if (this._snapshot)
-      response.push(this._snapshot, '');
+    if (this._includeSnapshot && this._context.currentTab())
+      response.push(await this._context.currentTabOrDie().captureSnapshot(), '');
 
     // Main response part
     const content: (TextContent | ImageContent)[] = [

@@ -39,9 +39,9 @@ const pressKey = defineTabTool({
     response.addCode(`// Press ${params.key}`);
     response.addCode(`await page.keyboard.press('${params.key}');`);
 
-    await tab.run(async () => {
+    await tab.waitForCompletion(async () => {
       await tab.page.keyboard.press(params.key);
-    }, response);
+    });
   },
 });
 
@@ -66,7 +66,7 @@ const type = defineTabTool({
 
     const locator = await tab.refLocator(params);
 
-    await tab.run(async () => {
+    await tab.waitForCompletion(async () => {
       if (params.slowly) {
         response.addCode(`// Press "${params.text}" sequentially into "${params.element}"`);
         response.addCode(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
@@ -81,7 +81,7 @@ const type = defineTabTool({
         response.addCode(`await page.${await generateLocator(locator)}.press('Enter');`);
         await locator.press('Enter');
       }
-    }, response);
+    });
   },
 });
 

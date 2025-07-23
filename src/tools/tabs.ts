@@ -48,9 +48,8 @@ const selectTab = defineTool({
   },
 
   handle: async (context, params, response) => {
-    const tab = await context.selectTab(params.index);
+    await context.selectTab(params.index);
     response.setIncludeSnapshot();
-    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 
@@ -71,9 +70,7 @@ const newTab = defineTool({
     const tab = await context.newTab();
     if (params.url)
       await tab.navigate(params.url);
-
     response.setIncludeSnapshot();
-    response.addSnapshot(await tab.captureSnapshot());
   },
 });
 
@@ -92,10 +89,7 @@ const closeTab = defineTool({
 
   handle: async (context, params, response) => {
     await context.closeTab(params.index);
-    response.setIncludeTabs();
-    response.addCode(`await myPage.close();`);
-    if (context.tabs().length)
-      response.addSnapshot(await context.currentTabOrDie().captureSnapshot());
+    response.setIncludeSnapshot();
   },
 });
 
