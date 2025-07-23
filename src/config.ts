@@ -42,6 +42,7 @@ export type CLIOptions = {
   port?: number;
   proxyBypass?: string;
   proxyServer?: string;
+  saveSession?: boolean;
   saveTrace?: boolean;
   storageState?: string;
   userAgent?: string;
@@ -189,6 +190,7 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,
     },
+    saveSession: cliOptions.saveSession,
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
     imageResponses: cliOptions.imageResponses,

@@ -51,8 +51,6 @@ const goBack = defineTabTool({
   },
 
   handle: async (tab, params, response) => {
-    response.setIncludeSnapshot();
-
     await tab.page.goBack();
     response.setIncludeSnapshot();
     response.addCode(`// Navigate back`);
@@ -70,8 +68,6 @@ const goForward = defineTabTool({
     type: 'readOnly',
   },
   handle: async (tab, params, response) => {
-    response.setIncludeSnapshot();
-
     await tab.page.goForward();
     response.setIncludeSnapshot();
     response.addCode(`// Navigate forward`);

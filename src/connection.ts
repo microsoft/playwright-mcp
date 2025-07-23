@@ -22,12 +22,11 @@ import { Context } from './context.js';
 import { Response } from './response.js';
 import { allTools } from './tools.js';
 import { packageJSON } from './package.js';
-
 import { FullConfig } from './config.js';
-
+import { SessionLog } from './sessionLog.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
 
-export function createConnection(config: FullConfig, browserContextFactory: BrowserContextFactory): Connection {
+export async function createConnection(config: FullConfig, browserContextFactory: BrowserContextFactory): Promise<Connection> {
   const tools = allTools.filter(tool => tool.capability.startsWith('core') || config.capabilities?.includes(tool.capability));
   const context = new Context(tools, config, browserContextFactory);
   const server = new McpServer({ name: 'Playwright', version: packageJSON.version }, {
@@ -35,6 +34,8 @@ export function createConnection(config: FullConfig, browserContextFactory: Brow
       tools: {},
     }
   });
+
+  const sessionLog = config.saveSession ? await SessionLog.create(config) : undefined;
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
@@ -62,8 +63,10 @@ export function createConnection(config: FullConfig, browserContextFactory: Brow
       return errorResult(`Tool "${request.params.name}" not found`);
 
     try {
-      const response = new Response(context);
+      const response = new Response(context, request.params.name, request.params.arguments || {});
       await tool.handle(context, tool.schema.inputSchema.parse(request.params.arguments || {}), response);
+      if (sessionLog)
+        await sessionLog.log(response);
       return await response.serialize();
     } catch (error) {
       return errorResult(String(error));

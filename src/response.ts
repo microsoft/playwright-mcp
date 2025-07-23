@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
+import type  { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Context } from './context.js';
 
 export class Response {
@@ -24,21 +24,39 @@ export class Response {
   private _context: Context;
   private _includeSnapshot = false;
   private _includeTabs = false;
+  private _snapshot: string | undefined;
 
-  constructor(context: Context) {
+  readonly toolName: string;
+  readonly toolArgs: Record<string, any>;
+
+  constructor(context: Context, toolName: string, toolArgs: Record<string, any>) {
     this._context = context;
+    this.toolName = toolName;
+    this.toolArgs = toolArgs;
   }
 
   addResult(result: string) {
     this._result.push(result);
   }
 
+  result() {
+    return this._result.join('\n');
+  }
+
   addCode(code: string) {
     this._code.push(code);
   }
 
+  code() {
+    return this._code.join('\n');
+  }
+
   addImage(image: { contentType: string, data: Buffer }) {
     this._images.push(image);
+  }
+
+  images() {
+    return this._images;
   }
 
   setIncludeSnapshot() {
@@ -49,8 +67,14 @@ export class Response {
     this._includeTabs = true;
   }
 
-  includeSnapshot() {
-    return this._includeSnapshot;
+  async snapshot(): Promise<string> {
+    if (this._snapshot !== undefined)
+      return this._snapshot;
+    if (this._includeSnapshot && this._context.currentTab())
+      this._snapshot = await this._context.currentTabOrDie().captureSnapshot();
+    else
+      this._snapshot = '';
+    return this._snapshot;
   }
 
   async serialize(): Promise<{ content: (TextContent | ImageContent)[] }> {
@@ -77,8 +101,9 @@ ${this._code.join('\n')}
       response.push(...(await this._context.listTabsMarkdown(this._includeTabs)));
 
     // Add snapshot if provided.
-    if (this._includeSnapshot && this._context.currentTab())
-      response.push(await this._context.currentTabOrDie().captureSnapshot(), '');
+    const snapshot = await this.snapshot();
+    if (snapshot)
+      response.push(snapshot, '');
 
     // Main response part
     const content: (TextContent | ImageContent)[] = [

@@ -86,6 +86,11 @@ export type Config = {
   capabilities?: ToolCapability[];
 
   /**
+   * Whether to save the Playwright session into the output directory.
+   */
+  saveSession?: boolean;
+
+  /**
    * Whether to save the Playwright trace of the session into the output directory.
    */
   saveTrace?: boolean;
