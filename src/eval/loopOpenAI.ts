@@ -15,91 +15,147 @@
  */
 
 import OpenAI from 'openai';
-import debug from 'debug';
-
-import type { Tool, ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
-import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import type { LLMDelegate, LLMConversation, LLMToolCall, LLMTool } from './loop.js';
+import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 const model = 'gpt-4.1';
 
-export async function runTask(client: Client, task: string): Promise<string | undefined> {
-  const openai = new OpenAI();
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    {
-      role: 'user',
-      content: `Peform following task: ${task}. Once the task is complete, call the "done" tool.`
+export class OpenAIDelegate implements LLMDelegate {
+  private openai = new OpenAI();
+
+  createConversation(task: string, tools: Tool[]): LLMConversation {
+    const genericTools: LLMTool[] = tools.map(tool => ({
+      name: tool.name,
+      description: tool.description || '',
+      inputSchema: tool.inputSchema,
+    }));
+
+    // Add the "done" tool
+    genericTools.push({
+      name: 'done',
+      description: 'Call this tool when the task is complete.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          result: { type: 'string', description: 'The result of the task.' },
+        },
+        required: ['result'],
+      },
+    });
+
+    return {
+      messages: [{
+        role: 'user',
+        content: `Peform following task: ${task}. Once the task is complete, call the "done" tool.`
+      }],
+      tools: genericTools,
+    };
+  }
+
+  async makeApiCall(conversation: LLMConversation): Promise<LLMToolCall[]> {
+    // Convert generic messages to OpenAI format
+    const openaiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
+
+    for (const message of conversation.messages) {
+      if (message.role === 'user') {
+        openaiMessages.push({
+          role: 'user',
+          content: message.content
+        });
+      } else if (message.role === 'assistant') {
+        const toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[] = [];
+
+        if (message.toolCalls) {
+          for (const toolCall of message.toolCalls) {
+            toolCalls.push({
+              id: toolCall.id,
+              type: 'function',
+              function: {
+                name: toolCall.name,
+                arguments: JSON.stringify(toolCall.arguments)
+              }
+            });
+          }
+        }
+
+        const assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam = {
+          role: 'assistant'
+        };
+
+        if (message.content)
+          assistantMessage.content = message.content;
+
+        if (toolCalls.length > 0)
+          assistantMessage.tool_calls = toolCalls;
+
+        openaiMessages.push(assistantMessage);
+      } else if (message.role === 'tool') {
+        openaiMessages.push({
+          role: 'tool',
+          tool_call_id: message.toolCallId,
+          content: message.content,
+        });
+      }
     }
-  ];
 
-  const { tools } = await client.listTools();
+    // Convert generic tools to OpenAI format
+    const openaiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = conversation.tools.map(tool => ({
+      type: 'function',
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.inputSchema,
+      },
+    }));
 
-  for (let iteration = 0; iteration < 5; ++iteration) {
-    debug('history')(messages);
-
-    const response = await openai.chat.completions.create({
+    const response = await this.openai.chat.completions.create({
       model,
-      messages,
-      tools: tools.map(tool => asOpenAIDeclaration(tool)),
+      messages: openaiMessages,
+      tools: openaiTools,
       tool_choice: 'auto'
     });
 
     const message = response.choices[0].message;
-    if (!message.tool_calls?.length)
-      return JSON.stringify(message.content, null, 2);
 
-    messages.push({
-      role: 'assistant',
-      tool_calls: message.tool_calls
+    // Extract tool calls and add assistant message to generic conversation
+    const toolCalls = message.tool_calls || [];
+    const genericToolCalls: LLMToolCall[] = toolCalls.map(toolCall => {
+      const functionCall = toolCall.function;
+      return {
+        name: functionCall.name,
+        arguments: JSON.parse(functionCall.arguments),
+        id: toolCall.id,
+      };
     });
 
-    for (const toolCall of message.tool_calls) {
-      const functionCall = toolCall.function;
+    // Add assistant message to generic conversation
+    conversation.messages.push({
+      role: 'assistant',
+      content: message.content || '',
+      toolCalls: genericToolCalls.length > 0 ? genericToolCalls : undefined
+    });
 
-      if (functionCall.name === 'done')
-        return JSON.stringify(functionCall.arguments, null, 2);
+    return genericToolCalls;
+  }
 
-      try {
-        debug('tool')(functionCall.name, functionCall.arguments);
-        const response = await client.callTool({
-          name: functionCall.name,
-          arguments: JSON.parse(functionCall.arguments)
-        });
-        const content = (response.content || []) as (TextContent | ImageContent)[];
-        debug('tool')(content);
-        const text = content.filter(part => part.type === 'text').map(part => part.text).join('\n');
-        messages.push({
-          role: 'tool',
-          tool_call_id: toolCall.id,
-          content: text,
-        });
-      } catch (error) {
-        debug('tool')(error);
-        messages.push({
-          role: 'tool',
-          tool_call_id: toolCall.id,
-          content: `Error while executing tool "${functionCall.name}": ${error instanceof Error ? error.message : String(error)}\n\nPlease try to recover and complete the task.`,
-        });
-        for (const ignoredToolCall of message.tool_calls.slice(message.tool_calls.indexOf(toolCall) + 1)) {
-          messages.push({
-            role: 'tool',
-            tool_call_id: ignoredToolCall.id,
-            content: `This tool call is skipped due to previous error.`,
-          });
-        }
-        break;
-      }
+  addToolResults(
+    conversation: LLMConversation,
+    results: Array<{ toolCallId: string; content: string; isError?: boolean }>
+  ): void {
+    for (const result of results) {
+      conversation.messages.push({
+        role: 'tool',
+        toolCallId: result.toolCallId,
+        content: result.content,
+        isError: result.isError,
+      });
     }
   }
-  throw new Error('Failed to perform step, max attempts reached');
-}
 
-function asOpenAIDeclaration(tool: Tool): OpenAI.Chat.Completions.ChatCompletionTool {
-  return {
-    type: 'function',
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.inputSchema,
-    },
-  };
+  checkDoneToolCall(toolCall: LLMToolCall): string | null {
+    if (toolCall.name === 'done')
+      return toolCall.arguments.result;
+
+    return null;
+  }
 }
