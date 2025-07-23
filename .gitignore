@@ -3,6 +3,7 @@ node_modules/
 test-results/
 playwright-report/
 .vscode/mcp.json
-
 .idea
 .DS_Store
+.env
+sessions/
