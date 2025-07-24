@@ -23,14 +23,17 @@ import dotenv from 'dotenv';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { program } from 'commander';
-import { runTask as runTaskOpenAI } from './loopOpenAI.js';
-import { runTask as runTaskClaude } from './loopClaude.js';
+import { OpenAIDelegate } from './loopOpenAI.js';
+import { ClaudeDelegate } from './loopClaude.js';
+import { runTask } from './loop.js';
+
+import type { LLMDelegate } from './loop.js';
 
 dotenv.config();
 
 const __filename = url.fileURLToPath(import.meta.url);
 
-async function run(runTask: (client: Client, task: string) => Promise<string | undefined>) {
+async function run(delegate: LLMDelegate) {
   const transport = new StdioClientTransport({
     command: 'node',
     args: [
@@ -48,7 +51,7 @@ async function run(runTask: (client: Client, task: string) => Promise<string | u
 
   let lastResult: string | undefined;
   for (const task of tasks)
-    lastResult = await runTask(client, task);
+    lastResult = await runTask(delegate, client, task);
   console.log(lastResult);
   await client.close();
 }
@@ -61,8 +64,8 @@ program
     .option('--model <model>', 'model to use')
     .action(async options => {
       if (options.model === 'claude')
-        await run(runTaskClaude);
+        await run(new ClaudeDelegate());
       else
-        await run(runTaskOpenAI);
+        await run(new OpenAIDelegate());
     });
 void program.parseAsync(process.argv);
