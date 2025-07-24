@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Server as McpServer } from '@modelcontextprotocol/sdk/server/index.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '@modelcontextprotocol/sdk/types.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { Context } from './context.js';
@@ -23,12 +23,13 @@ import { allTools } from './tools.js';
 import { packageJSON } from './package.js';
 import { FullConfig } from './config.js';
 import { SessionLog } from './sessionLog.js';
+import { logUnhandledError } from './log.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
 
-export async function createConnection(config: FullConfig, browserContextFactory: BrowserContextFactory): Promise<Connection> {
+export async function createMCPServer(config: FullConfig, browserContextFactory: BrowserContextFactory): Promise<Server> {
   const tools = allTools.filter(tool => tool.capability.startsWith('core') || config.capabilities?.includes(tool.capability));
   const context = new Context(tools, config, browserContextFactory);
-  const server = new McpServer({ name: 'Playwright', version: packageJSON.version }, {
+  const server = new Server({ name: 'Playwright', version: packageJSON.version }, {
     capabilities: {
       tools: {},
     }
@@ -72,23 +73,13 @@ export async function createConnection(config: FullConfig, browserContextFactory
     }
   });
 
-  return new Connection(server, context);
-}
+  server.oninitialized = () => {
+    context.clientVersion = server.getClientVersion();
+  };
 
-export class Connection {
-  readonly server: McpServer;
-  readonly context: Context;
+  server.onclose = () => {
+    void context.dispose().catch(logUnhandledError);
+  };
 
-  constructor(server: McpServer, context: Context) {
-    this.server = server;
-    this.context = context;
-    this.server.oninitialized = () => {
-      this.context.clientVersion = this.server.getClientVersion();
-    };
-  }
-
-  async close() {
-    await this.server.close();
-    await this.context.close();
-  }
+  return server;
 }

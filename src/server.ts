@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-import { createConnection } from './connection.js';
+import { createMCPServer } from './connection.js';
+import { Context } from './context.js';
 import { contextFactory as defaultContextFactory } from './browserContextFactory.js';
 
 import type { FullConfig } from './config.js';
-import type { Connection } from './connection.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
 
 export class Server {
   readonly config: FullConfig;
-  private _connectionList: Connection[] = [];
   private _browserConfig: FullConfig['browser'];
   private _contextFactory: BrowserContextFactory;
 
@@ -34,11 +33,9 @@ export class Server {
     this._contextFactory = contextFactory ?? defaultContextFactory(this._browserConfig);
   }
 
-  async createConnection(transport: Transport): Promise<Connection> {
-    const connection = await createConnection(this.config, this._contextFactory);
-    this._connectionList.push(connection);
-    await connection.server.connect(transport);
-    return connection;
+  async createConnection(transport: Transport): Promise<void> {
+    const server = await createMCPServer(this.config, this._contextFactory);
+    await server.connect(transport);
   }
 
   setupExitWatchdog() {
@@ -48,7 +45,7 @@ export class Server {
         return;
       isExiting = true;
       setTimeout(() => process.exit(0), 15000);
-      await Promise.all(this._connectionList.map(connection => connection.close()));
+      await Context.disposeAll();
       process.exit(0);
     };
 
