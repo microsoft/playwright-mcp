@@ -44,10 +44,7 @@ export class OpenAIDelegate implements LLMDelegate {
         description: 'Call this tool when the task is complete.',
         inputSchema: {
           type: 'object',
-          properties: {
-            result: { type: 'string', description: 'The result of the task.' },
-          },
-          required: ['result'],
+          properties: {},
         },
       });
     }
