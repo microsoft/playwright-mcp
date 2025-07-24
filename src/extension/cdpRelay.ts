@@ -27,10 +27,9 @@ import { spawn } from 'child_process';
 import { WebSocket, WebSocketServer } from 'ws';
 import debug from 'debug';
 import * as playwright from 'playwright';
-import { httpAddressToString, startHttpServer } from '../transport.js';
 // @ts-ignore
 const { registry } = await import('playwright-core/lib/server/registry/index');
-
+import { httpAddressToString, startHttpServer } from '../httpServer.js';
 import type { BrowserContextFactory } from '../browserContextFactory.js';
 import type websocket from 'ws';
 

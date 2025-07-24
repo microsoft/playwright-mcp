@@ -21,64 +21,64 @@ import { z } from 'zod';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
-import { FullConfig } from '../config.js';
-import { defineTool } from '../tools/tool.js';
-import { Server } from '../server.js';
-import { startHttpServer, startHttpTransport, startStdioTransport } from '../transport.js';
 import { OpenAIDelegate } from './loopOpenAI.js';
 import { runTask } from './loop.js';
+import { packageJSON } from '../package.js';
+import * as mcpTransport from '../mcp/transport.js';
 
-dotenv.config();
+import type { FullConfig } from '../config.js';
+import type { ServerBackend } from '../mcp/server.js';
+import type * as mcpServer from '../mcp/server.js';
 
 const __filename = url.fileURLToPath(import.meta.url);
 
-let innerClient: Client | undefined;
 const delegate = new OpenAIDelegate();
 
-const oneTool = defineTool({
-  capability: 'core',
-
-  schema: {
-    name: 'browser',
-    title: 'Perform a task with the browser',
-    description: 'Perform a task with the browser. It can click, type, export, capture screenshot, drag, hover, select options, etc.',
-    inputSchema: z.object({
-      task: z.string().describe('The task to perform with the browser'),
-    }),
-    type: 'readOnly',
-  },
-
-  handle: async (context, params, response) => {
-    const result = await runTask(delegate!, innerClient!, params.task);
-    response.addResult(result);
-  },
-});
+const oneToolSchema: mcpServer.ToolSchema<any> = {
+  name: 'browser',
+  title: 'Perform a task with the browser',
+  description: 'Perform a task with the browser. It can click, type, export, capture screenshot, drag, hover, select options, etc.',
+  inputSchema: z.object({
+    task: z.string().describe('The task to perform with the browser'),
+  }),
+  type: 'readOnly',
+};
 
 export async function runOneTool(config: FullConfig) {
-  innerClient = await createInnerClient();
-  const server = new Server(config, [oneTool]);
-  server.setupExitWatchdog();
-
-  if (config.server.port !== undefined) {
-    const httpServer = await startHttpServer(config.server);
-    startHttpTransport(httpServer, server);
-  } else {
-    await startStdioTransport(server);
-  }
+  dotenv.config();
+  const serverBackendFactory = () => new OneToolServerBackend();
+  await mcpTransport.start(serverBackendFactory, config.server);
 }
 
-async function createInnerClient(): Promise<Client> {
-  const transport = new StdioClientTransport({
-    command: 'node',
-    args: [
-      path.resolve(__filename, '../../../cli.js'),
-    ],
-    stderr: 'inherit',
-    env: process.env as Record<string, string>,
-  });
+class OneToolServerBackend implements ServerBackend {
+  readonly name = 'Playwright';
+  readonly version = packageJSON.version;
+  private _innerClient: Client | undefined;
 
-  const client = new Client({ name: 'Playwright Proxy', version: '1.0.0' });
-  await client.connect(transport);
-  await client.ping();
-  return client;
+  async initialize() {
+    const transport = new StdioClientTransport({
+      command: 'node',
+      args: [
+        path.resolve(__filename, '../../../cli.js'),
+      ],
+      stderr: 'inherit',
+      env: process.env as Record<string, string>,
+    });
+
+    const client = new Client({ name: 'Playwright Proxy', version: '1.0.0' });
+    await client.connect(transport);
+    await client.ping();
+    this._innerClient = client;
+  }
+
+  tools(): mcpServer.ToolSchema<any>[] {
+    return [oneToolSchema];
+  }
+
+  async callTool(schema: mcpServer.ToolSchema<any>, parsedArguments: any): Promise<mcpServer.ToolResponse> {
+    const result = await runTask(delegate!, this._innerClient!, parsedArguments.task as string);
+    return {
+      content: [{ type: 'text', text: result }],
+    };
+  }
 }
