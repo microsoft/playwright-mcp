@@ -22,7 +22,7 @@ import { filteredTools } from '../tools.js';
 import type { FullConfig } from '../config.js';
 
 export async function runWithExtension(config: FullConfig) {
-  const contextFactory = await startCDPRelayServer(9225, config.browser.launchOptions.channel || 'chrome');
+  const contextFactory = await startCDPRelayServer(config.browser.launchOptions.channel || 'chrome');
   const server = new Server(config, filteredTools(config), contextFactory);
   server.setupExitWatchdog();
 
