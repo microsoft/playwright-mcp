@@ -14,38 +14,48 @@
  * limitations under the License.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import type Anthropic from '@anthropic-ai/sdk';
 import type { LLMDelegate, LLMConversation, LLMToolCall, LLMTool } from './loop.js';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 const model = 'claude-sonnet-4-20250514';
 
 export class ClaudeDelegate implements LLMDelegate {
-  private anthropic = new Anthropic();
+  private _anthropic: Anthropic | undefined;
 
-  createConversation(task: string, tools: Tool[]): LLMConversation {
+  async anthropic(): Promise<Anthropic> {
+    if (!this._anthropic) {
+      const anthropic = await import('@anthropic-ai/sdk');
+      this._anthropic = new anthropic.Anthropic();
+    }
+    return this._anthropic;
+  }
+
+  createConversation(task: string, tools: Tool[], oneShot: boolean): LLMConversation {
     const llmTools: LLMTool[] = tools.map(tool => ({
       name: tool.name,
       description: tool.description || '',
       inputSchema: tool.inputSchema,
     }));
 
-    // Add the "done" tool
-    llmTools.push({
-      name: 'done',
-      description: 'Call this tool when the task is complete.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          result: { type: 'string', description: 'The result of the task.' },
+    if (!oneShot) {
+      llmTools.push({
+        name: 'done',
+        description: 'Call this tool when the task is complete.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            result: { type: 'string', description: 'The result of the task.' },
+          },
+          required: ['result'],
         },
-      },
-    });
+      });
+    }
 
     return {
       messages: [{
         role: 'user',
-        content: `Perform following task: ${task}. Once the task is complete, call the "done" tool.`
+        content: task
       }],
       tools: llmTools,
     };
@@ -119,7 +129,8 @@ export class ClaudeDelegate implements LLMDelegate {
       input_schema: tool.inputSchema,
     }));
 
-    const response = await this.anthropic.messages.create({
+    const anthropic = await this.anthropic();
+    const response = await anthropic.messages.create({
       model,
       max_tokens: 10000,
       messages: claudeMessages,
