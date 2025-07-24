@@ -23,11 +23,8 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-import { logUnhandledError } from './log.js';
-
 import type { AddressInfo } from 'node:net';
 import type { Server } from './server.js';
-import type { Connection } from './connection.js';
 
 export async function startStdioTransport(server: Server) {
   await server.createConnection(new StdioServerTransport());
@@ -54,11 +51,10 @@ async function handleSSE(server: Server, req: http.IncomingMessage, res: http.Se
     const transport = new SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
     testDebug(`create SSE session: ${transport.sessionId}`);
-    const connection = await server.createConnection(transport);
+    await server.createConnection(transport);
     res.on('close', () => {
       testDebug(`delete SSE session: ${transport.sessionId}`);
       sessions.delete(transport.sessionId);
-      void connection.close().catch(logUnhandledError);
     });
     return;
   }
@@ -67,10 +63,10 @@ async function handleSSE(server: Server, req: http.IncomingMessage, res: http.Se
   res.end('Method not allowed');
 }
 
-async function handleStreamable(server: Server, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, { transport: StreamableHTTPServerTransport, connection: Connection }>) {
+async function handleStreamable(server: Server, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, StreamableHTTPServerTransport>) {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (sessionId) {
-    const { transport } = sessions.get(sessionId) ?? {};
+    const transport = sessions.get(sessionId);
     if (!transport) {
       res.statusCode = 404;
       res.end('Session not found');
@@ -84,18 +80,16 @@ async function handleStreamable(server: Server, req: http.IncomingMessage, res: 
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: async sessionId => {
         testDebug(`create http session: ${transport.sessionId}`);
-        const connection = await server.createConnection(transport);
-        sessions.set(sessionId, { transport, connection });
+        await server.createConnection(transport);
+        sessions.set(sessionId, transport);
       }
     });
 
     transport.onclose = () => {
-      const result = transport.sessionId ? sessions.get(transport.sessionId) : undefined;
-      if (!result)
+      if (!transport.sessionId)
         return;
-      sessions.delete(result.transport.sessionId!);
+      sessions.delete(transport.sessionId);
       testDebug(`delete http session: ${transport.sessionId}`);
-      result.connection.close().catch(logUnhandledError);
     };
 
     await transport.handleRequest(req, res);
@@ -120,7 +114,7 @@ export async function startHttpServer(config: { host?: string, port?: number }):
 }
 
 export function startHttpTransport(httpServer: http.Server, mcpServer: Server) {
-  const sseSessions = new Map<string, SSEServerTransport>();
+  const sseSessions = new Map();
   const streamableSessions = new Map();
   httpServer.on('request', async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);

@@ -307,7 +307,9 @@ class ExtensionContextFactory implements BrowserContextFactory {
     const browser = await this._browserPromise;
     return {
       browserContext: browser.contexts()[0],
-      close: async () => {}
+      close: async () => {
+        debugLogger('close() called for browser context, ignoring');
+      }
     };
   }
 
