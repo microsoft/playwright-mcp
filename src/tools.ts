@@ -16,6 +16,7 @@
 
 import common from './tools/common.js';
 import console from './tools/console.js';
+import context from './tools/context.js';
 import dialogs from './tools/dialogs.js';
 import evaluate from './tools/evaluate.js';
 import files from './tools/files.js';
@@ -35,6 +36,7 @@ import type { Tool } from './tools/tool.js';
 export const allTools: Tool<any>[] = [
   ...common,
   ...console,
+  ...context,
   ...dialogs,
   ...evaluate,
   ...files,
