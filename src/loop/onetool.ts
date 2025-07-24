@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
-import path from 'path';
-import url from 'url';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import dotenv from 'dotenv';
 import { z } from 'zod';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
-import { OpenAIDelegate } from './loopOpenAI.js';
-import { runTask } from './loop.js';
-import { packageJSON } from '../package.js';
+import { contextFactory } from '../browserContextFactory.js';
+import { BrowserServerBackend } from '../browserServerBackend.js';
+import { Context } from '../context.js';
+import { logUnhandledError } from '../log.js';
+import { InProcessTransport } from '../mcp/inProcessTransport.js';
+import * as mcpServer from '../mcp/server.js';
 import * as mcpTransport from '../mcp/transport.js';
+import { packageJSON } from '../package.js';
+import { runTask } from './loop.js';
+import { OpenAIDelegate } from './loopOpenAI.js';
 
 import type { FullConfig } from '../config.js';
 import type { ServerBackend } from '../mcp/server.js';
-import type * as mcpServer from '../mcp/server.js';
-
-const __filename = url.fileURLToPath(import.meta.url);
-
-const delegate = new OpenAIDelegate();
 
 const oneToolSchema: mcpServer.ToolSchema<any> = {
   name: 'browser',
@@ -46,7 +44,7 @@ const oneToolSchema: mcpServer.ToolSchema<any> = {
 
 export async function runOneTool(config: FullConfig) {
   dotenv.config();
-  const serverBackendFactory = () => new OneToolServerBackend();
+  const serverBackendFactory = () => new OneToolServerBackend(config);
   await mcpTransport.start(serverBackendFactory, config.server);
 }
 
@@ -54,19 +52,17 @@ class OneToolServerBackend implements ServerBackend {
   readonly name = 'Playwright';
   readonly version = packageJSON.version;
   private _innerClient: Client | undefined;
+  private _config: FullConfig;
+
+  constructor(config: FullConfig) {
+    this._config = config;
+  }
 
   async initialize() {
-    const transport = new StdioClientTransport({
-      command: 'node',
-      args: [
-        path.resolve(__filename, '../../../cli.js'),
-      ],
-      stderr: 'inherit',
-      env: process.env as Record<string, string>,
-    });
-
     const client = new Client({ name: 'Playwright Proxy', version: '1.0.0' });
-    await client.connect(transport);
+    const browserContextFactory = contextFactory(this._config.browser);
+    const server = mcpServer.createServer(new BrowserServerBackend(this._config, browserContextFactory));
+    await client.connect(new InProcessTransport(server));
     await client.ping();
     this._innerClient = client;
   }
@@ -76,9 +72,14 @@ class OneToolServerBackend implements ServerBackend {
   }
 
   async callTool(schema: mcpServer.ToolSchema<any>, parsedArguments: any): Promise<mcpServer.ToolResponse> {
-    const result = await runTask(delegate!, this._innerClient!, parsedArguments.task as string);
+    const delegate = new OpenAIDelegate();
+    const result = await runTask(delegate, this._innerClient!, parsedArguments.task as string);
     return {
       content: [{ type: 'text', text: result }],
     };
+  }
+
+  serverClosed() {
+    void Context.disposeAll().catch(logUnhandledError);
   }
 }
