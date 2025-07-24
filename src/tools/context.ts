@@ -35,7 +35,7 @@ const ignoreHttpsErrors = defineTool({
     context.config.browser.contextOptions.ignoreHTTPSErrors = params.ignore;
     
     // Force recreation of the browser context by closing the current one
-    await context.close();
+    //await context.close();
     
     // Ensure a new tab is created with the updated context
     const tab = await context.ensureTab();
