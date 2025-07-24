@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-import { resolveCLIConfig } from '../config.js';
 import { startHttpServer, startHttpTransport, startStdioTransport } from '../transport.js';
 import { Server } from '../server.js';
 import { startCDPRelayServer } from './cdpRelay.js';
+import { filteredTools } from '../tools.js';
 
-import type { CLIOptions } from '../config.js';
+import type { FullConfig } from '../config.js';
 
-export async function runWithExtension(options: CLIOptions) {
-  const config = await resolveCLIConfig(options);
+export async function runWithExtension(config: FullConfig) {
   const contextFactory = await startCDPRelayServer(9225, config.browser.launchOptions.channel || 'chrome');
-
-  const server = new Server(config, contextFactory);
+  const server = new Server(config, filteredTools(config), contextFactory);
   server.setupExitWatchdog();
 
-  if (options.port !== undefined) {
-    const httpServer = await startHttpServer({ port: options.port });
+  if (config.server.port !== undefined) {
+    const httpServer = await startHttpServer(config.server);
     startHttpTransport(httpServer, server);
   } else {
     await startStdioTransport(server);
