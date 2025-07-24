@@ -30,6 +30,8 @@ import * as playwright from 'playwright';
 // @ts-ignore
 const { registry } = await import('playwright-core/lib/server/registry/index');
 import { httpAddressToString, startHttpServer } from '../httpServer.js';
+import { logUnhandledError } from '../log.js';
+import { ManualPromise } from '../manualPromise.js';
 import type { BrowserContextFactory } from '../browserContextFactory.js';
 import type websocket from 'ws';
 
@@ -65,8 +67,7 @@ export class CDPRelayServer {
     sessionId: string;
   } | undefined;
   private _nextSessionId: number = 1;
-  private _extensionConnectionPromise: Promise<void>;
-  private _extensionConnectionResolve: (() => void) | null = null;
+  private _extensionConnectionPromise!: ManualPromise<void>;
 
   constructor(server: http.Server, browserChannel: string) {
     this._wsHost = httpAddressToString(server.address()).replace(/^http/, 'ws');
@@ -76,9 +77,7 @@ export class CDPRelayServer {
     this._cdpPath = `/cdp/${uuid}`;
     this._extensionPath = `/extension/${uuid}`;
 
-    this._extensionConnectionPromise = new Promise(resolve => {
-      this._extensionConnectionResolve = resolve;
-    });
+    this._resetExtensionConnection();
     this._wss = new WebSocketServer({ server });
     this._wss.on('connection', this._onConnection.bind(this));
   }
@@ -166,15 +165,15 @@ export class CDPRelayServer {
 
   private _closeExtensionConnection(reason: string) {
     this._extensionConnection?.close(reason);
+    this._extensionConnectionPromise.reject(new Error(reason));
     this._resetExtensionConnection();
   }
 
   private _resetExtensionConnection() {
     this._connectedTabInfo = undefined;
     this._extensionConnection = null;
-    this._extensionConnectionPromise = new Promise(resolve => {
-      this._extensionConnectionResolve = resolve;
-    });
+    this._extensionConnectionPromise = new ManualPromise();
+    void this._extensionConnectionPromise.catch(logUnhandledError);
   }
 
   private _closePlaywrightConnection(reason: string) {
@@ -197,7 +196,7 @@ export class CDPRelayServer {
       this._closePlaywrightConnection(`Extension disconnected: ${reason}`);
     };
     this._extensionConnection.onmessage = this._handleExtensionMessage.bind(this);
-    this._extensionConnectionResolve?.();
+    this._extensionConnectionPromise.resolve();
   }
 
   private _handleExtensionMessage(method: string, params: any) {
@@ -323,10 +322,10 @@ class ExtensionContextFactory implements BrowserContextFactory {
   }
 }
 
-export async function startCDPRelayServer(browserChannel: string) {
+export async function startCDPRelayServer(browserChannel: string, abortController: AbortController) {
   const httpServer = await startHttpServer({});
   const cdpRelayServer = new CDPRelayServer(httpServer, browserChannel);
-  process.on('exit', () => cdpRelayServer.stop());
+  abortController.signal.addEventListener('abort', () => cdpRelayServer.stop());
   debugLogger(`CDP relay server started, extension endpoint: ${cdpRelayServer.extensionEndpoint()}.`);
   return new ExtensionContextFactory(cdpRelayServer);
 }

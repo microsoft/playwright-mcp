@@ -17,6 +17,7 @@
 import debug from 'debug';
 import * as playwright from 'playwright';
 
+import { logUnhandledError } from './log.js';
 import { Tab } from './tab.js';
 
 import { popupAnalysis } from './detect-popups.js';
@@ -287,7 +288,7 @@ export class Context {
 
   async closeBrowserContext() {
     if (!this._closeBrowserContextPromise)
-      this._closeBrowserContextPromise = this._closeBrowserContextImpl();
+      this._closeBrowserContextPromise = this._closeBrowserContextImpl().catch(logUnhandledError);
     await this._closeBrowserContextPromise;
     this._closeBrowserContextPromise = undefined;
   }

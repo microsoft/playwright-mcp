@@ -20,8 +20,8 @@ import * as mcpTransport from '../mcp/transport.js';
 
 import type { FullConfig } from '../config.js';
 
-export async function runWithExtension(config: FullConfig) {
-  const contextFactory = await startCDPRelayServer(config.browser.launchOptions.channel || 'chrome');
+export async function runWithExtension(config: FullConfig, abortController: AbortController) {
+  const contextFactory = await startCDPRelayServer(config.browser.launchOptions.channel || 'chrome', abortController);
   const serverBackendFactory = () => new BrowserServerBackend(config, contextFactory);
   await mcpTransport.start(serverBackendFactory, config.server);
 }
