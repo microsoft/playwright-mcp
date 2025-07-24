@@ -14,25 +14,34 @@
  * limitations under the License.
  */
 
-import http from 'node:http';
-import assert from 'node:assert';
-import crypto from 'node:crypto';
-
+import http from 'http';
+import crypto from 'crypto';
 import debug from 'debug';
+
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { httpAddressToString, startHttpServer } from '../httpServer.js';
+import * as mcpServer from './server.js';
 
-import type { AddressInfo } from 'node:net';
-import type { Server } from './server.js';
+import type { ServerBackendFactory } from './server.js';
 
-export async function startStdioTransport(server: Server) {
-  await server.createConnection(new StdioServerTransport());
+export async function start(serverBackendFactory: ServerBackendFactory, options: { host?: string; port?: number }) {
+  if (options.port !== undefined) {
+    const httpServer = await startHttpServer(options);
+    startHttpTransport(httpServer, serverBackendFactory);
+  } else {
+    await startStdioTransport(serverBackendFactory);
+  }
+}
+
+async function startStdioTransport(serverBackendFactory: ServerBackendFactory) {
+  await mcpServer.connect(serverBackendFactory, new StdioServerTransport());
 }
 
 const testDebug = debug('pw:mcp:test');
 
-async function handleSSE(server: Server, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>) {
+async function handleSSE(serverBackendFactory: ServerBackendFactory, req: http.IncomingMessage, res: http.ServerResponse, url: URL, sessions: Map<string, SSEServerTransport>) {
   if (req.method === 'POST') {
     const sessionId = url.searchParams.get('sessionId');
     if (!sessionId) {
@@ -51,7 +60,7 @@ async function handleSSE(server: Server, req: http.IncomingMessage, res: http.Se
     const transport = new SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
     testDebug(`create SSE session: ${transport.sessionId}`);
-    await server.createConnection(transport);
+    await mcpServer.connect(serverBackendFactory, transport);
     res.on('close', () => {
       testDebug(`delete SSE session: ${transport.sessionId}`);
       sessions.delete(transport.sessionId);
@@ -63,7 +72,7 @@ async function handleSSE(server: Server, req: http.IncomingMessage, res: http.Se
   res.end('Method not allowed');
 }
 
-async function handleStreamable(server: Server, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, StreamableHTTPServerTransport>) {
+async function handleStreamable(serverBackendFactory: ServerBackendFactory, req: http.IncomingMessage, res: http.ServerResponse, sessions: Map<string, StreamableHTTPServerTransport>) {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (sessionId) {
     const transport = sessions.get(sessionId);
@@ -80,7 +89,7 @@ async function handleStreamable(server: Server, req: http.IncomingMessage, res: 
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: async sessionId => {
         testDebug(`create http session: ${transport.sessionId}`);
-        await server.createConnection(transport);
+        await mcpServer.connect(serverBackendFactory, transport);
         sessions.set(sessionId, transport);
       }
     });
@@ -100,28 +109,15 @@ async function handleStreamable(server: Server, req: http.IncomingMessage, res: 
   res.end('Invalid request');
 }
 
-export async function startHttpServer(config: { host?: string, port?: number }): Promise<http.Server> {
-  const { host, port } = config;
-  const httpServer = http.createServer();
-  await new Promise<void>((resolve, reject) => {
-    httpServer.on('error', reject);
-    httpServer.listen(port, host, () => {
-      resolve();
-      httpServer.removeListener('error', reject);
-    });
-  });
-  return httpServer;
-}
-
-export function startHttpTransport(httpServer: http.Server, mcpServer: Server) {
+function startHttpTransport(httpServer: http.Server, serverBackendFactory: ServerBackendFactory) {
   const sseSessions = new Map();
   const streamableSessions = new Map();
   httpServer.on('request', async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);
     if (url.pathname.startsWith('/sse'))
-      await handleSSE(mcpServer, req, res, url, sseSessions);
+      await handleSSE(serverBackendFactory, req, res, url, sseSessions);
     else
-      await handleStreamable(mcpServer, req, res, streamableSessions);
+      await handleStreamable(serverBackendFactory, req, res, streamableSessions);
   });
   const url = httpAddressToString(httpServer.address());
   const message = [
@@ -138,15 +134,4 @@ export function startHttpTransport(httpServer: http.Server, mcpServer: Server) {
   ].join('\n');
     // eslint-disable-next-line no-console
   console.error(message);
-}
-
-export function httpAddressToString(address: string | AddressInfo | null): string {
-  assert(address, 'Could not bind server socket');
-  if (typeof address === 'string')
-    return address;
-  const resolvedPort = address.port;
-  let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
-  if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
-    resolvedHost = 'localhost';
-  return `http://${resolvedHost}:${resolvedPort}`;
 }

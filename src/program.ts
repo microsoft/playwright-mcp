@@ -18,12 +18,13 @@ import { program, Option } from 'commander';
 // @ts-ignore
 import { startTraceViewerServer } from 'playwright-core/lib/server';
 
-import { startHttpServer, startHttpTransport, startStdioTransport } from './transport.js';
+import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
-import { Server } from './server.js';
 import { packageJSON } from './package.js';
 import { runWithExtension } from './extension/main.js';
-import { filteredTools } from './tools.js';
+import { BrowserServerBackend } from './browserServerBackend.js';
+import { Context } from './context.js';
+import { contextFactory } from './browserContextFactory.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -56,6 +57,8 @@ program
     .addOption(new Option('--extension', 'Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright MCP Bridge" browser extension to be installed.').hideHelp())
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
+      setupExitWatchdog();
+
       if (options.vision) {
         // eslint-disable-next-line no-console
         console.error('The --vision option is deprecated, use --caps=vision instead');
@@ -68,15 +71,9 @@ program
         return;
       }
 
-      const server = new Server(config, filteredTools(config));
-      server.setupExitWatchdog();
-
-      if (config.server.port !== undefined) {
-        const httpServer = await startHttpServer(config.server);
-        startHttpTransport(httpServer, server);
-      } else {
-        await startStdioTransport(server);
-      }
+      const browserContextFactory = contextFactory(config.browser);
+      const serverBackendFactory = () => new BrowserServerBackend(config, browserContextFactory);
+      await mcpTransport.start(serverBackendFactory, config.server);
 
       if (config.saveTrace) {
         const server = await startTraceViewerServer();
@@ -86,5 +83,21 @@ program
         console.error('\nTrace viewer listening on ' + url);
       }
     });
+
+function setupExitWatchdog() {
+  let isExiting = false;
+  const handleExit = async () => {
+    if (isExiting)
+      return;
+    isExiting = true;
+    setTimeout(() => process.exit(0), 15000);
+    await Context.disposeAll();
+    process.exit(0);
+  };
+
+  process.stdin.on('close', handleExit);
+  process.on('SIGINT', handleExit);
+  process.on('SIGTERM', handleExit);
+}
 
 void program.parseAsync(process.argv);

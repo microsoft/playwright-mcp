@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-import { startHttpServer, startHttpTransport, startStdioTransport } from '../transport.js';
-import { Server } from '../server.js';
 import { startCDPRelayServer } from './cdpRelay.js';
-import { filteredTools } from '../tools.js';
+import { BrowserServerBackend } from '../browserServerBackend.js';
+import * as mcpTransport from '../mcp/transport.js';
 
 import type { FullConfig } from '../config.js';
 
 export async function runWithExtension(config: FullConfig) {
   const contextFactory = await startCDPRelayServer(config.browser.launchOptions.channel || 'chrome');
-  const server = new Server(config, filteredTools(config), contextFactory);
-  server.setupExitWatchdog();
-
-  if (config.server.port !== undefined) {
-    const httpServer = await startHttpServer(config.server);
-    startHttpTransport(httpServer, server);
-  } else {
-    await startStdioTransport(server);
-  }
+  const serverBackendFactory = () => new BrowserServerBackend(config, contextFactory);
+  await mcpTransport.start(serverBackendFactory, config.server);
 }
