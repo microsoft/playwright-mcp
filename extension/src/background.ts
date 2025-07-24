@@ -19,6 +19,10 @@ import { RelayConnection, debugLog } from './relayConnection.js';
 type PageMessage = {
   type: 'connectToMCPRelay';
   mcpRelayUrl: string;
+  tabId: number;
+  windowId: number;
+} | {
+  type: 'getTabs';
 };
 
 class TabShareExtension {
@@ -35,22 +39,22 @@ class TabShareExtension {
   private _onMessage(message: PageMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
     switch (message.type) {
       case 'connectToMCPRelay':
-        const tabId = sender.tab?.id;
-        if (!tabId) {
-          sendResponse({ success: false, error: 'No tab id' });
-          return true;
-        }
-        this._connectTab(sender.tab!, message.mcpRelayUrl!).then(
+        this._connectTab(message.tabId, message.windowId, message.mcpRelayUrl!).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true; // Return true to indicate that the response will be sent asynchronously
+      case 'getTabs':
+        this._getTabs().then(
+            tabs => sendResponse({ success: true, tabs, currentTabId: sender.tab?.id }),
+            (error: any) => sendResponse({ success: false, error: error.message }));
+        return true;
     }
     return false;
   }
 
-  private async _connectTab(tab: chrome.tabs.Tab, mcpRelayUrl: string): Promise<void> {
+  private async _connectTab(tabId: number, windowId: number, mcpRelayUrl: string): Promise<void> {
     try {
-      debugLog(`Connecting tab ${tab.id} to bridge at ${mcpRelayUrl}`);
+      debugLog(`Connecting tab ${tabId} to bridge at ${mcpRelayUrl}`);
       const socket = new WebSocket(mcpRelayUrl);
       await new Promise<void>((resolve, reject) => {
         socket.onopen = () => resolve();
@@ -58,7 +62,7 @@ class TabShareExtension {
         setTimeout(() => reject(new Error('Connection timeout')), 5000);
       });
 
-      const connection = new RelayConnection(socket, tab.id!);
+      const connection = new RelayConnection(socket, tabId);
       const connectionClosed = (m: string) => {
         debugLog(m);
         if (this._activeConnection === connection) {
@@ -71,14 +75,14 @@ class TabShareExtension {
       this._activeConnection = connection;
 
       await Promise.all([
-        this._setConnectedTabId(tab.id!),
-        chrome.tabs.update(tab.id!, { active: true }),
-        chrome.windows.update(tab.windowId, { focused: true }),
+        this._setConnectedTabId(tabId),
+        chrome.tabs.update(tabId, { active: true }),
+        chrome.windows.update(windowId, { focused: true }),
       ]);
       debugLog(`Connected to MCP bridge`);
     } catch (error: any) {
       await this._setConnectedTabId(null);
-      debugLog(`Failed to connect tab ${tab.id}:`, error.message);
+      debugLog(`Failed to connect tab ${tabId}:`, error.message);
       throw error;
     }
   }
@@ -109,6 +113,11 @@ class TabShareExtension {
   private async _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab): Promise<void> {
     if (changeInfo.status === 'complete' && this._connectedTabId === tabId)
       await this._setConnectedTabId(tabId);
+  }
+
+  private async _getTabs(): Promise<chrome.tabs.Tab[]> {
+    const tabs = await chrome.tabs.query({});
+    return tabs;
   }
 }
 
