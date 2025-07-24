@@ -21,20 +21,23 @@ import { contextFactory as defaultContextFactory } from './browserContextFactory
 import type { FullConfig } from './config.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
+import type { Tool } from './tools/tool.js';
 
 export class Server {
   readonly config: FullConfig;
   private _browserConfig: FullConfig['browser'];
   private _contextFactory: BrowserContextFactory;
+  readonly tools: Tool<any>[];
 
-  constructor(config: FullConfig, contextFactory?: BrowserContextFactory) {
+  constructor(config: FullConfig, tools: Tool<any>[], contextFactory?: BrowserContextFactory) {
     this.config = config;
+    this.tools = tools;
     this._browserConfig = config.browser;
     this._contextFactory = contextFactory ?? defaultContextFactory(this._browserConfig);
   }
 
   async createConnection(transport: Transport): Promise<void> {
-    const server = await createMCPServer(this.config, this._contextFactory);
+    const server = await createMCPServer(this.config, this.tools, this._contextFactory);
     await server.connect(transport);
   }
 

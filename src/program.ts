@@ -23,6 +23,7 @@ import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './
 import { Server } from './server.js';
 import { packageJSON } from './package.js';
 import { runWithExtension } from './extension/main.js';
+import { filteredTools } from './tools.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -55,11 +56,6 @@ program
     .addOption(new Option('--extension', 'Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright MCP Bridge" browser extension to be installed.').hideHelp())
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
-      if (options.extension) {
-        await runWithExtension(options);
-        return;
-      }
-
       if (options.vision) {
         // eslint-disable-next-line no-console
         console.error('The --vision option is deprecated, use --caps=vision instead');
@@ -67,7 +63,12 @@ program
       }
       const config = await resolveCLIConfig(options);
 
-      const server = new Server(config);
+      if (options.extension) {
+        await runWithExtension(config);
+        return;
+      }
+
+      const server = new Server(config, filteredTools(config));
       server.setupExitWatchdog();
 
       if (config.server.port !== undefined) {

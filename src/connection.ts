@@ -19,15 +19,14 @@ import { CallToolRequestSchema, ListToolsRequestSchema, Tool as McpTool } from '
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { Context } from './context.js';
 import { Response } from './response.js';
-import { allTools } from './tools.js';
 import { packageJSON } from './package.js';
 import { FullConfig } from './config.js';
 import { SessionLog } from './sessionLog.js';
 import { logUnhandledError } from './log.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
+import type { Tool } from './tools/tool.js';
 
-export async function createMCPServer(config: FullConfig, browserContextFactory: BrowserContextFactory): Promise<Server> {
-  const tools = allTools.filter(tool => tool.capability.startsWith('core') || config.capabilities?.includes(tool.capability));
+export async function createMCPServer(config: FullConfig, tools: Tool<any>[], browserContextFactory: BrowserContextFactory): Promise<Server> {
   const context = new Context(tools, config, browserContextFactory);
   const server = new Server({ name: 'Playwright', version: packageJSON.version }, {
     capabilities: {

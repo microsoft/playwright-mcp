@@ -47,7 +47,7 @@ export interface LLMDelegate {
   checkDoneToolCall(toolCall: LLMToolCall): string | null;
 }
 
-export async function runTask(delegate: LLMDelegate, client: Client, task: string): Promise<string | undefined> {
+export async function runTask(delegate: LLMDelegate, client: Client, task: string): Promise<string> {
   const { tools } = await client.listTools();
   const conversation = delegate.createConversation(task, tools);
 
