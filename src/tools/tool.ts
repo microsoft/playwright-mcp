@@ -20,16 +20,7 @@ import type * as playwright from 'playwright';
 import type { ToolCapability } from '../../config.js';
 import type { Tab } from '../tab.js';
 import type { Response } from '../response.js';
-
-export type ToolSchema<Input extends InputType> = {
-  name: string;
-  title: string;
-  description: string;
-  inputSchema: Input;
-  type: 'readOnly' | 'destructive';
-};
-
-type InputType = z.Schema;
+import type { ToolSchema } from '../mcp/server.js';
 
 export type FileUploadModalState = {
   type: 'fileChooser';
@@ -45,44 +36,24 @@ export type DialogModalState = {
 
 export type ModalState = FileUploadModalState | DialogModalState;
 
-export type SnapshotContent = {
-  type: 'snapshot';
-  snapshot: string;
-};
-
-export type TextContent = {
-  type: 'text';
-  text: string;
-};
-
-export type ImageContent = {
-  type: 'image';
-  image: string;
-};
-
-export type CodeContent = {
-  type: 'code';
-  code: string[];
-};
-
-export type Tool<Input extends InputType = InputType> = {
+export type Tool<Input extends z.Schema = z.Schema> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
   handle: (context: Context, params: z.output<Input>, response: Response) => Promise<void>;
 };
 
-export function defineTool<Input extends InputType>(tool: Tool<Input>): Tool<Input> {
+export function defineTool<Input extends z.Schema>(tool: Tool<Input>): Tool<Input> {
   return tool;
 }
 
-export type TabTool<Input extends InputType = InputType> = {
+export type TabTool<Input extends z.Schema = z.Schema> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
   clearsModalState?: ModalState['type'];
   handle: (tab: Tab, params: z.output<Input>, response: Response) => Promise<void>;
 };
 
-export function defineTabTool<Input extends InputType>(tool: TabTool<Input>): Tool<Input> {
+export function defineTabTool<Input extends z.Schema>(tool: TabTool<Input>): Tool<Input> {
   return {
     ...tool,
     handle: async (context, params, response) => {

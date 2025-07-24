@@ -14,39 +14,48 @@
  * limitations under the License.
  */
 
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
 import type { LLMDelegate, LLMConversation, LLMToolCall, LLMTool } from './loop.js';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 const model = 'gpt-4.1';
 
 export class OpenAIDelegate implements LLMDelegate {
-  private openai = new OpenAI();
+  private _openai: OpenAI | undefined;
 
-  createConversation(task: string, tools: Tool[]): LLMConversation {
+  async openai(): Promise<OpenAI> {
+    if (!this._openai) {
+      const oai = await import('openai');
+      this._openai = new oai.OpenAI();
+    }
+    return this._openai;
+  }
+
+  createConversation(task: string, tools: Tool[], oneShot: boolean): LLMConversation {
     const genericTools: LLMTool[] = tools.map(tool => ({
       name: tool.name,
       description: tool.description || '',
       inputSchema: tool.inputSchema,
     }));
 
-    // Add the "done" tool
-    genericTools.push({
-      name: 'done',
-      description: 'Call this tool when the task is complete.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          result: { type: 'string', description: 'The result of the task.' },
+    if (!oneShot) {
+      genericTools.push({
+        name: 'done',
+        description: 'Call this tool when the task is complete.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            result: { type: 'string', description: 'The result of the task.' },
+          },
+          required: ['result'],
         },
-        required: ['result'],
-      },
-    });
+      });
+    }
 
     return {
       messages: [{
         role: 'user',
-        content: `Peform following task: ${task}. Once the task is complete, call the "done" tool.`
+        content: task
       }],
       tools: genericTools,
     };
@@ -108,7 +117,8 @@ export class OpenAIDelegate implements LLMDelegate {
       },
     }));
 
-    const response = await this.openai.chat.completions.create({
+    const openai = await this.openai();
+    const response = await openai.chat.completions.create({
       model,
       messages: openaiMessages,
       tools: openaiTools,

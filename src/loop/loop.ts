@@ -41,15 +41,16 @@ export type LLMConversation = {
 };
 
 export interface LLMDelegate {
-  createConversation(task: string, tools: Tool[]): LLMConversation;
+  createConversation(task: string, tools: Tool[], oneShot: boolean): LLMConversation;
   makeApiCall(conversation: LLMConversation): Promise<LLMToolCall[]>;
   addToolResults(conversation: LLMConversation, results: Array<{ toolCallId: string; content: string; isError?: boolean }>): void;
   checkDoneToolCall(toolCall: LLMToolCall): string | null;
 }
 
-export async function runTask(delegate: LLMDelegate, client: Client, task: string): Promise<string> {
+export async function runTask(delegate: LLMDelegate, client: Client, task: string, oneShot: boolean = false): Promise<string> {
   const { tools } = await client.listTools();
-  const conversation = delegate.createConversation(task, tools);
+  const taskContent = oneShot ? `Perform following task: ${task}.` : `Perform following task: ${task}. Once the task is complete, call the "done" tool.`;
+  const conversation = delegate.createConversation(taskContent, tools, oneShot);
 
   for (let iteration = 0; iteration < 5; ++iteration) {
     debug('history')('Making API call for iteration', iteration);
@@ -99,8 +100,10 @@ export async function runTask(delegate: LLMDelegate, client: Client, task: strin
       }
     }
 
-    // Add tool results to conversation
-    delegate.addToolResults(conversation, toolResults);
+    if (oneShot)
+      return toolResults.map(result => result.content).join('\n');
+    else
+      delegate.addToolResults(conversation, toolResults);
   }
 
   throw new Error('Failed to perform step, max attempts reached');

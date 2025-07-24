@@ -25,6 +25,7 @@ import { runWithExtension } from './extension/main.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
+import { runLoopTools } from './loopTools/main.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -55,6 +56,7 @@ program
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .addOption(new Option('--extension', 'Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright MCP Bridge" browser extension to be installed.').hideHelp())
+    .addOption(new Option('--loop-tools', 'Run loop tools').hideHelp())
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
       const abortController = setupExitWatchdog();
@@ -68,6 +70,10 @@ program
 
       if (options.extension) {
         await runWithExtension(config, abortController);
+        return;
+      }
+      if (options.loopTools) {
+        await runLoopTools(config);
         return;
       }
 
