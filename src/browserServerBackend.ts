@@ -30,6 +30,8 @@ import type { Tool } from './tools/tool.js';
 export class BrowserServerBackend implements ServerBackend {
   name = 'Playwright';
   version = packageJSON.version;
+  onclose?: () => void;
+
   private _tools: Tool[];
   private _context: Context;
   private _sessionLog: SessionLog | undefined;
@@ -61,6 +63,7 @@ export class BrowserServerBackend implements ServerBackend {
   }
 
   serverClosed() {
+    this.onclose?.();
     void this._context.dispose().catch(logUnhandledError);
   }
 }

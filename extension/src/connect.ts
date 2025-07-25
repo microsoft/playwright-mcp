@@ -69,6 +69,7 @@ class ConnectPage {
 
     continueBtn.addEventListener('click', async () => {
       buttonRow.style.display = 'none';
+      this._tabListContainer.style.display = 'none';
       try {
         const selectedTab = this._selectedTab;
         if (!selectedTab) {

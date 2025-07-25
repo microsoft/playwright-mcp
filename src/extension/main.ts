@@ -22,6 +22,18 @@ import type { FullConfig } from '../config.js';
 
 export async function runWithExtension(config: FullConfig, abortController: AbortController) {
   const contextFactory = await startCDPRelayServer(config.browser.launchOptions.channel || 'chrome', abortController);
-  const serverBackendFactory = () => new BrowserServerBackend(config, contextFactory);
+
+  let backend: BrowserServerBackend | undefined;
+  const serverBackendFactory = () => {
+    if (backend)
+      throw new Error('Another MCP client is still connected. Only one connection at a time is allowed.');
+    backend = new BrowserServerBackend(config, contextFactory);
+    backend.onclose = () => {
+      contextFactory.clientDisconnected();
+      backend = undefined;
+    };
+    return backend;
+  };
+
   await mcpTransport.start(serverBackendFactory, config.server);
 }

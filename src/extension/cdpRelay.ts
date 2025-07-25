@@ -123,8 +123,13 @@ export class CDPRelayServer {
   }
 
   stop(): void {
-    this._closePlaywrightConnection('Server stopped');
-    this._closeExtensionConnection('Server stopped');
+    this.closeConnections('Server stopped');
+    this._wss.close();
+  }
+
+  closeConnections(reason: string) {
+    this._closePlaywrightConnection(reason);
+    this._closeExtensionConnection(reason);
   }
 
   private _onConnection(ws: WebSocket, request: http.IncomingMessage): void {
@@ -141,6 +146,11 @@ export class CDPRelayServer {
   }
 
   private _handlePlaywrightConnection(ws: WebSocket): void {
+    if (this._playwrightConnection) {
+      debugLogger('Rejecting second Playwright connection');
+      ws.close(1000, 'Another CDP client already connected');
+      return;
+    }
     this._playwrightConnection = ws;
     ws.on('message', async data => {
       try {
@@ -309,6 +319,11 @@ class ExtensionContextFactory implements BrowserContextFactory {
         debugLogger('close() called for browser context, ignoring');
       }
     };
+  }
+
+  clientDisconnected() {
+    this._relay.closeConnections('MCP client disconnected');
+    this._browserPromise = undefined;
   }
 
   private async _obtainBrowser(clientInfo: { name: string, version: string }): Promise<playwright.Browser> {
