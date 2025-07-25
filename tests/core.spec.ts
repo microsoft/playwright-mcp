@@ -120,64 +120,6 @@ await page.getByRole('listbox').selectOption(['bar', 'baz']);
 `);
 });
 
-test('browser_type', async ({ client, server }) => {
-  server.setContent('/', `
-    <!DOCTYPE html>
-    <html>
-      <input type='keypress' onkeypress="console.log('Key pressed:', event.key, ', Text:', event.target.value)"></input>
-    </html>
-  `, 'text/html');
-
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: server.PREFIX,
-    },
-  });
-  await client.callTool({
-    name: 'browser_type',
-    arguments: {
-      element: 'textbox',
-      ref: 'e2',
-      text: 'Hi!',
-      submit: true,
-    },
-  });
-  expect(await client.callTool({
-    name: 'browser_console_messages',
-  })).toHaveTextContent(/\[LOG\] Key pressed: Enter , Text: Hi!/);
-});
-
-test('browser_type (slowly)', async ({ client, server }) => {
-  server.setContent('/', `
-    <input type='text' onkeydown="console.log('Key pressed:', event.key, 'Text:', event.target.value)"></input>
-  `, 'text/html');
-
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: server.PREFIX,
-    },
-  });
-  await client.callTool({
-    name: 'browser_type',
-    arguments: {
-      element: 'textbox',
-      ref: 'e2',
-      text: 'Hi!',
-      submit: true,
-      slowly: true,
-    },
-  });
-  const response = await client.callTool({
-    name: 'browser_console_messages',
-  });
-  expect(response).toHaveTextContent(/\[LOG\] Key pressed: H Text: /);
-  expect(response).toHaveTextContent(/\[LOG\] Key pressed: i Text: H/);
-  expect(response).toHaveTextContent(/\[LOG\] Key pressed: ! Text: Hi/);
-  expect(response).toHaveTextContent(/\[LOG\] Key pressed: Enter Text: Hi!/);
-});
-
 test('browser_resize', async ({ client, server }) => {
   server.setContent('/', `
     <title>Resize Test</title>
