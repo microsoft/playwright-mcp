@@ -317,19 +317,19 @@ npx @playwright/mcp@latest --config path/to/config.json
 ### Standalone MCP server
 
 When running headed browser on system w/o display or from worker processes of the IDEs,
-run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable HTTP transport.
+run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable SSE transport.
 
 ```bash
 npx @playwright/mcp@latest --port 8931
 ```
 
-And then in MCP client config, set the `url` to the HTTP endpoint:
+And then in MCP client config, set the `url` to the SSE endpoint:
 
 ```js
 {
   "mcpServers": {
     "playwright": {
-      "url": "http://localhost:8931/mcp"
+      "url": "http://localhost:8931/sse"
     }
   }
 }

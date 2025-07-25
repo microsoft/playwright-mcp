@@ -114,10 +114,10 @@ function startHttpTransport(httpServer: http.Server, serverBackendFactory: Serve
   const streamableSessions = new Map();
   httpServer.on('request', async (req, res) => {
     const url = new URL(`http://localhost${req.url}`);
-    if (url.pathname.startsWith('/sse'))
-      await handleSSE(serverBackendFactory, req, res, url, sseSessions);
-    else
+    if (url.pathname.startsWith('/mcp'))
       await handleStreamable(serverBackendFactory, req, res, streamableSessions);
+    else
+      await handleSSE(serverBackendFactory, req, res, url, sseSessions);
   });
   const url = httpAddressToString(httpServer.address());
   const message = [
@@ -130,7 +130,7 @@ function startHttpTransport(httpServer: http.Server, serverBackendFactory: Serve
         }
       }
     }, undefined, 2),
-    'For legacy SSE transport support, you can use the /sse endpoint instead.',
+    'If your client supports streamable HTTP, you can use the /mcp endpoint instead.',
   ].join('\n');
     // eslint-disable-next-line no-console
   console.error(message);

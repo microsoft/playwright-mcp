@@ -248,12 +248,3 @@ test('http transport browser lifecycle (persistent, multiclient)', async ({ serv
   await client1.close();
   await client2.close();
 });
-
-test('http transport (default)', async ({ serverEndpoint }) => {
-  const { url } = await serverEndpoint();
-  const transport = new StreamableHTTPClientTransport(url);
-  const client = new Client({ name: 'test', version: '1.0.0' });
-  await client.connect(transport);
-  await client.ping();
-  expect(transport.sessionId, 'has session support').toBeDefined();
-});

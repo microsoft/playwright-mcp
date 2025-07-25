@@ -234,3 +234,12 @@ test('sse transport browser lifecycle (persistent, multiclient)', async ({ serve
   await client1.close();
   await client2.close();
 });
+
+test('sse transport (default)', async ({ serverEndpoint }) => {
+  const { url } = await serverEndpoint();
+  const transport = new SSEClientTransport(url);
+  const client = new Client({ name: 'test', version: '1.0.0' });
+  await client.connect(transport);
+  await client.ping();
+  await client.close();
+});
