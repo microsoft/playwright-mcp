@@ -36,7 +36,7 @@ export async function start(serverBackendFactory: ServerBackendFactory, options:
 }
 
 async function startStdioTransport(serverBackendFactory: ServerBackendFactory) {
-  await mcpServer.connect(serverBackendFactory, new StdioServerTransport());
+  await mcpServer.connect(serverBackendFactory, new StdioServerTransport(), false);
 }
 
 const testDebug = debug('pw:mcp:test');
@@ -60,7 +60,7 @@ async function handleSSE(serverBackendFactory: ServerBackendFactory, req: http.I
     const transport = new SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
     testDebug(`create SSE session: ${transport.sessionId}`);
-    await mcpServer.connect(serverBackendFactory, transport);
+    await mcpServer.connect(serverBackendFactory, transport, false);
     res.on('close', () => {
       testDebug(`delete SSE session: ${transport.sessionId}`);
       sessions.delete(transport.sessionId);
@@ -89,7 +89,7 @@ async function handleStreamable(serverBackendFactory: ServerBackendFactory, req:
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: async sessionId => {
         testDebug(`create http session: ${transport.sessionId}`);
-        await mcpServer.connect(serverBackendFactory, transport);
+        await mcpServer.connect(serverBackendFactory, transport, true);
         sessions.set(sessionId, transport);
       }
     });
