@@ -1,6 +1,6 @@
 {
   "name": "asteroid-playwright-mcp",
-  "version": "0.0.31-39",
+  "version": "0.0.32-39",
   "description": "Playwright Tools for MCP",
   "type": "module",
   "private": false,
