@@ -155,6 +155,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --caps <caps>                comma-separated list of additional capabilities
                                to enable, possible values: vision, pdf.
   --cdp-endpoint <endpoint>    CDP endpoint to connect to.
+  --cdp-headers <headers>      CDP headers to use when connecting to CDP endpoint. 
+                               Format: JSON string or key:value,key2:value2
   --config <path>              path to the configuration file.
   --device <device>            device to emulate, for example: "iPhone 15"
   --executable-path <path>     path to the browser executable.
@@ -274,6 +276,13 @@ npx @playwright/mcp@latest --config path/to/config.json
 
     // CDP endpoint for connecting to existing browser
     cdpEndpoint?: string;
+    
+    // Options for CDP connection
+    connectOptions?: {
+      headers?: Record<string, string>; // Headers to send with CDP connection
+      timeout?: number;                 // Connection timeout in milliseconds
+      slowMo?: number;                  // Slow down operations by the specified amount of milliseconds
+    };
 
     // Remote Playwright server endpoint
     remoteEndpoint?: string;

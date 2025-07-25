@@ -63,6 +63,12 @@ export type Config = {
      * Remote endpoint to connect to an existing Playwright server.
      */
     remoteEndpoint?: string;
+
+    /**
+     * Options to pass to connectOverCDP method.
+     * @see https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp
+     */
+    connectOptions?: Record<string, any>;
   },
 
   server?: {

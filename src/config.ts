@@ -29,6 +29,7 @@ export type CLIOptions = {
   browser?: string;
   caps?: string[];
   cdpEndpoint?: string;
+  cdpHeaders?: string;
   config?: string;
   device?: string;
   executablePath?: string;
@@ -77,6 +78,7 @@ export type FullConfig = Config & {
     browserName: 'chromium' | 'firefox' | 'webkit';
     launchOptions: NonNullable<BrowserUserConfig['launchOptions']>;
     contextOptions: NonNullable<BrowserUserConfig['contextOptions']>;
+    connectOptions?: Record<string, any>;
   },
   network: NonNullable<Config['network']>,
   outputDir: string;
@@ -180,6 +182,7 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
       launchOptions,
       contextOptions,
       cdpEndpoint: cliOptions.cdpEndpoint,
+      connectOptions: (cliOptions as any).connectOptions || (cliOptions.cdpHeaders ? { headers: parseHeaders(cliOptions.cdpHeaders) } : undefined),
     },
     server: {
       port: cliOptions.port,
@@ -207,7 +210,16 @@ function configFromEnv(): Config {
   options.browser = envToString(process.env.PLAYWRIGHT_MCP_BROWSER);
   options.caps = commaSeparatedList(process.env.PLAYWRIGHT_MCP_CAPS);
   options.cdpEndpoint = envToString(process.env.PLAYWRIGHT_MCP_CDP_ENDPOINT);
+  options.cdpHeaders = envToString(process.env.PLAYWRIGHT_MCP_CDP_HEADERS);
   options.config = envToString(process.env.PLAYWRIGHT_MCP_CONFIG);
+  const connectOptionsEnv = envToString(process.env.PLAYWRIGHT_MCP_CONNECT_OPTIONS);
+  if (connectOptionsEnv) {
+    try {
+      (options as any).connectOptions = JSON.parse(connectOptionsEnv);
+    } catch (e) {
+      throw new Error(`Failed to parse PLAYWRIGHT_MCP_CONNECT_OPTIONS as JSON: ${e}`);
+    }
+  }
   options.device = envToString(process.env.PLAYWRIGHT_MCP_DEVICE);
   options.executablePath = envToString(process.env.PLAYWRIGHT_MCP_EXECUTABLE_PATH);
   options.headless = envToBoolean(process.env.PLAYWRIGHT_MCP_HEADLESS);
@@ -315,4 +327,22 @@ function envToBoolean(value: string | undefined): boolean | undefined {
 
 function envToString(value: string | undefined): string | undefined {
   return value ? value.trim() : undefined;
+}
+
+function parseHeaders(headersString: string): Record<string, string> {
+  const headers: Record<string, string> = {};
+  try {
+    // First try to parse as JSON
+    return JSON.parse(headersString);
+  } catch (e) {
+    // If not valid JSON, try to parse as key:value pairs
+    const pairs = headersString.split(',');
+    for (const pair of pairs) {
+      const [key, value] = pair.split(':').map(s => s.trim());
+      if (key && value) {
+        headers[key] = value;
+      }
+    }
+    return headers;
+  }
 }
