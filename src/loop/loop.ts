@@ -47,7 +47,7 @@ export interface LLMDelegate {
   checkDoneToolCall(toolCall: LLMToolCall): string | null;
 }
 
-export async function runTask(delegate: LLMDelegate, client: Client, task: string, oneShot: boolean = false): Promise<string> {
+export async function runTask(delegate: LLMDelegate, client: Client, task: string, oneShot: boolean = false): Promise<LLMMessage[]> {
   const { tools } = await client.listTools();
   const taskContent = oneShot ? `Perform following task: ${task}.` : `Perform following task: ${task}. Once the task is complete, call the "done" tool.`;
   const conversation = delegate.createConversation(taskContent, tools, oneShot);
@@ -60,10 +60,9 @@ export async function runTask(delegate: LLMDelegate, client: Client, task: strin
 
     const toolResults: Array<{ toolCallId: string; content: string; isError?: boolean }> = [];
     for (const toolCall of toolCalls) {
-      // Check if this is the "done" tool
       const doneResult = delegate.checkDoneToolCall(toolCall);
       if (doneResult !== null)
-        return doneResult;
+        return conversation.messages;
 
       const { name, arguments: args, id } = toolCall;
       try {
@@ -100,10 +99,9 @@ export async function runTask(delegate: LLMDelegate, client: Client, task: strin
       }
     }
 
+    delegate.addToolResults(conversation, toolResults);
     if (oneShot)
-      return toolResults.map(result => result.content).join('\n');
-    else
-      delegate.addToolResults(conversation, toolResults);
+      return conversation.messages;
   }
 
   throw new Error('Failed to perform step, max attempts reached');

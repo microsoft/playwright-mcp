@@ -49,10 +49,11 @@ async function run(delegate: LLMDelegate) {
   await client.connect(transport);
   await client.ping();
 
-  let lastResult: string | undefined;
-  for (const task of tasks)
-    lastResult = await runTask(delegate, client, task);
-  console.log(lastResult);
+  for (const task of tasks) {
+    const messages = await runTask(delegate, client, task);
+    for (const message of messages)
+      console.log(`${message.role}: ${message.content}`);
+  }
   await client.close();
 }
 

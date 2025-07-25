@@ -53,9 +53,21 @@ export class Context {
   }
 
   async runTask(task: string, oneShot: boolean = false): Promise<mcpServer.ToolResponse> {
-    const result = await runTask(this._delegate, this._client!, task, oneShot);
+    const messages = await runTask(this._delegate, this._client!, task, oneShot);
+    const lines: string[] = [];
+
+    // Skip the first message, which is the user's task.
+    for (const message of messages.slice(1)) {
+      // Trim out all page snapshots.
+      if (!message.content.trim())
+        continue;
+      const index = oneShot ? -1 : message.content.indexOf('### Page state');
+      const trimmedContent = index === -1 ? message.content : message.content.substring(0, index);
+      lines.push(`[${message.role}]:`, trimmedContent);
+    }
+
     return {
-      content: [{ type: 'text', text: result }],
+      content: [{ type: 'text', text: lines.join('\n') }],
     };
   }
 
