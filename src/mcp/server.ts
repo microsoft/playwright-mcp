@@ -51,14 +51,14 @@ export interface ServerBackend {
 
 export type ServerBackendFactory = () => ServerBackend;
 
-export async function connect(serverBackendFactory: ServerBackendFactory, transport: Transport) {
+export async function connect(serverBackendFactory: ServerBackendFactory, transport: Transport, runHeartbeat: boolean) {
   const backend = serverBackendFactory();
   await backend.initialize?.();
-  const server = createServer(backend);
+  const server = createServer(backend, runHeartbeat);
   await server.connect(transport);
 }
 
-export function createServer(backend: ServerBackend): Server {
+export function createServer(backend: ServerBackend, runHeartbeat: boolean): Server {
   const server = new Server({ name: backend.name, version: backend.version }, {
     capabilities: {
       tools: {},
@@ -80,7 +80,13 @@ export function createServer(backend: ServerBackend): Server {
     })) };
   });
 
+  let heartbeatRunning = false;
   server.setRequestHandler(CallToolRequestSchema, async request => {
+    if (runHeartbeat && !heartbeatRunning) {
+      heartbeatRunning = true;
+      startHeartbeat(server);
+    }
+
     const errorResult = (...messages: string[]) => ({
       content: [{ type: 'text', text: messages.join('\n') }],
       isError: true,
@@ -96,10 +102,30 @@ export function createServer(backend: ServerBackend): Server {
     }
   });
 
-  if (backend.serverInitialized)
-    server.oninitialized = () => backend.serverInitialized!(server.getClientVersion());
-  if (backend.serverClosed)
-    server.onclose = () => backend.serverClosed!();
-
+  addServerListener(server, 'initialized', () => backend.serverInitialized?.(server.getClientVersion()));
+  addServerListener(server, 'close', () => backend.serverClosed?.());
   return server;
+}
+
+const startHeartbeat = (server: Server) => {
+  const beat = () => {
+    Promise.race([
+      server.ping(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('ping timeout')), 5000)),
+    ]).then(() => {
+      setTimeout(beat, 3000);
+    }).catch(() => {
+      void server.close();
+    });
+  };
+
+  beat();
+};
+
+function addServerListener(server: Server, event: 'close' | 'initialized', listener: () => void) {
+  const oldListener = server[`on${event}`];
+  server[`on${event}`] = () => {
+    oldListener?.();
+    listener();
+  };
 }
