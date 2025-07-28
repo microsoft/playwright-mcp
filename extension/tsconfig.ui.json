@@ -9,12 +9,10 @@
     "outDir": "./lib",
     "resolveJsonModule": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "react"
+    "jsxImportSource": "react",
+    "noEmit": true,
   },
   "include": [
-    "src",
-  ],
-  "exclude": [
     "src/ui",
-  ]
+  ],
 }
