@@ -80,6 +80,25 @@ export class Context {
     return tab;
   }
 
+  async connectToWindow(connectionString: string) {
+    await this.closeBrowserContext();
+
+    this._browserContextFactory = {
+      async createContext() {
+        const browser = await playwright.chromium.connect(connectionString);
+        const context = browser.contexts()[0] ?? await browser.newContext();
+        return {
+          browserContext: context,
+          close: async () => {
+            await browser.close();
+          }
+        };
+      },
+    };
+
+    await this._ensureBrowserContext();
+  }
+
   async ensureTab(): Promise<Tab> {
     const { browserContext } = await this._ensureBrowserContext();
     if (!this._currentTab)
