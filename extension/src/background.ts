@@ -117,7 +117,7 @@ class TabShareExtension {
 
   private async _getTabs(): Promise<chrome.tabs.Tab[]> {
     const tabs = await chrome.tabs.query({});
-    return tabs;
+    return tabs.filter(tab => tab.url && !['chrome:', 'edge:', 'devtools:'].some(scheme => tab.url!.startsWith(scheme)));
   }
 }
 

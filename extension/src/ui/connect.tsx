@@ -178,17 +178,14 @@ const TabItem: React.FC<{ tab: TabInfo; isSelected: boolean; onSelect: () => voi
   isSelected,
   onSelect
 }) => {
-  const disabled = tab.url.startsWith('chrome://');
-
-  const className = `tab-item ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`.trim();
+  const className = `tab-item ${isSelected ? 'selected' : ''}`.trim();
 
   return (
-    <div className={className} onClick={disabled ? undefined : onSelect}>
+    <div className={className} onClick={onSelect}>
       <input
         type='radio'
         className='tab-radio'
         checked={isSelected}
-        disabled={disabled}
       />
       <img
         src={tab.favIconUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'}
