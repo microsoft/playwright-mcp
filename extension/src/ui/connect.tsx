@@ -16,7 +16,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import './connect.css';
 
 interface TabInfo {
   id: number;
@@ -65,7 +64,7 @@ const ConnectApp: React.FC = () => {
     void loadTabs();
   }, []);
 
-  const loadTabs = async () => {
+  const loadTabs = useCallback(async () => {
     const response = await chrome.runtime.sendMessage({ type: 'getTabs' });
     if (response.success) {
       setTabs(response.tabs);
@@ -74,7 +73,7 @@ const ConnectApp: React.FC = () => {
     } else {
       setStatus({ type: 'error', message: 'Failed to load tabs: ' + response.error });
     }
-  };
+  }, []);
 
   const handleContinue = useCallback(async () => {
     setShowButtons(false);

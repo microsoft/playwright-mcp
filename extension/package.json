@@ -1,0 +1,34 @@
+{
+  "name": "@playwright/mcp-extension",
+  "version": "0.0.32",
+  "description": "Playwright MCP Browser Extension",
+  "type": "module",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+  },
+  "homepage": "https://playwright.dev",
+  "engines": {
+    "node": ">=18"
+  },
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsc --project . && tsc --project tsconfig.ui.json && vite build",
+    "watch": "tsc --watch --project . & tsc --watch --project tsconfig.ui.json & vite build --watch",
+    "clean": "rm -rf lib"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.315",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.8.2",
+    "vite": "^5.0.0"
+  }
+}
