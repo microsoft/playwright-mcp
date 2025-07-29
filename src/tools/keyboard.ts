@@ -67,11 +67,9 @@ const type = defineTabTool({
     await tab.waitForCompletion(async () => {
       if (params.slowly) {
         response.setIncludeSnapshot();
-        response.addCode(`// Press "${params.text}" sequentially into "${params.element}"`);
         response.addCode(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
         await locator.pressSequentially(params.text);
       } else {
-        response.addCode(`// Fill "${params.text}" into "${params.element}"`);
         response.addCode(`await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`);
         await locator.fill(params.text);
       }

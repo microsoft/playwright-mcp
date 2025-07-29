@@ -93,8 +93,8 @@ export class Context {
 
     if (!this._tabs.length) {
       return [
-        '### No open tabs',
-        'Use the "browser_navigate" tool to navigate to a page first.',
+        '### Open tabs',
+        'No open tabs. Use the "browser_navigate" tool to navigate to a page first.',
         '',
       ];
     }

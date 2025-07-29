@@ -22,9 +22,8 @@ test('stitched aria frames', async ({ client }) => {
     arguments: {
       url: `data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button><main><iframe src='data:text/html,<p>Nested</p>'></iframe></main>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>`,
     },
-  })).toContainTextContent(`
-\`\`\`yaml
-- generic [active] [ref=e1]:
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]:
   - heading "Hello" [level=1] [ref=e2]
   - iframe [ref=e3]:
     - generic [active] [ref=f1e1]:
@@ -32,7 +31,8 @@ test('stitched aria frames', async ({ client }) => {
       - main [ref=f1e3]:
         - iframe [ref=f1e4]:
           - paragraph [ref=f2e2]: Nested
-\`\`\``);
+\`\`\``),
+  });
 
   expect(await client.callTool({
     name: 'browser_click',
@@ -40,5 +40,7 @@ test('stitched aria frames', async ({ client }) => {
       element: 'World',
       ref: 'f1e2',
     },
-  })).toContainTextContent(`// Click World`);
+  })).toHaveResponse({
+    code: `await page.locator('iframe').first().contentFrame().getByRole('button', { name: 'World' }).click();`,
+  });
 });

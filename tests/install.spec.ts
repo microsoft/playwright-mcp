@@ -20,5 +20,7 @@ test('browser_install', async ({ client, mcpBrowser }) => {
   test.skip(mcpBrowser !== 'chromium', 'Test only chromium');
   expect(await client.callTool({
     name: 'browser_install',
-  })).toContainTextContent(`### No open tabs`);
+  })).toHaveResponse({
+    tabs: expect.stringContaining(`No open tabs`),
+  });
 });

@@ -25,7 +25,9 @@ test('cdp server', async ({ cdpServer, startClient, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- generic [active] [ref=e1]: Hello, world!`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
 });
 
 test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
@@ -41,18 +43,21 @@ test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
       element: 'Hello, world!',
       ref: 'f0',
     },
-  })).toHaveTextContent(`Error: No open pages available. Use the \"browser_navigate\" tool to navigate to a page first.`);
+  })).toHaveResponse({
+    result: `Error: No open pages available. Use the "browser_navigate" tool to navigate to a page first.`,
+    isError: true,
+  });
 
   expect(await client.callTool({
     name: 'browser_snapshot',
-  })).toHaveTextContent(`### Page state
-- Page URL: ${server.HELLO_WORLD}
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- Page URL: ${server.HELLO_WORLD}
 - Page Title: Title
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Hello, world!
-\`\`\`
-`);
+\`\`\``),
+  });
 });
 
 test('should throw connection error and allow re-connecting', async ({ cdpServer, startClient, server }) => {
@@ -66,12 +71,17 @@ test('should throw connection error and allow re-connecting', async ({ cdpServer
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent(`Error: browserType.connectOverCDP: connect ECONNREFUSED`);
+  })).toHaveResponse({
+    result: expect.stringContaining(`Error: browserType.connectOverCDP: connect ECONNREFUSED`),
+    isError: true,
+  });
   await cdpServer.start();
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent(`- generic [active] [ref=e1]: Hello, world!`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
 });
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.

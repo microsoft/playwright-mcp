@@ -34,5 +34,7 @@ test('do not falsely advertise user agent as a test driver', async ({ client, se
     arguments: {
       url: server.PREFIX,
     },
-  })).toContainTextContent('webdriver: false');
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`webdriver: false`),
+  });
 });

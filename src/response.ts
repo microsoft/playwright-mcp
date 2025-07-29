@@ -28,6 +28,7 @@ export class Response {
 
   readonly toolName: string;
   readonly toolArgs: Record<string, any>;
+  private _isError: boolean | undefined;
 
   constructor(context: Context, toolName: string, toolArgs: Record<string, any>) {
     this._context = context;
@@ -37,6 +38,11 @@ export class Response {
 
   addResult(result: string) {
     this._result.push(result);
+  }
+
+  addError(error: string) {
+    this._result.push(`Error: ${error}`);
+    this._isError = true;
   }
 
   result() {
@@ -77,7 +83,7 @@ export class Response {
     return this._snapshot;
   }
 
-  async serialize(): Promise<{ content: (TextContent | ImageContent)[] }> {
+  async serialize(): Promise<{ content: (TextContent | ImageContent)[], isError?: boolean }> {
     const response: string[] = [];
 
     // Start with command result.
@@ -116,6 +122,6 @@ ${this._code.join('\n')}
         content.push({ type: 'image', data: image.data.toString('base64'), mimeType: image.contentType });
     }
 
-    return { content };
+    return { content, isError: this._isError };
   }
 }

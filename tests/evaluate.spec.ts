@@ -20,15 +20,19 @@ test('browser_evaluate', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- Page Title: Title`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- Page Title: Title`),
+  });
 
-  const result = await client.callTool({
+  expect(await client.callTool({
     name: 'browser_evaluate',
     arguments: {
       function: '() => document.title',
     },
+  })).toHaveResponse({
+    result: `"Title"`,
+    code: `await page.evaluate('() => document.title');`,
   });
-  expect(result).toContainTextContent(`"Title"`);
 });
 
 test('browser_evaluate (element)', async ({ client, server }) => {
@@ -47,15 +51,19 @@ test('browser_evaluate (element)', async ({ client, server }) => {
       element: 'body',
       ref: 'e1',
     },
-  })).toContainTextContent(`### Result
-"red"`);
+  })).toHaveResponse({
+    result: `"red"`,
+    code: `await page.getByText('Hello, world!').evaluate('element => element.style.backgroundColor');`,
+  });
 });
 
 test('browser_evaluate (error)', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- Page Title: Title`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- Page Title: Title`),
+  });
 
   const result = await client.callTool({
     name: 'browser_evaluate',

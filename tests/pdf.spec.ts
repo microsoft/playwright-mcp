@@ -27,7 +27,10 @@ test('save as pdf unavailable', async ({ startClient, server }) => {
 
   expect(await client.callTool({
     name: 'browser_pdf_save',
-  })).toHaveTextContent(/Tool \"browser_pdf_save\" not found/);
+  })).toHaveResponse({
+    result: 'Error: Tool "browser_pdf_save" not found',
+    isError: true,
+  });
 });
 
 test('save as pdf', async ({ startClient, mcpBrowser, server }, testInfo) => {
@@ -40,12 +43,16 @@ test('save as pdf', async ({ startClient, mcpBrowser, server }, testInfo) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- generic [active] [ref=e1]: Hello, world!`);
-
-  const response = await client.callTool({
-    name: 'browser_pdf_save',
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
-  expect(response).toHaveTextContent(/Save page as.*page-[^:]+.pdf/);
+
+  expect(await client.callTool({
+    name: 'browser_pdf_save',
+  })).toHaveResponse({
+    code: expect.stringContaining(`await page.pdf(`),
+    result: expect.stringMatching(/Saved page as.*page-[^:]+.pdf/),
+  });
 });
 
 test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser, server }, testInfo) => {
@@ -58,14 +65,19 @@ test('save as pdf (filename: output.pdf)', async ({ startClient, mcpBrowser, ser
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- generic [active] [ref=e1]: Hello, world!`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
 
   expect(await client.callTool({
     name: 'browser_pdf_save',
     arguments: {
       filename: 'output.pdf',
     },
-  })).toContainTextContent(`output.pdf`);
+  })).toHaveResponse({
+    result: expect.stringContaining(`output.pdf`),
+    code: expect.stringContaining(`await page.pdf(`),
+  });
 
   const files = [...fs.readdirSync(outputDir)];
 

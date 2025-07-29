@@ -199,41 +199,14 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
 type Response = Awaited<ReturnType<Client['callTool']>>;
 
 export const expect = baseExpect.extend({
-  toHaveTextContent(response: Response, content: string | RegExp) {
+  toHaveResponse(response: Response, object: any) {
+    const parsed = parseResponse(response);
     const isNot = this.isNot;
     try {
-      const text = (response.content as any)[0].text;
-      if (typeof content === 'string') {
-        if (isNot)
-          baseExpect(text.trim()).not.toBe(content.trim());
-        else
-          baseExpect(text.trim()).toBe(content.trim());
-      } else {
-        if (isNot)
-          baseExpect(text).not.toMatch(content);
-        else
-          baseExpect(text).toMatch(content);
-      }
-    } catch (e) {
-      return {
-        pass: isNot,
-        message: () => e.message,
-      };
-    }
-    return {
-      pass: !isNot,
-      message: () => ``,
-    };
-  },
-
-  toContainTextContent(response: Response, content: string) {
-    const isNot = this.isNot;
-    try {
-      const texts = (response.content as any).map(c => c.text).join('\n');
       if (isNot)
-        expect(texts).not.toContain(content);
+        expect(parsed).not.toEqual(expect.objectContaining(object));
       else
-        expect(texts).toContain(content);
+        expect(parsed).toEqual(expect.objectContaining(object));
     } catch (e) {
       return {
         pass: isNot,
@@ -249,4 +222,47 @@ export const expect = baseExpect.extend({
 
 export function formatOutput(output: string): string[] {
   return output.split('\n').map(line => line.replace(/^pw:mcp:test /, '').replace(/user data dir.*/, 'user data dir').trim()).filter(Boolean);
+}
+
+function parseResponse(response: any) {
+  const text = (response as any).content[0].text;
+  const sections = parseSections(text);
+
+  const result = sections.get('Result');
+  const code = sections.get('Ran Playwright code');
+  const tabs = sections.get('Open tabs');
+  const pageState = sections.get('Page state');
+  const consoleMessages = sections.get('New console messages');
+  const modalState = sections.get('Modal state');
+  const downloads = sections.get('Downloads');
+  const codeNoFrame = code?.replace(/^```js\n/, '').replace(/\n```$/, '');
+  const isError = response.isError;
+
+  return {
+    result,
+    code: codeNoFrame,
+    tabs,
+    pageState,
+    consoleMessages,
+    modalState,
+    downloads,
+    isError,
+  };
+}
+
+function parseSections(text: string): Map<string, string> {
+  const sections = new Map<string, string>();
+  const sectionHeaders = text.split(/^### /m).slice(1); // Remove empty first element
+
+  for (const section of sectionHeaders) {
+    const firstNewlineIndex = section.indexOf('\n');
+    if (firstNewlineIndex === -1)
+      continue;
+
+    const sectionName = section.substring(0, firstNewlineIndex);
+    const sectionContent = section.substring(firstNewlineIndex + 1).trim();
+    sections.set(sectionName, sectionContent);
+  }
+
+  return sections;
 }

@@ -37,7 +37,9 @@ test('config user data dir', async ({ startClient, server, mcpMode }, testInfo) 
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toContainTextContent(`Hello, world!`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`Hello, world!`),
+  });
 
   const files = await fs.promises.readdir(config.browser!.userDataDir!);
   expect(files.length).toBeGreaterThan(0);
@@ -58,7 +60,9 @@ test.describe(() => {
     expect(await client.callTool({
       name: 'browser_navigate',
       arguments: { url: 'data:text/html,<script>document.title = navigator.userAgent</script>' },
-    })).toContainTextContent(`Firefox`);
+    })).toHaveResponse({
+      pageState: expect.stringContaining(`Firefox`),
+    });
   });
 });
 

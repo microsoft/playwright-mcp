@@ -47,7 +47,9 @@ test('browser_wait_for(text)', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_wait_for',
     arguments: { text: 'Text to appear' },
-  })).toContainTextContent(`- generic [ref=e3]: Text to appear`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [ref=e3]: Text to appear`),
+  });
 });
 
 test('browser_wait_for(textGone)', async ({ client, server }) => {
@@ -81,5 +83,7 @@ test('browser_wait_for(textGone)', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_wait_for',
     arguments: { textGone: 'Text to disappear' },
-  })).toContainTextContent(`- generic [ref=e3]: Text to appear`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [ref=e3]: Text to appear`),
+  });
 });
