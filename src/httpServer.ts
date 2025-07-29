@@ -37,8 +37,6 @@ export function httpAddressToString(address: string | net.AddressInfo | null): s
   if (typeof address === 'string')
     return address;
   const resolvedPort = address.port;
-  let resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
-  if (resolvedHost === '0.0.0.0' || resolvedHost === '[::]')
-    resolvedHost = 'localhost';
+  const resolvedHost = address.family === 'IPv4' ? address.address : `[${address.address}]`;
   return `http://${resolvedHost}:${resolvedPort}`;
 }
