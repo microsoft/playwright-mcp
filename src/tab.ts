@@ -69,6 +69,11 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     });
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
+    (page as any)[tabSymbol] = this;
+  }
+
+  static forPage(page: playwright.Page): Tab | undefined {
+    return (page as any)[tabSymbol];
   }
 
   modalStates(): ModalState[] {
@@ -308,3 +313,5 @@ function trim(text: string, maxLength: number) {
     return text;
   return text.slice(0, maxLength) + '...';
 }
+
+const tabSymbol = Symbol('tabSymbol');

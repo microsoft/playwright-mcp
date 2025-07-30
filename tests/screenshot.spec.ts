@@ -31,18 +31,13 @@ test('browser_take_screenshot (viewport)', async ({ startClient, server }, testI
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
-  })).toEqual({
-    content: [
-      {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
-        type: 'text',
-      },
-      {
-        data: expect.any(String),
-        mimeType: 'image/jpeg',
-        type: 'image',
-      },
-    ],
+  })).toHaveResponse({
+    code: expect.stringContaining(`await page.screenshot`),
+    attachments: [{
+      data: expect.any(String),
+      mimeType: 'image/jpeg',
+      type: 'image',
+    }],
   });
 });
 
@@ -207,7 +202,7 @@ test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, serv
   })).toEqual({
     content: [
       {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        text: expect.stringContaining(`await page.screenshot`),
         type: 'text',
       },
     ],
@@ -231,7 +226,7 @@ test('browser_take_screenshot (fullPage: true)', async ({ startClient, server },
   })).toEqual({
     content: [
       {
-        text: expect.stringContaining(`Screenshot full page and save it as`),
+        text: expect.stringContaining('fullPage: true'),
         type: 'text',
       },
       {
@@ -285,7 +280,7 @@ test('browser_take_screenshot (viewport without snapshot)', async ({ startClient
   })).toEqual({
     content: [
       {
-        text: expect.stringContaining(`Screenshot viewport and save it as`),
+        text: expect.stringContaining(`page.screenshot`),
         type: 'text',
       },
       {

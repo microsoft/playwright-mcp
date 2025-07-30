@@ -20,13 +20,16 @@ import path from 'path';
 import { outputFile  } from './config.js';
 import { Response } from './response.js';
 import type { FullConfig } from './config.js';
+import type * as actions from './actions.js';
+import type { Tab } from './tab.js';
 
-let sessionOrdinal = 0;
+export type Action = actions.ActionInContext & { code: string; tab?: Tab | undefined; timestamp: number };
 
 export class SessionLog {
   private _folder: string;
   private _file: string;
   private _ordinal = 0;
+  private _lastModified = 0;
 
   constructor(sessionFolder: string) {
     this._folder = sessionFolder;
@@ -34,18 +37,22 @@ export class SessionLog {
   }
 
   static async create(config: FullConfig): Promise<SessionLog> {
-    const sessionFolder = await outputFile(config, `session-${(++sessionOrdinal).toString().padStart(3, '0')}`);
+    const sessionFolder = await outputFile(config, `session-${Date.now()}`);
     await fs.promises.mkdir(sessionFolder, { recursive: true });
     // eslint-disable-next-line no-console
     console.error(`Session: ${sessionFolder}`);
     return new SessionLog(sessionFolder);
   }
 
-  async log(response: Response) {
+  lastModified() {
+    return this._lastModified;
+  }
+
+  async logResponse(response: Response) {
+    this._lastModified = performance.now();
     const prefix = `${(++this._ordinal).toString().padStart(3, '0')}`;
     const lines: string[] = [
-      `### Tool: ${response.toolName}`,
-      ``,
+      `### Tool call: ${response.toolName}`,
       `- Args`,
       '```json',
       JSON.stringify(response.toolArgs, null, 2),
@@ -53,7 +60,7 @@ export class SessionLog {
     ];
     if (response.result()) {
       lines.push(
-          `- Result`,
+          response.isError() ? `- Error` : `- Result`,
           '```',
           response.result(),
           '```');
@@ -80,7 +87,41 @@ export class SessionLog {
       lines.push(`- Screenshot: ${fileName}`);
     }
 
-    lines.push('', '');
+    lines.push('', '', '');
+    await this._appendLines(lines);
+  }
+
+  async logActions(actions: Action[]) {
+    // Skip recent navigation, it is a side-effect of the previous action or tool use.
+    if (actions?.[0]?.action?.name === 'navigate' && actions[0].timestamp - this._lastModified < 1000)
+      return;
+
+    this._lastModified = performance.now();
+    const lines: string[] = [];
+    for (const action of actions) {
+      const prefix = `${(++this._ordinal).toString().padStart(3, '0')}`;
+      lines.push(
+          `### User action: ${action.action.name}`,
+      );
+      if (action.code) {
+        lines.push(
+            `- Code`,
+            '```js',
+            action.code,
+            '```');
+      }
+      if (action.action.ariaSnapshot) {
+        const fileName = `${prefix}.snapshot.yml`;
+        await fs.promises.writeFile(path.join(this._folder, fileName), action.action.ariaSnapshot);
+        lines.push(`- Snapshot: ${fileName}`);
+      }
+      lines.push('', '', '');
+    }
+
+    await this._appendLines(lines);
+  }
+
+  private async _appendLines(lines: string[]) {
     await fs.promises.appendFile(this._file, lines.join('\n'));
   }
 }
