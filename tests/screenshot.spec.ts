@@ -39,7 +39,7 @@ test('browser_take_screenshot (viewport)', async ({ startClient, server }, testI
       },
       {
         data: expect.any(String),
-        mimeType: 'image/jpeg',
+        mimeType: 'image/png',
         type: 'image',
       },
     ],
@@ -71,7 +71,7 @@ test('browser_take_screenshot (element)', async ({ startClient, server }, testIn
       },
       {
         data: expect.any(String),
-        mimeType: 'image/jpeg',
+        mimeType: 'image/png',
         type: 'image',
       },
     ],
@@ -95,15 +95,14 @@ test('--output-dir should work', async ({ startClient, server }, testInfo) => {
   });
 
   expect(fs.existsSync(outputDir)).toBeTruthy();
-  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.jpeg'));
+  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.png'));
   expect(files).toHaveLength(1);
-  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.jpeg$/);
+  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png$/);
 });
 
-for (const raw of [undefined, true]) {
-  test(`browser_take_screenshot (raw: ${raw})`, async ({ startClient, server }, testInfo) => {
+for (const type of ['png', 'jpeg']) {
+  test(`browser_take_screenshot (type: ${type})`, async ({ startClient, server }, testInfo) => {
     const outputDir = testInfo.outputPath('output');
-    const ext = raw ? 'png' : 'jpeg';
     const { client } = await startClient({
       config: { outputDir },
     });
@@ -116,35 +115,72 @@ for (const raw of [undefined, true]) {
 
     expect(await client.callTool({
       name: 'browser_take_screenshot',
-      arguments: { raw },
+      arguments: { type },
     })).toEqual({
       content: [
         {
           text: expect.stringMatching(
-              new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.${ext}`)
+              new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.${type}`)
           ),
           type: 'text',
         },
         {
           data: expect.any(String),
-          mimeType: `image/${ext}`,
+          mimeType: `image/${type}`,
           type: 'image',
         },
       ],
     });
 
-    const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith(`.${ext}`));
+    const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith(`.${type}`));
 
     expect(fs.existsSync(outputDir)).toBeTruthy();
     expect(files).toHaveLength(1);
     expect(files[0]).toMatch(
-        new RegExp(`^page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z\\.${ext}$`)
+        new RegExp(`^page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z\\.${type}$`)
     );
   });
 
 }
 
-test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, server }, testInfo) => {
+test('browser_take_screenshot (default type should be png)', async ({ startClient, server }, testInfo) => {
+  const outputDir = testInfo.outputPath('output');
+  const { client } = await startClient({
+    config: { outputDir },
+  });
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  })).toHaveResponse({
+    code: `await page.goto('${server.PREFIX}');`,
+  });
+
+  expect(await client.callTool({
+    name: 'browser_take_screenshot',
+  })).toEqual({
+    content: [
+      {
+        text: expect.stringMatching(
+            new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.png`)
+        ),
+        type: 'text',
+      },
+      {
+        data: expect.any(String),
+        mimeType: 'image/png',
+        type: 'image',
+      },
+    ],
+  });
+
+  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.png'));
+
+  expect(fs.existsSync(outputDir)).toBeTruthy();
+  expect(files).toHaveLength(1);
+  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png$/);
+});
+
+test('browser_take_screenshot (filename: "output.png")', async ({ startClient, server }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
   const { client } = await startClient({
     config: { outputDir },
@@ -159,27 +195,27 @@ test('browser_take_screenshot (filename: "output.jpeg")', async ({ startClient, 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
     arguments: {
-      filename: 'output.jpeg',
+      filename: 'output.png',
     },
   })).toEqual({
     content: [
       {
-        text: expect.stringContaining(`output.jpeg`),
+        text: expect.stringContaining(`output.png`),
         type: 'text',
       },
       {
         data: expect.any(String),
-        mimeType: 'image/jpeg',
+        mimeType: 'image/png',
         type: 'image',
       },
     ],
   });
 
-  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.jpeg'));
+  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.png'));
 
   expect(fs.existsSync(outputDir)).toBeTruthy();
   expect(files).toHaveLength(1);
-  expect(files[0]).toMatch(/^output\.jpeg$/);
+  expect(files[0]).toMatch(/^output\.png$/);
 });
 
 test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, server }, testInfo) => {
@@ -236,7 +272,7 @@ test('browser_take_screenshot (fullPage: true)', async ({ startClient, server },
       },
       {
         data: expect.any(String),
-        mimeType: 'image/jpeg',
+        mimeType: 'image/png',
         type: 'image',
       },
     ],
@@ -290,7 +326,7 @@ test('browser_take_screenshot (viewport without snapshot)', async ({ startClient
       },
       {
         data: expect.any(String),
-        mimeType: 'image/jpeg',
+        mimeType: 'image/png',
         type: 'image',
       },
     ],
