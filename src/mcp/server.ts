@@ -88,12 +88,12 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
     }
 
     const errorResult = (...messages: string[]) => ({
-      content: [{ type: 'text', text: messages.join('\n') }],
+      content: [{ type: 'text', text: '### Result\n' + messages.join('\n') }],
       isError: true,
     });
     const tool = tools.find(tool => tool.name === request.params.name) as ToolSchema<any>;
     if (!tool)
-      return errorResult(`Tool "${request.params.name}" not found`);
+      return errorResult(`Error: Tool "${request.params.name}" not found`);
 
     try {
       return await backend.callTool(tool, tool.inputSchema.parse(request.params.arguments || {}));

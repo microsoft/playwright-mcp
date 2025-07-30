@@ -33,21 +33,10 @@ test('browser_click', async ({ client, server, mcpBrowser }) => {
       element: 'Submit button',
       ref: 'e2',
     },
-  })).toHaveTextContent(`
-### Ran Playwright code
-\`\`\`js
-// Click Submit button
-await page.getByRole('button', { name: 'Submit' }).click();
-\`\`\`
-
-### Page state
-- Page URL: ${server.PREFIX}
-- Page Title: Title
-- Page Snapshot:
-\`\`\`yaml
-- button "Submit" ${mcpBrowser !== 'webkit' || process.platform === 'linux' ? '[active] ' : ''}[ref=e2]
-\`\`\`
-`);
+  })).toHaveResponse({
+    code: `await page.getByRole('button', { name: 'Submit' }).click();`,
+    pageState: expect.stringContaining(`- button "Submit" ${mcpBrowser !== 'webkit' || process.platform === 'linux' ? '[active] ' : ''}[ref=e2]`),
+  });
 });
 
 test('browser_click (double)', async ({ client, server }) => {
@@ -73,21 +62,10 @@ test('browser_click (double)', async ({ client, server }) => {
       ref: 'e2',
       doubleClick: true,
     },
-  })).toHaveTextContent(`
-### Ran Playwright code
-\`\`\`js
-// Double click Click me
-await page.getByRole('heading', { name: 'Click me' }).dblclick();
-\`\`\`
-
-### Page state
-- Page URL: ${server.PREFIX}
-- Page Title: Title
-- Page Snapshot:
-\`\`\`yaml
-- heading "Double clicked" [level=1] [ref=e3]
-\`\`\`
-`);
+  })).toHaveResponse({
+    code: `await page.getByRole('heading', { name: 'Click me' }).dblclick();`,
+    pageState: expect.stringContaining(`- heading "Double clicked" [level=1] [ref=e3]`),
+  });
 });
 
 test('browser_click (right)', async ({ client, server }) => {
@@ -114,6 +92,8 @@ test('browser_click (right)', async ({ client, server }) => {
       button: 'right',
     },
   });
-  expect(result).toContainTextContent(`await page.getByRole('button', { name: 'Menu' }).click({ button: 'right' });`);
-  expect(result).toContainTextContent(`- button "Right clicked"`);
+  expect(result).toHaveResponse({
+    code: `await page.getByRole('button', { name: 'Menu' }).click({ button: 'right' });`,
+    pageState: expect.stringContaining(`- button "Right clicked"`),
+  });
 });

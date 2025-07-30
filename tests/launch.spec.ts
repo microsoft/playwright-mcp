@@ -27,18 +27,17 @@ test('test reopen browser', async ({ startClient, server, mcpMode }) => {
 
   expect(await client.callTool({
     name: 'browser_close',
-  })).toContainTextContent(`### Ran Playwright code
-\`\`\`js
-await page.close()
-\`\`\`
-
-### No open tabs
-Use the "browser_navigate" tool to navigate to a page first.`);
+  })).toHaveResponse({
+    code: `await page.close()`,
+    tabs: `No open tabs. Use the "browser_navigate" tool to navigate to a page first.`,
+  });
 
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toContainTextContent(`- generic [active] [ref=e1]: Hello, world!`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
 
   await client.close();
 
@@ -68,7 +67,10 @@ test('executable path', async ({ startClient, server }) => {
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
-  expect(response).toContainTextContent(`executable doesn't exist`);
+  expect(response).toHaveResponse({
+    result: expect.stringContaining(`executable doesn't exist`),
+    isError: true,
+  });
 });
 
 test('persistent context', async ({ startClient, server }) => {
@@ -82,11 +84,12 @@ test('persistent context', async ({ startClient, server }) => {
   `, 'text/html');
 
   const { client } = await startClient();
-  const response = await client.callTool({
+  expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`Storage: NO`),
   });
-  expect(response).toContainTextContent(`Storage: NO`);
 
   await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -95,12 +98,12 @@ test('persistent context', async ({ startClient, server }) => {
   });
 
   const { client: client2 } = await startClient();
-  const response2 = await client2.callTool({
+  expect(await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`Storage: YES`),
   });
-
-  expect(response2).toContainTextContent(`Storage: YES`);
 });
 
 test('isolated context', async ({ startClient, server }) => {
@@ -114,22 +117,24 @@ test('isolated context', async ({ startClient, server }) => {
   `, 'text/html');
 
   const { client: client1 } = await startClient({ args: [`--isolated`] });
-  const response = await client1.callTool({
+  expect(await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`Storage: NO`),
   });
-  expect(response).toContainTextContent(`Storage: NO`);
 
   await client1.callTool({
     name: 'browser_close',
   });
 
   const { client: client2 } = await startClient({ args: [`--isolated`] });
-  const response2 = await client2.callTool({
+  expect(await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`Storage: NO`),
   });
-  expect(response2).toContainTextContent(`Storage: NO`);
 });
 
 test('isolated context with storage state', async ({ startClient, server }, testInfo) => {
@@ -155,9 +160,10 @@ test('isolated context with storage state', async ({ startClient, server }, test
     `--isolated`,
     `--storage-state=${storageStatePath}`,
   ] });
-  const response = await client.callTool({
+  expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`Storage: session-value`),
   });
-  expect(response).toContainTextContent(`Storage: session-value`);
 });

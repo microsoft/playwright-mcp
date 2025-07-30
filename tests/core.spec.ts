@@ -20,22 +20,15 @@ test('browser_navigate', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-  })).toHaveTextContent(`
-### Ran Playwright code
-\`\`\`js
-// Navigate to ${server.HELLO_WORLD}
-await page.goto('${server.HELLO_WORLD}');
-\`\`\`
-
-### Page state
-- Page URL: ${server.HELLO_WORLD}
+  })).toHaveResponse({
+    code: `await page.goto('${server.HELLO_WORLD}');`,
+    pageState: `- Page URL: ${server.HELLO_WORLD}
 - Page Title: Title
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Hello, world!
-\`\`\`
-`
-  );
+\`\`\``,
+  });
 });
 
 test('browser_select_option', async ({ client, server }) => {
@@ -59,23 +52,17 @@ test('browser_select_option', async ({ client, server }) => {
       ref: 'e2',
       values: ['bar'],
     },
-  })).toHaveTextContent(`
-### Ran Playwright code
-\`\`\`js
-// Select options [bar] in Select
-await page.getByRole('combobox').selectOption(['bar']);
-\`\`\`
-
-### Page state
-- Page URL: ${server.PREFIX}
+  })).toHaveResponse({
+    code: `await page.getByRole('combobox').selectOption(['bar']);`,
+    pageState: `- Page URL: ${server.PREFIX}
 - Page Title: Title
 - Page Snapshot:
 \`\`\`yaml
 - combobox [ref=e2]:
   - option "Foo"
   - option "Bar" [selected]
-\`\`\`
-`);
+\`\`\``,
+  });
 });
 
 test('browser_select_option (multiple)', async ({ client, server }) => {
@@ -100,24 +87,14 @@ test('browser_select_option (multiple)', async ({ client, server }) => {
       ref: 'e2',
       values: ['bar', 'baz'],
     },
-  })).toHaveTextContent(`
-### Ran Playwright code
-\`\`\`js
-// Select options [bar, baz] in Select
-await page.getByRole('listbox').selectOption(['bar', 'baz']);
-\`\`\`
-
-### Page state
-- Page URL: ${server.PREFIX}
-- Page Title: Title
-- Page Snapshot:
-\`\`\`yaml
+  })).toHaveResponse({
+    code: `await page.getByRole('listbox').selectOption(['bar', 'baz']);`,
+    pageState: expect.stringContaining(`
 - listbox [ref=e2]:
   - option "Foo" [ref=e3]
   - option "Bar" [selected] [ref=e4]
-  - option "Baz" [selected] [ref=e5]
-\`\`\`
-`);
+  - option "Baz" [selected] [ref=e5]`),
+  });
 });
 
 test('browser_resize', async ({ client, server }) => {
@@ -141,12 +118,12 @@ test('browser_resize', async ({ client, server }) => {
       height: 780,
     },
   });
-  expect(response).toContainTextContent(`### Ran Playwright code
-\`\`\`js
-// Resize browser window to 390x780
-await page.setViewportSize({ width: 390, height: 780 });
-\`\`\``);
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toContainTextContent('Window size: 390x780');
+  expect(response).toHaveResponse({
+    code: `await page.setViewportSize({ width: 390, height: 780 });`,
+  });
+  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toHaveResponse({
+    pageState: expect.stringContaining(`Window size: 390x780`),
+  });
 });
 
 test('old locator error message', async ({ client, server }) => {
@@ -165,10 +142,11 @@ test('old locator error message', async ({ client, server }) => {
     arguments: {
       url: server.PREFIX,
     },
-  })).toContainTextContent(`
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`
   - button "Button 1" [ref=e2]
-  - button "Button 2" [ref=e3]
-  `.trim());
+  - button "Button 2" [ref=e3]`),
+  });
 
   await client.callTool({
     name: 'browser_click',
@@ -184,7 +162,10 @@ test('old locator error message', async ({ client, server }) => {
       element: 'Button 2',
       ref: 'e3',
     },
-  })).toContainTextContent('Ref e3 not found in the current page snapshot. Try capturing new snapshot.');
+  })).toHaveResponse({
+    result: expect.stringContaining(`Ref e3 not found in the current page snapshot. Try capturing new snapshot.`),
+    isError: true,
+  });
 });
 
 test('visibility: hidden > visible should be shown', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/535' } }, async ({ client, server }) => {
@@ -203,5 +184,7 @@ test('visibility: hidden > visible should be shown', { annotation: { type: 'issu
 
   expect(await client.callTool({
     name: 'browser_snapshot'
-  })).toContainTextContent('- button "Button"');
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- button "Button"`),
+  });
 });

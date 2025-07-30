@@ -30,99 +30,87 @@ async function createTab(client: Client, title: string, body: string) {
 test('list initial tabs', async ({ client }) => {
   expect(await client.callTool({
     name: 'browser_tab_list',
-  })).toHaveTextContent(`### Open tabs
-- 0: (current) [] (about:blank)`);
+  })).toHaveResponse({
+    tabs: `- 0: (current) [] (about:blank)`,
+  });
 });
 
 test('list first tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   expect(await client.callTool({
     name: 'browser_tab_list',
-  })).toHaveTextContent(`### Open tabs
-- 0: [] (about:blank)
-- 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`);
+  })).toHaveResponse({
+    tabs: `- 0: [] (about:blank)
+- 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`,
+  });
 });
 
 test('create new tab', async ({ client }) => {
-  const result = await createTab(client, 'Tab one', 'Body one');
-  expect(result).toContainTextContent(`### Open tabs
-- 0: [] (about:blank)
-- 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
-`);
-
-  expect(result).toContainTextContent(`
-### Page state
-- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
+  expect(await createTab(client, 'Tab one', 'Body one')).toHaveResponse({
+    tabs: `- 0: [] (about:blank)
+- 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`,
+    pageState: expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body one
-\`\`\``);
+\`\`\``),
+  });
 
-  const result2 = await createTab(client, 'Tab two', 'Body two');
-  expect(result2).toContainTextContent(`### Open tabs
-- 0: [] (about:blank)
+  expect(await createTab(client, 'Tab two', 'Body two')).toHaveResponse({
+    tabs: `- 0: [] (about:blank)
 - 1: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
-- 2: (current) [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)
-`);
-
-  expect(result2).toContainTextContent(`
-### Page state
-- Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
+- 2: (current) [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`,
+    pageState: expect.stringContaining(`- Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
 - Page Title: Tab two
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body two
-\`\`\``);
+\`\`\``),
+  });
 });
 
 test('select tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   await createTab(client, 'Tab two', 'Body two');
 
-  const result = await client.callTool({
+  expect(await client.callTool({
     name: 'browser_tab_select',
     arguments: {
       index: 1,
     },
-  });
-  expect(result).toContainTextContent(`### Open tabs
-- 0: [] (about:blank)
+  })).toHaveResponse({
+    tabs: `- 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
-- 2: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`);
-
-  expect(result).toContainTextContent(`
-### Page state
-- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
+- 2: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`,
+    pageState: expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body one
-\`\`\``);
+\`\`\``),
+  });
 });
 
 test('close tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   await createTab(client, 'Tab two', 'Body two');
 
-  const result = await client.callTool({
+  expect(await client.callTool({
     name: 'browser_tab_close',
     arguments: {
       index: 2,
     },
-  });
-  expect(result).toContainTextContent(`### Open tabs
-- 0: [] (about:blank)
-- 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`);
-
-  expect(result).toContainTextContent(`
-### Page state
-- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
+  })).toHaveResponse({
+    tabs: `- 0: [] (about:blank)
+- 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`,
+    pageState: expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body one
-\`\`\``);
+\`\`\``),
+  });
 });
 
 test('reuse first tab when navigating', async ({ startClient, cdpServer, server }) => {

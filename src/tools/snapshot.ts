@@ -63,13 +63,11 @@ const click = defineTabTool({
     const button = params.button;
     const buttonAttr = button ? `{ button: '${button}' }` : '';
 
-    if (params.doubleClick) {
-      response.addCode(`// Double click ${params.element}`);
+    if (params.doubleClick)
       response.addCode(`await page.${await generateLocator(locator)}.dblclick(${buttonAttr});`);
-    } else {
-      response.addCode(`// Click ${params.element}`);
+    else
       response.addCode(`await page.${await generateLocator(locator)}.click(${buttonAttr});`);
-    }
+
 
     await tab.waitForCompletion(async () => {
       if (params.doubleClick)
@@ -151,7 +149,6 @@ const selectOption = defineTabTool({
     response.setIncludeSnapshot();
 
     const locator = await tab.refLocator(params);
-    response.addCode(`// Select options [${params.values.join(', ')}] in ${params.element}`);
     response.addCode(`await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(params.values)});`);
 
     await tab.waitForCompletion(async () => {

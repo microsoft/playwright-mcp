@@ -39,5 +39,7 @@ test('--device should work', async ({ startClient, server, mcpMode }) => {
     arguments: {
       url: server.PREFIX,
     },
-  })).toContainTextContent(`393x659`);
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`393x659`),
+  });
 });
