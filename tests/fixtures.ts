@@ -225,7 +225,7 @@ export function formatOutput(output: string): string[] {
 }
 
 function parseResponse(response: any) {
-  const text = (response as any).content[0].text;
+  const text = response.content[0].text;
   const sections = parseSections(text);
 
   const result = sections.get('Result');
@@ -237,6 +237,7 @@ function parseResponse(response: any) {
   const downloads = sections.get('Downloads');
   const codeNoFrame = code?.replace(/^```js\n/, '').replace(/\n```$/, '');
   const isError = response.isError;
+  const attachments = response.content.slice(1);
 
   return {
     result,
@@ -247,6 +248,7 @@ function parseResponse(response: any) {
     modalState,
     downloads,
     isError,
+    attachments,
   };
 }
 
