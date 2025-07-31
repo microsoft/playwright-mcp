@@ -47,8 +47,8 @@ test('session log should record tool calls', async ({ startClient, server }, tes
 
   const output = stderr().split('\n').filter(line => line.startsWith('Session: '))[0];
   const sessionFolder = output.substring('Session: '.length);
-  const sessionLog = await fs.promises.readFile(path.join(sessionFolder, 'session.md'), 'utf8');
-  expect(sessionLog).toBe(`### Tool call: browser_navigate
+  await expect.poll(() => readSessionLog(sessionFolder)).toBe(`
+### Tool call: browser_navigate
 - Args
 \`\`\`json
 {
@@ -76,11 +76,120 @@ await page.getByRole('button', { name: 'Submit' }).click();
 \`\`\`
 - Snapshot: 002.snapshot.yml
 
+`);
+});
+
+test('session log should record user action', async ({ cdpServer, startClient }, testInfo) => {
+  const browserContext = await cdpServer.start();
+  const { client, stderr } = await startClient({
+    args: [
+      '--save-session',
+      '--output-dir', testInfo.outputPath('output'),
+      `--cdp-endpoint=${cdpServer.endpoint}`,
+    ],
+  });
+
+  // Force browser context creation.
+  await client.callTool({
+    name: 'browser_snapshot',
+  });
+
+  const [page] = browserContext.pages();
+  await page.setContent(`
+    <button>Button 1</button>
+    <button>Button 2</button>
+  `);
+
+  await page.getByRole('button', { name: 'Button 1' }).click();
+
+  const output = stderr().split('\n').filter(line => line.startsWith('Session: '))[0];
+  const sessionFolder = output.substring('Session: '.length);
+
+  await expect.poll(() => readSessionLog(sessionFolder)).toBe(`
+### Tool call: browser_snapshot
+- Args
+\`\`\`json
+{}
+\`\`\`
+- Snapshot: 001.snapshot.yml
+
+
+### User action: click
+- Args
+\`\`\`json
+{
+  "name": "click",
+  "ref": "e2",
+  "button": "left",
+  "modifiers": 0,
+  "clickCount": 1
+}
+\`\`\`
+- Code
+\`\`\`js
+await page.getByRole('button', { name: 'Button 1' }).click();
+\`\`\`
+- Snapshot: 002.snapshot.yml
 
 `);
 });
 
-test('session log should record tool user actions', async ({ cdpServer, startClient }, testInfo) => {
+test('session log should update user action', async ({ cdpServer, startClient }, testInfo) => {
+  const browserContext = await cdpServer.start();
+  const { client, stderr } = await startClient({
+    args: [
+      '--save-session',
+      '--output-dir', testInfo.outputPath('output'),
+      `--cdp-endpoint=${cdpServer.endpoint}`,
+    ],
+  });
+
+  // Force browser context creation.
+  await client.callTool({
+    name: 'browser_snapshot',
+  });
+
+  const [page] = browserContext.pages();
+  await page.setContent(`
+    <button>Button 1</button>
+    <button>Button 2</button>
+  `);
+
+  await page.getByRole('button', { name: 'Button 1' }).dblclick();
+
+  const output = stderr().split('\n').filter(line => line.startsWith('Session: '))[0];
+  const sessionFolder = output.substring('Session: '.length);
+
+  await expect.poll(() => readSessionLog(sessionFolder)).toBe(`
+### Tool call: browser_snapshot
+- Args
+\`\`\`json
+{}
+\`\`\`
+- Snapshot: 001.snapshot.yml
+
+
+### User action: click
+- Args
+\`\`\`json
+{
+  "name": "click",
+  "ref": "e2",
+  "button": "left",
+  "modifiers": 0,
+  "clickCount": 2
+}
+\`\`\`
+- Code
+\`\`\`js
+await page.getByRole('button', { name: 'Button 1' }).dblclick();
+\`\`\`
+- Snapshot: 002.snapshot.yml
+
+`);
+});
+
+test('session log should record tool calls and user actions', async ({ cdpServer, startClient }, testInfo) => {
   const browserContext = await cdpServer.start();
   const { client, stderr } = await startClient({
     args: [
@@ -117,8 +226,8 @@ test('session log should record tool user actions', async ({ cdpServer, startCli
 
   const output = stderr().split('\n').filter(line => line.startsWith('Session: '))[0];
   const sessionFolder = output.substring('Session: '.length);
-  const sessionLog = await fs.promises.readFile(path.join(sessionFolder, 'session.md'), 'utf8');
-  expect(sessionLog).toBe(`### Tool call: browser_snapshot
+  await expect.poll(() => readSessionLog(sessionFolder)).toBe(`
+### Tool call: browser_snapshot
 - Args
 \`\`\`json
 {}
@@ -127,6 +236,16 @@ test('session log should record tool user actions', async ({ cdpServer, startCli
 
 
 ### User action: click
+- Args
+\`\`\`json
+{
+  "name": "click",
+  "ref": "e2",
+  "button": "left",
+  "modifiers": 0,
+  "clickCount": 1
+}
+\`\`\`
 - Code
 \`\`\`js
 await page.getByRole('button', { name: 'Button 1' }).click();
@@ -148,6 +267,9 @@ await page.getByRole('button', { name: 'Button 2' }).click();
 \`\`\`
 - Snapshot: 003.snapshot.yml
 
-
 `);
 });
+
+async function readSessionLog(sessionFolder: string): Promise<string> {
+  return await fs.promises.readFile(path.join(sessionFolder, 'session.md'), 'utf8').catch(() => '');
+}

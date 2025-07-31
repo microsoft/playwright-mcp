@@ -57,16 +57,17 @@ export class BrowserServerBackend implements ServerBackend {
     const context = this._context!;
     const response = new Response(context, schema.name, parsedArguments);
     const tool = this._tools.find(tool => tool.schema.name === schema.name)!;
-    await context.setInputRecorderEnabled(false);
+    context.setRunningTool(true);
     try {
       await tool.handle(context, parsedArguments, response);
-    } catch (error) {
+      await response.finish();
+      this._sessionLog?.logResponse(response);
+    } catch (error: any) {
       response.addError(String(error));
     } finally {
-      await context.setInputRecorderEnabled(true);
+      context.setRunningTool(false);
     }
-    await this._sessionLog?.logResponse(response);
-    return await response.serialize();
+    return response.serialize();
   }
 
   serverInitialized(version: mcpServer.ClientVersion | undefined) {

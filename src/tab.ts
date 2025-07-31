@@ -48,6 +48,7 @@ export type TabSnapshot = {
 export class Tab extends EventEmitter<TabEventsInterface> {
   readonly context: Context;
   readonly page: playwright.Page;
+  private _lastTitle = 'about:blank';
   private _consoleMessages: ConsoleMessage[] = [];
   private _recentConsoleMessages: ConsoleMessage[] = [];
   private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
@@ -137,8 +138,18 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     this._onPageClose(this);
   }
 
-  async title(): Promise<string> {
-    return await callOnPageNoTrace(this.page, page => page.title());
+  async updateTitle() {
+    await this._raceAgainstModalStates(async () => {
+      this._lastTitle = await callOnPageNoTrace(this.page, page => page.title());
+    });
+  }
+
+  lastTitle(): string {
+    return this._lastTitle;
+  }
+
+  isCurrentTab(): boolean {
+    return this === this.context.currentTab();
   }
 
   async waitForLoadState(state: 'load', options?: { timeout?: number }): Promise<void> {
@@ -182,15 +193,15 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     return this._requests;
   }
 
-  async captureSnapshot(): Promise<{ tabSnapshot?: TabSnapshot, modalState?: ModalState }> {
+  async captureSnapshot(): Promise<TabSnapshot> {
     let tabSnapshot: TabSnapshot | undefined;
-    const modalState = await this._raceAgainstModalStates(async () => {
+    const modalStates = await this._raceAgainstModalStates(async () => {
       const snapshot = await (this.page as PageEx)._snapshotForAI();
       tabSnapshot = {
         url: this.page.url(),
         title: await this.page.title(),
         ariaSnapshot: snapshot,
-        modalStates: this.modalStates(),
+        modalStates: [],
         consoleMessages: [],
         downloads: this._downloads,
       };
@@ -200,25 +211,32 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       tabSnapshot.consoleMessages = this._recentConsoleMessages;
       this._recentConsoleMessages = [];
     }
-    return { tabSnapshot, modalState };
+    return tabSnapshot ?? {
+      url: this.page.url(),
+      title: '',
+      ariaSnapshot: '',
+      modalStates,
+      consoleMessages: [],
+      downloads: [],
+    };
   }
 
   private _javaScriptBlocked(): boolean {
     return this._modalStates.some(state => state.type === 'dialog');
   }
 
-  private async _raceAgainstModalStates(action: () => Promise<void>): Promise<ModalState | undefined> {
+  private async _raceAgainstModalStates(action: () => Promise<void>): Promise<ModalState[]> {
     if (this.modalStates().length)
-      return this.modalStates()[0];
+      return this.modalStates();
 
-    const promise = new ManualPromise<ModalState>();
-    const listener = (modalState: ModalState) => promise.resolve(modalState);
+    const promise = new ManualPromise<ModalState[]>();
+    const listener = (modalState: ModalState) => promise.resolve([modalState]);
     this.once(TabEvents.modalState, listener);
 
     return await Promise.race([
       action().then(() => {
         this.off(TabEvents.modalState, listener);
-        return undefined;
+        return [];
       }),
       promise,
     ]);

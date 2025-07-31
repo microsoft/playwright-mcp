@@ -16,8 +16,7 @@
 
 import { renderModalStates } from './tab.js';
 
-import type { TabSnapshot } from './tab.js';
-import type { ModalState } from './tools/tool.js';
+import type { Tab, TabSnapshot } from './tab.js';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Context } from './context.js';
 
@@ -28,7 +27,7 @@ export class Response {
   private _context: Context;
   private _includeSnapshot = false;
   private _includeTabs = false;
-  private _snapshot: { tabSnapshot?: TabSnapshot, modalState?: ModalState } | undefined;
+  private _tabSnapshot: TabSnapshot | undefined;
 
   readonly toolName: string;
   readonly toolArgs: Record<string, any>;
@@ -81,17 +80,20 @@ export class Response {
     this._includeTabs = true;
   }
 
-  async snapshot(): Promise<{ tabSnapshot?: TabSnapshot, modalState?: ModalState }> {
-    if (this._snapshot)
-      return this._snapshot;
+  async finish() {
+    // All the async snapshotting post-action is happening here.
+    // Everything below should race against modal states.
     if (this._includeSnapshot && this._context.currentTab())
-      this._snapshot = await this._context.currentTabOrDie().captureSnapshot();
-    else
-      this._snapshot = {};
-    return this._snapshot;
+      this._tabSnapshot = await this._context.currentTabOrDie().captureSnapshot();
+    for (const tab of this._context.tabs())
+      await tab.updateTitle();
   }
 
-  async serialize(): Promise<{ content: (TextContent | ImageContent)[], isError?: boolean }> {
+  tabSnapshot(): TabSnapshot | undefined {
+    return this._tabSnapshot;
+  }
+
+  serialize(): { content: (TextContent | ImageContent)[], isError?: boolean } {
     const response: string[] = [];
 
     // Start with command result.
@@ -112,16 +114,14 @@ ${this._code.join('\n')}
 
     // List browser tabs.
     if (this._includeSnapshot || this._includeTabs)
-      response.push(...(await this._context.listTabsMarkdown(this._includeTabs)));
+      response.push(...renderTabsMarkdown(this._context.tabs(), this._includeTabs));
 
     // Add snapshot if provided.
-    const snapshot = await this.snapshot();
-    if (snapshot?.modalState) {
-      response.push(...renderModalStates(this._context, [snapshot.modalState]));
+    if (this._tabSnapshot?.modalStates.length) {
+      response.push(...renderModalStates(this._context, this._tabSnapshot.modalStates));
       response.push('');
-    }
-    if (snapshot?.tabSnapshot) {
-      response.push(renderTabSnapshot(snapshot.tabSnapshot));
+    } else if (this._tabSnapshot) {
+      response.push(renderTabSnapshot(this._tabSnapshot));
       response.push('');
     }
 
@@ -170,6 +170,28 @@ function renderTabSnapshot(tabSnapshot: TabSnapshot): string {
   lines.push('```');
 
   return lines.join('\n');
+}
+
+function renderTabsMarkdown(tabs: Tab[], force: boolean = false): string[] {
+  if (tabs.length === 1 && !force)
+    return [];
+
+  if (!tabs.length) {
+    return [
+      '### Open tabs',
+      'No open tabs. Use the "browser_navigate" tool to navigate to a page first.',
+      '',
+    ];
+  }
+
+  const lines: string[] = ['### Open tabs'];
+  for (let i = 0; i < tabs.length; i++) {
+    const tab = tabs[i];
+    const current = tab.isCurrentTab() ? ' (current)' : '';
+    lines.push(`- ${i}:${current} [${tab.lastTitle()}] (${tab.page.url()})`);
+  }
+  lines.push('');
+  return lines;
 }
 
 function trim(text: string, maxLength: number) {
