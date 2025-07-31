@@ -33,16 +33,20 @@ export class BrowserServerBackend implements ServerBackend {
   onclose?: () => void;
 
   private _tools: Tool[];
-  private _context: Context;
+  private _context: Context | undefined;
   private _sessionLog: SessionLog | undefined;
+  private _config: FullConfig;
+  private _browserContextFactory: BrowserContextFactory;
 
   constructor(config: FullConfig, browserContextFactory: BrowserContextFactory) {
+    this._config = config;
+    this._browserContextFactory = browserContextFactory;
     this._tools = filteredTools(config);
-    this._context = new Context(this._tools, config, browserContextFactory);
   }
 
   async initialize() {
-    this._sessionLog = this._context.config.saveSession ? await SessionLog.create(this._context.config) : undefined;
+    this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config) : undefined;
+    this._context = new Context(this._tools, this._config, this._browserContextFactory, this._sessionLog);
   }
 
   tools(): mcpServer.ToolSchema<any>[] {
@@ -50,20 +54,27 @@ export class BrowserServerBackend implements ServerBackend {
   }
 
   async callTool(schema: mcpServer.ToolSchema<any>, parsedArguments: any) {
-    const response = new Response(this._context, schema.name, parsedArguments);
+    const context = this._context!;
+    const response = new Response(context, schema.name, parsedArguments);
     const tool = this._tools.find(tool => tool.schema.name === schema.name)!;
-    await tool.handle(this._context, parsedArguments, response);
-    if (this._sessionLog)
-      await this._sessionLog.log(response);
+    await context.setInputRecorderEnabled(false);
+    try {
+      await tool.handle(context, parsedArguments, response);
+    } catch (error) {
+      response.addError(String(error));
+    } finally {
+      await context.setInputRecorderEnabled(true);
+    }
+    await this._sessionLog?.logResponse(response);
     return await response.serialize();
   }
 
   serverInitialized(version: mcpServer.ClientVersion | undefined) {
-    this._context.clientVersion = version;
+    this._context!.clientVersion = version;
   }
 
   serverClosed() {
     this.onclose?.();
-    void this._context.dispose().catch(logUnhandledError);
+    void this._context!.dispose().catch(logUnhandledError);
   }
 }

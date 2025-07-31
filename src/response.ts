@@ -41,8 +41,12 @@ export class Response {
   }
 
   addError(error: string) {
-    this._result.push(`Error: ${error}`);
+    this._result.push(error);
     this._isError = true;
+  }
+
+  isError() {
+    return this._isError;
   }
 
   result() {

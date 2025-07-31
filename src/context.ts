@@ -24,6 +24,8 @@ import { popupAnalysis } from './detect-popups.js';
 import type { Tool } from './tools/tool.js';
 import type { FullConfig } from './config.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
+import type * as actions from './actions.js';
+import type { Action, SessionLog } from './sessionLog.js';
 
 const testDebug = debug('pw:mcp:test');
 
@@ -39,19 +41,19 @@ export class Context {
   private _browserContextFactory: BrowserContextFactory;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
+
   clientVersion: { name: string; version: string; } | undefined;
 
   private static _allContexts: Set<Context> = new Set();
   private _closeBrowserContextPromise: Promise<void> | undefined;
+  private _inputRecorder: InputRecorder | undefined;
+  private _sessionLog: SessionLog | undefined;
 
-  constructor(
-    tools: Tool[],
-    config: FullConfig,
-    browserContextFactory: BrowserContextFactory
-  ) {
+  constructor(tools: Tool[], config: FullConfig, browserContextFactory: BrowserContextFactory, sessionLog: SessionLog | undefined) {
     this.tools = tools;
     this.config = config;
     this._browserContextFactory = browserContextFactory;
+    this._sessionLog = sessionLog;
     testDebug('create context');
     Context._allContexts.add(this);
   }
@@ -293,6 +295,10 @@ export class Context {
     this._closeBrowserContextPromise = undefined;
   }
 
+  async setInputRecorderEnabled(enabled: boolean) {
+    await this._inputRecorder?.setEnabled(enabled);
+  }
+
   private async _closeBrowserContextImpl() {
     if (!this._browserContextPromise)
       return;
@@ -348,8 +354,8 @@ export class Context {
     const result = await this._browserContextFactory.createContext(this.clientVersion!);
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
-
-    // Handle initial pages that exist when the context is created
+    if (this._sessionLog)
+      this._inputRecorder = await InputRecorder.create(this._sessionLog, browserContext);
     for (const page of browserContext.pages())
       await this._onPageCreated(page);
 
@@ -367,5 +373,91 @@ export class Context {
       });
     }
     return result;
+  }
+}
+
+export class InputRecorder {
+  private _actions: Action[] = [];
+  private _enabled = false;
+  private _sessionLog: SessionLog;
+  private _browserContext: playwright.BrowserContext;
+  private _flushTimer: NodeJS.Timeout | undefined;
+
+  private constructor(sessionLog: SessionLog, browserContext: playwright.BrowserContext) {
+    this._sessionLog = sessionLog;
+    this._browserContext = browserContext;
+  }
+
+  static async create(sessionLog: SessionLog, browserContext: playwright.BrowserContext) {
+    const recorder = new InputRecorder(sessionLog, browserContext);
+    await recorder._initialize();
+    await recorder.setEnabled(true);
+    return recorder;
+  }
+
+  private async _initialize() {
+    await (this._browserContext as any)._enableRecorder({
+      mode: 'recording',
+      recorderMode: 'api',
+    }, {
+      actionAdded: (page: playwright.Page, data: actions.ActionInContext, code: string) => {
+        if (!this._enabled)
+          return;
+        const tab = Tab.forPage(page);
+        this._actions.push({ ...data, tab, code: code.trim(), timestamp: performance.now() });
+        this._scheduleFlush();
+      },
+      actionUpdated: (page: playwright.Page, data: actions.ActionInContext, code: string) => {
+        if (!this._enabled)
+          return;
+        const tab = Tab.forPage(page);
+        this._actions[this._actions.length - 1] = { ...data, tab, code: code.trim(), timestamp: performance.now() };
+        this._scheduleFlush();
+      },
+      signalAdded: (page: playwright.Page, data: actions.SignalInContext) => {
+        if (data.signal.name !== 'navigation')
+          return;
+        const tab = Tab.forPage(page);
+        this._actions.push({
+          frame: data.frame,
+          action: {
+            name: 'navigate',
+            url: data.signal.url,
+            signals: [],
+          },
+          startTime: data.timestamp,
+          endTime: data.timestamp,
+          tab,
+          code: `await page.goto('${data.signal.url}');`,
+          timestamp: performance.now(),
+        });
+        this._scheduleFlush();
+      },
+    });
+  }
+
+  async setEnabled(enabled: boolean) {
+    this._enabled = enabled;
+    if (!enabled)
+      await this._flush();
+  }
+
+  private _clearTimer() {
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer);
+      this._flushTimer = undefined;
+    }
+  }
+
+  private _scheduleFlush() {
+    this._clearTimer();
+    this._flushTimer = setTimeout(() => this._flush(), 1000);
+  }
+
+  private async _flush() {
+    this._clearTimer();
+    const actions = this._actions;
+    this._actions = [];
+    await this._sessionLog.logActions(actions);
   }
 }
