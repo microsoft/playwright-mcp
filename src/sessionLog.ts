@@ -19,17 +19,32 @@ import path from 'path';
 
 import { outputFile  } from './config.js';
 import { Response } from './response.js';
+
+import { logUnhandledError } from './log.js';
 import type { FullConfig } from './config.js';
 import type * as actions from './actions.js';
-import type { Tab } from './tab.js';
+import type { Tab, TabSnapshot } from './tab.js';
 
-export type Action = actions.ActionInContext & { code: string; tab?: Tab | undefined; timestamp: number };
+type LogEntry = {
+  timestamp: number;
+  toolCall?: {
+    toolName: string;
+    toolArgs: Record<string, any>;
+    result: string;
+    isError?: boolean;
+  };
+  userAction?: actions.Action;
+  code: string;
+  tabSnapshot?: TabSnapshot;
+};
 
 export class SessionLog {
   private _folder: string;
   private _file: string;
   private _ordinal = 0;
-  private _lastModified = 0;
+  private _pendingEntries: LogEntry[] = [];
+  private _sessionFileQueue = Promise.resolve();
+  private _flushEntriesTimeout: NodeJS.Timeout | undefined;
 
   constructor(sessionFolder: string) {
     this._folder = sessionFolder;
@@ -44,90 +59,118 @@ export class SessionLog {
     return new SessionLog(sessionFolder);
   }
 
-  lastModified() {
-    return this._lastModified;
+  logResponse(response: Response) {
+    const entry: LogEntry = {
+      timestamp: performance.now(),
+      toolCall: {
+        toolName: response.toolName,
+        toolArgs: response.toolArgs,
+        result: response.result(),
+        isError: response.isError(),
+      },
+      code: response.code(),
+      tabSnapshot: response.tabSnapshot(),
+    };
+    this._appendEntry(entry);
   }
 
-  async logResponse(response: Response) {
-    this._lastModified = performance.now();
-    const prefix = `${(++this._ordinal).toString().padStart(3, '0')}`;
-    const lines: string[] = [
-      `### Tool call: ${response.toolName}`,
-      `- Args`,
-      '```json',
-      JSON.stringify(response.toolArgs, null, 2),
-      '```',
-    ];
-    if (response.result()) {
-      lines.push(
-          response.isError() ? `- Error` : `- Result`,
-          '```',
-          response.result(),
-          '```');
+  logUserAction(action: actions.Action, tab: Tab, code: string, isUpdate: boolean) {
+    code = code.trim();
+    if (isUpdate) {
+      const lastEntry = this._pendingEntries[this._pendingEntries.length - 1];
+      if (lastEntry.userAction?.name === action.name) {
+        lastEntry.userAction = action;
+        lastEntry.code = code;
+        return;
+      }
     }
-
-    if (response.code()) {
-      lines.push(
-          `- Code`,
-          '```js',
-          response.code(),
-          '```');
+    if (action.name === 'navigate') {
+      // Already logged at this location.
+      const lastEntry = this._pendingEntries[this._pendingEntries.length - 1];
+      if (lastEntry?.tabSnapshot?.url === action.url)
+        return;
     }
-
-    const snapshot = await response.snapshot();
-    if (snapshot?.tabSnapshot) {
-      const fileName = `${prefix}.snapshot.yml`;
-      await fs.promises.writeFile(path.join(this._folder, fileName), snapshot.tabSnapshot?.ariaSnapshot);
-      lines.push(`- Snapshot: ${fileName}`);
-    }
-
-    for (const image of response.images()) {
-      const fileName = `${prefix}.screenshot.${extension(image.contentType)}`;
-      await fs.promises.writeFile(path.join(this._folder, fileName), image.data);
-      lines.push(`- Screenshot: ${fileName}`);
-    }
-
-    lines.push('', '', '');
-    await this._appendLines(lines);
+    const entry: LogEntry = {
+      timestamp: performance.now(),
+      userAction: action,
+      code,
+      tabSnapshot: {
+        url: tab.page.url(),
+        title: '',
+        ariaSnapshot: action.ariaSnapshot || '',
+        modalStates: [],
+        consoleMessages: [],
+        downloads: [],
+      },
+    };
+    this._appendEntry(entry);
   }
 
-  async logActions(actions: Action[]) {
-    // Skip recent navigation, it is a side-effect of the previous action or tool use.
-    if (actions?.[0]?.action?.name === 'navigate' && actions[0].timestamp - this._lastModified < 1000)
-      return;
+  private _appendEntry(entry: LogEntry) {
+    this._pendingEntries.push(entry);
+    if (this._flushEntriesTimeout)
+      clearTimeout(this._flushEntriesTimeout);
+    this._flushEntriesTimeout = setTimeout(() => this._flushEntries(), 1000);
+  }
 
-    this._lastModified = performance.now();
-    const lines: string[] = [];
-    for (const action of actions) {
-      const prefix = `${(++this._ordinal).toString().padStart(3, '0')}`;
-      lines.push(
-          `### User action: ${action.action.name}`,
-      );
-      if (action.code) {
+  private async _flushEntries() {
+    clearTimeout(this._flushEntriesTimeout);
+    const entries = this._pendingEntries;
+    this._pendingEntries = [];
+    const lines: string[] = [''];
+
+    for (const entry of entries) {
+      const ordinal = (++this._ordinal).toString().padStart(3, '0');
+      if (entry.toolCall) {
+        lines.push(
+            `### Tool call: ${entry.toolCall.toolName}`,
+            `- Args`,
+            '```json',
+            JSON.stringify(entry.toolCall.toolArgs, null, 2),
+            '```',
+        );
+        if (entry.toolCall.result) {
+          lines.push(
+              entry.toolCall.isError ? `- Error` : `- Result`,
+              '```',
+              entry.toolCall.result,
+              '```',
+          );
+        }
+      }
+
+      if (entry.userAction) {
+        const actionData = { ...entry.userAction } as any;
+        delete actionData.ariaSnapshot;
+        delete actionData.selector;
+        delete actionData.signals;
+
+        lines.push(
+            `### User action: ${entry.userAction.name}`,
+            `- Args`,
+            '```json',
+            JSON.stringify(actionData, null, 2),
+            '```',
+        );
+      }
+
+      if (entry.code) {
         lines.push(
             `- Code`,
             '```js',
-            action.code,
+            entry.code,
             '```');
       }
-      if (action.action.ariaSnapshot) {
-        const fileName = `${prefix}.snapshot.yml`;
-        await fs.promises.writeFile(path.join(this._folder, fileName), action.action.ariaSnapshot);
+
+      if (entry.tabSnapshot) {
+        const fileName = `${ordinal}.snapshot.yml`;
+        fs.promises.writeFile(path.join(this._folder, fileName), entry.tabSnapshot.ariaSnapshot).catch(logUnhandledError);
         lines.push(`- Snapshot: ${fileName}`);
       }
-      lines.push('', '', '');
+
+      lines.push('', '');
     }
 
-    await this._appendLines(lines);
+    this._sessionFileQueue = this._sessionFileQueue.then(() => fs.promises.appendFile(this._file, lines.join('\n')));
   }
-
-  private async _appendLines(lines: string[]) {
-    await fs.promises.appendFile(this._file, lines.join('\n'));
-  }
-}
-
-function extension(contentType: string): 'jpg' | 'png' {
-  if (contentType === 'image/jpeg')
-    return 'jpg';
-  return 'png';
 }
