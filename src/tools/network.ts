@@ -15,9 +15,11 @@
  */
 
 import { z } from 'zod';
-import { defineTabTool } from './tool.js';
+import { defineTabTool, defineTool } from './tool.js';
 
 import type * as playwright from 'playwright';
+import type { Context } from '../context.js';
+import type { Response } from '../response.js';
 
 const requests = defineTabTool({
   capability: 'core',
@@ -49,24 +51,21 @@ const setHeaders = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, { headers }) => {
+  handle: async (context: Context, params: { headers: Record<string, string> }, response: Response) => {
     // Set dynamic headers that will be applied to all future requests
-    context.setDynamicHeaders(headers);
+    context.setDynamicHeaders(params.headers);
 
-    return {
-      code: [`// Set custom headers: ${JSON.stringify(headers, null, 2)}`],
-      action: async () => {
-        const allHeaders = { ...context.config.network?.customHeaders, ...context.getDynamicHeaders() };
-        return {
-          content: [{
-            type: 'text',
-            text: `Custom headers have been set and will be included with all future requests:\n${Object.entries(headers).map(([key, value]) => `- ${key}: ${value}`).join('\n')}\n\nAll active headers:\n${Object.entries(allHeaders).map(([key, value]) => `- ${key}: ${value}`).join('\n')}`
-          }]
-        };
-      },
-      captureSnapshot: false,
-      waitForNetwork: false,
-    };
+    // Add code to show what was done
+    response.addCode(`// Set custom headers: ${JSON.stringify(params.headers, null, 2)}`);
+
+    // Get all active headers (static + dynamic)
+    const allHeaders = { ...context.config.network?.customHeaders, ...context.getDynamicHeaders() };
+
+    // Add result text
+    const headersList = Object.entries(params.headers).map(([key, value]) => `- ${key}: ${value}`).join('\n');
+    const allHeadersList = Object.entries(allHeaders).map(([key, value]) => `- ${key}: ${value}`).join('\n');
+
+    response.addResult(`Custom headers have been set and will be included with all future requests:\n${headersList}\n\nAll active headers:\n${allHeadersList}`);
   },
 });
 

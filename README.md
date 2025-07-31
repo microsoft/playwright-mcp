@@ -152,10 +152,15 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --block-service-workers      block service workers
   --browser <browser>          browser or chrome channel to use, possible
                                values: chrome, firefox, webkit, msedge.
-  --caps <caps>                comma-separated list of additional capabilities
-                               to enable, possible values: vision, pdf.
+  --browser-agent <endpoint>   Use browser agent (experimental).
+  --caps <caps>                comma-separated list of capabilities to enable,
+                               possible values: tabs, pdf, history, wait, files,
+                               install. Default is all.
   --cdp-endpoint <endpoint>    CDP endpoint to connect to.
   --config <path>              path to the configuration file.
+  --custom-headers <headers>   JSON object of custom headers to include with all
+                               requests, for example: '{"Authorization": "Bearer
+                               token", "X-API-Key": "key"}'
   --device <device>            device to emulate, for example: "iPhone 15"
   --executable-path <path>     path to the browser executable.
   --headless                   run browser in headless mode, headed by default
@@ -165,7 +170,9 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --isolated                   keep the browser profile in memory, do not save
                                it to disk.
   --image-responses <mode>     whether to send image responses to the client.
-                               Can be "allow" or "omit", Defaults to "allow".
+                               Can be "allow", "omit", or "auto". Defaults to
+                               "auto", which sends images if the client can
+                               display them.
   --no-sandbox                 disable the sandbox for all process types that
                                are normally sandboxed.
   --output-dir <path>          path to the directory for output files.
@@ -174,8 +181,6 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                example ".com,chromium.org,.domain.com"
   --proxy-server <proxy>       specify proxy server, for example
                                "http://myproxy:3128" or "socks5://myproxy:8080"
-  --save-session               Whether to save the Playwright MCP session into
-                               the output directory.
   --save-trace                 Whether to save the Playwright Trace of the
                                session into the output directory.
   --storage-state <path>       path to the storage state file for isolated
@@ -185,6 +190,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                specified, a temporary directory will be created.
   --viewport-size <size>       specify browser viewport size in pixels, for
                                example "1280, 720"
+  --vision                     Run server that uses screenshots (Aria snapshots
+                               are used by default)
 ```
 
 <!--- End of options generated section -->
@@ -395,8 +402,6 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
-    - `doubleClick` (boolean, optional): Whether to perform a double click instead of a single click
-    - `button` (string, optional): Button to click, defaults to left
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -425,26 +430,6 @@ http.createServer(async (req, res) => {
     - `startRef` (string): Exact source element reference from the page snapshot
     - `endElement` (string): Human-readable target element description used to obtain the permission to interact with the element
     - `endRef` (string): Exact target element reference from the page snapshot
-  - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_evaluate**
-  - Title: Evaluate JavaScript
-  - Description: Evaluate JavaScript expression on page or element
-  - Parameters:
-    - `function` (string): () => { /* code */ } or (element) => { /* code */ } when element is provided
-    - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
-    - `ref` (string, optional): Exact target element reference from the page snapshot
-  - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_file_upload**
-  - Title: Upload files
-  - Description: Upload one or multiple files
-  - Parameters:
-    - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -478,22 +463,6 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_navigate_back**
-  - Title: Go back
-  - Description: Go back to the previous page
-  - Parameters: None
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_navigate_forward**
-  - Title: Go forward
-  - Description: Go forward to the next page
-  - Parameters: None
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
 - **browser_network_requests**
   - Title: List network requests
   - Description: Returns all network requests since loading the page
@@ -521,6 +490,59 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_screen_capture**
+  - Title: Take a screenshot
+  - Description: Take a screenshot of the current page
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_screen_click**
+  - Title: Click
+  - Description: Click left mouse button
+  - Parameters:
+    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `x` (number): X coordinate
+    - `y` (number): Y coordinate
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_screen_drag**
+  - Title: Drag mouse
+  - Description: Drag left mouse button
+  - Parameters:
+    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `startX` (number): Start X coordinate
+    - `startY` (number): Start Y coordinate
+    - `endX` (number): End X coordinate
+    - `endY` (number): End Y coordinate
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_screen_move_mouse**
+  - Title: Move mouse
+  - Description: Move mouse to a given position
+  - Parameters:
+    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `x` (number): X coordinate
+    - `y` (number): Y coordinate
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_screen_type**
+  - Title: Type text
+  - Description: Type text
+  - Parameters:
+    - `text` (string): Text to type into the element
+    - `submit` (boolean, optional): Whether to submit entered text (press Enter after)
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_select_option**
   - Title: Select option
   - Description: Select an option in a dropdown
@@ -528,6 +550,15 @@ http.createServer(async (req, res) => {
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
     - `values` (array): Array of values to select in the dropdown. This can be a single value or multiple values.
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_set_headers**
+  - Title: Set custom headers
+  - Description: Set custom headers that will be included with all browser requests. Headers will persist for the current browser session.
+  - Parameters:
+    - `headers` (object): Object containing header name-value pairs to set
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -544,11 +575,10 @@ http.createServer(async (req, res) => {
   - Title: Take a screenshot
   - Description: Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.
   - Parameters:
-    - `type` (string, optional): Image format for the screenshot. Default is png.
+    - `raw` (boolean, optional): Whether to return without compression (in PNG format). Default is false, which returns a JPEG image.
     - `filename` (string, optional): File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified.
     - `element` (string, optional): Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.
     - `ref` (string, optional): Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.
-    - `fullPage` (boolean, optional): When true, takes a screenshot of the full scrollable page, instead of the currently visible viewport. Cannot be used with element screenshots.
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -564,109 +594,20 @@ http.createServer(async (req, res) => {
     - `slowly` (boolean, optional): Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.
   - Read-only: **false**
 
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_wait_for**
-  - Title: Wait for
-  - Description: Wait for text to appear or disappear or a specified time to pass
-  - Parameters:
-    - `time` (number, optional): The time to wait in seconds
-    - `text` (string, optional): The text to wait for
-    - `textGone` (string, optional): The text to wait for to disappear
-  - Read-only: **true**
-
 </details>
 
 <details>
 <summary><b>Tab management</b></summary>
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_close**
-  - Title: Close a tab
-  - Description: Close a tab
-  - Parameters:
-    - `index` (number, optional): The index of the tab to close. Closes current tab if not provided.
-  - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_list**
-  - Title: List tabs
-  - Description: List browser tabs
-  - Parameters: None
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_new**
-  - Title: Open a new tab
-  - Description: Open a new tab
-  - Parameters:
-    - `url` (string, optional): The URL to navigate to in the new tab. If not provided, the new tab will be blank.
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_select**
-  - Title: Select a tab
-  - Description: Select a tab by index
-  - Parameters:
-    - `index` (number): The index of the tab to select
-  - Read-only: **true**
 
 </details>
 
 <details>
 <summary><b>Browser installation</b></summary>
 
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_install**
-  - Title: Install the browser specified in the config
-  - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
-  - Parameters: None
-  - Read-only: **false**
-
 </details>
 
 <details>
 <summary><b>Coordinate-based (opt-in via --caps=vision)</b></summary>
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_mouse_click_xy**
-  - Title: Click
-  - Description: Click left mouse button at a given position
-  - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
-    - `x` (number): X coordinate
-    - `y` (number): Y coordinate
-  - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_mouse_drag_xy**
-  - Title: Drag mouse
-  - Description: Drag left mouse button to a given position
-  - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
-    - `startX` (number): Start X coordinate
-    - `startY` (number): Start Y coordinate
-    - `endX` (number): End X coordinate
-    - `endY` (number): End Y coordinate
-  - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_mouse_move_xy**
-  - Title: Move mouse
-  - Description: Move mouse to a given position
-  - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
-    - `x` (number): X coordinate
-    - `y` (number): Y coordinate
-  - Read-only: **true**
 
 </details>
 

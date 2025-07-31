@@ -192,17 +192,17 @@ export class Context {
     // Set up a single route handler that handles all network interception logic
     await context.route('**', route => {
       const url = route.request().url();
-      
+
       // Check blocked origins first
       if (this.config.network?.blockedOrigins?.length) {
         for (const origin of this.config.network.blockedOrigins) {
           if (url.includes(origin)) {
-            route.abort('blockedbyclient');
+            void route.abort('blockedbyclient');
             return;
           }
         }
       }
-      
+
       // Check allowed origins if configured
       if (this.config.network?.allowedOrigins?.length) {
         let isAllowed = false;
@@ -213,22 +213,22 @@ export class Context {
           }
         }
         if (!isAllowed) {
-          route.abort('blockedbyclient');
+          void route.abort('blockedbyclient');
           return;
         }
       }
-      
+
       // Apply custom headers (both static from config and dynamic)
       const customHeaders = {
         ...this.config.network?.customHeaders,
         ...this._dynamicHeaders
       };
-      
+
       if (Object.keys(customHeaders).length > 0) {
         const headers = { ...route.request().headers(), ...customHeaders };
-        route.continue({ headers });
+        void route.continue({ headers });
       } else {
-        route.continue();
+        void route.continue();
       }
     });
   }
