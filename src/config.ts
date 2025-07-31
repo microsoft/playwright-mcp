@@ -30,6 +30,7 @@ export type CLIOptions = {
   caps?: string[];
   cdpEndpoint?: string;
   config?: string;
+  customHeaders?: string;
   device?: string;
   executablePath?: string;
   headless?: boolean;
@@ -65,6 +66,7 @@ const defaultConfig: FullConfig = {
   network: {
     allowedOrigins: undefined,
     blockedOrigins: undefined,
+    customHeaders: undefined,
   },
   server: {},
   outputDir: path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString())),
@@ -172,6 +174,15 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
   if (cliOptions.blockServiceWorkers)
     contextOptions.serviceWorkers = 'block';
 
+  let customHeaders: Record<string, string> | undefined;
+  if (cliOptions.customHeaders) {
+    try {
+      customHeaders = JSON.parse(cliOptions.customHeaders);
+    } catch (error) {
+      throw new Error(`Invalid custom headers JSON format: ${error}`);
+    }
+  }
+
   const result: Config = {
     browser: {
       browserName,
@@ -189,6 +200,7 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
     network: {
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,
+      customHeaders,
     },
     saveSession: cliOptions.saveSession,
     saveTrace: cliOptions.saveTrace,

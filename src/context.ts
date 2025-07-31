@@ -20,7 +20,7 @@ import * as playwright from 'playwright';
 import { logUnhandledError } from './log.js';
 import { Tab } from './tab.js';
 
-import type { Tool } from './tools/tool.js';
+import type { Tool, ModalState } from './tools/tool.js';
 import type { FullConfig } from './config.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
 import type * as actions from './actions.js';
@@ -35,7 +35,10 @@ export class Context {
   private _browserContextFactory: BrowserContextFactory;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
-
+  private _modalStates: (ModalState & { tab: Tab })[] = [];
+  private _pendingAction: { action: string; tab: Tab } | undefined;
+  private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
+  private _dynamicHeaders: Record<string, string> = {};
   clientVersion: { name: string; version: string; } | undefined;
 
   private static _allContexts: Set<Context> = new Set();
@@ -145,6 +148,14 @@ export class Context {
       void this.closeBrowserContext();
   }
 
+  setDynamicHeaders(headers: Record<string, string>) {
+    this._dynamicHeaders = { ...this._dynamicHeaders, ...headers };
+  }
+
+  getDynamicHeaders(): Record<string, string> {
+    return { ...this._dynamicHeaders };
+  }
+
   async closeBrowserContext() {
     if (!this._closeBrowserContextPromise)
       this._closeBrowserContextPromise = this._closeBrowserContextImpl().catch(logUnhandledError);
@@ -178,17 +189,48 @@ export class Context {
   }
 
   private async _setupRequestInterception(context: playwright.BrowserContext) {
-    if (this.config.network?.allowedOrigins?.length) {
-      await context.route('**', route => route.abort('blockedbyclient'));
-
-      for (const origin of this.config.network.allowedOrigins)
-        await context.route(`*://${origin}/**`, route => route.continue());
-    }
-
-    if (this.config.network?.blockedOrigins?.length) {
-      for (const origin of this.config.network.blockedOrigins)
-        await context.route(`*://${origin}/**`, route => route.abort('blockedbyclient'));
-    }
+    // Set up a single route handler that handles all network interception logic
+    await context.route('**', route => {
+      const url = route.request().url();
+      
+      // Check blocked origins first
+      if (this.config.network?.blockedOrigins?.length) {
+        for (const origin of this.config.network.blockedOrigins) {
+          if (url.includes(origin)) {
+            route.abort('blockedbyclient');
+            return;
+          }
+        }
+      }
+      
+      // Check allowed origins if configured
+      if (this.config.network?.allowedOrigins?.length) {
+        let isAllowed = false;
+        for (const origin of this.config.network.allowedOrigins) {
+          if (url.includes(origin)) {
+            isAllowed = true;
+            break;
+          }
+        }
+        if (!isAllowed) {
+          route.abort('blockedbyclient');
+          return;
+        }
+      }
+      
+      // Apply custom headers (both static from config and dynamic)
+      const customHeaders = {
+        ...this.config.network?.customHeaders,
+        ...this._dynamicHeaders
+      };
+      
+      if (Object.keys(customHeaders).length > 0) {
+        const headers = { ...route.request().headers(), ...customHeaders };
+        route.continue({ headers });
+      } else {
+        route.continue();
+      }
+    });
   }
 
   private _ensureBrowserContext() {

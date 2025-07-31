@@ -110,6 +110,11 @@ export type Config = {
      * List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
      */
     blockedOrigins?: string[];
+
+    /**
+     * Custom headers to include with all browser requests.
+     */
+    customHeaders?: Record<string, string>;
   };
 
   /**

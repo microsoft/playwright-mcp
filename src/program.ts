@@ -37,6 +37,7 @@ program
     .option('--caps <caps>', 'comma-separated list of additional capabilities to enable, possible values: vision, pdf.', commaSeparatedList)
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
     .option('--config <path>', 'path to the configuration file.')
+    .option('--custom-headers <headers>', 'JSON object of custom headers to include with all requests, for example: \'{"Authorization": "Bearer token", "X-API-Key": "key"}\'')
     .option('--device <device>', 'device to emulate, for example: "iPhone 15"')
     .option('--executable-path <path>', 'path to the browser executable.')
     .option('--headless', 'run browser in headless mode, headed by default')

@@ -36,6 +36,40 @@ const requests = defineTabTool({
   },
 });
 
+const setHeaders = defineTool({
+  capability: 'core',
+
+  schema: {
+    name: 'browser_set_headers',
+    title: 'Set custom headers',
+    description: 'Set custom headers that will be included with all browser requests. Headers will persist for the current browser session.',
+    inputSchema: z.object({
+      headers: z.record(z.string(), z.string()).describe('Object containing header name-value pairs to set'),
+    }),
+    type: 'destructive',
+  },
+
+  handle: async (context, { headers }) => {
+    // Set dynamic headers that will be applied to all future requests
+    context.setDynamicHeaders(headers);
+
+    return {
+      code: [`// Set custom headers: ${JSON.stringify(headers, null, 2)}`],
+      action: async () => {
+        const allHeaders = { ...context.config.network?.customHeaders, ...context.getDynamicHeaders() };
+        return {
+          content: [{
+            type: 'text',
+            text: `Custom headers have been set and will be included with all future requests:\n${Object.entries(headers).map(([key, value]) => `- ${key}: ${value}`).join('\n')}\n\nAll active headers:\n${Object.entries(allHeaders).map(([key, value]) => `- ${key}: ${value}`).join('\n')}`
+          }]
+        };
+      },
+      captureSnapshot: false,
+      waitForNetwork: false,
+    };
+  },
+});
+
 function renderRequest(request: playwright.Request, response: playwright.Response | null) {
   const result: string[] = [];
   result.push(`[${request.method().toUpperCase()}] ${request.url()}`);
@@ -46,4 +80,5 @@ function renderRequest(request: playwright.Request, response: playwright.Respons
 
 export default [
   requests,
+  setHeaders,
 ];
