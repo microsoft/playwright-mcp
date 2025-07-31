@@ -36,6 +36,15 @@ export type TabEventsInterface = {
   [TabEvents.modalState]: [modalState: ModalState];
 };
 
+export type TabSnapshot = {
+  url: string;
+  title: string;
+  ariaSnapshot: string;
+  modalStates: ModalState[];
+  consoleMessages: ConsoleMessage[];
+  downloads: { download: playwright.Download, finished: boolean, outputFile: string }[];
+};
+
 export class Tab extends EventEmitter<TabEventsInterface> {
   readonly context: Context;
   readonly page: playwright.Page;
@@ -90,14 +99,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   }
 
   modalStatesMarkdown(): string[] {
-    const result: string[] = ['### Modal state'];
-    if (this._modalStates.length === 0)
-      result.push('- There is no modal state present');
-    for (const state of this._modalStates) {
-      const tool = this.context.tools.filter(tool => 'clearsModalState' in tool).find(tool => tool.clearsModalState === state.type);
-      result.push(`- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`);
-    }
-    return result;
+    return renderModalStates(this.context, this.modalStates());
   }
 
   private _dialogShown(dialog: playwright.Dialog) {
@@ -180,53 +182,25 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     return this._requests;
   }
 
-  private _takeRecentConsoleMarkdown(): string[] {
-    if (!this._recentConsoleMessages.length)
-      return [];
-    const result = this._recentConsoleMessages.map(message => {
-      return `- ${trim(message.toString(), 100)}`;
-    });
-    return [`### New console messages`, ...result, ''];
-  }
-
-  private _listDownloadsMarkdown(): string[] {
-    if (!this._downloads.length)
-      return [];
-
-    const result: string[] = ['### Downloads'];
-    for (const entry of this._downloads) {
-      if (entry.finished)
-        result.push(`- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`);
-      else
-        result.push(`- Downloading file ${entry.download.suggestedFilename()} ...`);
-    }
-    result.push('');
-    return result;
-  }
-
-  async captureSnapshot(): Promise<string> {
-    const result: string[] = [];
-    if (this.modalStates().length) {
-      result.push(...this.modalStatesMarkdown());
-      return result.join('\n');
-    }
-
-    result.push(...this._takeRecentConsoleMarkdown());
-    result.push(...this._listDownloadsMarkdown());
-
-    await this._raceAgainstModalStates(async () => {
+  async captureSnapshot(): Promise<{ tabSnapshot?: TabSnapshot, modalState?: ModalState }> {
+    let tabSnapshot: TabSnapshot | undefined;
+    const modalState = await this._raceAgainstModalStates(async () => {
       const snapshot = await (this.page as PageEx)._snapshotForAI();
-      result.push(
-          `### Page state`,
-          `- Page URL: ${this.page.url()}`,
-          `- Page Title: ${await this.page.title()}`,
-          `- Page Snapshot:`,
-          '```yaml',
-          snapshot,
-          '```',
-      );
+      tabSnapshot = {
+        url: this.page.url(),
+        title: await this.page.title(),
+        ariaSnapshot: snapshot,
+        modalStates: this.modalStates(),
+        consoleMessages: [],
+        downloads: this._downloads,
+      };
     });
-    return result.join('\n');
+    if (tabSnapshot) {
+      // Assign console message late so that we did not lose any to modal state.
+      tabSnapshot.consoleMessages = this._recentConsoleMessages;
+      this._recentConsoleMessages = [];
+    }
+    return { tabSnapshot, modalState };
   }
 
   private _javaScriptBlocked(): boolean {
@@ -308,10 +282,15 @@ function pageErrorToConsoleMessage(errorOrValue: Error | any): ConsoleMessage {
   };
 }
 
-function trim(text: string, maxLength: number) {
-  if (text.length <= maxLength)
-    return text;
-  return text.slice(0, maxLength) + '...';
+export function renderModalStates(context: Context, modalStates: ModalState[]): string[] {
+  const result: string[] = ['### Modal state'];
+  if (modalStates.length === 0)
+    result.push('- There is no modal state present');
+  for (const state of modalStates) {
+    const tool = context.tools.filter(tool => 'clearsModalState' in tool).find(tool => tool.clearsModalState === state.type);
+    result.push(`- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`);
+  }
+  return result;
 }
 
 const tabSymbol = Symbol('tabSymbol');

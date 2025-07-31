@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import type  { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
+import { renderModalStates } from './tab.js';
+
+import type { TabSnapshot } from './tab.js';
+import type { ModalState } from './tools/tool.js';
+import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Context } from './context.js';
 
 export class Response {
@@ -24,7 +28,7 @@ export class Response {
   private _context: Context;
   private _includeSnapshot = false;
   private _includeTabs = false;
-  private _snapshot: string | undefined;
+  private _snapshot: { tabSnapshot?: TabSnapshot, modalState?: ModalState } | undefined;
 
   readonly toolName: string;
   readonly toolArgs: Record<string, any>;
@@ -77,13 +81,13 @@ export class Response {
     this._includeTabs = true;
   }
 
-  async snapshot(): Promise<string> {
-    if (this._snapshot !== undefined)
+  async snapshot(): Promise<{ tabSnapshot?: TabSnapshot, modalState?: ModalState }> {
+    if (this._snapshot)
       return this._snapshot;
     if (this._includeSnapshot && this._context.currentTab())
       this._snapshot = await this._context.currentTabOrDie().captureSnapshot();
     else
-      this._snapshot = '';
+      this._snapshot = {};
     return this._snapshot;
   }
 
@@ -112,8 +116,14 @@ ${this._code.join('\n')}
 
     // Add snapshot if provided.
     const snapshot = await this.snapshot();
-    if (snapshot)
-      response.push(snapshot, '');
+    if (snapshot?.modalState) {
+      response.push(...renderModalStates(this._context, [snapshot.modalState]));
+      response.push('');
+    }
+    if (snapshot?.tabSnapshot) {
+      response.push(renderTabSnapshot(snapshot.tabSnapshot));
+      response.push('');
+    }
 
     // Main response part
     const content: (TextContent | ImageContent)[] = [
@@ -128,4 +138,42 @@ ${this._code.join('\n')}
 
     return { content, isError: this._isError };
   }
+}
+
+function renderTabSnapshot(tabSnapshot: TabSnapshot): string {
+  const lines: string[] = [];
+
+  if (tabSnapshot.consoleMessages.length) {
+    lines.push(`### New console messages`);
+    for (const message of tabSnapshot.consoleMessages)
+      lines.push(`- ${trim(message.toString(), 100)}`);
+    lines.push('');
+  }
+
+  if (tabSnapshot.downloads.length) {
+    lines.push(`### Downloads`);
+    for (const entry of tabSnapshot.downloads) {
+      if (entry.finished)
+        lines.push(`- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`);
+      else
+        lines.push(`- Downloading file ${entry.download.suggestedFilename()} ...`);
+    }
+    lines.push('');
+  }
+
+  lines.push(`### Page state`);
+  lines.push(`- Page URL: ${tabSnapshot.url}`);
+  lines.push(`- Page Title: ${tabSnapshot.title}`);
+  lines.push(`- Page Snapshot:`);
+  lines.push('```yaml');
+  lines.push(tabSnapshot.ariaSnapshot);
+  lines.push('```');
+
+  return lines.join('\n');
+}
+
+function trim(text: string, maxLength: number) {
+  if (text.length <= maxLength)
+    return text;
+  return text.slice(0, maxLength) + '...';
 }

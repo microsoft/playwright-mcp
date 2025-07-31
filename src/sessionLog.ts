@@ -75,9 +75,9 @@ export class SessionLog {
     }
 
     const snapshot = await response.snapshot();
-    if (snapshot) {
+    if (snapshot?.tabSnapshot) {
       const fileName = `${prefix}.snapshot.yml`;
-      await fs.promises.writeFile(path.join(this._folder, fileName), snapshot);
+      await fs.promises.writeFile(path.join(this._folder, fileName), snapshot.tabSnapshot?.ariaSnapshot);
       lines.push(`- Snapshot: ${fileName}`);
     }
 
