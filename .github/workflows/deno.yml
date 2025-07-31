@@ -39,4 +39,4 @@ jobs:
         run: deno lint
 
       - name: Run tests
-        run: deno test -A
+        run: deno test --allow-read --allow-net
