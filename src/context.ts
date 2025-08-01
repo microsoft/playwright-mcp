@@ -86,7 +86,9 @@ export class Context {
     this._browserContextFactory = {
       async createContext() {
         const browser = await playwright.chromium.connect(connectionString);
-        const context = browser.contexts()[0] ?? await (browser as any)._newContextForReuse();
+        const params = new URL(connectionString).searchParams;
+        const contextOptions = JSON.parse(params.get('context-options') ?? '{}');
+        const context = browser.contexts()[0] ?? await (browser as any)._newContextForReuse(contextOptions);
         return {
           browserContext: context,
           close: async () => {
