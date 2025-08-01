@@ -43,9 +43,16 @@ export class BrowserServerBackend implements ServerBackend {
     this._tools = filteredTools(config);
   }
 
-  async initialize() {
+  async initialize(server: mcpServer.Server): Promise<void> {
     this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config) : undefined;
-    this._context = new Context(this._tools, this._config, this._browserContextFactory, this._sessionLog);
+    this._context = new Context({
+      tools: this._tools,
+      config: this._config,
+      browserContextFactory: this._browserContextFactory,
+      sessionLog: this._sessionLog,
+      clientVersion: server.getClientVersion(),
+      capabilities: server.getClientCapabilities() as mcpServer.ClientCapabilities,
+    });
   }
 
   tools(): mcpServer.ToolSchema<any>[] {
@@ -67,10 +74,6 @@ export class BrowserServerBackend implements ServerBackend {
       context.setRunningTool(false);
     }
     return response.serialize();
-  }
-
-  serverInitialized(version: mcpServer.ClientVersion | undefined) {
-    this._context!.clientVersion = version;
   }
 
   serverClosed() {
