@@ -27,7 +27,7 @@ const connect = defineTool({
     inputSchema: z.object({
       connectionString: z.string().describe('Connection string for an existing Playwright browser window, as provided by the playwright_browser_window tool or as included in test reports.'),
     }),
-    type: 'destructive',
+    type: 'readOnly',
   },
 
   handle: async (context, params, response) => {
