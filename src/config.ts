@@ -18,7 +18,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { devices } from 'playwright';
-import { sanitizeForFilePath } from './tools/utils.js';
+import { sanitizeForFilePath } from './utils.js';
+
 import type { Config, ToolCapability } from '../config.js';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';
 
@@ -67,7 +68,7 @@ const defaultConfig: FullConfig = {
     blockedOrigins: undefined,
   },
   server: {},
-  outputDir: path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString())),
+  saveTrace: false,
 };
 
 type BrowserUserConfig = NonNullable<Config['browser']>;
@@ -79,7 +80,7 @@ export type FullConfig = Config & {
     contextOptions: NonNullable<BrowserUserConfig['contextOptions']>;
   },
   network: NonNullable<Config['network']>,
-  outputDir: string;
+  saveTrace: boolean;
   server: NonNullable<Config['server']>,
 };
 
@@ -95,9 +96,6 @@ export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConf
   result = mergeConfig(result, configInFile);
   result = mergeConfig(result, envOverrides);
   result = mergeConfig(result, cliOverrides);
-  // Derive artifact output directory from config.outputDir
-  if (result.saveTrace)
-    result.browser.launchOptions.tracesDir = path.join(result.outputDir, 'traces');
   return result;
 }
 
@@ -240,10 +238,14 @@ async function loadConfig(configFile: string | undefined): Promise<Config> {
   }
 }
 
-export async function outputFile(config: FullConfig, name: string): Promise<string> {
-  await fs.promises.mkdir(config.outputDir, { recursive: true });
+export async function outputFile(config: FullConfig, rootPath: string | undefined, name: string): Promise<string> {
+  const outputDir = config.outputDir
+    ?? (rootPath ? path.join(rootPath, '.playwright-mcp') : undefined)
+    ?? path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString()));
+
+  await fs.promises.mkdir(outputDir, { recursive: true });
   const fileName = sanitizeForFilePath(name);
-  return path.join(config.outputDir, fileName);
+  return path.join(outputDir, fileName);
 }
 
 function pickDefined<T extends object>(obj: T | undefined): Partial<T> {

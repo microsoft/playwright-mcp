@@ -77,7 +77,7 @@ program
         return;
       }
 
-      const browserContextFactory = contextFactory(config.browser);
+      const browserContextFactory = contextFactory(config);
       const serverBackendFactory = () => new BrowserServerBackend(config, browserContextFactory);
       await mcpTransport.start(serverBackendFactory, config.server);
 

@@ -14,41 +14,44 @@
  * limitations under the License.
  */
 
-import fs from 'node:fs';
-import net from 'node:net';
-import path from 'node:path';
-import os from 'node:os';
+import fs from 'fs';
+import net from 'net';
+import path from 'path';
 
 import * as playwright from 'playwright';
-
+// @ts-ignore
+import { registryDirectory } from 'playwright-core/lib/server/registry/index';
 import { logUnhandledError, testDebug } from './log.js';
+import { createHash } from './utils.js';
+import { outputFile  } from './config.js';
 
 import type { FullConfig } from './config.js';
 
-export function contextFactory(browserConfig: FullConfig['browser']): BrowserContextFactory {
-  if (browserConfig.remoteEndpoint)
-    return new RemoteContextFactory(browserConfig);
-  if (browserConfig.cdpEndpoint)
-    return new CdpContextFactory(browserConfig);
-  if (browserConfig.isolated)
-    return new IsolatedContextFactory(browserConfig);
-  return new PersistentContextFactory(browserConfig);
+export function contextFactory(config: FullConfig): BrowserContextFactory {
+  if (config.browser.remoteEndpoint)
+    return new RemoteContextFactory(config);
+  if (config.browser.cdpEndpoint)
+    return new CdpContextFactory(config);
+  if (config.browser.isolated)
+    return new IsolatedContextFactory(config);
+  return new PersistentContextFactory(config);
 }
 
-export type ClientInfo = { name: string, version: string };
+export type ClientInfo = { name?: string, version?: string, rootPath?: string };
 
 export interface BrowserContextFactory {
   createContext(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }>;
 }
 
 class BaseContextFactory implements BrowserContextFactory {
-  readonly browserConfig: FullConfig['browser'];
+  readonly config: FullConfig;
   protected _browserPromise: Promise<playwright.Browser> | undefined;
+  protected _tracesDir: string | undefined;
   readonly name: string;
 
-  constructor(name: string, browserConfig: FullConfig['browser']) {
+  constructor(name: string, config: FullConfig) {
     this.name = name;
-    this.browserConfig = browserConfig;
+    this.config = config;
   }
 
   protected async _obtainBrowser(): Promise<playwright.Browser> {
@@ -70,7 +73,10 @@ class BaseContextFactory implements BrowserContextFactory {
     throw new Error('Not implemented');
   }
 
-  async createContext(): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
+  async createContext(clientInfo: ClientInfo): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
+    if (this.config.saveTrace)
+      this._tracesDir = await outputFile(this.config, clientInfo.rootPath, `traces-${Date.now()}`);
+
     testDebug(`create browser context (${this.name})`);
     const browser = await this._obtainBrowser();
     const browserContext = await this._doCreateContext(browser);
@@ -94,15 +100,16 @@ class BaseContextFactory implements BrowserContextFactory {
 }
 
 class IsolatedContextFactory extends BaseContextFactory {
-  constructor(browserConfig: FullConfig['browser']) {
-    super('isolated', browserConfig);
+  constructor(config: FullConfig) {
+    super('isolated', config);
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
-    await injectCdpPort(this.browserConfig);
-    const browserType = playwright[this.browserConfig.browserName];
+    await injectCdpPort(this.config.browser);
+    const browserType = playwright[this.config.browser.browserName];
     return browserType.launch({
-      ...this.browserConfig.launchOptions,
+      tracesDir: this._tracesDir,
+      ...this.config.browser.launchOptions,
       handleSIGINT: false,
       handleSIGTERM: false,
     }).catch(error => {
@@ -113,35 +120,35 @@ class IsolatedContextFactory extends BaseContextFactory {
   }
 
   protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
-    return browser.newContext(this.browserConfig.contextOptions);
+    return browser.newContext(this.config.browser.contextOptions);
   }
 }
 
 class CdpContextFactory extends BaseContextFactory {
-  constructor(browserConfig: FullConfig['browser']) {
-    super('cdp', browserConfig);
+  constructor(config: FullConfig) {
+    super('cdp', config);
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
-    return playwright.chromium.connectOverCDP(this.browserConfig.cdpEndpoint!);
+    return playwright.chromium.connectOverCDP(this.config.browser.cdpEndpoint!);
   }
 
   protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
-    return this.browserConfig.isolated ? await browser.newContext() : browser.contexts()[0];
+    return this.config.browser.isolated ? await browser.newContext() : browser.contexts()[0];
   }
 }
 
 class RemoteContextFactory extends BaseContextFactory {
-  constructor(browserConfig: FullConfig['browser']) {
-    super('remote', browserConfig);
+  constructor(config: FullConfig) {
+    super('remote', config);
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
-    const url = new URL(this.browserConfig.remoteEndpoint!);
-    url.searchParams.set('browser', this.browserConfig.browserName);
-    if (this.browserConfig.launchOptions)
-      url.searchParams.set('launch-options', JSON.stringify(this.browserConfig.launchOptions));
-    return playwright[this.browserConfig.browserName].connect(String(url));
+    const url = new URL(this.config.browser.remoteEndpoint!);
+    url.searchParams.set('browser', this.config.browser.browserName);
+    if (this.config.browser.launchOptions)
+      url.searchParams.set('launch-options', JSON.stringify(this.config.browser.launchOptions));
+    return playwright[this.config.browser.browserName].connect(String(url));
   }
 
   protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
@@ -150,27 +157,31 @@ class RemoteContextFactory extends BaseContextFactory {
 }
 
 class PersistentContextFactory implements BrowserContextFactory {
-  readonly browserConfig: FullConfig['browser'];
+  readonly config: FullConfig;
   private _userDataDirs = new Set<string>();
 
-  constructor(browserConfig: FullConfig['browser']) {
-    this.browserConfig = browserConfig;
+  constructor(config: FullConfig) {
+    this.config = config;
   }
 
-  async createContext(): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
-    await injectCdpPort(this.browserConfig);
+  async createContext(clientInfo: ClientInfo): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
+    await injectCdpPort(this.config.browser);
     testDebug('create browser context (persistent)');
-    const userDataDir = this.browserConfig.userDataDir ?? await this._createUserDataDir();
+    const userDataDir = this.config.browser.userDataDir ?? await this._createUserDataDir(clientInfo.rootPath);
+    let tracesDir: string | undefined;
+    if (this.config.saveTrace)
+      tracesDir = await outputFile(this.config, clientInfo.rootPath, `traces-${Date.now()}`);
 
     this._userDataDirs.add(userDataDir);
     testDebug('lock user data dir', userDataDir);
 
-    const browserType = playwright[this.browserConfig.browserName];
+    const browserType = playwright[this.config.browser.browserName];
     for (let i = 0; i < 5; i++) {
       try {
         const browserContext = await browserType.launchPersistentContext(userDataDir, {
-          ...this.browserConfig.launchOptions,
-          ...this.browserConfig.contextOptions,
+          tracesDir,
+          ...this.config.browser.launchOptions,
+          ...this.config.browser.contextOptions,
           handleSIGINT: false,
           handleSIGTERM: false,
         });
@@ -198,17 +209,12 @@ class PersistentContextFactory implements BrowserContextFactory {
     testDebug('close browser context complete (persistent)');
   }
 
-  private async _createUserDataDir() {
-    let cacheDirectory: string;
-    if (process.platform === 'linux')
-      cacheDirectory = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
-    else if (process.platform === 'darwin')
-      cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
-    else if (process.platform === 'win32')
-      cacheDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-    else
-      throw new Error('Unsupported platform: ' + process.platform);
-    const result = path.join(cacheDirectory, 'ms-playwright', `mcp-${this.browserConfig.launchOptions?.channel ?? this.browserConfig?.browserName}-profile`);
+  private async _createUserDataDir(rootPath: string | undefined) {
+    const dir = process.env.PWMCP_PROFILES_DIR_FOR_TEST ?? registryDirectory;
+    const browserToken = this.config.browser.launchOptions?.channel ?? this.config.browser?.browserName;
+    // Hesitant putting hundreds of files into the user's workspace, so using it for hashing instead.
+    const rootPathToken = rootPath ? `-${createHash(rootPath)}` : '';
+    const result = path.join(dir, `mcp-${browserToken}${rootPathToken}`);
     await fs.promises.mkdir(result, { recursive: true });
     return result;
   }

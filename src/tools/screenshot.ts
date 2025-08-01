@@ -18,7 +18,6 @@ import { z } from 'zod';
 
 import { defineTabTool } from './tool.js';
 import * as javascript from '../javascript.js';
-import { outputFile } from '../config.js';
 import { generateLocator } from './utils.js';
 
 import type * as playwright from 'playwright';
@@ -53,7 +52,7 @@ const screenshot = defineTabTool({
 
   handle: async (tab, params, response) => {
     const fileType = params.type || 'png';
-    const fileName = await outputFile(tab.context.config, params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
+    const fileName = await tab.context.outputFile(params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
     const options: playwright.PageScreenshotOptions = {
       type: fileType,
       quality: fileType === 'png' ? undefined : 90,

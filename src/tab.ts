@@ -20,7 +20,6 @@ import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 import { logUnhandledError } from './log.js';
 import { ManualPromise } from './manualPromise.js';
 import { ModalState } from './tools/tool.js';
-import { outputFile } from './config.js';
 
 import type { Context } from './context.js';
 
@@ -115,7 +114,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     const entry = {
       download,
       finished: false,
-      outputFile: await outputFile(this.context.config, download.suggestedFilename())
+      outputFile: await this.context.outputFile(download.suggestedFilename())
     };
     this._downloads.push(entry);
     await download.saveAs(entry.outputFile);

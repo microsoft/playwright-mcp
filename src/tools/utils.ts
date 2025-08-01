@@ -71,14 +71,6 @@ export async function waitForCompletion<R>(tab: Tab, callback: () => Promise<R>)
   }
 }
 
-export function sanitizeForFilePath(s: string) {
-  const sanitize = (s: string) => s.replace(/[\x00-\x2C\x2E-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F]+/g, '-');
-  const separator = s.lastIndexOf('.');
-  if (separator === -1)
-    return sanitize(s);
-  return sanitize(s.substring(0, separator)) + '.' + sanitize(s.substring(separator + 1));
-}
-
 export async function generateLocator(locator: playwright.Locator): Promise<string> {
   try {
     const { resolvedSelector } = await (locator as any)._resolveSelector();

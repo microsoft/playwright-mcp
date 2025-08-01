@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { fileURLToPath } from 'url';
 import { FullConfig } from './config.js';
 import { Context } from './context.js';
 import { logUnhandledError } from './log.js';
@@ -44,14 +45,21 @@ export class BrowserServerBackend implements ServerBackend {
   }
 
   async initialize(server: mcpServer.Server): Promise<void> {
-    this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config) : undefined;
+    const capabilities = server.getClientCapabilities() as mcpServer.ClientCapabilities;
+    let rootPath: string | undefined;
+    if (capabilities.roots) {
+      const { roots } = await server.listRoots();
+      const firstRootUri = roots[0]?.uri;
+      const url = firstRootUri ? new URL(firstRootUri) : undefined;
+      rootPath = url ? fileURLToPath(url) : undefined;
+    }
+    this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config, rootPath) : undefined;
     this._context = new Context({
       tools: this._tools,
       config: this._config,
       browserContextFactory: this._browserContextFactory,
       sessionLog: this._sessionLog,
-      clientVersion: server.getClientVersion(),
-      capabilities: server.getClientCapabilities() as mcpServer.ClientCapabilities,
+      clientInfo: { ...server.getClientVersion(), rootPath },
     });
   }
 
