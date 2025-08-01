@@ -22,18 +22,18 @@
  * - /extension/guid - Extension connection for chrome.debugger forwarding
  */
 
-import http from 'http';
 import { spawn } from 'child_process';
-import { WebSocket, WebSocketServer } from 'ws';
+import http from 'http';
 import debug from 'debug';
-import * as playwright from 'playwright';
-// @ts-ignore
-const { registry } = await import('playwright-core/lib/server/registry/index');
-import { httpAddressToString, startHttpServer } from '../httpServer.js';
+import { WebSocket, WebSocketServer } from 'ws';
+import { httpAddressToString } from '../httpServer.js';
 import { logUnhandledError } from '../log.js';
 import { ManualPromise } from '../manualPromise.js';
-import type { BrowserContextFactory } from '../browserContextFactory.js';
 import type websocket from 'ws';
+import type { ClientInfo } from '../browserContextFactory.js';
+
+// @ts-ignore
+const { registry } = await import('playwright-core/lib/server/registry/index');
 
 const debugLogger = debug('pw:mcp:relay');
 
@@ -90,17 +90,20 @@ export class CDPRelayServer {
     return `${this._wsHost}${this._extensionPath}`;
   }
 
-  async ensureExtensionConnectionForMCPContext(clientInfo: { name: string, version: string }) {
+  async ensureExtensionConnectionForMCPContext(clientInfo: ClientInfo, abortSignal: AbortSignal) {
     debugLogger('Ensuring extension connection for MCP context');
     if (this._extensionConnection)
       return;
-    await this._connectBrowser(clientInfo);
+    this._connectBrowser(clientInfo);
     debugLogger('Waiting for incoming extension connection');
-    await this._extensionConnectionPromise;
+    await Promise.race([
+      this._extensionConnectionPromise,
+      new Promise((_, reject) => abortSignal.addEventListener('abort', reject))
+    ]);
     debugLogger('Extension connection established');
   }
 
-  private async _connectBrowser(clientInfo: { name: string, version: string }) {
+  private _connectBrowser(clientInfo: ClientInfo) {
     const mcpRelayEndpoint = `${this._wsHost}${this._extensionPath}`;
     // Need to specify "key" in the manifest.json to make the id stable when loading from file.
     const url = new URL('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/lib/ui/connect.html');
@@ -298,51 +301,6 @@ export class CDPRelayServer {
     debugLogger('→ Playwright:', `${message.method ?? `response(id=${message.id})`}`);
     this._playwrightConnection?.send(JSON.stringify(message));
   }
-}
-
-class ExtensionContextFactory implements BrowserContextFactory {
-  private _relay: CDPRelayServer;
-  private _browserPromise: Promise<playwright.Browser> | undefined;
-
-  constructor(relay: CDPRelayServer) {
-    this._relay = relay;
-  }
-
-  async createContext(clientInfo: { name: string, version: string }): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
-    // First call will establish the connection to the extension.
-    if (!this._browserPromise)
-      this._browserPromise = this._obtainBrowser(clientInfo);
-    const browser = await this._browserPromise;
-    return {
-      browserContext: browser.contexts()[0],
-      close: async () => {
-        debugLogger('close() called for browser context, ignoring');
-      }
-    };
-  }
-
-  clientDisconnected() {
-    this._relay.closeConnections('MCP client disconnected');
-    this._browserPromise = undefined;
-  }
-
-  private async _obtainBrowser(clientInfo: { name: string, version: string }): Promise<playwright.Browser> {
-    await this._relay.ensureExtensionConnectionForMCPContext(clientInfo);
-    const browser = await playwright.chromium.connectOverCDP(this._relay.cdpEndpoint());
-    browser.on('disconnected', () => {
-      this._browserPromise = undefined;
-      debugLogger('Browser disconnected');
-    });
-    return browser;
-  }
-}
-
-export async function startCDPRelayServer(browserChannel: string, abortController: AbortController) {
-  const httpServer = await startHttpServer({});
-  const cdpRelayServer = new CDPRelayServer(httpServer, browserChannel);
-  abortController.signal.addEventListener('abort', () => cdpRelayServer.stop());
-  debugLogger(`CDP relay server started, extension endpoint: ${cdpRelayServer.extensionEndpoint()}.`);
-  return new ExtensionContextFactory(cdpRelayServer);
 }
 
 type ExtensionResponse = {

@@ -59,7 +59,7 @@ program
     .addOption(new Option('--loop-tools', 'Run loop tools').hideHelp())
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
-      const abortController = setupExitWatchdog();
+      setupExitWatchdog();
 
       if (options.vision) {
         // eslint-disable-next-line no-console
@@ -69,7 +69,7 @@ program
       const config = await resolveCLIConfig(options);
 
       if (options.extension) {
-        await runWithExtension(config, abortController);
+        await runWithExtension(config);
         return;
       }
       if (options.loopTools) {
@@ -91,15 +91,12 @@ program
     });
 
 function setupExitWatchdog() {
-  const abortController = new AbortController();
-
   let isExiting = false;
   const handleExit = async () => {
     if (isExiting)
       return;
     isExiting = true;
     setTimeout(() => process.exit(0), 15000);
-    abortController.abort('Process exiting');
     await Context.disposeAll();
     process.exit(0);
   };
@@ -107,8 +104,6 @@ function setupExitWatchdog() {
   process.stdin.on('close', handleExit);
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
-
-  return abortController;
 }
 
 void program.parseAsync(process.argv);
