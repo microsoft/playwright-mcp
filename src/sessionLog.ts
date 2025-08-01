@@ -17,10 +17,10 @@
 import fs from 'fs';
 import path from 'path';
 
-import { outputFile  } from './config.js';
 import { Response } from './response.js';
-
 import { logUnhandledError } from './log.js';
+import { outputFile  } from './config.js';
+
 import type { FullConfig } from './config.js';
 import type * as actions from './actions.js';
 import type { Tab, TabSnapshot } from './tab.js';
@@ -51,8 +51,8 @@ export class SessionLog {
     this._file = path.join(this._folder, 'session.md');
   }
 
-  static async create(config: FullConfig): Promise<SessionLog> {
-    const sessionFolder = await outputFile(config, `session-${Date.now()}`);
+  static async create(config: FullConfig, rootPath: string | undefined): Promise<SessionLog> {
+    const sessionFolder = await outputFile(config, rootPath, `session-${Date.now()}`);
     await fs.promises.mkdir(sessionFolder, { recursive: true });
     // eslint-disable-next-line no-console
     console.error(`Session: ${sessionFolder}`);
