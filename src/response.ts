@@ -143,6 +143,8 @@ ${this._code.join('\n')}
 function renderTabSnapshot(tabSnapshot: TabSnapshot): string {
   const lines: string[] = [];
 
+  // Put first the elements that are less likely to change for the same web page,
+  // to exploit Context Caching whenever it is available.
   lines.push(`### Page state`);
   lines.push(`- Page URL: ${tabSnapshot.url}`);
   lines.push(`- Page Title: ${tabSnapshot.title}`);
