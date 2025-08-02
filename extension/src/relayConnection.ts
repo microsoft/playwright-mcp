@@ -59,10 +59,6 @@ export class RelayConnection {
     this._ws.close(1000, message);
   }
 
-  private async _detachDebugger(): Promise<void> {
-    await chrome.debugger.detach(this._debuggee);
-  }
-
   private _onDebuggerEvent(source: chrome.debugger.DebuggerSession, method: string, params: any): void {
     if (source.tabId !== this._debuggee.tabId)
       return;
@@ -81,13 +77,7 @@ export class RelayConnection {
   private _onDebuggerDetach(source: chrome.debugger.Debuggee, reason: string): void {
     if (source.tabId !== this._debuggee.tabId)
       return;
-    this._sendMessage({
-      method: 'detachedFromTab',
-      params: {
-        tabId: this._debuggee.tabId,
-        reason,
-      },
-    });
+    this.close(`Debugger detached: ${reason}`);
     this._debuggee = { };
   }
 
@@ -130,10 +120,6 @@ export class RelayConnection {
       return {
         targetInfo: result?.targetInfo,
       };
-    }
-    if (message.method === 'detachFromTab') {
-      debugLog('Detaching debugger from tab:', this._debuggee);
-      return await this._detachDebugger();
     }
     if (message.method === 'forwardCDPCommand') {
       const { sessionId, method, params } = message.params;
