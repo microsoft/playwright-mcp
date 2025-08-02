@@ -40,17 +40,21 @@ export function contextFactory(config: FullConfig): BrowserContextFactory {
 export type ClientInfo = { name?: string, version?: string, rootPath?: string };
 
 export interface BrowserContextFactory {
+  readonly name: string;
+  readonly description: string;
   createContext(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }>;
 }
 
 class BaseContextFactory implements BrowserContextFactory {
+  readonly name: string;
+  readonly description: string;
   readonly config: FullConfig;
   protected _browserPromise: Promise<playwright.Browser> | undefined;
   protected _tracesDir: string | undefined;
-  readonly name: string;
 
-  constructor(name: string, config: FullConfig) {
+  constructor(name: string, description: string, config: FullConfig) {
     this.name = name;
+    this.description = description;
     this.config = config;
   }
 
@@ -101,7 +105,7 @@ class BaseContextFactory implements BrowserContextFactory {
 
 class IsolatedContextFactory extends BaseContextFactory {
   constructor(config: FullConfig) {
-    super('isolated', config);
+    super('isolated', 'Create a new isolated browser context', config);
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
@@ -126,7 +130,7 @@ class IsolatedContextFactory extends BaseContextFactory {
 
 class CdpContextFactory extends BaseContextFactory {
   constructor(config: FullConfig) {
-    super('cdp', config);
+    super('cdp', 'Connect to a browser over CDP', config);
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
@@ -140,7 +144,7 @@ class CdpContextFactory extends BaseContextFactory {
 
 class RemoteContextFactory extends BaseContextFactory {
   constructor(config: FullConfig) {
-    super('remote', config);
+    super('remote', 'Connect to a browser using a remote endpoint', config);
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
@@ -158,6 +162,9 @@ class RemoteContextFactory extends BaseContextFactory {
 
 class PersistentContextFactory implements BrowserContextFactory {
   readonly config: FullConfig;
+  readonly name = 'persistent';
+  readonly description = 'Create a new persistent browser context';
+
   private _userDataDirs = new Set<string>();
 
   constructor(config: FullConfig) {

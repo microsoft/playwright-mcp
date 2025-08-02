@@ -24,6 +24,9 @@ import type { BrowserContextFactory, ClientInfo } from '../browserContextFactory
 const debugLogger = debug('pw:mcp:relay');
 
 export class ExtensionContextFactory implements BrowserContextFactory {
+  name = 'extension';
+  description = 'Connect to a browser using the Playwright MCP extension';
+
   private _browserChannel: string;
   private _relayPromise: Promise<CDPRelayServer> | undefined;
   private _browserPromise: Promise<playwright.Browser> | undefined;

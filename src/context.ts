@@ -42,6 +42,7 @@ export class Context {
   readonly tools: Tool[];
   readonly config: FullConfig;
   readonly sessionLog: SessionLog | undefined;
+  readonly options: ContextOptions;
   private _browserContextPromise: Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> | undefined;
   private _browserContextFactory: BrowserContextFactory;
   private _tabs: Tab[] = [];
@@ -57,6 +58,7 @@ export class Context {
     this.tools = options.tools;
     this.config = options.config;
     this.sessionLog = options.sessionLog;
+    this.options = options;
     this._browserContextFactory = options.browserContextFactory;
     this._clientInfo = options.clientInfo;
     testDebug('create context');
