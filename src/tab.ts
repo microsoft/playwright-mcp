@@ -16,12 +16,20 @@
 
 import { EventEmitter } from 'events';
 import * as playwright from 'playwright';
-import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 import { logUnhandledError } from './log.js';
 import { ManualPromise } from './manualPromise.js';
 import { ModalState } from './tools/tool.js';
+import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 
 import type { Context } from './context.js';
+
+/**
+ * Recursively traverses a data structure (object or array) and removes the
+ * substring ' [cursor=pointer]' from all string values.
+ */
+function cleanYamlValue(data: any): any {
+  return data.replaceAll(' [cursor=pointer]', '');
+}
 
 type PageEx = playwright.Page & {
   _snapshotForAI: () => Promise<string>;
@@ -195,7 +203,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   async captureSnapshot(): Promise<TabSnapshot> {
     let tabSnapshot: TabSnapshot | undefined;
     const modalStates = await this._raceAgainstModalStates(async () => {
-      const snapshot = await (this.page as PageEx)._snapshotForAI();
+      const snapshot = cleanYamlValue(await (this.page as PageEx)._snapshotForAI());
       tabSnapshot = {
         url: this.page.url(),
         title: await this.page.title(),
@@ -250,7 +258,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   }
 
   async refLocators(params: { element: string, ref: string }[]): Promise<playwright.Locator[]> {
-    const snapshot = await (this.page as PageEx)._snapshotForAI();
+    const snapshot = cleanYamlValue(await (this.page as PageEx)._snapshotForAI());
     return params.map(param => {
       if (!snapshot.includes(`[ref=${param.ref}]`))
         throw new Error(`Ref ${param.ref} not found in the current page snapshot. Try capturing new snapshot.`);

@@ -16,9 +16,9 @@
 
 import { renderModalStates } from './tab.js';
 
-import type { Tab, TabSnapshot } from './tab.js';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Context } from './context.js';
+import type { Tab, TabSnapshot } from './tab.js';
 
 export class Response {
   private _result: string[] = [];
@@ -96,7 +96,20 @@ export class Response {
   serialize(): { content: (TextContent | ImageContent)[], isError?: boolean } {
     const response: string[] = [];
 
-    // Start with command result.
+    // Add snapshot if provided.
+    if (this._tabSnapshot?.modalStates.length) {
+      response.push(...renderModalStates(this._context, this._tabSnapshot.modalStates));
+      response.push('');
+    } else if (this._tabSnapshot) {
+      response.push(renderTabSnapshot(this._tabSnapshot));
+      response.push('');
+    }
+
+    // List browser tabs.
+    if (this._includeSnapshot || this._includeTabs)
+      response.push(...renderTabsMarkdown(this._context.tabs(), this._includeTabs));
+
+    // Command result.
     if (this._result.length) {
       response.push('### Result');
       response.push(this._result.join('\n'));
@@ -109,19 +122,6 @@ export class Response {
 \`\`\`js
 ${this._code.join('\n')}
 \`\`\``);
-      response.push('');
-    }
-
-    // List browser tabs.
-    if (this._includeSnapshot || this._includeTabs)
-      response.push(...renderTabsMarkdown(this._context.tabs(), this._includeTabs));
-
-    // Add snapshot if provided.
-    if (this._tabSnapshot?.modalStates.length) {
-      response.push(...renderModalStates(this._context, this._tabSnapshot.modalStates));
-      response.push('');
-    } else if (this._tabSnapshot) {
-      response.push(renderTabSnapshot(this._tabSnapshot));
       response.push('');
     }
 
@@ -143,10 +143,33 @@ ${this._code.join('\n')}
 function renderTabSnapshot(tabSnapshot: TabSnapshot): string {
   const lines: string[] = [];
 
+  // Put first the elements that are less likely to change for the same web page,
+  // to exploit Context Caching whenever it is available.
+  lines.push(`### Page state`);
+  lines.push(`- Page URL: ${tabSnapshot.url}`);
+  lines.push(`- Page Title: ${tabSnapshot.title}`);
+  lines.push(`- Page Snapshot:`);
+  lines.push('```yaml');
+  lines.push(tabSnapshot.ariaSnapshot);
+  lines.push('```');
+
+  const messageSet = new Set<string>();
+
   if (tabSnapshot.consoleMessages.length) {
     lines.push(`### New console messages`);
-    for (const message of tabSnapshot.consoleMessages)
-      lines.push(`- ${trim(message.toString(), 100)}`);
+    for (const message of tabSnapshot.consoleMessages) {
+      // Remove low-priority messages
+      if (!['error', 'warning', 'unknown'].includes(message.type ?? 'unknown'))
+        continue;
+
+      // Deduplicate messages
+      const messageString = trim(message.toString(), 100);
+      if (messageSet.has(messageString))
+        continue;
+      messageSet.add(messageString);
+      lines.push(`- ${messageString}`);
+    }
+
     lines.push('');
   }
 
@@ -160,14 +183,6 @@ function renderTabSnapshot(tabSnapshot: TabSnapshot): string {
     }
     lines.push('');
   }
-
-  lines.push(`### Page state`);
-  lines.push(`- Page URL: ${tabSnapshot.url}`);
-  lines.push(`- Page Title: ${tabSnapshot.title}`);
-  lines.push(`- Page Snapshot:`);
-  lines.push('```yaml');
-  lines.push(tabSnapshot.ariaSnapshot);
-  lines.push('```');
 
   return lines.join('\n');
 }
