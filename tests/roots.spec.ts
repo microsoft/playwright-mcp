@@ -21,13 +21,15 @@ import { pathToFileURL } from 'url';
 import { test, expect } from './fixtures.js';
 import { createHash } from '../src/utils.js';
 
+const p = process.platform === 'win32' ? 'c:\\non\\existent\\folder' : '/non/existent/folder';
+
 test('should use separate user data by root path', async ({ startClient, server }, testInfo) => {
   const { client } = await startClient({
     roots: [
       {
         name: 'test',
-        uri: 'file:///non/existent/folder',
-      },
+        uri: 'file://' + p.replace(/\\/g, '/'),
+      }
     ],
   });
 
@@ -36,7 +38,7 @@ test('should use separate user data by root path', async ({ startClient, server 
     arguments: { url: server.HELLO_WORLD },
   });
 
-  const hash = createHash('/non/existent/folder');
+  const hash = createHash(p);
   const [file] = await fs.promises.readdir(testInfo.outputPath('ms-playwright'));
   expect(file).toContain(hash);
 });
