@@ -16,9 +16,9 @@
 
 import { renderModalStates } from './tab.js';
 
-import type { Tab, TabSnapshot } from './tab.js';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Context } from './context.js';
+import type { Tab, TabSnapshot } from './tab.js';
 
 export class Response {
   private _result: string[] = [];
@@ -143,10 +143,31 @@ ${this._code.join('\n')}
 function renderTabSnapshot(tabSnapshot: TabSnapshot): string {
   const lines: string[] = [];
 
+  lines.push(`### Page state`);
+  lines.push(`- Page URL: ${tabSnapshot.url}`);
+  lines.push(`- Page Title: ${tabSnapshot.title}`);
+  lines.push(`- Page Snapshot:`);
+  lines.push('```yaml');
+  lines.push(tabSnapshot.ariaSnapshot);
+  lines.push('```');
+
+  const messageSet = new Set<string>();
+
   if (tabSnapshot.consoleMessages.length) {
     lines.push(`### New console messages`);
-    for (const message of tabSnapshot.consoleMessages)
-      lines.push(`- ${trim(message.toString(), 100)}`);
+    for (const message of tabSnapshot.consoleMessages) {
+      // Remove low-priority messages
+      if (!['error', 'warning', 'unknown'].includes(message.type ?? 'unknown'))
+        continue;
+
+      // Deduplicate messages
+      const messageString = trim(message.toString(), 100);
+      if (messageSet.has(messageString))
+        continue;
+      messageSet.add(messageString);
+      lines.push(`- ${messageString}`);
+    }
+
     lines.push('');
   }
 
@@ -160,14 +181,6 @@ function renderTabSnapshot(tabSnapshot: TabSnapshot): string {
     }
     lines.push('');
   }
-
-  lines.push(`### Page state`);
-  lines.push(`- Page URL: ${tabSnapshot.url}`);
-  lines.push(`- Page Title: ${tabSnapshot.title}`);
-  lines.push(`- Page Snapshot:`);
-  lines.push('```yaml');
-  lines.push(tabSnapshot.ariaSnapshot);
-  lines.push('```');
 
   return lines.join('\n');
 }
