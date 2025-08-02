@@ -96,7 +96,20 @@ export class Response {
   serialize(): { content: (TextContent | ImageContent)[], isError?: boolean } {
     const response: string[] = [];
 
-    // Start with command result.
+    // Add snapshot if provided.
+    if (this._tabSnapshot?.modalStates.length) {
+      response.push(...renderModalStates(this._context, this._tabSnapshot.modalStates));
+      response.push('');
+    } else if (this._tabSnapshot) {
+      response.push(renderTabSnapshot(this._tabSnapshot));
+      response.push('');
+    }
+
+    // List browser tabs.
+    if (this._includeSnapshot || this._includeTabs)
+      response.push(...renderTabsMarkdown(this._context.tabs(), this._includeTabs));
+
+    // Command result.
     if (this._result.length) {
       response.push('### Result');
       response.push(this._result.join('\n'));
@@ -109,19 +122,6 @@ export class Response {
 \`\`\`js
 ${this._code.join('\n')}
 \`\`\``);
-      response.push('');
-    }
-
-    // List browser tabs.
-    if (this._includeSnapshot || this._includeTabs)
-      response.push(...renderTabsMarkdown(this._context.tabs(), this._includeTabs));
-
-    // Add snapshot if provided.
-    if (this._tabSnapshot?.modalStates.length) {
-      response.push(...renderModalStates(this._context, this._tabSnapshot.modalStates));
-      response.push('');
-    } else if (this._tabSnapshot) {
-      response.push(renderTabSnapshot(this._tabSnapshot));
       response.push('');
     }
 
