@@ -220,6 +220,95 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     };
   }
 
+  async capturePartialSnapshot(selector?: string, maxLength?: number): Promise<TabSnapshot> {
+    let tabSnapshot: TabSnapshot | undefined;
+    const modalStates = await this._raceAgainstModalStates(async () => {
+      let snapshot: string;
+      
+      if (selector) {
+        // Get partial snapshot by targeting specific selector
+        try {
+          const locator = this.page.locator(selector);
+          const elementCount = await locator.count();
+          
+          if (elementCount === 0) {
+            // Fallback to full snapshot if selector not found
+            snapshot = await (this.page as PageEx)._snapshotForAI();
+          } else {
+            // Get the text content or innerHTML of the selected element
+            const elementContent = await locator.first().innerHTML();
+            snapshot = await this._convertToAriaSnapshot(elementContent, selector);
+          }
+        } catch (error) {
+          // Fallback to full snapshot on error
+          snapshot = await (this.page as PageEx)._snapshotForAI();
+        }
+      } else {
+        // Full snapshot if no selector specified
+        snapshot = await (this.page as PageEx)._snapshotForAI();
+      }
+
+      // Apply maxLength truncation with word boundary consideration
+      if (maxLength && snapshot.length > maxLength) {
+        snapshot = this._truncateAtWordBoundary(snapshot, maxLength);
+      }
+
+      tabSnapshot = {
+        url: this.page.url(),
+        title: await this.page.title(),
+        ariaSnapshot: snapshot,
+        modalStates: [],
+        consoleMessages: [],
+        downloads: this._downloads,
+      };
+    });
+    
+    if (tabSnapshot) {
+      // Assign console message late so that we did not lose any to modal state.
+      tabSnapshot.consoleMessages = this._recentConsoleMessages;
+      this._recentConsoleMessages = [];
+    }
+    
+    return tabSnapshot ?? {
+      url: this.page.url(),
+      title: '',
+      ariaSnapshot: '',
+      modalStates,
+      consoleMessages: [],
+      downloads: [],
+    };
+  }
+
+  private async _convertToAriaSnapshot(htmlContent: string, selector: string): Promise<string> {
+    // Convert HTML content to ARIA snapshot format
+    // This is a simplified conversion - in a real implementation, 
+    // this would need to parse HTML and generate proper ARIA snapshot
+    const textContent = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return `element [${selector}]: ${textContent}`;
+  }
+
+  private _truncateAtWordBoundary(text: string, maxLength: number): string {
+    if (text.length <= maxLength) {
+      return text;
+    }
+
+    // Find the last space within the maxLength limit
+    let truncateIndex = maxLength;
+    for (let i = maxLength - 1; i >= 0; i--) {
+      if (text[i] === ' ') {
+        truncateIndex = i;
+        break;
+      }
+    }
+
+    // If no space found within reasonable distance (more than 30% back), just cut at maxLength
+    if (maxLength - truncateIndex > maxLength * 0.3) {
+      truncateIndex = maxLength;
+    }
+
+    return text.substring(0, truncateIndex).trim();
+  }
+
   private _javaScriptBlocked(): boolean {
     return this._modalStates.some(state => state.type === 'dialog');
   }

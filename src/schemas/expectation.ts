@@ -32,7 +32,9 @@ export const expectationSchema = z.object({
   }).optional(),
   consoleOptions: z.object({
     levels: z.array(z.enum(['log', 'warn', 'error', 'info'])).optional(),
-    maxMessages: z.number().optional().default(10)
+    maxMessages: z.number().optional().default(10),
+    patterns: z.array(z.string()).optional().describe('Regex patterns to filter messages'),
+    removeDuplicates: z.boolean().optional().default(false).describe('Remove duplicate messages')
   }).optional(),
   imageOptions: z.object({
     quality: z.number().min(1).max(100).optional().describe('JPEG quality (1-100)'),
