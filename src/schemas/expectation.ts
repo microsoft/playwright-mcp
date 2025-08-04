@@ -52,7 +52,7 @@ export type ExpectationOptions = z.infer<typeof expectationSchema>;
  */
 const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions'>>> = {
   // Navigation tools need full context for verification
-  navigate: {
+  browser_navigate: {
     includeSnapshot: true,
     includeConsole: true,
     includeDownloads: true,
@@ -61,7 +61,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
   },
   
   // Interactive tools need snapshot for feedback but less verbose logging
-  click: {
+  browser_click: {
     includeSnapshot: true,
     includeConsole: false,
     includeDownloads: false,
@@ -69,7 +69,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeCode: true
   },
   
-  fill: {
+  browser_type: {
     includeSnapshot: true,
     includeConsole: false,
     includeDownloads: false,
@@ -80,6 +80,15 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
   // Screenshot tools don't need additional context
   screenshot: {
     includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: false
+  },
+  
+  // Snapshot tool should capture snapshot but minimal other context
+  browser_snapshot: {
+    includeSnapshot: true,
     includeConsole: false,
     includeDownloads: false,
     includeTabs: false,

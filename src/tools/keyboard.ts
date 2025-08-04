@@ -20,6 +20,7 @@ import { defineTabTool } from './tool.js';
 import { elementSchema } from './snapshot.js';
 import { generateLocator } from './utils.js';
 import * as javascript from '../javascript.js';
+import { expectationSchema } from '../schemas/expectation.js';
 
 const pressKey = defineTabTool({
   capability: 'core',
@@ -30,12 +31,12 @@ const pressKey = defineTabTool({
     description: 'Press a key on the keyboard',
     inputSchema: z.object({
       key: z.string().describe('Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'),
+      expectation: expectationSchema
     }),
     type: 'destructive',
   },
 
   handle: async (tab, params, response) => {
-    response.setIncludeSnapshot();
     response.addCode(`// Press ${params.key}`);
     response.addCode(`await page.keyboard.press('${params.key}');`);
 
@@ -49,6 +50,7 @@ const typeSchema = elementSchema.extend({
   text: z.string().describe('Text to type into the element'),
   submit: z.boolean().optional().describe('Whether to submit entered text (press Enter after)'),
   slowly: z.boolean().optional().describe('Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'),
+  expectation: expectationSchema
 });
 
 const type = defineTabTool({
@@ -66,7 +68,6 @@ const type = defineTabTool({
 
     await tab.waitForCompletion(async () => {
       if (params.slowly) {
-        response.setIncludeSnapshot();
         response.addCode(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
         await locator.pressSequentially(params.text);
       } else {
@@ -75,7 +76,6 @@ const type = defineTabTool({
       }
 
       if (params.submit) {
-        response.setIncludeSnapshot();
         response.addCode(`await page.${await generateLocator(locator)}.press('Enter');`);
         await locator.press('Enter');
       }
