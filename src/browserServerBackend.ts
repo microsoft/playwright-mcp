@@ -17,7 +17,7 @@
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { FullConfig } from './config.js';
-import { Context } from './context.js';
+import { Context, ContextOptions } from './context.js';
 import { logUnhandledError } from './log.js';
 import { Response } from './response.js';
 import { SessionLog } from './sessionLog.js';
@@ -66,6 +66,7 @@ export class BrowserServerBackend implements ServerBackend {
       tools: this._tools,
       config: this._config,
       browserContextFactory: this._browserContextFactory,
+      browserContextFactoryParams: undefined,
       sessionLog: this._sessionLog,
       clientInfo: { ...server.getClientVersion(), rootPath },
     });
@@ -110,6 +111,7 @@ export class BrowserServerBackend implements ServerBackend {
         ].join('\n'),
         inputSchema: z.object({
           method: z.enum(factories.map(factory => factory.name) as [string, ...string[]]).default(factories[0].name).describe('The method to use to connect to the browser'),
+          params: z.any().optional().describe('Additional parameters for the connection method'),
         }),
         type: 'readOnly',
       },
@@ -120,17 +122,18 @@ export class BrowserServerBackend implements ServerBackend {
           response.addError('Unknown connection method: ' + params.method);
           return;
         }
-        await self._setContextFactory(factory);
+        await self._setContextFactory(factory, params.params);
         response.addResult('Successfully changed connection method.');
       }
     });
   }
 
-  private async _setContextFactory(newFactory: BrowserContextFactory) {
+  private async _setContextFactory(newFactory: BrowserContextFactory, params: any) {
     if (this._context) {
-      const options = {
+      const options: ContextOptions = {
         ...this._context.options,
         browserContextFactory: newFactory,
+        browserContextFactoryParams: params,
       };
       await this._context.dispose();
       this._context = new Context(options);

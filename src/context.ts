@@ -29,10 +29,11 @@ import type { SessionLog } from './sessionLog.js';
 
 const testDebug = debug('pw:mcp:test');
 
-type ContextOptions = {
+export type ContextOptions = {
   tools: Tool[];
   config: FullConfig;
   browserContextFactory: BrowserContextFactory;
+  browserContextFactoryParams: any;
   sessionLog: SessionLog | undefined;
   clientInfo: ClientInfo;
 };
@@ -44,6 +45,7 @@ export class Context {
   readonly options: ContextOptions;
   private _browserContextPromise: Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> | undefined;
   private _browserContextFactory: BrowserContextFactory;
+  private _browserContextFactoryParams: any;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
   private _clientInfo: ClientInfo;
@@ -59,6 +61,7 @@ export class Context {
     this.sessionLog = options.sessionLog;
     this.options = options;
     this._browserContextFactory = options.browserContextFactory;
+    this._browserContextFactoryParams = options.browserContextFactoryParams;
     this._clientInfo = options.clientInfo;
     testDebug('create context');
     Context._allContexts.add(this);
@@ -202,7 +205,7 @@ export class Context {
     if (this._closeBrowserContextPromise)
       throw new Error('Another browser context is being closed.');
     // TODO: move to the browser context factory to make it based on isolation mode.
-    const result = await this._browserContextFactory.createContext(this._clientInfo, this._abortController.signal);
+    const result = await this._browserContextFactory.createContext(this._clientInfo, this._abortController.signal, this._browserContextFactoryParams);
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
     if (this.sessionLog)
