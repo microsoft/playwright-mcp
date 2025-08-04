@@ -20,6 +20,7 @@ import * as playwright from 'playwright';
 import { logUnhandledError } from './log.js';
 import { Tab } from './tab.js';
 import { outputFile  } from './config.js';
+import { BatchExecutor } from './batch/batchExecutor.js';
 
 import type { FullConfig } from './config.js';
 import type { Tool } from './tools/tool.js';
@@ -47,6 +48,7 @@ export class Context {
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
   private _clientInfo: ClientInfo;
+  private _batchExecutor: BatchExecutor | undefined;
 
   private static _allContexts: Set<Context> = new Set();
   private _closeBrowserContextPromise: Promise<void> | undefined;
@@ -150,6 +152,21 @@ export class Context {
 
   setRunningTool(isRunningTool: boolean) {
     this._isRunningTool = isRunningTool;
+  }
+
+  /**
+   * Gets or creates the batch executor for this context
+   */
+  getBatchExecutor(): BatchExecutor {
+    if (!this._batchExecutor) {
+      // Create tool registry from available tools
+      const toolRegistry = new Map();
+      for (const tool of this.tools) {
+        toolRegistry.set(tool.schema.name, tool);
+      }
+      this._batchExecutor = new BatchExecutor(this, toolRegistry);
+    }
+    return this._batchExecutor;
   }
 
   private async _closeBrowserContextImpl() {
