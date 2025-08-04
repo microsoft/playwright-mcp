@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { defineTabTool, defineTool } from './tool.js';
 import * as javascript from '../javascript.js';
 import { generateLocator } from './utils.js';
+import { expectationSchema } from '../schemas/expectation.js';
 
 const snapshot = defineTool({
   capability: 'core',
@@ -26,13 +27,15 @@ const snapshot = defineTool({
     name: 'browser_snapshot',
     title: 'Page snapshot',
     description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
-    inputSchema: z.object({}),
+    inputSchema: z.object({
+      expectation: expectationSchema
+    }),
     type: 'readOnly',
   },
 
   handle: async (context, params, response) => {
     await context.ensureTab();
-    response.setIncludeSnapshot();
+    // Snapshot will be handled by expectation settings
   },
 });
 
@@ -44,6 +47,7 @@ export const elementSchema = z.object({
 const clickSchema = elementSchema.extend({
   doubleClick: z.boolean().optional().describe('Whether to perform a double click instead of a single click'),
   button: z.enum(['left', 'right', 'middle']).optional().describe('Button to click, defaults to left'),
+  expectation: expectationSchema
 });
 
 const click = defineTabTool({
@@ -57,8 +61,6 @@ const click = defineTabTool({
   },
 
   handle: async (tab, params, response) => {
-    response.setIncludeSnapshot();
-
     const locator = await tab.refLocator(params);
     const button = params.button;
     const buttonAttr = button ? `{ button: '${button}' }` : '';
@@ -67,7 +69,6 @@ const click = defineTabTool({
       response.addCode(`await page.${await generateLocator(locator)}.dblclick(${buttonAttr});`);
     else
       response.addCode(`await page.${await generateLocator(locator)}.click(${buttonAttr});`);
-
 
     await tab.waitForCompletion(async () => {
       if (params.doubleClick)
@@ -89,13 +90,12 @@ const drag = defineTabTool({
       startRef: z.string().describe('Exact source element reference from the page snapshot'),
       endElement: z.string().describe('Human-readable target element description used to obtain the permission to interact with the element'),
       endRef: z.string().describe('Exact target element reference from the page snapshot'),
+      expectation: expectationSchema
     }),
     type: 'destructive',
   },
 
   handle: async (tab, params, response) => {
-    response.setIncludeSnapshot();
-
     const [startLocator, endLocator] = await tab.refLocators([
       { ref: params.startRef, element: params.startElement },
       { ref: params.endRef, element: params.endElement },
@@ -115,13 +115,13 @@ const hover = defineTabTool({
     name: 'browser_hover',
     title: 'Hover mouse',
     description: 'Hover over element on page',
-    inputSchema: elementSchema,
+    inputSchema: elementSchema.extend({
+      expectation: expectationSchema
+    }),
     type: 'readOnly',
   },
 
   handle: async (tab, params, response) => {
-    response.setIncludeSnapshot();
-
     const locator = await tab.refLocator(params);
     response.addCode(`await page.${await generateLocator(locator)}.hover();`);
 
@@ -133,6 +133,7 @@ const hover = defineTabTool({
 
 const selectOptionSchema = elementSchema.extend({
   values: z.array(z.string()).describe('Array of values to select in the dropdown. This can be a single value or multiple values.'),
+  expectation: expectationSchema
 });
 
 const selectOption = defineTabTool({
@@ -146,8 +147,6 @@ const selectOption = defineTabTool({
   },
 
   handle: async (tab, params, response) => {
-    response.setIncludeSnapshot();
-
     const locator = await tab.refLocator(params);
     response.addCode(`await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(params.values)});`);
 

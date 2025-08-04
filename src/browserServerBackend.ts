@@ -77,7 +77,7 @@ export class BrowserServerBackend implements ServerBackend {
 
   async callTool(schema: mcpServer.ToolSchema<any>, parsedArguments: any) {
     const context = this._context!;
-    const response = new Response(context, schema.name, parsedArguments);
+    const response = new Response(context, schema.name, parsedArguments, parsedArguments.expectation);
     const tool = this._tools.find(tool => tool.schema.name === schema.name)!;
     context.setRunningTool(true);
     try {

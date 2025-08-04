@@ -87,7 +87,9 @@ export class Response {
   async finish() {
     // All the async snapshotting post-action is happening here.
     // Everything below should race against modal states.
-    if ((this._includeSnapshot || this._expectation.includeSnapshot) && this._context.currentTab()) {
+    // Expectation settings take priority over legacy setIncludeSnapshot calls
+    const shouldIncludeSnapshot = this._expectation.includeSnapshot;
+    if (shouldIncludeSnapshot && this._context.currentTab()) {
       const options = this._expectation.snapshotOptions;
       if (options?.selector) {
         // TODO: Implement partial snapshot capture based on selector
@@ -125,10 +127,10 @@ ${this._code.join('\n')}
     }
 
     // List browser tabs based on expectation.
-    const shouldIncludeTabs = this._expectation.includeTabs || this._includeTabs;
-    const shouldIncludeSnapshot = this._expectation.includeSnapshot || this._includeSnapshot;
+    const shouldIncludeTabs = this._expectation.includeTabs;
+    const shouldIncludeSnapshot = this._expectation.includeSnapshot;
     
-    if (shouldIncludeSnapshot || shouldIncludeTabs)
+    if (shouldIncludeTabs)
       response.push(...renderTabsMarkdown(this._context.tabs(), shouldIncludeTabs));
 
     // Add snapshot if provided and expectation allows it.
