@@ -16,6 +16,7 @@
 
 import { z } from 'zod';
 import { defineTool } from './tool.js';
+import { expectationSchema } from '../schemas/expectation.js';
 
 const wait = defineTool({
   capability: 'core',
@@ -28,6 +29,7 @@ const wait = defineTool({
       time: z.number().optional().describe('The time to wait in seconds'),
       text: z.string().optional().describe('The text to wait for'),
       textGone: z.string().optional().describe('The text to wait for to disappear'),
+      expectation: expectationSchema
     }),
     type: 'readOnly',
   },

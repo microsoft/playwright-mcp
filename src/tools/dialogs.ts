@@ -16,6 +16,7 @@
 
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';
+import { expectationSchema } from '../schemas/expectation.js';
 
 const handleDialog = defineTabTool({
   capability: 'core',
@@ -27,6 +28,7 @@ const handleDialog = defineTabTool({
     inputSchema: z.object({
       accept: z.boolean().describe('Whether to accept the dialog.'),
       promptText: z.string().optional().describe('The text of the prompt in case of a prompt dialog.'),
+      expectation: expectationSchema
     }),
     type: 'destructive',
   },

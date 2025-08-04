@@ -46,7 +46,9 @@ const goBack = defineTabTool({
     name: 'browser_navigate_back',
     title: 'Go back',
     description: 'Go back to the previous page',
-    inputSchema: z.object({}),
+    inputSchema: z.object({
+      expectation: expectationSchema
+    }),
     type: 'readOnly',
   },
 
@@ -62,7 +64,9 @@ const goForward = defineTabTool({
     name: 'browser_navigate_forward',
     title: 'Go forward',
     description: 'Go forward to the next page',
-    inputSchema: z.object({}),
+    inputSchema: z.object({
+      expectation: expectationSchema
+    }),
     type: 'readOnly',
   },
   handle: async (tab, params, response) => {

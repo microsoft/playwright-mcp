@@ -16,6 +16,7 @@
 
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';
+import { expectationSchema } from '../schemas/expectation.js';
 
 const uploadFile = defineTabTool({
   capability: 'core',
@@ -26,6 +27,7 @@ const uploadFile = defineTabTool({
     description: 'Upload one or multiple files',
     inputSchema: z.object({
       paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
+      expectation: expectationSchema
     }),
     type: 'destructive',
   },

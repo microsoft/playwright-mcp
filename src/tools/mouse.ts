@@ -16,6 +16,7 @@
 
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';
+import { expectationSchema } from '../schemas/expectation.js';
 
 const elementSchema = z.object({
   element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
@@ -30,6 +31,7 @@ const mouseMove = defineTabTool({
     inputSchema: elementSchema.extend({
       x: z.number().describe('X coordinate'),
       y: z.number().describe('Y coordinate'),
+      expectation: expectationSchema
     }),
     type: 'readOnly',
   },
@@ -53,6 +55,7 @@ const mouseClick = defineTabTool({
     inputSchema: elementSchema.extend({
       x: z.number().describe('X coordinate'),
       y: z.number().describe('Y coordinate'),
+      expectation: expectationSchema
     }),
     type: 'destructive',
   },
@@ -84,6 +87,7 @@ const mouseDrag = defineTabTool({
       startY: z.number().describe('Start Y coordinate'),
       endX: z.number().describe('End X coordinate'),
       endY: z.number().describe('End Y coordinate'),
+      expectation: expectationSchema
     }),
     type: 'destructive',
   },

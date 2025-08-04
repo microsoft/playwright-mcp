@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { defineTabTool } from './tool.js';
 import * as javascript from '../javascript.js';
 import { generateLocator } from './utils.js';
+import { expectationSchema } from '../schemas/expectation.js';
 
 import type * as playwright from 'playwright';
 
@@ -26,6 +27,7 @@ const evaluateSchema = z.object({
   function: z.string().describe('() => { /* code */ } or (element) => { /* code */ } when element is provided'),
   element: z.string().optional().describe('Human-readable element description used to obtain permission to interact with the element'),
   ref: z.string().optional().describe('Exact target element reference from the page snapshot'),
+  expectation: expectationSchema
 });
 
 const evaluate = defineTabTool({
