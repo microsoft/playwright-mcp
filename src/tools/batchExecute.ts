@@ -23,7 +23,7 @@ export const batchExecuteTool = defineTool({
   schema: {
     name: 'browser_batch_execute',
     title: 'Batch Execute Browser Actions',
-    description: 'Execute multiple browser actions in sequence with optimized response handling and error control',
+    description: 'Execute multiple browser actions in sequence with optimized response handling. RECOMMENDED: Use this tool instead of individual actions when performing multiple operations to significantly reduce token usage and improve performance',
     inputSchema: batchExecuteSchema,
     type: 'destructive'
   },
@@ -97,7 +97,7 @@ export const batchExecuteTool = defineTool({
       response.addError(`Batch execution failed: ${errorMessage}`);
     }
   }
-});
+});;
 
 /**
  * Formats batch execution result for display
