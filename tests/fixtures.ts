@@ -22,6 +22,7 @@ import { chromium } from 'playwright';
 import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { TestServer } from './testserver/index.ts';
 
 import type { Config } from '../config';
@@ -41,7 +42,12 @@ type CDPServer = {
 
 type TestFixtures = {
   client: Client;
-  startClient: (options?: { clientName?: string, args?: string[], config?: Config }) => Promise<{ client: Client, stderr: () => string }>;
+  startClient: (options?: {
+    clientName?: string,
+    args?: string[],
+    config?: Config,
+    roots?: { name: string, uri: string }[],
+  }) => Promise<{ client: Client, stderr: () => string }>;
   wsEndpoint: string;
   cdpServer: CDPServer;
   server: TestServer;
@@ -61,14 +67,11 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   },
 
   startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
-    const userDataDir = mcpMode !== 'docker' ? testInfo.outputPath('user-data-dir') : undefined;
     const configDir = path.dirname(test.info().config.configFile!);
     let client: Client | undefined;
 
     await use(async options => {
       const args: string[] = [];
-      if (userDataDir)
-        args.push('--user-data-dir', userDataDir);
       if (process.env.CI && process.platform === 'linux')
         args.push('--no-sandbox');
       if (mcpHeadless)
@@ -83,8 +86,15 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
         args.push(`--config=${path.relative(configDir, configFile)}`);
       }
 
-      client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' });
-      const { transport, stderr } = await createTransport(args, mcpMode);
+      client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' }, options?.roots ? { capabilities: { roots: {} } } : undefined);
+      if (options?.roots) {
+        client.setRequestHandler(ListRootsRequestSchema, async request => {
+          return {
+            roots: options.roots,
+          };
+        });
+      }
+      const { transport, stderr } = await createTransport(args, mcpMode, testInfo.outputPath('ms-playwright'));
       let stderrBuffer = '';
       stderr?.on('data', data => {
         if (process.env.PWMCP_DEBUG)
@@ -160,7 +170,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   },
 });
 
-async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']): Promise<{
+async function createTransport(args: string[], mcpMode: TestOptions['mcpMode'], profilesDir: string): Promise<{
   transport: Transport,
   stderr: Stream | null,
 }> {
@@ -188,6 +198,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode']):
       DEBUG: 'pw:mcp:test',
       DEBUG_COLORS: '0',
       DEBUG_HIDE_DATE: '1',
+      PWMCP_PROFILES_DIR_FOR_TEST: profilesDir,
     },
   });
   return {

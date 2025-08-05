@@ -6,7 +6,7 @@
     "strict": true,
     "module": "ESNext",
     "rootDir": "src",
-    "outDir": "./lib",
+    "outDir": "./dist/lib",
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "jsxImportSource": "react"

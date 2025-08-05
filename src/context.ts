@@ -19,35 +19,47 @@ import * as playwright from 'playwright';
 
 import { logUnhandledError } from './log.js';
 import { Tab } from './tab.js';
+import { outputFile  } from './config.js';
 
-import type { Tool } from './tools/tool.js';
 import type { FullConfig } from './config.js';
-import type { BrowserContextFactory } from './browserContextFactory.js';
+import type { Tool } from './tools/tool.js';
+import type { BrowserContextFactory, ClientInfo } from './browserContextFactory.js';
 import type * as actions from './actions.js';
-import type { Action, SessionLog } from './sessionLog.js';
+import type { SessionLog } from './sessionLog.js';
 
 const testDebug = debug('pw:mcp:test');
+
+type ContextOptions = {
+  tools: Tool[];
+  config: FullConfig;
+  browserContextFactory: BrowserContextFactory;
+  sessionLog: SessionLog | undefined;
+  clientInfo: ClientInfo;
+};
 
 export class Context {
   readonly tools: Tool[];
   readonly config: FullConfig;
+  readonly sessionLog: SessionLog | undefined;
+  readonly options: ContextOptions;
   private _browserContextPromise: Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> | undefined;
   private _browserContextFactory: BrowserContextFactory;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
-
-  clientVersion: { name: string; version: string; } | undefined;
+  private _clientInfo: ClientInfo;
 
   private static _allContexts: Set<Context> = new Set();
   private _closeBrowserContextPromise: Promise<void> | undefined;
-  private _inputRecorder: InputRecorder | undefined;
-  private _sessionLog: SessionLog | undefined;
+  private _isRunningTool: boolean = false;
+  private _abortController = new AbortController();
 
-  constructor(tools: Tool[], config: FullConfig, browserContextFactory: BrowserContextFactory, sessionLog: SessionLog | undefined) {
-    this.tools = tools;
-    this.config = config;
-    this._browserContextFactory = browserContextFactory;
-    this._sessionLog = sessionLog;
+  constructor(options: ContextOptions) {
+    this.tools = options.tools;
+    this.config = options.config;
+    this.sessionLog = options.sessionLog;
+    this.options = options;
+    this._browserContextFactory = options.browserContextFactory;
+    this._clientInfo = options.clientInfo;
     testDebug('create context');
     Context._allContexts.add(this);
   }
@@ -93,30 +105,6 @@ export class Context {
     return this._currentTab!;
   }
 
-  async listTabsMarkdown(force: boolean = false): Promise<string[]> {
-    if (this._tabs.length === 1 && !force)
-      return [];
-
-    if (!this._tabs.length) {
-      return [
-        '### Open tabs',
-        'No open tabs. Use the "browser_navigate" tool to navigate to a page first.',
-        '',
-      ];
-    }
-
-    const lines: string[] = ['### Open tabs'];
-    for (let i = 0; i < this._tabs.length; i++) {
-      const tab = this._tabs[i];
-      const title = await tab.title();
-      const url = tab.page.url();
-      const current = tab === this._currentTab ? ' (current)' : '';
-      lines.push(`- ${i}:${current} [${title}] (${url})`);
-    }
-    lines.push('');
-    return lines;
-  }
-
   async closeTab(index: number | undefined): Promise<string> {
     const tab = index === undefined ? this._currentTab : this._tabs[index];
     if (!tab)
@@ -124,6 +112,10 @@ export class Context {
     const url = tab.page.url();
     await tab.page.close();
     return url;
+  }
+
+  async outputFile(name: string): Promise<string> {
+    return outputFile(this.config, this._clientInfo.rootPath, name);
   }
 
   private _onPageCreated(page: playwright.Page) {
@@ -152,8 +144,12 @@ export class Context {
     this._closeBrowserContextPromise = undefined;
   }
 
-  async setInputRecorderEnabled(enabled: boolean) {
-    await this._inputRecorder?.setEnabled(enabled);
+  isRunningTool() {
+    return this._isRunningTool;
+  }
+
+  setRunningTool(isRunningTool: boolean) {
+    this._isRunningTool = isRunningTool;
   }
 
   private async _closeBrowserContextImpl() {
@@ -173,6 +169,7 @@ export class Context {
   }
 
   async dispose() {
+    this._abortController.abort('MCP context disposed');
     await this.closeBrowserContext();
     Context._allContexts.delete(this);
   }
@@ -205,11 +202,11 @@ export class Context {
     if (this._closeBrowserContextPromise)
       throw new Error('Another browser context is being closed.');
     // TODO: move to the browser context factory to make it based on isolation mode.
-    const result = await this._browserContextFactory.createContext(this.clientVersion!);
+    const result = await this._browserContextFactory.createContext(this._clientInfo, this._abortController.signal);
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
-    if (this._sessionLog)
-      this._inputRecorder = await InputRecorder.create(this._sessionLog, browserContext);
+    if (this.sessionLog)
+      await InputRecorder.create(this, browserContext);
     for (const page of browserContext.pages())
       this._onPageCreated(page);
     browserContext.on('page', page => this._onPageCreated(page));
@@ -226,87 +223,54 @@ export class Context {
 }
 
 export class InputRecorder {
-  private _actions: Action[] = [];
-  private _enabled = false;
-  private _sessionLog: SessionLog;
+  private _context: Context;
   private _browserContext: playwright.BrowserContext;
-  private _flushTimer: NodeJS.Timeout | undefined;
 
-  private constructor(sessionLog: SessionLog, browserContext: playwright.BrowserContext) {
-    this._sessionLog = sessionLog;
+  private constructor(context: Context, browserContext: playwright.BrowserContext) {
+    this._context = context;
     this._browserContext = browserContext;
   }
 
-  static async create(sessionLog: SessionLog, browserContext: playwright.BrowserContext) {
-    const recorder = new InputRecorder(sessionLog, browserContext);
+  static async create(context: Context, browserContext: playwright.BrowserContext) {
+    const recorder = new InputRecorder(context, browserContext);
     await recorder._initialize();
-    await recorder.setEnabled(true);
     return recorder;
   }
 
   private async _initialize() {
+    const sessionLog = this._context.sessionLog!;
     await (this._browserContext as any)._enableRecorder({
       mode: 'recording',
       recorderMode: 'api',
     }, {
       actionAdded: (page: playwright.Page, data: actions.ActionInContext, code: string) => {
-        if (!this._enabled)
+        if (this._context.isRunningTool())
           return;
         const tab = Tab.forPage(page);
-        this._actions.push({ ...data, tab, code: code.trim(), timestamp: performance.now() });
-        this._scheduleFlush();
+        if (tab)
+          sessionLog.logUserAction(data.action, tab, code, false);
       },
       actionUpdated: (page: playwright.Page, data: actions.ActionInContext, code: string) => {
-        if (!this._enabled)
+        if (this._context.isRunningTool())
           return;
         const tab = Tab.forPage(page);
-        this._actions[this._actions.length - 1] = { ...data, tab, code: code.trim(), timestamp: performance.now() };
-        this._scheduleFlush();
+        if (tab)
+          sessionLog.logUserAction(data.action, tab, code, true);
       },
       signalAdded: (page: playwright.Page, data: actions.SignalInContext) => {
+        if (this._context.isRunningTool())
+          return;
         if (data.signal.name !== 'navigation')
           return;
         const tab = Tab.forPage(page);
-        this._actions.push({
-          frame: data.frame,
-          action: {
-            name: 'navigate',
-            url: data.signal.url,
-            signals: [],
-          },
-          startTime: data.timestamp,
-          endTime: data.timestamp,
-          tab,
-          code: `await page.goto('${data.signal.url}');`,
-          timestamp: performance.now(),
-        });
-        this._scheduleFlush();
+        const navigateAction: actions.Action = {
+          name: 'navigate',
+          url: data.signal.url,
+          signals: [],
+        };
+        if (tab)
+          sessionLog.logUserAction(navigateAction, tab, `await page.goto('${data.signal.url}');`, false);
       },
     });
-  }
-
-  async setEnabled(enabled: boolean) {
-    this._enabled = enabled;
-    if (!enabled)
-      await this._flush();
-  }
-
-  private _clearTimer() {
-    if (this._flushTimer) {
-      clearTimeout(this._flushTimer);
-      this._flushTimer = undefined;
-    }
-  }
-
-  private _scheduleFlush() {
-    this._clearTimer();
-    this._flushTimer = setTimeout(() => this._flush(), 1000);
-  }
-
-  private async _flush() {
-    this._clearTimer();
-    const actions = this._actions;
-    this._actions = [];
-    await this._sessionLog.logActions(actions);
   }
 }
