@@ -8,3 +8,4 @@ playwright-report/
 .env
 sessions/
 .playwright-mcp/
+benchmark/*.json

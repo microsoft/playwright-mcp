@@ -121,7 +121,12 @@ test('clicking on download link emits download', async ({ startClient, server, m
       ref: 'e2',
     },
   });
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toHaveResponse({
+  await expect.poll(() => client.callTool({ 
+    name: 'browser_snapshot',
+    arguments: {
+      expectation: { includeDownloads: true }
+    }
+  })).toHaveResponse({
     downloads: `- Downloaded file test.txt to ${testInfo.outputPath('output', 'test.txt')}`,
   });
 });

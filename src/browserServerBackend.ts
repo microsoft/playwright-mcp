@@ -89,7 +89,7 @@ export class BrowserServerBackend implements ServerBackend {
     } finally {
       context.setRunningTool(false);
     }
-    return await response.serialize();
+    return response.serialize();
   }
 
   serverClosed() {

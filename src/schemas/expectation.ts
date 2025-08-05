@@ -78,7 +78,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
   },
 
   // Screenshot tools don't need additional context
-  screenshot: {
+  browser_take_screenshot: {
     includeSnapshot: false,
     includeConsole: false,
     includeDownloads: false,
@@ -96,7 +96,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
   },
 
   // Code evaluation needs console output but minimal other info
-  evaluate: {
+  browser_evaluate: {
     includeSnapshot: false,
     includeConsole: true,
     includeDownloads: false,
@@ -105,7 +105,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
   },
 
   // Wait operations typically don't need verbose output
-  wait: {
+  browser_wait_for: {
     includeSnapshot: false,
     includeConsole: false,
     includeDownloads: false,

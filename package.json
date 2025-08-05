@@ -1,11 +1,11 @@
 {
-  "name": "@playwright/mcp",
+  "name": "tontoko/fast-playwright-mcp",
   "version": "0.0.32",
-  "description": "Playwright Tools for MCP",
+  "description": "Fast Playwright Tools for MCP",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+    "url": "git+https://github.com/tomohiko/fast-playwright-mcp.git"
   },
   "homepage": "https://playwright.dev",
   "engines": {

@@ -33,7 +33,8 @@ test.describe('Expectation Schema', () => {
       },
       consoleOptions: {
         levels: ['error', 'warn'],
-        maxMessages: 5
+        maxMessages: 5,
+        removeDuplicates: false
       },
       imageOptions: {
         quality: 80,
@@ -145,7 +146,7 @@ test.describe('Expectation Schema', () => {
 
 test.describe('Default Expectation Configuration', () => {
   test('should return appropriate defaults for navigate tool', () => {
-    const defaults = getDefaultExpectation('navigate');
+    const defaults = getDefaultExpectation('browser_navigate');
     expect(defaults.includeSnapshot).toBe(true);
     expect(defaults.includeConsole).toBe(true);
     expect(defaults.includeDownloads).toBe(true);
@@ -154,7 +155,7 @@ test.describe('Default Expectation Configuration', () => {
   });
 
   test('should return appropriate defaults for click tool', () => {
-    const defaults = getDefaultExpectation('click');
+    const defaults = getDefaultExpectation('browser_click');
     expect(defaults.includeSnapshot).toBe(true);
     expect(defaults.includeConsole).toBe(false);
     expect(defaults.includeDownloads).toBe(false);
@@ -163,7 +164,7 @@ test.describe('Default Expectation Configuration', () => {
   });
 
   test('should return appropriate defaults for screenshot tool', () => {
-    const defaults = getDefaultExpectation('screenshot');
+    const defaults = getDefaultExpectation('browser_take_screenshot');
     expect(defaults.includeSnapshot).toBe(false);
     expect(defaults.includeConsole).toBe(false);
     expect(defaults.includeDownloads).toBe(false);
@@ -172,7 +173,7 @@ test.describe('Default Expectation Configuration', () => {
   });
 
   test('should return appropriate defaults for evaluate tool', () => {
-    const defaults = getDefaultExpectation('evaluate');
+    const defaults = getDefaultExpectation('browser_evaluate');
     expect(defaults.includeSnapshot).toBe(false);
     expect(defaults.includeConsole).toBe(true);
     expect(defaults.includeDownloads).toBe(false);

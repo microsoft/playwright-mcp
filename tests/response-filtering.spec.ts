@@ -142,7 +142,7 @@ test.describe('Response Filtering', () => {
   test('should use tool-specific defaults when no expectation provided', async () => {
     const mockContext = createMockContext();
     // Screenshot tool should have minimal output by default
-    const response = new Response(mockContext as any, 'screenshot', { });
+    const response = new Response(mockContext as any, 'browser_take_screenshot', { });
     response.addResult('Screenshot taken');
     response.addCode('page.screenshot()');
 

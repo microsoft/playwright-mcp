@@ -106,13 +106,37 @@ export class Response {
     }
     for (const tab of this._context.tabs())
       await tab.updateTitle();
+
+    // Process images if image options are specified
+    if (this._expectation.imageOptions && this._images.length > 0) {
+      const processedImages = [];
+      for (const image of this._images) {
+        try {
+          const processedResult = await processImage(
+            image.data,
+            image.contentType,
+            this._expectation.imageOptions
+          );
+          processedImages.push({
+            contentType: processedResult.contentType,
+            data: processedResult.data
+          });
+        } catch (error) {
+          // If processing fails, keep the original image
+          console.error('Image processing failed:', error);
+          processedImages.push(image);
+        }
+      }
+      // Replace original images with processed ones
+      this._images = processedImages;
+    }
   }
 
   tabSnapshot(): TabSnapshot | undefined {
     return this._tabSnapshot;
   }
 
-  async serialize(): Promise<{ content: (TextContent | ImageContent)[], isError?: boolean }> {
+  serialize(): { content: (TextContent | ImageContent)[], isError?: boolean } {
     const response: string[] = [];
 
     // Start with command result.
@@ -152,32 +176,10 @@ ${this._code.join('\n')}
       { type: 'text', text: response.join('\n') },
     ];
 
-    // Image attachments with optional processing.
+    // Image attachments.
     if (this._context.config.imageResponses !== 'omit') {
-      for (const image of this._images) {
-        let processedImage = image;
-        
-        // Apply Sharp processing if imageOptions are specified
-        if (this._expectation.imageOptions) {
-          try {
-            processedImage = await processImage(
-              image.data,
-              image.contentType,
-              this._expectation.imageOptions
-            );
-          } catch (error) {
-            // If Sharp processing fails, use original image
-            console.error('Image processing failed:', error);
-            processedImage = image;
-          }
-        }
-        
-        content.push({ 
-          type: 'image', 
-          data: processedImage.data.toString('base64'), 
-          mimeType: processedImage.contentType 
-        });
-      }
+      for (const image of this._images)
+        content.push({ type: 'image', data: image.data.toString('base64'), mimeType: image.contentType });
     }
 
     return { content, isError: this._isError };
@@ -213,14 +215,18 @@ ${this._code.join('\n')}
     lines.push(`### Page state`);
     lines.push(`- Page URL: ${tabSnapshot.url}`);
     lines.push(`- Page Title: ${tabSnapshot.title}`);
-    lines.push(`- Page Snapshot:`);
-    lines.push('```yaml');
+    
+    // Only include snapshot if expectation allows it
+    if (this._expectation.includeSnapshot) {
+      lines.push(`- Page Snapshot:`);
+      lines.push('```yaml');
 
-    // Use the snapshot as-is (length restrictions handled in tab.ts)
-    const snapshot = tabSnapshot.ariaSnapshot;
+      // Use the snapshot as-is (length restrictions handled in tab.ts)
+      const snapshot = tabSnapshot.ariaSnapshot;
 
-    lines.push(snapshot);
-    lines.push('```');
+      lines.push(snapshot);
+      lines.push('```');
+    }
 
     return lines.join('\n');
   }

@@ -31,6 +31,9 @@ test('browser_take_screenshot (viewport)', async ({ startClient, server }, testI
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
+    arguments: {
+      expectation: { includeCode: true }
+    }
   })).toHaveResponse({
     code: expect.stringContaining(`await page.screenshot`),
     attachments: [{
@@ -57,6 +60,7 @@ test('browser_take_screenshot (element)', async ({ startClient, server }, testIn
     arguments: {
       element: 'hello button',
       ref: 'e1',
+      expectation: { includeCode: true }
     },
   })).toEqual({
     content: [
@@ -235,6 +239,9 @@ test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, serv
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
+    arguments: {
+      expectation: { includeCode: true }
+    }
   })).toEqual({
     content: [
       {
@@ -258,7 +265,10 @@ test('browser_take_screenshot (fullPage: true)', async ({ startClient, server },
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
-    arguments: { fullPage: true },
+    arguments: { 
+      fullPage: true,
+      expectation: { includeCode: true }
+    },
   })).toEqual({
     content: [
       {
@@ -313,6 +323,9 @@ test('browser_take_screenshot (viewport without snapshot)', async ({ startClient
   // This should work without requiring a snapshot since it's a viewport screenshot
   expect(await client.callTool({
     name: 'browser_take_screenshot',
+    arguments: {
+      expectation: { includeCode: true }
+    }
   })).toEqual({
     content: [
       {

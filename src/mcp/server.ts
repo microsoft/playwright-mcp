@@ -71,6 +71,7 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
     }
   });
 
+
   const tools = backend.tools();
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return { tools: tools.map(tool => ({

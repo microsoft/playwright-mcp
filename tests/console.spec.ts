@@ -91,6 +91,9 @@ test('recent console messages', async ({ client, server }) => {
     arguments: {
       element: 'Click me',
       ref: 'e2',
+      expectation: {
+        includeConsole: true
+      }
     },
   });
 
