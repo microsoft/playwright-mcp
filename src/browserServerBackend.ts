@@ -55,7 +55,9 @@ export class BrowserServerBackend implements ServerBackend {
   async initialize(server: mcpServer.Server): Promise<void> {
     const capabilities = server.getClientCapabilities() as mcpServer.ClientCapabilities;
     let rootPath: string | undefined;
-    if (capabilities.roots) {
+    if (capabilities.roots && (
+      server.getClientVersion()?.name === 'Visual Studio Code' ||
+      server.getClientVersion()?.name === 'Visual Studio Code - Insiders')) {
       const { roots } = await server.listRoots();
       const firstRootUri = roots[0]?.uri;
       const url = firstRootUri ? new URL(firstRootUri) : undefined;
