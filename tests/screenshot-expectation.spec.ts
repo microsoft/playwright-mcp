@@ -20,7 +20,7 @@ test.describe('Screenshot Tool Expectation Parameter', () => {
   test.describe('browser_take_screenshot', () => {
     test('should accept expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<div>Test Page for Screenshot</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -47,7 +47,7 @@ test.describe('Screenshot Tool Expectation Parameter', () => {
 
     test('should accept expectation parameter with full response', async ({ client, server }) => {
       server.setContent('/', '<div>Full Test Page for Screenshot</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -77,7 +77,7 @@ test.describe('Screenshot Tool Expectation Parameter', () => {
           Full page screenshot test content
         </div>
       `, 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }

@@ -389,6 +389,17 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_batch_execute**
+  - Title: Batch Execute Browser Actions
+  - Description: Execute multiple browser actions in sequence with optimized response handling and error control
+  - Parameters:
+    - `steps` (array): Array of steps to execute in sequence
+    - `stopOnFirstError` (boolean, optional): Stop entire batch on first error
+    - `globalExpectation` (optional): Default expectation for all steps
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_click**
   - Title: Click
   - Description: Perform click on a web page
@@ -397,6 +408,7 @@ http.createServer(async (req, res) => {
     - `ref` (string): Exact target element reference from the page snapshot
     - `doubleClick` (boolean, optional): Whether to perform a double click instead of a single click
     - `button` (string, optional): Button to click, defaults to left
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -425,6 +437,7 @@ http.createServer(async (req, res) => {
     - `startRef` (string): Exact source element reference from the page snapshot
     - `endElement` (string): Human-readable target element description used to obtain the permission to interact with the element
     - `endRef` (string): Exact target element reference from the page snapshot
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -436,6 +449,7 @@ http.createServer(async (req, res) => {
     - `function` (string): () => { /* code */ } or (element) => { /* code */ } when element is provided
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string, optional): Exact target element reference from the page snapshot
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -445,6 +459,7 @@ http.createServer(async (req, res) => {
   - Description: Upload one or multiple files
   - Parameters:
     - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -455,6 +470,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `accept` (boolean): Whether to accept the dialog.
     - `promptText` (string, optional): The text of the prompt in case of a prompt dialog.
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -465,6 +481,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -474,6 +491,7 @@ http.createServer(async (req, res) => {
   - Description: Navigate to a URL
   - Parameters:
     - `url` (string): The URL to navigate to
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -481,7 +499,8 @@ http.createServer(async (req, res) => {
 - **browser_navigate_back**
   - Title: Go back
   - Description: Go back to the previous page
-  - Parameters: None
+  - Parameters:
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -489,7 +508,8 @@ http.createServer(async (req, res) => {
 - **browser_navigate_forward**
   - Title: Go forward
   - Description: Go forward to the next page
-  - Parameters: None
+  - Parameters:
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -507,6 +527,7 @@ http.createServer(async (req, res) => {
   - Description: Press a key on the keyboard
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -528,6 +549,7 @@ http.createServer(async (req, res) => {
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
     - `values` (array): Array of values to select in the dropdown. This can be a single value or multiple values.
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -535,7 +557,8 @@ http.createServer(async (req, res) => {
 - **browser_snapshot**
   - Title: Page snapshot
   - Description: Capture accessibility snapshot of the current page, this is better than screenshot
-  - Parameters: None
+  - Parameters:
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -549,6 +572,7 @@ http.createServer(async (req, res) => {
     - `element` (string, optional): Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.
     - `ref` (string, optional): Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.
     - `fullPage` (boolean, optional): When true, takes a screenshot of the full scrollable page, instead of the currently visible viewport. Cannot be used with element screenshots.
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -562,6 +586,7 @@ http.createServer(async (req, res) => {
     - `text` (string): Text to type into the element
     - `submit` (boolean, optional): Whether to submit entered text (press Enter after)
     - `slowly` (boolean, optional): Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -573,6 +598,7 @@ http.createServer(async (req, res) => {
     - `time` (number, optional): The time to wait in seconds
     - `text` (string, optional): The text to wait for
     - `textGone` (string, optional): The text to wait for to disappear
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 </details>
@@ -587,6 +613,7 @@ http.createServer(async (req, res) => {
   - Description: Close a tab
   - Parameters:
     - `index` (number, optional): The index of the tab to close. Closes current tab if not provided.
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -594,7 +621,8 @@ http.createServer(async (req, res) => {
 - **browser_tab_list**
   - Title: List tabs
   - Description: List browser tabs
-  - Parameters: None
+  - Parameters:
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -604,6 +632,7 @@ http.createServer(async (req, res) => {
   - Description: Open a new tab
   - Parameters:
     - `url` (string, optional): The URL to navigate to in the new tab. If not provided, the new tab will be blank.
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -613,6 +642,7 @@ http.createServer(async (req, res) => {
   - Description: Select a tab by index
   - Parameters:
     - `index` (number): The index of the tab to select
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 </details>
@@ -642,6 +672,7 @@ http.createServer(async (req, res) => {
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
     - `y` (number): Y coordinate
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -655,6 +686,7 @@ http.createServer(async (req, res) => {
     - `startY` (number): Start Y coordinate
     - `endX` (number): End X coordinate
     - `endY` (number): End Y coordinate
+    - `expectation` (object, optional): undefined
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -666,6 +698,7 @@ http.createServer(async (req, res) => {
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
     - `y` (number): Y coordinate
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 </details>
@@ -681,24 +714,6 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `filename` (string, optional): File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.
   - Read-only: **true**
-
-</details>
-
-<details>
-<summary><b>Batch execution</b></summary>
-
-- **browser_batch_execute**
-  - Title: Batch Execute Browser Actions
-  - Description: Execute multiple browser actions in sequence with optimized response handling and error control
-  - Parameters:
-    - `steps` (array): Array of steps to execute in sequence. Each step contains:
-      - `tool` (string): Tool name to execute
-      - `arguments` (object): Arguments for the tool
-      - `continueOnError` (boolean, optional): Continue batch execution if this step fails
-      - `expectation` (object, optional): Expected output configuration for this step
-    - `stopOnFirstError` (boolean, optional): Stop entire batch on first error
-    - `globalExpectation` (object, optional): Default expectation for all steps
-  - Read-only: **false**
 
 </details>
 

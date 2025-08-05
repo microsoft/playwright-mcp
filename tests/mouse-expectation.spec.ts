@@ -21,7 +21,7 @@ test.describe('Mouse Tools Expectation Parameter', () => {
     test('should accept expectation parameter with minimal response', async ({ startClient, server }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
       server.setContent('/', '<div>Test Page</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -51,7 +51,7 @@ test.describe('Mouse Tools Expectation Parameter', () => {
     test('should accept expectation parameter with full response', async ({ startClient, server }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
       server.setContent('/', '<div>Full Test Page</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -82,7 +82,7 @@ test.describe('Mouse Tools Expectation Parameter', () => {
     test('should accept expectation parameter with minimal response', async ({ startClient, server }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
       server.setContent('/', '<div>Test Page</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -115,7 +115,7 @@ test.describe('Mouse Tools Expectation Parameter', () => {
     test('should accept expectation parameter with minimal response', async ({ startClient, server }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
       server.setContent('/', '<div>Test Page</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }

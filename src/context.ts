@@ -161,9 +161,9 @@ export class Context {
     if (!this._batchExecutor) {
       // Create tool registry from available tools
       const toolRegistry = new Map();
-      for (const tool of this.tools) {
+      for (const tool of this.tools)
         toolRegistry.set(tool.schema.name, tool);
-      }
+
       this._batchExecutor = new BatchExecutor(this, toolRegistry);
     }
     return this._batchExecutor;

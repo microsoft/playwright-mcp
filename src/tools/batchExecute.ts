@@ -46,22 +46,22 @@ export const batchExecuteTool = defineTool({
       if (result.steps.length > 0) {
         response.addResult('');
         response.addResult('### Step Details');
-        
+
         for (const stepResult of result.steps) {
           const status = stepResult.success ? '✅' : '❌';
           const duration = `${stepResult.executionTimeMs}ms`;
-          
+
           response.addResult(`${status} Step ${stepResult.stepIndex + 1}: ${stepResult.toolName} (${duration})`);
-          
+
           if (stepResult.success && stepResult.result) {
             // Add successful step content if available
             const stepContent = stepResult.result.content?.[0]?.text;
             if (stepContent) {
               const lines = stepContent.split('\n').slice(0, 3); // Show first 3 lines
               response.addResult(`   ${lines.join('\n   ')}`);
-              if (stepContent.split('\n').length > 3) {
+              if (stepContent.split('\n').length > 3)
                 response.addResult('   ...');
-              }
+
             }
           } else if (!stepResult.success && stepResult.error) {
             response.addResult(`   Error: ${stepResult.error}`);
@@ -70,27 +70,27 @@ export const batchExecuteTool = defineTool({
       }
 
       // Add aggregated information from successful steps if any had content
-      const successfulStepsWithContent = result.steps.filter(s => 
-        s.success && 
-        s.result?.content?.[0]?.text && 
+      const successfulStepsWithContent = result.steps.filter(s =>
+        s.success &&
+        s.result?.content?.[0]?.text &&
         !s.result.isError
       );
 
       if (successfulStepsWithContent.length > 0 && result.stopReason === 'completed') {
         response.addResult('');
         response.addResult('### Final State');
-        
+
         // Use content from the last successful step that had meaningful output
         const lastStep = successfulStepsWithContent[successfulStepsWithContent.length - 1];
-        if (lastStep.result?.content?.[0]?.text) {
+        if (lastStep.result?.content?.[0]?.text)
           response.addResult(lastStep.result.content[0].text);
-        }
+
       }
 
       // Mark as error if batch failed
-      if (result.stopReason === 'error' || result.failedSteps > 0) {
+      if (result.stopReason === 'error' || result.failedSteps > 0)
         response.addError(`Batch execution ${result.stopReason === 'error' ? 'stopped due to error' : 'completed with failures'}`);
-      }
+
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -104,18 +104,18 @@ export const batchExecuteTool = defineTool({
  */
 function formatBatchResult(result: BatchResult): string {
   const lines = [];
-  
+
   lines.push(`### Batch Execution Summary`);
   lines.push(`- Status: ${getStatusDisplay(result.stopReason)}`);
   lines.push(`- Total Steps: ${result.totalSteps}`);
   lines.push(`- Successful: ${result.successfulSteps}`);
   lines.push(`- Failed: ${result.failedSteps}`);
   lines.push(`- Total Time: ${result.totalExecutionTimeMs}ms`);
-  
-  if (result.stopReason === 'error') {
+
+  if (result.stopReason === 'error')
     lines.push(`- Note: Execution stopped early due to error`);
-  }
-  
+
+
   return lines.join('\n');
 }
 

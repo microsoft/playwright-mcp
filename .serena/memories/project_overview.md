@@ -1,53 +1,34 @@
-# Playwright MCP Server - Project Overview
+# Playwright MCP プロジェクト概要
 
-## Purpose
-A Model Context Protocol (MCP) server that provides browser automation capabilities using Playwright. This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
+## プロジェクトの目的
+Playwright MCPは、Model Context Protocol (MCP) サーバーとして動作し、Playwright を使用したブラウザ自動化機能を提供します。LLMがWebページと構造化されたアクセシビリティスナップショットを通じて相互作用できるようにし、スクリーンショットや視覚的に調整されたモデルを必要としません。
 
-## Key Features
-- Fast and lightweight - uses Playwright's accessibility tree, not pixel-based input
-- LLM-friendly - operates purely on structured data
-- Deterministic tool application - avoids ambiguity common with screenshot-based approaches
+## 技術スタック
+- **Node.js**: 18以上
+- **TypeScript**: ^5.8.2
+- **Playwright**: 1.55.0-alpha (コア機能)
+- **MCP SDK**: @modelcontextprotocol/sdk ^1.16.0
+- **その他の主要依存関係**:
+  - commander: CLI管理
+  - zod: スキーマ検証
+  - ws: WebSocket通信
+  - mime: MIMEタイプ処理
 
-## Tech Stack
-- **Language**: TypeScript/Node.js
-- **Framework**: Playwright for browser automation
-- **MCP SDK**: @modelcontextprotocol/sdk for server functionality
-- **Schema Validation**: Zod with zod-to-json-schema
-- **Build Tool**: TypeScript compiler (tsc)
-- **Testing**: Playwright Test
-- **Package Manager**: npm
-
-## Project Structure
+## プロジェクト構造
 ```
-/
-├── src/                 # Main source code
-│   ├── mcp/            # MCP server implementation
-│   ├── tools/          # Tool implementations (click, type, navigate, etc.)
-│   ├── extension/      # Extension-related code
-│   ├── loopTools/      # Loop tools
-│   └── loop/           # Loop functionality
-├── docs/               # Documentation including design docs
-├── examples/           # Usage examples
-├── tests/              # Test files
-├── utils/              # Utility scripts
-└── extension/          # Browser extension code
+src/
+├── tools/           # ブラウザ操作ツール群
+├── types/           # TypeScript型定義
+├── utils/           # ユーティリティ機能（画像処理など）
+├── schemas/         # Zodスキーマ定義
+├── batch/           # バッチ実行機能
+├── mcp/             # MCP サーバー実装
+├── extension/       # 拡張機能
+└── loop/           # ループ処理機能
 ```
 
-## Core Components
-1. **Server Backend** (`src/mcp/server.ts`): Main MCP server implementation
-2. **Tools** (`src/tools/`): Individual browser automation tools
-3. **Response System** (`src/response.ts`): Tool response handling and serialization
-4. **Context Management** (`src/context.ts`): Browser context and tab management
-5. **Configuration** (`src/config.ts`): Server configuration handling
-
-## Available Tools
-- Core automation: click, type, navigate, screenshot, snapshot, evaluate
-- Tab management: new tab, close tab, switch tab, list tabs
-- Browser installation: install browser
-- Coordinate-based actions (opt-in via --caps=vision)
-- PDF generation (opt-in via --caps=pdf)
-
-## Current Performance Issues
-- Token consumption is high due to verbose responses including snapshots and console messages
-- Multiple round-trip communications slow down complex automation sequences
-- Response filtering is not implemented, leading to unnecessary data transmission
+## 主要機能
+1. **高速で軽量**: Playwrightのアクセシビリティツリーを使用（ピクセルベースの入力ではない）
+2. **LLMフレンドリー**: ビジョンモデル不要、構造化データのみで動作
+3. **決定論的ツール適用**: スクリーンショットベースのアプローチで見られる曖昧さを回避
+4. **トークン最適化**: レスポンスフィルタリングとバッチ実行による高度な最適化機能

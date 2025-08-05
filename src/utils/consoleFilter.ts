@@ -28,12 +28,12 @@ export interface ConsoleMessage {
  * Filter console messages based on provided options
  */
 export function filterConsoleMessages(
-  messages: ConsoleMessage[], 
+  messages: ConsoleMessage[],
   options?: NonNullable<ExpectationOptions>['consoleOptions']
 ): ConsoleMessage[] {
-  if (!options) {
+  if (!options)
     return messages;
-  }
+
 
   let filtered = messages;
 
@@ -66,9 +66,9 @@ export function filterConsoleMessages(
     const seen = new Set<string>();
     filtered = filtered.filter(msg => {
       const key = `${msg.type || 'log'}:${msg.toString()}`;
-      if (seen.has(key)) {
+      if (seen.has(key))
         return false;
-      }
+
       seen.add(key);
       return true;
     });

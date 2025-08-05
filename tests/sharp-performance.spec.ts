@@ -15,40 +15,14 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 test.describe('Sharp Implementation Performance Tests', () => {
-  // Create a realistic test image buffer (100x100 RGB PNG)
+  // Use real test image from extension icons (128x128 PNG)
   function createLargerTestImageBuffer(): Buffer {
-    // PNG signature
-    const signature = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
-    
-    // IHDR chunk for 100x100 image
-    const ihdr = Buffer.concat([
-      Buffer.from([0x00, 0x00, 0x00, 0x0D]), // Length
-      Buffer.from('IHDR'),                    // Type
-      Buffer.from([0x00, 0x00, 0x00, 0x64]), // Width: 100
-      Buffer.from([0x00, 0x00, 0x00, 0x64]), // Height: 100
-      Buffer.from([0x08, 0x02, 0x00, 0x00, 0x00]), // 8-bit RGB
-      Buffer.from([0x7D, 0x7A, 0xEA, 0x8C])  // CRC
-    ]);
-    
-    // Simple IDAT chunk with compressed data
-    const idat = Buffer.concat([
-      Buffer.from([0x00, 0x00, 0x00, 0x16]), // Length
-      Buffer.from('IDAT'),                    // Type
-      // Minimal deflate compressed data for testing
-      Buffer.from([0x08, 0x1D, 0x01, 0x02, 0x00, 0xFD, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01]),
-      Buffer.from([0x95, 0x05, 0xEF, 0x8C])  // CRC
-    ]);
-    
-    // IEND chunk
-    const iend = Buffer.concat([
-      Buffer.from([0x00, 0x00, 0x00, 0x00]), // Length
-      Buffer.from('IEND'),                    // Type
-      Buffer.from([0xAE, 0x42, 0x60, 0x82])  // CRC
-    ]);
-    
-    return Buffer.concat([signature, ihdr, idat, iend]);
+    const imagePath = join(process.cwd(), 'extension/icons/icon-128.png');
+    return readFileSync(imagePath);
   }
 
   test('should handle large image processing efficiently', async () => {
@@ -89,7 +63,8 @@ test.describe('Sharp Implementation Performance Tests', () => {
     for (const result of results) {
       expect(result.data).toBeInstanceOf(Buffer);
       expect(result.data.length).toBeGreaterThan(0);
-      expect(result.compressionRatio).toBeLessThanOrEqual(1.0);
+      // Compression ratio can be > 1.0 when converting formats (e.g., PNG to JPEG)
+      expect(result.compressionRatio).toBeGreaterThan(0);
       expect(result.processedSize.width).toBeGreaterThan(0);
       expect(result.processedSize.height).toBeGreaterThan(0);
     }

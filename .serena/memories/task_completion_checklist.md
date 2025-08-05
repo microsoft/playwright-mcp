@@ -1,36 +1,83 @@
-# Task Completion Checklist
+# タスク完了時のチェックリスト
 
-## Required Checks After Code Implementation
+## 必須実行項目
 
-1. **Run Lint**
-   ```bash
-   npm run lint
-   ```
-   - Confirm no ESLint errors
-   - Confirm no TypeScript type errors
+### 1. コード品質チェック
+```bash
+# Lint + TypeScript型チェック
+npm run lint
 
-2. **Run Tests**
-   ```bash
-   npm run test
-   ```
-   - Confirm all tests pass
-   - Add tests for new features
+# 自動修正可能な問題の修正
+npm run lint-fix
+```
 
-3. **Build Verification**
-   ```bash
-   npm run build
-   ```
-   - Confirm build succeeds
-   - Confirm output to lib/ directory
+### 2. ビルド確認
+```bash
+# TypeScriptコンパイル
+npm run build
 
-## Pre-commit Checklist
-- Copyright header included?
-- No console.log statements?
-- No floating promises (forgotten await)?
-- Correct import order?
-- Proper error handling?
+# ビルドエラーがないことを確認
+```
 
-## When Adding New Features
-- Update README if needed with `npm run update-readme`
-- Update type definitions in index.d.ts if needed
-- Add samples to examples directory as appropriate
+### 3. テスト実行
+```bash
+# 全テスト実行
+npm test
+
+# 各ブラウザでの個別テスト（必要に応じて）
+npm run ctest    # Chrome
+npm run ftest    # Firefox  
+npm run wtest    # WebKit
+```
+
+### 4. ドキュメント更新
+```bash
+# README.mdの自動更新（ツール情報など）
+npm run update-readme
+```
+
+## Git関連チェック
+
+### コミット前
+- [ ] 不要なファイルが含まれていないか確認
+- [ ] コンソールログ、デバッグコードの削除
+- [ ] 適切なコミットメッセージの作成
+
+### プッシュ前
+- [ ] リモートとの競合確認
+- [ ] 機能ブランチでの作業完了確認
+
+## ファイル構成チェック
+
+### 新規ファイル作成時
+- [ ] 適切なディレクトリ配置
+- [ ] Copyrightヘッダーの追加
+- [ ] 適切なexport/import構造
+
+### 既存ファイル修正時
+- [ ] 関連テストの更新
+- [ ] 型定義の整合性確認
+- [ ] 依存関係の影響範囲確認
+
+## 品質基準
+
+### TypeScript
+- [ ] strict modeでのエラーなし
+- [ ] 明示的な型定義
+- [ ] 適切なエラーハンドリング
+
+### パフォーマンス
+- [ ] 不要な計算の削除
+- [ ] メモリリークの確認
+- [ ] 非同期処理の適切な実装
+
+### セキュリティ
+- [ ] 入力値検証
+- [ ] 機密情報の露出確認
+- [ ] 依存関係の脆弱性チェック
+
+## 実行完了の確認方法
+1. すべてのコマンドがエラーなしで完了
+2. 新機能が期待通り動作
+3. 既存機能に悪影響なし
+4. ドキュメントが最新状態

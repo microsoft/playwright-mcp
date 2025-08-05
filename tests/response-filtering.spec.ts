@@ -58,10 +58,10 @@ test.describe('Response Filtering', () => {
     response.addCode('page.goto("test")');
     response.setIncludeSnapshot();
     response.setIncludeTabs();
-    
+
     await response.finish();
     const serialized = response.serialize();
-    
+
     expect(serialized.content[0].text).toContain('### Result');
     expect(serialized.content[0].text).toContain('Navigation successful');
     expect(serialized.content[0].text).toContain('### Ran Playwright code');
@@ -78,14 +78,14 @@ test.describe('Response Filtering', () => {
       includeTabs: true,
       includeCode: true
     };
-    
+
     const response = new Response(mockContext as any, 'click', { element: 'button' }, expectation);
     response.addResult('Click successful');
     response.addCode('page.click("button")');
-    
+
     await response.finish();
     const serialized = response.serialize();
-    
+
     expect(serialized.content[0].text).toContain('### Result');
     expect(serialized.content[0].text).toContain('Click successful');
     expect(serialized.content[0].text).toContain('### Ran Playwright code');
@@ -101,15 +101,15 @@ test.describe('Response Filtering', () => {
       includeTabs: true,
       includeCode: false
     };
-    
+
     const response = new Response(mockContext as any, 'click', { element: 'button' }, expectation);
     response.addResult('Click successful');
     response.addCode('page.click("button")');
     response.setIncludeSnapshot();
-    
+
     await response.finish();
     const serialized = response.serialize();
-    
+
     expect(serialized.content[0].text).toContain('### Result');
     expect(serialized.content[0].text).toContain('Click successful');
     expect(serialized.content[0].text).not.toContain('### Ran Playwright code');
@@ -126,14 +126,14 @@ test.describe('Response Filtering', () => {
       includeTabs: false,
       includeCode: true
     };
-    
+
     const response = new Response(mockContext as any, 'navigate', { url: 'test' }, expectation);
     response.addResult('Navigation successful');
     response.setIncludeSnapshot();
-    
+
     await response.finish();
     const serialized = response.serialize();
-    
+
     expect(serialized.content[0].text).toContain('### Result');
     expect(serialized.content[0].text).not.toContain('### Open tabs');
     expect(serialized.content[0].text).toContain('### Page state');
@@ -145,10 +145,10 @@ test.describe('Response Filtering', () => {
     const response = new Response(mockContext as any, 'screenshot', { });
     response.addResult('Screenshot taken');
     response.addCode('page.screenshot()');
-    
+
     await response.finish();
     const serialized = response.serialize();
-    
+
     // Should have result but no code, tabs, or snapshot
     expect(serialized.content[0].text).toContain('### Result');
     expect(serialized.content[0].text).toContain('Screenshot taken');
@@ -164,17 +164,17 @@ test.describe('Response Filtering', () => {
     const expectation: ExpectationOptions = {
       includeSnapshot: false
     };
-    
+
     const response = new Response(mockContext as any, 'click', { element: 'button' }, expectation);
     response.addResult('Click successful');
     response.addCode('page.click("button")');
-    
+
     await response.finish();
     const serialized = response.serialize();
-    
+
     // Should respect user's includeSnapshot=false
     expect(serialized.content[0].text).not.toContain('### Page state');
-    
+
     // Should use tool default for includeCode=true
     expect(serialized.content[0].text).toContain('### Ran Playwright code');
   });
@@ -190,9 +190,9 @@ test.describe('Response Filtering', () => {
         maxMessages: 3
       }
     };
-    
+
     const response = new Response(mockContext as any, 'evaluate', { code: 'console.log("test")' }, expectation);
-    
+
     // Test that expectation is stored correctly
     expect(response['_expectation']?.includeConsole).toBe(true);
     expect(response['_expectation']?.consoleOptions?.levels).toEqual(['error', 'warn']);
@@ -209,9 +209,9 @@ test.describe('Response Filtering', () => {
         format: 'text'
       }
     };
-    
+
     const response = new Response(mockContext as any, 'navigate', { url: 'test' }, expectation);
-    
+
     // Test that expectation is stored correctly
     expect(response['_expectation']?.includeSnapshot).toBe(true);
     expect(response['_expectation']?.snapshotOptions?.selector).toBe('.content');

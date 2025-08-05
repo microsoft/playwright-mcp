@@ -1,3 +1,18 @@
+/**
+ * Copyright (c) Microsoft Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { test, expect } from './fixtures.js';
 
 test.describe('Response partial snapshot implementation', () => {
@@ -19,7 +34,7 @@ test.describe('Response partial snapshot implementation', () => {
     // Navigate to test page
     await client.callTool({
       name: 'browser_navigate',
-      arguments: { 
+      arguments: {
         url: server.PREFIX,
         expectation: {
           includeSnapshot: false
@@ -43,11 +58,11 @@ test.describe('Response partial snapshot implementation', () => {
 
     // Verify partial snapshot was captured
     const content = result.content[0].text;
-    
+
     // Should contain only main content in snapshot
     expect(content).toContain('Page Snapshot:');
     expect(content).toContain('Main Content');
-    
+
     // Should not contain header or footer content in the snapshot
     expect(content).not.toContain('Header Content');
     expect(content).not.toContain('Footer Content');
@@ -65,7 +80,7 @@ test.describe('Response partial snapshot implementation', () => {
 
     await client.callTool({
       name: 'browser_navigate',
-      arguments: { 
+      arguments: {
         url: server.PREFIX,
         expectation: {
           includeSnapshot: false
@@ -107,7 +122,7 @@ test.describe('Response partial snapshot implementation', () => {
 
     await client.callTool({
       name: 'browser_navigate',
-      arguments: { 
+      arguments: {
         url: server.PREFIX + 'long-content',
         expectation: {
           includeSnapshot: false
@@ -129,22 +144,22 @@ test.describe('Response partial snapshot implementation', () => {
     });
 
     const content = result.content[0].text;
-    
+
     // Should contain main content
     expect(content).toContain('main');
     expect(content).toContain('long paragraph');
-    
+
     // Extract the actual snapshot content
     const lines = content.split('\n');
     const yamlStartIdx = lines.findIndex(l => l.includes('```yaml'));
     const yamlEndIdx = lines.findIndex((l, i) => i > yamlStartIdx && l.includes('```'));
-    
+
     if (yamlStartIdx !== -1 && yamlEndIdx !== -1) {
       const snapshotContent = lines.slice(yamlStartIdx + 1, yamlEndIdx).join('\n');
-      
+
       // Should be truncated to maxLength
       expect(snapshotContent.length).toBeLessThanOrEqual(100);
-      
+
       // Should end at word boundary
       const lastChar = snapshotContent.trim().slice(-1);
       expect(lastChar).not.toBe('.');  // Not mid-sentence
@@ -178,19 +193,19 @@ test.describe('Response partial snapshot implementation', () => {
     });
 
     const content = result.content[0].text;
-    
+
     // Should have used partial snapshot
     expect(content).toContain('Page Snapshot:');
-    
+
     // Verify selector was applied - body content only
     expect(content).toContain('Test Page');
     expect(content).toContain('Body content here');
-    
+
     // The snapshot should be limited due to maxLength
     const lines = content.split('\n');
     const yamlStartIdx = lines.findIndex(l => l.includes('```yaml'));
     const yamlEndIdx = lines.findIndex((l, i) => i > yamlStartIdx && l.includes('```'));
-    
+
     if (yamlStartIdx !== -1 && yamlEndIdx !== -1) {
       const snapshotContent = lines.slice(yamlStartIdx + 1, yamlEndIdx).join('\n');
       expect(snapshotContent.length).toBeLessThanOrEqual(300);

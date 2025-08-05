@@ -50,7 +50,7 @@ test.describe('Expectation Schema', () => {
   test('should use default values for missing options', () => {
     const minimalExpectation = {};
     const result = expectationSchema.parse(minimalExpectation);
-    
+
     expect(result.includeSnapshot).toBe(true);
     expect(result.includeConsole).toBe(true);
     expect(result.includeDownloads).toBe(true);

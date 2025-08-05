@@ -224,23 +224,23 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     let tabSnapshot: TabSnapshot | undefined;
     const modalStates = await this._raceAgainstModalStates(async () => {
       let snapshot: string;
-      
+
       if (selector) {
         // Use the full snapshot but filter it to the selector
         const fullSnapshot = await (this.page as PageEx)._snapshotForAI();
-        
+
         // Extract the part of the snapshot that matches the selector
         snapshot = this._extractPartialSnapshot(fullSnapshot, selector);
-        
+
       } else {
         // Full snapshot if no selector specified
         snapshot = await (this.page as PageEx)._snapshotForAI();
       }
 
       // Apply maxLength truncation with word boundary consideration
-      if (maxLength && snapshot.length > maxLength) {
+      if (maxLength && snapshot.length > maxLength)
         snapshot = this._truncateAtWordBoundary(snapshot, maxLength);
-      }
+
 
       tabSnapshot = {
         url: this.page.url(),
@@ -251,13 +251,13 @@ export class Tab extends EventEmitter<TabEventsInterface> {
         downloads: this._downloads,
       };
     });
-    
+
     if (tabSnapshot) {
       // Assign console message late so that we did not lose any to modal state.
       tabSnapshot.consoleMessages = this._recentConsoleMessages;
       this._recentConsoleMessages = [];
     }
-    
+
     return tabSnapshot ?? {
       url: this.page.url(),
       title: '',
@@ -280,20 +280,20 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       'section': 'region',
       'article': 'article'
     };
-    
+
     // Get expected role from selector
     const expectedRole = selectorToRole[selector] || selector;
-    
+
     // Find the section in the ARIA tree
     let capturing = false;
     let captureIndent = -1;
     const capturedLines: string[] = [];
-    
+
     for (const line of lines) {
       // Count leading spaces to determine indent level
       const indent = line.length - line.trimStart().length;
       const trimmedLine = line.trim();
-      
+
       // Check if this line contains our target role with proper ARIA structure
       // Matches patterns like: "- main [ref=e3]:" or "- main [active] [ref=e1]:"
       const rolePattern = new RegExp(`^- ${expectedRole}\\s*(?:\\[[^\\]]*\\])*\\s*:?`);
@@ -303,7 +303,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
         capturedLines.push(line);
         continue;
       }
-      
+
       // If we're capturing, continue until we reach a sibling or parent element
       if (capturing) {
         if (indent > captureIndent) {
@@ -315,39 +315,40 @@ export class Tab extends EventEmitter<TabEventsInterface> {
         }
       }
     }
-    
+
     // If we captured something, normalize indentation and return it
     if (capturedLines.length > 0) {
       // Calculate minimum indentation (should be the target element's indentation)
       const minIndent = capturedLines[0].length - capturedLines[0].trimStart().length;
-      
+
       // Normalize indentation: remove the minimum indentation from all lines
       const normalizedLines = capturedLines.map(line => {
-        if (line.trim() === '') return line; // Keep empty lines as-is
+        if (line.trim() === '')
+          return line; // Keep empty lines as-is
         const currentIndent = line.length - line.trimStart().length;
         const newIndent = Math.max(0, currentIndent - minIndent);
         return ' '.repeat(newIndent) + line.trimStart();
       });
-      
+
       return normalizedLines.join('\n');
     }
-    
+
     // Log debug information when selector is not found
     console.warn(`Selector "${selector}" (role: "${expectedRole}") not found in ARIA snapshot. Returning full snapshot as fallback.`);
-    
+
     // Return the original full snapshot when selector is not found
     // This ensures that tests expecting complete page structure get what they need
     return fullSnapshot;
   }
 
   private _truncateAtWordBoundary(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
+    if (text.length <= maxLength)
       return text;
-    }
+
 
     // Look for the last word boundary before maxLength
     let truncateIndex = maxLength;
-    
+
     // Check if we're in the middle of a word at maxLength
     if (text[maxLength] && text[maxLength] !== ' ' && text[maxLength] !== '\n') {
       // We're in the middle of a word, find the last space before maxLength
@@ -357,19 +358,19 @@ export class Tab extends EventEmitter<TabEventsInterface> {
           break;
         }
       }
-      
+
       // If we've gone back too far (more than 20 chars), just cut at maxLength
-      if (maxLength - truncateIndex > 20) {
+      if (maxLength - truncateIndex > 20)
         truncateIndex = maxLength;
-      }
+
     }
 
     let result = text.substring(0, truncateIndex).trim();
-    
+
     // Ensure the result doesn't exceed maxLength after trimming
-    if (result.length > maxLength) {
+    if (result.length > maxLength)
       result = result.substring(0, maxLength);
-    }
+
 
     return result;
   }

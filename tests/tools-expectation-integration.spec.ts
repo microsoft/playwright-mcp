@@ -21,7 +21,7 @@ test.describe('Main Tools Expectation Integration', () => {
   test.describe('browser_navigate tool', () => {
     test('should handle expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<h1>Test Page</h1>', 'text/html');
-      
+
       const result = await client.callTool({
         name: 'browser_navigate',
         arguments: {
@@ -45,7 +45,7 @@ test.describe('Main Tools Expectation Integration', () => {
 
     test('should handle expectation parameter with full response', async ({ client, server }) => {
       server.setContent('/', '<h1>Full Test Page</h1>', 'text/html');
-      
+
       const result = await client.callTool({
         name: 'browser_navigate',
         arguments: {
@@ -66,7 +66,7 @@ test.describe('Main Tools Expectation Integration', () => {
 
     test('should use appropriate defaults when no expectation provided', async ({ client, server }) => {
       server.setContent('/', '<h1>Default Test Page</h1>', 'text/html');
-      
+
       const result = await client.callTool({
         name: 'browser_navigate',
         arguments: {
@@ -83,7 +83,7 @@ test.describe('Main Tools Expectation Integration', () => {
   test.describe('browser_click tool', () => {
     test('should handle expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<button id="test-btn">Click me</button>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -111,7 +111,7 @@ test.describe('Main Tools Expectation Integration', () => {
 
     test('should handle expectation parameter with snapshot', async ({ client, server }) => {
       server.setContent('/', '<button id="test-btn">Click me</button>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -138,7 +138,7 @@ test.describe('Main Tools Expectation Integration', () => {
 
     test('should use appropriate defaults when no expectation provided', async ({ client, server }) => {
       server.setContent('/', '<button id="test-btn">Click me</button>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -161,7 +161,7 @@ test.describe('Main Tools Expectation Integration', () => {
   test.describe('browser_type tool', () => {
     test('should handle expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<input id="test-input" type="text">', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -190,7 +190,7 @@ test.describe('Main Tools Expectation Integration', () => {
 
     test('should handle expectation parameter with snapshot', async ({ client, server }) => {
       server.setContent('/', '<input id="test-input" type="text">', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -218,7 +218,7 @@ test.describe('Main Tools Expectation Integration', () => {
 
     test('should use appropriate defaults when no expectation provided', async ({ client, server }) => {
       server.setContent('/', '<input id="test-input" type="text">', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -241,7 +241,7 @@ test.describe('Main Tools Expectation Integration', () => {
   test.describe('browser_snapshot tool', () => {
     test('should handle expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<h1>Snapshot Test</h1>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -267,7 +267,7 @@ test.describe('Main Tools Expectation Integration', () => {
 
     test('should use appropriate defaults when no expectation provided', async ({ client, server }) => {
       server.setContent('/', '<h1>Snapshot Test</h1>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -286,7 +286,7 @@ test.describe('Main Tools Expectation Integration', () => {
   test.describe('Backward Compatibility', () => {
     test('should maintain backward compatibility for all tools without expectation parameter', async ({ client, server }) => {
       server.setContent('/', '<button id="test">Test</button><input id="input" type="text">', 'text/html');
-      
+
       // Navigate without expectation
       const navigateResult = await client.callTool({
         name: 'browser_navigate',
@@ -327,7 +327,7 @@ test.describe('Main Tools Expectation Integration', () => {
   test.describe('Advanced Expectation Options', () => {
     test('should handle snapshotOptions correctly', async ({ client, server }) => {
       server.setContent('/', '<div class="content"><h1>Title</h1><p>Content</p></div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -356,7 +356,7 @@ test.describe('Main Tools Expectation Integration', () => {
 
     test('should handle consoleOptions correctly', async ({ client, server }) => {
       server.setContent('/', '<script>console.error("test error"); console.log("test log");</script><h1>Test</h1>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }

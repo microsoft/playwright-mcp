@@ -20,7 +20,7 @@ test.describe('Wait Tool Expectation Parameter', () => {
   test.describe('browser_wait_for', () => {
     test('should accept expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<div>Test Page</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -47,7 +47,7 @@ test.describe('Wait Tool Expectation Parameter', () => {
 
     test('should accept expectation parameter with full response', async ({ client, server }) => {
       server.setContent('/', '<div>Full Test Page</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -80,7 +80,7 @@ test.describe('Wait Tool Expectation Parameter', () => {
           }, 100);
         </script>
       `, 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }

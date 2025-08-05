@@ -18,11 +18,11 @@ import { Response } from '../response.js';
 import { mergeExpectations } from '../schemas/expectation.js';
 import type { Context } from '../context.js';
 import type { Tool } from '../tools/tool.js';
-import type { 
-  BatchStep, 
-  BatchExecuteOptions, 
-  BatchResult, 
-  StepResult 
+import type {
+  BatchStep,
+  BatchExecuteOptions,
+  BatchResult,
+  StepResult
 } from '../types/batch.js';
 import type { ExpectationOptions } from '../schemas/expectation.js';
 
@@ -45,9 +45,9 @@ export class BatchExecutor {
   async validateAllSteps(steps: BatchStep[]): Promise<void> {
     for (const [index, step] of steps.entries()) {
       const tool = this.toolRegistry.get(step.tool);
-      if (!tool) {
+      if (!tool)
         throw new Error(`Unknown tool: ${step.tool}`);
-      }
+
 
       // Validate arguments using tool's schema
       try {
@@ -55,10 +55,10 @@ export class BatchExecutor {
           ...step.arguments,
           expectation: step.expectation
         });
-        
-        if (!parseResult.success) {
+
+        if (!parseResult.success)
           throw new Error(`Invalid arguments: ${parseResult.error.message}`);
-        }
+
       } catch (error) {
         throw new Error(`Invalid arguments for ${step.tool} at step ${index}: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -81,11 +81,11 @@ export class BatchExecutor {
     // Execution phase
     for (const [index, step] of options.steps.entries()) {
       const stepStartTime = Date.now();
-      
+
       try {
         const result = await this.executeStep(step, options.globalExpectation);
         const stepEndTime = Date.now();
-        
+
         results.push({
           stepIndex: index,
           toolName: step.tool,
@@ -96,7 +96,7 @@ export class BatchExecutor {
       } catch (error) {
         const stepEndTime = Date.now();
         const errorMessage = error instanceof Error ? error.message : String(error);
-        
+
         results.push({
           stepIndex: index,
           toolName: step.tool,
@@ -135,15 +135,15 @@ export class BatchExecutor {
    */
   async executeStep(step: BatchStep, globalExpectation?: ExpectationOptions): Promise<any> {
     const tool = this.toolRegistry.get(step.tool);
-    if (!tool) {
+    if (!tool)
       throw new Error(`Unknown tool: ${step.tool}`);
-    }
+
 
     // Merge expectations: step expectation takes precedence over global
     const mergedExpectation = this.mergeStepExpectations(
-      step.tool,
-      globalExpectation,
-      step.expectation
+        step.tool,
+        globalExpectation,
+        step.expectation
     );
 
     // Create arguments with merged expectation
@@ -157,7 +157,7 @@ export class BatchExecutor {
 
     // Execute the tool
     await tool.handle(this.context, argsWithExpectation, response);
-    
+
     // Finish the response (capture snapshots, etc.)
     await response.finish();
 

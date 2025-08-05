@@ -45,7 +45,7 @@ test.describe('Console Message Filtering', () => {
     const options = { levels: ['error'] as const };
 
     const result = filterConsoleMessages(messages, options);
-    
+
     expect(result.length).toBe(3); // Should only have error messages
     expect(result.every(msg => msg.type === 'error')).toBe(true);
     expect(result[0].toString()).toContain('[ERROR]');
@@ -57,7 +57,7 @@ test.describe('Console Message Filtering', () => {
     const options = { patterns: ['User.*logged', 'API.*rate'] };
 
     const result = filterConsoleMessages(messages, options);
-    
+
     expect(result.length).toBe(3); // 2 login messages + 1 API rate message
     expect(result.some(msg => msg.toString().includes('User logged in'))).toBe(true);
     expect(result.some(msg => msg.toString().includes('API rate limit'))).toBe(true);
@@ -69,10 +69,10 @@ test.describe('Console Message Filtering', () => {
     const options = { removeDuplicates: true };
 
     const result = filterConsoleMessages(messages, options);
-    
+
     // Original has 10 messages, with 1 duplicate, so should be 9 unique
     expect(result.length).toBe(9);
-    
+
     // Check that duplicate "User logged in successfully" message is removed
     const loginMessages = result.filter(msg => msg.toString().includes('User logged in successfully'));
     expect(loginMessages.length).toBe(1);
@@ -84,7 +84,7 @@ test.describe('Console Message Filtering', () => {
     const options = { maxMessages: 3 };
 
     const result = filterConsoleMessages(messages, options);
-    
+
     expect(result.length).toBe(3);
     // Should keep the last 3 messages
     expect(result[2].toString()).toContain('[ERROR] Permission denied');
@@ -96,7 +96,7 @@ test.describe('Console Message Filtering', () => {
     const options = { patterns: ['[invalid regex', 'User'] };
 
     const result = filterConsoleMessages(messages, options);
-    
+
     // Should fall back to substring matching for invalid regex
     // Should find messages containing "User"
     expect(result.length).toBeGreaterThan(0);
@@ -114,7 +114,7 @@ test.describe('Console Message Filtering', () => {
     };
 
     const result = filterConsoleMessages(messages, options);
-    
+
     expect(result.length).toBeLessThanOrEqual(2);
     expect(result.every(msg => ['log', 'error'].includes(msg.type!))).toBe(true);
     expect(result.every(msg => msg.toString().includes('User'))).toBe(true);
@@ -125,7 +125,7 @@ test.describe('Console Message Filtering', () => {
     const messages = createMockConsoleMessages();
 
     const result = filterConsoleMessages(messages);
-    
+
     expect(result).toEqual(messages);
     expect(result.length).toBe(messages.length);
   });

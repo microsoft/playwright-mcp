@@ -59,7 +59,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: true,
     includeCode: true
   },
-  
+
   // Interactive tools need snapshot for feedback but less verbose logging
   browser_click: {
     includeSnapshot: true,
@@ -68,7 +68,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: true
   },
-  
+
   browser_type: {
     includeSnapshot: true,
     includeConsole: false,
@@ -76,7 +76,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: true
   },
-  
+
   // Screenshot tools don't need additional context
   screenshot: {
     includeSnapshot: false,
@@ -85,7 +85,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: false
   },
-  
+
   // Snapshot tool should capture snapshot but minimal other context
   browser_snapshot: {
     includeSnapshot: true,
@@ -94,7 +94,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: false
   },
-  
+
   // Code evaluation needs console output but minimal other info
   evaluate: {
     includeSnapshot: false,
@@ -103,7 +103,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: true
   },
-  
+
   // Wait operations typically don't need verbose output
   wait: {
     includeSnapshot: false,
@@ -141,15 +141,15 @@ export function getDefaultExpectation(toolName: string): Required<Omit<NonNullab
  * @returns Merged expectation configuration
  */
 export function mergeExpectations(
-  toolName: string, 
+  toolName: string,
   userExpectation?: ExpectationOptions
 ): NonNullable<ExpectationOptions> {
   const defaults = getDefaultExpectation(toolName);
-  
-  if (!userExpectation) {
+
+  if (!userExpectation)
     return defaults;
-  }
-  
+
+
   return {
     includeSnapshot: userExpectation.includeSnapshot ?? defaults.includeSnapshot,
     includeConsole: userExpectation.includeConsole ?? defaults.includeConsole,

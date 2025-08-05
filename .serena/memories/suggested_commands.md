@@ -1,25 +1,66 @@
-# Suggested Commands List
+# 推奨コマンド一覧
 
-## Build & Development Commands
-- `npm run build` - Compile TypeScript (src → lib)
-- `npm run watch` - Watch file changes and auto-build
-- `npm run clean` - Remove build artifacts
+## 開発コマンド
 
-## Quality Assurance Commands
-- `npm run lint` - Run ESLint and TypeScript type checking
-- `npm run lint-fix` - Run ESLint with auto-fix
-- `npm run test` - Run all Playwright tests
-- `npm run ctest` - Run tests in Chrome only
-- `npm run ftest` - Run tests in Firefox only
-- `npm run wtest` - Run tests in WebKit only
+### ビルドとコンパイル
+```bash
+npm run build        # TypeScriptをコンパイル
+npm run watch        # 監視モードでコンパイル
+npm run clean        # ビルド結果を削除
+```
 
-## Other Commands
-- `npm run update-readme` - Auto-update README
-- `npm run run-server` - Start browser server
-- `npm run npm-publish` - Publish npm package (clean → build → test → publish)
+### 品質チェック
+```bash
+npm run lint         # ESLintとTypeScriptチェック実行
+npm run lint-fix     # ESLintの自動修正
+npm run update-readme # README.mdの更新
+```
 
-## MCP Execution Commands
-- `npx @playwright/mcp@latest` - Start MCP server
-- `npx @playwright/mcp@latest --help` - Show help
-- `npx @playwright/mcp@latest --headless` - Run in headless mode
-- `npx @playwright/mcp@latest --port <port>` - Start as HTTP server
+### テスト実行
+```bash
+npm test             # 全てのテスト実行
+npm run ctest        # Chrome環境でのテスト
+npm run ftest        # Firefox環境でのテスト  
+npm run wtest        # WebKit環境でのテスト
+```
+
+### サーバー実行
+```bash
+npm run run-server   # ブラウザサーバーを起動
+```
+
+### 本番リリース
+```bash
+npm run npm-publish  # clean → build → test → publishの一連の流れ
+```
+
+## システムコマンド（Darwin/macOS）
+```bash
+# 基本的なファイル操作
+ls -la              # ファイル一覧表示
+cd <directory>      # ディレクトリ移動
+pwd                 # 現在のディレクトリ表示
+
+# 検索とフィルタリング
+find . -name "*.ts" # TypeScriptファイル検索
+grep -r "pattern"   # テキスト検索
+rg "pattern"        # ripgrepでの高速検索（推奨）
+
+# Git操作
+git status          # 変更状況確認
+git add .           # 全変更をステージング
+git commit -m "msg" # コミット
+git push            # プッシュ
+```
+
+## MCPサーバー起動
+```bash
+# 直接起動
+npx @playwright/mcp@latest
+
+# 特定設定での起動
+npx @playwright/mcp@latest --headless --port 8931
+
+# Dockerでの起動
+docker run -i --rm --init --pull=always mcr.microsoft.com/playwright/mcp
+```

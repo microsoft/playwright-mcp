@@ -153,7 +153,7 @@ describe('batchExecuteTool', () => {
       } as unknown as Context;
 
       await expect(
-        batchExecuteTool.handle(contextWithBatchExecutor, params, mockResponse)
+          batchExecuteTool.handle(contextWithBatchExecutor, params, mockResponse)
       ).resolves.not.toThrow();
 
       expect(mockBatchExecutor.execute).toHaveBeenCalledWith(params);
@@ -198,7 +198,7 @@ describe('batchExecuteTool', () => {
       } as unknown as Context;
 
       await expect(
-        batchExecuteTool.handle(contextWithBatchExecutor, params, mockResponse)
+          batchExecuteTool.handle(contextWithBatchExecutor, params, mockResponse)
       ).resolves.not.toThrow();
 
       expect(mockBatchExecutor.execute).toHaveBeenCalledWith(params);
@@ -253,11 +253,11 @@ describe('batchExecuteTool', () => {
 
       const result = batchExecuteTool.schema.inputSchema.safeParse(params);
       expect(result.success).toBe(true);
-      
+
       if (result.success) {
         // First step should have step-specific expectation
         expect(result.data.steps[0].expectation).toEqual({ includeSnapshot: true });
-        
+
         // Second step should inherit from global expectation (handled in executor)
         expect(result.data.steps[1].expectation).toBeUndefined();
         expect(result.data.globalExpectation).toEqual({ includeSnapshot: false, includeConsole: true });

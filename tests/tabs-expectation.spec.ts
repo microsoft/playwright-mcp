@@ -20,7 +20,7 @@ test.describe('Tabs Tools Expectation Parameter', () => {
   test.describe('browser_tab_list', () => {
     test('should accept expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<div>Test Page</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -49,7 +49,7 @@ test.describe('Tabs Tools Expectation Parameter', () => {
     test('should accept expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<div>Original Tab</div>', 'text/html');
       server.setContent('/new', '<div>New Tab Content</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -77,7 +77,7 @@ test.describe('Tabs Tools Expectation Parameter', () => {
     test('should accept expectation parameter with full response', async ({ client, server }) => {
       server.setContent('/', '<div>Original Tab</div>', 'text/html');
       server.setContent('/new', '<div>New Tab Content</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -106,7 +106,7 @@ test.describe('Tabs Tools Expectation Parameter', () => {
     test('should accept expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<div>Tab 1</div>', 'text/html');
       server.setContent('/tab2', '<div>Tab 2</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -140,7 +140,7 @@ test.describe('Tabs Tools Expectation Parameter', () => {
     test('should accept expectation parameter with minimal response', async ({ client, server }) => {
       server.setContent('/', '<div>Tab 1</div>', 'text/html');
       server.setContent('/tab2', '<div>Tab 2</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }

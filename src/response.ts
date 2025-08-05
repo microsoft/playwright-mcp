@@ -96,8 +96,8 @@ export class Response {
       if (options?.selector || options?.maxLength) {
         // Use partial snapshot capture when selector or maxLength is specified
         this._tabSnapshot = await this._context.currentTabOrDie().capturePartialSnapshot(
-          options.selector,
-          options.maxLength
+            options.selector,
+            options.maxLength
         );
       } else {
         this._tabSnapshot = await this._context.currentTabOrDie().captureSnapshot();
@@ -133,7 +133,7 @@ ${this._code.join('\n')}
     // List browser tabs based on expectation.
     const shouldIncludeTabs = this._expectation.includeTabs;
     const shouldIncludeSnapshot = this._expectation.includeSnapshot || this._includeSnapshot;
-    
+
     if (shouldIncludeTabs)
       response.push(...renderTabsMarkdown(this._context.tabs(), shouldIncludeTabs));
 
@@ -192,10 +192,10 @@ ${this._code.join('\n')}
     lines.push(`- Page Title: ${tabSnapshot.title}`);
     lines.push(`- Page Snapshot:`);
     lines.push('```yaml');
-    
+
     // Use the snapshot as-is (length restrictions handled in tab.ts)
-    let snapshot = tabSnapshot.ariaSnapshot;
-    
+    const snapshot = tabSnapshot.ariaSnapshot;
+
     lines.push(snapshot);
     lines.push('```');
 
@@ -204,7 +204,7 @@ ${this._code.join('\n')}
 
   private filterConsoleMessages(messages: any[], options?: NonNullable<ExpectationOptions>['consoleOptions']): any[] {
     let filtered = messages;
-    
+
     // Filter by levels if specified
     if (options?.levels && options.levels.length > 0) {
       filtered = filtered.filter(msg => {
@@ -212,13 +212,13 @@ ${this._code.join('\n')}
         return options.levels!.includes(level);
       });
     }
-    
+
     // Limit number of messages
     const maxMessages = options?.maxMessages ?? 10;
-    if (filtered.length > maxMessages) {
+    if (filtered.length > maxMessages)
       filtered = filtered.slice(0, maxMessages);
-    }
-    
+
+
     return filtered;
   }
 }

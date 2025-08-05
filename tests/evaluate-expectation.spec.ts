@@ -20,7 +20,7 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
   test.describe('browser_evaluate', () => {
     test('should accept expectation parameter with minimal response for page evaluation', async ({ client, server }) => {
       server.setContent('/', '<div id="test">Test Page for Evaluation</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -48,7 +48,7 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
 
     test('should accept expectation parameter with full response for page evaluation', async ({ client, server }) => {
       server.setContent('/', '<div id="test">Full Test Page</div>', 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }
@@ -80,7 +80,7 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
           <span id="counter">0</span>
         </div>
       `, 'text/html');
-      
+
       await client.callTool({
         name: 'browser_navigate',
         arguments: { url: server.PREFIX }

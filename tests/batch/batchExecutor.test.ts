@@ -32,8 +32,8 @@ const mockClickTool: ToolSchema<any> = {
   title: 'Click Element',
   description: 'Click on an element',
   inputSchema: {
-    parse: vi.fn((args) => args),
-    safeParse: vi.fn((args) => ({ success: true, data: args }))
+    parse: vi.fn(args => args),
+    safeParse: vi.fn(args => ({ success: true, data: args }))
   } as any,
   type: 'destructive'
 };
@@ -43,8 +43,8 @@ const mockNavigationTool: ToolSchema<any> = {
   title: 'Navigate',
   description: 'Navigate to a URL',
   inputSchema: {
-    parse: vi.fn((args) => args),
-    safeParse: vi.fn((args) => ({ success: true, data: args }))
+    parse: vi.fn(args => args),
+    safeParse: vi.fn(args => ({ success: true, data: args }))
   } as any,
   type: 'destructive'
 };
@@ -55,12 +55,12 @@ describe('BatchExecutor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockToolRegistry = new Map([
       ['browser_click', mockClickTool],
       ['browser_navigate', mockNavigationTool]
     ]);
-    
+
     executor = new BatchExecutor(mockContext, mockToolRegistry);
   });
 
@@ -95,7 +95,7 @@ describe('BatchExecutor', () => {
       ];
 
       await expect(executor.validateAllSteps(steps))
-        .rejects.toThrow('Unknown tool: unknown_tool');
+          .rejects.toThrow('Unknown tool: unknown_tool');
     });
 
     it('should throw error for invalid arguments', async () => {
@@ -106,7 +106,7 @@ describe('BatchExecutor', () => {
           safeParse: vi.fn(() => ({ success: false, error: { message: 'Invalid arguments' } }))
         }
       };
-      
+
       mockToolRegistry.set('browser_click', mockTool);
       executor = new BatchExecutor(mockContext, mockToolRegistry);
 
@@ -120,14 +120,14 @@ describe('BatchExecutor', () => {
       ];
 
       await expect(executor.validateAllSteps(steps))
-        .rejects.toThrow('Invalid arguments for browser_click');
+          .rejects.toThrow('Invalid arguments for browser_click');
     });
   });
 
   describe('execute', () => {
     it('should execute all steps successfully', async () => {
       const mockToolHandler = vi.fn().mockResolvedValue('Tool executed successfully');
-      
+
       // Mock tool execution
       const originalExecuteStep = executor.executeStep;
       executor.executeStep = vi.fn().mockImplementation(async (step, globalExpectation) => {
@@ -168,9 +168,9 @@ describe('BatchExecutor', () => {
 
     it('should handle step errors with continueOnError=true', async () => {
       executor.executeStep = vi.fn()
-        .mockResolvedValueOnce('First step success')
-        .mockRejectedValueOnce(new Error('Step failed'))
-        .mockResolvedValueOnce('Third step success');
+          .mockResolvedValueOnce('First step success')
+          .mockRejectedValueOnce(new Error('Step failed'))
+          .mockResolvedValueOnce('Third step success');
 
       const options: BatchExecuteOptions = {
         steps: [
@@ -209,9 +209,9 @@ describe('BatchExecutor', () => {
 
     it('should stop on first error when stopOnFirstError=true and continueOnError=false', async () => {
       executor.executeStep = vi.fn()
-        .mockResolvedValueOnce('First step success')
-        .mockRejectedValueOnce(new Error('Critical error'))
-        .mockResolvedValueOnce('Should not reach here');
+          .mockResolvedValueOnce('First step success')
+          .mockRejectedValueOnce(new Error('Critical error'))
+          .mockResolvedValueOnce('Should not reach here');
 
       const options: BatchExecuteOptions = {
         steps: [
@@ -268,11 +268,11 @@ describe('BatchExecutor', () => {
       await executor.execute(options);
 
       expect(executeStepSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          tool: 'browser_click',
-          expectation: { includeSnapshot: true }
-        }),
-        { includeConsole: false, includeDownloads: false }
+          expect.objectContaining({
+            tool: 'browser_click',
+            expectation: { includeSnapshot: true }
+          }),
+          { includeConsole: false, includeDownloads: false }
       );
     });
 
@@ -338,7 +338,7 @@ describe('BatchExecutor', () => {
       };
 
       await expect(executor.executeStep(step, undefined))
-        .rejects.toThrow('Unknown tool: unknown_tool');
+          .rejects.toThrow('Unknown tool: unknown_tool');
     });
   });
 });

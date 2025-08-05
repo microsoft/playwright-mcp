@@ -48,9 +48,9 @@ test.describe('Batch Execution Schema Tests', () => {
 
     const result = batchStepSchema.safeParse(minimalStep);
     expect(result.success).toBe(true);
-    if (result.success) {
+    if (result.success)
       expect(result.data.continueOnError).toBe(false);
-    }
+
   });
 
   test('batchExecuteSchema should validate correct batch configuration', () => {
@@ -100,9 +100,9 @@ test.describe('Batch Execution Schema Tests', () => {
 
     const result = batchExecuteSchema.safeParse(minimalBatch);
     expect(result.success).toBe(true);
-    if (result.success) {
+    if (result.success)
       expect(result.data.stopOnFirstError).toBe(false);
-    }
+
   });
 
   test('batchExecuteSchema should handle complex expectation configurations', () => {

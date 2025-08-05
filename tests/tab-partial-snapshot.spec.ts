@@ -18,11 +18,11 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Tab._truncateAtWordBoundary helper function', () => {
   // Test the helper function directly since we can't easily mock Tab class
-  
+
   function truncateAtWordBoundary(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
+    if (text.length <= maxLength)
       return text;
-    }
+
 
     // Find the last space within the maxLength limit
     let truncateIndex = maxLength;
@@ -34,9 +34,9 @@ test.describe('Tab._truncateAtWordBoundary helper function', () => {
     }
 
     // If no space found within reasonable distance (more than 30% back), just cut at maxLength
-    if (maxLength - truncateIndex > maxLength * 0.3) {
+    if (maxLength - truncateIndex > maxLength * 0.3)
       truncateIndex = maxLength;
-    }
+
 
     return text.substring(0, truncateIndex).trim();
   }
@@ -44,7 +44,7 @@ test.describe('Tab._truncateAtWordBoundary helper function', () => {
   test('should truncate at word boundary when possible', () => {
     const text = 'This is a test content with multiple words';
     const result = truncateAtWordBoundary(text, 20);
-    
+
     expect(result.length).toBeLessThanOrEqual(20);
     expect(result).toBe('This is a test');
     // Result ends with complete word "test", which is correct
@@ -54,14 +54,14 @@ test.describe('Tab._truncateAtWordBoundary helper function', () => {
   test('should return original text when under limit', () => {
     const text = 'Short text';
     const result = truncateAtWordBoundary(text, 50);
-    
+
     expect(result).toBe(text);
   });
 
   test('should cut at maxLength when no spaces within reasonable distance', () => {
     const text = 'Verylongwordwithoutanyspaces';
     const result = truncateAtWordBoundary(text, 10);
-    
+
     expect(result.length).toBeLessThanOrEqual(10);
     expect(result).toBe('Verylongwo');
   });
@@ -69,7 +69,7 @@ test.describe('Tab._truncateAtWordBoundary helper function', () => {
   test('should handle edge case with single word longer than maxLength', () => {
     const text = 'supercalifragilisticexpialidocious';
     const result = truncateAtWordBoundary(text, 15);
-    
+
     expect(result.length).toBeLessThanOrEqual(15);
     expect(result).toBe('supercalifragil');
   });
@@ -77,7 +77,7 @@ test.describe('Tab._truncateAtWordBoundary helper function', () => {
   test('should handle text with multiple spaces', () => {
     const text = 'This  has   multiple    spaces between words';
     const result = truncateAtWordBoundary(text, 25);
-    
+
     expect(result.length).toBeLessThanOrEqual(25);
     expect(result).toBe('This  has   multiple');
   });
