@@ -29,7 +29,7 @@ const close = defineTool({
   },
 
   handle: async (context, params, response) => {
-    await context.closeBrowserContext();
+    await context.closeBrowserContext(false);
     response.setIncludeTabs();
     response.addCode(`await page.close()`);
   },

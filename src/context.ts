@@ -43,7 +43,7 @@ export class Context {
   readonly config: FullConfig;
   readonly sessionLog: SessionLog | undefined;
   readonly options: ContextOptions;
-  private _browserContextPromise: Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> | undefined;
+  private _browserContextPromise: Promise<{ browserContext: playwright.BrowserContext, close: (dispose: boolean) => Promise<void> }> | undefined;
   private _browserContextFactory: BrowserContextFactory;
   private _browserContextFactoryParams: any;
   private _tabs: Tab[] = [];
@@ -137,12 +137,12 @@ export class Context {
     if (this._currentTab === tab)
       this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
     if (!this._tabs.length)
-      void this.closeBrowserContext();
+      void this.closeBrowserContext(false);
   }
 
-  async closeBrowserContext() {
+  async closeBrowserContext(dispose: boolean) {
     if (!this._closeBrowserContextPromise)
-      this._closeBrowserContextPromise = this._closeBrowserContextImpl().catch(logUnhandledError);
+      this._closeBrowserContextPromise = this._closeBrowserContextImpl(dispose).catch(logUnhandledError);
     await this._closeBrowserContextPromise;
     this._closeBrowserContextPromise = undefined;
   }
@@ -155,7 +155,7 @@ export class Context {
     this._isRunningTool = isRunningTool;
   }
 
-  private async _closeBrowserContextImpl() {
+  private async _closeBrowserContextImpl(dispose: boolean) {
     if (!this._browserContextPromise)
       return;
 
@@ -167,13 +167,13 @@ export class Context {
     await promise.then(async ({ browserContext, close }) => {
       if (this.config.saveTrace)
         await browserContext.tracing.stop();
-      await close();
+      await close(dispose);
     });
   }
 
   async dispose() {
     this._abortController.abort('MCP context disposed');
-    await this.closeBrowserContext();
+    await this.closeBrowserContext(true);
     Context._allContexts.delete(this);
   }
 
@@ -201,7 +201,7 @@ export class Context {
     return this._browserContextPromise;
   }
 
-  private async _setupBrowserContext(): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
+  private async _setupBrowserContext(): Promise<{ browserContext: playwright.BrowserContext, close: (dispose: boolean) => Promise<void> }> {
     if (this._closeBrowserContextPromise)
       throw new Error('Another browser context is being closed.');
     // TODO: move to the browser context factory to make it based on isolation mode.
@@ -213,6 +213,9 @@ export class Context {
     for (const page of browserContext.pages())
       this._onPageCreated(page);
     browserContext.on('page', page => this._onPageCreated(page));
+    browserContext.on('close', () => {
+      this._closeBrowserContextPromise = undefined;
+    });
     if (this.config.saveTrace) {
       await browserContext.tracing.start({
         name: 'trace',

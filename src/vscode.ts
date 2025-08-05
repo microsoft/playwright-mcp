@@ -26,20 +26,28 @@ class VSCodeContextFactory implements BrowserContextFactory {
 
   constructor(private readonly _config: FullConfig) {}
 
-  async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal, params: any): Promise<{ browserContext: BrowserContext; close: () => Promise<void>; }> {
-    const { connectionString, lib } = z.object({ connectionString: z.string(), lib: z.string() }).parse(params);
+  async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal, _params: any): Promise<{ browserContext: BrowserContext; close: (dispose: boolean) => Promise<void>; }> {
+    const params = z.object({ connectionString: z.string(), lib: z.string() }).parse(_params);
 
-    const playwrightLibrary = playwright; // TODO: require playwright dynamically from `lib`
-
-    const browser = await playwrightLibrary.chromium.connect(connectionString);
+    const connectionString = new URL(params.connectionString);
+    connectionString.searchParams.set('launch-options', JSON.stringify(this._config.browser.launchOptions));
+    const playwrightLibrary = playwright; // TODO: require playwright dynamically from `params.lib`
+    const browser = await playwrightLibrary.chromium.connect(connectionString.toString());
     const context = browser.contexts()[0] ?? await browser.newContext(this._config.browser.contextOptions);
+
+    context.on('close', () => browser.close());
+    context.on('page', page => {
+      page.on('close', () => {
+        if (context.pages().length === 0)
+          void context.close();
+      });
+    });
     return {
       browserContext: context,
-      close: async () => {
-        // in connect mode, browser.close() closes the connection, but not the browser.
-        // closing the context ensures visible cleanup.
+      close: async dispose => {
+        if (dispose)
+          return;
         await context.close();
-        await browser.close();
       }
     };
   }
