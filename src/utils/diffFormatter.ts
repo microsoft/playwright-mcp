@@ -1,6 +1,3 @@
-/*
- * Copyright (c) Microsoft Corporation.
- */
 
 import { DiffSegment } from '../types/diff.js';
 

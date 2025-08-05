@@ -1,6 +1,3 @@
-/*
- * Copyright (c) Microsoft Corporation.
- */
 
 import { createHash } from 'crypto';
 import diff from 'fast-diff';

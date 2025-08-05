@@ -10,21 +10,15 @@
 
 ### ファイル構造
 ```typescript
-// 1. Copyright header（Microsoft標準）
-/**
- * Copyright (c) Microsoft Corporation.
- * Licensed under the Apache License, Version 2.0
- */
-
-// 2. Import文（外部依存 → 内部依存の順）
+// 1. Import文（外部依存 → 内部依存の順）
 import type { ExpectationOptions } from '../schemas/expectation.js';
 
-// 3. 型定義
+// 2. 型定義
 export interface SomeInterface {
   property: string;
 }
 
-// 4. 実装
+// 3. 実装
 export function someFunction(): SomeType {
   // implementation
 }
