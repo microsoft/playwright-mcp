@@ -1,19 +1,21 @@
 {
   "mcpServers": {
-    "playwright": {
+    "playwright-original": {
       "type": "stdio",
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest"
+        "-y",
+        "@playwright/mcp@latest",
+        "--isolated"
       ],
       "env": {}
     },
     "fast-playwright": {
       "type": "stdio",
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "fast-playwright-mcp"
+        "cli.js",
+        "--isolated"
       ],
       "env": {}
     },
