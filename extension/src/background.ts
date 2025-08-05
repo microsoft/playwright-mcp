@@ -130,9 +130,13 @@ class TabShareExtension {
   }
 
   private async _updateBadge(tabId: number, { text, color }: { text: string; color: string | null }): Promise<void> {
-    await chrome.action.setBadgeText({ tabId, text });
-    if (color)
-      await chrome.action.setBadgeBackgroundColor({ tabId, color });
+    try {
+      await chrome.action.setBadgeText({ tabId, text });
+      if (color)
+        await chrome.action.setBadgeBackgroundColor({ tabId, color });
+    } catch (error: any) {
+      // Ignore errors as the tab may be closed already.
+    }
   }
 
   private async _onTabRemoved(tabId: number): Promise<void> {
@@ -165,8 +169,9 @@ class TabShareExtension {
     if (!tab.active && !pending.timerId) {
       debugLog('Starting inactivity timer', tabId);
       pending.timerId = window.setTimeout(() => {
-        this._pendingTabSelection.delete(tabId);
-        pending.connection.close('Tab is not active');
+        const existed = this._pendingTabSelection.delete(tabId);
+        if (existed)
+          pending.connection.close('Tab is not active');
       }, 5000);
       return;
     }

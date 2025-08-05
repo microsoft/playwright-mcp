@@ -43,6 +43,7 @@ export class RelayConnection {
   private _detachListener: (source: chrome.debugger.Debuggee, reason: string) => void;
   private _tabPromise: Promise<void>;
   private _tabPromiseResolve!: () => void;
+  private _closed = false;
 
   onclose?: () => void;
 
@@ -51,7 +52,7 @@ export class RelayConnection {
     this._tabPromise = new Promise(resolve => this._tabPromiseResolve = resolve);
     this._ws = ws;
     this._ws.onmessage = this._onMessage.bind(this);
-    this._ws.onclose = () => this.onclose?.();
+    this._ws.onclose = () => this._onClose();
     // Store listeners for cleanup
     this._eventListener = this._onDebuggerEvent.bind(this);
     this._detachListener = this._onDebuggerDetach.bind(this);
@@ -66,9 +67,19 @@ export class RelayConnection {
   }
 
   close(message: string): void {
+    this._ws.close(1000, message);
+    // ws.onclose is called asynchronously, so we call it here to avoid forwarding
+    // CDP events to the closed connection.
+    this._onClose();
+  }
+
+  private _onClose() {
+    if (this._closed)
+      return;
+    this._closed = true;
     chrome.debugger.onEvent.removeListener(this._eventListener);
     chrome.debugger.onDetach.removeListener(this._detachListener);
-    this._ws.close(1000, message);
+    this.onclose?.();
   }
 
   private _onDebuggerEvent(source: chrome.debugger.DebuggerSession, method: string, params: any): void {
@@ -160,6 +171,7 @@ export class RelayConnection {
   }
 
   private _sendMessage(message: any): void {
-    this._ws.send(JSON.stringify(message));
+    if (this._ws.readyState === WebSocket.OPEN)
+      this._ws.send(JSON.stringify(message));
   }
 }
