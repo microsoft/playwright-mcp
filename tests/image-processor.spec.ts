@@ -15,8 +15,6 @@
  */
 
 import { test, expect } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
 
 test.describe('Image Processing Utils', () => {
   // Create a simple test image buffer for testing
@@ -45,7 +43,7 @@ test.describe('Image Processing Utils', () => {
 
   test('should validate image quality bounds correctly', async () => {
     const { validateImageOptions } = await import('../src/utils/imageProcessor.js');
-    
+
     const testCases = [
       { options: { quality: 0 }, shouldHaveErrors: true },
       { options: { quality: 101 }, shouldHaveErrors: true },
@@ -67,7 +65,7 @@ test.describe('Image Processing Utils', () => {
 
   test('should validate image dimension bounds correctly', async () => {
     const { validateImageOptions } = await import('../src/utils/imageProcessor.js');
-    
+
     const testCases = [
       { options: { maxWidth: 0 }, shouldHaveErrors: true },
       { options: { maxHeight: -1 }, shouldHaveErrors: true },
@@ -92,7 +90,7 @@ test.describe('Image Processing Utils', () => {
     const options = { quality: 80, format: 'jpeg' as const };
 
     const result = await processImage(testBuffer, 'image/png', options);
-    
+
     expect(result.contentType).toBe('image/jpeg');
     expect(result.data).toBeInstanceOf(Buffer);
     expect(result.compressionRatio).toBeLessThanOrEqual(1.0);
@@ -106,7 +104,7 @@ test.describe('Image Processing Utils', () => {
     const options = { maxWidth: 50, maxHeight: 50 };
 
     const result = await processImage(testBuffer, 'image/png', options);
-    
+
     expect(result.processedSize.width).toBeLessThanOrEqual(50);
     expect(result.processedSize.height).toBeLessThanOrEqual(50);
     expect(result.originalSize).toEqual({ width: 100, height: 100 });
@@ -129,9 +127,10 @@ test.describe('Image Processing Utils', () => {
     const testBuffer = createTestImageBuffer();
 
     const result = await processImage(testBuffer, 'image/png');
-    
+
     expect(result.data).toBe(testBuffer);
     expect(result.contentType).toBe('image/png');
     expect(result.compressionRatio).toBe(1.0);
   });
 });
+
