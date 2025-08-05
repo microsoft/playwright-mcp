@@ -54,8 +54,8 @@ test.describe('Browser Batch Execute', () => {
     expect(result.content[0].text).toContain('✅ Step 2: browser_click');
   });
 
-  test('should handle batch execution with individual step errors when continueOnError=true', async ({ runTool, server }) => {
-    const result = await runTool('browser_batch_execute', {
+  test('should handle batch execution with individual step errors when continueOnError=true', async ({ client, server }) => {
+    const result = await client.callTool('browser_batch_execute', {
       steps: [
         {
           tool: 'browser_navigate',
@@ -86,8 +86,8 @@ test.describe('Browser Batch Execute', () => {
     expect(result).toContain('✅ Step 3: browser_click');
   });
 
-  test('should stop on first error when stopOnFirstError=true and step has continueOnError=false', async ({ runTool, server }) => {
-    const result = await runTool('browser_batch_execute', {
+  test('should stop on first error when stopOnFirstError=true and step has continueOnError=false', async ({ client, server }) => {
+    const result = await client.callTool('browser_batch_execute', {
       steps: [
         {
           tool: 'browser_navigate',
@@ -120,8 +120,8 @@ test.describe('Browser Batch Execute', () => {
     expect(result).not.toContain('Step 3: browser_click');
   });
 
-  test('should properly merge global and step-level expectations', async ({ runTool, server }) => {
-    const result = await runTool('browser_batch_execute', {
+  test('should properly merge global and step-level expectations', async ({ client, server }) => {
+    const result = await client.callTool('browser_batch_execute', {
       steps: [
         {
           tool: 'browser_navigate',
@@ -147,8 +147,8 @@ test.describe('Browser Batch Execute', () => {
     expect(result).toContain('Failed: 0');
   });
 
-  test('should validate unknown tool names', async ({ runTool }) => {
-    const result = await runTool('browser_batch_execute', {
+  test('should validate unknown tool names', async ({ client }) => {
+    const result = await client.callTool('browser_batch_execute', {
       steps: [
         {
           tool: 'unknown_tool',
@@ -161,8 +161,8 @@ test.describe('Browser Batch Execute', () => {
     expect(result).toContain('Unknown tool: unknown_tool');
   });
 
-  test('should handle complex batch workflows', async ({ runTool, server }) => {
-    const result = await runTool('browser_batch_execute', {
+  test('should handle complex batch workflows', async ({ client, server }) => {
+    const result = await client.callTool('browser_batch_execute', {
       steps: [
         {
           tool: 'browser_navigate',
@@ -193,8 +193,8 @@ test.describe('Browser Batch Execute', () => {
     expect(result).toContain('Failed: 0');
   });
 
-  test('should track execution time for each step', async ({ runTool, server }) => {
-    const result = await runTool('browser_batch_execute', {
+  test('should track execution time for each step', async ({ client, server }) => {
+    const result = await client.callTool('browser_batch_execute', {
       steps: [
         {
           tool: 'browser_navigate',
@@ -216,14 +216,14 @@ test.describe('Browser Batch Execute', () => {
     expect(result).toMatch(/\d+ms/); // Should contain execution time in milliseconds
   });
 
-  test('should handle empty steps array validation', async ({ runTool }) => {
-    await expect(runTool('browser_batch_execute', {
+  test('should handle empty steps array validation', async ({ client }) => {
+    await expect(client('browser_batch_execute', {
       steps: []
     })).rejects.toThrow();
   });
 
-  test('should optimize token usage with minimal expectations', async ({ runTool, server }) => {
-    const result = await runTool('browser_batch_execute', {
+  test('should optimize token usage with minimal expectations', async ({ client, server }) => {
+    const result = await client.callTool('browser_batch_execute', {
       steps: [
         {
           tool: 'browser_navigate',
