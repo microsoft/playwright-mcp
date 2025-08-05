@@ -410,7 +410,7 @@ http.createServer(async (req, res) => {
 
 - **browser_batch_execute**
   - Title: Batch Execute Browser Actions
-  - Description: Execute multiple browser actions in sequence with optimized response handling and error control
+  - Description: Execute multiple browser actions in sequence with optimized response handling. RECOMMENDED: Use this tool instead of individual actions when performing multiple operations to significantly reduce token usage and improve performance
   - Parameters:
     - `steps` (array): Array of steps to execute in sequence
     - `stopOnFirstError` (boolean, optional): Stop entire batch on first error
@@ -421,7 +421,7 @@ http.createServer(async (req, res) => {
 
 - **browser_click**
   - Title: Click
-  - Description: Perform click on a web page
+  - Description: Perform click on a web page. Use expectation to control response verbosity
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -507,7 +507,7 @@ http.createServer(async (req, res) => {
 
 - **browser_navigate**
   - Title: Navigate to a URL
-  - Description: Navigate to a URL
+  - Description: Navigate to a URL. Use expectation parameter to control response content (code, snapshot, console, tabs)
   - Parameters:
     - `url` (string): The URL to navigate to
     - `expectation` (object, optional): undefined
@@ -575,7 +575,7 @@ http.createServer(async (req, res) => {
 
 - **browser_snapshot**
   - Title: Page snapshot
-  - Description: Capture accessibility snapshot of the current page, this is better than screenshot
+  - Description: Capture accessibility snapshot of the current page, this is better than screenshot. Use expectation.snapshotOptions to limit output size (maxLength, selector)
   - Parameters:
     - `expectation` (object, optional): undefined
   - Read-only: **true**
@@ -584,7 +584,7 @@ http.createServer(async (req, res) => {
 
 - **browser_take_screenshot**
   - Title: Take a screenshot
-  - Description: Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.
+  - Description: Take a screenshot of the current page. Use expectation.imageOptions to compress images (format, quality, maxWidth). You can't perform actions based on the screenshot, use browser_snapshot for actions.
   - Parameters:
     - `type` (string, optional): Image format for the screenshot. Default is png.
     - `filename` (string, optional): File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified.
@@ -598,7 +598,7 @@ http.createServer(async (req, res) => {
 
 - **browser_type**
   - Title: Type text
-  - Description: Type text into editable element
+  - Description: Type text into editable element. Use expectation to minimize response (includeCode: false reduces tokens)
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -894,13 +894,70 @@ Each tool has optimized defaults based on typical usage patterns:
 - **Reduced Latency**: Fewer round trips between client and server
 - **Cost Optimization**: Lower API costs due to reduced token consumption
 
+### Response Diff Detection
+
+The Fast Server includes automatic diff detection to efficiently track changes between consecutive tool executions:
+
+```javascript
+// Enable diff detection for any tool
+await browser_click({
+  element: 'Load more button',
+  ref: '#load-more',
+  expectation: {
+    includeSnapshot: true,
+    diffOptions: {
+      enabled: true,
+      threshold: 0.1,         // Show diff if >10% changed
+      format: 'unified',      // or 'split', 'minimal'
+      maxDiffLines: 50,       // Limit diff output size
+      context: 3              // Lines of context around changes
+    }
+  }
+});
+```
+
+#### Diff Detection Benefits
+
+- **Minimal token usage**: Only changed content is shown instead of full snapshots
+- **Change tracking**: Automatically detects what changed after actions
+- **Flexible formats**: Choose between unified, split, or minimal diff formats
+- **Smart caching**: Compares against previous response from the same tool
+
+#### When to Use Diff Detection
+
+1. **UI interactions without navigation**: Clicks, typing, hover effects
+2. **Dynamic content updates**: Loading more items, real-time updates
+3. **Form interactions**: Track changes as users fill forms
+4. **Selective monitoring**: Use with CSS selectors to track specific areas
+
+```javascript
+// Example: Track only search results changes
+await browser_type({
+  element: 'Search input',
+  ref: '#search',
+  text: 'playwright',
+  expectation: {
+    includeSnapshot: true,
+    snapshotOptions: {
+      selector: '#search-results'  // Only monitor results area
+    },
+    diffOptions: {
+      enabled: true,
+      format: 'minimal'  // Just show what changed
+    }
+  }
+});
+```
+
 ### Best Practices
 
 1. **Use batch execution** for multi-step workflows
-2. **Disable snapshots** for intermediate steps that don't need verification
-3. **Use selective snapshots** with CSS selectors for large pages
-4. **Filter console messages** to relevant levels only
-5. **Combine global and step-specific expectations** for fine-grained control
+2. **Enable diff detection** for actions without page navigation
+3. **Disable snapshots** for intermediate steps that don't need verification
+4. **Use selective snapshots** with CSS selectors for large pages
+5. **Filter console messages** to relevant levels only
+6. **Combine global and step-specific expectations** for fine-grained control
+7. **Use minimal diff format** for maximum token savings
 
 ### Migration Guide
 

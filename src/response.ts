@@ -17,11 +17,13 @@
 import { renderModalStates } from './tab.js';
 import { mergeExpectations } from './schemas/expectation.js';
 import { processImage } from './utils/imageProcessor.js';
+import { ResponseDiffDetector } from './utils/responseDiffDetector.js';
 
 import type { Tab, TabSnapshot } from './tab.js';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Context } from './context.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
+import type { DiffResult } from './types/diff.js';
 
 export class Response {
   private _result: string[] = [];
@@ -32,10 +34,14 @@ export class Response {
   private _includeTabs = false;
   private _tabSnapshot: TabSnapshot | undefined;
   private _expectation: NonNullable<ExpectationOptions>;
+  private _diffResult: DiffResult | undefined;
 
   readonly toolName: string;
   readonly toolArgs: Record<string, any>;
   private _isError: boolean | undefined;
+
+  // Static diff detector instance shared across all responses
+  private static diffDetector: ResponseDiffDetector = new ResponseDiffDetector();
 
   constructor(context: Context, toolName: string, toolArgs: Record<string, any>, expectation?: ExpectationOptions) {
     this._context = context;
@@ -130,6 +136,31 @@ export class Response {
       // Replace original images with processed ones
       this._images = processedImages;
     }
+
+    // Perform diff detection if enabled
+    if (this._expectation.diffOptions?.enabled) {
+      try {
+        const currentContent = this.buildContentForDiff();
+        // Ensure diffOptions has all required fields with defaults
+        const diffOptions = {
+          enabled: this._expectation.diffOptions.enabled,
+          threshold: this._expectation.diffOptions.threshold ?? 0.1,
+          format: this._expectation.diffOptions.format ?? 'unified',
+          maxDiffLines: this._expectation.diffOptions.maxDiffLines ?? 50,
+          ignoreWhitespace: this._expectation.diffOptions.ignoreWhitespace ?? true,
+          context: this._expectation.diffOptions.context ?? 3
+        };
+        this._diffResult = await Response.diffDetector.detectDiff(
+          currentContent,
+          this.toolName,
+          diffOptions
+        );
+      } catch (error) {
+        // Gracefully handle diff detection errors
+        console.error('Diff detection failed:', error);
+        this._diffResult = undefined;
+      }
+    }
   }
 
   tabSnapshot(): TabSnapshot | undefined {
@@ -138,6 +169,18 @@ export class Response {
 
   serialize(): { content: (TextContent | ImageContent)[], isError?: boolean } {
     const response: string[] = [];
+
+    // Add diff information if available and has differences
+    if (this._diffResult?.hasDifference && this._diffResult.formattedDiff) {
+      response.push('### Changes from previous response');
+      response.push(`Similarity: ${(this._diffResult.similarity * 100).toFixed(1)}%`);
+      response.push(`Changes: ${this._diffResult.metadata.addedLines} additions, ${this._diffResult.metadata.removedLines} deletions`);
+      response.push('');
+      response.push('```diff');
+      response.push(this._diffResult.formattedDiff);
+      response.push('```');
+      response.push('');
+    }
 
     // Start with command result.
     if (this._result.length) {
@@ -249,6 +292,49 @@ ${this._code.join('\n')}
 
 
     return filtered;
+  }
+
+  /**
+   * Build content string for diff detection
+   * Includes all relevant response information to detect meaningful changes
+   */
+  private buildContentForDiff(): string {
+    const content: string[] = [];
+
+    // Include result content
+    if (this._result.length) {
+      content.push('### Result');
+      content.push(this._result.join('\n'));
+    }
+
+    // Include code if available
+    if (this._code.length) {
+      content.push('### Code');
+      content.push(this._code.join('\n'));
+    }
+
+    // Include tab snapshot if available and expectation allows it
+    if (this._tabSnapshot && this._expectation.includeSnapshot) {
+      content.push('### Page State');
+      content.push(`URL: ${this._tabSnapshot.url}`);
+      content.push(`Title: ${this._tabSnapshot.title}`);
+      content.push('Snapshot:');
+      content.push(this._tabSnapshot.ariaSnapshot);
+    }
+
+    // Include console messages if available and expectation allows it
+    if (this._tabSnapshot?.consoleMessages.length && this._expectation.includeConsole) {
+      const filteredMessages = this.filterConsoleMessages(
+        this._tabSnapshot.consoleMessages,
+        this._expectation.consoleOptions
+      );
+      if (filteredMessages.length) {
+        content.push('### Console Messages');
+        filteredMessages.forEach(msg => content.push(`- ${msg.toString()}`));
+      }
+    }
+
+    return content.join('\n');
   }
 }
 

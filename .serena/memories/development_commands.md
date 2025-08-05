@@ -1,53 +1,36 @@
-# Development Commands
+# 開発コマンド
 
-## Essential Commands
+## ビルド関連
+- `npm run build` - TypeScriptのビルド（メインとベンチマーク）
+- `npm run build:benchmark` - ベンチマークのみビルド
+- `npm run watch` - TypeScriptの監視ビルド
+- `npm run clean` - libディレクトリのクリーンアップ
 
-### Build and Development
-- `npm run build` - Compile TypeScript to JavaScript
-- `npm run watch` - Watch mode compilation
-- `npm run clean` - Remove compiled files from lib directory
+## テスト関連
+- `npm test` - Playwrightテスト実行
+- `npm run ctest` - Chrome プロジェクトのテスト
+- `npm run ftest` - Firefox プロジェクトのテスト
+- `npm run wtest` - WebKit プロジェクトのテスト
 
-### Code Quality
-- `npm run lint` - Run ESLint and TypeScript checks + update README
-- `npm run lint-fix` - Auto-fix ESLint issues
-- `npm run update-readme` - Update README with tool documentation
+## 品質チェック
+- `npm run lint` - ESLint + TypeScript型チェック
+- `npm run lint-fix` - ESLintの自動修正
+- `npm run update-readme` - README.mdの自動更新
 
-### Testing
-- `npm test` - Run all tests with Playwright
-- `npm run ctest` - Run tests in Chrome only
-- `npm run ftest` - Run tests in Firefox only
-- `npm run wtest` - Run tests in WebKit only
+## ベンチマーク
+- `npm run benchmark` - パフォーマンスベンチマーク実行
+- `npm run benchmark:verbose` - 詳細ベンチマーク
+- `npm run benchmark:quiet` - 簡潔ベンチマーク
 
-### Server Operations
-- `npm run run-server` - Start the MCP server manually
-- `npx @playwright/mcp@latest` - Run the published version
-- `npx @playwright/mcp@latest --help` - Show command line options
+## サーバー実行
+- `npm run run-server` - ブラウザサーバーの起動
 
-### Publishing
-- `npm run npm-publish` - Full publish workflow (clean, build, test, publish)
+## パブリッシュ
+- `npm run npm-publish` - クリーン→ビルド→テスト→パブリッシュ
 
-## Configuration Options
-The server accepts various command line arguments:
-- `--browser <browser>` - Browser type (chrome, firefox, webkit, msedge)
-- `--headless` - Run in headless mode
-- `--port <port>` - Port for HTTP transport
-- `--config <path>` - Configuration file path
-- `--caps <caps>` - Additional capabilities (vision, pdf)
-- `--isolated` - Keep browser profile in memory
-
-## System Commands (macOS/Darwin)
-- `git` - Version control
-- `ls` - List directory contents
-- `cd` - Change directory
-- `grep` - Search text patterns
-- `find` - Find files and directories
-- `cat` - Display file contents
-- `chmod` - Change file permissions
-- `which` - Locate command
-
-## Task Completion Workflow
-1. Make code changes
-2. Run `npm run lint` to check code quality
-3. Run `npm test` to ensure tests pass
-4. Run `npm run build` to compile
-5. Test manually if needed with `npm run run-server`
+## システムコマンド（Darwin/macOS）
+- `ls` - ファイル一覧
+- `cd` - ディレクトリ移動
+- `grep` - テキスト検索（ripgrepのrgが推奨）
+- `find` - ファイル検索
+- `git` - バージョン管理

@@ -24,7 +24,7 @@ const wait = defineTool({
   schema: {
     name: 'browser_wait_for',
     title: 'Wait for',
-    description: 'Wait for text to appear or disappear or a specified time to pass',
+    description: 'Wait for text to appear or disappear or a specified time to pass. Use expectation to control response content, diffOptions to efficiently track changes',
     inputSchema: z.object({
       time: z.number().optional().describe('The time to wait in seconds'),
       text: z.string().optional().describe('The text to wait for'),
