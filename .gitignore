@@ -9,3 +9,13 @@ playwright-report/
 sessions/
 .playwright-mcp/
 benchmark/*.json
+
+# Test files
+*.test.js
+*.test.ts
+__tests__/
+test-results.json
+*-test.json
+
+# Serena cache
+.serena/cache/

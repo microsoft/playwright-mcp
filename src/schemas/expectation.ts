@@ -17,6 +17,18 @@
 import { z } from 'zod';
 
 /**
+ * Schema for diff options configuration
+ */
+export const diffOptionsSchema = z.object({
+  enabled: z.boolean().default(false),
+  threshold: z.number().min(0).max(1).default(0.1),
+  format: z.enum(['unified', 'split', 'minimal']).default('unified'),
+  maxDiffLines: z.number().positive().default(50),
+  ignoreWhitespace: z.boolean().default(true),
+  context: z.number().min(0).default(3)
+}).optional();
+
+/**
  * Schema for expectation configuration that controls response content
  */
 export const expectationSchema = z.object({
@@ -41,7 +53,8 @@ export const expectationSchema = z.object({
     maxWidth: z.number().optional().describe('Maximum width in pixels'),
     maxHeight: z.number().optional().describe('Maximum height in pixels'),
     format: z.enum(['jpeg', 'png', 'webp']).optional()
-  }).optional()
+  }).optional(),
+  diffOptions: diffOptionsSchema
 }).optional();
 
 export type ExpectationOptions = z.infer<typeof expectationSchema>;
@@ -50,7 +63,7 @@ export type ExpectationOptions = z.infer<typeof expectationSchema>;
  * Tool-specific default expectation configurations
  * These optimize token usage based on typical tool usage patterns
  */
-const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions'>>> = {
+const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'>>> = {
   // Navigation tools need full context for verification
   browser_navigate: {
     includeSnapshot: true,
@@ -117,7 +130,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
 /**
  * General default configuration for tools without specific settings
  */
-const GENERAL_DEFAULT: Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions'>> = {
+const GENERAL_DEFAULT: Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'>> = {
   includeSnapshot: true,
   includeConsole: true,
   includeDownloads: true,
@@ -130,7 +143,7 @@ const GENERAL_DEFAULT: Required<Omit<NonNullable<ExpectationOptions>, 'snapshotO
  * @param toolName - Name of the tool (e.g., 'click', 'navigate', 'screenshot')
  * @returns Default expectation configuration optimized for the tool
  */
-export function getDefaultExpectation(toolName: string): Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions'>> {
+export function getDefaultExpectation(toolName: string): Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'>> {
   return TOOL_DEFAULTS[toolName] || GENERAL_DEFAULT;
 }
 
@@ -158,6 +171,7 @@ export function mergeExpectations(
     includeCode: userExpectation.includeCode ?? defaults.includeCode,
     snapshotOptions: userExpectation.snapshotOptions,
     consoleOptions: userExpectation.consoleOptions,
-    imageOptions: userExpectation.imageOptions
+    imageOptions: userExpectation.imageOptions,
+    diffOptions: userExpectation.diffOptions
   };
 }

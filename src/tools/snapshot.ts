@@ -26,7 +26,7 @@ const snapshot = defineTool({
   schema: {
     name: 'browser_snapshot',
     title: 'Page snapshot',
-    description: 'Capture accessibility snapshot of the current page, this is better than screenshot. Use expectation.snapshotOptions to limit output size (maxLength, selector)',
+    description: 'Capture accessibility snapshot of the current page. Use expectation to control response content, snapshotOptions to limit scope',
     inputSchema: z.object({
       expectation: expectationSchema
     }),
@@ -73,7 +73,7 @@ const click = defineTabTool({
   schema: {
     name: 'browser_click',
     title: 'Click',
-    description: 'Perform click on a web page. Use expectation to control response verbosity',
+    description: 'Perform click on a web page. Use expectation to control response content, diffOptions to efficiently track changes',
     inputSchema: clickSchema,
     type: 'destructive',
   },
@@ -102,7 +102,7 @@ const drag = defineTabTool({
   schema: {
     name: 'browser_drag',
     title: 'Drag mouse',
-    description: 'Perform drag and drop between two elements',
+    description: 'Perform drag and drop between two elements. Use expectation to control response content, diffOptions to efficiently track changes',
     inputSchema: z.object({
       startElement: z.string().describe('Human-readable source element description used to obtain the permission to interact with the element'),
       startRef: z.string().describe('Exact source element reference from the page snapshot'),
@@ -132,7 +132,7 @@ const hover = defineTabTool({
   schema: {
     name: 'browser_hover',
     title: 'Hover mouse',
-    description: 'Hover over element on page',
+    description: 'Hover over element on page. Use expectation to control response content, diffOptions to efficiently track changes',
     inputSchema: elementSchema.extend({
       expectation: expectationSchema
     }),
