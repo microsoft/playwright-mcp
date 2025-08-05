@@ -119,9 +119,9 @@ export class Response {
       for (const image of this._images) {
         try {
           const processedResult = await processImage(
-            image.data,
-            image.contentType,
-            this._expectation.imageOptions
+              image.data,
+              image.contentType,
+              this._expectation.imageOptions
           );
           processedImages.push({
             contentType: processedResult.contentType,
@@ -129,6 +129,8 @@ export class Response {
           });
         } catch (error) {
           // If processing fails, keep the original image
+          // TODO: Use proper logging instead of console
+          // eslint-disable-next-line no-console
           console.error('Image processing failed:', error);
           processedImages.push(image);
         }
@@ -151,12 +153,14 @@ export class Response {
           context: this._expectation.diffOptions.context ?? 3
         };
         this._diffResult = await Response.diffDetector.detectDiff(
-          currentContent,
-          this.toolName,
-          diffOptions
+            currentContent,
+            this.toolName,
+            diffOptions
         );
       } catch (error) {
         // Gracefully handle diff detection errors
+        // TODO: Use proper logging instead of console
+        // eslint-disable-next-line no-console
         console.error('Diff detection failed:', error);
         this._diffResult = undefined;
       }
@@ -258,7 +262,7 @@ ${this._code.join('\n')}
     lines.push(`### Page state`);
     lines.push(`- Page URL: ${tabSnapshot.url}`);
     lines.push(`- Page Title: ${tabSnapshot.title}`);
-    
+
     // Only include snapshot if expectation allows it
     if (this._expectation.includeSnapshot) {
       lines.push(`- Page Snapshot:`);
@@ -325,8 +329,8 @@ ${this._code.join('\n')}
     // Include console messages if available and expectation allows it
     if (this._tabSnapshot?.consoleMessages.length && this._expectation.includeConsole) {
       const filteredMessages = this.filterConsoleMessages(
-        this._tabSnapshot.consoleMessages,
-        this._expectation.consoleOptions
+          this._tabSnapshot.consoleMessages,
+          this._expectation.consoleOptions
       );
       if (filteredMessages.length) {
         content.push('### Console Messages');
@@ -336,38 +340,6 @@ ${this._code.join('\n')}
 
     return content.join('\n');
   }
-}
-
-function renderTabSnapshot(tabSnapshot: TabSnapshot): string {
-  const lines: string[] = [];
-
-  if (tabSnapshot.consoleMessages.length) {
-    lines.push(`### New console messages`);
-    for (const message of tabSnapshot.consoleMessages)
-      lines.push(`- ${trim(message.toString(), 100)}`);
-    lines.push('');
-  }
-
-  if (tabSnapshot.downloads.length) {
-    lines.push(`### Downloads`);
-    for (const entry of tabSnapshot.downloads) {
-      if (entry.finished)
-        lines.push(`- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`);
-      else
-        lines.push(`- Downloading file ${entry.download.suggestedFilename()} ...`);
-    }
-    lines.push('');
-  }
-
-  lines.push(`### Page state`);
-  lines.push(`- Page URL: ${tabSnapshot.url}`);
-  lines.push(`- Page Title: ${tabSnapshot.title}`);
-  lines.push(`- Page Snapshot:`);
-  lines.push('```yaml');
-  lines.push(tabSnapshot.ariaSnapshot);
-  lines.push('```');
-
-  return lines.join('\n');
 }
 
 function renderTabsMarkdown(tabs: Tab[], force: boolean = false): string[] {

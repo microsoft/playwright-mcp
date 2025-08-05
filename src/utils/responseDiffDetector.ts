@@ -2,8 +2,8 @@
  * Copyright (c) Microsoft Corporation.
  */
 
-import diff from 'fast-diff';
 import { createHash } from 'crypto';
+import diff from 'fast-diff';
 import { DiffOptions, DiffResult, DiffSegment, ResponseStorage, DiffMetadata } from '../types/diff.js';
 import { DiffFormatter } from './diffFormatter.js';
 
@@ -47,7 +47,7 @@ export class ResponseDiffDetector {
     const hasDifference = similarity < (1 - options.threshold);
 
     let formattedDiff = '';
-    let metadata: DiffMetadata = {
+    const metadata: DiffMetadata = {
       addedLines: 0,
       removedLines: 0,
       contextLines: 0,
@@ -57,13 +57,13 @@ export class ResponseDiffDetector {
     if (hasDifference) {
       // Calculate metadata
       diffSegments.forEach(segment => {
-        if (segment.type === 'add') {
+        if (segment.type === 'add')
           metadata.addedLines += segment.value.split('\n').length - 1;
-        } else if (segment.type === 'remove') {
+        else if (segment.type === 'remove')
           metadata.removedLines += segment.value.split('\n').length - 1;
-        } else {
+        else
           metadata.contextLines += segment.value.split('\n').length - 1;
-        }
+
       });
 
       // Format the diff based on requested format
@@ -82,7 +82,7 @@ export class ResponseDiffDetector {
       // Limit output size
       if (formattedDiff.split('\n').length > options.maxDiffLines) {
         const lines = formattedDiff.split('\n');
-        formattedDiff = lines.slice(0, options.maxDiffLines).join('\n') + 
+        formattedDiff = lines.slice(0, options.maxDiffLines).join('\n') +
           `\n... (${lines.length - options.maxDiffLines} more lines truncated)`;
       }
     }
@@ -106,7 +106,7 @@ export class ResponseDiffDetector {
   storeResponse(content: string, toolName: string): void {
     const cacheKey = this.generateCacheKey(toolName);
     const hash = createHash('sha256').update(content).digest('hex');
-    
+
     this.storage.set(cacheKey, {
       toolName,
       timestamp: Date.now(),
@@ -145,9 +145,12 @@ export class ResponseDiffDetector {
    * @returns Similarity ratio (0.0 to 1.0)
    */
   private calculateSimilarity(text1: string, text2: string): number {
-    if (text1 === text2) return 1.0;
-    if (text1.length === 0 && text2.length === 0) return 1.0;
-    if (text1.length === 0 || text2.length === 0) return 0.0;
+    if (text1 === text2)
+      return 1.0;
+    if (text1.length === 0 && text2.length === 0)
+      return 1.0;
+    if (text1.length === 0 || text2.length === 0)
+      return 0.0;
 
     const diffSegments = this.calculateDiff(text1, text2);
     let equalChars = 0;
@@ -155,9 +158,9 @@ export class ResponseDiffDetector {
 
     diffSegments.forEach(segment => {
       totalChars += segment.value.length;
-      if (segment.type === 'equal') {
+      if (segment.type === 'equal')
         equalChars += segment.value.length;
-      }
+
     });
 
     return totalChars > 0 ? equalChars / totalChars : 0.0;

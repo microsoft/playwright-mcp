@@ -18,7 +18,8 @@ export class DiffFormatter {
    * @returns Formatted diff string
    */
   formatUnified(segments: DiffSegment[], context: number = 3): string {
-    if (segments.length === 0) return '';
+    if (segments.length === 0)
+      return '';
 
     const lines: string[] = [];
     let hasChanges = false;
@@ -29,30 +30,30 @@ export class DiffFormatter {
       if (segment.type === 'add') {
         hasChanges = true;
         segment.value.split('\n').forEach(line => {
-          if (line || segment.value.endsWith('\n')) {
+          if (line || segment.value.endsWith('\n'))
             lines.push('+ ' + line);
-          }
+
         });
       } else if (segment.type === 'remove') {
         hasChanges = true;
         segment.value.split('\n').forEach(line => {
-          if (line || segment.value.endsWith('\n')) {
+          if (line || segment.value.endsWith('\n'))
             lines.push('- ' + line);
-          }
+
         });
       } else if (segment.type === 'equal' && hasChanges) {
         // Show context lines after changes
         const contextLines = segment.value.split('\n');
         const showLines = Math.min(context, contextLines.length);
-        
-        for (let j = 0; j < showLines && j < contextLines.length - 1; j++) {
+
+        for (let j = 0; j < showLines && j < contextLines.length - 1; j++)
           lines.push('  ' + contextLines[j]);
-        }
-        
+
+
         // Stop adding context after showing requested lines
-        if (contextLines.length > showLines) {
+        if (contextLines.length > showLines)
           break;
-        }
+
       }
     }
 
@@ -71,15 +72,15 @@ export class DiffFormatter {
     segments.forEach(segment => {
       if (segment.type === 'remove') {
         segment.value.split('\n').forEach(line => {
-          if (line || segment.value.endsWith('\n')) {
+          if (line || segment.value.endsWith('\n'))
             removedLines.push(line);
-          }
+
         });
       } else if (segment.type === 'add') {
         segment.value.split('\n').forEach(line => {
-          if (line || segment.value.endsWith('\n')) {
+          if (line || segment.value.endsWith('\n'))
             addedLines.push(line);
-          }
+
         });
       }
     });
@@ -92,7 +93,8 @@ export class DiffFormatter {
     }
 
     if (addedLines.length > 0) {
-      if (result.length > 0) result.push('');
+      if (result.length > 0)
+        result.push('');
       result.push('+++ Added');
       addedLines.forEach(line => result.push(line));
     }
@@ -109,11 +111,11 @@ export class DiffFormatter {
     const changes: string[] = [];
 
     segments.forEach(segment => {
-      if (segment.type === 'add') {
+      if (segment.type === 'add')
         changes.push('+' + segment.value);
-      } else if (segment.type === 'remove') {
+      else if (segment.type === 'remove')
         changes.push('-' + segment.value);
-      }
+
     });
 
     return changes.join('');
@@ -126,7 +128,8 @@ export class DiffFormatter {
    * @returns Highlighted text
    */
   private highlightChanges(text: string, type: 'add' | 'remove'): string {
-    if (!text) return text;
+    if (!text)
+      return text;
 
     // Simple ANSI color highlighting for terminal output
     const colors = {

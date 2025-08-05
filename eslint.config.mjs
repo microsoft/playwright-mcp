@@ -232,4 +232,16 @@ export default [
       ...noBooleanCompareRules,
     },
   },
+  {
+    files: ["benchmark/**/*.ts", "tests/**/*.ts"],
+    plugins,
+    languageOptions,
+    rules: {
+      ...baseRules,
+      ...importOrderRules,
+      ...noFloatingPromisesRules,
+      ...noBooleanCompareRules,
+      "no-console": "off", // Allow console.log in benchmark and test files
+    },
+  },
 ];

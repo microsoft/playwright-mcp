@@ -1,4 +1,19 @@
 /**
+ * Copyright (c) Microsoft Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Utility functions for benchmark operations
  */
 
@@ -13,7 +28,7 @@ export class ProcessUtils {
    */
   static async cleanup(): Promise<void> {
     console.log('🧹 Cleaning up existing processes...');
-    
+
     for (const [cmd, ...args] of KILL_COMMANDS) {
       try {
         const proc = spawn(cmd, args);
@@ -22,7 +37,7 @@ export class ProcessUtils {
         // Ignore errors - process might not exist
       }
     }
-    
+
     // Wait for processes to die
     await new Promise<void>(resolve => setTimeout(resolve, 2000));
   }
@@ -56,9 +71,9 @@ export class ValidationUtils {
    * Validate MCP response format
    */
   static isValidMCPResponse(response: any): boolean {
-    return response && 
-           typeof response === 'object' && 
-           response.jsonrpc === '2.0' && 
+    return response &&
+           typeof response === 'object' &&
+           response.jsonrpc === '2.0' &&
            response.id !== undefined;
   }
 }
@@ -71,7 +86,7 @@ export class ResultUtils {
     const responseText = response.result?.content?.[0]?.text || '';
     const size = JSON.stringify(response).length;
     const tokens = Math.ceil(responseText.length / 4); // Rough token estimation
-    
+
     return { size, tokens };
   }
 
@@ -79,7 +94,8 @@ export class ResultUtils {
    * Calculate percentage reduction
    */
   static calculateReduction(original: number, optimized: number): number {
-    if (original === 0) return 0;
+    if (original === 0)
+      return 0;
     return Number(((1 - optimized / original) * 100).toFixed(1));
   }
 
@@ -92,7 +108,7 @@ export class ResultUtils {
     let totalOriginalTokens = 0;
     let totalFastTokens = 0;
     let validComparisons = 0;
-    
+
     for (const result of results) {
       if (result.original.success && result.fast.success) {
         totalOriginalSize += result.original.totalSize;
@@ -102,15 +118,15 @@ export class ResultUtils {
         validComparisons++;
       }
     }
-    
+
     return {
       totalOriginalSize,
       totalFastSize,
       totalOriginalTokens,
       totalFastTokens,
-      avgSizeReduction: validComparisons > 0 ? 
+      avgSizeReduction: validComparisons > 0 ?
         this.calculateReduction(totalOriginalSize, totalFastSize) : 0,
-      avgTokenReduction: validComparisons > 0 ? 
+      avgTokenReduction: validComparisons > 0 ?
         this.calculateReduction(totalOriginalTokens, totalFastTokens) : 0,
       validComparisons
     };
@@ -122,13 +138,13 @@ export class ResultUtils {
   static saveResults(results: BenchmarkResult[], directory: string, prefix: string): string {
     const timestamp = new Date().toISOString().replace(/:/g, '-');
     const filename = `${directory}/${prefix}-${timestamp}.json`;
-    
+
     const output: BenchmarkSummary = {
       timestamp: new Date().toISOString(),
       results,
       summary: this.generateSummary(results)
     };
-    
+
     writeFileSync(filename, JSON.stringify(output, null, 2));
     return filename;
   }
@@ -139,9 +155,9 @@ export class RetryUtils {
    * Get alternative URL for retry attempts
    */
   static getAlternativeUrl(retryCount: number, originalUrl: string): string {
-    if (retryCount > 0 && retryCount <= ALTERNATIVE_URLS.length) {
+    if (retryCount > 0 && retryCount <= ALTERNATIVE_URLS.length)
       return ALTERNATIVE_URLS[retryCount - 1];
-    }
+
     return originalUrl;
   }
 
@@ -155,20 +171,20 @@ export class RetryUtils {
     onRetry?: (attempt: number, error: Error) => void
   ): Promise<T> {
     let lastError: Error;
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
       } catch (error) {
         lastError = error as Error;
-        
+
         if (attempt < maxRetries) {
           onRetry?.(attempt + 1, lastError);
           await ProcessUtils.wait(delay);
         }
       }
     }
-    
+
     throw lastError!;
   }
 }

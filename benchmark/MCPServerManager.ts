@@ -1,4 +1,19 @@
 /**
+ * Copyright (c) Microsoft Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * MCP Server Management
  */
 
@@ -12,7 +27,7 @@ export class MCPServerManager {
     original: null,
     fast: null
   };
-  
+
   private config: BenchmarkConfig;
 
   constructor(config: BenchmarkConfig) {
@@ -24,7 +39,7 @@ export class MCPServerManager {
    */
   async startServers(): Promise<void> {
     console.log('🚀 Starting MCP servers...');
-    
+
     // Start original server
     const originalConfig = this.config.servers.original;
     this.servers.original = spawn(originalConfig.command, originalConfig.args, {
@@ -32,7 +47,7 @@ export class MCPServerManager {
       env: { ...process.env, ...originalConfig.env },
       cwd: originalConfig.cwd || process.cwd()
     });
-    
+
     // Start fast server
     const fastConfig = this.config.servers.fast;
     this.servers.fast = spawn(fastConfig.command, fastConfig.args, {
@@ -40,17 +55,17 @@ export class MCPServerManager {
       env: { ...process.env, ...fastConfig.env },
       cwd: fastConfig.cwd || process.cwd()
     });
-    
+
     // Add error handlers
     this.addErrorHandlers();
-    
+
     // Wait for servers to initialize
     console.log('⏳ Waiting for servers to initialize...');
     await ProcessUtils.wait(this.config.timeouts.initialization);
-    
+
     // Initialize connections
     await this.initializeConnections();
-    
+
     console.log('✅ Servers ready');
   }
 
@@ -58,11 +73,11 @@ export class MCPServerManager {
    * Add error handlers to server processes
    */
   private addErrorHandlers(): void {
-    this.servers.original?.on('error', (err) => {
+    this.servers.original?.on('error', err => {
       console.error('Original server error:', err);
     });
-    
-    this.servers.fast?.on('error', (err) => {
+
+    this.servers.fast?.on('error', err => {
       console.error('Fast server error:', err);
     });
   }
@@ -72,9 +87,9 @@ export class MCPServerManager {
    */
   private async initializeConnections(): Promise<void> {
     for (const [serverType, server] of Object.entries(this.servers)) {
-      if (server) {
+      if (server)
         await this.initializeServer(server, serverType as ServerType);
-      }
+
     }
   }
 
@@ -83,10 +98,10 @@ export class MCPServerManager {
    */
   async initializeServer(server: ChildProcess, serverType: ServerType): Promise<void> {
     console.log(`  Initializing ${serverType} server...`);
-    
-    if (!ValidationUtils.isProcessRunning(server)) {
+
+    if (!ValidationUtils.isProcessRunning(server))
       throw new Error(`${serverType} server process is not running`);
-    }
+
 
     // Send initialize request
     const initRequest: MCPRequest = {
@@ -101,18 +116,18 @@ export class MCPServerManager {
     };
 
     server.stdin?.write(JSON.stringify(initRequest) + '\n');
-    
+
     // Wait for initialize response
     await this.waitForResponse(server, 'init', this.config.timeouts.initialization);
-    
+
     // Send initialized notification
     const initializedNotification: MCPRequest = {
       jsonrpc: '2.0',
       method: 'notifications/initialized'
     };
-    
+
     server.stdin?.write(JSON.stringify(initializedNotification) + '\n');
-    
+
     // Additional wait for full initialization
     await ProcessUtils.wait(1000);
   }
@@ -121,8 +136,8 @@ export class MCPServerManager {
    * Wait for specific MCP response
    */
   private async waitForResponse(
-    server: ChildProcess, 
-    requestId: string | number, 
+    server: ChildProcess,
+    requestId: string | number,
     timeoutMs: number
   ): Promise<MCPResponse> {
     return new Promise((resolve, reject) => {
@@ -130,7 +145,7 @@ export class MCPServerManager {
         server.stdout?.removeListener('data', handler);
         reject(new Error(`Timeout waiting for response to ${requestId}`));
       }, timeoutMs);
-      
+
       const handler = (data: Buffer) => {
         const lines = data.toString().split('\n');
         for (const line of lines) {
@@ -149,7 +164,7 @@ export class MCPServerManager {
           }
         }
       };
-      
+
       server.stdout?.on('data', handler);
     });
   }
@@ -158,15 +173,15 @@ export class MCPServerManager {
    * Call a tool on a specific server
    */
   async callTool(
-    serverType: ServerType, 
-    toolName: string, 
+    serverType: ServerType,
+    toolName: string,
     args: Record<string, any> = {}
   ): Promise<{ size: number; tokens: number; response: MCPResponse }> {
     const server = this.servers[serverType];
-    
-    if (!server || !ValidationUtils.isProcessRunning(server)) {
+
+    if (!server || !ValidationUtils.isProcessRunning(server))
       throw new Error(`${serverType} server is not available`);
-    }
+
 
     const request: MCPRequest = {
       jsonrpc: '2.0',
@@ -179,22 +194,22 @@ export class MCPServerManager {
     };
 
     server.stdin?.write(JSON.stringify(request) + '\n');
-    
+
     // Use longer timeout for screenshot operations
-    const timeoutMs = toolName.includes('screenshot') ? 
-      this.config.timeouts.screenshotCall : 
+    const timeoutMs = toolName.includes('screenshot') ?
+      this.config.timeouts.screenshotCall :
       this.config.timeouts.toolCall;
-    
+
     const response = await this.waitForResponse(server, request.id!, timeoutMs);
-    
-    if (response.error) {
+
+    if (response.error)
       throw new Error(`Tool call failed: ${response.error.message}`);
-    }
+
 
     const responseText = response.result?.content?.[0]?.text || '';
     const size = JSON.stringify(response).length;
     const tokens = Math.ceil(responseText.length / 4);
-    
+
     return { size, tokens, response };
   }
 
@@ -218,16 +233,17 @@ export class MCPServerManager {
    */
   async stopServer(serverType: ServerType): Promise<void> {
     const server = this.servers[serverType];
-    if (!server) return;
-    
+    if (!server)
+      return;
+
     console.log(`🛑 Stopping ${serverType} server...`);
-    
+
     try {
       server.kill('SIGTERM');
-      
+
       // Wait a bit for graceful shutdown
       await ProcessUtils.wait(1000);
-      
+
       // Force kill if still running
       if (ValidationUtils.isProcessRunning(server)) {
         server.kill('SIGKILL');
@@ -236,7 +252,7 @@ export class MCPServerManager {
     } catch (error) {
       console.warn(`Warning: Error shutting down ${serverType} server:`, error);
     }
-    
+
     this.servers[serverType] = null;
   }
 
@@ -245,11 +261,11 @@ export class MCPServerManager {
    */
   async shutdown(): Promise<void> {
     console.log('\n🧹 Shutting down servers...');
-    
-    for (const serverType of Object.keys(this.servers) as ServerType[]) {
+
+    for (const serverType of Object.keys(this.servers) as ServerType[])
       await this.stopServer(serverType);
-    }
-    
+
+
     await ProcessUtils.wait(1000);
   }
 }

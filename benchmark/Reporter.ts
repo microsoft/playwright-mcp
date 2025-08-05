@@ -1,4 +1,19 @@
 /**
+ * Copyright (c) Microsoft Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Results reporting and analysis
  */
 
@@ -24,28 +39,28 @@ export class Reporter {
   ): void {
     console.log(`\n📊 COMPARISON RESULTS`);
     console.log(`=====================`);
-    
+
     for (let i = 0; i < originalResults.length; i++) {
       const original = originalResults[i];
       const fast = fastResults[i];
-      
+
       console.log(`\n📋 ${original.name}`);
       console.log(`   ${original.description}`);
-      
+
       if (original.result.success && fast.result.success) {
         const sizeReduction = ResultUtils.calculateReduction(
-          original.result.totalSize, 
-          fast.result.totalSize
+            original.result.totalSize,
+            fast.result.totalSize
         );
         const tokenReduction = ResultUtils.calculateReduction(
-          original.result.totalTokens, 
-          fast.result.totalTokens
+            original.result.totalTokens,
+            fast.result.totalTokens
         );
-        
+
         console.log(`   📊 Results:`);
         console.log(`      Size: ${original.result.totalSize} → ${fast.result.totalSize} bytes (${sizeReduction}% reduction)`);
         console.log(`      Tokens: ~${original.result.totalTokens} → ~${fast.result.totalTokens} (${tokenReduction}% reduction)`);
-        
+
         // Store result for summary
         this.addResult({
           name: original.name,
@@ -65,9 +80,9 @@ export class Reporter {
   printSummary(): void {
     console.log('\n📊 SUMMARY');
     console.log('==========');
-    
+
     const summary = ResultUtils.generateSummary(this.results);
-    
+
     if (summary.validComparisons > 0) {
       console.log(`Valid comparisons: ${summary.validComparisons}`);
       console.log(`Average size reduction: ${summary.avgSizeReduction}%`);
@@ -85,24 +100,24 @@ export class Reporter {
   printDetailedAnalysis(): void {
     console.log('\n📈 DETAILED ANALYSIS');
     console.log('====================');
-    
+
     for (const result of this.results) {
       if (result.original.success && result.fast.success) {
         console.log(`\n🔍 ${result.name}:`);
-        
+
         const sizeReduction = ResultUtils.calculateReduction(
-          result.original.totalSize, 
-          result.fast.totalSize
+            result.original.totalSize,
+            result.fast.totalSize
         );
         const tokenReduction = ResultUtils.calculateReduction(
-          result.original.totalTokens, 
-          result.fast.totalTokens
+            result.original.totalTokens,
+            result.fast.totalTokens
         );
-        
+
         console.log(`   Size reduction: ${sizeReduction}%`);
         console.log(`   Token reduction: ${tokenReduction}%`);
         console.log(`   Steps: ${result.original.stepResults.length}`);
-        
+
         // Show step-by-step comparison
         this.printStepComparison(result);
       }
@@ -114,25 +129,27 @@ export class Reporter {
    */
   private printStepComparison(result: BenchmarkResult): void {
     console.log('   Step details:');
-    
+
     for (let i = 0; i < result.original.stepResults.length; i++) {
       const originalStep = result.original.stepResults[i];
       const fastStep = result.fast.stepResults[i];
-      
+
       if (originalStep.error || fastStep.error) {
         console.log(`     Step ${i + 1}: ERROR`);
-        if (originalStep.error) console.log(`       Original: ${originalStep.error}`);
-        if (fastStep.error) console.log(`       Fast: ${fastStep.error}`);
+        if (originalStep.error)
+          console.log(`       Original: ${originalStep.error}`);
+        if (fastStep.error)
+          console.log(`       Fast: ${fastStep.error}`);
       } else {
         const stepSizeReduction = ResultUtils.calculateReduction(
-          originalStep.size, 
-          fastStep.size
+            originalStep.size,
+            fastStep.size
         );
         const stepTokenReduction = ResultUtils.calculateReduction(
-          originalStep.tokens, 
-          fastStep.tokens
+            originalStep.tokens,
+            fastStep.tokens
         );
-        
+
         console.log(`     Step ${i + 1}: ${stepSizeReduction}% size, ${stepTokenReduction}% tokens`);
       }
     }
@@ -172,7 +189,7 @@ export class Reporter {
    * Check if there are any valid results
    */
   hasValidResults(): boolean {
-    return this.results.some(result => 
+    return this.results.some(result =>
       result.original.success && result.fast.success
     );
   }
@@ -182,12 +199,13 @@ export class Reporter {
    */
   getSuccessRate(): { original: number; fast: number; combined: number } {
     const total = this.results.length;
-    if (total === 0) return { original: 0, fast: 0, combined: 0 };
-    
+    if (total === 0)
+      return { original: 0, fast: 0, combined: 0 };
+
     const originalSuccesses = this.results.filter(r => r.original.success).length;
     const fastSuccesses = this.results.filter(r => r.fast.success).length;
     const combinedSuccesses = this.results.filter(r => r.original.success && r.fast.success).length;
-    
+
     return {
       original: Math.round((originalSuccesses / total) * 100),
       fast: Math.round((fastSuccesses / total) * 100),

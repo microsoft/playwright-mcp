@@ -1,50 +1,50 @@
-# レスポンス差分検出機能 Design Doc
+# Response Diff Detection Feature Design Doc
 
-## 1. 概要
+## 1. Overview
 
-### 1.1 背景
-現在のfast-playwright-mcpでは、ブラウザ操作後のレスポンス内容を毎回フルで返しており、類似した操作や同じページでの複数操作において冗長な情報が多く含まれています。これにより、トークン使用量の増加とレスポンス処理時間の増加が発生しています。
+### 1.1 Background
+The current fast-playwright-mcp returns full response content after every browser operation, resulting in redundant information for similar operations or multiple operations on the same page. This causes increased token usage and longer response processing times.
 
-### 1.2 目的
-- **トークン使用量の削減**: 前回レスポンスとの差分のみを返すことで、大幅なトークン削減を実現
-- **レスポンス効率化**: 変更部分のみに焦点を当てた、より効率的な情報提供
-- **既存システムとの統合**: 現在のexpectationシステムを拡張する形での実装
+### 1.2 Purpose
+- **Token Usage Reduction**: Achieve significant token reduction by returning only differences from the previous response
+- **Response Efficiency**: Provide more efficient information by focusing only on changed parts
+- **System Integration**: Implementation as an extension of the current expectation system
 
-### 1.3 スコープ
+### 1.3 Scope
 
-#### 含むもの
-- expectationシステムへの差分検出オプション追加
-- メモリベースの前回レスポンス保存機能
-- 差分ライブラリ（diff-match-patch または fast-diff）の活用
-- バッチ実行での差分検出対応
-- 差分表示の最適化
+#### Includes
+- Adding diff detection options to the expectation system
+- Memory-based previous response storage functionality
+- Utilizing diff libraries (diff-match-patch or fast-diff)
+- Diff detection support for batch execution
+- Diff display optimization
 
-#### 含まないもの
-- 永続化による差分検出（セッション間での差分保持）
-- 画像データの差分検出
-- カスタム差分アルゴリズムの実装
+#### Excludes
+- Persistent diff detection (maintaining diffs between sessions)
+- Image data diff detection
+- Custom diff algorithm implementation
 
-## 2. 要件
+## 2. Requirements
 
-### 2.1 機能要件
+### 2.1 Functional Requirements
 
-- **FR-001**: expectationパラメータに`diffOptions`を追加し、差分検出の有効/無効を制御
-- **FR-002**: 前回のレスポンス内容をメモリ上に保存する機能
-- **FR-003**: 差分ライブラリを使用したレスポンスの差分計算
-- **FR-004**: 差分結果を分かりやすい形式で表示（追加/削除/変更）
-- **FR-005**: バッチ実行における各ステップでの差分検出対応
-- **FR-006**: 差分が小さい場合の最小変更閾値設定
+- **FR-001**: Add `diffOptions` to expectation parameters to control diff detection enable/disable
+- **FR-002**: Functionality to store previous response content in memory
+- **FR-003**: Response diff calculation using diff libraries
+- **FR-004**: Display diff results in an understandable format (add/delete/modify)
+- **FR-005**: Support diff detection for each step in batch execution
+- **FR-006**: Minimum change threshold setting for small diffs
 
-### 2.2 非機能要件
+### 2.2 Non-Functional Requirements
 
-- **NFR-001**: パフォーマンス要件 - 差分計算は100ms以内で完了
-- **NFR-002**: メモリ使用量 - 前回レスポンス保存によるメモリ増加は10MB以内
-- **NFR-003**: 既存機能への影響なし - expectationの既存機能は完全に維持
-- **NFR-004**: 設定の柔軟性 - 差分検出の詳細レベルを調整可能
+- **NFR-001**: Performance requirement - diff calculation must complete within 100ms
+- **NFR-002**: Memory usage - memory increase from storing previous responses must be within 10MB
+- **NFR-003**: No impact on existing functionality - existing expectation features must be fully maintained
+- **NFR-004**: Configuration flexibility - adjustable detail level for diff detection
 
-## 3. 技術設計
+## 3. Technical Design
 
-### 3.1 アーキテクチャ
+### 3.1 Architecture
 
 ```mermaid
 graph TB
@@ -61,43 +61,43 @@ graph TB
     I --> J
 ```
 
-### 3.2 差分ライブラリの選定
+### 3.2 Diff Library Selection
 
-#### オプション1: fast-diff (推奨)
+#### Option 1: fast-diff (Recommended)
 ```bash
 npm install fast-diff
 ```
 
-**メリット**:
-- 非常に高速（Myersアルゴリズムの最適化版）
-- 軽量（依存関係なし）
-- シンプルなAPI
-- TypeScript対応
+**Benefits**:
+- Very fast (optimized Myers algorithm)
+- Lightweight (no dependencies)
+- Simple API
+- TypeScript support
 
-**使用例**:
+**Usage Example**:
 ```typescript
 import diff from 'fast-diff';
 
 const result = diff(oldText, newText);
 // result: Array<[type: -1|0|1, value: string]>
-// -1: 削除, 0: 変更なし, 1: 追加
+// -1: delete, 0: no change, 1: add
 ```
 
-#### オプション2: diff-match-patch
+#### Option 2: diff-match-patch
 ```bash
 npm install diff-match-patch
 ```
 
-**メリット**:
-- Googleが開発、実績豊富
-- 多機能（パッチ適用、ファジーマッチング）
-- 複数言語対応
+**Benefits**:
+- Developed by Google, proven track record
+- Feature-rich (patch application, fuzzy matching)
+- Multi-language support
 
-**デメリット**:
-- fast-diffより若干重い
-- APIがやや複雑
+**Drawbacks**:
+- Slightly heavier than fast-diff
+- Somewhat complex API
 
-### 3.3 データモデル
+### 3.3 Data Model
 
 #### DiffOptions Schema
 ```typescript
@@ -107,7 +107,7 @@ export const diffOptionsSchema = z.object({
   format: z.enum(['unified', 'split', 'minimal']).default('unified'),
   maxDiffLines: z.number().positive().default(50),
   ignoreWhitespace: z.boolean().default(true),
-  context: z.number().min(0).default(3) // 差分の前後に表示する行数
+  context: z.number().min(0).default(3) // Number of lines to display before and after diff
 }).optional();
 ```
 
@@ -121,18 +121,18 @@ interface ResponseStorage {
 }
 ```
 
-### 3.4 API設計
+### 3.4 API Design
 
-#### 新しいExpectationオプション
+#### New Expectation Options
 ```typescript
-// 既存のexpectationSchemaに追加
+// Add to existing expectationSchema
 export const expectationSchema = z.object({
-  // ... 既存のオプション
+  // ... existing options
   diffOptions: diffOptionsSchema
 }).optional();
 ```
 
-#### 使用例
+#### Usage Example
 ```javascript
 await browser_click({
   element: 'Submit button',
@@ -150,7 +150,7 @@ await browser_click({
 });
 ```
 
-### 3.5 クラス設計
+### 3.5 Class Design
 
 ```mermaid
 classDiagram
@@ -187,38 +187,38 @@ classDiagram
     Response --> ResponseDiffDetector
 ```
 
-## 4. 実装計画
+## 4. Implementation Plan
 
-### 4.1 単一PRでの実装
-- **ブランチ名**: `feature/response-diff`
-- **内容**: レスポンス差分検出機能の完全実装
-- **スコープ**:
-  1. fast-diffライブラリの追加
-  2. expectationスキーマへのdiffOptions追加
-  3. ResponseDiffDetectorクラスの実装
-  4. DiffFormatterクラスの実装
-  5. Responseクラスへの統合
-  6. バッチ実行での対応
-  7. テストとドキュメント
+### 4.1 Single PR Implementation
+- **Branch Name**: `feature/response-diff`
+- **Content**: Complete implementation of response diff detection feature
+- **Scope**:
+  1. Adding fast-diff library
+  2. Adding diffOptions to expectation schema
+  3. Implementing ResponseDiffDetector class
+  4. Implementing DiffFormatter class
+  5. Integration with Response class
+  6. Support for batch execution
+  7. Tests and documentation
 
-### 4.2 実装ファイル一覧
+### 4.2 Implementation File List
 
-#### 新規作成
-- `src/utils/responseDiffDetector.ts` - 差分検出メインクラス
-- `src/utils/diffFormatter.ts` - 差分フォーマッター
-- `src/types/diff.ts` - TypeScript型定義
-- `src/__tests__/responseDiff.test.ts` - テスト
+#### New Files
+- `src/utils/responseDiffDetector.ts` - Main diff detection class
+- `src/utils/diffFormatter.ts` - Diff formatter
+- `src/types/diff.ts` - TypeScript type definitions
+- `src/__tests__/responseDiff.test.ts` - Tests
 
-#### 既存ファイル変更
-- `package.json` - fast-diff依存追加
-- `src/schemas/expectation.ts` - diffOptionsSchema追加
-- `src/response.ts` - 差分検出機能統合
-- `src/tools/batchExecute.ts` - バッチ実行対応
-- `README.md` - 機能説明追加
+#### Modified Files
+- `package.json` - Add fast-diff dependency
+- `src/schemas/expectation.ts` - Add diffOptionsSchema
+- `src/response.ts` - Integrate diff detection functionality
+- `src/tools/batchExecute.ts` - Support batch execution
+- `README.md` - Add feature description
 
-### 4.2 実装手順詳細
+### 4.2 Detailed Implementation Steps
 
-#### ステップ1: fast-diffライブラリの統合
+#### Step 1: fast-diff Library Integration
 ```typescript
 // src/utils/responseDiffDetector.ts
 import diff from 'fast-diff';
@@ -234,7 +234,7 @@ export class ResponseDiffDetector {
 }
 ```
 
-#### ステップ2: Unified形式のフォーマッター実装
+#### Step 2: Unified Format Formatter Implementation
 ```typescript
 // src/utils/diffFormatter.ts
 export class DiffFormatter {
@@ -244,12 +244,12 @@ export class DiffFormatter {
     
     segments.forEach((segment, index) => {
       if (segment.type !== 'equal') {
-        // 変更箇所の前後context行を含める
+        // Include context lines before and after changes
         const prefix = segment.type === 'remove' ? '- ' : '+ ';
         lines.push(prefix + segment.value);
         inChange = true;
       } else if (inChange) {
-        // 変更後のcontext行を表示
+        // Display context lines after changes
         const contextLines = segment.value.split('\n').slice(0, context);
         contextLines.forEach(line => lines.push('  ' + line));
         inChange = false;
@@ -261,30 +261,30 @@ export class DiffFormatter {
 }
 ```
 
-## 5. テスト計画
+## 5. Test Plan
 
-### 5.1 単体テスト
-- **カバレッジ目標**: 90%以上
-- **重点テスト項目**:
-  - fast-diffライブラリの統合テスト
-  - 各種フォーマット形式の正確性
-  - メモリストレージの動作
-  - エラーハンドリング
+### 5.1 Unit Tests
+- **Coverage Target**: 90% or higher
+- **Key Test Items**:
+  - fast-diff library integration tests
+  - Accuracy of various format types
+  - Memory storage functionality
+  - Error handling
 
-### 5.2 統合テスト
+### 5.2 Integration Tests
 ```typescript
 describe('Response Diff Integration', () => {
   it('should detect differences using fast-diff', async () => {
     const context = createTestContext();
     
-    // 最初のレスポンス
+    // First response
     const response1 = new Response(context, 'browser_click', {
       expectation: { diffOptions: { enabled: true } }
     });
     response1.addResult('Page loaded successfully');
     await response1.finish();
     
-    // 2回目のレスポンス（差分あり）
+    // Second response (with diff)
     const response2 = new Response(context, 'browser_click', {
       expectation: { diffOptions: { enabled: true } }
     });
@@ -298,90 +298,90 @@ describe('Response Diff Integration', () => {
 });
 ```
 
-### 5.3 パフォーマンステスト
-- 大文字列（10KB以上）での100ms以内実行確認
-- メモリ使用量の監視（10MB制限の確認）
-- 同時実行時のパフォーマンス影響測定
+### 5.3 Performance Tests
+- Execution within 100ms for large strings (10KB+)
+- Memory usage monitoring (10MB limit verification)
+- Performance impact measurement during concurrent execution
 
-## 6. リスクと対策
+## 6. Risks and Mitigation
 
-### 6.1 技術的リスク
+### 6.1 Technical Risks
 
-| リスク | 影響度 | 発生確率 | 対策 |
-|--------|--------|----------|------|
-| ライブラリの互換性問題 | 中 | 低 | 事前の動作確認、代替ライブラリの準備 |
-| メモリリーク | 高 | 低 | WeakMapの使用、適切なクリーンアップ処理 |
-| 既存機能への影響 | 中 | 低 | 段階的な統合、フィーチャーフラグの活用 |
-| 差分表示の可読性 | 中 | 中 | 複数フォーマット対応、ユーザビリティテスト |
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| Library compatibility issues | Medium | Low | Pre-validation, alternative library preparation |
+| Memory leaks | High | Low | Use of WeakMap, proper cleanup procedures |
+| Impact on existing functionality | Medium | Low | Gradual integration, feature flag utilization |
+| Diff display readability | Medium | Medium | Multiple format support, usability testing |
 
-### 6.2 スケジュールリスク
-- 各PRの依存関係が深いため、1つのPRの遅れが全体に影響
-- 対策: 各PRの完了条件を明確化し、必要に応じて並行開発
+### 6.2 Schedule Risks
+- Deep dependencies between PRs mean one PR delay affects the entire project
+- Mitigation: Clarify completion criteria for each PR, parallel development when necessary
 
-## 7. 運用考慮事項
+## 7. Operational Considerations
 
-### 7.1 監視項目
-- 差分計算の実行時間
-- メモリ使用量の推移
-- 差分検出の精度（false positive/negative）
-- トークン削減率
+### 7.1 Monitoring Items
+- Diff calculation execution time
+- Memory usage trends
+- Diff detection accuracy (false positive/negative)
+- Token reduction rate
 
-### 7.2 ロールバック計画
-1. feature flagによる機能の無効化
-2. expectationパラメータの削除
-3. 既存レスポンス形式への復帰
+### 7.2 Rollback Plan
+1. Disable functionality via feature flag
+2. Remove expectation parameters
+3. Revert to existing response format
 
-## 8. 意思決定の記録
+## 8. Decision Records
 
-### 決定事項1: 差分検出ライブラリ
-- **選択肢**:
-  - A: fast-diff（Myersアルゴリズム）
-  - B: diff-match-patch（Google）
-  - C: jsdiff（多機能）
-- **決定**: A (fast-diff)
-- **理由**: 
-  - 最も高速でメモリ効率が良い
-  - 依存関係なし
-  - シンプルなAPIで実装が容易
+### Decision 1: Diff Detection Library
+- **Options**:
+  - A: fast-diff (Myers algorithm)
+  - B: diff-match-patch (Google)
+  - C: jsdiff (feature-rich)
+- **Decision**: A (fast-diff)
+- **Rationale**: 
+  - Fastest with best memory efficiency
+  - No dependencies
+  - Simple API for easy implementation
 
-### 決定事項2: ストレージ方式
-- **選択肢**:
-  - A: メモリベース（セッション内のみ）
-  - B: ファイルベース永続化
-  - C: データベース使用
-- **決定**: A (メモリベース)
-- **理由**:
-  - シンプルで高速
-  - ファイルI/Oのオーバーヘッドなし
-  - セッション間での差分は不要
+### Decision 2: Storage Method
+- **Options**:
+  - A: Memory-based (session only)
+  - B: File-based persistence
+  - C: Database usage
+- **Decision**: A (Memory-based)
+- **Rationale**:
+  - Simple and fast
+  - No file I/O overhead
+  - Cross-session diff not required
 
-### 決定事項3: expectation統合方式
-- **選択肢**:
-  - A: 既存expectationへの追加
-  - B: 新しいパラメータとして分離
-  - C: ツール毎の個別設定
-- **決定**: A (既存expectationへの追加)
-- **理由**:
-  - 既存システムとの一貫性
-  - バッチ実行との統合が容易
-  - 学習コストが低い
+### Decision 3: Expectation Integration Method
+- **Options**:
+  - A: Add to existing expectation
+  - B: Separate as new parameter
+  - C: Individual settings per tool
+- **Decision**: A (Add to existing expectation)
+- **Rationale**:
+  - Consistency with existing system
+  - Easy integration with batch execution
+  - Low learning cost
 
-## 9. 更新履歴
+## 9. Change History
 
-| 日付 | 更新者 | 内容 |
-|------|--------|------|
-| 2025-01-05 | Claude Code | 初版作成 |
-| 2025-01-05 | Claude Code | 差分ライブラリをfast-diffに変更 |
+| Date | Author | Changes |
+|------|--------|---------|
+| 2025-01-05 | Claude Code | Initial version created |
+| 2025-01-05 | Claude Code | Changed diff library to fast-diff |
 
-## 10. 承認
+## 10. Approval
 
-**この設計で進めてよろしいでしょうか？**
+**Is it acceptable to proceed with this design?**
 
-本設計ドキュメントでは、以下の要点でレスポンス差分検出機能を実装します：
+This design document implements the response diff detection feature with the following key points:
 
-1. **fast-diffライブラリによる高速な差分検出**
-2. **既存システムとの完全な互換性維持**
-3. **expectationシステムの自然な拡張**
-4. **単一PRでのシンプルな実装**
+1. **Fast diff detection using fast-diff library**
+2. **Complete compatibility with existing systems**
+3. **Natural extension of the expectation system**
+4. **Simple implementation in a single PR**
 
-承認後、`feature/response-diff`ブランチで実装を開始します。
+After approval, implementation will begin on the `feature/response-diff` branch.

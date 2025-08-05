@@ -15,7 +15,6 @@
  */
 
 import { test, expect } from './fixtures.js';
-import type { ExpectationOptions } from '../src/schemas/expectation.js';
 
 test.describe('Main Tools Expectation Integration', () => {
   test.describe('browser_navigate tool', () => {

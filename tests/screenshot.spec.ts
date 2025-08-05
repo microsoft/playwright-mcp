@@ -265,7 +265,7 @@ test('browser_take_screenshot (fullPage: true)', async ({ startClient, server },
 
   expect(await client.callTool({
     name: 'browser_take_screenshot',
-    arguments: { 
+    arguments: {
       fullPage: true,
       expectation: { includeCode: true }
     },

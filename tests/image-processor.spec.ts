@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { test, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { test, expect } from '@playwright/test';
 
 test.describe('Image Processing Utils', () => {
   // Use real test image from extension icons
@@ -125,4 +125,3 @@ test.describe('Image Processing Utils', () => {
     expect(result.compressionRatio).toBe(1.0);
   });
 });
-

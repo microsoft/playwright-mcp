@@ -334,6 +334,8 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     }
 
     // Log debug information when selector is not found
+    // TODO: Use proper logging instead of console
+    // eslint-disable-next-line no-console
     console.warn(`Selector "${selector}" (role: "${expectedRole}") not found in ARIA snapshot. Returning full snapshot as fallback.`);
 
     // Return the original full snapshot when selector is not found

@@ -421,7 +421,7 @@ http.createServer(async (req, res) => {
 
 - **browser_click**
   - Title: Click
-  - Description: Perform click on a web page. Use expectation to control response verbosity
+  - Description: Perform click on a web page. Use expectation to control response content, diffOptions to efficiently track changes
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -450,7 +450,7 @@ http.createServer(async (req, res) => {
 
 - **browser_drag**
   - Title: Drag mouse
-  - Description: Perform drag and drop between two elements
+  - Description: Perform drag and drop between two elements. Use expectation to control response content, diffOptions to efficiently track changes
   - Parameters:
     - `startElement` (string): Human-readable source element description used to obtain the permission to interact with the element
     - `startRef` (string): Exact source element reference from the page snapshot
@@ -496,7 +496,7 @@ http.createServer(async (req, res) => {
 
 - **browser_hover**
   - Title: Hover mouse
-  - Description: Hover over element on page
+  - Description: Hover over element on page. Use expectation to control response content, diffOptions to efficiently track changes
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -507,7 +507,7 @@ http.createServer(async (req, res) => {
 
 - **browser_navigate**
   - Title: Navigate to a URL
-  - Description: Navigate to a URL. Use expectation parameter to control response content (code, snapshot, console, tabs)
+  - Description: Navigate to a URL. Use expectation to control response content, diffOptions to efficiently track changes
   - Parameters:
     - `url` (string): The URL to navigate to
     - `expectation` (object, optional): undefined
@@ -517,7 +517,7 @@ http.createServer(async (req, res) => {
 
 - **browser_navigate_back**
   - Title: Go back
-  - Description: Go back to the previous page
+  - Description: Go back to the previous page. Use expectation to control response content, diffOptions to efficiently track changes
   - Parameters:
     - `expectation` (object, optional): undefined
   - Read-only: **true**
@@ -526,7 +526,7 @@ http.createServer(async (req, res) => {
 
 - **browser_navigate_forward**
   - Title: Go forward
-  - Description: Go forward to the next page
+  - Description: Go forward to the next page. Use expectation to control response content, diffOptions to efficiently track changes
   - Parameters:
     - `expectation` (object, optional): undefined
   - Read-only: **true**
@@ -543,7 +543,7 @@ http.createServer(async (req, res) => {
 
 - **browser_press_key**
   - Title: Press a key
-  - Description: Press a key on the keyboard
+  - Description: Press a key on the keyboard. Use expectation to control response content, diffOptions to efficiently track changes
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
     - `expectation` (object, optional): undefined
@@ -575,7 +575,7 @@ http.createServer(async (req, res) => {
 
 - **browser_snapshot**
   - Title: Page snapshot
-  - Description: Capture accessibility snapshot of the current page, this is better than screenshot. Use expectation.snapshotOptions to limit output size (maxLength, selector)
+  - Description: Capture accessibility snapshot of the current page. Use expectation to control response content, snapshotOptions to limit scope
   - Parameters:
     - `expectation` (object, optional): undefined
   - Read-only: **true**
@@ -584,7 +584,7 @@ http.createServer(async (req, res) => {
 
 - **browser_take_screenshot**
   - Title: Take a screenshot
-  - Description: Take a screenshot of the current page. Use expectation.imageOptions to compress images (format, quality, maxWidth). You can't perform actions based on the screenshot, use browser_snapshot for actions.
+  - Description: Take a screenshot of the current page. Use expectation to control response content, imageOptions to compress images
   - Parameters:
     - `type` (string, optional): Image format for the screenshot. Default is png.
     - `filename` (string, optional): File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified.
@@ -598,7 +598,7 @@ http.createServer(async (req, res) => {
 
 - **browser_type**
   - Title: Type text
-  - Description: Type text into editable element. Use expectation to minimize response (includeCode: false reduces tokens)
+  - Description: Type text into editable element. Use expectation to control response content, diffOptions to efficiently track changes
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -612,7 +612,7 @@ http.createServer(async (req, res) => {
 
 - **browser_wait_for**
   - Title: Wait for
-  - Description: Wait for text to appear or disappear or a specified time to pass
+  - Description: Wait for text to appear or disappear or a specified time to pass. Use expectation to control response content, diffOptions to efficiently track changes
   - Parameters:
     - `time` (number, optional): The time to wait in seconds
     - `text` (string, optional): The text to wait for

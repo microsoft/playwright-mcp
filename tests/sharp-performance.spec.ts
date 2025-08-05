@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { test, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { test, expect } from '@playwright/test';
 
 test.describe('Sharp Implementation Performance Tests', () => {
   // Use real test image from extension icons (128x128 PNG)
@@ -28,37 +28,37 @@ test.describe('Sharp Implementation Performance Tests', () => {
   test('should handle large image processing efficiently', async () => {
     const { processImage } = await import('../src/utils/imageProcessor.js');
     const testBuffer = createLargerTestImageBuffer();
-    
+
     const startTime = performance.now();
     const startMemory = process.memoryUsage().heapUsed;
-    
+
     // Process with multiple operations
     const operations = [
       { maxWidth: 800, maxHeight: 600, quality: 90, format: 'jpeg' as const },
       { maxWidth: 400, maxHeight: 300, quality: 80, format: 'webp' as const },
       { maxWidth: 200, maxHeight: 150, quality: 70, format: 'png' as const }
     ];
-    
+
     const results = [];
     for (const options of operations) {
       const result = await processImage(testBuffer, 'image/png', options);
       results.push(result);
     }
-    
+
     const endTime = performance.now();
     const endMemory = process.memoryUsage().heapUsed;
-    
+
     // Performance assertions
     const processingTime = endTime - startTime;
     const memoryIncrease = endMemory - startMemory;
-    
+
     console.log(`Processing time: ${processingTime.toFixed(2)}ms`);
     console.log(`Memory increase: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`);
-    
+
     // Reasonable performance expectations
     expect(processingTime).toBeLessThan(5000); // Should complete within 5 seconds
     expect(memoryIncrease).toBeLessThan(50 * 1024 * 1024); // Should not increase memory by more than 50MB
-    
+
     // Verify all results are valid
     for (const result of results) {
       expect(result.data).toBeInstanceOf(Buffer);
@@ -73,9 +73,9 @@ test.describe('Sharp Implementation Performance Tests', () => {
   test('should not leak memory with multiple sequential operations', async () => {
     const { processImage } = await import('../src/utils/imageProcessor.js');
     const testBuffer = createLargerTestImageBuffer();
-    
+
     const initialMemory = process.memoryUsage().heapUsed;
-    
+
     // Perform multiple operations sequentially
     for (let i = 0; i < 10; i++) {
       await processImage(testBuffer, 'image/png', {
@@ -84,18 +84,18 @@ test.describe('Sharp Implementation Performance Tests', () => {
         quality: 85,
         format: 'jpeg'
       });
-      
+
       // Force garbage collection if available
-      if (global.gc) {
+      if (global.gc)
         global.gc();
-      }
+
     }
-    
+
     const finalMemory = process.memoryUsage().heapUsed;
     const memoryIncrease = finalMemory - initialMemory;
-    
+
     console.log(`Memory increase after 10 operations: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`);
-    
+
     // Should not accumulate significant memory
     expect(memoryIncrease).toBeLessThan(20 * 1024 * 1024); // Less than 20MB increase
   });
@@ -103,11 +103,11 @@ test.describe('Sharp Implementation Performance Tests', () => {
   test('should handle concurrent image processing', async () => {
     const { processImage } = await import('../src/utils/imageProcessor.js');
     const testBuffer = createLargerTestImageBuffer();
-    
+
     const startTime = performance.now();
-    
+
     // Process multiple images concurrently
-    const promises = Array.from({ length: 5 }, (_, i) => 
+    const promises = Array.from({ length: 5 }, (_, i) =>
       processImage(testBuffer, 'image/png', {
         maxWidth: 300 + i * 50,
         maxHeight: 300 + i * 50,
@@ -115,16 +115,16 @@ test.describe('Sharp Implementation Performance Tests', () => {
         format: 'jpeg'
       })
     );
-    
+
     const results = await Promise.all(promises);
     const endTime = performance.now();
-    
+
     const totalTime = endTime - startTime;
     console.log(`Concurrent processing time: ${totalTime.toFixed(2)}ms`);
-    
+
     // Should complete reasonably quickly
     expect(totalTime).toBeLessThan(10000); // 10 seconds max
-    
+
     // All results should be valid
     results.forEach((result, index) => {
       expect(result.data).toBeInstanceOf(Buffer);
@@ -136,21 +136,21 @@ test.describe('Sharp Implementation Performance Tests', () => {
 
   test('should handle error conditions gracefully', async () => {
     const { processImage } = await import('../src/utils/imageProcessor.js');
-    
+
     // Test with invalid image data
     const invalidBuffer = Buffer.from('not an image');
-    
+
     await expect(processImage(invalidBuffer, 'image/png', { quality: 80 }))
-      .rejects.toThrow();
+        .rejects.toThrow();
   });
 
   test('should preserve metadata when appropriate', async () => {
     const { processImage } = await import('../src/utils/imageProcessor.js');
     const testBuffer = createLargerTestImageBuffer();
-    
+
     // Test preserving original format when no format specified
     const result = await processImage(testBuffer, 'image/png');
-    
+
     expect(result.contentType).toBe('image/png');
     expect(result.compressionRatio).toBe(1.0);
     expect(result.data).toBe(testBuffer); // Should return original buffer unchanged

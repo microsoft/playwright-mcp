@@ -1,4 +1,19 @@
 /**
+ * Copyright (c) Microsoft Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Main benchmark orchestrator
  */
 
@@ -18,7 +33,7 @@ export class MCPBenchmark {
   constructor(config: Partial<BenchmarkConfig> = {}) {
     // Merge provided config with defaults
     this.config = this.mergeConfig(DEFAULT_CONFIG, config);
-    
+
     // Initialize components
     this.serverManager = new MCPServerManager(this.config);
     this.engine = new BenchmarkEngine(this.config, this.serverManager);
@@ -29,31 +44,31 @@ export class MCPBenchmark {
    * Deep merge configuration objects
    */
   private mergeConfig(
-    defaultConfig: BenchmarkConfig, 
+    defaultConfig: BenchmarkConfig,
     userConfig: Partial<BenchmarkConfig>
   ): BenchmarkConfig {
     const merged = { ...defaultConfig };
-    
-    if (userConfig.servers) {
+
+    if (userConfig.servers)
       merged.servers = { ...defaultConfig.servers, ...userConfig.servers };
-    }
-    
-    if (userConfig.timeouts) {
+
+
+    if (userConfig.timeouts)
       merged.timeouts = { ...defaultConfig.timeouts, ...userConfig.timeouts };
-    }
-    
-    if (userConfig.retries) {
+
+
+    if (userConfig.retries)
       merged.retries = { ...defaultConfig.retries, ...userConfig.retries };
-    }
-    
-    if (userConfig.output) {
+
+
+    if (userConfig.output)
       merged.output = { ...defaultConfig.output, ...userConfig.output };
-    }
-    
-    if (userConfig.logging) {
+
+
+    if (userConfig.logging)
       merged.logging = { ...defaultConfig.logging, ...userConfig.logging };
-    }
-    
+
+
     return merged;
   }
 
@@ -63,31 +78,31 @@ export class MCPBenchmark {
   async run(scenarios: BenchmarkScenario[]): Promise<void> {
     console.log('🎯 MCP Benchmark');
     console.log('=================');
-    
-    if (this.config.logging.verbose) {
+
+    if (this.config.logging.verbose)
       console.log('Configuration:', JSON.stringify(this.config, null, 2));
-    }
+
 
     try {
       // Clean up any existing processes
       await ProcessUtils.cleanup();
-      
+
       // Start servers
       await this.serverManager.startServers();
-      
+
       // Run benchmarks
       await this.runBenchmarks(scenarios);
-      
+
       // Generate reports
       this.generateReports();
-      
+
     } catch (error) {
       console.error('❌ Benchmark failed:', (error as Error).message);
-      
-      if (this.config.logging.verbose) {
+
+      if (this.config.logging.verbose)
         console.error('Stack trace:', (error as Error).stack);
-      }
-      
+
+
       throw error;
     } finally {
       // Always clean up
@@ -103,40 +118,40 @@ export class MCPBenchmark {
     console.log('\n🚀 Phase 1: Original Server Testing');
     console.log('=====================================');
     const originalResults = await this.engine.runAllScenariosOnServer('original', scenarios);
-    
+
     // Stop original server and switch to fast server
     console.log('\n🔄 Switching servers...');
     await this.serverManager.stopServer('original');
     console.log('   Original server stopped');
-    
+
     // Start fast server fresh
     console.log('   Starting fast server...');
     const fastConfig = this.config.servers.fast;
     const { spawn } = await import('child_process');
-    
+
     const fastServer = spawn(fastConfig.command, fastConfig.args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, ...fastConfig.env },
       cwd: fastConfig.cwd || process.cwd()
     });
-    
+
     // Update server manager with new fast server
     this.serverManager.servers.fast = fastServer;
-    
+
     // Add error handler for new fast server
-    fastServer.on('error', (err) => {
+    fastServer.on('error', err => {
       console.error('Fast server error:', err);
     });
-    
+
     // Initialize fast server connection
     console.log('   Initializing fast server...');
     await this.serverManager.initializeServer(fastServer, 'fast');
-    
+
     // Run all scenarios on fast server
     console.log('\n🚀 Phase 2: Fast Server Testing');
     console.log('==================================');
     const fastResults = await this.engine.runAllScenariosOnServer('fast', scenarios);
-    
+
     // Process and store results
     this.reporter.processResults(originalResults, fastResults);
   }
@@ -147,12 +162,12 @@ export class MCPBenchmark {
   private generateReports(): void {
     // Print summary
     this.reporter.printSummary();
-    
+
     // Print detailed analysis if verbose
-    if (this.config.logging.verbose) {
+    if (this.config.logging.verbose)
       this.reporter.printDetailedAnalysis();
-    }
-    
+
+
     // Print success rates
     const successRates = this.reporter.getSuccessRate();
     console.log('\n📈 SUCCESS RATES');
@@ -160,11 +175,11 @@ export class MCPBenchmark {
     console.log(`Original server: ${successRates.original}%`);
     console.log(`Fast server: ${successRates.fast}%`);
     console.log(`Combined success: ${successRates.combined}%`);
-    
+
     // Save results to file
     this.reporter.saveResults(
-      this.config.output.resultsDirectory, 
-      this.config.output.filePrefix
+        this.config.output.resultsDirectory,
+        this.config.output.filePrefix
     );
   }
 
@@ -174,7 +189,7 @@ export class MCPBenchmark {
   private async cleanup(): Promise<void> {
     await this.serverManager.shutdown();
     this.engine.resetServerTracking();
-    
+
     // Additional cleanup wait
     await ProcessUtils.wait(this.config.timeouts.processCleanup);
   }
@@ -226,34 +241,34 @@ export class MCPBenchmark {
    */
   validateConfig(): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     // Check required commands exist
-    if (!this.config.servers.original.command) {
+    if (!this.config.servers.original.command)
       errors.push('Original server command is required');
-    }
-    
-    if (!this.config.servers.fast.command) {
+
+
+    if (!this.config.servers.fast.command)
       errors.push('Fast server command is required');
-    }
-    
+
+
     // Check timeout values
-    if (this.config.timeouts.initialization <= 0) {
+    if (this.config.timeouts.initialization <= 0)
       errors.push('Initialization timeout must be positive');
-    }
-    
-    if (this.config.timeouts.toolCall <= 0) {
+
+
+    if (this.config.timeouts.toolCall <= 0)
       errors.push('Tool call timeout must be positive');
-    }
-    
+
+
     // Check retry values
-    if (this.config.retries.maxRetries < 0) {
+    if (this.config.retries.maxRetries < 0)
       errors.push('Max retries cannot be negative');
-    }
-    
-    if (this.config.retries.retryDelay < 0) {
+
+
+    if (this.config.retries.retryDelay < 0)
       errors.push('Retry delay cannot be negative');
-    }
-    
+
+
     return {
       valid: errors.length === 0,
       errors

@@ -97,7 +97,7 @@ export const batchExecuteTool = defineTool({
       response.addError(`Batch execution failed: ${errorMessage}`);
     }
   }
-});;
+});
 
 /**
  * Formats batch execution result for display

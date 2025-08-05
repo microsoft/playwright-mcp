@@ -149,4 +149,3 @@ export async function processImage(
     throw new Error(`Image processing failed: ${errorMessage}`);
   }
 }
-
