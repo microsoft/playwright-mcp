@@ -16,6 +16,7 @@
 
 import { renderModalStates } from './tab.js';
 import { mergeExpectations } from './schemas/expectation.js';
+import { processImage } from './utils/imageProcessor.js';
 
 import type { Tab, TabSnapshot } from './tab.js';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
@@ -111,7 +112,7 @@ export class Response {
     return this._tabSnapshot;
   }
 
-  serialize(): { content: (TextContent | ImageContent)[], isError?: boolean } {
+  async serialize(): Promise<{ content: (TextContent | ImageContent)[], isError?: boolean }> {
     const response: string[] = [];
 
     // Start with command result.
@@ -151,10 +152,32 @@ ${this._code.join('\n')}
       { type: 'text', text: response.join('\n') },
     ];
 
-    // Image attachments.
+    // Image attachments with optional processing.
     if (this._context.config.imageResponses !== 'omit') {
-      for (const image of this._images)
-        content.push({ type: 'image', data: image.data.toString('base64'), mimeType: image.contentType });
+      for (const image of this._images) {
+        let processedImage = image;
+        
+        // Apply Sharp processing if imageOptions are specified
+        if (this._expectation.imageOptions) {
+          try {
+            processedImage = await processImage(
+              image.data,
+              image.contentType,
+              this._expectation.imageOptions
+            );
+          } catch (error) {
+            // If Sharp processing fails, use original image
+            console.error('Image processing failed:', error);
+            processedImage = image;
+          }
+        }
+        
+        content.push({ 
+          type: 'image', 
+          data: processedImage.data.toString('base64'), 
+          mimeType: processedImage.contentType 
+        });
+      }
     }
 
     return { content, isError: this._isError };

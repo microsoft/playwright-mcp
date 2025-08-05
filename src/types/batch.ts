@@ -17,6 +17,18 @@
 import { z } from 'zod';
 import { expectationSchema } from '../schemas/expectation.js';
 
+// Helper to parse JSON strings that might be sent by MCP clients
+const parseJsonString = (val: unknown): unknown => {
+  if (typeof val === 'string') {
+    try {
+      return JSON.parse(val);
+    } catch {
+      return val;
+    }
+  }
+  return val;
+};
+
 /**
  * Schema for a single step in batch execution
  */
@@ -33,7 +45,7 @@ export const batchStepSchema = z.object({
 export const batchExecuteSchema = z.object({
   steps: z.array(batchStepSchema).min(1).describe('Array of steps to execute in sequence'),
   stopOnFirstError: z.boolean().optional().default(false).describe('Stop entire batch on first error'),
-  globalExpectation: expectationSchema.describe('Default expectation for all steps')
+  globalExpectation: z.preprocess(parseJsonString, expectationSchema).optional().describe('Default expectation for all steps')
 });
 
 export type BatchStep = z.infer<typeof batchStepSchema>;

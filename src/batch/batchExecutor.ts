@@ -162,7 +162,7 @@ export class BatchExecutor {
     await response.finish();
 
     // Return serialized response
-    return response.serialize();
+    return await response.serialize();
   }
 
   /**
