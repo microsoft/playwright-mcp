@@ -144,71 +144,9 @@ export async function processImage(
       compressionRatio
     };
   } catch (error) {
-    // Fallback to simulation behavior for invalid or test images
-    // Sharp processing failed, falling back to simulation
-
-    if (!options) {
-      return {
-        data: imageData,
-        contentType: originalContentType,
-        originalSize: { width: 0, height: 0 },
-        processedSize: { width: 0, height: 0 },
-        compressionRatio: 1.0
-      };
-    }
-
-    // Simulate image processing as fallback
-    const originalSize = { width: 100, height: 100 };
-    const processedSize = { ...originalSize };
-
-    // Simulate resize operation
-    if (options.maxWidth && originalSize.width > options.maxWidth) {
-      const ratio = options.maxWidth / originalSize.width;
-      processedSize.width = options.maxWidth;
-      processedSize.height = Math.round(originalSize.height * ratio);
-    }
-
-    if (options.maxHeight && processedSize.height > options.maxHeight) {
-      const ratio = options.maxHeight / processedSize.height;
-      processedSize.height = options.maxHeight;
-      processedSize.width = Math.round(processedSize.width * ratio);
-    }
-
-    // Simulate format conversion
-    let contentType = originalContentType;
-    let processedData = imageData;
-
-    if (options.format) {
-      switch (options.format) {
-        case 'jpeg':
-          contentType = 'image/jpeg';
-          const qualityFactor = (options.quality || 85) / 100;
-          const targetSize = Math.round(imageData.length * qualityFactor);
-          processedData = Buffer.alloc(targetSize, imageData[0]);
-          break;
-        case 'webp':
-          contentType = 'image/webp';
-          const webpQualityFactor = (options.quality || 85) / 100;
-          const webpTargetSize = Math.round(imageData.length * webpQualityFactor * 0.8);
-          processedData = Buffer.alloc(webpTargetSize, imageData[0]);
-          break;
-        case 'png':
-        default:
-          contentType = 'image/png';
-          processedData = imageData;
-          break;
-      }
-    }
-
-    const compressionRatio = imageData.length > 0 ? processedData.length / imageData.length : 1.0;
-
-    return {
-      data: processedData,
-      contentType,
-      originalSize,
-      processedSize,
-      compressionRatio
-    };
+    // Sharp processing failed - throw error for caller to handle
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Image processing failed: ${errorMessage}`);
   }
 }
 

@@ -17,10 +17,10 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Sharp Error Handling Tests', () => {
-  test('should demonstrate Sharp fallback behavior', async () => {
+  test('should throw errors for invalid image data', async () => {
     const { processImage } = await import('../src/utils/imageProcessor.js');
     
-    // Test with various invalid data
+    // Test with various invalid data - all should throw errors
     const testCases = [
       { data: Buffer.from('not an image'), description: 'text data' },
       { data: Buffer.from([0x00, 0x01, 0x02, 0x03]), description: 'random bytes' },
@@ -31,18 +31,9 @@ test.describe('Sharp Error Handling Tests', () => {
     for (const testCase of testCases) {
       console.log(`Testing with ${testCase.description}:`);
       
-      const result = await processImage(testCase.data, 'image/png', { quality: 80 });
-      
-      // Should not throw, but fallback to simulation
-      expect(result).toBeDefined();
-      expect(result.data).toBeInstanceOf(Buffer);
-      expect(result.contentType).toBe('image/png');
-      expect(result.originalSize).toEqual({ width: 100, height: 100 });
-      expect(result.processedSize).toEqual({ width: 100, height: 100 });
-      
-      console.log(`  Original size: ${testCase.data.length} bytes`);
-      console.log(`  Result size: ${result.data.length} bytes`);
-      console.log(`  Compression ratio: ${result.compressionRatio.toFixed(3)}`);
+      // Should throw error for invalid image data
+      await expect(processImage(testCase.data, 'image/png', { quality: 80 }))
+        .rejects.toThrow(/Image processing failed/);
     }
   });
 
@@ -77,10 +68,10 @@ test.describe('Sharp Error Handling Tests', () => {
     expect(result.originalSize.height).toBeGreaterThan(0);
   });
 
-  test('should handle Sharp processing vs fallback correctly', async () => {
+  test('should handle valid vs invalid image data correctly', async () => {
     const { processImage } = await import('../src/utils/imageProcessor.js');
     
-    // Test case that should trigger Sharp processing
+    // Test case that should work with Sharp processing
     const validPng = Buffer.from([
       0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
       0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
@@ -93,13 +84,11 @@ test.describe('Sharp Error Handling Tests', () => {
       0x60, 0x82
     ]);
     
-    // Test case that should trigger fallback
+    // Test case that should throw error
     const invalidData = Buffer.from('not an image at all');
     
-    const [validResult, invalidResult] = await Promise.all([
-      processImage(validPng, 'image/png', { format: 'jpeg', quality: 80 }),
-      processImage(invalidData, 'image/png', { format: 'jpeg', quality: 80 })
-    ]);
+    // Valid PNG should process successfully
+    const validResult = await processImage(validPng, 'image/png', { format: 'jpeg', quality: 80 });
     
     console.log('Valid PNG result:', {
       contentType: validResult.contentType,
@@ -107,18 +96,12 @@ test.describe('Sharp Error Handling Tests', () => {
       dataLength: validResult.data.length
     });
     
-    console.log('Invalid data result:', {
-      contentType: invalidResult.contentType,
-      size: `${invalidResult.originalSize.width}x${invalidResult.originalSize.height}`,
-      dataLength: invalidResult.data.length
-    });
-    
-    // Both should succeed but with different processing paths
     expect(validResult.contentType).toBe('image/jpeg');
-    expect(invalidResult.contentType).toBe('image/jpeg');
+    expect(validResult.originalSize.width).toBeGreaterThan(0);
+    expect(validResult.originalSize.height).toBeGreaterThan(0);
     
-    // The fallback case should have simulated dimensions
-    expect(invalidResult.originalSize).toEqual({ width: 100, height: 100 });
-    expect(invalidResult.processedSize).toEqual({ width: 100, height: 100 });
+    // Invalid data should throw error
+    await expect(processImage(invalidData, 'image/png', { format: 'jpeg', quality: 80 }))
+      .rejects.toThrow(/Image processing failed/);
   });
 });
