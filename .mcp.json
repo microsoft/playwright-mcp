@@ -1,5 +1,22 @@
 {
   "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "fast-playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "fast-playwright-mcp"
+      ],
+      "env": {}
+    },
     "serena": {
       "type": "stdio",
       "command": "uvx",
