@@ -8,6 +8,25 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - **LLM-friendly**. No vision models needed, operates purely on structured data.
 - **Deterministic tool application**. Avoids ambiguity common with screenshot-based approaches.
 
+### Fast Server Features (This Fork)
+
+- **Token Optimization**. All tools support an `expectation` parameter to control response content:
+  - `includeCode: false` - Suppress Playwright code generation to reduce tokens
+  - `includeSnapshot: false` - Skip page snapshot for minimal responses
+  - `includeConsole: false` - Exclude console messages
+  - `includeTabs: false` - Hide tab information
+- **Image Compression**. Screenshot tool supports `imageOptions`:
+  - `format: 'jpeg'` - Use JPEG instead of PNG
+  - `quality: 1-100` - Compress images (e.g., 50 for 50% quality)
+  - `maxWidth: number` - Resize images to max width
+- **Batch Execution**. Use `browser_batch_execute` for multiple operations:
+  - Significant token reduction by eliminating redundant responses
+  - Per-step and global expectation configuration
+  - Error handling with `continueOnError` and `stopOnFirstError` options
+- **Snapshot Control**. Limit snapshot size with `snapshotOptions`:
+  - `maxLength: number` - Truncate long snapshots
+  - `selector: string` - Capture only specific page sections
+
 ### Requirements
 - Node.js 18 or newer
 - VS Code, Cursor, Windsurf, Claude Desktop, Goose or any other MCP client

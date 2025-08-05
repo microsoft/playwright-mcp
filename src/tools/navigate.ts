@@ -24,7 +24,7 @@ const navigate = defineTool({
   schema: {
     name: 'browser_navigate',
     title: 'Navigate to a URL',
-    description: 'Navigate to a URL',
+    description: 'Navigate to a URL. Use expectation parameter to control response content (code, snapshot, console, tabs)',
     inputSchema: z.object({
       url: z.string().describe('The URL to navigate to'),
       expectation: expectationSchema

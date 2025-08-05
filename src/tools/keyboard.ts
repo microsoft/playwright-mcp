@@ -58,7 +58,7 @@ const type = defineTabTool({
   schema: {
     name: 'browser_type',
     title: 'Type text',
-    description: 'Type text into editable element',
+    description: 'Type text into editable element. Use expectation to minimize response (includeCode: false reduces tokens)',
     inputSchema: typeSchema,
     type: 'destructive',
   },

@@ -47,7 +47,7 @@ const screenshot = defineTabTool({
   schema: {
     name: 'browser_take_screenshot',
     title: 'Take a screenshot',
-    description: `Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
+    description: `Take a screenshot of the current page. Use expectation.imageOptions to compress images (format, quality, maxWidth). You can't perform actions based on the screenshot, use browser_snapshot for actions.`,
     inputSchema: screenshotSchema,
     type: 'readOnly',
   },

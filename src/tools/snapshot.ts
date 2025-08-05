@@ -26,7 +26,7 @@ const snapshot = defineTool({
   schema: {
     name: 'browser_snapshot',
     title: 'Page snapshot',
-    description: 'Capture accessibility snapshot of the current page, this is better than screenshot',
+    description: 'Capture accessibility snapshot of the current page, this is better than screenshot. Use expectation.snapshotOptions to limit output size (maxLength, selector)',
     inputSchema: z.object({
       expectation: expectationSchema
     }),
@@ -73,7 +73,7 @@ const click = defineTabTool({
   schema: {
     name: 'browser_click',
     title: 'Click',
-    description: 'Perform click on a web page',
+    description: 'Perform click on a web page. Use expectation to control response verbosity',
     inputSchema: clickSchema,
     type: 'destructive',
   },
