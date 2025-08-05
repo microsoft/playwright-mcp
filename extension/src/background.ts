@@ -36,6 +36,7 @@ class TabShareExtension {
   constructor() {
     chrome.tabs.onRemoved.addListener(this._onTabRemoved.bind(this));
     chrome.tabs.onUpdated.addListener(this._onTabUpdated.bind(this));
+    chrome.tabs.onActivated.addListener(this._onTabActivated.bind(this));
     chrome.runtime.onMessage.addListener(this._onMessage.bind(this));
   }
 
@@ -153,28 +154,29 @@ class TabShareExtension {
     this._connectedTabId = null;
   }
 
-  private async _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab): Promise<void> {
-    if (changeInfo.status === 'complete' && this._connectedTabId === tabId) {
-      await this._setConnectedTabId(tabId);
-      return;
+  private _onTabActivated(activeInfo: chrome.tabs.TabActiveInfo) {
+    for (const [tabId, pending] of this._pendingTabSelection) {
+      if (tabId === activeInfo.tabId) {
+        if (pending.timerId) {
+          clearTimeout(pending.timerId);
+          pending.timerId = undefined;
+        }
+        continue;
+      }
+      if (!pending.timerId) {
+        pending.timerId = setTimeout(() => {
+          const existed = this._pendingTabSelection.delete(tabId);
+          if (existed)
+            pending.connection.close('Tab has been inactive for 5 seconds');
+        }, 5000);
+        return;
+      }
     }
-    const pending = this._pendingTabSelection.get(tabId);
-    if (!pending)
-      return;
-    if (tab.active && pending.timerId) {
-      clearTimeout(pending.timerId);
-      pending.timerId = undefined;
-      return;
-    }
-    if (!tab.active && !pending.timerId) {
-      debugLog('Starting inactivity timer', tabId);
-      pending.timerId = window.setTimeout(() => {
-        const existed = this._pendingTabSelection.delete(tabId);
-        if (existed)
-          pending.connection.close('Tab is not active');
-      }, 5000);
-      return;
-    }
+  }
+
+  private _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {
+    if (changeInfo.status === 'complete' && this._connectedTabId === tabId)
+      void this._setConnectedTabId(tabId);
   }
 
   private async _getTabs(): Promise<chrome.tabs.Tab[]> {
