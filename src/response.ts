@@ -91,10 +91,12 @@ export class Response {
     const shouldIncludeSnapshot = this._expectation.includeSnapshot;
     if (shouldIncludeSnapshot && this._context.currentTab()) {
       const options = this._expectation.snapshotOptions;
-      if (options?.selector) {
-        // TODO: Implement partial snapshot capture based on selector
-        // For now, capture full snapshot
-        this._tabSnapshot = await this._context.currentTabOrDie().captureSnapshot();
+      if (options?.selector || options?.maxLength) {
+        // Use partial snapshot capture when selector or maxLength is specified
+        this._tabSnapshot = await this._context.currentTabOrDie().capturePartialSnapshot(
+          options.selector,
+          options.maxLength
+        );
       } else {
         this._tabSnapshot = await this._context.currentTabOrDie().captureSnapshot();
       }
