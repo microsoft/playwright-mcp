@@ -100,13 +100,41 @@ export class MCPBenchmark {
    */
   private async runBenchmarks(scenarios: BenchmarkScenario[]): Promise<void> {
     // Run all scenarios on original server first
+    console.log('\n🚀 Phase 1: Original Server Testing');
+    console.log('=====================================');
     const originalResults = await this.engine.runAllScenariosOnServer('original', scenarios);
     
-    // Add delay before switching to fast server
-    console.log('\n🕐 Switching servers...');
-    await ProcessUtils.wait(this.config.timeouts.serverSwitch);
+    // Stop original server and switch to fast server
+    console.log('\n🔄 Switching servers...');
+    await this.serverManager.stopServer('original');
+    console.log('   Original server stopped');
+    
+    // Start fast server fresh
+    console.log('   Starting fast server...');
+    const fastConfig = this.config.servers.fast;
+    const { spawn } = await import('child_process');
+    
+    const fastServer = spawn(fastConfig.command, fastConfig.args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, ...fastConfig.env },
+      cwd: fastConfig.cwd || process.cwd()
+    });
+    
+    // Update server manager with new fast server
+    this.serverManager.servers.fast = fastServer;
+    
+    // Add error handler for new fast server
+    fastServer.on('error', (err) => {
+      console.error('Fast server error:', err);
+    });
+    
+    // Initialize fast server connection
+    console.log('   Initializing fast server...');
+    await this.serverManager.initializeServer(fastServer, 'fast');
     
     // Run all scenarios on fast server
+    console.log('\n🚀 Phase 2: Fast Server Testing');
+    console.log('==================================');
     const fastResults = await this.engine.runAllScenariosOnServer('fast', scenarios);
     
     // Process and store results

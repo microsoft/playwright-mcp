@@ -40,6 +40,7 @@ async function main(): Promise<void> {
       if (summary.validComparisons > 0) {
         console.log(`🎉 Average improvements: ${summary.avgSizeReduction}% size, ${summary.avgTokenReduction}% tokens`);
       }
+      process.exit(0);
     } else {
       console.log('\n⚠️  Benchmark completed but no valid comparisons were made');
       process.exit(1);

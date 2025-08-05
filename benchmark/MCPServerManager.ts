@@ -8,7 +8,7 @@ import { MCPRequest, MCPResponse, ServerType } from './types.js';
 import { ProcessUtils, ValidationUtils } from './utils.js';
 
 export class MCPServerManager {
-  private servers: Record<ServerType, ChildProcess | null> = {
+  public servers: Record<ServerType, ChildProcess | null> = {
     original: null,
     fast: null
   };
@@ -81,7 +81,7 @@ export class MCPServerManager {
   /**
    * Initialize a single MCP server connection
    */
-  private async initializeServer(server: ChildProcess, serverType: ServerType): Promise<void> {
+  async initializeServer(server: ChildProcess, serverType: ServerType): Promise<void> {
     console.log(`  Initializing ${serverType} server...`);
     
     if (!ValidationUtils.isProcessRunning(server)) {
@@ -214,32 +214,41 @@ export class MCPServerManager {
   }
 
   /**
+   * Stop a specific server
+   */
+  async stopServer(serverType: ServerType): Promise<void> {
+    const server = this.servers[serverType];
+    if (!server) return;
+    
+    console.log(`🛑 Stopping ${serverType} server...`);
+    
+    try {
+      server.kill('SIGTERM');
+      
+      // Wait a bit for graceful shutdown
+      await ProcessUtils.wait(1000);
+      
+      // Force kill if still running
+      if (ValidationUtils.isProcessRunning(server)) {
+        server.kill('SIGKILL');
+        await ProcessUtils.wait(500);
+      }
+    } catch (error) {
+      console.warn(`Warning: Error shutting down ${serverType} server:`, error);
+    }
+    
+    this.servers[serverType] = null;
+  }
+
+  /**
    * Shutdown all servers
    */
   async shutdown(): Promise<void> {
     console.log('\n🧹 Shutting down servers...');
     
-    for (const [serverType, server] of Object.entries(this.servers)) {
-      if (server) {
-        try {
-          server.kill('SIGTERM');
-          
-          // Wait a bit for graceful shutdown
-          await ProcessUtils.wait(1000);
-          
-          // Force kill if still running
-          if (ValidationUtils.isProcessRunning(server)) {
-            server.kill('SIGKILL');
-          }
-        } catch (error) {
-          console.warn(`Warning: Error shutting down ${serverType} server:`, error);
-        }
-      }
+    for (const serverType of Object.keys(this.servers) as ServerType[]) {
+      await this.stopServer(serverType);
     }
-    
-    // Reset server references
-    this.servers.original = null;
-    this.servers.fast = null;
     
     await ProcessUtils.wait(1000);
   }

@@ -63,9 +63,6 @@ export class BenchmarkEngine {
   private async runScenario(serverType: ServerType, steps: BenchmarkStep[]): Promise<ScenarioResult> {
     console.log(`\n   Running on ${serverType} server...`);
     
-    // Add delay when switching between servers
-    await this.handleServerSwitch(serverType);
-    
     let totalSize = 0;
     let totalTokens = 0;
     let success = true;
@@ -92,22 +89,17 @@ export class BenchmarkEngine {
           tokens: 0, 
           error: (error as Error).message 
         });
+        
+        // Continue with next step instead of breaking entire execution
+        if (this.config.logging.verbose) {
+          console.log(`       ⚠️  Continuing with next step...`);
+        }
       }
     }
     
     return { success, totalSize, totalTokens, stepResults };
   }
 
-  /**
-   * Handle server switching with appropriate delays
-   */
-  private async handleServerSwitch(serverType: ServerType): Promise<void> {
-    if (this.lastServerType && this.lastServerType !== serverType) {
-      console.log(`     🕐 Waiting for server switch (${this.lastServerType} → ${serverType})...`);
-      await ProcessUtils.wait(this.config.timeouts.serverSwitch);
-    }
-    this.lastServerType = serverType;
-  }
 
   /**
    * Execute a step with retry logic
