@@ -15,10 +15,20 @@
  */
 
 import * as playwright from 'playwright';
-import { BrowserContext } from 'playwright-core';
 import z from 'zod';
 import { BrowserContextFactory, ClientInfo } from './browserContextFactory.js';
 import { FullConfig } from './config.js';
+import { logUnhandledError } from './log.js';
+
+function closeOnUIClose(context: playwright.BrowserContext) {
+  context.on('close', () => context.browser()?.close({ reason: 'ui closed' }).catch(logUnhandledError));
+  context.on('page', page => {
+    page.on('close', () => {
+      if (context.pages().length === 0)
+        void context.close().catch(logUnhandledError);
+    });
+  });
+}
 
 class VSCodeContextFactory implements BrowserContextFactory {
   name = 'vscode';
@@ -26,28 +36,28 @@ class VSCodeContextFactory implements BrowserContextFactory {
 
   constructor(private readonly _config: FullConfig) {}
 
-  async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal, _params: any): Promise<{ browserContext: BrowserContext; close: (dispose: boolean) => Promise<void>; }> {
+  async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal, _params: any): Promise<{ browserContext: playwright.BrowserContext; close: () => Promise<void>; }> {
     const params = z.object({ connectionString: z.string(), lib: z.string() }).parse(_params);
 
     const connectionString = new URL(params.connectionString);
-    connectionString.searchParams.set('launch-options', JSON.stringify(this._config.browser.launchOptions));
-    const playwrightLibrary = playwright; // TODO: require playwright dynamically from `params.lib`
-    const browser = await playwrightLibrary.chromium.connect(connectionString.toString());
-    const context = browser.contexts()[0] ?? await browser.newContext(this._config.browser.contextOptions);
 
-    context.on('close', () => browser.close());
-    context.on('page', page => {
-      page.on('close', () => {
-        if (context.pages().length === 0)
-          void context.close();
-      });
-    });
+    connectionString.searchParams.set('launch-options', JSON.stringify({
+      ...this._config.browser.launchOptions,
+      userDataDir: this._config.browser.userDataDir,
+    }));
+    const playwrightLibrary = playwright; // TODO: require playwright dynamically from `params.lib`
+    const browser = await playwrightLibrary[this._config.browser.browserName].connect(connectionString.toString());
+
+    const context: playwright.BrowserContext = browser.contexts()[0] ?? await browser.newContext(this._config.browser.contextOptions);
+
+    // when the user closes the browser window, we should reconnect.
+    closeOnUIClose(context);
+
     return {
       browserContext: context,
-      close: async dispose => {
-        if (dispose)
-          return;
-        await context.close();
+      close: async () => {
+        // close the connection. in this mode, the browser will survive
+        await browser.close();
       }
     };
   }
