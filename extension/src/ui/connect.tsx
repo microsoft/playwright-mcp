@@ -61,7 +61,14 @@ const ConnectApp: React.FC = () => {
       return;
     }
 
+    void connectToMCPRelay(relayUrl);
     void loadTabs();
+  }, []);
+
+  const connectToMCPRelay = useCallback(async (mcpRelayUrl: string) => {
+    const response = await chrome.runtime.sendMessage({ type: 'connectToMCPRelay', mcpRelayUrl });
+    if (!response.success)
+      setStatus({ type: 'error', message: 'Failed to connect to MCP relay: ' + response.error });
   }, []);
 
   const loadTabs = useCallback(async () => {
@@ -86,7 +93,7 @@ const ConnectApp: React.FC = () => {
 
     try {
       const response = await chrome.runtime.sendMessage({
-        type: 'connectToMCPRelay',
+        type: 'connectToTab',
         mcpRelayUrl,
         tabId: selectedTab.id,
         windowId: selectedTab.windowId,
