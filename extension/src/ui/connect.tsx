@@ -121,6 +121,13 @@ const ConnectApp: React.FC = () => {
     setStatus({ type: 'error', message: 'Connection rejected. This tab can be closed.' });
   }, []);
 
+  useEffect(() => {
+    chrome.runtime.onMessage.addListener(message => {
+      if (message.type === 'connectionTimeout')
+        handleReject();
+    });
+  }, []);
+
   return (
     <div className='app-container'>
       <div className='content-wrapper'>
