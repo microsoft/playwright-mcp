@@ -229,23 +229,9 @@ export class Tab extends EventEmitter<TabEventsInterface> {
         // Use the full snapshot but filter it to the selector
         const fullSnapshot = await (this.page as PageEx)._snapshotForAI();
         
-        // Try to find the selector in the page to get its aria-ref
-        try {
-          const locator = this.page.locator(selector);
-          const elementCount = await locator.count();
-          
-          if (elementCount === 0) {
-            // Fallback to full snapshot if selector not found
-            snapshot = fullSnapshot;
-          } else {
-            // Extract the part of the snapshot that matches the selector
-            // This is a simplified approach - ideally we'd parse the ARIA tree
-            snapshot = await this._extractPartialSnapshot(fullSnapshot, selector);
-          }
-        } catch (error) {
-          // Fallback to full snapshot on error
-          snapshot = fullSnapshot;
-        }
+        // Extract the part of the snapshot that matches the selector
+        snapshot = this._extractPartialSnapshot(fullSnapshot, selector);
+        
       } else {
         // Full snapshot if no selector specified
         snapshot = await (this.page as PageEx)._snapshotForAI();
@@ -282,12 +268,75 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     };
   }
 
-  private async _extractPartialSnapshot(fullSnapshot: string, selector: string): Promise<string> {
-    // This is a simplified implementation that extracts the relevant part
-    // In the future, this should properly parse the ARIA tree
+  private _extractPartialSnapshot(fullSnapshot: string, selector: string): string {
+    // Parse the ARIA tree to find the section matching the selector
+    const lines = fullSnapshot.split('\n');
+    const selectorToRole: Record<string, string> = {
+      'main': 'main',
+      'header': 'banner',
+      'footer': 'contentinfo',
+      'nav': 'navigation',
+      'aside': 'complementary',
+      'section': 'region',
+      'article': 'article'
+    };
     
-    // For now, just return the full snapshot
-    // TODO: Implement proper ARIA tree parsing and filtering
+    // Get expected role from selector
+    const expectedRole = selectorToRole[selector] || selector;
+    
+    // Find the section in the ARIA tree
+    let capturing = false;
+    let captureIndent = -1;
+    const capturedLines: string[] = [];
+    
+    for (const line of lines) {
+      // Count leading spaces to determine indent level
+      const indent = line.length - line.trimStart().length;
+      const trimmedLine = line.trim();
+      
+      // Check if this line contains our target role with proper ARIA structure
+      // Matches patterns like: "- main [ref=e3]:" or "- main [active] [ref=e1]:"
+      const rolePattern = new RegExp(`^- ${expectedRole}\\s*(?:\\[[^\\]]*\\])*\\s*:?`);
+      if (!capturing && rolePattern.test(trimmedLine)) {
+        capturing = true;
+        captureIndent = indent;
+        capturedLines.push(line);
+        continue;
+      }
+      
+      // If we're capturing, continue until we reach a sibling or parent element
+      if (capturing) {
+        if (indent > captureIndent) {
+          // This is a child element, include it
+          capturedLines.push(line);
+        } else {
+          // We've reached a sibling or parent, stop capturing
+          break;
+        }
+      }
+    }
+    
+    // If we captured something, normalize indentation and return it
+    if (capturedLines.length > 0) {
+      // Calculate minimum indentation (should be the target element's indentation)
+      const minIndent = capturedLines[0].length - capturedLines[0].trimStart().length;
+      
+      // Normalize indentation: remove the minimum indentation from all lines
+      const normalizedLines = capturedLines.map(line => {
+        if (line.trim() === '') return line; // Keep empty lines as-is
+        const currentIndent = line.length - line.trimStart().length;
+        const newIndent = Math.max(0, currentIndent - minIndent);
+        return ' '.repeat(newIndent) + line.trimStart();
+      });
+      
+      return normalizedLines.join('\n');
+    }
+    
+    // Log debug information when selector is not found
+    console.warn(`Selector "${selector}" (role: "${expectedRole}") not found in ARIA snapshot. Returning full snapshot as fallback.`);
+    
+    // Return the original full snapshot when selector is not found
+    // This ensures that tests expecting complete page structure get what they need
     return fullSnapshot;
   }
 
@@ -296,21 +345,33 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       return text;
     }
 
-    // Find the last space within the maxLength limit
+    // Look for the last word boundary before maxLength
     let truncateIndex = maxLength;
-    for (let i = maxLength - 1; i >= 0; i--) {
-      if (text[i] === ' ') {
-        truncateIndex = i;
-        break;
+    
+    // Check if we're in the middle of a word at maxLength
+    if (text[maxLength] && text[maxLength] !== ' ' && text[maxLength] !== '\n') {
+      // We're in the middle of a word, find the last space before maxLength
+      for (let i = maxLength - 1; i >= 0; i--) {
+        if (text[i] === ' ' || text[i] === '\n') {
+          truncateIndex = i;
+          break;
+        }
+      }
+      
+      // If we've gone back too far (more than 20 chars), just cut at maxLength
+      if (maxLength - truncateIndex > 20) {
+        truncateIndex = maxLength;
       }
     }
 
-    // If no space found within reasonable distance (more than 30% back), just cut at maxLength
-    if (maxLength - truncateIndex > maxLength * 0.3) {
-      truncateIndex = maxLength;
+    let result = text.substring(0, truncateIndex).trim();
+    
+    // Ensure the result doesn't exceed maxLength after trimming
+    if (result.length > maxLength) {
+      result = result.substring(0, maxLength);
     }
 
-    return text.substring(0, truncateIndex).trim();
+    return result;
   }
 
   private _javaScriptBlocked(): boolean {

@@ -35,7 +35,25 @@ const snapshot = defineTool({
 
   handle: async (context, params, response) => {
     await context.ensureTab();
-    // Snapshot will be handled by expectation settings
+    
+    // Always include snapshot for browser_snapshot tool
+    response.setIncludeSnapshot();
+    
+    // If expectation has snapshotOptions, we need to make sure they are used
+    // This is a workaround for the issue where expectation is not properly handled
+    if (params.expectation?.snapshotOptions) {
+      const tab = context.currentTabOrDie();
+      const options = params.expectation.snapshotOptions;
+      
+      // Manually capture partial snapshot and store it
+      const snapshot = await tab.capturePartialSnapshot(
+        options.selector,
+        options.maxLength
+      );
+      
+      // Store the snapshot in response for later use
+      (response as any)._tabSnapshot = snapshot;
+    }
   },
 });
 

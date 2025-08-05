@@ -40,7 +40,9 @@ export class Response {
     this._context = context;
     this.toolName = toolName;
     this.toolArgs = toolArgs;
-    this._expectation = mergeExpectations(toolName, expectation);
+    // Use expectation from toolArgs if not provided directly
+    const actualExpectation = expectation || toolArgs.expectation;
+    this._expectation = mergeExpectations(toolName, actualExpectation);
   }
 
   addResult(result: string) {
@@ -88,7 +90,7 @@ export class Response {
     // All the async snapshotting post-action is happening here.
     // Everything below should race against modal states.
     // Expectation settings take priority over legacy setIncludeSnapshot calls
-    const shouldIncludeSnapshot = this._expectation.includeSnapshot;
+    const shouldIncludeSnapshot = this._expectation.includeSnapshot || this._includeSnapshot;
     if (shouldIncludeSnapshot && this._context.currentTab()) {
       const options = this._expectation.snapshotOptions;
       if (options?.selector || options?.maxLength) {
@@ -130,7 +132,7 @@ ${this._code.join('\n')}
 
     // List browser tabs based on expectation.
     const shouldIncludeTabs = this._expectation.includeTabs;
-    const shouldIncludeSnapshot = this._expectation.includeSnapshot;
+    const shouldIncludeSnapshot = this._expectation.includeSnapshot || this._includeSnapshot;
     
     if (shouldIncludeTabs)
       response.push(...renderTabsMarkdown(this._context.tabs(), shouldIncludeTabs));
@@ -191,13 +193,8 @@ ${this._code.join('\n')}
     lines.push(`- Page Snapshot:`);
     lines.push('```yaml');
     
-    // Apply snapshot format and length restrictions
+    // Use the snapshot as-is (length restrictions handled in tab.ts)
     let snapshot = tabSnapshot.ariaSnapshot;
-    const snapshotOptions = this._expectation.snapshotOptions;
-    
-    if (snapshotOptions?.maxLength && snapshot.length > snapshotOptions.maxLength) {
-      snapshot = snapshot.slice(0, snapshotOptions.maxLength) + '...';
-    }
     
     lines.push(snapshot);
     lines.push('```');

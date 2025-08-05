@@ -88,7 +88,7 @@ test.describe('Response partial snapshot implementation', () => {
     // Should fall back to full snapshot
     const content = result.content[0].text;
     expect(content).not.toMatch(/element \[\.non-existent-selector\]:/);
-    expect(content).toContain('div'); // Full snapshot contains page structure
+    expect(content).toContain('generic'); // Full snapshot contains page structure (div becomes generic in ARIA tree)
   });
 
   test('should apply maxLength truncation at word boundary', async ({ client, server }) => {
