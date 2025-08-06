@@ -17,23 +17,38 @@
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  base: '/lib/ui/',
+  plugins: [
+    react(),
+    viteStaticCopy({
+      targets: [
+        {
+          src: '../../icons/*',
+          dest: 'icons'
+        },
+        {
+          src: '../../manifest.json',
+          dest: '.'
+        }
+      ]
+    })
+  ],
+  root: resolve(__dirname, 'src/ui'),
   build: {
-    outDir: resolve(__dirname, 'lib/ui'),
-    emptyOutDir: true,
+    outDir: resolve(__dirname, 'dist/'),
+    emptyOutDir: false,
     minify: false,
     rollupOptions: {
-      input: resolve(__dirname, 'connect.html'),
+      input: 'src/ui/connect.html',
       output: {
         manualChunks: undefined,
         inlineDynamicImports: true,
-        entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
-        assetFileNames: '[name].[ext]'
+        entryFileNames: 'lib/ui/[name].js',
+        chunkFileNames: 'lib/ui/[name].js',
+        assetFileNames: 'lib/ui/[name].[ext]'
       }
     }
   }

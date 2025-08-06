@@ -41,11 +41,18 @@ export class RelayConnection {
   private _ws: WebSocket;
   private _eventListener: (source: chrome.debugger.DebuggerSession, method: string, params: any) => void;
   private _detachListener: (source: chrome.debugger.Debuggee, reason: string) => void;
+  private _tabPromise: Promise<void>;
+  private _tabPromiseResolve!: () => void;
+  private _closed = false;
 
-  constructor(ws: WebSocket, tabId: number) {
-    this._debuggee = { tabId };
+  onclose?: () => void;
+
+  constructor(ws: WebSocket) {
+    this._debuggee = { };
+    this._tabPromise = new Promise(resolve => this._tabPromiseResolve = resolve);
     this._ws = ws;
     this._ws.onmessage = this._onMessage.bind(this);
+    this._ws.onclose = () => this._onClose();
     // Store listeners for cleanup
     this._eventListener = this._onDebuggerEvent.bind(this);
     this._detachListener = this._onDebuggerDetach.bind(this);
@@ -53,10 +60,26 @@ export class RelayConnection {
     chrome.debugger.onDetach.addListener(this._detachListener);
   }
 
+  // Either setTabId or close is called after creating the connection.
+  setTabId(tabId: number): void {
+    this._debuggee = { tabId };
+    this._tabPromiseResolve();
+  }
+
   close(message: string): void {
+    this._ws.close(1000, message);
+    // ws.onclose is called asynchronously, so we call it here to avoid forwarding
+    // CDP events to the closed connection.
+    this._onClose();
+  }
+
+  private _onClose() {
+    if (this._closed)
+      return;
+    this._closed = true;
     chrome.debugger.onEvent.removeListener(this._eventListener);
     chrome.debugger.onDetach.removeListener(this._detachListener);
-    this._ws.close(1000, message);
+    this.onclose?.();
   }
 
   private _onDebuggerEvent(source: chrome.debugger.DebuggerSession, method: string, params: any): void {
@@ -111,9 +134,8 @@ export class RelayConnection {
   }
 
   private async _handleCommand(message: ProtocolCommand): Promise<any> {
-    if (!this._debuggee.tabId)
-      throw new Error('No tab is connected. Please go to the Playwright MCP extension and select the tab you want to connect to.');
     if (message.method === 'attachToTab') {
+      await this._tabPromise;
       debugLog('Attaching debugger to tab:', this._debuggee);
       await chrome.debugger.attach(this._debuggee, '1.3');
       const result: any = await chrome.debugger.sendCommand(this._debuggee, 'Target.getTargetInfo');
@@ -121,6 +143,8 @@ export class RelayConnection {
         targetInfo: result?.targetInfo,
       };
     }
+    if (!this._debuggee.tabId)
+      throw new Error('No tab is connected. Please go to the Playwright MCP extension and select the tab you want to connect to.');
     if (message.method === 'forwardCDPCommand') {
       const { sessionId, method, params } = message.params;
       debugLog('CDP command:', method, params);
@@ -147,6 +171,7 @@ export class RelayConnection {
   }
 
   private _sendMessage(message: any): void {
-    this._ws.send(JSON.stringify(message));
+    if (this._ws.readyState === WebSocket.OPEN)
+      this._ws.send(JSON.stringify(message));
   }
 }

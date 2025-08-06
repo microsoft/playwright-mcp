@@ -25,6 +25,7 @@ const p = process.platform === 'win32' ? 'c:\\non\\existent\\folder' : '/non/exi
 
 test('should use separate user data by root path', async ({ startClient, server }, testInfo) => {
   const { client } = await startClient({
+    clientName: 'Visual Studio Code', // Simulate VS Code client, roots only work with it
     roots: [
       {
         name: 'test',
@@ -48,6 +49,7 @@ test('check that trace is saved in workspace', async ({ startClient, server, mcp
   const rootPath = testInfo.outputPath('workspace');
   const { client } = await startClient({
     args: ['--save-trace'],
+    clientName: 'Visual Studio Code - Insiders', // Simulate VS Code client, roots only work with it
     roots: [
       {
         name: 'workspace',

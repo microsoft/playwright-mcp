@@ -28,51 +28,37 @@ export class ExtensionContextFactory implements BrowserContextFactory {
   description = 'Connect to a browser using the Playwright MCP extension';
 
   private _browserChannel: string;
-  private _relayPromise: Promise<CDPRelayServer> | undefined;
-  private _browserPromise: Promise<playwright.Browser> | undefined;
 
   constructor(browserChannel: string) {
     this._browserChannel = browserChannel;
   }
 
   async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
-    // First call will establish the connection to the extension.
-    if (!this._browserPromise)
-      this._browserPromise = this._obtainBrowser(clientInfo, abortSignal);
-    const browser = await this._browserPromise;
+    const browser = await this._obtainBrowser(clientInfo, abortSignal);
     return {
       browserContext: browser.contexts()[0],
       close: async () => {
         debugLogger('close() called for browser context');
         await browser.close();
-        this._browserPromise = undefined;
       }
     };
   }
 
   private async _obtainBrowser(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<playwright.Browser> {
-    if (!this._relayPromise)
-      this._relayPromise = this._startRelay(abortSignal);
-    const relay = await this._relayPromise;
-
-    abortSignal.throwIfAborted();
+    const relay = await this._startRelay(abortSignal);
     await relay.ensureExtensionConnectionForMCPContext(clientInfo, abortSignal);
-    const browser = await playwright.chromium.connectOverCDP(relay.cdpEndpoint());
-    browser.on('disconnected', () => {
-      this._browserPromise = undefined;
-      debugLogger('Browser disconnected');
-    });
-    return browser;
+    return await playwright.chromium.connectOverCDP(relay.cdpEndpoint());
   }
 
   private async _startRelay(abortSignal: AbortSignal) {
     const httpServer = await startHttpServer({});
+    if (abortSignal.aborted) {
+      httpServer.close();
+      throw new Error(abortSignal.reason);
+    }
     const cdpRelayServer = new CDPRelayServer(httpServer, this._browserChannel);
+    abortSignal.addEventListener('abort', () => cdpRelayServer.stop());
     debugLogger(`CDP relay server started, extension endpoint: ${cdpRelayServer.extensionEndpoint()}.`);
-    if (abortSignal.aborted)
-      cdpRelayServer.stop();
-    else
-      abortSignal.addEventListener('abort', () => cdpRelayServer.stop());
     return cdpRelayServer;
   }
 }
