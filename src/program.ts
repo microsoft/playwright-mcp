@@ -59,7 +59,6 @@ program
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .addOption(new Option('--extension', 'Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright MCP Bridge" browser extension to be installed.').hideHelp())
     .addOption(new Option('--connect-tool', 'Allow to switch between different browser connection methods.').hideHelp())
-    .addOption(new Option('--vscode', 'Enables VS Code integration.').hideHelp())
     .addOption(new Option('--loop-tools', 'Run loop tools').hideHelp())
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
