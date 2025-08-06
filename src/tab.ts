@@ -77,7 +77,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       void this._downloadStarted(download);
     });
     page.setDefaultNavigationTimeout(60000);
-    page.setDefaultTimeout(5000);
+    page.setDefaultTimeout(this.context.config.defaultTimeout);
     (page as any)[tabSymbol] = this;
   }
 

@@ -49,6 +49,7 @@ export type CLIOptions = {
   userAgent?: string;
   userDataDir?: string;
   viewportSize?: string;
+  timeout?: number;
 };
 
 const defaultConfig: FullConfig = {
@@ -69,6 +70,7 @@ const defaultConfig: FullConfig = {
   },
   server: {},
   saveTrace: false,
+  defaultTimeout: 5000,
 };
 
 type BrowserUserConfig = NonNullable<Config['browser']>;
@@ -82,6 +84,7 @@ export type FullConfig = Config & {
   network: NonNullable<Config['network']>,
   saveTrace: boolean;
   server: NonNullable<Config['server']>,
+  defaultTimeout: number;
 };
 
 export async function resolveConfig(config: Config): Promise<FullConfig> {
@@ -192,6 +195,7 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
     imageResponses: cliOptions.imageResponses,
+    defaultTimeout: envToNumber(cliOptions.timeout as string | undefined),
   };
 
   return result;
@@ -224,6 +228,7 @@ function configFromEnv(): Config {
   options.userAgent = envToString(process.env.PLAYWRIGHT_MCP_USER_AGENT);
   options.userDataDir = envToString(process.env.PLAYWRIGHT_MCP_USER_DATA_DIR);
   options.viewportSize = envToString(process.env.PLAYWRIGHT_MCP_VIEWPORT_SIZE);
+  options.timeout = envToNumber(process.env.PLAYWRIGHT_MCP_TIMEOUT);
   return configFromCLIOptions(options);
 }
 
