@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 interface SerializedError {
   name: string;

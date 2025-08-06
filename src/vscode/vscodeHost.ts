@@ -25,7 +25,7 @@ export class VSCodeServerBackend extends ProcessHost implements ServerBackend {
   private _tools: ToolSchema<any>[] = [];
 
   private constructor() {
-    super(require.resolve('./vscodeMain.js'), {});
+    super(new URL('./vscodeMain.js', import.meta.url).pathname, {});
     this.on('changeProxyTarget', target => this.onChangeProxyTarget?.(target));
   }
 
@@ -65,7 +65,13 @@ export class VSCodeServerBackend extends ProcessHost implements ServerBackend {
   }
 
   async initialize(server: Server) {
-    // TODO: implement other caps
-    await this.sendMessage({ method: 'initialize', params: { capabilities: server.getClientCapabilities() } });
+    await this.sendMessage({
+      method: 'initialize',
+      params: {
+        capabilities: server.getClientCapabilities(),
+        roots: await server.listRoots(),
+        clientVersion: server.getClientVersion()
+      }
+    });
   }
 }

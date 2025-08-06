@@ -98,7 +98,8 @@ export class ProcessHost extends EventEmitter {
       return error;
 
     this.send({
-      method: '__init__', params: {
+      method: '__init__',
+      params: {
         runnerScript: this._runnerScript,
         runnerParams
       }

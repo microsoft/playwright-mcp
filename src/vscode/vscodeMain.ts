@@ -81,7 +81,7 @@ class VSCodeContextFactory implements BrowserContextFactory {
       ...this._config.browser.launchOptions,
       userDataDir: this._config.browser.userDataDir,
     }));
-    const lib = await import(this._lib) as typeof import('playwright');
+    const lib = await import(this._lib).then(mod => mod.default ?? mod) as typeof import('playwright');
     const browser = await lib[this._config.browser.browserName].connect(connectionString.toString());
 
     const context: playwright.BrowserContext = browser.contexts()[0] ?? await browser.newContext(this._config.browser.contextOptions);

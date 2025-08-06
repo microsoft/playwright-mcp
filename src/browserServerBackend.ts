@@ -141,14 +141,20 @@ export class BrowserServerBackend implements ServerBackend {
         title: 'Connect to vscode',
         description: 'Connect to VS Code:',
         inputSchema: z.object({
-          connectionString: z.string(),
-          lib: z.string(),
+          connectionString: z.string().optional(),
+          lib: z.string().optional(),
         }),
         type: 'readOnly',
       },
       handle: async (context, params, response) => {
+        if (!params.connectionString || !params.lib) {
+          this.onChangeProxyTarget!({ kind: 'default' });
+          response.addResult('Successfully disconnected.');
+          return;
+        }
+
         this.onChangeProxyTarget?.({ kind: 'vscode', connectionString: params.connectionString, lib: params.lib });
-        response.addResult('Successfully changed connection method.');
+        response.addResult('Successfully switched to VS Code.');
       }
     });
   }
