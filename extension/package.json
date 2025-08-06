@@ -19,6 +19,7 @@
   "scripts": {
     "build": "tsc --project . && tsc --project tsconfig.ui.json && vite build",
     "watch": "tsc --watch --project . & tsc --watch --project tsconfig.ui.json & vite build --watch",
+    "test": "playwright test",
     "clean": "rm -rf dist"
   },
   "devDependencies": {

@@ -28,9 +28,11 @@ export class ExtensionContextFactory implements BrowserContextFactory {
   description = 'Connect to a browser using the Playwright MCP extension';
 
   private _browserChannel: string;
+  private _userDataDir?: string;
 
-  constructor(browserChannel: string) {
+  constructor(browserChannel: string, userDataDir: string | undefined) {
     this._browserChannel = browserChannel;
+    this._userDataDir = userDataDir;
   }
 
   async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
@@ -56,7 +58,7 @@ export class ExtensionContextFactory implements BrowserContextFactory {
       httpServer.close();
       throw new Error(abortSignal.reason);
     }
-    const cdpRelayServer = new CDPRelayServer(httpServer, this._browserChannel);
+    const cdpRelayServer = new CDPRelayServer(httpServer, this._browserChannel, this._userDataDir);
     abortSignal.addEventListener('abort', () => cdpRelayServer.stop());
     debugLogger(`CDP relay server started, extension endpoint: ${cdpRelayServer.extensionEndpoint()}.`);
     return cdpRelayServer;

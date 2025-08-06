@@ -191,7 +191,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode'], 
   const transport = new StdioClientTransport({
     command: 'node',
     args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
-    cwd: path.join(path.dirname(__filename), '..'),
+    cwd: path.dirname(test.info().config.configFile!),
     stderr: 'pipe',
     env: {
       ...process.env,

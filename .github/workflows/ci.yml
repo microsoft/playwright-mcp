@@ -84,19 +84,19 @@ jobs:
       env:
         MCP_IN_DOCKER: 1
 
-  build_extension:
+  test_extension:
     strategy:
       fail-fast: false
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     defaults:
       run:
         working-directory: ./extension
     steps:
     - uses: actions/checkout@v4
-    - name: Use Node.js 18
+    - name: Use Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20' # crypto.randomUUID(); stalls in v18.20.8
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
@@ -108,3 +108,17 @@ jobs:
         name: extension
         path: ./extension/dist
         retention-days: 7
+    - name: Install and build MCP server
+      run: |
+        cd ..
+        npm ci
+        npm run build
+        npx playwright install chromium
+    - name: Run tests
+      run: |
+        if [[ "$(uname)" == "Linux" ]]; then
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test
+        else
+          npm run test
+        fi
+      shell: bash

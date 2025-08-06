@@ -56,6 +56,7 @@ type CDPResponse = {
 export class CDPRelayServer {
   private _wsHost: string;
   private _browserChannel: string;
+  private _userDataDir?: string;
   private _cdpPath: string;
   private _extensionPath: string;
   private _wss: WebSocketServer;
@@ -69,9 +70,10 @@ export class CDPRelayServer {
   private _nextSessionId: number = 1;
   private _extensionConnectionPromise!: ManualPromise<void>;
 
-  constructor(server: http.Server, browserChannel: string) {
+  constructor(server: http.Server, browserChannel: string, userDataDir?: string) {
     this._wsHost = httpAddressToString(server.address()).replace(/^http/, 'ws');
     this._browserChannel = browserChannel;
+    this._userDataDir = userDataDir;
 
     const uuid = crypto.randomUUID();
     this._cdpPath = `/cdp/${uuid}`;
@@ -117,7 +119,12 @@ export class CDPRelayServer {
     if (!executablePath)
       throw new Error(`"${this._browserChannel}" executable not found. Make sure it is installed at a standard location.`);
 
-    spawn(executablePath, [href], {
+    const args: string[] = [];
+    if (this._userDataDir)
+      args.push(`--user-data-dir=${this._userDataDir}`);
+    args.push(href);
+
+    spawn(executablePath, args, {
       windowsHide: true,
       detached: true,
       shell: false,
