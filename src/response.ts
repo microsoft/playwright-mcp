@@ -203,11 +203,13 @@ ${this._code.join('\n')}
     }
 
     // List browser tabs based on expectation.
-    const shouldIncludeTabs = this._expectation.includeTabs;
+    const shouldIncludeTabs = this._expectation.includeTabs || this._includeTabs;
     const shouldIncludeSnapshot = this._expectation.includeSnapshot || this._includeSnapshot;
 
-    if (shouldIncludeTabs)
-      response.push(...renderTabsMarkdown(this._context.tabs(), shouldIncludeTabs));
+    if (shouldIncludeTabs) {
+      const tabsMarkdown = renderTabsMarkdown(this._context.tabs(), true);
+      response.push(...tabsMarkdown);
+    }
 
     // Add snapshot if provided and expectation allows it.
     if (shouldIncludeSnapshot && this._tabSnapshot?.modalStates.length) {

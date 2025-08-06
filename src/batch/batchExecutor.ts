@@ -91,7 +91,7 @@ export class BatchExecutor {
         });
 
         // Determine if we should continue or stop
-        if (!step.continueOnError && options.stopOnFirstError) {
+        if (options.stopOnFirstError && !step.continueOnError) {
           stopReason = 'error';
           break;
         }

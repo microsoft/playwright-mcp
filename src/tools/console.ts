@@ -27,7 +27,12 @@ const console = defineTabTool({
     type: 'readOnly',
   },
   handle: async (tab, params, response) => {
-    tab.consoleMessages().map(message => response.addResult(message.toString()));
+    const messages = tab.consoleMessages();
+    if (messages.length === 0) {
+      response.addResult('No console messages');
+    } else {
+      messages.forEach(message => response.addResult(message.toString()));
+    }
   },
 });
 
