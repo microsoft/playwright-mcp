@@ -37,10 +37,11 @@ const wait = defineTool({
       throw new Error('Either time, text or textGone must be provided');
 
     const code: string[] = [];
+    const timeout: number | undefined = params.time && params.time * 1000;
 
-    if (params.time) {
-      code.push(`await new Promise(f => setTimeout(f, ${params.time!} * 1000));`);
-      await new Promise(f => setTimeout(f, Math.min(30000, params.time! * 1000)));
+    if (!params.text && !params.textGone && timeout) {
+      code.push(`await new Promise(f => setTimeout(f, ${timeout}));`);
+      await new Promise(f => setTimeout(f, Math.max(30000, timeout)));
     }
 
     const tab = context.currentTabOrDie();
@@ -49,12 +50,12 @@ const wait = defineTool({
 
     if (goneLocator) {
       code.push(`await page.getByText(${JSON.stringify(params.textGone)}).first().waitFor({ state: 'hidden' });`);
-      await goneLocator.waitFor({ state: 'hidden' });
+      await goneLocator.waitFor({ state: 'hidden', timeout: timeout });
     }
 
     if (locator) {
       code.push(`await page.getByText(${JSON.stringify(params.text)}).first().waitFor({ state: 'visible' });`);
-      await locator.waitFor({ state: 'visible' });
+      await locator.waitFor({ state: 'visible', timeout: timeout });
     }
 
     response.addResult(`Waited for ${params.text || params.textGone || params.time}`);
