@@ -42,7 +42,7 @@ export type ClientInfo = { name?: string, version?: string, rootPath?: string };
 export interface BrowserContextFactory {
   readonly name: string;
   readonly description: string;
-  createContext(clientInfo: ClientInfo, abortSignal: AbortSignal, params: any): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }>;
+  createContext(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }>;
 }
 
 class BaseContextFactory implements BrowserContextFactory {

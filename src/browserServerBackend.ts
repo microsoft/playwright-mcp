@@ -44,12 +44,15 @@ export class BrowserServerBackend implements ServerBackend {
   private _config: FullConfig;
   private _browserContextFactory: BrowserContextFactory;
 
+  onChangeProxyTarget: ServerBackend['onChangeProxyTarget'];
+
   constructor(config: FullConfig, factories: FactoryList) {
     this._config = config;
     this._browserContextFactory = factories[0];
     this._tools = filteredTools(config);
     if (factories.length > 1)
       this._tools.push(this._defineContextSwitchTool(factories));
+    this._tools.push(this._defineConnectVSCodeTool());
   }
 
   async initialize(server: mcpServer.Server): Promise<void> {
@@ -66,7 +69,6 @@ export class BrowserServerBackend implements ServerBackend {
       tools: this._tools,
       config: this._config,
       browserContextFactory: this._browserContextFactory,
-      browserContextFactoryParams: undefined,
       sessionLog: this._sessionLog,
       clientInfo: { ...server.getClientVersion(), rootPath },
     });
@@ -111,7 +113,6 @@ export class BrowserServerBackend implements ServerBackend {
         ].join('\n'),
         inputSchema: z.object({
           method: z.enum(factories.map(factory => factory.name) as [string, ...string[]]).default(factories[0].name).describe('The method to use to connect to the browser'),
-          params: z.any().optional().describe('Additional parameters for the connection method'),
         }),
         type: 'readOnly',
       },
@@ -122,18 +123,38 @@ export class BrowserServerBackend implements ServerBackend {
           response.addError('Unknown connection method: ' + params.method);
           return;
         }
-        await self._setContextFactory(factory, params.params);
+        await self._setContextFactory(factory);
         response.addResult('Successfully changed connection method.');
       }
     });
   }
 
-  private async _setContextFactory(newFactory: BrowserContextFactory, params: any) {
+  private _defineConnectVSCodeTool(): Tool<any> {
+    return defineTool({
+      capability: 'core',
+
+      schema: {
+        name: 'browser_connect_vscode',
+        title: 'Connect to vscode',
+        description: 'Connect to VS Code:',
+        inputSchema: z.object({
+          connectionString: z.string(),
+          lib: z.string(),
+        }),
+        type: 'readOnly',
+      },
+      handle: async (context, params, response) => {
+        this.onChangeProxyTarget?.({ kind: 'vscode', connectionString: params.connectionString, lib: params.lib });
+        response.addResult('Successfully changed connection method.');
+      }
+    });
+  }
+
+  private async _setContextFactory(newFactory: BrowserContextFactory) {
     if (this._context) {
       const options: ContextOptions = {
         ...this._context.options,
         browserContextFactory: newFactory,
-        browserContextFactoryParams: params,
       };
       await this._context.dispose();
       this._context = new Context(options);

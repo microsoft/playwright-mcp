@@ -53,9 +53,59 @@ export interface ServerBackend {
   tools(): ToolSchema<any>[];
   callTool(schema: ToolSchema<any>, parsedArguments: any): Promise<ToolResponse>;
   serverClosed?(): void;
+
+  onChangeProxyTarget?: (target: { kind: 'vscode', connectionString: string, lib: string } | { kind: 'default' }) => void;
 }
 
 export type ServerBackendFactory = () => ServerBackend;
+
+interface ServerBackendProxyDelegate {
+  onChangeProxyTarget: ServerBackend['onChangeProxyTarget'];
+}
+
+export class ServerBackendProxy implements ServerBackend {
+  private _server?: Server;
+  constructor(private _backend: ServerBackend, private _delegate: ServerBackendProxyDelegate) {
+    this._backend.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
+  }
+
+  async connectTo(backend: ServerBackend) {
+    const old = this._backend;
+    old.onChangeProxyTarget = undefined;
+    this._backend = backend;
+    this._backend.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
+    if (this._server) {
+      old.serverClosed?.();
+      await this.initialize(this._server);
+    }
+  }
+
+  get name() {
+    return this._backend.name;
+  }
+
+  get version() {
+    return this._backend.version;
+  }
+
+  async initialize(server: Server): Promise<void> {
+    this._server = server;
+    await this._backend.initialize?.(server);
+  }
+
+  tools(): ToolSchema<any>[] {
+    return this._backend.tools();
+  }
+
+  async callTool(schema: ToolSchema<any>, parsedArguments: any): Promise<ToolResponse> {
+    return this._backend.callTool(schema, parsedArguments);
+  }
+
+  serverClosed(): void {
+    this._backend.serverClosed?.();
+    this._server = undefined;
+  }
+}
 
 export async function connect(serverBackendFactory: ServerBackendFactory, transport: Transport, runHeartbeat: boolean) {
   const backend = serverBackendFactory();

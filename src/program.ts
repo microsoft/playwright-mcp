@@ -22,11 +22,12 @@ import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
 import { packageJSON } from './package.js';
 import { createExtensionContextFactory, runWithExtension } from './extension/main.js';
-import { createVSCodeContextFactory } from './vscode.js';
 import { BrowserServerBackend, FactoryList } from './browserServerBackend.js';
 import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
+import { ServerBackendProxy } from './mcp/server.js';
+import { VSCodeServerBackend } from './vscode/vscodeHost.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -84,9 +85,22 @@ program
       const factories: FactoryList = [browserContextFactory];
       if (options.connectTool)
         factories.push(createExtensionContextFactory(config));
-      if (options.vscode)
-        factories.push(createVSCodeContextFactory(config)); // TODO: auto-detect this from VS Code user agent.
-      const serverBackendFactory = () => new BrowserServerBackend(config, factories);
+      const serverBackendFactory = () => {
+        const proxy = new ServerBackendProxy(
+            new BrowserServerBackend(config, factories),
+            {
+              async onChangeProxyTarget(target) {
+                if (target.kind === 'vscode')
+                  await proxy.connectTo(await VSCodeServerBackend.start(config, target.connectionString, target.lib));
+                else if (target.kind === 'default')
+                  await proxy.connectTo(new BrowserServerBackend(config, factories));
+                else
+                  throw new Error(`Unknown target kind`);
+              },
+            }
+        );
+        return proxy;
+      };
       await mcpTransport.start(serverBackendFactory, config.server);
 
       if (config.saveTrace) {
