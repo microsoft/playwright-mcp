@@ -28,7 +28,7 @@ const pressKey = defineTabTool({
   schema: {
     name: 'browser_press_key',
     title: 'Press a key',
-    description: 'Press a key on the keyboard. Use expectation to control response content, diffOptions to efficiently track changes',
+    description: 'Press a key on the keyboard. For simple key presses without needing to see the result, use expectation: { includeSnapshot: false } to reduce token usage. Include snapshots when you need to see the page state after the key press.',
     inputSchema: z.object({
       key: z.string().describe('Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'),
       expectation: expectationSchema
@@ -58,7 +58,7 @@ const type = defineTabTool({
   schema: {
     name: 'browser_type',
     title: 'Type text',
-    description: 'Type text into editable element. Use expectation to control response content, diffOptions to efficiently track changes',
+    description: 'Type text into editable element. For simple text input without needing to see the result, use expectation: { includeSnapshot: false } to reduce token usage. Include snapshots when you need to see the updated form or continue interacting with the page.',
     inputSchema: typeSchema,
     type: 'destructive',
   },

@@ -23,7 +23,7 @@ export const batchExecuteTool = defineTool({
   schema: {
     name: 'browser_batch_execute',
     title: 'Batch Execute Browser Actions',
-    description: 'Execute multiple browser actions in sequence with optimized response handling. RECOMMENDED: Use this tool instead of individual actions when performing multiple operations to significantly reduce token usage and improve performance',
+    description: 'Execute multiple browser actions in sequence with optimized response handling. RECOMMENDED: Use this tool instead of individual actions when performing multiple operations to significantly reduce token usage and improve performance. Example: [{ tool: "browser_navigate", arguments: { url: "https://example.com", expectation: { includeSnapshot: false } } }, { tool: "browser_click", arguments: { element: "login button", ref: "ref123" } }]. Set globalExpectation: { includeSnapshot: false } for maximum efficiency when intermediate states aren\'t needed.',
     inputSchema: batchExecuteSchema,
     type: 'destructive'
   },

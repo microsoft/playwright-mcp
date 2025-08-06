@@ -24,7 +24,7 @@ const listTabs = defineTool({
   schema: {
     name: 'browser_tab_list',
     title: 'List tabs',
-    description: 'List browser tabs',
+    description: 'List browser tabs. This tool shows tab information - use expectation: { includeSnapshot: false } if you only need tab metadata without current page snapshots.',
     inputSchema: z.object({
       expectation: expectationSchema
     }),
@@ -43,7 +43,7 @@ const selectTab = defineTool({
   schema: {
     name: 'browser_tab_select',
     title: 'Select a tab',
-    description: 'Select a tab by index',
+    description: 'Select a tab by index. Use expectation: { includeSnapshot: false } for simple tab switching, or include snapshots when you need to see the selected tab\'s content.',
     inputSchema: z.object({
       index: z.number().describe('The index of the tab to select'),
       expectation: expectationSchema
@@ -63,7 +63,7 @@ const newTab = defineTool({
   schema: {
     name: 'browser_tab_new',
     title: 'Open a new tab',
-    description: 'Open a new tab',
+    description: 'Open a new tab. Use expectation: { includeSnapshot: false } for simple tab creation, or include snapshots when you need to see the new tab\'s content immediately.',
     inputSchema: z.object({
       url: z.string().optional().describe('The URL to navigate to in the new tab. If not provided, the new tab will be blank.'),
       expectation: expectationSchema
@@ -85,7 +85,7 @@ const closeTab = defineTool({
   schema: {
     name: 'browser_tab_close',
     title: 'Close a tab',
-    description: 'Close a tab',
+    description: 'Close a tab. Use expectation: { includeSnapshot: false } for simple tab closure, or include snapshots when you need to see the remaining tabs or current tab after closure.',
     inputSchema: z.object({
       index: z.number().optional().describe('The index of the tab to close. Closes current tab if not provided.'),
       expectation: expectationSchema

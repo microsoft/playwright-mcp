@@ -26,7 +26,7 @@ const snapshot = defineTool({
   schema: {
     name: 'browser_snapshot',
     title: 'Page snapshot',
-    description: 'Capture accessibility snapshot of the current page. Use expectation to control response content, snapshotOptions to limit scope',
+    description: 'Capture accessibility snapshot of the current page. Use snapshotOptions.selector to limit scope to specific elements for token efficiency. This tool always includes snapshots - use it when you specifically need to see the current page state.',
     inputSchema: z.object({
       expectation: expectationSchema
     }),
@@ -73,7 +73,7 @@ const click = defineTabTool({
   schema: {
     name: 'browser_click',
     title: 'Click',
-    description: 'Perform click on a web page. Use expectation to control response content, diffOptions to efficiently track changes',
+    description: 'Perform click on a web page. Use expectation: { includeSnapshot: false } for simple clicks where you don\'t need to see the result. Include snapshots when you need to see page changes or continue interacting. Use diffOptions to track specific changes efficiently.',
     inputSchema: clickSchema,
     type: 'destructive',
   },
@@ -102,7 +102,7 @@ const drag = defineTabTool({
   schema: {
     name: 'browser_drag',
     title: 'Drag mouse',
-    description: 'Perform drag and drop between two elements. Use expectation to control response content, diffOptions to efficiently track changes',
+    description: 'Perform drag and drop between two elements. Use expectation: { includeSnapshot: false } for simple drag operations where you don\'t need to see the result. Include snapshots when you need to verify the drag result or continue interacting.',
     inputSchema: z.object({
       startElement: z.string().describe('Human-readable source element description used to obtain the permission to interact with the element'),
       startRef: z.string().describe('Exact source element reference from the page snapshot'),
@@ -132,7 +132,7 @@ const hover = defineTabTool({
   schema: {
     name: 'browser_hover',
     title: 'Hover mouse',
-    description: 'Hover over element on page. Use expectation to control response content, diffOptions to efficiently track changes',
+    description: 'Hover over element on page. Use expectation: { includeSnapshot: false } for simple hover actions. Include snapshots when you need to see hover effects like tooltips or menu appearances.',
     inputSchema: elementSchema.extend({
       expectation: expectationSchema
     }),
@@ -159,7 +159,7 @@ const selectOption = defineTabTool({
   schema: {
     name: 'browser_select_option',
     title: 'Select option',
-    description: 'Select an option in a dropdown',
+    description: 'Select an option in a dropdown. Use expectation: { includeSnapshot: false } for simple selections without needing to see the result. Include snapshots when you need to verify the selection or continue interacting with the form.',
     inputSchema: selectOptionSchema,
     type: 'destructive',
   },

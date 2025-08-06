@@ -24,7 +24,7 @@ const navigate = defineTool({
   schema: {
     name: 'browser_navigate',
     title: 'Navigate to a URL',
-    description: 'Navigate to a URL. Use expectation to control response content, diffOptions to efficiently track changes',
+    description: 'Navigate to a URL. For simple navigation, use expectation: { includeSnapshot: false } to reduce token usage. Use diffOptions to efficiently track specific changes.',
     inputSchema: z.object({
       url: z.string().describe('The URL to navigate to'),
       expectation: expectationSchema
@@ -45,7 +45,7 @@ const goBack = defineTabTool({
   schema: {
     name: 'browser_navigate_back',
     title: 'Go back',
-    description: 'Go back to the previous page. Use expectation to control response content, diffOptions to efficiently track changes',
+    description: 'Go back to the previous page. For simple navigation, use expectation: { includeSnapshot: false } to reduce token usage. Use diffOptions to efficiently track specific changes.',
     inputSchema: z.object({
       expectation: expectationSchema
     }),
@@ -63,7 +63,7 @@ const goForward = defineTabTool({
   schema: {
     name: 'browser_navigate_forward',
     title: 'Go forward',
-    description: 'Go forward to the next page. Use expectation to control response content, diffOptions to efficiently track changes',
+    description: 'Go forward to the next page. For simple navigation, use expectation: { includeSnapshot: false } to reduce token usage. Use diffOptions to efficiently track specific changes.',
     inputSchema: z.object({
       expectation: expectationSchema
     }),
