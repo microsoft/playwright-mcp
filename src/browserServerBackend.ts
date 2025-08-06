@@ -52,7 +52,6 @@ export class BrowserServerBackend implements ServerBackend {
     this._tools = filteredTools(config);
     if (factories.length > 1)
       this._tools.push(this._defineContextSwitchTool(factories));
-    this._tools.push(this._defineConnectVSCodeTool());
   }
 
   async initialize(server: mcpServer.Server): Promise<void> {
@@ -65,6 +64,8 @@ export class BrowserServerBackend implements ServerBackend {
       const firstRootUri = roots[0]?.uri;
       const url = firstRootUri ? new URL(firstRootUri) : undefined;
       rootPath = url ? fileURLToPath(url) : undefined;
+
+      this._tools.push(this._defineConnectVSCodeTool());
     }
     this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config, rootPath) : undefined;
     this._context = new Context({
