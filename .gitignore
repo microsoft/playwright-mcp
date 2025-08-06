@@ -19,3 +19,7 @@ test-results.json
 
 # Serena cache
 .serena/cache/
+
+# Request logs
+logs/
+*.log

@@ -20,6 +20,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { ManualPromise } from '../manualPromise.js';
 import { logUnhandledError } from '../log.js';
+import { logRequest } from '../utils/requestLogger.js';
 
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
@@ -105,6 +106,9 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
       return errorResult(`Error: Tool "${request.params.name}" not found`);
 
     try {
+      // Log the request
+      logRequest(request.params.name, request.params.arguments || {});
+      
       return await backend.callTool(tool, tool.inputSchema.parse(request.params.arguments || {}));
     } catch (error) {
       return errorResult(String(error));

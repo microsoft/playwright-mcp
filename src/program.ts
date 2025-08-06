@@ -26,6 +26,7 @@ import { BrowserServerBackend, FactoryList } from './browserServerBackend.js';
 import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
+import { logServerStart } from './utils/requestLogger.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -83,6 +84,7 @@ program
       if (options.connectTool)
         factories.push(createExtensionContextFactory(config));
       const serverBackendFactory = () => new BrowserServerBackend(config, factories);
+      logServerStart();
       await mcpTransport.start(serverBackendFactory, config.server);
 
       if (config.saveTrace) {
