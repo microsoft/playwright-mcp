@@ -24,7 +24,7 @@ const navigate = defineTool({
   schema: {
     name: 'browser_navigate',
     title: 'Navigate to a URL',
-    description: `Navigate to URL.Default:minimal(false).Use expectation:{includeSnapshot:true,includeConsole:true,includeDownloads:true,includeTabs:true,includeCode:true,snapshotOptions:{selector:"#content",format:"aria"},consoleOptions:{levels:["error","warn"],maxMessages:10},diffOptions:{enabled:true,format:"unified",threshold:0.1,maxDiffLines:50},imageOptions:{quality:80,maxWidth:1200,maxHeight:800,format:"jpeg"}}.TIP:Use diffOptions:{enabled:true} to show only changes from previous state(saves tokens).Use selector to focus on content area.`,
+    description: `Navigate to a URL.expectation:{includeSnapshot:true} to see what loaded,false if you know what to do next.snapshotOptions:{selector:"#content"} to focus on main content(saves 50% tokens).diffOptions:{enabled:true} when revisiting pages to see only changes.CONSIDER batch_execute for navigate→interact workflows.`,
     inputSchema: z.object({
       url: z.string().describe('The URL to navigate to'),
       expectation: expectationSchema
@@ -45,7 +45,7 @@ const goBack = defineTabTool({
   schema: {
     name: 'browser_navigate_back',
     title: 'Go back',
-    description: `Go back.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"main",format:"aria"},consoleOptions:{levels:["error","warn"]},diffOptions:{enabled:true}}.TIP:includeSnapshot:false for simple nav.`,
+    description: `Go back to previous page.expectation:{includeSnapshot:true} to see previous page,false if continuing workflow.diffOptions:{enabled:true} shows only what changed from forward page.USE batch_execute for back→interact sequences.`,
     inputSchema: z.object({
       expectation: expectationSchema
     }),
@@ -63,7 +63,7 @@ const goForward = defineTabTool({
   schema: {
     name: 'browser_navigate_forward',
     title: 'Go forward',
-    description: `Go forward.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"main",format:"aria"},consoleOptions:{levels:["error","warn"]},diffOptions:{enabled:true}}.TIP:includeSnapshot:false for simple nav.`,
+    description: `Go forward to next page.expectation:{includeSnapshot:true} to see next page,false if continuing workflow.diffOptions:{enabled:true} shows only what changed from previous page.USE batch_execute for forward→interact sequences.`,
     inputSchema: z.object({
       expectation: expectationSchema
     }),

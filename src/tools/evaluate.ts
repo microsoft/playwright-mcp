@@ -35,7 +35,7 @@ const evaluate = defineTabTool({
   schema: {
     name: 'browser_evaluate',
     title: 'Evaluate JavaScript',
-    description: `Evaluate JS on page/element.Default:minimal(false)+result.Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"body",format:"aria"}}.Returns evaluation result.TIP:includeSnapshot:false for simple eval,true if changes page state.`,
+    description: `Evaluate JavaScript expression on page or element.Returns evaluation result.USE CASES:extract data,modify DOM,trigger events.expectation:{includeSnapshot:false} for data extraction,true if modifying page.element+ref to run on specific element.CONSIDER batch_execute for multiple evaluations.`,
     inputSchema: evaluateSchema,
     type: 'destructive',
   },

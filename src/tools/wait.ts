@@ -24,7 +24,7 @@ const wait = defineTool({
   schema: {
     name: 'browser_wait_for',
     title: 'Wait for',
-    description: `Wait for text/time.Default:minimal(false).PREFER:text-based wait over time for reliability.Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"#status",format:"aria"},diffOptions:{enabled:true}}.TIP:diffOptions:{enabled:true} shows only what changed during wait.Use selector to monitor specific area.`,
+    description: `Wait for text to appear/disappear or time to pass.PREFER text-based wait over time for reliability.For loading states:wait for text:"Loading..." textGone:true.For dynamic content:wait for specific text to appear.expectation:{includeSnapshot:true,snapshotOptions:{selector:"#status"},diffOptions:{enabled:true}} shows only what changed.AVOID:fixed time waits unless necessary.`,
     inputSchema: z.object({
       time: z.number().optional().describe('The time to wait in seconds'),
       text: z.string().optional().describe('The text to wait for'),

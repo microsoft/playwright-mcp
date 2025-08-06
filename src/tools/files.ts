@@ -24,7 +24,7 @@ const uploadFile = defineTabTool({
   schema: {
     name: 'browser_file_upload',
     title: 'Upload files',
-    description: `Upload files.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"form",format:"aria"}}.Accepts array of paths.TIP:Use selector:"form" to see upload area.`,
+    description: `Upload one or multiple files to file input.paths:["/path/file1.jpg","/path/file2.pdf"] for multiple files.expectation:{includeSnapshot:true,snapshotOptions:{selector:"form"}} to verify upload.Must be triggered after file input interaction.USE batch_execute for click→upload workflows.`,
     inputSchema: z.object({
       paths: z.array(z.string()).describe('The absolute paths to the files to upload. Can be a single file or multiple files.'),
       expectation: expectationSchema

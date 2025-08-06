@@ -26,7 +26,7 @@ const snapshot = defineTool({
   schema: {
     name: 'browser_snapshot',
     title: 'Page snapshot',
-    description: `Capture page snapshot.Always includes snapshot.TIP:Other tools(navigate/click/type etc) can include snapshot via expectation:{includeSnapshot:true},use that instead of calling this separately.Use expectation:{snapshotOptions:{selector:"body",format:"aria"},consoleOptions:{levels:["log","warn","error","info"]}}.`,
+    description: `Capture accessibility snapshot of current page.AVOID calling directly - use expectation:{includeSnapshot:true} on other tools instead.USE CASES:Initial page inspection,debugging when other tools didn't capture needed info.snapshotOptions:{selector:"#content"} to focus on specific area.`,
     inputSchema: z.object({
       expectation: expectationSchema
     }),
@@ -73,7 +73,7 @@ const click = defineTabTool({
   schema: {
     name: 'browser_click',
     title: 'Click',
-    description: `Click element.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:".result",format:"aria"},consoleOptions:{levels:["error"]},diffOptions:{enabled:true,format:"minimal"}}.TIP:diffOptions:{enabled:true} shows only what changed after click(huge token saver).includeSnapshot:false for chained actions,true to verify result.`,
+    description: `Perform click on web page.USE batch_execute for multi-click workflows.expectation:{includeSnapshot:false} when next action follows immediately,true to verify result.diffOptions:{enabled:true,format:"minimal"} shows only changes(saves 80% tokens).snapshotOptions:{selector:".result"} to focus on result area.doubleClick:true for double-click,button:"right" for context menu.`,
     inputSchema: clickSchema,
     type: 'destructive',
   },
@@ -102,7 +102,7 @@ const drag = defineTabTool({
   schema: {
     name: 'browser_drag',
     title: 'Drag mouse',
-    description: `Drag and drop between elements.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:".drop-zone",format:"aria"}}.TIP:Use selector:".drop-zone" to focus on drop area.includeSnapshot:true to verify drop result.`,
+    description: `Perform drag and drop between two elements.expectation:{includeSnapshot:true,snapshotOptions:{selector:".drop-zone"}} to verify drop result.diffOptions:{enabled:true} shows only what moved.CONSIDER batch_execute if part of larger workflow.`,
     inputSchema: z.object({
       startElement: z.string().describe('Human-readable source element description used to obtain the permission to interact with the element'),
       startRef: z.string().describe('Exact source element reference from the page snapshot'),
@@ -132,7 +132,7 @@ const hover = defineTabTool({
   schema: {
     name: 'browser_hover',
     title: 'Hover mouse',
-    description: `Hover over element.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:".tooltip",format:"aria"}}.TIP:Use selector:".tooltip" for tooltip area.includeSnapshot:true to see tooltips/menus,false for simple hover.`,
+    description: `Hover over element on page.expectation:{includeSnapshot:true} to capture tooltips/dropdown menus,false for simple hover.snapshotOptions:{selector:".tooltip"} to focus on tooltip area.Often followed by click - use batch_execute for hover→click sequences.`,
     inputSchema: elementSchema.extend({
       expectation: expectationSchema
     }),
@@ -159,7 +159,7 @@ const selectOption = defineTabTool({
   schema: {
     name: 'browser_select_option',
     title: 'Select option',
-    description: `Select dropdown option.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"form",format:"aria"}}.Accepts array for multi-select.TIP:Use selector:"form" for form context.includeSnapshot:false for simple select,true to verify.`,
+    description: `Select option in dropdown.values:["option1","option2"] for multi-select.expectation:{includeSnapshot:false} when part of form filling(use batch),true to verify selection.snapshotOptions:{selector:"form"} for form context.USE batch_execute for form workflows with multiple selects.`,
     inputSchema: selectOptionSchema,
     type: 'destructive',
   },

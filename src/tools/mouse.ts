@@ -27,7 +27,7 @@ const mouseMove = defineTabTool({
   schema: {
     name: 'browser_mouse_move_xy',
     title: 'Move mouse',
-    description: `Move mouse to position.Default:minimal(false).Use expectation:{includeSnapshot:true}.TIP:includeSnapshot:false for simple move.`,
+    description: `Move mouse to specific coordinates.Requires --caps=vision.x,y:coordinates.expectation:{includeSnapshot:false} for simple move,true to see hover effects.PREFER element-based interactions over coordinates when possible.`,
     inputSchema: elementSchema.extend({
       x: z.number().describe('X coordinate'),
       y: z.number().describe('Y coordinate'),
@@ -51,7 +51,7 @@ const mouseClick = defineTabTool({
   schema: {
     name: 'browser_mouse_click_xy',
     title: 'Click',
-    description: `Click at position.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"body"}}.TIP:includeSnapshot:true to see click result.`,
+    description: `Click at specific coordinates.Requires --caps=vision.x,y:click position.expectation:{includeSnapshot:true} to verify result.PREFER browser_click with element ref over coordinates.USE batch_execute for coordinate-based workflows.`,
     inputSchema: elementSchema.extend({
       x: z.number().describe('X coordinate'),
       y: z.number().describe('Y coordinate'),
@@ -81,7 +81,7 @@ const mouseDrag = defineTabTool({
   schema: {
     name: 'browser_mouse_drag_xy',
     title: 'Drag mouse',
-    description: `Drag to position.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:".drop-zone"}}.TIP:includeSnapshot:true to verify drag result.`,
+    description: `Drag from one coordinate to another.Requires --caps=vision.startX,startY→endX,endY.expectation:{includeSnapshot:true,snapshotOptions:{selector:".drop-zone"}} to verify.PREFER browser_drag with element refs over coordinates.`,
     inputSchema: elementSchema.extend({
       startX: z.number().describe('Start X coordinate'),
       startY: z.number().describe('Start Y coordinate'),

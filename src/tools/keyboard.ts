@@ -28,7 +28,7 @@ const pressKey = defineTabTool({
   schema: {
     name: 'browser_press_key',
     title: 'Press a key',
-    description: `Press key.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"body",format:"aria"}}.TIP:includeSnapshot:false for simple key press.`,
+    description: `Press a key on the keyboard.Common keys:Enter,Escape,ArrowUp/Down/Left/Right,Tab,Backspace.expectation:{includeSnapshot:false} for navigation keys,true for content changes.CONSIDER batch_execute for multiple key presses.`,
     inputSchema: z.object({
       key: z.string().describe('Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'),
       expectation: expectationSchema
@@ -58,7 +58,7 @@ const type = defineTabTool({
   schema: {
     name: 'browser_type',
     title: 'Type text',
-    description: `Type text into element.Default:minimal(false).Options:slowly(char-by-char),submit(press Enter).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"form",format:"aria"},consoleOptions:{levels:["warn","error"]},diffOptions:{enabled:true}}.TIP:diffOptions:{enabled:true} shows only form changes.Use selector:"form".includeSnapshot:true to verify,false if continuing.`,
+    description: `Type text into editable element.FOR FORMS:Use batch_execute to fill multiple fields efficiently.slowly:true for auto-complete fields,submit:true to press Enter after.expectation:{includeSnapshot:false} when filling multiple fields(use batch),true for final verification.snapshotOptions:{selector:"form"} to focus on form only.diffOptions:{enabled:true} shows only what changed in form.`,
     inputSchema: typeSchema,
     type: 'destructive',
   },
