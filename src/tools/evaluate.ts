@@ -44,7 +44,7 @@ const evaluate = defineTabTool({
     let locator: playwright.Locator | undefined;
     if (params.ref && params.element) {
       locator = await tab.refLocator({ ref: params.ref, element: params.element });
-      response.addCode(`await page.${await generateLocator(locator)}.evaluate(${javascript.quote(params.function)});`);
+      // response.addCode(`await page.${await generateLocator(locator)}.evaluate(${javascript.quote(params.function)});`);
     } else {
       response.addCode(`await page.evaluate(${javascript.quote(params.function)});`);
     }
