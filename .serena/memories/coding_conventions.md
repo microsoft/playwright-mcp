@@ -1,64 +1,49 @@
-# Coding Conventions and Style
+# Coding Conventions
 
-## Code Style
-- **Language**: TypeScript with strict type checking
-- **Module System**: ES modules (import/export)
-- **File Extensions**: .ts for TypeScript files, .js for compiled output
-- **Naming Conventions**:
-  - Variables and functions: camelCase
-  - Classes: PascalCase
-  - Constants: UPPER_SNAKE_CASE
-  - Files: camelCase or kebab-case
+## TypeScript スタイル
+- **型定義**: 厳密な型チェックを使用
+- **インポート**: ES Modules（.js拡張子で参照）
+- **エクスポート**: 名前付きエクスポートを優先
+- **非同期処理**: async/awaitパターン
 
-## Project Structure Patterns
-- Tool implementations in `src/tools/` directory
-- Each tool exports a schema and handler function
-- Response handling centralized in `src/response.ts`
-- Configuration management in `src/config.ts`
-- MCP server logic in `src/mcp/` directory
+## ファイル命名規則
+- **ツール**: `src/tools/[tool-name].ts`
+- **型定義**: `src/types/[type-name].ts`
+- **スキーマ**: `src/schemas/[schema-name].ts`
+- **ユーティリティ**: `src/utils/[util-name].ts`
 
-## TypeScript Patterns
-- Use Zod schemas for input validation
-- Leverage TypeScript's type inference where possible
-- Define interfaces for complex data structures
-- Use generic types for reusable components
-
-## Tool Implementation Pattern
+## コード構成パターン
 ```typescript
+// ツールの基本構造
+import { Tool } from './tool.js';
 import { z } from 'zod';
-import { defineTool } from './tool.js';
 
 const toolSchema = z.object({
-  // Define parameters
+  // スキーマ定義
 });
 
-export const toolName = defineTool({
-  capability: 'core', // or 'tabs', 'install', etc.
-  schema: {
-    name: 'tool_name',
-    title: 'Tool Title',
-    description: 'Tool description',
-    inputSchema: toolSchema,
-    type: 'readOnly' | 'destructive'
-  },
-  handle: async (context, params, response) => {
-    // Implementation
+export const tool: Tool<typeof toolSchema> = {
+  name: 'browser_[action]',
+  capability: 'core',
+  description: '...',
+  schema: toolSchema,
+  handler: async (args, context) => {
+    // 実装
   }
-});
+};
 ```
 
-## Error Handling
-- Use `response.addError()` for user-facing errors
-- Throw exceptions for internal errors
-- Validate inputs using Zod schemas
-- Provide descriptive error messages
+## エラーハンドリング
+- **MCPエラー**: `McpError`クラスを使用
+- **Playwright例外**: 適切にキャッチして変換
+- **検証エラー**: Zodスキーマで自動検証
 
-## Async/Await
-- Use async/await for asynchronous operations
-- Handle Promise rejections appropriately
-- Use Promise.race() for timeout scenarios
+## レスポンス設計
+- **最適化**: expectationパラメータによる制御
+- **構造化**: 一貫したレスポンス形式
+- **diff検出**: 変更のみを効率的に報告
 
-## Documentation
-- Use JSDoc comments for public APIs
-- Include parameter descriptions in Zod schemas
-- Maintain README.md with usage examples
+## ドキュメント
+- **JSDoc**: 関数・クラスには必須
+- **README更新**: `npm run update-readme`で自動生成
+- **型安全性**: すべての公開APIで型を明示

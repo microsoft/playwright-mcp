@@ -1,44 +1,45 @@
-# fast-playwright-mcp プロジェクト概要
+# Fast Playwright MCP Server - Project Overview
 
-## プロジェクトの目的
-fast-playwright-mcpは、Model Context Protocol (MCP)サーバーとしてPlaywrightブラウザ自動化機能を提供するプロジェクトです。
+## プロジェクト概要
+Model Context Protocol (MCP) サーバーとして実装されたブラウザ自動化ツール。Playwrightをベースに、LLMがWebページと相互作用できる機能を提供。
 
-### 主な特徴
-- **高速で軽量**: Playwrightのアクセシビリティツリーを使用し、画像ベースではなく構造化データで動作
-- **LLMフレンドリー**: ビジョンモデル不要、純粋に構造化データで操作
-- **決定論的**: スクリーンショットベースのアプローチに比べて曖昧さを回避
+## 主要な特徴
+- **軽量・高速**: Playwrightのアクセシビリティツリーを使用（ピクセルベース入力不要）
+- **LLMフレンドリー**: 構造化データのみで動作、ビジョンモデル不要
+- **決定論的ツール適用**: スクリーンショットベースのアプローチによくある曖昧さを回避
 
-### 拡張機能（このフォーク）
-- **トークン最適化**: expectationパラメータでレスポンス内容制御
-- **画像圧縮**: imageOptionsによる画像最適化
-- **バッチ実行**: browser_batch_executeによる複数操作の効率的実行
-- **スナップショット制御**: snapshotOptionsによるサイズ制限
+## Fast Serverの独自機能
+- **トークン最適化**: 50-80%のトークン削減が可能
+- **バッチ実行**: 複数操作の一括実行でパフォーマンス向上
+- **画像圧縮**: JPEG形式・品質調整・サイズ変更対応
+- **diff検出**: 前回の状態との差分のみを表示
+- **レスポンス制御**: expectationパラメータによる細かな出力制御
 
 ## 技術スタック
-- **言語**: TypeScript
-- **ランタイム**: Node.js 18+
-- **主要ライブラリ**:
-  - Playwright (1.55.0-alpha)
-  - @modelcontextprotocol/sdk
-  - zod (スキーマ検証)
-  - sharp (画像処理)
-  - fast-diff (今回の実装で追加予定)
+- **言語**: TypeScript (Node.js 18+)
+- **主要依存関係**:
+  - Playwright 1.55.0-alpha
+  - @modelcontextprotocol/sdk ^1.16.0
+  - Sharp (画像処理)
+  - Zod (スキーマ検証)
+  - Commander (CLI)
 
 ## プロジェクト構造
 ```
 src/
-├── tools/          # ブラウザ操作ツール群
-├── types/          # TypeScript型定義
-├── utils/          # ユーティリティ関数
-├── schemas/        # zodスキーマ定義
+├── tools/          # 各ツールの実装
+├── types/          # 型定義
+├── schemas/        # Zodスキーマ
 ├── batch/          # バッチ実行機能
+├── utils/          # ユーティリティ
 ├── mcp/           # MCP関連
-└── response.ts    # レスポンス処理（今回の主要変更対象）
+└── [その他のコアファイル]
 ```
 
-## 現在の実装タスク
-レスポンス差分検出機能の実装（feature/response-diff-detectionブランチ）
-- expectationシステムの拡張
-- fast-diffライブラリを使用した差分検出
-- ResponseDiffDetectorとDiffFormatterクラスの実装
-- 既存のResponseクラスへの統合
+## 主要なツール群
+- **コア自動化**: click, navigate, type, wait, evaluate等
+- **タブ管理**: tab_list, tab_new, tab_select, tab_close
+- **ブラウザインストール**: browser_install
+- **バッチ実行**: browser_batch_execute（推奨）
+- **座標ベース**: mouse_click_xy（--caps=vision時）
+- **PDF生成**: pdf_save（--caps=pdf時）

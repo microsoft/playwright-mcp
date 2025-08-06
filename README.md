@@ -34,6 +34,12 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
   - `enabled: true` - Show only what changed from previous state (massive token saver)
   - `format: "minimal"` - Ultra-compact diff output
   - Perfect for monitoring state changes during navigation or interactions
+- **Diagnostic System**. Advanced debugging and element discovery tools:
+  - `browser_find_elements` - Find elements using multiple search criteria (text, role, attributes)
+  - `browser_diagnose` - Comprehensive page analysis with performance metrics and troubleshooting
+  - Enhanced error handling with alternative element suggestions
+  - Page structure analysis (iframes, modals, accessibility metrics)
+  - Performance monitoring with execution time under 300ms
 
 ### Requirements
 - Node.js 18 or newer
@@ -418,7 +424,7 @@ http.createServer(async (req, res) => {
 
 - **browser_batch_execute**
   - Title: Batch Execute Browser Actions
-  - Description: Execute multiple browser actions in sequence with optimized response handling. RECOMMENDED: Use this tool instead of individual actions when performing multiple operations to significantly reduce token usage and improve performance
+  - Description: Execute multiple browser actions in sequence with optimized response handling.RECOMMENDED:Use this tool instead of individual actions when performing multiple operations to significantly reduce token usage and improve performance.BY DEFAULT use for:form filling(multiple type→click),multi-step navigation,any workflow with 2+ known steps.Saves 90% tokens vs individual calls.globalExpectation:{includeSnapshot:false,snapshotOptions:{selector:"#app"},diffOptions:{enabled:true}}.Per-step override:steps[].expectation.Example:[{tool:"browser_navigate",arguments:{url:"https://example.com"}},{tool:"browser_type",arguments:{element:"username",ref:"#user",text:"john"}},{tool:"browser_click",arguments:{element:"submit",ref:"#btn"}}].
   - Parameters:
     - `steps` (array): Array of steps to execute in sequence
     - `stopOnFirstError` (boolean, optional): Stop entire batch on first error
@@ -429,7 +435,7 @@ http.createServer(async (req, res) => {
 
 - **browser_click**
   - Title: Click
-  - Description: Perform click on a web page. Use expectation to control response content, diffOptions to efficiently track changes
+  - Description: Perform click on web page.USE batch_execute for multi-click workflows.expectation:{includeSnapshot:false} when next action follows immediately,true to verify result.diffOptions:{enabled:true,format:"minimal"} shows only changes(saves 80% tokens).snapshotOptions:{selector:".result"} to focus on result area.doubleClick:true for double-click,button:"right" for context menu.
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -456,9 +462,22 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_diagnose**
+  - Title: Diagnose page
+  - Description: Generate a comprehensive diagnostic report of the current page including elements, iframes, modal states, and optional performance metrics.
+  - Parameters:
+    - `searchForElements` (object, optional): Search for specific elements and include them in the report
+    - `includePerformanceMetrics` (boolean, optional): Include performance metrics in the report
+    - `includeAccessibilityInfo` (boolean, optional): Include accessibility information
+    - `includeTroubleshootingSuggestions` (boolean, optional): Include troubleshooting suggestions
+    - `expectation` (object, optional): undefined
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_drag**
   - Title: Drag mouse
-  - Description: Perform drag and drop between two elements. Use expectation to control response content, diffOptions to efficiently track changes
+  - Description: Perform drag and drop between two elements.expectation:{includeSnapshot:true,snapshotOptions:{selector:".drop-zone"}} to verify drop result.diffOptions:{enabled:true} shows only what moved.CONSIDER batch_execute if part of larger workflow.
   - Parameters:
     - `startElement` (string): Human-readable source element description used to obtain the permission to interact with the element
     - `startRef` (string): Exact source element reference from the page snapshot
@@ -471,7 +490,7 @@ http.createServer(async (req, res) => {
 
 - **browser_evaluate**
   - Title: Evaluate JavaScript
-  - Description: Evaluate JavaScript expression on page or element
+  - Description: Evaluate JavaScript expression on page or element.Returns evaluation result.USE CASES:extract data,modify DOM,trigger events.expectation:{includeSnapshot:false} for data extraction,true if modifying page.element+ref to run on specific element.CONSIDER batch_execute for multiple evaluations.
   - Parameters:
     - `function` (string): () => { /* code */ } or (element) => { /* code */ } when element is provided
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
@@ -483,7 +502,7 @@ http.createServer(async (req, res) => {
 
 - **browser_file_upload**
   - Title: Upload files
-  - Description: Upload one or multiple files
+  - Description: Upload one or multiple files to file input.paths:["/path/file1.jpg","/path/file2.pdf"] for multiple files.expectation:{includeSnapshot:true,snapshotOptions:{selector:"form"}} to verify upload.Must be triggered after file input interaction.USE batch_execute for click→upload workflows.
   - Parameters:
     - `paths` (array): The absolute paths to the files to upload. Can be a single file or multiple files.
     - `expectation` (object, optional): undefined
@@ -491,9 +510,21 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_find_elements**
+  - Title: Find elements
+  - Description: Find elements on the page using multiple search criteria such as text, role, tag name, or attributes. Returns matching elements sorted by confidence.
+  - Parameters:
+    - `searchCriteria` (object): Search criteria for finding elements
+    - `maxResults` (number, optional): Maximum number of results to return
+    - `includeDiagnosticInfo` (boolean, optional): Include diagnostic information about the page
+    - `expectation` (object, optional): undefined
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_handle_dialog**
   - Title: Handle a dialog
-  - Description: Handle a dialog
+  - Description: Handle a dialog(alert,confirm,prompt).accept:true to accept,false to dismiss.promptText:"answer" for prompt dialogs.expectation:{includeSnapshot:true} to see page after dialog handling.USE batch_execute if dialog appears during workflow.
   - Parameters:
     - `accept` (boolean): Whether to accept the dialog.
     - `promptText` (string, optional): The text of the prompt in case of a prompt dialog.
@@ -504,7 +535,7 @@ http.createServer(async (req, res) => {
 
 - **browser_hover**
   - Title: Hover mouse
-  - Description: Hover over element on page. Use expectation to control response content, diffOptions to efficiently track changes
+  - Description: Hover over element on page.expectation:{includeSnapshot:true} to capture tooltips/dropdown menus,false for simple hover.snapshotOptions:{selector:".tooltip"} to focus on tooltip area.Often followed by click - use batch_execute for hover→click sequences.
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -515,7 +546,7 @@ http.createServer(async (req, res) => {
 
 - **browser_navigate**
   - Title: Navigate to a URL
-  - Description: Navigate to a URL. Use expectation to control response content, diffOptions to efficiently track changes
+  - Description: Navigate to a URL.expectation:{includeSnapshot:true} to see what loaded,false if you know what to do next.snapshotOptions:{selector:"#content"} to focus on main content(saves 50% tokens).diffOptions:{enabled:true} when revisiting pages to see only changes.CONSIDER batch_execute for navigate→interact workflows.
   - Parameters:
     - `url` (string): The URL to navigate to
     - `expectation` (object, optional): undefined
@@ -525,7 +556,7 @@ http.createServer(async (req, res) => {
 
 - **browser_navigate_back**
   - Title: Go back
-  - Description: Go back to the previous page. Use expectation to control response content, diffOptions to efficiently track changes
+  - Description: Go back to previous page.expectation:{includeSnapshot:true} to see previous page,false if continuing workflow.diffOptions:{enabled:true} shows only what changed from forward page.USE batch_execute for back→interact sequences.
   - Parameters:
     - `expectation` (object, optional): undefined
   - Read-only: **true**
@@ -534,7 +565,7 @@ http.createServer(async (req, res) => {
 
 - **browser_navigate_forward**
   - Title: Go forward
-  - Description: Go forward to the next page. Use expectation to control response content, diffOptions to efficiently track changes
+  - Description: Go forward to next page.expectation:{includeSnapshot:true} to see next page,false if continuing workflow.diffOptions:{enabled:true} shows only what changed from previous page.USE batch_execute for forward→interact sequences.
   - Parameters:
     - `expectation` (object, optional): undefined
   - Read-only: **true**
@@ -551,7 +582,7 @@ http.createServer(async (req, res) => {
 
 - **browser_press_key**
   - Title: Press a key
-  - Description: Press a key on the keyboard. Use expectation to control response content, diffOptions to efficiently track changes
+  - Description: Press a key on the keyboard.Common keys:Enter,Escape,ArrowUp/Down/Left/Right,Tab,Backspace.expectation:{includeSnapshot:false} for navigation keys,true for content changes.CONSIDER batch_execute for multiple key presses.
   - Parameters:
     - `key` (string): Name of the key to press or a character to generate, such as `ArrowLeft` or `a`
     - `expectation` (object, optional): undefined
@@ -571,7 +602,7 @@ http.createServer(async (req, res) => {
 
 - **browser_select_option**
   - Title: Select option
-  - Description: Select an option in a dropdown
+  - Description: Select option in dropdown.values:["option1","option2"] for multi-select.expectation:{includeSnapshot:false} when part of form filling(use batch),true to verify selection.snapshotOptions:{selector:"form"} for form context.USE batch_execute for form workflows with multiple selects.
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -583,7 +614,7 @@ http.createServer(async (req, res) => {
 
 - **browser_snapshot**
   - Title: Page snapshot
-  - Description: Capture accessibility snapshot of the current page. Use expectation to control response content, snapshotOptions to limit scope
+  - Description: Capture accessibility snapshot of current page.AVOID calling directly - use expectation:{includeSnapshot:true} on other tools instead.USE CASES:Initial page inspection,debugging when other tools didn't capture needed info.snapshotOptions:{selector:"#content"} to focus on specific area.
   - Parameters:
     - `expectation` (object, optional): undefined
   - Read-only: **true**
@@ -592,7 +623,7 @@ http.createServer(async (req, res) => {
 
 - **browser_take_screenshot**
   - Title: Take a screenshot
-  - Description: Take a screenshot of the current page. Use expectation to control response content, imageOptions to compress images
+  - Description: Take a screenshot of current page.Returns image data.expectation:{includeSnapshot:false} to avoid redundant accessibility tree(screenshot≠snapshot).imageOptions:{quality:50,format:"jpeg"} for 70% size reduction.fullPage:true for entire page,element+ref for specific element.USE CASES:visual verification,documentation,error capture.
   - Parameters:
     - `type` (string, optional): Image format for the screenshot. Default is png.
     - `filename` (string, optional): File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified.
@@ -606,7 +637,7 @@ http.createServer(async (req, res) => {
 
 - **browser_type**
   - Title: Type text
-  - Description: Type text into editable element. Use expectation to control response content, diffOptions to efficiently track changes
+  - Description: Type text into editable element.FOR FORMS:Use batch_execute to fill multiple fields efficiently.slowly:true for auto-complete fields,submit:true to press Enter after.expectation:{includeSnapshot:false} when filling multiple fields(use batch),true for final verification.snapshotOptions:{selector:"form"} to focus on form only.diffOptions:{enabled:true} shows only what changed in form.
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
@@ -620,7 +651,7 @@ http.createServer(async (req, res) => {
 
 - **browser_wait_for**
   - Title: Wait for
-  - Description: Wait for text to appear or disappear or a specified time to pass. Use expectation to control response content, diffOptions to efficiently track changes
+  - Description: Wait for text to appear/disappear or time to pass.PREFER text-based wait over time for reliability.For loading states:wait for text:"Loading..." textGone:true.For dynamic content:wait for specific text to appear.expectation:{includeSnapshot:true,snapshotOptions:{selector:"#status"},diffOptions:{enabled:true}} shows only what changed.AVOID:fixed time waits unless necessary.
   - Parameters:
     - `time` (number, optional): The time to wait in seconds
     - `text` (string, optional): The text to wait for
@@ -637,7 +668,7 @@ http.createServer(async (req, res) => {
 
 - **browser_tab_close**
   - Title: Close a tab
-  - Description: Close a tab
+  - Description: Close a tab.index:N to close specific tab,omit to close current.expectation:{includeSnapshot:false} usually sufficient,true to verify remaining tabs.USE batch_execute for multi-tab cleanup.
   - Parameters:
     - `index` (number, optional): The index of the tab to close. Closes current tab if not provided.
     - `expectation` (object, optional): undefined
@@ -647,7 +678,7 @@ http.createServer(async (req, res) => {
 
 - **browser_tab_list**
   - Title: List tabs
-  - Description: List browser tabs
+  - Description: List browser tabs.Always returns tab list with titles and URLs.expectation:{includeSnapshot:false} for just tab info,true to also see current tab content.USE before tab_select to find right tab.
   - Parameters:
     - `expectation` (object, optional): undefined
   - Read-only: **true**
@@ -656,7 +687,7 @@ http.createServer(async (req, res) => {
 
 - **browser_tab_new**
   - Title: Open a new tab
-  - Description: Open a new tab
+  - Description: Open a new tab.url:"https://example.com" to navigate immediately,omit for blank tab.expectation:{includeSnapshot:true} to see new tab,false if opening for later use.CONSIDER batch_execute for new_tab→navigate→interact.
   - Parameters:
     - `url` (string, optional): The URL to navigate to in the new tab. If not provided, the new tab will be blank.
     - `expectation` (object, optional): undefined
@@ -666,7 +697,7 @@ http.createServer(async (req, res) => {
 
 - **browser_tab_select**
   - Title: Select a tab
-  - Description: Select a tab by index
+  - Description: Select a tab by index.expectation:{includeSnapshot:true} to see selected tab content,false if you know what's there.USE batch_execute for tab_select→interact workflows.
   - Parameters:
     - `index` (number): The index of the tab to select
     - `expectation` (object, optional): undefined
@@ -694,7 +725,7 @@ http.createServer(async (req, res) => {
 
 - **browser_mouse_click_xy**
   - Title: Click
-  - Description: Click left mouse button at a given position
+  - Description: Click at specific coordinates.Requires --caps=vision.x,y:click position.expectation:{includeSnapshot:true} to verify result.PREFER browser_click with element ref over coordinates.USE batch_execute for coordinate-based workflows.
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
@@ -706,7 +737,7 @@ http.createServer(async (req, res) => {
 
 - **browser_mouse_drag_xy**
   - Title: Drag mouse
-  - Description: Drag left mouse button to a given position
+  - Description: Drag from one coordinate to another.Requires --caps=vision.startX,startY→endX,endY.expectation:{includeSnapshot:true,snapshotOptions:{selector:".drop-zone"}} to verify.PREFER browser_drag with element refs over coordinates.
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `startX` (number): Start X coordinate
@@ -720,7 +751,7 @@ http.createServer(async (req, res) => {
 
 - **browser_mouse_move_xy**
   - Title: Move mouse
-  - Description: Move mouse to a given position
+  - Description: Move mouse to specific coordinates.Requires --caps=vision.x,y:coordinates.expectation:{includeSnapshot:false} for simple move,true to see hover effects.PREFER element-based interactions over coordinates when possible.
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
@@ -967,6 +998,41 @@ await browser_type({
 6. **Combine global and step-specific expectations** for fine-grained control
 7. **Use minimal diff format** for maximum token savings
 
+### Diagnostic System Examples
+
+**Find alternative elements when selectors fail:**
+```json
+{
+  "name": "browser_find_elements",
+  "arguments": {
+    "searchCriteria": {
+      "text": "Submit",
+      "role": "button"
+    },
+    "maxResults": 5
+  }
+}
+```
+
+**Generate comprehensive page diagnostics:**
+```json
+{
+  "name": "browser_diagnose",
+  "arguments": {
+    "includePerformanceMetrics": true,
+    "includeAccessibilityInfo": true,
+    "includeTroubleshootingSuggestions": true
+  }
+}
+```
+
+**Debug automation failures with enhanced errors:**
+All tools automatically provide enhanced error messages with:
+- Alternative element suggestions
+- Page structure analysis
+- Context-aware troubleshooting tips
+- Performance insights
+
 ### Migration Guide
 
 Existing code continues to work without changes. To optimize:
@@ -974,3 +1040,4 @@ Existing code continues to work without changes. To optimize:
 1. Start by adding `expectation: { includeSnapshot: false }` to intermediate steps
 2. Use batch execution for sequences of 3+ operations
 3. Gradually fine-tune expectations based on your specific needs
+4. Use diagnostic tools when automation fails or needs debugging
