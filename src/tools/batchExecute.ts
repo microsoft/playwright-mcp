@@ -23,7 +23,7 @@ export const batchExecuteTool = defineTool({
   schema: {
     name: 'browser_batch_execute',
     title: 'Batch Execute Browser Actions',
-    description: `Execute multiple actions.RECOMMENDED for chained ops.Use globalExpectation:{includeSnapshot:false,snapshotOptions:{selector:"#app"}}.Options:stopOnFirstError:true,steps[].continueOnError:true.Example:[{tool:"browser_navigate",arguments:{url:"https://example.com"}},{tool:"browser_click",arguments:{element:"btn",ref:"e1"}}].TIP:Use selector per step for efficiency.`,
+    description: `Execute multiple actions.RECOMMENDED for chained ops.Use globalExpectation:{includeSnapshot:false,snapshotOptions:{selector:"#app"},diffOptions:{enabled:true}}.Options:stopOnFirstError:true,steps[].continueOnError:true.Example:[{tool:"browser_navigate",arguments:{url:"https://example.com"}},{tool:"browser_click",arguments:{element:"btn",ref:"e1"}}].TIP:diffOptions:{enabled:true} tracks changes between steps efficiently.`,
     inputSchema: batchExecuteSchema,
     type: 'destructive'
   },

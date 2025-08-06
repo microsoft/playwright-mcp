@@ -73,7 +73,7 @@ const click = defineTabTool({
   schema: {
     name: 'browser_click',
     title: 'Click',
-    description: `Click element.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:".result",format:"aria"},consoleOptions:{levels:["error"]},diffOptions:{enabled:true,format:"minimal"}}.TIP:Use selector to focus on affected area.includeSnapshot:false for chained actions,true to verify result.`,
+    description: `Click element.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:".result",format:"aria"},consoleOptions:{levels:["error"]},diffOptions:{enabled:true,format:"minimal"}}.TIP:diffOptions:{enabled:true} shows only what changed after click(huge token saver).includeSnapshot:false for chained actions,true to verify result.`,
     inputSchema: clickSchema,
     type: 'destructive',
   },

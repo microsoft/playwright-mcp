@@ -30,6 +30,10 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - **Snapshot Control**. Limit snapshot size with `snapshotOptions`:
   - `selector: string` - Capture only specific page sections (recommended over maxLength)
   - `format: "aria"` - Accessibility tree format for LLM processing
+- **Diff Detection**. Track only changes with `diffOptions`:
+  - `enabled: true` - Show only what changed from previous state (massive token saver)
+  - `format: "minimal"` - Ultra-compact diff output
+  - Perfect for monitoring state changes during navigation or interactions
 
 ### Requirements
 - Node.js 18 or newer

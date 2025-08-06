@@ -58,7 +58,7 @@ const type = defineTabTool({
   schema: {
     name: 'browser_type',
     title: 'Type text',
-    description: `Type text into element.Default:minimal(false).Options:slowly(char-by-char),submit(press Enter).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"form",format:"aria"},consoleOptions:{levels:["warn","error"]},diffOptions:{enabled:true}}.TIP:Use selector:"form" to focus on form area.includeSnapshot:true to verify,false if continuing.`,
+    description: `Type text into element.Default:minimal(false).Options:slowly(char-by-char),submit(press Enter).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"form",format:"aria"},consoleOptions:{levels:["warn","error"]},diffOptions:{enabled:true}}.TIP:diffOptions:{enabled:true} shows only form changes.Use selector:"form".includeSnapshot:true to verify,false if continuing.`,
     inputSchema: typeSchema,
     type: 'destructive',
   },

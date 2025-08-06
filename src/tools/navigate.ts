@@ -24,7 +24,7 @@ const navigate = defineTool({
   schema: {
     name: 'browser_navigate',
     title: 'Navigate to a URL',
-    description: `Navigate to URL.Default:minimal(false).Use expectation:{includeSnapshot:true,includeConsole:true,includeDownloads:true,includeTabs:true,includeCode:true,snapshotOptions:{selector:"#content",format:"aria"},consoleOptions:{levels:["error","warn"],maxMessages:10},diffOptions:{enabled:true,format:"unified",threshold:0.1,maxDiffLines:50},imageOptions:{quality:80,maxWidth:1200,maxHeight:800,format:"jpeg"}}.TIP:Use selector to focus on content area.Set includeSnapshot:false unless needed.`,
+    description: `Navigate to URL.Default:minimal(false).Use expectation:{includeSnapshot:true,includeConsole:true,includeDownloads:true,includeTabs:true,includeCode:true,snapshotOptions:{selector:"#content",format:"aria"},consoleOptions:{levels:["error","warn"],maxMessages:10},diffOptions:{enabled:true,format:"unified",threshold:0.1,maxDiffLines:50},imageOptions:{quality:80,maxWidth:1200,maxHeight:800,format:"jpeg"}}.TIP:Use diffOptions:{enabled:true} to show only changes from previous state(saves tokens).Use selector to focus on content area.`,
     inputSchema: z.object({
       url: z.string().describe('The URL to navigate to'),
       expectation: expectationSchema
