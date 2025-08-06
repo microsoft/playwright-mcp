@@ -63,6 +63,12 @@ export type Config = {
      * Remote endpoint to connect to an existing Playwright server.
      */
     remoteEndpoint?: string;
+
+    /**
+     * List of extensions to load. Can be:
+     * - Local paths to unpacked extensions (e.g., "/path/to/extension")
+     */
+    extensions?: string[];
   },
 
   server?: {

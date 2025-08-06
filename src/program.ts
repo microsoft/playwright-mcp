@@ -55,6 +55,7 @@ program
     .option('--user-agent <ua string>', 'specify user agent string')
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
+    .option('--extensions <extensions>', 'comma-separated list of extensions to load. (local paths)', commaSeparatedList)
     .addOption(new Option('--extension', 'Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright MCP Bridge" browser extension to be installed.').hideHelp())
     .addOption(new Option('--connect-tool', 'Allow to switch between different browser connection methods.').hideHelp())
     .addOption(new Option('--loop-tools', 'Run loop tools').hideHelp())

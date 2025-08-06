@@ -23,9 +23,9 @@ const navigate = defineTool({
   schema: {
     name: 'browser_navigate',
     title: 'Navigate to a URL',
-    description: 'Navigate to a URL',
+    description: 'Navigate to a URL. For Chrome extensions, use chrome-extension://{extension-id}/{page}.html format. Common extension pages include popup.html, options.html, background.html. You can find extension IDs by navigating to chrome://extensions and using browser_snapshot to see the installed extensions.',
     inputSchema: z.object({
-      url: z.string().describe('The URL to navigate to'),
+      url: z.string().describe('The URL to navigate to. For Chrome extensions, use format: chrome-extension://{extension-id}/{page}.html'),
     }),
     type: 'destructive',
   },
@@ -36,6 +36,13 @@ const navigate = defineTool({
 
     response.setIncludeSnapshot();
     response.addCode(`await page.goto('${params.url}');`);
+
+    // Add helpful context for extension URLs
+    if (params.url.startsWith('chrome-extension://')) {
+      response.addCode(`// Navigated to Chrome extension: ${params.url}`);
+      response.addCode(`// Common extension pages: popup.html, options.html, background.html`);
+      response.addCode(`// Use browser_snapshot to see the extension interface`);
+    }
   },
 });
 

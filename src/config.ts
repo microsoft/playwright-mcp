@@ -49,6 +49,7 @@ export type CLIOptions = {
   userAgent?: string;
   userDataDir?: string;
   viewportSize?: string;
+  extensions?: string[];
 };
 
 const defaultConfig: FullConfig = {
@@ -178,6 +179,7 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
       launchOptions,
       contextOptions,
       cdpEndpoint: cliOptions.cdpEndpoint,
+      extensions: cliOptions.extensions,
     },
     server: {
       port: cliOptions.port,
@@ -197,7 +199,7 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
   return result;
 }
 
-function configFromEnv(): Config {
+export function configFromEnv(): Config {
   const options: CLIOptions = {};
   options.allowedOrigins = semicolonSeparatedList(process.env.PLAYWRIGHT_MCP_ALLOWED_ORIGINS);
   options.blockedOrigins = semicolonSeparatedList(process.env.PLAYWRIGHT_MCP_BLOCKED_ORIGINS);
@@ -224,6 +226,7 @@ function configFromEnv(): Config {
   options.userAgent = envToString(process.env.PLAYWRIGHT_MCP_USER_AGENT);
   options.userDataDir = envToString(process.env.PLAYWRIGHT_MCP_USER_DATA_DIR);
   options.viewportSize = envToString(process.env.PLAYWRIGHT_MCP_VIEWPORT_SIZE);
+  options.extensions = commaSeparatedList(process.env.PLAYWRIGHT_MCP_EXTENSIONS);
   return configFromCLIOptions(options);
 }
 

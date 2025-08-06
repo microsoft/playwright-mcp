@@ -185,6 +185,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                specified, a temporary directory will be created.
   --viewport-size <size>       specify browser viewport size in pixels, for
                                example "1280, 720"
+  --extensions <extensions>    comma-separated list of extensions to load.
+                               (local paths)
 ```
 
 <!--- End of options generated section -->
@@ -277,6 +279,9 @@ npx @playwright/mcp@latest --config path/to/config.json
 
     // Remote Playwright server endpoint
     remoteEndpoint?: string;
+
+    // List of extensions to load. (local paths)
+    extensions?: string[];
   },
 
   // Server configuration
@@ -313,6 +318,78 @@ npx @playwright/mcp@latest --config path/to/config.json
 }
 ```
 </details>
+
+### Browser Extensions
+
+The Playwright MCP server supports loading browser extensions, which is useful for testing applications that require specific extensions like wallet providers or other browser add-ons.
+
+#### Loading Extensions
+
+You can specify extensions to load using the `--extensions` command line option or in the configuration file:
+
+**Command line:**
+```bash
+npx @playwright/mcp@latest --extensions "/path/to/extension,/path/to/another-extension"
+```
+
+**Configuration file:**
+```json
+{
+  "browser": {
+    "extensions": [
+      "/path/to/extension",
+      "/path/to/another-extension"
+    ]
+  }
+}
+```
+
+**Environment variable:**
+```bash
+PLAYWRIGHT_MCP_EXTENSIONS="/path/to/extension,/path/to/another-extension"
+```
+
+**Local unpacked extensions**: Paths to directories containing `manifest.json` files
+```bash
+--extensions "/path/to/unpacked-extension"
+```
+
+#### Example: Loading a Test Extension
+
+To load a test extension for development and testing:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--extensions=/path/to/test-extension"      
+      ]
+    }
+  }
+}
+```
+
+#### Interacting with Extensions
+
+Once an extension is loaded, you can interact with it using standard browser tools:
+
+1. **Navigate to the extension popup**: Use `browser_navigate` to go directly to the extension's popup URL
+   ```
+   chrome-extension://{extension-id}/popup.html
+   ```
+
+2. **Find the extension ID**: Navigate to `chrome://extensions` and use `browser_snapshot` to see installed extensions and their IDs
+
+3. **Interact with extension UI**: Use standard tools like `browser_click`, `browser_type`, and `browser_snapshot` to interact with the extension interface
+
+#### Limitations
+
+- Extensions are only supported in Chromium-based browsers
+- Extensions must be compatible with the browser version being used
+- Some extensions may require additional permissions or setup
 
 ### Standalone MCP server
 
@@ -471,9 +548,9 @@ http.createServer(async (req, res) => {
 
 - **browser_navigate**
   - Title: Navigate to a URL
-  - Description: Navigate to a URL
+  - Description: Navigate to a URL. For Chrome extensions, use chrome-extension://{extension-id}/{page}.html format. Common extension pages include popup.html, options.html, background.html. You can find extension IDs by navigating to chrome://extensions and using browser_snapshot to see the installed extensions.
   - Parameters:
-    - `url` (string): The URL to navigate to
+    - `url` (string): The URL to navigate to. For Chrome extensions, use format: chrome-extension://{extension-id}/{page}.html
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->

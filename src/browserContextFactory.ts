@@ -21,7 +21,7 @@ import path from 'path';
 import * as playwright from 'playwright';
 // @ts-ignore
 import { registryDirectory } from 'playwright-core/lib/server/registry/index';
-import { logUnhandledError, testDebug } from './log.js';
+import { testDebug } from './log.js';
 import { createHash } from './utils.js';
 import { outputFile  } from './config.js';
 
@@ -74,7 +74,30 @@ class BaseContextFactory implements BrowserContextFactory {
   }
 
   protected async _doObtainBrowser(): Promise<playwright.Browser> {
-    throw new Error('Not implemented');
+    await injectCdpPort(this.config.browser);
+    const browserType = playwright[this.config.browser.browserName];
+
+    // Prepare launch options with extensions if specified
+    const launchOptions = { ...this.config.browser.launchOptions };
+
+    // For Chromium, we need to add extension loading arguments
+    if (this.config.browser.browserName === 'chromium' && this.config.browser.extensions && this.config.browser.extensions.length > 0) {
+      const extensionArgs = this._prepareExtensionArgs();
+      if (extensionArgs.length > 0)
+        launchOptions.args = [...(launchOptions.args || []), ...extensionArgs];
+
+    }
+
+    return browserType.launch({
+      tracesDir: this._tracesDir,
+      ...launchOptions,
+      handleSIGINT: false,
+      handleSIGTERM: false,
+    }).catch(error => {
+      if (error.message.includes('Executable doesn\'t exist'))
+        throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);
+      throw error;
+    });
   }
 
   async createContext(clientInfo: ClientInfo): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
@@ -93,14 +116,43 @@ class BaseContextFactory implements BrowserContextFactory {
 
   private async _closeBrowserContext(browserContext: playwright.BrowserContext, browser: playwright.Browser) {
     testDebug(`close browser context (${this.name})`);
-    if (browser.contexts().length === 1)
-      this._browserPromise = undefined;
-    await browserContext.close().catch(logUnhandledError);
-    if (browser.contexts().length === 0) {
-      testDebug(`close browser (${this.name})`);
-      await browser.close().catch(logUnhandledError);
-    }
+    await browserContext.close().catch(() => {});
+    await browser.close().catch(() => {});
+    testDebug(`close browser context complete (${this.name})`);
   }
+
+  private _prepareExtensionArgs(): string[] {
+    if (!this.config.browser.extensions || this.config.browser.extensions.length === 0)
+      return [];
+
+
+    const args: string[] = [];
+    const extensionPaths: string[] = [];
+
+    for (const extension of this.config.browser.extensions) {
+      if (this._isLocalPath(extension))
+        extensionPaths.push(extension);
+      else
+        testDebug(`Invalid extension path: ${extension}. Only local paths are supported.`);
+
+    }
+
+    if (extensionPaths.length > 0) {
+      args.push(`--disable-extensions-except=${extensionPaths.join(',')}`);
+      args.push(`--load-extension=${extensionPaths.join(',')}`);
+    }
+
+    return args;
+  }
+
+  private _isLocalPath(extension: string): boolean {
+    // Check if it's a local file path
+    return extension.startsWith('/') || extension.startsWith('./') || extension.startsWith('../') ||
+           (extension.includes('\\') && process.platform === 'win32') ||
+           (extension.includes('/') && !extension.startsWith('http'));
+  }
+
+
 }
 
 class IsolatedContextFactory extends BaseContextFactory {
@@ -183,11 +235,23 @@ class PersistentContextFactory implements BrowserContextFactory {
     testDebug('lock user data dir', userDataDir);
 
     const browserType = playwright[this.config.browser.browserName];
+
+    // Prepare launch options with extensions if specified
+    const launchOptions = { ...this.config.browser.launchOptions };
+
+    // For Chromium, we need to add extension loading arguments
+    if (this.config.browser.browserName === 'chromium' && this.config.browser.extensions && this.config.browser.extensions.length > 0) {
+      const extensionArgs = this._prepareExtensionArgs();
+      if (extensionArgs.length > 0)
+        launchOptions.args = [...(launchOptions.args || []), ...extensionArgs];
+
+    }
+
     for (let i = 0; i < 5; i++) {
       try {
         const browserContext = await browserType.launchPersistentContext(userDataDir, {
           tracesDir,
-          ...this.config.browser.launchOptions,
+          ...launchOptions,
           ...this.config.browser.contextOptions,
           handleSIGINT: false,
           handleSIGTERM: false,
@@ -225,6 +289,39 @@ class PersistentContextFactory implements BrowserContextFactory {
     await fs.promises.mkdir(result, { recursive: true });
     return result;
   }
+
+  private _prepareExtensionArgs(): string[] {
+    if (!this.config.browser.extensions || this.config.browser.extensions.length === 0)
+      return [];
+
+
+    const args: string[] = [];
+    const extensionPaths: string[] = [];
+
+    for (const extension of this.config.browser.extensions) {
+      if (this._isLocalPath(extension))
+        extensionPaths.push(extension);
+      else
+        testDebug(`Invalid extension path: ${extension}. Only local paths are supported.`);
+
+    }
+
+    if (extensionPaths.length > 0) {
+      args.push(`--disable-extensions-except=${extensionPaths.join(',')}`);
+      args.push(`--load-extension=${extensionPaths.join(',')}`);
+    }
+
+    return args;
+  }
+
+  private _isLocalPath(extension: string): boolean {
+    // Check if it's a local file path
+    return extension.startsWith('/') || extension.startsWith('./') || extension.startsWith('../') ||
+           (extension.includes('\\') && process.platform === 'win32') ||
+           (extension.includes('/') && !extension.startsWith('http'));
+  }
+
+
 }
 
 async function injectCdpPort(browserConfig: FullConfig['browser']) {
