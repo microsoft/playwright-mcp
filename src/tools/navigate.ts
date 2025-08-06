@@ -24,7 +24,7 @@ const navigate = defineTool({
   schema: {
     name: 'browser_navigate',
     title: 'Navigate to a URL',
-    description: 'Navigate to a URL. For simple navigation, use expectation: { includeSnapshot: false } to reduce token usage. Use diffOptions to efficiently track specific changes.',
+    description: `Navigate to URL.Default:minimal(false).Use expectation:{includeSnapshot:true,includeConsole:true,includeDownloads:true,includeTabs:true,includeCode:true,snapshotOptions:{selector:"#content",format:"aria"},consoleOptions:{levels:["error","warn"],maxMessages:10},diffOptions:{enabled:true,format:"unified",threshold:0.1,maxDiffLines:50},imageOptions:{quality:80,maxWidth:1200,maxHeight:800,format:"jpeg"}}.TIP:Use selector to focus on content area.Set includeSnapshot:false unless needed.`,
     inputSchema: z.object({
       url: z.string().describe('The URL to navigate to'),
       expectation: expectationSchema
@@ -45,7 +45,7 @@ const goBack = defineTabTool({
   schema: {
     name: 'browser_navigate_back',
     title: 'Go back',
-    description: 'Go back to the previous page. For simple navigation, use expectation: { includeSnapshot: false } to reduce token usage. Use diffOptions to efficiently track specific changes.',
+    description: `Go back.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"main",format:"aria"},consoleOptions:{levels:["error","warn"]},diffOptions:{enabled:true}}.TIP:includeSnapshot:false for simple nav.`,
     inputSchema: z.object({
       expectation: expectationSchema
     }),
@@ -63,7 +63,7 @@ const goForward = defineTabTool({
   schema: {
     name: 'browser_navigate_forward',
     title: 'Go forward',
-    description: 'Go forward to the next page. For simple navigation, use expectation: { includeSnapshot: false } to reduce token usage. Use diffOptions to efficiently track specific changes.',
+    description: `Go forward.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"main",format:"aria"},consoleOptions:{levels:["error","warn"]},diffOptions:{enabled:true}}.TIP:includeSnapshot:false for simple nav.`,
     inputSchema: z.object({
       expectation: expectationSchema
     }),

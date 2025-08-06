@@ -17,11 +17,11 @@ export const diffOptionsSchema = z.object({
  * Schema for expectation configuration that controls response content
  */
 export const expectationSchema = z.object({
-  includeSnapshot: z.boolean().optional().default(true),
-  includeConsole: z.boolean().optional().default(true),
-  includeDownloads: z.boolean().optional().default(true),
-  includeTabs: z.boolean().optional().default(true),
-  includeCode: z.boolean().optional().default(true),
+  includeSnapshot: z.boolean().optional().default(false),
+  includeConsole: z.boolean().optional().default(false),
+  includeDownloads: z.boolean().optional().default(false),
+  includeTabs: z.boolean().optional().default(false),
+  includeCode: z.boolean().optional().default(false),
   snapshotOptions: z.object({
     selector: z.string().optional().describe('CSS selector to limit snapshot scope'),
     maxLength: z.number().optional().describe('Maximum characters for snapshot'),
@@ -49,33 +49,32 @@ export type ExpectationOptions = z.infer<typeof expectationSchema>;
  * These optimize token usage based on typical tool usage patterns
  */
 const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'>>> = {
-  // Navigation tools need full context for verification
+  // All tools default to minimal output for maximum token efficiency
+  // Users can enable specific outputs as needed
   browser_navigate: {
-    includeSnapshot: true,
-    includeConsole: true,
-    includeDownloads: true,
-    includeTabs: true,
-    includeCode: true
-  },
-
-  // Interactive tools need snapshot for feedback but less verbose logging
-  browser_click: {
-    includeSnapshot: true,
+    includeSnapshot: false,
     includeConsole: false,
     includeDownloads: false,
     includeTabs: false,
-    includeCode: true
+    includeCode: false
+  },
+
+  browser_click: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: false
   },
 
   browser_type: {
-    includeSnapshot: true,
+    includeSnapshot: false,
     includeConsole: false,
     includeDownloads: false,
     includeTabs: false,
-    includeCode: true
+    includeCode: false
   },
 
-  // Screenshot tools don't need additional context
   browser_take_screenshot: {
     includeSnapshot: false,
     includeConsole: false,
@@ -84,7 +83,7 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeCode: false
   },
 
-  // Snapshot tool should capture snapshot but minimal other context
+  // Snapshot tool must include snapshot as that's its purpose
   browser_snapshot: {
     includeSnapshot: true,
     includeConsole: false,
@@ -93,22 +92,21 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeCode: false
   },
 
-  // Code evaluation needs console output but minimal other info
+  // All tools default to minimal output
   browser_evaluate: {
     includeSnapshot: false,
-    includeConsole: true,
+    includeConsole: false,
     includeDownloads: false,
     includeTabs: false,
-    includeCode: true
+    includeCode: false
   },
 
-  // Wait operations typically don't need verbose output
   browser_wait_for: {
     includeSnapshot: false,
     includeConsole: false,
     includeDownloads: false,
     includeTabs: false,
-    includeCode: true
+    includeCode: false
   }
 };
 
@@ -116,11 +114,11 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
  * General default configuration for tools without specific settings
  */
 const GENERAL_DEFAULT: Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'>> = {
-  includeSnapshot: true,
-  includeConsole: true,
-  includeDownloads: true,
-  includeTabs: true,
-  includeCode: true
+  includeSnapshot: false,
+  includeConsole: false,
+  includeDownloads: false,
+  includeTabs: false,
+  includeCode: false
 };
 
 /**

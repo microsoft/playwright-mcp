@@ -28,7 +28,7 @@ const pressKey = defineTabTool({
   schema: {
     name: 'browser_press_key',
     title: 'Press a key',
-    description: 'Press a key on the keyboard. For simple key presses without needing to see the result, use expectation: { includeSnapshot: false } to reduce token usage. Include snapshots when you need to see the page state after the key press.',
+    description: `Press key.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"body",format:"aria"}}.TIP:includeSnapshot:false for simple key press.`,
     inputSchema: z.object({
       key: z.string().describe('Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'),
       expectation: expectationSchema
@@ -58,7 +58,7 @@ const type = defineTabTool({
   schema: {
     name: 'browser_type',
     title: 'Type text',
-    description: 'Type text into editable element. For simple text input without needing to see the result, use expectation: { includeSnapshot: false } to reduce token usage. Include snapshots when you need to see the updated form or continue interacting with the page.',
+    description: `Type text into element.Default:minimal(false).Options:slowly(char-by-char),submit(press Enter).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"form",format:"aria"},consoleOptions:{levels:["warn","error"]},diffOptions:{enabled:true}}.TIP:Use selector:"form" to focus on form area.includeSnapshot:true to verify,false if continuing.`,
     inputSchema: typeSchema,
     type: 'destructive',
   },

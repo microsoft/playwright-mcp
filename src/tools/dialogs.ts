@@ -24,7 +24,7 @@ const handleDialog = defineTabTool({
   schema: {
     name: 'browser_handle_dialog',
     title: 'Handle a dialog',
-    description: 'Handle a dialog',
+    description: `Handle dialog(alert/confirm/prompt).Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"body",format:"aria"}}.Options:accept:true/false,promptText:"text".TIP:includeSnapshot:true to see page after dialog.`,
     inputSchema: z.object({
       accept: z.boolean().describe('Whether to accept the dialog.'),
       promptText: z.string().optional().describe('The text of the prompt in case of a prompt dialog.'),

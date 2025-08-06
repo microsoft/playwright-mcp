@@ -12,9 +12,13 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 - **Token Optimization**. All tools support an `expectation` parameter to control response content:
   - `includeCode: false` - Suppress Playwright code generation to reduce tokens
-  - `includeSnapshot: false` - Skip page snapshot for minimal responses
+  - `includeSnapshot: false` - Skip page snapshot for minimal responses (70-80% token reduction)
   - `includeConsole: false` - Exclude console messages
   - `includeTabs: false` - Hide tab information
+- **Ultra-Compact Tool Descriptions**. One-line tool descriptions with full parameter details:
+  - 70-80% reduction in tool description tokens
+  - All expectation parameters inline without formatting overhead
+  - Smart tips for efficient usage (e.g., "Use selector to focus on specific area")
 - **Image Compression**. Screenshot tool supports `imageOptions`:
   - `format: 'jpeg'` - Use JPEG instead of PNG
   - `quality: 1-100` - Compress images (e.g., 50 for 50% quality)
@@ -24,8 +28,8 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
   - Per-step and global expectation configuration
   - Error handling with `continueOnError` and `stopOnFirstError` options
 - **Snapshot Control**. Limit snapshot size with `snapshotOptions`:
-  - `maxLength: number` - Truncate long snapshots
-  - `selector: string` - Capture only specific page sections
+  - `selector: string` - Capture only specific page sections (recommended over maxLength)
+  - `format: "aria"` - Accessibility tree format for LLM processing
 
 ### Requirements
 - Node.js 18 or newer

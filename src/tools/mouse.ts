@@ -27,7 +27,7 @@ const mouseMove = defineTabTool({
   schema: {
     name: 'browser_mouse_move_xy',
     title: 'Move mouse',
-    description: 'Move mouse to a given position',
+    description: `Move mouse to position.Default:minimal(false).Use expectation:{includeSnapshot:true}.TIP:includeSnapshot:false for simple move.`,
     inputSchema: elementSchema.extend({
       x: z.number().describe('X coordinate'),
       y: z.number().describe('Y coordinate'),
@@ -51,7 +51,7 @@ const mouseClick = defineTabTool({
   schema: {
     name: 'browser_mouse_click_xy',
     title: 'Click',
-    description: 'Click left mouse button at a given position',
+    description: `Click at position.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"body"}}.TIP:includeSnapshot:true to see click result.`,
     inputSchema: elementSchema.extend({
       x: z.number().describe('X coordinate'),
       y: z.number().describe('Y coordinate'),
@@ -81,7 +81,7 @@ const mouseDrag = defineTabTool({
   schema: {
     name: 'browser_mouse_drag_xy',
     title: 'Drag mouse',
-    description: 'Drag left mouse button to a given position',
+    description: `Drag to position.Default:minimal(false).Use expectation:{includeSnapshot:true,snapshotOptions:{selector:".drop-zone"}}.TIP:includeSnapshot:true to verify drag result.`,
     inputSchema: elementSchema.extend({
       startX: z.number().describe('Start X coordinate'),
       startY: z.number().describe('Start Y coordinate'),

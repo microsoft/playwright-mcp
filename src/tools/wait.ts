@@ -24,7 +24,7 @@ const wait = defineTool({
   schema: {
     name: 'browser_wait_for',
     title: 'Wait for',
-    description: 'Wait for text to appear or disappear or a specified time to pass. If you only need confirmation without seeing page state, use expectation: { includeSnapshot: false } to reduce tokens. Include snapshots when you need to see the result or continue interacting with the page.',
+    description: `Wait for text/time.Default:minimal(false).PREFER:text-based wait over time for reliability.Use expectation:{includeSnapshot:true,snapshotOptions:{selector:"#status",format:"aria"}}.TIP:Use selector to monitor specific area.includeSnapshot:false if just confirming,true to see result.`,
     inputSchema: z.object({
       time: z.number().optional().describe('The time to wait in seconds'),
       text: z.string().optional().describe('The text to wait for'),
