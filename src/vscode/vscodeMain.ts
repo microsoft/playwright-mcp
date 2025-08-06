@@ -59,6 +59,10 @@ export class VSCodeMain extends ProcessRunner {
 
 export const create = (params: VSCodeInitParams) => new VSCodeMain(params);
 
+/**
+ * turns the operating system's "Close" button into UI for closing the browser.
+ * the user can use it to dismiss the foreground browser window, and the browser will be closed.
+ */
 function closeOnUIClose(context: playwright.BrowserContext) {
   context.on('close', () => context.browser()?.close({ reason: 'ui closed' }).catch(logUnhandledError));
   context.on('page', page => {
@@ -76,9 +80,12 @@ class VSCodeContextFactory implements BrowserContextFactory {
   constructor(private readonly _config: FullConfig, private readonly _connectionString: string, private readonly _lib: string) {}
 
   async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<{ browserContext: playwright.BrowserContext; close: () => Promise<void>; }> {
+    // TODO: what's the difference between the abortSignal and the close() retval?
+
     const connectionString = new URL(this._connectionString);
     connectionString.searchParams.set('launch-options', JSON.stringify({
       ...this._config.browser.launchOptions,
+      ...this._config.browser.contextOptions,
       userDataDir: this._config.browser.userDataDir,
     }));
     const lib = await import(this._lib).then(mod => mod.default ?? mod) as typeof import('playwright');
