@@ -131,6 +131,7 @@ export class BrowserServerBackend implements ServerBackend {
         description: [
           'Connect to a browser using one of the available methods:',
           ...contextSwitchers.map(({ name, description }) => `- "${name}": ${description}`),
+          `By default, you're connected to the first method. Only call this tool to change it.`,
         ].join('\n'),
         inputSchema: z.object({
           method: z.enum(contextSwitchers.map(c => c.name) as [string, ...string[]]).describe('The method to use to connect to the browser'),
