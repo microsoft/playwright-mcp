@@ -79,6 +79,7 @@ export class RelayConnection {
     this._closed = true;
     chrome.debugger.onEvent.removeListener(this._eventListener);
     chrome.debugger.onDetach.removeListener(this._detachListener);
+    chrome.debugger.detach(this._debuggee).catch(() => {});
     this.onclose?.();
   }
 
