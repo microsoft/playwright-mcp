@@ -4,7 +4,7 @@
 
 import { test, expect } from '@playwright/test';
 import { DiagnosticLevel, DiagnosticLevelManager  } from '../src/diagnostics/DiagnosticLevel.js';
-import type { DiagnosticConfig } from '../src/diagnostics/DiagnosticLevel.js';
+
 
 test.describe('DiagnosticLevelManager', () => {
   test.describe('Feature enablement based on level', () => {

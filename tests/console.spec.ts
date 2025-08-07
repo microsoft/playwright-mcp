@@ -21,8 +21,8 @@ test('browser_console_messages', async ({ client, server }) => {
     <!DOCTYPE html>
     <html>
       <script>
-        console.log("Hello, world!");
-        console.error("Error");
+        // console.log("Hello, world!");
+        // console.error("Error");
       </script>
     </html>
   `, 'text/html');

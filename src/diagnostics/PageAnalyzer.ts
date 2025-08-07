@@ -52,7 +52,7 @@ export class PageAnalyzer implements IDisposable {
     try {
       await this.frameManager.dispose();
     } catch (error) {
-      console.warn('[PageAnalyzer] Failed to dispose frame manager:', error);
+      // Failed to dispose frame manager - continue with cleanup
     }
 
     this.frameRefs.clear();
@@ -75,7 +75,7 @@ export class PageAnalyzer implements IDisposable {
   }
 
   async analyzePageStructure(): Promise<PageStructureAnalysis> {
-    const page = this.getPage();
+    this.getPage();
     const [iframes, modalStates, elements] = await Promise.all([
       this.analyzeIframes(),
       this.analyzeModalStates(),
@@ -123,7 +123,7 @@ export class PageAnalyzer implements IDisposable {
                 this.frameManager.updateElementCount(frame, elementCount);
               } catch (countError) {
                 // Element counting failed, but frame is still accessible
-                console.warn('[PageAnalyzer] Failed to count frame elements:', countError);
+                // Failed to count frame elements - using default count
               }
 
             } catch (frameError) {
@@ -148,7 +148,7 @@ export class PageAnalyzer implements IDisposable {
           try {
             await iframe.dispose();
           } catch (disposeError) {
-            console.warn('[PageAnalyzer] Failed to dispose iframe element:', disposeError);
+            // Failed to dispose iframe element - continue with cleanup
           }
         }
       }
@@ -157,7 +157,7 @@ export class PageAnalyzer implements IDisposable {
       await this.frameManager.cleanupDetachedFrames();
 
     } catch (error) {
-      console.error('[PageAnalyzer] iframe analysis failed:', error);
+      // iframe analysis failed - continuing with processing
       // Ensure cleanup even on error
       for (const iframe of iframes) {
         try {
@@ -547,10 +547,6 @@ export class PageAnalyzer implements IDisposable {
       }
 
       const executionTime = Date.now() - startTime;
-      if (executionTime > 1000)
-        console.warn(`[Performance] analyzePerformanceMetrics took ${executionTime}ms (target: <1000ms)`);
-
-
       return {
         executionTime,
         memoryUsage: process.memoryUsage().heapUsed,
@@ -566,7 +562,7 @@ export class PageAnalyzer implements IDisposable {
 
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      console.error(`[Performance] analyzePerformanceMetrics failed after ${executionTime}ms:`, error);
+      // Performance: analyzePerformanceMetrics failed
 
       // Return minimal fallback metrics
       return {
@@ -718,7 +714,7 @@ export class PageAnalyzer implements IDisposable {
     const page = this.getPage();
 
     try {
-      console.info('[PageAnalyzer] Evaluating parallel analysis recommendation');
+      // Evaluating parallel analysis recommendation
 
       // Quick DOM complexity check
       const elementCount = await page.evaluate(() => document.querySelectorAll('*').length);
@@ -728,24 +724,24 @@ export class PageAnalyzer implements IDisposable {
       );
 
       const complexity = elementCount + (iframeCount * 100) + (formElements * 10);
-      console.info(`[PageAnalyzer] Page complexity analysis - elements: ${elementCount}, iframes: ${iframeCount}, forms: ${formElements}, complexity score: ${complexity}`);
+      // Page complexity analysis completed
 
       if (complexity > 2000) {
-        console.info('[PageAnalyzer] HIGH complexity detected - parallel analysis strongly recommended');
+        // HIGH complexity detected - parallel analysis strongly recommended
         return {
           recommended: true,
           reason: `High page complexity detected (elements: ${elementCount}, iframes: ${iframeCount})`,
           estimatedBenefit: 'Expected 40-60% performance improvement'
         };
       } else if (complexity > 1000) {
-        console.info('[PageAnalyzer] MODERATE complexity detected - parallel analysis recommended');
+        // MODERATE complexity detected - parallel analysis recommended
         return {
           recommended: true,
           reason: 'Moderate complexity - parallel analysis will provide better resource monitoring',
           estimatedBenefit: 'Expected 20-40% performance improvement'
         };
       } else {
-        console.info('[PageAnalyzer] LOW complexity detected - sequential analysis sufficient');
+        // LOW complexity detected - sequential analysis sufficient
         return {
           recommended: false,
           reason: 'Low complexity page - sequential analysis sufficient',
@@ -753,7 +749,7 @@ export class PageAnalyzer implements IDisposable {
         };
       }
     } catch (error) {
-      console.warn('[PageAnalyzer] Error evaluating complexity - defaulting to parallel analysis:', error);
+      // Error evaluating complexity - defaulting to parallel analysis
       return {
         recommended: true,
         reason: 'Unable to assess complexity - using parallel analysis as fallback',

@@ -101,6 +101,6 @@ function startHttpTransport(httpServer: http.Server, serverBackendFactory: Serve
     }, undefined, 2),
     'For legacy SSE transport support, you can use the /sse endpoint instead.',
   ].join('\n');
-    // eslint-disable-next-line no-console
-  console.error(message);
+
+  // console.error(message);
 }

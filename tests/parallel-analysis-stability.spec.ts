@@ -41,7 +41,7 @@ test.describe('Parallel Analysis Stability', () => {
     results.forEach((result, index) => {
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      console.log(`Test ${index + 1}: Success=${result.success}, ExecutionTime=${result.executionTime}ms`);
+      // console.log(`Test ${index + 1}: Success=${result.success}, ExecutionTime=${result.executionTime}ms`);
     });
 
     await unifiedSystem.dispose();
@@ -75,11 +75,11 @@ test.describe('Parallel Analysis Stability', () => {
 
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
-    console.log(`Complex page analysis: Success=${result.success}, ExecutionTime=${result.executionTime}ms`);
+    // console.log(`Complex page analysis: Success=${result.success}, ExecutionTime=${result.executionTime}ms`);
 
     // Check if parallel analysis was used by looking for structureAnalysis property
     const hasParallelStructure = result.data && 'structureAnalysis' in result.data;
-    console.log(`Parallel analysis detected: ${hasParallelStructure}`);
+    // console.log(`Parallel analysis detected: ${hasParallelStructure}`);
 
     await unifiedSystem.dispose();
   });
@@ -110,11 +110,11 @@ test.describe('Parallel Analysis Stability', () => {
 
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
-    console.log(`Simple page analysis: Success=${result.success}, ExecutionTime=${result.executionTime}ms`);
+    // console.log(`Simple page analysis: Success=${result.success}, ExecutionTime=${result.executionTime}ms`);
 
     // Check if standard analysis was used (no structureAnalysis property)
     const hasParallelStructure = result.data && 'structureAnalysis' in result.data;
-    console.log(`Parallel analysis detected: ${hasParallelStructure}`);
+    // console.log(`Parallel analysis detected: ${hasParallelStructure}`);
 
     await unifiedSystem.dispose();
   });
@@ -134,14 +134,14 @@ test.describe('Parallel Analysis Stability', () => {
 
     expect(forcedResult.success).toBe(true);
     expect(forcedResult.data).toBeDefined();
-    console.log(`Forced parallel analysis: Success=${forcedResult.success}, ExecutionTime=${forcedResult.executionTime}ms`);
+    // console.log(`Forced parallel analysis: Success=${forcedResult.success}, ExecutionTime=${forcedResult.executionTime}ms`);
 
     // Normal analysis without force
     const normalResult = await unifiedSystem.analyzePageStructure();
 
     expect(normalResult.success).toBe(true);
     expect(normalResult.data).toBeDefined();
-    console.log(`Normal analysis: Success=${normalResult.success}, ExecutionTime=${normalResult.executionTime}ms`);
+    // console.log(`Normal analysis: Success=${normalResult.success}, ExecutionTime=${normalResult.executionTime}ms`);
 
     await unifiedSystem.dispose();
   });
@@ -155,15 +155,15 @@ test.describe('Parallel Analysis Stability', () => {
     const originalConsoleWarn = console.warn;
     const originalConsoleError = console.error;
 
-    console.info = (...args) => {
+    // console.info = (...args) => {
       consoleLogs.push(`INFO: ${args.join(' ')}`);
       originalConsoleInfo(...args);
     };
-    console.warn = (...args) => {
+    // console.warn = (...args) => {
       consoleLogs.push(`WARN: ${args.join(' ')}`);
       originalConsoleWarn(...args);
     };
-    console.error = (...args) => {
+    // console.error = (...args) => {
       consoleLogs.push(`ERROR: ${args.join(' ')}`);
       originalConsoleError(...args);
     };
@@ -185,7 +185,7 @@ test.describe('Parallel Analysis Stability', () => {
         log.includes('[ParallelPageAnalyzer]')
       );
 
-      console.log('Captured relevant logs:', relevantLogs.length);
+      // console.log('Captured relevant logs:', relevantLogs.length);
       relevantLogs.forEach(log => console.log(log));
 
       expect(relevantLogs.length).toBeGreaterThan(0);
@@ -193,9 +193,9 @@ test.describe('Parallel Analysis Stability', () => {
       await unifiedSystem.dispose();
     } finally {
       // Restore original console methods
-      console.info = originalConsoleInfo;
-      console.warn = originalConsoleWarn;
-      console.error = originalConsoleError;
+      // console.info = originalConsoleInfo;
+      // console.warn = originalConsoleWarn;
+      // console.error = originalConsoleError;
     }
   });
 });

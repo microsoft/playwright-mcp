@@ -8,8 +8,7 @@ import { expectationSchema } from '../schemas/expectation.js';
 import { ElementDiscovery  } from '../diagnostics/ElementDiscovery.js';
 import { PageAnalyzer } from '../diagnostics/PageAnalyzer.js';
 import { UnifiedDiagnosticSystem } from '../diagnostics/UnifiedSystem.js';
-import { SmartConfigManager  } from '../diagnostics/SmartConfig.js';
-import type { SearchCriteria } from '../diagnostics/ElementDiscovery.js';
+
 import type { SmartConfig } from '../diagnostics/SmartConfig.js';
 
 const findElementsSchema = z.object({
@@ -50,7 +49,6 @@ export const browserFindElements = defineTabTool({
     let elementDiscovery: ElementDiscovery | null = null;
 
     try {
-      const startTime = Date.now();
       let alternatives: any[] = [];
       let operationResult: any;
 
@@ -138,7 +136,7 @@ export const browserFindElements = defineTabTool({
           return;
         }
 
-        console.info(`[browser_find_elements] Used unified system (${operationResult.executionTime}ms)`);
+        // Used unified system for element discovery
       } else {
         // Legacy element discovery
         elementDiscovery = new ElementDiscovery(tab.page);
@@ -148,10 +146,9 @@ export const browserFindElements = defineTabTool({
           maxResults
         });
 
-        console.info('[browser_find_elements] Used legacy element discovery');
+        // Used legacy element discovery
       }
 
-      const searchTime = Date.now() - startTime;
 
       if (alternatives.length === 0) {
         response.addResult('No elements found matching the specified criteria.');
@@ -250,11 +247,6 @@ export const browserFindElements = defineTabTool({
       }
 
       // Track performance internally but don't report to agent unless it's critical
-      const totalTime = Date.now() - startTime;
-      if (totalTime > 300)
-        console.warn(`[Performance] browser_find_elements took ${totalTime}ms (target: <300ms)`);
-
-
       response.addResult(resultsText.join('\n'));
 
     } catch (error) {

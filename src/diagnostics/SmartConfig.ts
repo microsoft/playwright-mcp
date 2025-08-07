@@ -149,13 +149,6 @@ export class SmartConfigManager {
 
     this.notifyListeners();
 
-    // Log significant configuration changes
-    if (this.hasSignificantChanges(previousConfig, this.config)) {
-      console.info('[SmartConfig] Configuration updated with significant changes:', {
-        timestamp: Date.now(),
-        changes: this.getConfigDiff(previousConfig, this.config)
-      });
-    }
   }
 
   private deepMerge(target: any, source: any): any {
@@ -239,7 +232,7 @@ export class SmartConfigManager {
       try {
         listener(this.config);
       } catch (error) {
-        console.warn('[SmartConfig] Error in config change listener:', error);
+        // Silently ignore listener errors
       }
     });
   }
@@ -340,8 +333,6 @@ export class SmartConfigManager {
     // DiagnosticThresholdsもリセット
     this.thresholdsManager.resetToDefaults();
     this.notifyListeners();
-
-    console.info('[SmartConfig] Configuration reset to defaults');
   }
 
   /**
@@ -362,7 +353,7 @@ export class SmartConfigManager {
       // DiagnosticThresholds を更新
       this.thresholdsManager.updateThresholds(thresholdsConfig);
     } catch (error) {
-      console.warn('[SmartConfig] Failed to sync thresholds with DiagnosticThresholds:', error);
+      // Silently ignore sync errors
     }
   }
 
@@ -500,10 +491,7 @@ export class SmartConfigManager {
           thresholds: updatedThresholds
         }
       });
-
-      console.info('[SmartConfig] Thresholds updated via DiagnosticThresholds integration');
     } catch (error) {
-      console.error('[SmartConfig] Failed to update thresholds:', error);
       throw error;
     }
   }

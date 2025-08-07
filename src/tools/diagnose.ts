@@ -7,12 +7,11 @@ import { defineTabTool } from './tool.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import { PageAnalyzer } from '../diagnostics/PageAnalyzer.js';
 import { ElementDiscovery  } from '../diagnostics/ElementDiscovery.js';
-import { DiagnosticLevel } from '../diagnostics/DiagnosticLevel.js';
+
 import { UnifiedDiagnosticSystem } from '../diagnostics/UnifiedSystem.js';
-import { SmartConfigManager  } from '../diagnostics/SmartConfig.js';
+
 import { getCurrentThresholds } from '../diagnostics/DiagnosticThresholds.js';
 import type { SmartConfig } from '../diagnostics/SmartConfig.js';
-import type { SearchCriteria } from '../diagnostics/ElementDiscovery.js';
 
 const diagnoseSchema = z.object({
   searchForElements: z.object({
@@ -75,16 +74,13 @@ export const browserDiagnose = defineTabTool({
         const thresholdsManager = getCurrentThresholds();
         const configDiagnostics = thresholdsManager.getConfigDiagnostics();
 
-        if (configDiagnostics.warnings.length > 0)
-          console.warn('[browser_diagnose] Configuration warnings:', configDiagnostics.warnings);
-
 
         // Report configuration status when diagnostic level is full
         if (diagnosticLevel === 'full' && includeSystemStats)
           response.addResult(`## Configuration Status\n- **Thresholds Status**: ${configDiagnostics.status}\n- **Customizations**: ${configDiagnostics.customizations.length} active\n- **Warnings**: ${configDiagnostics.warnings.length} items\n\n`);
 
       } catch (configError) {
-        console.error('[browser_diagnose] Configuration validation failed:', configError);
+        // Configuration validation failed - included in error response
         response.addError('Configuration system validation failed - using fallback settings');
       }
 
@@ -168,15 +164,15 @@ export const browserDiagnose = defineTabTool({
         }
 
         unifiedSystem = UnifiedDiagnosticSystem.getInstance(tab.page, configUpdates);
-        console.info('[browser_diagnose] Using unified diagnostic system');
+        // Using unified diagnostic system
 
         // Store applied overrides for reporting
-        if (appliedOverrides.length > 0)
-          console.info('[browser_diagnose] Applied configuration overrides:', appliedOverrides);
-
+        if (appliedOverrides.length > 0) {
+          // Applied configuration overrides
+        }
       } else {
         pageAnalyzer = new PageAnalyzer(tab.page);
-        console.info('[browser_diagnose] Using legacy PageAnalyzer');
+        // Using legacy PageAnalyzer
       }
 
       try {
@@ -209,7 +205,7 @@ export const browserDiagnose = defineTabTool({
           }
 
           // Execute page structure analysis through unified system with detailed logging
-          console.info(`[browser_diagnose] Analysis parameters - useParallelAnalysis: ${useParallelAnalysis}, config enableParallelAnalysis: ${configOverrides ? 'custom' : 'default'}`);
+          // Analysis parameters configured
 
           const structureResult = await unifiedSystem.analyzePageStructure(useParallelAnalysis);
           if (structureResult.success) {
@@ -221,12 +217,12 @@ export const browserDiagnose = defineTabTool({
               resourceUsageInfo = diagnosticInfo.resourceUsage;
               diagnosticInfo = diagnosticInfo.structureAnalysis;
 
-              console.info(`[browser_diagnose] Executed Enhanced Parallel Analysis (${structureResult.executionTime}ms)`);
+              // Executed Enhanced Parallel Analysis
               reportSections.push(`**Analysis Type:** Enhanced Parallel Analysis (${structureResult.executionTime}ms)`);
               reportSections.push(`**Parallel Analysis Status:** Successfully executed with resource monitoring`);
             } else {
               // Standard analysis result
-              console.info(`[browser_diagnose] Executed Standard Analysis (${structureResult.executionTime}ms) - parallel analysis not used or unavailable`);
+              // Executed Standard Analysis
               reportSections.push(`**Analysis Type:** Standard Analysis (${structureResult.executionTime}ms)`);
               reportSections.push(`**Analysis Status:** ${useParallelAnalysis ? 'Parallel analysis requested but fell back to standard' : 'Standard analysis by configuration'}`);
             }
@@ -402,9 +398,8 @@ export const browserDiagnose = defineTabTool({
 
           reportSections.push(`- **Interactable elements:** ${diagnosticInfo.elements.totalInteractable}`);
           reportSections.push('');
-        }
+        } else {
         // Standard level and above
-        else {
           reportSections.push(
               '# Page Diagnostic Report',
               `**URL:** ${tab.page.url()}`,
@@ -661,12 +656,6 @@ export const browserDiagnose = defineTabTool({
           });
           reportSections.push('');
         }
-
-        // Track performance internally
-        const totalExecutionTime = Date.now() - startTime;
-        if (totalExecutionTime > 300)
-          console.warn(`[Performance] browser_diagnose took ${totalExecutionTime}ms (target: <300ms)`);
-
 
         response.addResult(reportSections.join('\n'));
       } finally {

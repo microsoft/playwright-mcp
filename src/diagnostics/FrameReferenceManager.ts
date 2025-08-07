@@ -45,7 +45,6 @@ export class FrameReferenceManager implements IDisposable {
       this.activeFrames.add(frame);
     } catch (error) {
       // Frame might be detached already, skip tracking
-      console.warn('[FrameReferenceManager] Failed to track frame:', error);
     }
   }
 
@@ -112,8 +111,7 @@ export class FrameReferenceManager implements IDisposable {
       this.activeFrames.delete(frame);
 
 
-    if (framesToRemove.length > 0)
-      console.log(`[FrameReferenceManager] Cleaned up ${framesToRemove.length} detached frames`);
+    // Cleaned up detached frames
 
   }
 
@@ -196,7 +194,7 @@ export class FrameReferenceManager implements IDisposable {
   private startCleanupTimer(): void {
     this.cleanupInterval = setInterval(() => {
       this.cleanupDetachedFrames().catch(error => {
-        console.warn('[FrameReferenceManager] Cleanup timer failed:', error);
+        // Cleanup timer failed - continue with next cycle
       });
     }, 30000); // Clean up every 30 seconds
   }

@@ -4,7 +4,7 @@
 
 import { test, expect } from '@playwright/test';
 import { EnhancedErrorHandler } from '../src/diagnostics/EnhancedErrorHandler.js';
-import { fixtures } from '../tests/fixtures.js';
+
 
 test.describe('EnhancedErrorHandler', () => {
   test('should enhance Playwright errors with diagnostic information', async ({ page }) => {

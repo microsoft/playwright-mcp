@@ -45,8 +45,8 @@ program
     .action(async options => {
       setupExitWatchdog();
       if (options.vision) {
-        // eslint-disable-next-line no-console
-        console.error('The --vision option is deprecated, use --caps=vision instead');
+
+        // console.error('The --vision option is deprecated, use --caps=vision instead');
         options.caps = 'vision';
       }
       const config = await resolveCLIConfig(options);
@@ -69,8 +69,8 @@ program
         const server = await startTraceViewerServer();
         const urlPrefix = server.urlPrefix('human-readable');
         const url = urlPrefix + '/trace/index.html?trace=' + config.browser.launchOptions.tracesDir + '/trace.json';
-        // eslint-disable-next-line no-console
-        console.error('\nTrace viewer listening on ' + url);
+
+        // console.error('\nTrace viewer listening on ' + url);
       }
     });
 function setupExitWatchdog() {

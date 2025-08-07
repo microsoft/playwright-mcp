@@ -6,7 +6,7 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { DiagnosticThresholds, getCurrentThresholds  } from '../src/diagnostics/DiagnosticThresholds.js';
 import { SmartConfigManager } from '../src/diagnostics/SmartConfig.js';
-import type { DiagnosticThresholdsConfig } from '../src/diagnostics/DiagnosticThresholds.js';
+
 
 describe('DiagnosticThresholds - Unit4 Configuration System', () => {
 
@@ -380,7 +380,7 @@ describe('統合シナリオテスト', () => {
     expect(thresholds.getMetricsThresholds().layout.highZIndexThreshold).toBe(2000);
 
     // 4. 環境設定の適用（カスタマイズが上書きされるため、期待値を調整）
-    const beforeEnvConfig = smartConfig.getConfig().performance.thresholds.dom.elementsWarning;
+    smartConfig.getConfig().performance.thresholds.dom.elementsWarning;
     smartConfig.configureForEnvironment('production');
 
     // 環境設定適用後は現在の統合設定された閾値が使用される

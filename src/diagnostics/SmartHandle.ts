@@ -52,7 +52,7 @@ export class SmartHandle<T extends playwright.ElementHandle> implements ProxyHan
         await this.resource.dispose();
 
     } catch (error) {
-      console.warn('[SmartHandle] Dispose failed:', error);
+      // console.warn('[SmartHandle] Dispose failed:', error);
     } finally {
       this.disposed = true;
       this.tracker.untrackResource(this.resourceId);

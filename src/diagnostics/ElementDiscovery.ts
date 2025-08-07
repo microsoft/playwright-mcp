@@ -44,7 +44,7 @@ export class ElementDiscovery implements IDisposable {
     try {
       await this.smartHandleBatch.disposeAll();
     } catch (error) {
-      console.warn('[ElementDiscovery] Failed to dispose smart handles:', error);
+      // Failed to dispose smart handles - continue with cleanup
     }
 
     this.page = null;
@@ -87,15 +87,12 @@ export class ElementDiscovery implements IDisposable {
           }
       );
 
-      console.warn(
-          `[ElementDiscovery:dispose] Failed to dispose element during ${operation}:`,
-          diagnosticError.toJSON()
-      );
+      // Element dispose failed during operation, but processing continues
     }
   }
 
   async findAlternativeElements(options: ElementDiscoveryOptions): Promise<AlternativeElement[]> {
-    const page = this.getPage();
+    this.getPage();
     const { searchCriteria, maxResults = 10 } = options;
     const alternatives: AlternativeElement[] = [];
 
@@ -134,8 +131,7 @@ export class ElementDiscovery implements IDisposable {
       return uniqueAlternatives.slice(0, effectiveMaxResults);
 
     } catch (error) {
-      console.error('[ElementDiscovery] Search failed:', error);
-      // Ensure cleanup on error
+      // Search failed - ensure cleanup on error
       await this.smartHandleBatch.disposeAll();
       throw error;
     }
@@ -252,7 +248,7 @@ export class ElementDiscovery implements IDisposable {
       }
 
     } catch (error) {
-      console.warn('[ElementDiscovery] Role search failed:', error);
+      // Role search failed - continue with processing
     }
 
     return alternatives;
@@ -292,7 +288,7 @@ export class ElementDiscovery implements IDisposable {
         }
       }
     } catch (error) {
-      console.warn('[ElementDiscovery] Tag name search failed:', error);
+      // Tag name search failed - continue with processing
     }
 
     return alternatives;

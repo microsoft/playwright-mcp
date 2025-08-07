@@ -52,8 +52,8 @@ test.describe('Sharp Implementation Performance Tests', () => {
     const processingTime = endTime - startTime;
     const memoryIncrease = endMemory - startMemory;
 
-    console.log(`Processing time: ${processingTime.toFixed(2)}ms`);
-    console.log(`Memory increase: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`);
+    // console.log(`Processing time: ${processingTime.toFixed(2)}ms`);
+    // console.log(`Memory increase: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`);
 
     // Reasonable performance expectations
     expect(processingTime).toBeLessThan(5000); // Should complete within 5 seconds
@@ -94,7 +94,7 @@ test.describe('Sharp Implementation Performance Tests', () => {
     const finalMemory = process.memoryUsage().heapUsed;
     const memoryIncrease = finalMemory - initialMemory;
 
-    console.log(`Memory increase after 10 operations: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`);
+    // console.log(`Memory increase after 10 operations: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`);
 
     // Should not accumulate significant memory
     expect(memoryIncrease).toBeLessThan(20 * 1024 * 1024); // Less than 20MB increase
@@ -120,7 +120,7 @@ test.describe('Sharp Implementation Performance Tests', () => {
     const endTime = performance.now();
 
     const totalTime = endTime - startTime;
-    console.log(`Concurrent processing time: ${totalTime.toFixed(2)}ms`);
+    // console.log(`Concurrent processing time: ${totalTime.toFixed(2)}ms`);
 
     // Should complete reasonably quickly
     expect(totalTime).toBeLessThan(10000); // 10 seconds max

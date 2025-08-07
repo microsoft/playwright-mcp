@@ -5,10 +5,10 @@
 import { PageAnalyzer  } from './PageAnalyzer.js';
 import { ElementDiscovery   } from './ElementDiscovery.js';
 import { ErrorEnrichment  } from './ErrorEnrichment.js';
-import { DiagnosticLevelManager, DiagnosticLevel  } from './DiagnosticLevel.js';
+import { DiagnosticLevelManager  } from './DiagnosticLevel.js';
 import { DiagnosticError  } from './DiagnosticError.js';
 import type { PageStructureAnalysis } from './PageAnalyzer.js';
-import type { AlternativeElement, SearchCriteria } from './ElementDiscovery.js';
+import type { SearchCriteria } from './ElementDiscovery.js';
 import type { EnrichedError } from './ErrorEnrichment.js';
 import type { DiagnosticConfig } from './DiagnosticLevel.js';
 import type { DiagnosticComponent } from './DiagnosticError.js';
@@ -137,7 +137,7 @@ export class EnhancedErrorHandler {
   }
 
   async enhanceTimeoutError(options: TimeoutErrorOptions): Promise<EnhancedPlaywrightError> {
-    const { error, operation, selector, timeout } = options;
+    const { error, operation, selector } = options;
 
     const enrichedError = await this.errorEnrichment.enrichTimeoutError({
       originalError: error,
@@ -154,7 +154,7 @@ export class EnhancedErrorHandler {
   }
 
   async enhanceContextError(options: ContextErrorOptions): Promise<EnhancedPlaywrightError> {
-    const { error, selector, expectedContext } = options;
+    const { error, expectedContext } = options;
 
     const contextInfo = await this.analyzeFrameContext();
     const diagnosticInfo = await this.pageAnalyzer.analyzePageStructure();
@@ -179,7 +179,7 @@ export class EnhancedErrorHandler {
   }
 
   async enhancePerformanceError(options: PerformanceErrorOptions): Promise<EnhancedPlaywrightError> {
-    const { operation, selector, executionTime, performanceThreshold } = options;
+    const { operation, executionTime, performanceThreshold } = options;
 
     const diagnosticInfo = await this.pageAnalyzer.analyzePageStructure();
     const exceededThreshold = executionTime > performanceThreshold;
@@ -209,7 +209,7 @@ export class EnhancedErrorHandler {
   }
 
   async enhanceToolError(options: ToolErrorOptions): Promise<EnhancedPlaywrightError> {
-    const { toolName, error, selector, toolArgs } = options;
+    const { toolName, error, toolArgs } = options;
 
     const diagnosticInfo = await this.pageAnalyzer.analyzePageStructure();
 
@@ -397,7 +397,6 @@ export class EnhancedErrorHandler {
 
     } catch (processingError) {
       // Fallback: create simple diagnostic error if processing fails
-      console.warn('[EnhancedErrorHandler] Error processing failed:', processingError);
       return DiagnosticError.from(error as Error, component, operation, {
         executionTime: Date.now() - startTime
       });
@@ -453,7 +452,7 @@ export class EnhancedErrorHandler {
 
 
     } catch (contextError) {
-      console.warn('[EnhancedErrorHandler] Failed to generate contextual suggestions:', contextError);
+      // Failed to generate contextual suggestions - continue with available suggestions
     }
 
     return suggestions;

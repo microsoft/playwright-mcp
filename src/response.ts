@@ -89,8 +89,8 @@ export class Response {
         } catch (error) {
           // If processing fails, keep the original image
           // TODO: Use proper logging instead of console
-          // eslint-disable-next-line no-console
-          console.error('Image processing failed:', error);
+
+          // Image processing failed
           processedImages.push(image);
         }
       }
@@ -118,8 +118,8 @@ export class Response {
       } catch (error) {
         // Gracefully handle diff detection errors
         // TODO: Use proper logging instead of console
-        // eslint-disable-next-line no-console
-        console.error('Diff detection failed:', error);
+
+        // Diff detection failed
         this._diffResult = undefined;
       }
     }
@@ -334,7 +334,7 @@ ${this._code.join('\n')}
             this._tabSnapshot = await this._captureBasicSnapshot(currentTab);
           } catch (finalError) {
             // Could not capture snapshot - log error but don't throw
-            console.error('Failed to capture snapshot after navigation:', finalError);
+            // Failed to capture snapshot after navigation
             this._tabSnapshot = undefined;
           }
         }

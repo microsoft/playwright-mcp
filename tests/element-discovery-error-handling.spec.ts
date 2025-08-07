@@ -76,7 +76,7 @@ test.describe('ElementDiscovery Error Handling', () => {
     // Track console.warn calls
     const originalWarn = console.warn;
     const warnCalls: any[] = [];
-    console.warn = (...args) => warnCalls.push(args);
+    // console.warn = (...args) => warnCalls.push(args);
 
     // Call safeDispose directly (accessing private method for testing)
     await (elementDiscovery as any).safeDispose(mockElement, 'test-operation');
@@ -86,7 +86,7 @@ test.describe('ElementDiscovery Error Handling', () => {
       call[0].includes('[ElementDiscovery:dispose]')
     )).toBe(true);
 
-    console.warn = originalWarn;
+    // console.warn = originalWarn;
   });
 
   test('should handle nested error scenarios correctly', async () => {
@@ -108,7 +108,7 @@ test.describe('ElementDiscovery Error Handling', () => {
 
     const originalWarn = console.warn;
     const warnCalls: any[] = [];
-    console.warn = (...args) => warnCalls.push(args);
+    // console.warn = (...args) => warnCalls.push(args);
 
     const alternatives = await elementDiscovery.findAlternativeElements({
       originalSelector: '#test',
@@ -120,7 +120,7 @@ test.describe('ElementDiscovery Error Handling', () => {
     expect(alternatives.length).toBe(0); // No valid alternatives due to errors
     expect(warnCalls.length).toBeGreaterThan(0); // Errors should be logged
 
-    console.warn = originalWarn;
+    // console.warn = originalWarn;
   });
 
   test('should maintain resource cleanup guarantees', async () => {
@@ -135,7 +135,7 @@ test.describe('ElementDiscovery Error Handling', () => {
 
     const originalWarn = console.warn;
     const warnCalls: any[] = [];
-    console.warn = (...args) => warnCalls.push(args);
+    // console.warn = (...args) => warnCalls.push(args);
 
     // Test multiple calls to safeDispose
     await (elementDiscovery as any).safeDispose(mockElement, 'cleanup-test-1');
@@ -149,7 +149,7 @@ test.describe('ElementDiscovery Error Handling', () => {
       call[0].includes('dispose')
     )).toBe(true);
 
-    console.warn = originalWarn;
+    // console.warn = originalWarn;
   });
 
   test('should create properly structured DiagnosticError for dispose failures', async () => {
@@ -193,7 +193,7 @@ test.describe('ElementDiscovery Error Handling', () => {
 
     const originalWarn = console.warn;
     const warnCalls: any[] = [];
-    console.warn = (...args) => warnCalls.push(args);
+    // console.warn = (...args) => warnCalls.push(args);
 
     // Test memory pressure scenario with safeDispose
     await (elementDiscovery as any).safeDispose(mockElement, 'memory-pressure-test');
@@ -203,6 +203,6 @@ test.describe('ElementDiscovery Error Handling', () => {
       call[0].includes('dispose')
     )).toBe(true);
 
-    console.warn = originalWarn;
+    // console.warn = originalWarn;
   });
 });

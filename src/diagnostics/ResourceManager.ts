@@ -1,4 +1,4 @@
-import * as playwright from 'playwright';
+
 
 export interface IDisposable {
   dispose(): Promise<void>;
@@ -49,11 +49,11 @@ export class ResourceManager implements SmartTracker {
 
     for (const [id, { resource, disposeMethod }] of this.resources.entries()) {
       try {
-        if (resource && typeof resource[disposeMethod] === 'function')
+        if (resource && typeof resource[disposeMethod] === 'function') {
           disposePromises.push(resource[disposeMethod]());
-
+        }
       } catch (error) {
-        console.warn(`[ResourceManager] Failed to dispose resource ${id}:`, error);
+        // Failed to dispose resource - continue cleanup
       }
     }
 
@@ -88,9 +88,9 @@ export class ResourceManager implements SmartTracker {
     let expiredCount = 0;
 
     for (const [, { timestamp }] of this.resources.entries()) {
-      if (now - timestamp > this.disposeTimeout)
+      if (now - timestamp > this.disposeTimeout) {
         expiredCount++;
-
+      }
     }
 
     return {
@@ -103,7 +103,7 @@ export class ResourceManager implements SmartTracker {
 
   private startCleanupTimer(): void {
     this.cleanupInterval = setInterval(() => {
-      this.cleanupExpiredResources();
+      void this.cleanupExpiredResources();
     }, this.disposeTimeout / 2); // Run cleanup every half of timeout period
   }
 
@@ -112,27 +112,24 @@ export class ResourceManager implements SmartTracker {
     const expiredIds: string[] = [];
 
     for (const [id, { timestamp }] of this.resources.entries()) {
-      if (now - timestamp > this.disposeTimeout)
+      if (now - timestamp > this.disposeTimeout) {
         expiredIds.push(id);
-
+      }
     }
 
     for (const id of expiredIds) {
       const entry = this.resources.get(id);
       if (entry) {
         try {
-          if (entry.resource && typeof entry.resource[entry.disposeMethod] === 'function')
+          if (entry.resource && typeof entry.resource[entry.disposeMethod] === 'function') {
             await entry.resource[entry.disposeMethod]();
-
+          }
         } catch (error) {
-          console.warn(`[ResourceManager] Failed to dispose expired resource ${id}:`, error);
+          // Failed to dispose expired resource - continue cleanup
         }
         this.untrackResource(id);
       }
     }
-
-    if (expiredIds.length > 0)
-      console.log(`[ResourceManager] Cleaned up ${expiredIds.length} expired resources`);
 
   }
 

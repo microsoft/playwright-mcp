@@ -16,10 +16,10 @@
 
 export function debugLog(...args: unknown[]): void {
   const enabled = true;
-  if (enabled) {
-    // eslint-disable-next-line no-console
+  if (enabled)
+
     console.log('[Extension]', ...args);
-  }
+
 }
 
 type ProtocolCommand = {

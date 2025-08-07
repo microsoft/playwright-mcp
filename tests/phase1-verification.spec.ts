@@ -22,7 +22,7 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
     };
 
     // Track resource
-    const id = resourceManager.trackResource(mockResource, 'dispose');
+    resourceManager.trackResource(mockResource, 'dispose');
     expect(resourceManager.getActiveCount()).toBe(1);
 
     // Dispose all

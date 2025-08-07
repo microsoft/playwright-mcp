@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 import path from 'path';
 import url from 'url';
 import dotenv from 'dotenv';
@@ -26,9 +26,7 @@ async function run(delegate: LLMDelegate) {
   await client.connect(transport);
   await client.ping();
   for (const task of tasks) {
-    const messages = await runTask(delegate, client, task);
-    for (const message of messages)
-      console.log(`${message.role}: ${message.content}`);
+    await runTask(delegate, client, task);
   }
   await client.close();
 }

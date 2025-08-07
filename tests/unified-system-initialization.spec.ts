@@ -46,7 +46,7 @@ test.describe('UnifiedSystem Initialization (Unit3)', () => {
 
       if (initializeComponents) {
         // Mock one component to fail during initialization
-        const mockError = new Error('Component initialization failed');
+        new Error('Component initialization failed');
 
         try {
           await initializeComponents();

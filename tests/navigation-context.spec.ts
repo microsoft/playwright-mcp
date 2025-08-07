@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { Response } from '../src/response.js';
-import { Context } from '../src/context.js';
+
 import { waitForCompletion } from '../src/tools/utils.js';
 import { Tab } from '../src/tab.js';
 import type { Page } from 'playwright';
@@ -224,7 +224,7 @@ test.describe('Navigation Context Handling', () => {
 
       // Trigger navigation with console messages
       await page.evaluate(() => {
-        console.log('Before navigation');
+        // console.log('Before navigation');
       });
       await page.goto('data:text/html,<html><body><h1>After Nav</h1><script>console.log("After navigation");</script></body></html>');
 

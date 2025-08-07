@@ -31,7 +31,7 @@ test.describe('Sharp Error Handling Tests', () => {
     ];
 
     for (const testCase of testCases) {
-      console.log(`Testing with ${testCase.description}:`);
+      // console.log(`Testing with ${testCase.description}:`);
 
       // Should throw error for invalid image data
       await expect(processImage(testCase.data, 'image/png', { quality: 80 }))
@@ -48,11 +48,11 @@ test.describe('Sharp Error Handling Tests', () => {
 
     const result = await processImage(pngBuffer, 'image/png', { quality: 90, format: 'jpeg' });
 
-    console.log('Valid PNG processing:');
-    console.log(`  Result content type: ${result.contentType}`);
-    console.log(`  Original size: ${result.originalSize.width}x${result.originalSize.height}`);
-    console.log(`  Processed size: ${result.processedSize.width}x${result.processedSize.height}`);
-    console.log(`  Compression ratio: ${result.compressionRatio.toFixed(3)}`);
+    // console.log('Valid PNG processing:');
+    // console.log(`  Result content type: ${result.contentType}`);
+    // console.log(`  Original size: ${result.originalSize.width}x${result.originalSize.height}`);
+    // console.log(`  Processed size: ${result.processedSize.width}x${result.processedSize.height}`);
+    // console.log(`  Compression ratio: ${result.compressionRatio.toFixed(3)}`);
 
     // This should work with actual Sharp processing
     expect(result.contentType).toBe('image/jpeg');
@@ -74,7 +74,7 @@ test.describe('Sharp Error Handling Tests', () => {
     // Valid PNG should process successfully
     const validResult = await processImage(validPng, 'image/png', { format: 'jpeg', quality: 80 });
 
-    console.log('Valid PNG result:', {
+    // console.log('Valid PNG result:', {
       contentType: validResult.contentType,
       size: `${validResult.originalSize.width}x${validResult.originalSize.height}`,
       dataLength: validResult.data.length

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 import { PageAnalyzer } from '../src/diagnostics/PageAnalyzer.js';
 import { ElementDiscovery } from '../src/diagnostics/ElementDiscovery.js';
 import { ErrorEnrichment } from '../src/diagnostics/ErrorEnrichment.js';
-import { fixtures } from './fixtures.js';
+
 
 test.describe('PageAnalyzer', () => {
   test('should analyze iframe detection status', async ({ page }) => {
@@ -446,7 +446,7 @@ test.describe('Phase 2: ResourceUsageMonitor', () => {
 
     // Simulate some work
     await new Promise(resolve => setTimeout(resolve, 50));
-    const largeArray = new Array(10000).fill(0).map((_, i) => ({ id: i, data: `test-${i}` }));
+    new Array(10000).fill(0).map((_, i) => ({ id: i, data: `test-${i}` }));
 
     const result = await monitor.stopMonitoring('test-operation');
 
@@ -484,7 +484,7 @@ test.describe('Phase 2: ResourceUsageMonitor', () => {
     monitor.startMonitoring('memory-test');
 
     // Simulate memory usage
-    const data = new Array(5000).fill(0).map((_, i) => ({
+    new Array(5000).fill(0).map((_, i) => ({
       id: i,
       content: `test-content-${i}`.repeat(10)
     }));
@@ -884,7 +884,7 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
       pageAnalyzer.analyzePageStructure(),
       pageAnalyzer.analyzePerformanceMetrics()
     ]);
-    const sequentialTime = Date.now() - sequentialStart;
+    Date.now() - sequentialStart;
 
     // Test parallel analysis timing
     const parallelStart = Date.now();
