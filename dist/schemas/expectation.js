@@ -1,28 +1,24 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { z } from 'zod';
+/**
+ * Schema for diff options configuration
+ */
+export const diffOptionsSchema = z.object({
+    enabled: z.boolean().default(false),
+    threshold: z.number().min(0).max(1).default(0.1),
+    format: z.enum(['unified', 'split', 'minimal']).default('unified'),
+    maxDiffLines: z.number().positive().default(50),
+    ignoreWhitespace: z.boolean().default(true),
+    context: z.number().min(0).default(3)
+}).optional();
 /**
  * Schema for expectation configuration that controls response content
  */
 export const expectationSchema = z.object({
-    includeSnapshot: z.boolean().optional().default(true),
-    includeConsole: z.boolean().optional().default(true),
-    includeDownloads: z.boolean().optional().default(true),
-    includeTabs: z.boolean().optional().default(true),
-    includeCode: z.boolean().optional().default(true),
+    includeSnapshot: z.boolean().optional().default(false),
+    includeConsole: z.boolean().optional().default(false),
+    includeDownloads: z.boolean().optional().default(false),
+    includeTabs: z.boolean().optional().default(false),
+    includeCode: z.boolean().optional().default(false),
     snapshotOptions: z.object({
         selector: z.string().optional().describe('CSS selector to limit snapshot scope'),
         maxLength: z.number().optional().describe('Maximum characters for snapshot'),
@@ -30,77 +26,86 @@ export const expectationSchema = z.object({
     }).optional(),
     consoleOptions: z.object({
         levels: z.array(z.enum(['log', 'warn', 'error', 'info'])).optional(),
-        maxMessages: z.number().optional().default(10)
+        maxMessages: z.number().optional().default(10),
+        patterns: z.array(z.string()).optional().describe('Regex patterns to filter messages'),
+        removeDuplicates: z.boolean().optional().default(false).describe('Remove duplicate messages')
     }).optional(),
     imageOptions: z.object({
         quality: z.number().min(1).max(100).optional().describe('JPEG quality (1-100)'),
         maxWidth: z.number().optional().describe('Maximum width in pixels'),
         maxHeight: z.number().optional().describe('Maximum height in pixels'),
         format: z.enum(['jpeg', 'png', 'webp']).optional()
-    }).optional()
+    }).optional(),
+    diffOptions: diffOptionsSchema
 }).optional();
 /**
  * Tool-specific default expectation configurations
  * These optimize token usage based on typical tool usage patterns
  */
 const TOOL_DEFAULTS = {
-    // Navigation tools need full context for verification
-    navigate: {
-        includeSnapshot: true,
-        includeConsole: true,
-        includeDownloads: true,
-        includeTabs: true,
-        includeCode: true
-    },
-    // Interactive tools need snapshot for feedback but less verbose logging
-    click: {
-        includeSnapshot: true,
-        includeConsole: false,
-        includeDownloads: false,
-        includeTabs: false,
-        includeCode: true
-    },
-    fill: {
-        includeSnapshot: true,
-        includeConsole: false,
-        includeDownloads: false,
-        includeTabs: false,
-        includeCode: true
-    },
-    // Screenshot tools don't need additional context
-    screenshot: {
+    // All tools default to minimal output for maximum token efficiency
+    // Users can enable specific outputs as needed
+    browser_navigate: {
         includeSnapshot: false,
         includeConsole: false,
         includeDownloads: false,
         includeTabs: false,
         includeCode: false
     },
-    // Code evaluation needs console output but minimal other info
-    evaluate: {
-        includeSnapshot: false,
-        includeConsole: true,
-        includeDownloads: false,
-        includeTabs: false,
-        includeCode: true
-    },
-    // Wait operations typically don't need verbose output
-    wait: {
+    browser_click: {
         includeSnapshot: false,
         includeConsole: false,
         includeDownloads: false,
         includeTabs: false,
-        includeCode: true
+        includeCode: false
+    },
+    browser_type: {
+        includeSnapshot: false,
+        includeConsole: false,
+        includeDownloads: false,
+        includeTabs: false,
+        includeCode: false
+    },
+    browser_take_screenshot: {
+        includeSnapshot: false,
+        includeConsole: false,
+        includeDownloads: false,
+        includeTabs: false,
+        includeCode: false
+    },
+    // Snapshot tool must include snapshot as that's its purpose
+    browser_snapshot: {
+        includeSnapshot: true,
+        includeConsole: false,
+        includeDownloads: false,
+        includeTabs: false,
+        includeCode: false
+    },
+    // All tools default to minimal output
+    browser_evaluate: {
+        includeSnapshot: false,
+        includeConsole: false,
+        includeDownloads: false,
+        includeTabs: false,
+        includeCode: false
+    },
+    browser_wait_for: {
+        includeSnapshot: false,
+        includeConsole: false,
+        includeDownloads: false,
+        includeTabs: false,
+        includeCode: false
     }
 };
 /**
  * General default configuration for tools without specific settings
  */
 const GENERAL_DEFAULT = {
-    includeSnapshot: true,
-    includeConsole: true,
-    includeDownloads: true,
-    includeTabs: true,
-    includeCode: true
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: false
 };
 /**
  * Get default expectation configuration for a specific tool
@@ -118,9 +123,8 @@ export function getDefaultExpectation(toolName) {
  */
 export function mergeExpectations(toolName, userExpectation) {
     const defaults = getDefaultExpectation(toolName);
-    if (!userExpectation) {
+    if (!userExpectation)
         return defaults;
-    }
     return {
         includeSnapshot: userExpectation.includeSnapshot ?? defaults.includeSnapshot,
         includeConsole: userExpectation.includeConsole ?? defaults.includeConsole,
@@ -129,6 +133,7 @@ export function mergeExpectations(toolName, userExpectation) {
         includeCode: userExpectation.includeCode ?? defaults.includeCode,
         snapshotOptions: userExpectation.snapshotOptions,
         consoleOptions: userExpectation.consoleOptions,
-        imageOptions: userExpectation.imageOptions
+        imageOptions: userExpectation.imageOptions,
+        diffOptions: userExpectation.diffOptions
     };
 }

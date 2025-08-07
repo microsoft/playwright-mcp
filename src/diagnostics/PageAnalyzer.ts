@@ -7,6 +7,7 @@ import type { PerformanceMetrics, MetricsThresholds } from '../types/performance
 import { FrameReferenceManager } from './FrameReferenceManager.js';
 import { ParallelPageAnalyzer } from './ParallelPageAnalyzer.js';
 import { ParallelAnalysisResult } from '../types/performance.js';
+import { getCurrentThresholds } from './DiagnosticThresholds.js';
 
 export interface IDisposable {
   dispose(): Promise<void>;
@@ -32,45 +33,7 @@ export interface PageStructureAnalysis {
 }
 
 export class PageAnalyzer implements IDisposable {
-  private readonly metricsThresholds: MetricsThresholds = {
-    executionTime: {
-      pageAnalysis: 1000,
-      elementDiscovery: 500,
-      resourceMonitoring: 200,
-      parallelAnalysis: 2000
-    },
-    memory: {
-      maxMemoryUsage: 100 * 1024 * 1024,
-      memoryLeakThreshold: 50 * 1024 * 1024,
-      gcTriggerThreshold: 80 * 1024 * 1024
-    },
-    performance: {
-      domElementLimit: 10000,
-      maxDepthLimit: 50,
-      largeSubtreeThreshold: 1000
-    },
-    dom: {
-      totalElements: 10000,
-      maxDepth: 50,
-      largeSubtrees: 10,
-      elementsWarning: 1500,
-      elementsDanger: 3000,
-      depthWarning: 15,
-      depthDanger: 20,
-      largeSubtreeThreshold: 500
-    },
-    interaction: {
-      clickableElements: 100,
-      formElements: 50,
-      clickableHigh: 100
-    },
-    layout: {
-      fixedElements: 10,
-      highZIndexElements: 5,
-      highZIndexThreshold: 1000,
-      excessiveZIndexThreshold: 9999
-    }
-  };
+  private readonly metricsThresholds: MetricsThresholds;
 
   private isDisposed = false;
   private frameRefs: Set<playwright.Frame> = new Set();
@@ -78,6 +41,8 @@ export class PageAnalyzer implements IDisposable {
 
   constructor(private page: playwright.Page | null) {
     this.frameManager = new FrameReferenceManager();
+    // 設定システムから閾値を取得（ハードコーディング解消）
+    this.metricsThresholds = getCurrentThresholds().getMetricsThresholds();
   }
 
   async dispose(): Promise<void> {
@@ -749,6 +714,8 @@ export class PageAnalyzer implements IDisposable {
     const page = this.getPage();
     
     try {
+      console.info('[PageAnalyzer] Evaluating parallel analysis recommendation');
+      
       // Quick DOM complexity check
       const elementCount = await page.evaluate(() => document.querySelectorAll('*').length);
       const iframeCount = await page.evaluate(() => document.querySelectorAll('iframe').length);
@@ -757,20 +724,24 @@ export class PageAnalyzer implements IDisposable {
       );
       
       const complexity = elementCount + (iframeCount * 100) + (formElements * 10);
+      console.info(`[PageAnalyzer] Page complexity analysis - elements: ${elementCount}, iframes: ${iframeCount}, forms: ${formElements}, complexity score: ${complexity}`);
       
       if (complexity > 2000) {
+        console.info('[PageAnalyzer] HIGH complexity detected - parallel analysis strongly recommended');
         return {
           recommended: true,
           reason: `High page complexity detected (elements: ${elementCount}, iframes: ${iframeCount})`,
           estimatedBenefit: 'Expected 40-60% performance improvement'
         };
       } else if (complexity > 1000) {
+        console.info('[PageAnalyzer] MODERATE complexity detected - parallel analysis recommended');
         return {
           recommended: true,
           reason: 'Moderate complexity - parallel analysis will provide better resource monitoring',
           estimatedBenefit: 'Expected 20-40% performance improvement'
         };
       } else {
+        console.info('[PageAnalyzer] LOW complexity detected - sequential analysis sufficient');
         return {
           recommended: false,
           reason: 'Low complexity page - sequential analysis sufficient',
@@ -778,6 +749,7 @@ export class PageAnalyzer implements IDisposable {
         };
       }
     } catch (error) {
+      console.warn('[PageAnalyzer] Error evaluating complexity - defaulting to parallel analysis:', error);
       return {
         recommended: true,
         reason: 'Unable to assess complexity - using parallel analysis as fallback',

@@ -28,6 +28,8 @@ export class ParallelPageAnalyzer {
     const errors: Array<{ step: string; error: string }> = [];
     const analysisSteps: Array<{ step: string; duration: number; memoryDelta: number }> = [];
 
+    console.info('[ParallelPageAnalyzer] Starting parallel analysis with resource monitoring');
+
     // Start global monitoring
     this.resourceMonitor.startMonitoring('parallel-analysis');
     const startMemory = this.resourceMonitor.getCurrentMemoryUsage();
@@ -37,6 +39,7 @@ export class ParallelPageAnalyzer {
 
     try {
       // Parallel execution of analysis tasks
+      console.info('[ParallelPageAnalyzer] Launching parallel analysis tasks');
       const analysisPromises = [
         this.executeWithMonitoring('structure-analysis', async () => {
           return await this.pageAnalyzer.analyzePageStructure();
@@ -47,6 +50,7 @@ export class ParallelPageAnalyzer {
       ];
 
       const results = await Promise.allSettled(analysisPromises);
+      console.info(`[ParallelPageAnalyzer] Parallel tasks completed - results: ${results.length}`);
 
       // Process results
       results.forEach((result, index) => {
@@ -55,6 +59,7 @@ export class ParallelPageAnalyzer {
         if (result.status === 'fulfilled') {
           const { data, step } = result.value;
           analysisSteps.push(step);
+          console.info(`[ParallelPageAnalyzer] Step '${stepName}' completed successfully in ${step.duration}ms`);
           
           if (stepName === 'structure-analysis') {
             structureAnalysis = data;
@@ -62,17 +67,21 @@ export class ParallelPageAnalyzer {
             performanceMetrics = data;
           }
         } else {
+          const errorMsg = result.reason?.message || 'Unknown error';
+          console.error(`[ParallelPageAnalyzer] Step '${stepName}' failed: ${errorMsg}`);
           errors.push({
             step: stepName,
-            error: result.reason?.message || 'Unknown error'
+            error: errorMsg
           });
         }
       });
 
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Parallel execution failed';
+      console.error(`[ParallelPageAnalyzer] Parallel execution failed: ${errorMsg}`);
       errors.push({
         step: 'parallel-execution',
-        error: error instanceof Error ? error.message : 'Parallel execution failed'
+        error: errorMsg
       });
     }
 
@@ -81,6 +90,8 @@ export class ParallelPageAnalyzer {
     const endTime = Date.now();
     const executionTime = endTime - startTime;
     const endMemory = this.resourceMonitor.getCurrentMemoryUsage();
+
+    console.info(`[ParallelPageAnalyzer] Parallel analysis completed in ${executionTime}ms with ${errors.length} errors`);
 
     return {
       structureAnalysis,
@@ -103,6 +114,7 @@ export class ParallelPageAnalyzer {
     stepName: string, 
     analysisFunction: () => Promise<T>
   ): Promise<{ data: T; step: { step: string; duration: number; memoryDelta: number } }> {
+    console.info(`[ParallelPageAnalyzer] Starting step: ${stepName}`);
     const startMemory = this.resourceMonitor.getCurrentMemoryUsage();
     this.resourceMonitor.startMonitoring(stepName);
 
@@ -117,8 +129,10 @@ export class ParallelPageAnalyzer {
         memoryDelta: endMemory.heapUsed - startMemory.heapUsed
       };
 
+      console.info(`[ParallelPageAnalyzer] Step '${stepName}' completed in ${usage.duration}ms (memory delta: ${(step.memoryDelta / 1024 / 1024).toFixed(2)}MB)`);
       return { data, step };
     } catch (error) {
+      console.error(`[ParallelPageAnalyzer] Step '${stepName}' failed:`, error);
       // Cleanup monitoring on error
       try {
         await this.resourceMonitor.stopMonitoring(stepName);

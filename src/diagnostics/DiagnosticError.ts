@@ -2,7 +2,7 @@
  * Structured error for diagnostic operations with enhanced context
  */
 
-export type DiagnosticComponent = 'PageAnalyzer' | 'ElementDiscovery' | 'ResourceManager' | 'ErrorHandler' | 'ConfigManager';
+export type DiagnosticComponent = 'PageAnalyzer' | 'ElementDiscovery' | 'ResourceManager' | 'ErrorHandler' | 'ConfigManager' | 'UnifiedSystem';
 
 export interface DiagnosticErrorContext {
   timestamp: number;
@@ -12,6 +12,7 @@ export interface DiagnosticErrorContext {
   memoryUsage?: number;
   performanceImpact?: 'low' | 'medium' | 'high';
   suggestions?: string[];
+  context?: any; // Additional context information
 }
 
 /**
@@ -27,6 +28,7 @@ export class DiagnosticError extends Error {
   public readonly memoryUsage?: number;
   public readonly performanceImpact?: 'low' | 'medium' | 'high';
   public readonly suggestions: string[];
+  public readonly context?: any;
 
   constructor(
     message: string,
@@ -45,6 +47,7 @@ export class DiagnosticError extends Error {
     this.memoryUsage = context.memoryUsage;
     this.performanceImpact = context.performanceImpact || 'low';
     this.suggestions = context.suggestions || [];
+    this.context = context.context;
 
     // Maintain stack trace for debugging
     if (Error.captureStackTrace) {

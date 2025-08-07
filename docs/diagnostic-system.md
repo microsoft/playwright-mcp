@@ -300,9 +300,11 @@ The diagnostic system is designed to operate efficiently:
 - **Non-blocking**: Diagnostic operations don't interfere with existing automation
 - **Cached Results**: Similar analyses are cached to improve performance
 
-### Performance Thresholds
+### Performance Thresholds (Configuration-Driven System)
 
-The system uses predefined thresholds to generate warnings:
+The system now uses a centralized configuration-driven threshold management system that eliminates hardcoding and provides runtime configurability:
+
+#### Default Thresholds
 
 | Metric | Warning Level | Danger Level | Description |
 |--------|--------------|--------------|-------------|
@@ -311,6 +313,47 @@ The system uses predefined thresholds to generate warnings:
 | Large Subtree | 500 | - | Elements in a single subtree |
 | Clickable Elements | 100 | - | Interactive elements count |
 | High Z-Index | 1000 | 9999 | Z-index values |
+
+#### Configuration System Features
+
+- **Centralized Management**: All thresholds managed by `DiagnosticThresholds` class
+- **Runtime Configuration**: Thresholds can be updated during runtime without code changes
+- **Validation**: Automatic validation of threshold values with meaningful error messages
+- **SmartConfig Integration**: Seamless integration with existing configuration system
+- **Environment-Specific**: Different threshold profiles for development, production, testing
+- **Fallback Support**: Automatic fallback to default values if custom configuration fails
+
+#### Usage Examples
+
+```typescript
+import { getCurrentThresholds, DiagnosticThresholds } from './DiagnosticThresholds.js';
+
+// Get current thresholds
+const thresholds = getCurrentThresholds();
+const domThresholds = thresholds.getDomThresholds();
+
+// Update specific thresholds
+thresholds.updateThresholds({
+  dom: {
+    elementsWarning: 2000,  // Increase warning threshold
+    elementsDanger: 4000    // Increase danger threshold
+  }
+});
+
+// Reset to defaults
+thresholds.resetToDefaults();
+```
+
+#### Configuration Validation
+
+The system provides comprehensive validation:
+
+```typescript
+const diagnostics = getCurrentThresholds().getConfigDiagnostics();
+console.log('Status:', diagnostics.status);
+console.log('Customizations:', diagnostics.customizations);
+console.log('Warnings:', diagnostics.warnings);
+```
 
 ## Integration with Existing Tools
 

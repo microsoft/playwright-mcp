@@ -46,6 +46,10 @@ test.describe('PageAnalyzer', () => {
     const metrics = await pageAnalyzer.analyzePerformanceMetrics();
     
     expect(metrics).toBeDefined();
+    expect(metrics.domMetrics).toBeDefined();
+    expect(metrics.interactionMetrics).toBeDefined();
+    expect(metrics.resourceMetrics).toBeDefined();
+    expect(metrics.layoutMetrics).toBeDefined();
     expect(metrics.domMetrics.totalElements).toBeGreaterThan(0);
     expect(metrics.domMetrics.maxDepth).toBeGreaterThanOrEqual(1);
     expect(metrics.interactionMetrics.clickableElements).toBeGreaterThanOrEqual(1);
@@ -53,6 +57,43 @@ test.describe('PageAnalyzer', () => {
     expect(metrics.resourceMetrics.imageCount).toBeGreaterThanOrEqual(1);
     expect(metrics.warnings).toBeDefined();
     expect(Array.isArray(metrics.warnings)).toBe(true);
+  });
+
+  test('should handle performance metrics analysis errors gracefully', async ({ page }) => {
+    // Create a page that might cause issues (very deep DOM structure)
+    const complexHtml = `
+      <html>
+        <head><title>Complex Test Page</title></head>
+        <body>
+          ${'<div>'.repeat(20)}
+            <button id="deep-button">Deep Button</button>
+          ${'</div>'.repeat(20)}
+        </body>
+      </html>
+    `;
+    await page.goto(`data:text/html,${complexHtml}`);
+    
+    const pageAnalyzer = new PageAnalyzer(page);
+    
+    // This should not throw an error even with complex DOM
+    const metrics = await pageAnalyzer.analyzePerformanceMetrics();
+    
+    expect(metrics).toBeDefined();
+    expect(metrics.domMetrics).toBeDefined();
+    expect(metrics.interactionMetrics).toBeDefined();
+    expect(metrics.resourceMetrics).toBeDefined();
+    expect(metrics.layoutMetrics).toBeDefined();
+    
+    // Check that the analysis completed successfully or failed gracefully
+    expect(metrics.errorCount).toBeGreaterThanOrEqual(0);
+    expect(metrics.successRate).toBeGreaterThanOrEqual(0);
+    expect(metrics.successRate).toBeLessThanOrEqual(1);
+    
+    // Deep DOM should be detected
+    expect(metrics.domMetrics.maxDepth).toBeGreaterThan(10);
+    
+    // Cleanup
+    await pageAnalyzer.dispose();
   });
 
   test('should detect DOM complexity warnings', async ({ page }) => {
@@ -986,5 +1027,163 @@ test.describe('Diagnostic System Integration', () => {
     expect(parallelResult.structureAnalysis.iframes.detected).toBe(true);
     expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(500);
     expect(enrichedError.suggestions).toContain('Page has active modal dialog - handle it before performing click');
+  });
+});
+
+test.describe('configOverrides visibility and impact', () => {
+  test('should show applied overrides in diagnostic report', async ({ page }) => {
+    await page.goto('data:text/html,<html><body><h1>Test Page</h1></body></html>');
+    
+    const mockContext = {
+      currentTabOrDie: () => ({ 
+        page, 
+        id: 'test-tab',
+        modalStates: () => [],
+        modalStatesMarkdown: () => []
+      }),
+      tab: { page, id: 'test-tab' }
+    };
+
+    const mockResponse = {
+      results: [] as string[],
+      addResult: function(result: string) { this.results.push(result); },
+      addError: function(error: string) { this.results.push(`ERROR: ${error}`); }
+    };
+
+    const params = {
+      configOverrides: {
+        enableResourceMonitoring: false,
+        performanceThresholds: {
+          pageAnalysis: 2000,
+          elementDiscovery: 1500
+        }
+      },
+      includeSystemStats: true,
+      useUnifiedSystem: true
+    };
+
+    const { browserDiagnose } = await import('../src/tools/diagnose.js');
+
+    await browserDiagnose.handle(mockContext as any, params, mockResponse as any);
+
+    const report = mockResponse.results.join('\n');
+
+    // Check that applied overrides are visible in the report
+    expect(report).toContain('Applied Configuration Overrides');
+    expect(report).toContain('Resource Monitoring: Disabled');
+    expect(report).toContain('Performance Thresholds:');
+    // Check for actual threshold values reported in the format: oldValue → newValue
+    expect(report).toMatch(/1000ms → 2000ms|Page Analysis:.*2000ms/);
+    expect(report).toMatch(/500ms → 1500ms|Element Discovery:.*1500ms/);
+  });
+
+  test('should show different results with and without overrides', async ({ page }) => {
+    await page.goto('data:text/html,<html><body><h1>Test Page</h1></body></html>');
+    
+    const mockContext = {
+      currentTabOrDie: () => ({ 
+        page, 
+        id: 'test-tab',
+        modalStates: () => [],
+        modalStatesMarkdown: () => []
+      }),
+      tab: { page, id: 'test-tab' }
+    };
+
+    // Test without overrides
+    const mockResponseWithout = {
+      results: [] as string[],
+      addResult: function(result: string) { this.results.push(result); },
+      addError: function(error: string) { this.results.push(`ERROR: ${error}`); }
+    };
+
+    const paramsWithout = {
+      includeSystemStats: true,
+      useUnifiedSystem: true
+    };
+
+    // Test with overrides
+    const mockResponseWith = {
+      results: [] as string[],
+      addResult: function(result: string) { this.results.push(result); },
+      addError: function(error: string) { this.results.push(`ERROR: ${error}`); }
+    };
+
+    const paramsWith = {
+      configOverrides: {
+        enableResourceMonitoring: true,
+        performanceThresholds: {
+          pageAnalysis: 10000
+        }
+      },
+      includeSystemStats: true,
+      useUnifiedSystem: true
+    };
+
+    const { browserDiagnose } = await import('../src/tools/diagnose.js');
+
+    await browserDiagnose.handle(mockContext as any, paramsWithout, mockResponseWithout as any);
+    await browserDiagnose.handle(mockContext as any, paramsWith, mockResponseWith as any);
+
+    const reportWithout = mockResponseWithout.results.join('\n');
+    const reportWith = mockResponseWith.results.join('\n');
+
+    // Reports should be different
+    expect(reportWith).not.toEqual(reportWithout);
+    
+    // Report with overrides should contain override information
+    expect(reportWith).toContain('Custom overrides applied');
+    expect(reportWith).toContain('Applied Configuration Overrides');
+    
+    // Report without overrides should use default settings
+    expect(reportWithout).toContain('Default settings');
+    expect(reportWithout).not.toContain('Applied Configuration Overrides');
+  });
+
+  test('should show configuration impact analysis', async ({ page }) => {
+    await page.goto('data:text/html,<html><body><h1>Test Page</h1></body></html>');
+    
+    const mockContext = {
+      currentTabOrDie: () => ({ 
+        page, 
+        id: 'test-tab',
+        modalStates: () => [],
+        modalStatesMarkdown: () => []
+      }),
+      tab: { page, id: 'test-tab' }
+    };
+
+    const mockResponse = {
+      results: [] as string[],
+      addResult: function(result: string) { this.results.push(result); },
+      addError: function(error: string) { this.results.push(`ERROR: ${error}`); }
+    };
+
+    const params = {
+      configOverrides: {
+        enableResourceMonitoring: true,
+        enableErrorEnrichment: true,
+        performanceThresholds: {
+          pageAnalysis: 5000,
+          elementDiscovery: 3000
+        }
+      },
+      includeSystemStats: true,
+      useUnifiedSystem: true
+    };
+
+    const { browserDiagnose } = await import('../src/tools/diagnose.js');
+
+    await browserDiagnose.handle(mockContext as any, params, mockResponse as any);
+
+    const report = mockResponse.results.join('\n');
+
+    // Check for configuration impact analysis
+    expect(report).toContain('### Configuration Impact Analysis');
+    expect(report).toContain('**Configuration Status:**');
+    
+    // Check for performance baseline comparison instead of applied changes
+    expect(report).toContain('**Performance Baseline Comparison:**');
+    expect(report).toMatch(/pageAnalysis.*Expected.*5000ms/);
   });
 });

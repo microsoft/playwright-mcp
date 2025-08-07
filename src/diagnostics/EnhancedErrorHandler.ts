@@ -550,7 +550,8 @@ export class EnhancedErrorHandler {
       ElementDiscovery: 0,
       ResourceManager: 0,
       ErrorHandler: 0,
-      ConfigManager: 0
+      ConfigManager: 0,
+      UnifiedSystem: 0
     };
     
     const errorsByOperation: Record<string, number> = {};

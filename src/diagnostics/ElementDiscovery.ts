@@ -5,6 +5,7 @@
 import type * as playwright from 'playwright';
 import type { IDisposable } from './PageAnalyzer.js';
 import { SmartHandleBatch } from './SmartHandle.js';
+import { DiagnosticError } from './DiagnosticError.js';
 
 export interface SearchCriteria {
   text?: string;
@@ -61,6 +62,35 @@ export class ElementDiscovery implements IDisposable {
       throw new Error('Page reference is null');
     }
     return this.page;
+  }
+
+  /**
+   * Safely dispose an element with enhanced error handling
+   * Uses DiagnosticError for structured error reporting
+   */
+  private async safeDispose(element: playwright.ElementHandle, operation: string): Promise<void> {
+    try {
+      await element.dispose();
+    } catch (error) {
+      const diagnosticError = DiagnosticError.from(
+        error instanceof Error ? error : new Error('Unknown dispose error'),
+        'ElementDiscovery',
+        'dispose',
+        {
+          performanceImpact: 'low',
+          suggestions: [
+            'Element dispose failed but processing continues',
+            'This may indicate browser connection issues',
+            'Consider checking browser/page state'
+          ]
+        }
+      );
+
+      console.warn(
+        `[ElementDiscovery:dispose] Failed to dispose element during ${operation}:`,
+        diagnosticError.toJSON()
+      );
+    }
   }
 
   async findAlternativeElements(options: ElementDiscoveryOptions): Promise<AlternativeElement[]> {
@@ -133,7 +163,7 @@ export class ElementDiscovery implements IDisposable {
         for (const element of elements) {
           if (totalFound >= maxResults) {
             // Dispose excess elements immediately
-            await element.dispose();
+            await this.safeDispose(element, `findByText-excess-${totalFound}`);
             break;
           }
 
@@ -162,11 +192,11 @@ export class ElementDiscovery implements IDisposable {
               totalFound++;
             } else {
               // Dispose elements that don't meet confidence threshold
-              await element.dispose();
+              await this.safeDispose(element, `findByText-threshold-${totalFound}`);
             }
           } catch (elementError) {
-            // Dispose element on error and continue
-            await element.dispose();
+            // Dispose element on error and continue with nested error handling
+            await this.safeDispose(element, `findByText-element-${totalFound}`);
             continue;
           }
         }
@@ -189,7 +219,7 @@ export class ElementDiscovery implements IDisposable {
       
       for (const element of elements) {
         if (totalFound >= maxResults) {
-          await element.dispose();
+          await this.safeDispose(element, `findByRole-excess-${totalFound}`);
           break;
         }
 
@@ -208,7 +238,7 @@ export class ElementDiscovery implements IDisposable {
           });
           totalFound++;
         } catch (elementError) {
-          await element.dispose();
+          await this.safeDispose(element, `findByRole-element-${totalFound}`);
           continue;
         }
       }
@@ -236,7 +266,7 @@ export class ElementDiscovery implements IDisposable {
 
       for (const element of elements) {
         if (totalFound >= maxResults) {
-          await element.dispose();
+          await this.safeDispose(element, `findByTagName-excess-${totalFound}`);
           break;
         }
 
@@ -255,7 +285,7 @@ export class ElementDiscovery implements IDisposable {
           });
           totalFound++;
         } catch (elementError) {
-          await element.dispose();
+          await this.safeDispose(element, `findByTagName-element-${totalFound}`);
           continue;
         }
       }
@@ -279,7 +309,7 @@ export class ElementDiscovery implements IDisposable {
         
         for (const element of elements) {
           if (totalFound >= maxResults) {
-            await element.dispose();
+            await this.safeDispose(element, `findByAttributes-excess-${totalFound}`);
             break;
           }
 
@@ -296,7 +326,7 @@ export class ElementDiscovery implements IDisposable {
             });
             totalFound++;
           } catch (elementError) {
-            await element.dispose();
+            await this.safeDispose(element, `findByAttributes-element-${totalFound}`);
             continue;
           }
         }
@@ -331,7 +361,7 @@ export class ElementDiscovery implements IDisposable {
         
         for (const element of elements) {
           if (totalFound >= maxResults) {
-            await element.dispose();
+            await this.safeDispose(element, `findImplicitRole-excess-${totalFound}`);
             break;
           }
 
@@ -348,7 +378,7 @@ export class ElementDiscovery implements IDisposable {
             });
             totalFound++;
           } catch (elementError) {
-            await element.dispose();
+            await this.safeDispose(element, `findImplicitRole-element-${totalFound}`);
             continue;
           }
         }
