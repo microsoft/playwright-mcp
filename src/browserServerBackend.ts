@@ -55,15 +55,9 @@ export class BrowserServerBackend implements ServerBackend {
   }
 
   async initialize(info: mcpServer.InitializeInfo): Promise<void> {
-    let rootPath: string | undefined;
-    if (info.roots) {
-      const firstRootUri = info.roots.roots[0]?.uri;
-      const url = firstRootUri ? new URL(firstRootUri) : undefined;
-      rootPath = url ? fileURLToPath(url) : undefined;
-    }
-
     this._defineContextSwitchTool(mcpServer.isVSCode(info.clientVersion));
 
+    const rootPath = info.roots?.roots[0]?.uri ? fileURLToPath(new URL(info.roots.roots[0].uri)) : undefined;
     this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config, rootPath) : undefined;
     this._context = new Context({
       tools: this._tools,
