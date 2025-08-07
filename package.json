@@ -21,7 +21,6 @@
     "benchmark": "npm run build:benchmark && node benchmark/lib/index.js",
     "benchmark:verbose": "npm run build:benchmark && node benchmark/lib/index.js --verbose",
     "benchmark:quiet": "npm run build:benchmark && node benchmark/lib/index.js --quiet",
-    "lint": "npm run update-readme && eslint . && tsc --noEmit && tsc -p benchmark/tsconfig.json --noEmit",
     "lint-fix": "eslint . --fix",
     "update-readme": "node utils/update-readme.js",
     "watch": "tsc --watch",
