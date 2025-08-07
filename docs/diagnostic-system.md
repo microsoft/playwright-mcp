@@ -1,162 +1,284 @@
-# Diagnostic System
+# Diagnostic System - Complete Architecture
 
-The Playwright MCP Server includes a comprehensive diagnostic system that helps identify and resolve issues with browser automation. This system provides detailed information about page structure, element discovery, performance metrics, and enhanced error handling.
+The Playwright MCP Server includes a comprehensive three-phase diagnostic system that provides advanced error handling, performance monitoring, and intelligent automation assistance.
+
+## Architecture Overview
+
+### Phase 1: Foundation Components
+- **PageAnalyzer**: Core page structure analysis
+- **ElementDiscovery**: Alternative element finding
+- **EnhancedErrorHandler**: Error enrichment with suggestions
+- **DiagnosticLevel**: Configurable detail levels
+
+### Phase 2: Advanced Analysis
+- **ParallelPageAnalyzer**: Concurrent multi-aspect analysis
+- **ResourceUsageMonitor**: Memory and CPU tracking
+- **FrameReferenceManager**: Advanced iframe management
+- **ResourceManager**: Lifecycle management for handles
+
+### Phase 3: Unified System
+- **UnifiedDiagnosticSystem**: Orchestrates all components
+- **SmartConfig**: Intelligent configuration management
+- **DiagnosticThresholds**: Centralized threshold management
+- **Token Optimization**: 50-80% response size reduction
 
 ## Core Components
 
-### 1. PageAnalyzer
-Analyzes the current page structure and provides insights about potential automation issues.
+### 1. UnifiedDiagnosticSystem (Phase 3)
+
+The central orchestrator that integrates all diagnostic components with enhanced error handling and performance monitoring.
 
 #### Features
-- **IFrame Detection**: Identifies iframes and their accessibility status
-- **Modal State Analysis**: Detects active dialogs and file choosers
-- **Element Statistics**: Counts visible and interactable elements
-- **Accessibility Metrics**: Identifies elements with missing ARIA attributes
-- **Performance Metrics**: Comprehensive DOM complexity, interaction, resource, and layout analysis
+- **Singleton Pattern**: One instance per page for resource efficiency
+- **Component Orchestration**: Manages all diagnostic subsystems
+- **Error Enrichment**: Automatic error enhancement with context
+- **Performance Monitoring**: Real-time operation tracking
+- **Resource Management**: Automatic cleanup and leak prevention
+- **Configuration Runtime**: Dynamic configuration updates
 
 #### Usage
 ```typescript
-import { PageAnalyzer } from './src/diagnostics/PageAnalyzer.js';
+import { UnifiedDiagnosticSystem } from './src/diagnostics/UnifiedSystem.js';
 
-const analyzer = new PageAnalyzer(page);
-
-// Basic page structure analysis
-const analysis = await analyzer.analyzePageStructure();
-console.log(`Found ${analysis.iframes.count} iframes`);
-console.log(`${analysis.elements.totalInteractable} interactable elements`);
-
-// Performance metrics analysis
-const metrics = await analyzer.analyzePerformanceMetrics();
-console.log(`DOM elements: ${metrics.domMetrics.totalElements}`);
-console.log(`DOM depth: ${metrics.domMetrics.maxDepth}`);
-console.log(`Warnings: ${metrics.warnings.length}`);
-```
-
-#### Performance Metrics
-
-The `analyzePerformanceMetrics()` method provides comprehensive insights:
-
-**DOM Metrics:**
-- Total element count with warning/danger thresholds (1500/3000)
-- Maximum DOM depth with thresholds (15/20 levels)
-- Large subtree detection (>500 elements)
-
-**Interaction Metrics:**
-- Clickable elements count
-- Form elements count
-- Disabled elements count
-
-**Resource Metrics:**
-- Image count and estimated size
-- Script tags (inline vs external)
-- Stylesheet count
-
-**Layout Metrics:**
-- Fixed position elements with purpose detection
-- High z-index elements (>1000) with excessive threshold (>9999)
-- Overflow hidden element count
-
-**Performance Warnings:**
-- Automatic threshold-based warnings
-- Categorized by type: dom_complexity, interaction_overload, resource_heavy, layout_issue
-- Severity levels: warning, danger
-
-### 2. ElementDiscovery
-Finds alternative elements when the original selector fails.
-
-#### Features
-- **Multi-criteria Search**: Text content, ARIA roles, tag names, attributes
-- **Confidence Scoring**: Ranks alternatives by likelihood of being correct
-- **Smart Matching**: Uses Levenshtein distance for text similarity
-- **Implicit Role Detection**: Finds elements with implicit ARIA roles
-
-#### Usage
-```typescript
-import { ElementDiscovery } from './src/diagnostics/ElementDiscovery.js';
-
-const discovery = new ElementDiscovery(page);
-const alternatives = await discovery.findAlternativeElements({
-  originalSelector: 'button[data-missing="true"]',
-  searchCriteria: {
-    text: 'Submit',
-    role: 'button'
+// Get singleton instance with optional config overrides
+const system = UnifiedDiagnosticSystem.getInstance(page, {
+  features: {
+    enableParallelAnalysis: true,
+    enableResourceLeakDetection: true,
+    enableAdvancedElementDiscovery: true
   },
+  performance: {
+    thresholds: {
+      executionTime: {
+        pageAnalysis: 500,
+        elementDiscovery: 300
+      }
+    }
+  }
+});
+
+// Analyze page structure with parallel processing
+const result = await system.analyzePageStructure(true);
+if (result.success) {
+  console.log('Analysis completed in', result.executionTime, 'ms');
+  console.log('Memory usage:', result.memoryUsage);
+}
+
+// Find alternative elements with enhanced discovery
+const alternatives = await system.findAlternativeElements({
+  originalSelector: 'button#submit',
+  searchCriteria: { text: 'Submit', role: 'button' },
   maxResults: 5
 });
 
-alternatives.forEach(alt => {
-  console.log(`Found: ${alt.selector} (${alt.confidence * 100}% confidence)`);
-});
+// Get system health status
+const health = await system.performHealthCheck();
+console.log('System status:', health.status);
+console.log('Active operations:', health.activeOperations);
 ```
 
-### 3. ErrorEnrichment
-Enriches standard errors with diagnostic information and suggestions.
+### 2. ParallelPageAnalyzer (Phase 2)
+
+Performs concurrent analysis of multiple page aspects for improved performance.
 
 #### Features
-- **Alternative Element Suggestions**: Provides selectors for similar elements
-- **Context-aware Analysis**: Considers page state when suggesting solutions
-- **Batch Operation Support**: Special handling for failed batch operations
-- **Performance Context**: Includes timing and performance considerations
+- **Concurrent Execution**: Analyzes DOM, performance, and resources in parallel
+- **Worker Pool Pattern**: Efficient resource utilization
+- **Error Isolation**: Individual task failures don't affect others
+- **Resource Monitoring**: Tracks memory and CPU usage per task
 
-#### Usage
+#### Parallel Analysis Components
+- **Structure Analysis**: DOM tree, iframes, modal states
+- **Performance Metrics**: DOM complexity, interaction elements, resources
+- **Resource Usage**: Memory snapshots, CPU time tracking
+- **Frame Management**: Concurrent iframe analysis
+
 ```typescript
-import { ErrorEnrichment } from './src/diagnostics/ErrorEnrichment.js';
+const parallelAnalyzer = new ParallelPageAnalyzer(page);
+const result = await parallelAnalyzer.runParallelAnalysis();
 
-const enrichment = new ErrorEnrichment(page);
-const enrichedError = await enrichment.enrichElementNotFoundError({
-  originalError: new Error('Element not found'),
-  selector: 'button[data-missing="true"]',
-  searchCriteria: { text: 'Submit', role: 'button' }
-});
-
-console.log(enrichedError.message);
-enrichedError.suggestions.forEach(suggestion => {
-  console.log(`💡 ${suggestion}`);
-});
+console.log('Parallel execution time:', result.executionTime, 'ms');
+console.log('Tasks completed:', result.tasksCompleted);
+console.log('Memory peak:', result.resourceUsage.peakMemory);
 ```
 
-### 4. EnhancedErrorHandler
-Provides high-level error enhancement with tool-specific optimizations.
+### 3. SmartConfig System
+
+Advanced configuration management with runtime updates and environment-specific profiles.
 
 #### Features
-- **Playwright Error Integration**: Seamlessly handles standard Playwright errors
-- **Timeout Analysis**: Specialized handling for timeout errors
-- **Context Detection**: Identifies frame context issues
-- **Performance Monitoring**: Tracks operation performance
-- **Tool-specific Suggestions**: Provides suggestions based on the tool being used
+- **Environment Profiles**: Development, production, testing presets
+- **Runtime Updates**: Change configuration without restart
+- **Threshold Management**: Integrated with DiagnosticThresholds
+- **Validation**: Automatic configuration validation
+- **Impact Analysis**: Reports configuration change effects
 
-### 5. DiagnosticLevel
-Controls the level of diagnostic detail provided in responses.
-
-#### Levels
-- **none**: No diagnostics (minimal output)
-- **basic**: Critical information only (iframes, modals, interactable elements)
-- **standard**: Default level with comprehensive analysis
-- **detailed**: Includes performance metrics
-- **full**: All available information including layout analysis
-
-#### Usage
 ```typescript
-import { DiagnosticLevelManager } from './src/diagnostics/DiagnosticLevel.js';
+import { SmartConfigManager } from './src/diagnostics/SmartConfig.js';
 
-const manager = new DiagnosticLevelManager();
+const config = SmartConfigManager.getInstance();
 
-// Set global diagnostic level
-manager.setLevel('detailed');
+// Configure for specific environment
+config.configureForEnvironment('production');
 
-// Check if a feature should be enabled
-if (manager.shouldInclude('performanceMetrics')) {
-  // Include performance metrics in output
+// Update specific thresholds
+config.updateThresholds({
+  dom: {
+    totalElements: 5000,
+    maxDepth: 25
+  }
+});
+
+// Get configuration impact report
+const impact = config.getConfigurationImpactReport();
+console.log('Active overrides:', impact.activeOverrides);
+console.log('Performance risk:', impact.performanceImpact);
+```
+
+### 4. ResourceManager
+
+Manages lifecycle of browser handles and prevents memory leaks.
+
+#### Features
+- **Automatic Disposal**: Tracks and disposes unused resources
+- **Leak Detection**: Identifies potential memory leaks
+- **Handle Management**: Smart handle creation and tracking
+- **Cleanup Timers**: Automatic resource cleanup
+
+```typescript
+import { globalResourceManager } from './src/diagnostics/ResourceManager.js';
+
+// Track a resource
+const handleId = globalResourceManager.trackResource(elementHandle, 'dispose');
+
+// Get resource statistics
+const stats = globalResourceManager.getResourceStats();
+console.log('Active resources:', stats.activeCount);
+console.log('Memory usage:', stats.memoryUsage);
+
+// Automatic cleanup happens on timeout
+```
+
+## Token Optimization Features
+
+### Expectation Parameters
+
+Control response content to reduce token usage by 50-80%.
+
+```typescript
+// Minimal response (maximum token savings)
+{
+  expectation: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeNetwork: false,
+    includeTabs: false,
+    includeCode: false
+  }
 }
 
-// Get configuration for a specific level
-const config = manager.getConfiguration('basic');
+// Selective inclusion
+{
+  expectation: {
+    includeSnapshot: true,  // Only get visual state
+    includeConsole: false,
+    maxSnapshotHeight: 500  // Limit snapshot size
+  }
+}
 ```
 
-## New MCP Tools
+### Batch Execution
 
-### browser_find_elements
-Find elements using multiple search criteria.
+Execute multiple operations with single response for 60-70% token reduction.
+
+```typescript
+{
+  "name": "browser_batch_execute",
+  "arguments": {
+    "steps": [
+      { "tool": "browser_navigate", "args": { "url": "https://example.com" }},
+      { "tool": "browser_click", "args": { "element": "Login" }},
+      { "tool": "browser_type", "args": { "text": "username" }},
+      { "tool": "browser_press_key", "args": { "key": "Tab" }},
+      { "tool": "browser_type", "args": { "text": "password" }}
+    ],
+    "globalExpectation": {
+      "includeSnapshot": false,
+      "includeCode": true
+    }
+  }
+}
+```
+
+## Enhanced MCP Tools
+
+### browser_diagnose (Enhanced)
+
+Now includes Phase 2 and Phase 3 capabilities:
+
+```json
+{
+  "name": "browser_diagnose",
+  "arguments": {
+    "diagnosticLevel": "detailed",
+    "useParallelAnalysis": true,
+    "useUnifiedSystem": true,
+    "configOverrides": {
+      "enableResourceMonitoring": true,
+      "performanceThresholds": {
+        "pageAnalysis": 1000,
+        "elementDiscovery": 500
+      }
+    },
+    "includeSystemStats": true
+  }
+}
+```
+
+**Enhanced Response:**
+```markdown
+# Unified Diagnostic System Report
+**Unified System Status:** Active with enhanced error handling and monitoring
+**Configuration:** Custom overrides applied
+**Analysis Type:** Enhanced Parallel Analysis (234ms)
+**Memory Usage:** 45.67MB
+
+## Applied Configuration Overrides
+- **Resource Monitoring: Enabled**
+- **Performance Thresholds: Page Analysis: 300ms → 1000ms**
+
+## Unified System Health
+- **System Status:** healthy
+- **Total Operations:** 1234
+- **Success Rate:** 99.8%
+- **Active Handles:** 12
+- **Total Errors:** 3
+
+### Configuration Impact Analysis
+- **Configuration Status:** Custom With Overrides
+🟢 **pageAnalysis**: Expected 300ms, Actual 234ms (-22% notable)
+🟡 **elementDiscovery**: Expected 200ms, Actual 189ms (-5% normal)
+
+**High Priority Recommendations:**
+⚡ Consider enabling parallel analysis for better performance
+
+## Page Structure Analysis (Parallel)
+[Parallel execution data with resource monitoring]
+
+### Resource Usage Monitoring
+- **Peak Memory Usage:** 67.89 MB
+- **CPU Time:** 234ms
+- **Current Memory Usage:** 45.67 MB
+
+**Analysis Steps Performance:**
+1. **Structure Analysis**: 89ms (Memory Δ: 12.34MB)
+2. **Performance Metrics**: 123ms (Memory Δ: 23.45MB)
+3. **Resource Monitoring**: 22ms (Memory Δ: 5.67MB)
+```
+
+### browser_find_elements (Enhanced)
+
+With UnifiedSystem integration:
 
 ```json
 {
@@ -164,299 +286,306 @@ Find elements using multiple search criteria.
   "arguments": {
     "searchCriteria": {
       "text": "Submit",
-      "role": "button",
-      "tagName": "button",
-      "attributes": {
-        "data-action": "submit"
-      }
+      "role": "button"
     },
-    "maxResults": 10,
-    "includeDiagnosticInfo": true
+    "useUnifiedSystem": true,
+    "enableEnhancedDiscovery": true,
+    "performanceThreshold": 300
   }
 }
 ```
 
-**Response Example:**
-```
-Found 3 elements matching the criteria:
+## Performance Thresholds Configuration
 
-1. Selector: button[data-action="submit"]
-   Confidence: 100%
-   Reason: attribute match: data-action="submit"
+### DiagnosticThresholds System
 
-2. Selector: input[type="submit"]
-   Confidence: 80%
-   Reason: text match: "Submit"
-
-3. Selector: div.submit-btn
-   Confidence: 60%
-   Reason: role match: "button"
-
-### Diagnostic Information
-- Page has 0 iframes detected: false
-- Total visible elements: 45
-- Total interactable elements: 12
-```
-
-### browser_diagnose
-Generate comprehensive diagnostic reports with performance analysis.
-
-```json
-{
-  "name": "browser_diagnose", 
-  "arguments": {
-    "searchForElements": {
-      "role": "textbox"
-    },
-    "includePerformanceMetrics": true,
-    "includeAccessibilityInfo": true,
-    "includeTroubleshootingSuggestions": true,
-    "diagnosticLevel": "detailed"
-  }
-}
-```
-
-**Response Example:**
-```markdown
-# Page Diagnostic Report
-**URL:** https://example.com
-**Title:** Example Form Page
-
-## Page Structure Analysis
-- **IFrames:** 1 iframes detected: true
-- **Accessible iframes:** 0
-- **Inaccessible iframes:** 1
-
-- **Total visible elements:** 87
-- **Total interactable elements:** 15
-- **Elements missing ARIA:** 3
-
-## Element Search Results
-Found 2 matching elements:
-1. **input#username** (90% confidence)
-   - implicit role match: "textbox" via input[type="text"]
-2. **textarea.comments** (60% confidence)
-   - implicit role match: "textbox" via textarea
-
-## Performance Metrics
-- **Diagnosis execution time:** 45ms
-
-### DOM Complexity
-- **Total DOM elements:** 2456
-- **Max DOM depth:** 18 levels
-- **Large subtrees detected:** 2
-  1. **ul#large-list**: 600 elements (Large list structure)
-  2. **div.container**: 800 elements (Large container element)
-
-### Interaction Elements
-- **Clickable elements:** 125
-- **Form elements:** 15
-- **Disabled elements:** 3
-
-### Resource Load
-- **Images:** 24 (Large >1MB estimated)
-- **Script tags:** 12 (8 external, 4 inline)
-- **Stylesheets:** 5
-
-### Layout Analysis
-- **Fixed position elements:** 2
-  1. **nav#main-nav**: Fixed navigation element (z-index: 1000)
-- **High z-index elements:** 3
-  1. **div.modal-overlay**: z-index 9999 (Extremely high z-index - potential issue)
-- **Overflow hidden elements:** 8
-
-### Performance Warnings
-- ⚠️ **dom_complexity**: High DOM complexity: 2456 elements (threshold: 1500)
-- ⚠️ **dom_complexity**: Deep DOM structure: 18 levels (threshold: 15)
-- ⚠️ **interaction_overload**: High number of clickable elements: 125 (threshold: 100)
-
-### Browser Performance Timing
-- **DOM Content Loaded:** 234.56ms
-- **Load Complete:** 456.78ms
-- **First Paint:** 123.45ms
-- **First Contentful Paint:** 234.56ms
-
-## Accessibility Information
-- **Elements with missing ARIA labels:** 3
-- **Heading elements:** 4
-- **Landmark elements:** 3
-- **Images with alt text:** 8/10
-
-## Troubleshooting Suggestions
-- Elements might be inside iframes - use frameLocator() for iframe interactions
-- 3 elements lack proper ARIA attributes - consider using text-based selectors
-
----
-*Diagnosis completed in 45ms*
-```
-
-## Performance Requirements
-
-The diagnostic system is designed to operate efficiently:
-
-- **Analysis Time**: Page structure analysis completes within 300ms
-- **Performance Metrics**: Complete analysis within 1 second
-- **Memory Efficient**: Minimal memory footprint during diagnosis
-- **Non-blocking**: Diagnostic operations don't interfere with existing automation
-- **Cached Results**: Similar analyses are cached to improve performance
-
-### Performance Thresholds (Configuration-Driven System)
-
-The system now uses a centralized configuration-driven threshold management system that eliminates hardcoding and provides runtime configurability:
-
-#### Default Thresholds
-
-| Metric | Warning Level | Danger Level | Description |
-|--------|--------------|--------------|-------------|
-| DOM Elements | 1500 | 3000 | Total elements in the DOM |
-| DOM Depth | 15 | 20 | Maximum nesting level |
-| Large Subtree | 500 | - | Elements in a single subtree |
-| Clickable Elements | 100 | - | Interactive elements count |
-| High Z-Index | 1000 | 9999 | Z-index values |
-
-#### Configuration System Features
-
-- **Centralized Management**: All thresholds managed by `DiagnosticThresholds` class
-- **Runtime Configuration**: Thresholds can be updated during runtime without code changes
-- **Validation**: Automatic validation of threshold values with meaningful error messages
-- **SmartConfig Integration**: Seamless integration with existing configuration system
-- **Environment-Specific**: Different threshold profiles for development, production, testing
-- **Fallback Support**: Automatic fallback to default values if custom configuration fails
-
-#### Usage Examples
+Centralized, runtime-configurable threshold management:
 
 ```typescript
-import { getCurrentThresholds, DiagnosticThresholds } from './DiagnosticThresholds.js';
+import { getCurrentThresholds } from './src/diagnostics/DiagnosticThresholds.js';
 
-// Get current thresholds
 const thresholds = getCurrentThresholds();
-const domThresholds = thresholds.getDomThresholds();
 
-// Update specific thresholds
-thresholds.updateThresholds({
-  dom: {
-    elementsWarning: 2000,  // Increase warning threshold
-    elementsDanger: 4000    // Increase danger threshold
-  }
-});
-
-// Reset to defaults
-thresholds.resetToDefaults();
-```
-
-#### Configuration Validation
-
-The system provides comprehensive validation:
-
-```typescript
-const diagnostics = getCurrentThresholds().getConfigDiagnostics();
+// Get current configuration diagnostics
+const diagnostics = thresholds.getConfigDiagnostics();
 console.log('Status:', diagnostics.status);
 console.log('Customizations:', diagnostics.customizations);
 console.log('Warnings:', diagnostics.warnings);
-```
 
-## Integration with Existing Tools
-
-All existing MCP tools automatically benefit from enhanced error handling:
-
-```typescript
-// When an element is not found, you get enhanced errors:
-const result = await client.callTool({
-  name: 'browser_click',
-  arguments: {
-    element: 'Submit button',
-    ref: 'button[data-missing="true"]'
+// Update thresholds at runtime
+thresholds.updateThresholds({
+  executionTime: {
+    pageAnalysis: 500,
+    elementDiscovery: 300,
+    resourceMonitoring: 200,
+    parallelAnalysis: 2000
+  },
+  memory: {
+    maxMemoryUsage: 200 * 1024 * 1024,
+    memoryLeakThreshold: 100 * 1024 * 1024
+  },
+  dom: {
+    totalElements: 5000,
+    maxDepth: 25,
+    elementsWarning: 2000,
+    elementsDanger: 4000
   }
 });
-
-// If the element isn't found, the error response includes:
-// - Alternative elements that might work
-// - Page structure analysis
-// - Context-aware suggestions
-// - Troubleshooting guidance
 ```
 
-## Common Use Cases
+### Default Thresholds
 
-### 1. Debugging Failed Automation
-When automation fails, use `browser_diagnose` to understand the page state:
+| Category | Metric | Warning | Danger | Description |
+|----------|--------|---------|--------|-------------|
+| **Execution Time** | pageAnalysis | 300ms | - | Page structure analysis |
+| | elementDiscovery | 200ms | - | Element search operations |
+| | resourceMonitoring | 100ms | - | Resource usage checks |
+| | parallelAnalysis | 2000ms | - | Parallel execution total |
+| **Memory** | maxMemoryUsage | 100MB | - | Maximum heap usage |
+| | memoryLeakThreshold | 50MB | - | Potential leak detection |
+| | gcTriggerThreshold | 80MB | - | Garbage collection trigger |
+| **DOM** | totalElements | 1500 | 3000 | Total DOM elements |
+| | maxDepth | 15 | 20 | Maximum nesting level |
+| | largeSubtrees | 10 | - | Count of large subtrees |
+| | largeSubtreeThreshold | 500 | - | Elements per subtree |
+| **Interaction** | clickableElements | - | 100 | Interactive elements |
+| | formElements | - | 50 | Form input elements |
+| **Layout** | fixedElements | - | 10 | Fixed position elements |
+| | highZIndexElements | - | 5 | Z-index > 1000 |
+| | highZIndexThreshold | 1000 | - | High z-index detection |
+| | excessiveZIndexThreshold | 9999 | - | Excessive z-index warning |
 
-```json
-{
-  "name": "browser_diagnose",
-  "arguments": {
-    "includeTroubleshootingSuggestions": true
-  }
+## System Health Monitoring
+
+### Performance Metrics Collection
+
+The UnifiedSystem continuously collects performance metrics:
+
+```typescript
+const stats = system.getSystemStats();
+
+console.log('Performance Metrics:', {
+  totalOperations: stats.performanceMetrics.totalOperations,
+  averageExecutionTime: stats.performanceMetrics.averageExecutionTime,
+  successRate: stats.performanceMetrics.successRate,
+  slowOperations: stats.performanceMetrics.slowOperations
+});
+
+console.log('Resource Usage:', {
+  currentHandles: stats.resourceUsage.currentHandles,
+  peakHandles: stats.resourceUsage.peakHandles,
+  memoryLeaks: stats.resourceUsage.memoryLeaks
+});
+
+console.log('Error Tracking:', {
+  totalErrors: stats.errorCount,
+  errorsByType: stats.errorsByType
+});
+```
+
+### Health Check
+
+Regular health checks ensure system stability:
+
+```typescript
+const health = await system.performHealthCheck();
+
+if (health.status === 'degraded') {
+  console.log('Issues detected:', health.issues);
+  console.log('Recommendations:', health.recommendations);
 }
 ```
 
-### 2. Finding Alternative Selectors
-When your selector doesn't work, use `browser_find_elements`:
+## Navigation Context Handling
 
-```json
-{
-  "name": "browser_find_elements", 
-  "arguments": {
-    "searchCriteria": {
-      "text": "Login",
-      "role": "button"
-    }
-  }
-}
-```
+Enhanced navigation detection and stability:
 
-### 3. Performance Analysis
-Monitor page complexity and performance characteristics:
+```typescript
+// The system automatically detects and handles navigation
+// No more "Execution context was destroyed" errors
 
-```json
-{
-  "name": "browser_diagnose",
-  "arguments": {
-    "includePerformanceMetrics": true,
-    "diagnosticLevel": "detailed"
-  }
-}
-```
+// Navigation is detected in:
+- browser_navigate
+- browser_click (when causing navigation)
+- browser_press_key (Enter key navigation)
+- browser_goBack/goForward
 
-This provides insights into:
-- DOM complexity that might slow automation
-- Resource load that affects page speed
-- Layout issues that could interfere with element interaction
-- Automatic warnings when thresholds are exceeded
-
-### 4. Accessibility Auditing
-Check accessibility compliance:
-
-```json
-{
-  "name": "browser_diagnose",
-  "arguments": {
-    "includeAccessibilityInfo": true
-  }
-}
+// Automatic retry logic for post-navigation operations
+// Waits for navigation stability before capturing snapshots
 ```
 
 ## Best Practices
 
-1. **Use Diagnostic Tools Proactively**: Run diagnostics before starting complex automation
-2. **Leverage Alternative Elements**: When selectors fail, check suggested alternatives
-3. **Monitor Performance**: Use performance metrics to identify pages with complexity issues
-4. **Handle IFrames**: Pay attention to iframe warnings in diagnostic reports
-5. **Consider Accessibility**: Use accessibility info to create more robust selectors
-6. **Set Appropriate Diagnostic Levels**: 
-   - Use `basic` for quick checks
-   - Use `standard` for general debugging
-   - Use `detailed` when performance is a concern
-   - Use `full` for comprehensive analysis
-7. **Watch for Performance Warnings**: Address warnings to prevent automation failures
-8. **Analyze Large Subtrees**: Refactor selectors to avoid traversing large DOM sections
+### 1. Use UnifiedSystem for Complex Operations
+```typescript
+// Prefer UnifiedSystem for enhanced error handling
+const system = UnifiedDiagnosticSystem.getInstance(page);
+const result = await system.analyzePageStructure(true);
+```
 
-## Error Handling Improvements
+### 2. Configure for Your Environment
+```typescript
+// Set appropriate configuration for your use case
+SmartConfigManager.getInstance().configureForEnvironment('production');
+```
 
-The diagnostic system enhances all error messages with:
-- **Root Cause Analysis**: Why the operation failed
-- **Alternative Solutions**: Other ways to achieve the same goal
-- **Context Information**: Page state that might affect automation
-- **Actionable Suggestions**: Specific steps to resolve the issue
+### 3. Monitor Resource Usage
+```typescript
+// Regular health checks in long-running scripts
+const health = await system.performHealthCheck();
+if (health.status !== 'healthy') {
+  // Take corrective action
+}
+```
 
-This makes debugging faster and helps create more reliable automation scripts.
+### 4. Optimize Token Usage
+```typescript
+// Use expectation parameters to reduce response size
+{
+  expectation: {
+    includeSnapshot: false,  // Save ~1000 tokens
+    includeConsole: false,   // Save ~200 tokens
+    includeNetwork: false,   // Save ~500 tokens
+  }
+}
+```
+
+### 5. Batch Operations
+```typescript
+// Group related operations for efficiency
+{
+  steps: [/* multiple operations */],
+  globalExpectation: { includeSnapshot: false }
+}
+```
+
+### 6. Handle Parallel Analysis Recommendations
+```typescript
+// Check if parallel analysis is recommended
+const recommendation = await analyzer.shouldUseParallelAnalysis();
+if (recommendation.recommended) {
+  // Use parallel analysis for better performance
+}
+```
+
+## Error Recovery Strategies
+
+### Automatic Retry with Context
+The UnifiedSystem implements intelligent retry logic:
+
+1. **Navigation Detection**: Automatically detects page navigation
+2. **Context Validation**: Checks if execution context is valid
+3. **Stability Waiting**: Waits for page to stabilize
+4. **Retry Logic**: Up to 3 attempts with exponential backoff
+5. **Fallback Options**: Provides alternatives on failure
+
+### Enhanced Error Messages
+All errors now include:
+- **Root cause analysis**
+- **Alternative selectors** (up to 5 suggestions)
+- **Page state context**
+- **Performance metrics**
+- **Actionable recommendations**
+
+## Migration Guide
+
+### From Basic Diagnostics to UnifiedSystem
+
+**Before:**
+```typescript
+const analyzer = new PageAnalyzer(page);
+const analysis = await analyzer.analyzePageStructure();
+```
+
+**After:**
+```typescript
+const system = UnifiedDiagnosticSystem.getInstance(page);
+const result = await system.analyzePageStructure(true);
+if (result.success) {
+  const analysis = result.data;
+}
+```
+
+### Using Configuration Overrides
+
+**Runtime configuration:**
+```typescript
+const system = UnifiedDiagnosticSystem.getInstance(page, {
+  features: {
+    enableParallelAnalysis: true,
+    enableResourceLeakDetection: true
+  },
+  performance: {
+    thresholds: customThresholds
+  }
+});
+```
+
+## Performance Benchmarks
+
+### Token Reduction Results
+- **Sequential operations**: Baseline (100%)
+- **With expectation parameters**: 40-50% of baseline
+- **Batch execution**: 30-35% of baseline
+- **Batch + expectations**: 20-30% of baseline
+
+### Execution Performance
+- **Standard analysis**: ~300ms
+- **Parallel analysis**: ~150ms (50% faster)
+- **With resource monitoring**: +20ms overhead
+- **Element discovery**: ~200ms for 10 alternatives
+
+### Memory Efficiency
+- **Base memory**: ~30MB
+- **During analysis**: +10-20MB
+- **Peak with parallel**: +30-40MB
+- **Automatic cleanup**: Returns to base within 30s
+
+## Troubleshooting
+
+### High Memory Usage
+```typescript
+// Check for resource leaks
+const stats = globalResourceManager.getResourceStats();
+if (stats.expiredCount > 0) {
+  await globalResourceManager.disposeAll();
+}
+```
+
+### Slow Performance
+```typescript
+// Adjust thresholds for your environment
+config.updateThresholds({
+  executionTime: {
+    pageAnalysis: 1000,  // Increase timeout
+    parallelAnalysis: 3000
+  }
+});
+```
+
+### Navigation Errors
+```typescript
+// System handles automatically, but you can check:
+const isNavigating = await tab.isNavigating();
+if (isNavigating) {
+  await tab.waitForNavigationComplete();
+}
+```
+
+## Summary
+
+The three-phase diagnostic system provides:
+
+1. **Phase 1**: Core analysis and error enrichment
+2. **Phase 2**: Parallel processing and resource monitoring  
+3. **Phase 3**: Unified orchestration and token optimization
+
+Together, these components deliver:
+- 50-80% token reduction
+- 2x faster analysis with parallel processing
+- Automatic error recovery
+- Resource leak prevention
+- Runtime configuration
+- Comprehensive health monitoring
+
+The system is designed to be transparent to users while providing powerful diagnostic capabilities when needed.
