@@ -26,7 +26,7 @@ import { BrowserServerBackend, FactoryList } from './browserServerBackend.js';
 import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
-import { ServerBackendProxy } from './mcp/server.js';
+import { ServerBackendSwitcher } from './mcp/server.js';
 import { VSCodeServerBackend } from './vscode/vscodeHost.js';
 
 program
@@ -85,20 +85,20 @@ program
       if (options.connectTool)
         factories.push(createExtensionContextFactory(config));
       const serverBackendFactory = () => {
-        const proxy = new ServerBackendProxy(
+        const switcher = new ServerBackendSwitcher(
             new BrowserServerBackend(config, factories),
             {
               async onChangeProxyTarget(target) {
                 if (target.kind === 'vscode')
-                  await proxy.connectTo(await VSCodeServerBackend.start(config, target.connectionString, target.lib));
+                  await switcher.switch(await VSCodeServerBackend.start(config, target.connectionString, target.lib));
                 else if (target.kind === 'default')
-                  await proxy.connectTo(new BrowserServerBackend(config, factories));
+                  await switcher.switch(new BrowserServerBackend(config, factories));
                 else
                   throw new Error(`Unknown target kind`);
               },
             }
         );
-        return proxy;
+        return switcher;
       };
       await mcpTransport.start(serverBackendFactory, config.server);
 

@@ -69,17 +69,21 @@ interface ServerBackendProxyDelegate {
   onChangeProxyTarget: ServerBackend['onChangeProxyTarget'];
 }
 
-export class ServerBackendProxy implements ServerBackend {
+export class ServerBackendSwitcher implements ServerBackend {
   private _initialized?: InitializeInfo;
-  constructor(private _backend: ServerBackend, private _delegate: ServerBackendProxyDelegate) {
-    this._backend.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
+
+  private _target: ServerBackend;
+
+  constructor(target: ServerBackend, private _delegate: ServerBackendProxyDelegate) {
+    this._target = target;
+    this._target.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
   }
 
-  async connectTo(backend: ServerBackend) {
-    const old = this._backend;
+  async switch(backend: ServerBackend) {
+    const old = this._target;
     old.onChangeProxyTarget = undefined;
-    this._backend = backend;
-    this._backend.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
+    this._target = backend;
+    this._target.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
     if (this._initialized) {
       old.serverClosed?.();
       await this.initialize(this._initialized);
@@ -87,28 +91,28 @@ export class ServerBackendProxy implements ServerBackend {
   }
 
   get name() {
-    return this._backend.name;
+    return this._target.name;
   }
 
   get version() {
-    return this._backend.version;
+    return this._target.version;
   }
 
   async initialize(info: InitializeInfo): Promise<void> {
     this._initialized = info;
-    await this._backend.initialize?.(info);
+    await this._target.initialize?.(info);
   }
 
   tools(): ToolSchema<any>[] {
-    return this._backend.tools();
+    return this._target.tools();
   }
 
   async callTool(schema: ToolSchema<any>, parsedArguments: any): Promise<ToolResponse> {
-    return this._backend.callTool(schema, parsedArguments);
+    return this._target.callTool(schema, parsedArguments);
   }
 
   serverClosed(): void {
-    this._backend.serverClosed?.();
+    this._target.serverClosed?.();
     this._initialized = undefined;
   }
 }
