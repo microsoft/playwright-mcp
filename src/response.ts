@@ -67,16 +67,8 @@ export class Response {
     // Expectation settings take priority over legacy setIncludeSnapshot calls
     const shouldIncludeSnapshot = this._expectation.includeSnapshot || this._includeSnapshot;
     if (shouldIncludeSnapshot && this._context.currentTab()) {
-      const options = this._expectation.snapshotOptions;
-      if (options?.selector || options?.maxLength) {
-        // Use partial snapshot capture when selector or maxLength is specified
-        this._tabSnapshot = await this._context.currentTabOrDie().capturePartialSnapshot(
-            options.selector,
-            options.maxLength
-        );
-      } else {
-        this._tabSnapshot = await this._context.currentTabOrDie().captureSnapshot();
-      }
+      // Enhanced navigation detection and deferred execution
+      await this._captureSnapshotWithNavigationHandling();
     }
     for (const tab of this._context.tabs())
       await tab.updateTitle();
@@ -277,6 +269,164 @@ ${this._code.join('\n')}
       }
     }
     return content.join('\n');
+  }
+
+  /**
+   * Navigation retry configuration
+   */
+  private _getNavigationRetryConfig() {
+    return {
+      maxRetries: 3,
+      retryDelay: 500,
+      stabilityTimeout: 3000,
+      evaluationTimeout: 200
+    };
+  }
+
+  /**
+   * Captures snapshot with navigation detection and retry logic
+   * Handles "Execution context was destroyed" errors gracefully
+   */
+  private async _captureSnapshotWithNavigationHandling(): Promise<void> {
+    const currentTab = this._context.currentTabOrDie();
+    const options = this._expectation.snapshotOptions;
+    const maxRetries = this._getNavigationRetryConfig().maxRetries;
+    const retryDelay = this._getNavigationRetryConfig().retryDelay;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Check if navigation is in progress
+        const isNavigating = await this._isPageNavigating(currentTab);
+        
+        if (isNavigating && attempt < maxRetries) {
+          // Wait for navigation to complete before snapshot
+          await this._waitForNavigationStability(currentTab);
+        }
+
+        // Attempt snapshot capture
+        if (options?.selector || options?.maxLength) {
+          this._tabSnapshot = await currentTab.capturePartialSnapshot(
+            options.selector,
+            options.maxLength
+          );
+        } else {
+          this._tabSnapshot = await currentTab.captureSnapshot();
+        }
+        
+        // Success - break out of retry loop
+        break;
+        
+      } catch (error: any) {
+        const errorMessage = error?.message || '';
+        const isContextError = errorMessage.includes('Execution context was destroyed') ||
+                               errorMessage.includes('Target closed') ||
+                               errorMessage.includes('Session closed');
+
+        if (isContextError && attempt < maxRetries) {
+          // Wait for stability and retry
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+          continue;
+        }
+
+        if (attempt === maxRetries) {
+          // Last attempt failed - try to capture basic snapshot or give up gracefully
+          try {
+            this._tabSnapshot = await this._captureBasicSnapshot(currentTab);
+          } catch (finalError) {
+            // Could not capture snapshot - log error but don't throw
+            console.error('Failed to capture snapshot after navigation:', finalError);
+            this._tabSnapshot = undefined;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Checks if the page is currently navigating
+   */
+  private async _isPageNavigating(tab: Tab): Promise<boolean> {
+    try {
+      // Check Tab's internal navigation state if available
+      if ('isNavigating' in tab && typeof (tab as any).isNavigating === 'function') {
+        const tabNavigating = (tab as any).isNavigating();
+        if (tabNavigating) return true;
+      }
+
+      // Multiple checks for navigation state
+      const [readyState, isLoading] = await Promise.race([
+        tab.page.evaluate(() => [
+          document.readyState,
+          (window as any).performance?.timing?.loadEventEnd === 0
+        ]).catch(() => [null, null]),
+        new Promise(resolve => setTimeout(() => resolve([null, null]), this._getNavigationRetryConfig().evaluationTimeout))
+      ]) as [string | null, boolean | null];
+
+      return readyState === 'loading' || isLoading === true;
+    } catch (error) {
+      // If we can't check, assume navigation might be happening
+      return true;
+    }
+  }
+
+  /**
+   * Waits for navigation to stabilize
+   */
+  private async _waitForNavigationStability(tab: Tab): Promise<void> {
+    const stabilityTimeout = this._getNavigationRetryConfig().stabilityTimeout;
+    const startTime = Date.now();
+
+    // Use Tab's navigation completion method if available
+    if ('waitForNavigationComplete' in tab && typeof (tab as any).waitForNavigationComplete === 'function') {
+      try {
+        await (tab as any).waitForNavigationComplete();
+        return;
+      } catch (error) {
+        // Fall through to manual detection
+      }
+    }
+
+    while (Date.now() - startTime < stabilityTimeout) {
+      try {
+        await tab.waitForLoadState('load', { timeout: 1000 });
+        await tab.waitForLoadState('networkidle', { timeout: 500 }).catch(() => {});
+        
+        // Additional stability check
+        const isStable = await tab.page.evaluate(() => document.readyState === 'complete').catch(() => false);
+        if (isStable) {
+          // Small delay to ensure DOM is fully settled
+          await new Promise(resolve => setTimeout(resolve, 200));
+          return;
+        }
+      } catch (error) {
+        // Continue waiting
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  /**
+   * Attempts to capture a basic snapshot with minimal requirements
+   */
+  private async _captureBasicSnapshot(tab: Tab): Promise<TabSnapshot> {
+    try {
+      // Try basic snapshot without complex operations
+      return await tab.captureSnapshot();
+    } catch (error) {
+      // Create a minimal snapshot with available information
+      const url = tab.page.url();
+      const title = await tab.page.title().catch(() => '');
+      
+      return {
+        url,
+        title,
+        ariaSnapshot: '// Snapshot unavailable due to navigation context issues',
+        modalStates: [],
+        consoleMessages: [],
+        downloads: []
+      };
+    }
   }
 }
 function renderTabsMarkdown(tabs: Tab[], force: boolean = false): string[] {

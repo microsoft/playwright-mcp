@@ -32,6 +32,14 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   private _onPageClose: (tab: Tab) => void;
   private _modalStates: ModalState[] = [];
   private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
+  private _navigationState: {
+    isNavigating: boolean;
+    lastNavigationStart: number;
+    navigationPromise?: Promise<void>;
+  } = {
+    isNavigating: false,
+    lastNavigationStart: 0
+  };
   constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void) {
     super();
     this.context = context;
@@ -53,6 +61,21 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     page.on('download', download => {
       void this._downloadStarted(download);
     });
+    
+    // Navigation state tracking
+    page.on('framenavigated', (frame) => {
+      if (frame === page.mainFrame()) {
+        this._handleNavigationStart();
+      }
+    });
+    page.on('load', () => {
+      this._handleNavigationComplete();
+    });
+    page.on('domcontentloaded', () => {
+      // DOMContentLoaded indicates navigation is progressing
+      this._navigationState.isNavigating = true;
+    });
+    
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);
     (page as any)[tabSymbol] = this;
@@ -114,9 +137,68 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   isCurrentTab(): boolean {
     return this === this.context.currentTab();
   }
-  async waitForLoadState(state: 'load', options?: { timeout?: number }): Promise<void> {
+  async waitForLoadState(state: 'load' | 'networkidle', options?: { timeout?: number }): Promise<void> {
     await callOnPageNoTrace(this.page, page => page.waitForLoadState(state, options).catch(logUnhandledError));
   }
+  
+  /**
+   * Navigation state management methods
+   */
+  private _handleNavigationStart(): void {
+    this._navigationState.isNavigating = true;
+    this._navigationState.lastNavigationStart = Date.now();
+    
+    // Create a promise that resolves when navigation completes
+    this._navigationState.navigationPromise = this._createNavigationPromise();
+  }
+  
+  private _handleNavigationComplete(): void {
+    this._navigationState.isNavigating = false;
+  }
+  
+  private _createNavigationPromise(): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const checkComplete = () => {
+        if (!this._navigationState.isNavigating) {
+          resolve();
+          return;
+        }
+        
+        // Timeout after configured duration
+        if (Date.now() - this._navigationState.lastNavigationStart > getNavigationTimeouts().navigationTimeout) {
+          this._navigationState.isNavigating = false;
+          resolve();
+          return;
+        }
+        
+        setTimeout(checkComplete, getNavigationTimeouts().checkInterval);
+      };
+      
+      setTimeout(checkComplete, getNavigationTimeouts().checkInterval);
+    });
+  }
+  
+  /**
+   * Check if navigation is currently in progress
+   */
+  isNavigating(): boolean {
+    // Consider stale if navigation started more than configured timeout ago
+    const isStale = Date.now() - this._navigationState.lastNavigationStart > getNavigationTimeouts().staleTimeout;
+    if (isStale && this._navigationState.isNavigating) {
+      this._navigationState.isNavigating = false;
+    }
+    return this._navigationState.isNavigating;
+  }
+  
+  /**
+   * Wait for current navigation to complete (if any)
+   */
+  async waitForNavigationComplete(): Promise<void> {
+    if (this._navigationState.navigationPromise) {
+      await this._navigationState.navigationPromise;
+    }
+  }
+  
   async navigate(url: string) {
     this._clearCollectedArtifacts();
     const downloadEvent = callOnPageNoTrace(this.page, page => page.waitForEvent('download').catch(logUnhandledError));
@@ -381,3 +463,11 @@ export function renderModalStates(context: Context, modalStates: ModalState[]): 
   return result;
 }
 const tabSymbol = Symbol('tabSymbol');
+
+function getNavigationTimeouts() {
+  return {
+    navigationTimeout: 5000,
+    checkInterval: 100,
+    staleTimeout: 10000
+  };
+}

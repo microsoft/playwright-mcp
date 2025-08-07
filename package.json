@@ -16,7 +16,7 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc && tsc -p benchmark/tsconfig.json",
+    "build": "tsc",
     "build:benchmark": "tsc -p benchmark/tsconfig.json",
     "benchmark": "npm run build:benchmark && node benchmark/lib/index.js",
     "benchmark:verbose": "npm run build:benchmark && node benchmark/lib/index.js --verbose",
