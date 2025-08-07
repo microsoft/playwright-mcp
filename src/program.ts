@@ -84,22 +84,10 @@ program
       const factories: FactoryList = [browserContextFactory];
       if (options.connectTool)
         factories.push(createExtensionContextFactory(config));
-      const serverBackendFactory = () => {
-        const switcher = new ServerBackendSwitcher(
-            new BrowserServerBackend(config, factories),
-            {
-              async onChangeProxyTarget(target) {
-                if (target.kind === 'vscode')
-                  await switcher.switch(await VSCodeServerBackend.start(config, target.connectionString, target.lib));
-                else if (target.kind === 'default')
-                  await switcher.switch(new BrowserServerBackend(config, factories));
-                else
-                  throw new Error(`Unknown target kind`);
-              },
-            }
-        );
-        return switcher;
-      };
+      const serverBackendFactory = () => new ServerBackendSwitcher({
+        '': () => new BrowserServerBackend(config, factories),
+        'vscode': options => new VSCodeServerBackend(config, options.connectionString, options.lib),
+      });
       await mcpTransport.start(serverBackendFactory, config.server);
 
       if (config.saveTrace) {

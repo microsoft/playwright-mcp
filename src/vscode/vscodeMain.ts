@@ -34,7 +34,7 @@ export class VSCodeMain extends ProcessRunner {
     super();
     const factory = new VSCodeContextFactory(params.config, params.connectionString, params.lib);
     this._backend = new BrowserServerBackend(params.config, [factory]);
-    this._backend.onChangeProxyTarget = target => this.dispatchEvent('changeProxyTarget', target);
+    this._backend.onChangeProxyTarget = (target, options) => this.dispatchEvent('changeProxyTarget', { target, options });
   }
 
   async gracefullyClose() {

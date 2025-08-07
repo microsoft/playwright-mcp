@@ -60,30 +60,34 @@ export interface ServerBackend {
   callTool(schema: ToolSchema<any>, parsedArguments: any): Promise<ToolResponse>;
   serverClosed?(): void;
 
-  onChangeProxyTarget?: (target: { kind: 'vscode', connectionString: string, lib: string } | { kind: 'default' }) => void;
+  onChangeProxyTarget?: (target: string, options: any) => void;
 }
 
 export type ServerBackendFactory = () => ServerBackend;
 
-interface ServerBackendProxyDelegate {
-  onChangeProxyTarget: ServerBackend['onChangeProxyTarget'];
-}
-
 export class ServerBackendSwitcher implements ServerBackend {
+  private _target: ServerBackend;
   private _initialized?: InitializeInfo;
 
-  private _target: ServerBackend;
-
-  constructor(target: ServerBackend, private _delegate: ServerBackendProxyDelegate) {
-    this._target = target;
-    this._target.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
+  constructor(private readonly _targetFactories: Record<string, (options: any) => ServerBackend>) {
+    const defaultTargetFactory = this._targetFactories[''];
+    this._target = defaultTargetFactory({});
+    this._target.onChangeProxyTarget = this._handleChangeProxyTarget;
   }
 
-  async switch(backend: ServerBackend) {
+  _handleChangeProxyTarget = (name: string, options: any) => {
+    const factory = this._targetFactories[name];
+    if (!factory)
+      throw new Error(`Unknown target: ${name}`);
+    const target = factory(options);
+    this.switch(target).catch(logUnhandledError);
+  };
+
+  async switch(target: ServerBackend) {
     const old = this._target;
     old.onChangeProxyTarget = undefined;
-    this._target = backend;
-    this._target.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
+    this._target = target;
+    this._target.onChangeProxyTarget = this._handleChangeProxyTarget;
     if (this._initialized) {
       old.serverClosed?.();
       await this.initialize(this._initialized);

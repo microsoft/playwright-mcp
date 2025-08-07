@@ -63,8 +63,8 @@ export class BrowserServerBackend implements ServerBackend {
       rootPath = url ? fileURLToPath(url) : undefined;
     }
 
-    if (mcpServer.isVSCode(info.clientVersion))
-      this._tools.push(this._defineConnectVSCodeTool());
+    if (mcpServer.isVSCode(info.clientVersion) && this.onChangeProxyTarget)
+      this._tools.push(this._defineConnectVSCodeTool()); // TODO: combine this tool with browser_connect to save space
 
     this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config, rootPath) : undefined;
     this._context = new Context({
@@ -147,12 +147,12 @@ export class BrowserServerBackend implements ServerBackend {
       },
       handle: async (context, params, response) => {
         if (!params.connectionString || !params.lib) {
-          this.onChangeProxyTarget!({ kind: 'default' });
+          this.onChangeProxyTarget!('', {});
           response.addResult('Successfully disconnected.');
           return;
         }
 
-        this.onChangeProxyTarget?.({ kind: 'vscode', connectionString: params.connectionString, lib: params.lib });
+        this.onChangeProxyTarget!('vscode', { connectionString: params.connectionString, lib: params.lib });
         response.addResult('Successfully switched to VS Code.');
       }
     });

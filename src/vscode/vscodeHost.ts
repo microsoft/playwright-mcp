@@ -15,43 +15,45 @@
  */
 import { FullConfig } from '../config.js';
 import { InitializeInfo, ServerBackend, ToolSchema } from '../mcp/server.js';
+import { packageJSON } from '../package.js';
 import { filteredTools } from '../tools.js';
 import { ProcessHost } from './processHost.js';
 import { VSCodeInitParams } from './vscodeMain.js';
 
 export class VSCodeServerBackend extends ProcessHost implements ServerBackend {
-  readonly name = '';
-  readonly version = '';
-  private _tools: ToolSchema<any>[] = [];
+  readonly name = 'Playwright';
+  readonly version = packageJSON.version;
 
-  private constructor() {
+  onChangeProxyTarget?: (target: string, options: any) => void;
+
+  constructor(private _config: FullConfig, private _connectionString: string, private _lib: string) {
     super(new URL('./vscodeMain.js', import.meta.url).pathname, {});
-    this.on('changeProxyTarget', target => this.onChangeProxyTarget?.(target));
+    this.on('changeProxyTarget', ({ target, options }) => this.onChangeProxyTarget?.(target, options));
   }
 
-  private async _start(config: FullConfig, connectionString: string, lib: string) {
-    this._tools = filteredTools(config).map(tool => tool.schema);
-    const params: VSCodeInitParams = { config, connectionString, lib };
+  async initialize(info: InitializeInfo) {
+    const params: VSCodeInitParams = {
+      config: this._config,
+      connectionString: this._connectionString,
+      lib: this._lib,
+    };
     const error = await this.startRunner(params);
     if (error)
       throw error;
-  }
 
-  static async start(config: FullConfig, connectionString: string, lib: string): Promise<VSCodeServerBackend> {
-    const backend = new VSCodeServerBackend();
-    await backend._start(config, connectionString, lib);
-    return backend;
+    await this.sendMessage({
+      method: 'initialize',
+      params: info
+    });
   }
 
   tools(): ToolSchema<any>[] {
-    return this._tools;
+    return filteredTools(this._config).map(tool => tool.schema);
   }
 
   serverClosed?() {
     void this.stop();
   }
-
-  onChangeProxyTarget?: ((target: { kind: 'vscode'; connectionString: string; lib: string; } | { kind: 'default'; }) => void) | undefined;
 
   async callTool(schema: ToolSchema<any>, parsedArguments: any) {
     const response = await this.sendMessage({
@@ -62,12 +64,5 @@ export class VSCodeServerBackend extends ProcessHost implements ServerBackend {
       },
     });
     return response as any;
-  }
-
-  async initialize(info: InitializeInfo) {
-    await this.sendMessage({
-      method: 'initialize',
-      params: info
-    });
   }
 }
