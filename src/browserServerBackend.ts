@@ -43,15 +43,15 @@ export class BrowserServerBackend implements ServerBackend {
   private _sessionLog: SessionLog | undefined;
   private _config: FullConfig;
   private _browserContextFactory: BrowserContextFactory;
+  private _browserContextFactories: FactoryList;
 
   onChangeProxyTarget: ServerBackend['onChangeProxyTarget'];
 
   constructor(config: FullConfig, factories: FactoryList) {
     this._config = config;
     this._browserContextFactory = factories[0];
+    this._browserContextFactories = factories;
     this._tools = filteredTools(config);
-    if (factories.length > 1)
-      this._tools.push(this._defineContextSwitchTool(factories));
   }
 
   async initialize(info: mcpServer.InitializeInfo): Promise<void> {
@@ -63,8 +63,7 @@ export class BrowserServerBackend implements ServerBackend {
       rootPath = url ? fileURLToPath(url) : undefined;
     }
 
-    if (mcpServer.isVSCode(info.clientVersion) && this.onChangeProxyTarget)
-      this._tools.push(this._defineConnectVSCodeTool()); // TODO: combine this tool with browser_connect to save space
+    this._defineContextSwitchTool(mcpServer.isVSCode(info.clientVersion));
 
     this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config, rootPath) : undefined;
     this._context = new Context({
@@ -101,9 +100,36 @@ export class BrowserServerBackend implements ServerBackend {
     void this._context!.dispose().catch(logUnhandledError);
   }
 
-  private _defineContextSwitchTool(factories: FactoryList): Tool<any> {
-    const self = this;
-    return defineTool({
+  private _defineContextSwitchTool(isVSCode: boolean) {
+    const contextSwitchers: { name: string, description: string, switch(options: any): Promise<void> }[] = [];
+    for (const factory of this._browserContextFactories) {
+      contextSwitchers.push({
+        name: factory.name,
+        description: factory.description,
+        switch: async () => {
+          await this._setContextFactory(factory);
+        }
+      });
+    }
+
+    const askForOptions = isVSCode;
+    if (isVSCode) {
+      contextSwitchers.push({
+        name: 'vscode',
+        description: 'TODO',
+        switch: async (options: any) => {
+          if (!options.connectionString || !options.lib)
+            this.onChangeProxyTarget?.('', {});
+          else
+            this.onChangeProxyTarget?.('vscode', options);
+        }
+      });
+    }
+
+    if (contextSwitchers.length < 2)
+      return;
+
+    this._tools.push(defineTool<any>({
       capability: 'core',
 
       schema: {
@@ -111,51 +137,25 @@ export class BrowserServerBackend implements ServerBackend {
         title: 'Connect to a browser context',
         description: [
           'Connect to a browser using one of the available methods:',
-          ...factories.map(factory => `- "${factory.name}": ${factory.description}`),
+          ...contextSwitchers.map(({ name, description }) => `- "${name}": ${description}`),
         ].join('\n'),
         inputSchema: z.object({
-          method: z.enum(factories.map(factory => factory.name) as [string, ...string[]]).default(factories[0].name).describe('The method to use to connect to the browser'),
+          method: z.enum(contextSwitchers.map(c => c.name) as [string, ...string[]]).describe('The method to use to connect to the browser'),
+          options: askForOptions ? z.object({}).optional().describe('options for the connection method') : z.void(),
         }),
         type: 'readOnly',
       },
 
       async handle(context, params, response) {
-        const factory = factories.find(factory => factory.name === params.method);
-        if (!factory) {
+        const contextSwitcher = contextSwitchers.find(c => c.name === params.method);
+        if (!contextSwitcher) {
           response.addError('Unknown connection method: ' + params.method);
           return;
         }
-        await self._setContextFactory(factory);
+        await contextSwitcher.switch({});
         response.addResult('Successfully changed connection method.');
       }
-    });
-  }
-
-  private _defineConnectVSCodeTool(): Tool<any> {
-    return defineTool({
-      capability: 'core',
-
-      schema: {
-        name: 'browser_connect_vscode',
-        title: 'Connect to vscode',
-        description: 'Connect to VS Code:',
-        inputSchema: z.object({
-          connectionString: z.string().optional(),
-          lib: z.string().optional(),
-        }),
-        type: 'readOnly',
-      },
-      handle: async (context, params, response) => {
-        if (!params.connectionString || !params.lib) {
-          this.onChangeProxyTarget!('', {});
-          response.addResult('Successfully disconnected.');
-          return;
-        }
-
-        this.onChangeProxyTarget!('vscode', { connectionString: params.connectionString, lib: params.lib });
-        response.addResult('Successfully switched to VS Code.');
-      }
-    });
+    }));
   }
 
   private async _setContextFactory(newFactory: BrowserContextFactory) {
