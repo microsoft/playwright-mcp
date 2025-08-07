@@ -2,12 +2,12 @@
  * Page analysis for diagnostic information
  */
 
-import type * as playwright from 'playwright';
-import type { PerformanceMetrics, MetricsThresholds } from '../types/performance.js';
 import { FrameReferenceManager } from './FrameReferenceManager.js';
 import { ParallelPageAnalyzer } from './ParallelPageAnalyzer.js';
 import { ParallelAnalysisResult } from '../types/performance.js';
 import { getCurrentThresholds } from './DiagnosticThresholds.js';
+import type { PerformanceMetrics, MetricsThresholds } from '../types/performance.js';
+import type * as playwright from 'playwright';
 
 export interface IDisposable {
   dispose(): Promise<void>;
@@ -46,30 +46,31 @@ export class PageAnalyzer implements IDisposable {
   }
 
   async dispose(): Promise<void> {
-    if (this.isDisposed) return;
-    
+    if (this.isDisposed)
+      return;
+
     try {
       await this.frameManager.dispose();
     } catch (error) {
       console.warn('[PageAnalyzer] Failed to dispose frame manager:', error);
     }
-    
+
     this.frameRefs.clear();
     this.page = null;
     this.isDisposed = true;
   }
 
   private checkDisposed(): void {
-    if (this.isDisposed) {
+    if (this.isDisposed)
       throw new Error('PageAnalyzer has been disposed');
-    }
+
   }
 
   private getPage(): playwright.Page {
     this.checkDisposed();
-    if (!this.page) {
+    if (!this.page)
       throw new Error('Page reference is null');
-    }
+
     return this.page;
   }
 
@@ -99,7 +100,7 @@ export class PageAnalyzer implements IDisposable {
     try {
       for (const iframe of iframes) {
         const src = await iframe.getAttribute('src') || 'about:blank';
-        
+
         try {
           // Try to access the iframe's content
           const frame = await iframe.contentFrame();
@@ -107,7 +108,7 @@ export class PageAnalyzer implements IDisposable {
             // Track frame in frame manager
             this.frameManager.trackFrame(frame);
             this.frameRefs.add(frame);
-            
+
             try {
               // Try to access frame content with timeout to verify it's truly accessible
               await Promise.race([
@@ -115,7 +116,7 @@ export class PageAnalyzer implements IDisposable {
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
               ]);
               accessible.push({ src, accessible: true });
-              
+
               // Update frame metadata with element count for performance tracking
               try {
                 const elementCount = await frame.$$eval('*', elements => elements.length);
@@ -124,22 +125,22 @@ export class PageAnalyzer implements IDisposable {
                 // Element counting failed, but frame is still accessible
                 console.warn('[PageAnalyzer] Failed to count frame elements:', countError);
               }
-              
+
             } catch (frameError) {
-              inaccessible.push({ 
-                src, 
+              inaccessible.push({
+                src,
                 reason: 'Frame content not accessible - cross-origin or blocked'
               });
             }
           } else {
-            inaccessible.push({ 
-              src, 
+            inaccessible.push({
+              src,
               reason: 'Content frame not available'
             });
           }
         } catch (error) {
-          inaccessible.push({ 
-            src, 
+          inaccessible.push({
+            src,
             reason: error instanceof Error ? error.message : 'Access denied'
           });
         } finally {
@@ -206,8 +207,10 @@ export class PageAnalyzer implements IDisposable {
       hasFileChooser = false;
     }
 
-    if (hasDialog) blockedBy.push('dialog');
-    if (hasFileChooser) blockedBy.push('fileChooser');
+    if (hasDialog)
+      blockedBy.push('dialog');
+    if (hasFileChooser)
+      blockedBy.push('fileChooser');
 
     return {
       hasDialog,
@@ -227,25 +230,25 @@ export class PageAnalyzer implements IDisposable {
       for (const element of allElements) {
         const style = window.getComputedStyle(element);
         const isVisible = style.display !== 'none' && style.visibility !== 'hidden';
-        
+
         if (isVisible) {
           totalVisible++;
-          
+
           // Check if element is interactable
           const tagName = element.tagName.toLowerCase();
           const isInteractable = ['button', 'input', 'select', 'textarea', 'a'].includes(tagName) ||
                                  element.hasAttribute('onclick') ||
                                  element.hasAttribute('role');
-          
+
           if (isInteractable) {
             totalInteractable++;
-            
+
             // Check for missing ARIA attributes
-            if (!element.hasAttribute('aria-label') && 
-                !element.hasAttribute('aria-labelledby') && 
-                !element.textContent?.trim()) {
+            if (!element.hasAttribute('aria-label') &&
+                !element.hasAttribute('aria-labelledby') &&
+                !element.textContent?.trim())
               missingAria++;
-            }
+
           }
         }
       }
@@ -259,25 +262,25 @@ export class PageAnalyzer implements IDisposable {
   async analyzePerformanceMetrics(): Promise<PerformanceMetrics> {
     const startTime = Date.now();
     const page = this.getPage();
-    
+
     try {
       const metricsData = await page.evaluate(() => {
         // DOM complexity analysis using TreeWalker for efficiency
         const getAllElementsWithTreeWalker = () => {
           const elements: Element[] = [];
           const walker = document.createTreeWalker(
-            document.documentElement,
-            NodeFilter.SHOW_ELEMENT,
-            null
+              document.documentElement,
+              NodeFilter.SHOW_ELEMENT,
+              null
           );
-          
+
           let node: Node | null;
-          while (node = walker.nextNode()) {
+          while (node = walker.nextNode())
             elements.push(node as Element);
-          }
+
           return elements;
         };
-        
+
         const allElements = getAllElementsWithTreeWalker();
         const totalElements = allElements.length;
 
@@ -296,17 +299,17 @@ export class PageAnalyzer implements IDisposable {
         const largeSubtrees: Array<{ selector: string; elementCount: number; description: string }> = [];
         const countDescendants = (rootElement: Element): number => {
           const walker = document.createTreeWalker(
-            rootElement,
-            NodeFilter.SHOW_ELEMENT,
-            null
+              rootElement,
+              NodeFilter.SHOW_ELEMENT,
+              null
           );
           let count = 0;
-          while (walker.nextNode()) {
+          while (walker.nextNode())
             count++;
-          }
+
           return count - 1; // Exclude the root element itself
         };
-        
+
         const analyzeSubtree = (element: Element, selector: string) => {
           const descendantCount = countDescendants(element);
           if (descendantCount >= 500) {
@@ -314,15 +317,15 @@ export class PageAnalyzer implements IDisposable {
             const id = element.id ? `#${element.id}` : '';
             const className = element.className ? `.${element.className.split(' ')[0]}` : '';
             const fullSelector = `${tagName}${id}${className}`;
-            
+
             let description = 'Large subtree';
-            if (tagName === 'ul' || tagName === 'ol') {
+            if (tagName === 'ul' || tagName === 'ol')
               description = 'Large list structure';
-            } else if (tagName === 'table') {
+            else if (tagName === 'table')
               description = 'Large table structure';
-            } else if (tagName === 'div' && (element.className.includes('container') || element.className.includes('wrapper'))) {
+            else if (tagName === 'div' && (element.className.includes('container') || element.className.includes('wrapper')))
               description = 'Large container element';
-            }
+
 
             largeSubtrees.push({
               selector: fullSelector || selector,
@@ -345,12 +348,12 @@ export class PageAnalyzer implements IDisposable {
         let clickableElements = 0;
         let formElements = 0;
         let disabledElements = 0;
-        
+
         // Analyze elements in a single pass for efficiency
         allElements.forEach(element => {
           const tagName = element.tagName.toLowerCase();
           const type = (element as HTMLInputElement).type?.toLowerCase();
-          
+
           // Check if clickable
           if (
             tagName === 'button' ||
@@ -360,21 +363,21 @@ export class PageAnalyzer implements IDisposable {
             element.getAttribute('role') === 'button' ||
             element.getAttribute('role') === 'link' ||
             (element.hasAttribute('tabindex') && element.getAttribute('tabindex') !== '-1')
-          ) {
+          )
             clickableElements++;
-          }
-          
+
+
           // Check if form element
-          if (['input', 'select', 'textarea'].includes(tagName) || 
-              (tagName === 'button' && type === 'submit')) {
+          if (['input', 'select', 'textarea'].includes(tagName) ||
+              (tagName === 'button' && type === 'submit'))
             formElements++;
-          }
-          
+
+
           // Check if disabled
-          if ((element as HTMLElement).hasAttribute('disabled') || 
-              element.getAttribute('aria-disabled') === 'true') {
+          if ((element as HTMLElement).hasAttribute('disabled') ||
+              element.getAttribute('aria-disabled') === 'true')
             disabledElements++;
-          }
+
         });
 
         // Resource analysis
@@ -382,15 +385,15 @@ export class PageAnalyzer implements IDisposable {
         const imageCount = images.length;
         let estimatedImageSize = 0;
         let sizeDescription = 'Small (estimated)';
-        
+
         if (imageCount > 0) {
           // Rough estimation based on image count and common sizes
           estimatedImageSize = imageCount * 50; // Assume 50KB per image on average
-          if (estimatedImageSize > 1000) {
+          if (estimatedImageSize > 1000)
             sizeDescription = 'Large (>1MB estimated)';
-          } else if (estimatedImageSize > 500) {
+          else if (estimatedImageSize > 500)
             sizeDescription = 'Medium (>500KB estimated)';
-          }
+
         }
 
         const scriptTags = document.querySelectorAll('script').length;
@@ -412,19 +415,19 @@ export class PageAnalyzer implements IDisposable {
           if (position === 'fixed') {
             const tagName = element.tagName.toLowerCase();
             let purpose = 'Unknown fixed element';
-            
-            if (tagName === 'nav' || element.getAttribute('role') === 'navigation' || 
-                element.className.toLowerCase().includes('nav')) {
+
+            if (tagName === 'nav' || element.getAttribute('role') === 'navigation' ||
+                element.className.toLowerCase().includes('nav'))
               purpose = 'Fixed navigation element';
-            } else if (tagName === 'header' || element.className.toLowerCase().includes('header')) {
+            else if (tagName === 'header' || element.className.toLowerCase().includes('header'))
               purpose = 'Fixed header element';
-            } else if (element.className.toLowerCase().includes('modal') || 
-                       element.className.toLowerCase().includes('dialog')) {
+            else if (element.className.toLowerCase().includes('modal') ||
+                       element.className.toLowerCase().includes('dialog'))
               purpose = 'Modal or dialog overlay';
-            } else if (element.className.toLowerCase().includes('toolbar') || 
-                       element.className.toLowerCase().includes('controls')) {
+            else if (element.className.toLowerCase().includes('toolbar') ||
+                       element.className.toLowerCase().includes('controls'))
               purpose = 'Fixed toolbar or controls';
-            }
+
 
             fixedElements.push({
               selector: element.id ? `#${element.id}` : `${tagName}:nth-child(${index + 1})`,
@@ -436,13 +439,13 @@ export class PageAnalyzer implements IDisposable {
           // High z-index elements
           if (zIndex >= 1000) {
             let description = 'High z-index element';
-            if (zIndex >= 9999) {
+            if (zIndex >= 9999)
               description = 'Extremely high z-index (potential issue)';
-            } else if (element.className.toLowerCase().includes('modal')) {
+            else if (element.className.toLowerCase().includes('modal'))
               description = 'Modal with high z-index';
-            } else if (element.className.toLowerCase().includes('tooltip')) {
+            else if (element.className.toLowerCase().includes('tooltip'))
               description = 'Tooltip with high z-index';
-            }
+
 
             highZIndexElements.push({
               selector: element.id ? `#${element.id}` : `${element.tagName.toLowerCase()}:nth-child(${index + 1})`,
@@ -452,9 +455,9 @@ export class PageAnalyzer implements IDisposable {
           }
 
           // Overflow hidden elements
-          if (style.overflow === 'hidden') {
+          if (style.overflow === 'hidden')
             overflowHiddenElements++;
-          }
+
         });
 
         return {
@@ -544,9 +547,9 @@ export class PageAnalyzer implements IDisposable {
       }
 
       const executionTime = Date.now() - startTime;
-      if (executionTime > 1000) {
+      if (executionTime > 1000)
         console.warn(`[Performance] analyzePerformanceMetrics took ${executionTime}ms (target: <1000ms)`);
-      }
+
 
       return {
         executionTime,
@@ -564,7 +567,7 @@ export class PageAnalyzer implements IDisposable {
     } catch (error) {
       const executionTime = Date.now() - startTime;
       console.error(`[Performance] analyzePerformanceMetrics failed after ${executionTime}ms:`, error);
-      
+
       // Return minimal fallback metrics
       return {
         executionTime,
@@ -619,7 +622,7 @@ export class PageAnalyzer implements IDisposable {
       oldFrames: Array<{ frame: playwright.Frame; age: number; url: string }>;
     };
     isDisposed: boolean;
-  } {
+    } {
     if (this.isDisposed) {
       return {
         frameStats: {
@@ -650,7 +653,8 @@ export class PageAnalyzer implements IDisposable {
    * Manual cleanup of detached frames
    */
   async cleanupFrames(): Promise<void> {
-    if (this.isDisposed) return;
+    if (this.isDisposed)
+      return;
     await this.frameManager.cleanupDetachedFrames();
   }
 
@@ -661,7 +665,7 @@ export class PageAnalyzer implements IDisposable {
   async runParallelAnalysis(): Promise<ParallelAnalysisResult> {
     const page = this.getPage();
     const parallelAnalyzer = new ParallelPageAnalyzer(page);
-    
+
     try {
       return await parallelAnalyzer.runParallelAnalysis();
     } catch (error) {
@@ -712,20 +716,20 @@ export class PageAnalyzer implements IDisposable {
     estimatedBenefit: string;
   }> {
     const page = this.getPage();
-    
+
     try {
       console.info('[PageAnalyzer] Evaluating parallel analysis recommendation');
-      
+
       // Quick DOM complexity check
       const elementCount = await page.evaluate(() => document.querySelectorAll('*').length);
       const iframeCount = await page.evaluate(() => document.querySelectorAll('iframe').length);
-      const formElements = await page.evaluate(() => 
+      const formElements = await page.evaluate(() =>
         document.querySelectorAll('input, button, select, textarea').length
       );
-      
+
       const complexity = elementCount + (iframeCount * 100) + (formElements * 10);
       console.info(`[PageAnalyzer] Page complexity analysis - elements: ${elementCount}, iframes: ${iframeCount}, forms: ${formElements}, complexity score: ${complexity}`);
-      
+
       if (complexity > 2000) {
         console.info('[PageAnalyzer] HIGH complexity detected - parallel analysis strongly recommended');
         return {

@@ -18,7 +18,7 @@ export async function waitForCompletion<R>(tab: Tab, callback: () => Promise<R>)
     if (frame.parentFrame())
       return;
     frameNavigated = true;
-    
+
     // Enhanced navigation handling with stability checks
     void (async () => {
       try {

@@ -46,12 +46,12 @@ export class ResourceManager implements SmartTracker {
 
   async disposeAll(): Promise<void> {
     const disposePromises: Promise<void>[] = [];
-    
+
     for (const [id, { resource, disposeMethod }] of this.resources.entries()) {
       try {
-        if (resource && typeof resource[disposeMethod] === 'function') {
+        if (resource && typeof resource[disposeMethod] === 'function')
           disposePromises.push(resource[disposeMethod]());
-        }
+
       } catch (error) {
         console.warn(`[ResourceManager] Failed to dispose resource ${id}:`, error);
       }
@@ -83,14 +83,14 @@ export class ResourceManager implements SmartTracker {
     activeCount: number;
     expiredCount: number;
     memoryUsage: number;
-  } {
+    } {
     const now = Date.now();
     let expiredCount = 0;
-    
+
     for (const [, { timestamp }] of this.resources.entries()) {
-      if (now - timestamp > this.disposeTimeout) {
+      if (now - timestamp > this.disposeTimeout)
         expiredCount++;
-      }
+
     }
 
     return {
@@ -112,18 +112,18 @@ export class ResourceManager implements SmartTracker {
     const expiredIds: string[] = [];
 
     for (const [id, { timestamp }] of this.resources.entries()) {
-      if (now - timestamp > this.disposeTimeout) {
+      if (now - timestamp > this.disposeTimeout)
         expiredIds.push(id);
-      }
+
     }
 
     for (const id of expiredIds) {
       const entry = this.resources.get(id);
       if (entry) {
         try {
-          if (entry.resource && typeof entry.resource[entry.disposeMethod] === 'function') {
+          if (entry.resource && typeof entry.resource[entry.disposeMethod] === 'function')
             await entry.resource[entry.disposeMethod]();
-          }
+
         } catch (error) {
           console.warn(`[ResourceManager] Failed to dispose expired resource ${id}:`, error);
         }
@@ -131,9 +131,9 @@ export class ResourceManager implements SmartTracker {
       }
     }
 
-    if (expiredIds.length > 0) {
+    if (expiredIds.length > 0)
       console.log(`[ResourceManager] Cleaned up ${expiredIds.length} expired resources`);
-    }
+
   }
 
   async dispose(): Promise<void> {

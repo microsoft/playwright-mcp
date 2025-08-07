@@ -20,36 +20,37 @@ export class SmartHandle<T extends playwright.ElementHandle> implements ProxyHan
   }
 
   get(target: T, prop: string | symbol, receiver: any): any {
-    if (this.disposed) {
+    if (this.disposed)
       throw new Error('SmartHandle has been disposed');
-    }
+
 
     const value = (target as any)[prop];
 
     // Return bound method for function properties
-    if (typeof value === 'function') {
+    if (typeof value === 'function')
       return value.bind(target);
-    }
+
 
     return value;
   }
 
   set(target: T, prop: string | symbol, value: any, receiver: any): boolean {
-    if (this.disposed) {
+    if (this.disposed)
       throw new Error('SmartHandle has been disposed');
-    }
+
 
     (target as any)[prop] = value;
     return true;
   }
 
   async dispose(): Promise<void> {
-    if (this.disposed) return;
+    if (this.disposed)
+      return;
 
     try {
-      if (this.resource && typeof this.resource.dispose === 'function') {
+      if (this.resource && typeof this.resource.dispose === 'function')
         await this.resource.dispose();
-      }
+
     } catch (error) {
       console.warn('[SmartHandle] Dispose failed:', error);
     } finally {
@@ -63,9 +64,9 @@ export class SmartHandle<T extends playwright.ElementHandle> implements ProxyHan
   }
 
   getResource(): T {
-    if (this.disposed) {
+    if (this.disposed)
       throw new Error('SmartHandle has been disposed');
-    }
+
     return this.resource;
   }
 }
@@ -89,9 +90,9 @@ export class SmartHandleBatch {
   private disposed = false;
 
   add<T extends playwright.ElementHandle>(handle: T, tracker?: SmartTracker): T {
-    if (this.disposed) {
+    if (this.disposed)
       throw new Error('SmartHandleBatch has been disposed');
-    }
+
 
     const smartHandle = new SmartHandle(handle, tracker);
     this.handles.push(smartHandle);
@@ -99,11 +100,12 @@ export class SmartHandleBatch {
   }
 
   async disposeAll(): Promise<void> {
-    if (this.disposed) return;
+    if (this.disposed)
+      return;
 
     const disposePromises = this.handles.map(handle => handle.dispose());
     await Promise.allSettled(disposePromises);
-    
+
     this.handles.length = 0;
     this.disposed = true;
   }

@@ -2,15 +2,17 @@
  * Unified diagnostic system that integrates all components
  */
 
-import type * as playwright from 'playwright';
-import { SmartConfigManager, type SmartConfig } from './SmartConfig.js';
-import { DiagnosticError, type DiagnosticComponent } from './DiagnosticError.js';
+import { SmartConfigManager  } from './SmartConfig.js';
+import { DiagnosticError  } from './DiagnosticError.js';
 import { PageAnalyzer } from './PageAnalyzer.js';
 import { ParallelPageAnalyzer } from './ParallelPageAnalyzer.js';
 import { ElementDiscovery } from './ElementDiscovery.js';
 import { ResourceManager } from './ResourceManager.js';
 import { EnhancedErrorHandler } from './EnhancedErrorHandler.js';
 import { ResourceUsageMonitor } from './ResourceUsageMonitor.js';
+import type { DiagnosticComponent } from './DiagnosticError.js';
+import type { SmartConfig } from './SmartConfig.js';
+import type * as playwright from 'playwright';
 
 export interface SystemStats {
   operationCount: Record<string, number>;
@@ -39,7 +41,7 @@ export interface OperationResult<T = any> {
 
 export class UnifiedDiagnosticSystem {
   private static instances = new Map<playwright.Page, UnifiedDiagnosticSystem>();
-  
+
   private readonly page: playwright.Page;
   private readonly configManager: SmartConfigManager;
   private pageAnalyzer?: PageAnalyzer;
@@ -48,12 +50,12 @@ export class UnifiedDiagnosticSystem {
   private resourceManager?: ResourceManager;
   private errorHandler?: EnhancedErrorHandler;
   private resourceMonitor?: ResourceUsageMonitor;
-  
+
   // Initialization state management
   private isInitialized: boolean = false;
   private initializationPromise?: Promise<void>;
   private initializationError?: DiagnosticError;
-  
+
   private stats: SystemStats;
   private operationHistory: Array<{
     operation: string;
@@ -66,11 +68,11 @@ export class UnifiedDiagnosticSystem {
   private constructor(page: playwright.Page, config?: Partial<SmartConfig>) {
     this.page = page;
     this.configManager = SmartConfigManager.getInstance(config);
-    
+
     // Initialize basic stats and listener setup
     this.stats = this.initializeStats();
     this.setupConfigurationListener();
-    
+
     // Note: Component initialization moved to initializeComponents method
     // This follows the create-then-initialize pattern for better error handling
   }
@@ -80,32 +82,32 @@ export class UnifiedDiagnosticSystem {
    * This method handles component dependencies and provides proper cleanup on failure
    */
   async initializeComponents(): Promise<void> {
-    if (this.isInitialized) {
+    if (this.isInitialized)
       return;
-    }
-    
-    if (this.initializationPromise) {
+
+
+    if (this.initializationPromise)
       return this.initializationPromise;
-    }
-    
-    if (this.initializationError) {
+
+
+    if (this.initializationError)
       throw this.initializationError;
-    }
+
 
     this.initializationPromise = this.performInitialization();
-    
+
     try {
       await this.initializationPromise;
       this.isInitialized = true;
     } catch (error) {
-      this.initializationError = error instanceof DiagnosticError 
-        ? error 
+      this.initializationError = error instanceof DiagnosticError
+        ? error
         : DiagnosticError.from(
-            error as Error, 
-            'UnifiedSystem', 
+            error as Error,
+            'UnifiedSystem',
             'initializeComponents',
             { timestamp: Date.now() }
-          );
+        );
       throw this.initializationError;
     } finally {
       this.initializationPromise = undefined;
@@ -113,8 +115,8 @@ export class UnifiedDiagnosticSystem {
   }
 
   private async performInitialization(): Promise<void> {
-    const initializationStages: Array<{ 
-      name: string; 
+    const initializationStages: Array<{
+      name: string;
       components: (() => Promise<void>)[];
       dependencies?: string[];
     }> = [
@@ -147,11 +149,11 @@ export class UnifiedDiagnosticSystem {
           // Stage 3: Advanced components that depend on other components
           async () => {
             this.parallelAnalyzer = new ParallelPageAnalyzer(this.page);
-            
+
             // Initialize optional components based on configuration
-            if (this.configManager.getConfig().features.enableResourceLeakDetection) {
+            if (this.configManager.getConfig().features.enableResourceLeakDetection)
               this.resourceMonitor = new ResourceUsageMonitor();
-            }
+
           }
         ]
       }
@@ -163,91 +165,91 @@ export class UnifiedDiagnosticSystem {
     try {
       for (const stage of initializationStages) {
         console.info(`[UnifiedSystem] Initializing stage: ${stage.name}`);
-        
+
         // Check dependencies
         if (stage.dependencies) {
           for (const dep of stage.dependencies) {
-            if (!completedStages.has(dep)) {
+            if (!completedStages.has(dep))
               throw new Error(`Dependency '${dep}' not satisfied for stage '${stage.name}'`);
-            }
+
           }
         }
-        
+
         // Execute all components in this stage
-        for (const componentInit of stage.components) {
+        for (const componentInit of stage.components)
           await componentInit();
-        }
-        
+
+
         // Track components for cleanup if needed
         this.collectDisposableComponents(partiallyInitializedComponents);
-        
+
         completedStages.add(stage.name);
         console.info(`[UnifiedSystem] Stage '${stage.name}' completed successfully`);
       }
-      
+
       console.info('[UnifiedSystem] All components initialized successfully');
-      
+
     } catch (error) {
       console.error(`[UnifiedSystem] Initialization failed:`, error);
-      
+
       // Clean up any partially initialized components
       await this.cleanupPartialInitialization(partiallyInitializedComponents);
-      
+
       // Create detailed diagnostic error
       const diagnosticError = new DiagnosticError(
-        `Component initialization failed: ${error instanceof Error ? error.message : String(error)}`,
-        {
-          timestamp: Date.now(),
-          component: 'UnifiedSystem',
-          operation: 'initializeComponents',
-          context: {
-            stage: completedStages.size > 0 ? Array.from(completedStages).pop() : 'initialization-start',
-            completedStages: Array.from(completedStages),
-            failedComponents: partiallyInitializedComponents.length
+          `Component initialization failed: ${error instanceof Error ? error.message : String(error)}`,
+          {
+            timestamp: Date.now(),
+            component: 'UnifiedSystem',
+            operation: 'initializeComponents',
+            context: {
+              stage: completedStages.size > 0 ? Array.from(completedStages).pop() : 'initialization-start',
+              completedStages: Array.from(completedStages),
+              failedComponents: partiallyInitializedComponents.length
+            },
+            suggestions: [
+              'Review component dependencies',
+              'Check page availability',
+              'Verify configuration settings',
+              'Ensure sufficient resources'
+            ]
           },
-          suggestions: [
-            'Review component dependencies',
-            'Check page availability',
-            'Verify configuration settings',
-            'Ensure sufficient resources'
-          ]
-        },
         error as Error
       );
-      
+
       throw diagnosticError;
     }
   }
 
   private collectDisposableComponents(components: Array<{ dispose: () => Promise<void> }>): void {
     // Add currently initialized components that have dispose methods
-    if (this.resourceManager) {
+    if (this.resourceManager)
       components.push(this.resourceManager as any);
-    }
-    if (this.pageAnalyzer) {
+
+    if (this.pageAnalyzer)
       components.push(this.pageAnalyzer as any);
-    }
-    if (this.parallelAnalyzer) {
+
+    if (this.parallelAnalyzer)
       components.push(this.parallelAnalyzer as any);
-    }
-    if (this.resourceMonitor) {
+
+    if (this.resourceMonitor)
       components.push(this.resourceMonitor as any);
-    }
+
   }
 
   private async cleanupPartialInitialization(components: Array<{ dispose: () => Promise<void> }>): Promise<void> {
     console.info('[UnifiedSystem] Cleaning up partially initialized components');
-    
+
     for (const component of components) {
       try {
-        if (component && typeof component.dispose === 'function') {
+        if (component && typeof component.dispose === 'function')
           await component.dispose();
-        }
+
       } catch (cleanupError) {
         console.warn('[UnifiedSystem] Error during component cleanup:', cleanupError);
       }
     }
-    
+
     // Reset component references
     this.pageAnalyzer = undefined;
     this.parallelAnalyzer = undefined;
@@ -262,33 +264,33 @@ export class UnifiedDiagnosticSystem {
    * This method provides automatic initialization for API methods
    */
   private async ensureInitialized(): Promise<void> {
-    if (!this.isInitialized && !this.initializationPromise) {
+    if (!this.isInitialized && !this.initializationPromise)
       await this.initializeComponents();
-    } else if (this.initializationPromise) {
+    else if (this.initializationPromise)
       await this.initializationPromise;
-    }
-    
+
+
     if (!this.isInitialized) {
       throw new DiagnosticError(
-        'UnifiedSystem components are not initialized',
-        {
-          timestamp: Date.now(),
-          component: 'UnifiedSystem',
-          operation: 'ensureInitialized',
-          suggestions: [
-            'Call initializeComponents() before using the system',
-            'Check for initialization errors',
-            'Verify page and configuration are valid'
-          ]
-        }
+          'UnifiedSystem components are not initialized',
+          {
+            timestamp: Date.now(),
+            component: 'UnifiedSystem',
+            operation: 'ensureInitialized',
+            suggestions: [
+              'Call initializeComponents() before using the system',
+              'Check for initialization errors',
+              'Verify page and configuration are valid'
+            ]
+          }
       );
     }
   }
 
   static getInstance(page: playwright.Page, config?: Partial<SmartConfig>): UnifiedDiagnosticSystem {
-    if (!UnifiedDiagnosticSystem.instances.has(page)) {
+    if (!UnifiedDiagnosticSystem.instances.has(page))
       UnifiedDiagnosticSystem.instances.set(page, new UnifiedDiagnosticSystem(page, config));
-    }
+
     return UnifiedDiagnosticSystem.instances.get(page)!;
   }
 
@@ -327,9 +329,9 @@ export class UnifiedDiagnosticSystem {
   }
 
   private setupConfigurationListener(): void {
-    this.configManager.onConfigChange((config) => {
+    this.configManager.onConfigChange(config => {
       console.info('[UnifiedSystem] Configuration updated, reinitializing components if needed');
-      
+
       // Update resource monitor based on new configuration
       if (config.features.enableResourceLeakDetection && !this.resourceMonitor) {
         // Resource monitor would need to be reinitialized
@@ -350,11 +352,11 @@ export class UnifiedDiagnosticSystem {
     const componentConfig = this.configManager.getComponentConfig(
       component.toLowerCase() as 'pageAnalyzer' | 'elementDiscovery' | 'resourceManager'
     );
-    
+
     let resourceSnapshot: any;
-    if (this.resourceMonitor && (options?.enableResourceMonitoring ?? config.performance.enableResourceMonitoring)) {
+    if (this.resourceMonitor && (options?.enableResourceMonitoring ?? config.performance.enableResourceMonitoring))
       resourceSnapshot = await this.resourceMonitor.getResourceUsage();
-    }
+
 
     try {
       // Apply timeout if specified
@@ -365,16 +367,16 @@ export class UnifiedDiagnosticSystem {
 
       const result = await Promise.race([fn(), timeoutPromise]);
       const executionTime = Date.now() - startTime;
-      
+
       // Record successful operation
       this.recordOperation(operation, component, executionTime, true);
-      
+
       // Check for performance issues
       if (config.performance.enablePerformanceWarnings) {
         const threshold = componentConfig.executionTimeout || 1000;
-        if (executionTime > threshold) {
+        if (executionTime > threshold)
           console.warn(`[UnifiedSystem] Performance warning: ${operation} took ${executionTime}ms (threshold: ${threshold}ms)`);
-        }
+
       }
 
       // Calculate memory usage if monitoring is enabled
@@ -382,10 +384,10 @@ export class UnifiedDiagnosticSystem {
       if (resourceSnapshot && this.resourceMonitor) {
         const currentUsage = await this.resourceMonitor.getResourceUsage();
         memoryUsage = currentUsage.memoryUsage.heapUsed - resourceSnapshot.memoryUsage.heapUsed;
-        
-        if (memoryUsage > config.performance.thresholds.memory.memoryLeakThreshold) {
+
+        if (memoryUsage > config.performance.thresholds.memory.memoryLeakThreshold)
           console.warn(`[UnifiedSystem] Memory usage warning: ${operation} used ${(memoryUsage / 1024 / 1024).toFixed(2)}MB`);
-        }
+
       }
 
       return {
@@ -397,20 +399,20 @@ export class UnifiedDiagnosticSystem {
 
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      
+
       // Record failed operation
       this.recordOperation(operation, component, executionTime, false);
       this.stats.errorCount[component]++;
 
       // Create enhanced diagnostic error
-      const diagnosticError = error instanceof DiagnosticError 
+      const diagnosticError = error instanceof DiagnosticError
         ? error
         : DiagnosticError.from(
             error as Error,
             component,
             operation,
             { executionTime, timestamp: startTime }
-          );
+        );
 
       // Apply error enrichment if enabled
       let enrichedError = diagnosticError;
@@ -433,20 +435,20 @@ export class UnifiedDiagnosticSystem {
   private recordOperation(operation: string, component: DiagnosticComponent, executionTime: number, success: boolean): void {
     // Update operation count
     this.stats.operationCount[operation] = (this.stats.operationCount[operation] || 0) + 1;
-    
+
     // Update performance metrics
     const currentAvg = this.stats.performanceMetrics.averageExecutionTime[operation] || 0;
     const currentCount = this.stats.operationCount[operation];
-    this.stats.performanceMetrics.averageExecutionTime[operation] = 
+    this.stats.performanceMetrics.averageExecutionTime[operation] =
       (currentAvg * (currentCount - 1) + executionTime) / currentCount;
-    
+
     this.stats.performanceMetrics.totalOperations++;
-    
+
     // Update success rate
     const successfulOps = this.operationHistory.filter(op => op.success).length + (success ? 1 : 0);
     const totalOps = this.operationHistory.length + 1;
     this.stats.performanceMetrics.successRate = successfulOps / totalOps;
-    
+
     // Add to operation history (maintain limited size)
     this.operationHistory.push({
       operation,
@@ -455,40 +457,40 @@ export class UnifiedDiagnosticSystem {
       executionTime,
       success
     });
-    
+
     const maxHistory = this.configManager.getConfig().errorHandling.maxErrorHistory;
-    if (this.operationHistory.length > maxHistory) {
+    if (this.operationHistory.length > maxHistory)
       this.operationHistory = this.operationHistory.slice(-maxHistory);
-    }
+
 
     // Trigger adaptive threshold adjustment
     if (this.configManager.getConfig().runtime.enableAdaptiveThresholds) {
-      const recentOps = this.operationHistory.filter(op => 
-        op.operation === operation && 
+      const recentOps = this.operationHistory.filter(op =>
+        op.operation === operation &&
         Date.now() - op.timestamp < 300000 // Last 5 minutes
       );
-      
+
       if (recentOps.length >= 10) { // Enough data for adjustment
         const avgTime = recentOps.reduce((sum, op) => sum + op.executionTime, 0) / recentOps.length;
         const successRate = recentOps.filter(op => op.success).length / recentOps.length;
-        
-        if (component === 'PageAnalyzer') {
+
+        if (component === 'PageAnalyzer')
           this.configManager.adjustThresholds('pageAnalysis', avgTime, successRate);
-        } else if (component === 'ElementDiscovery') {
+        else if (component === 'ElementDiscovery')
           this.configManager.adjustThresholds('elementDiscovery', avgTime, successRate);
-        } else if (component === 'ResourceManager') {
+        else if (component === 'ResourceManager')
           this.configManager.adjustThresholds('resourceMonitoring', avgTime, successRate);
-        }
+
       }
     }
   }
 
   private async enrichError(error: DiagnosticError, operation: string): Promise<DiagnosticError> {
     try {
-      if (!this.errorHandler) {
+      if (!this.errorHandler)
         return error; // Return original error if handler is not initialized
-      }
-      
+
+
       // Use the enhanced error handler for context-aware enrichment
       const enrichedPlaywrightError = await this.errorHandler.enhanceToolError({
         toolName: operation,
@@ -498,17 +500,17 @@ export class UnifiedDiagnosticSystem {
 
       // Create a new DiagnosticError with enriched information
       const enrichedDiagnosticError = new DiagnosticError(
-        enrichedPlaywrightError.message,
-        {
-          timestamp: error.timestamp,
-          component: error.component,
-          operation: error.operation,
-          executionTime: error.executionTime,
-          memoryUsage: error.memoryUsage,
-          performanceImpact: error.performanceImpact,
-          suggestions: [...error.suggestions, ...(enrichedPlaywrightError.suggestions || [])]
-        },
-        error.originalError
+          enrichedPlaywrightError.message,
+          {
+            timestamp: error.timestamp,
+            component: error.component,
+            operation: error.operation,
+            executionTime: error.executionTime,
+            memoryUsage: error.memoryUsage,
+            performanceImpact: error.performanceImpact,
+            suggestions: [...error.suggestions, ...(enrichedPlaywrightError.suggestions || [])]
+          },
+          error.originalError
       );
 
       return enrichedDiagnosticError;
@@ -523,21 +525,21 @@ export class UnifiedDiagnosticSystem {
   async analyzePageStructure(forceParallel?: boolean): Promise<OperationResult> {
     await this.ensureInitialized();
     const config = this.configManager.getConfig();
-    
+
     // Determine analysis mode with clear logging
     const shouldUseParallel = forceParallel ?? config.features.enableParallelAnalysis;
-    
+
     if (shouldUseParallel) {
       console.info(`[UnifiedSystem] Using parallel analysis - forced: ${forceParallel === true}, config enabled: ${config.features.enableParallelAnalysis}`);
-      
+
       return this.executeOperation('analyzePageStructure', 'PageAnalyzer', async () => {
         const recommendation = await this.pageAnalyzer!.shouldUseParallelAnalysis();
-        
+
         if (recommendation.recommended || forceParallel) {
           console.info(`[UnifiedSystem] Parallel analysis execution - recommendation: ${recommendation.recommended}, forced: ${forceParallel === true}`);
-          if (!recommendation.recommended && forceParallel) {
+          if (!recommendation.recommended && forceParallel)
             console.info(`[UnifiedSystem] Overriding recommendation (${recommendation.reason}) due to force flag`);
-          }
+
           return await this.parallelAnalyzer!.runParallelAnalysis();
         } else {
           console.info(`[UnifiedSystem] Falling back to standard analysis - reason: ${recommendation.reason}`);
@@ -589,12 +591,12 @@ export class UnifiedDiagnosticSystem {
 
   // System monitoring and statistics
   getSystemStats(): SystemStats {
-    if (!this.isInitialized || !this.resourceManager) {
+    if (!this.isInitialized || !this.resourceManager)
       return this.stats;
-    }
-    
+
+
     const currentResourceUsage = this.resourceManager.getResourceStats();
-    
+
     return {
       ...this.stats,
       resourceUsage: {
@@ -633,23 +635,23 @@ export class UnifiedDiagnosticSystem {
       message: string;
       priority: 'low' | 'medium' | 'high';
     }[];
-  } {
+    } {
     const config = this.configManager.getConfig();
     const impactReport = this.configManager.getConfigurationImpactReport();
     const configSummary = this.configManager.getConfigurationSummary();
 
     // Determine configuration status
     let configurationStatus: 'default' | 'customized' | 'heavily-customized' = 'default';
-    if (configSummary.totalOverrides > 0) {
+    if (configSummary.totalOverrides > 0)
       configurationStatus = configSummary.totalOverrides > 5 ? 'heavily-customized' : 'customized';
-    }
+
 
     // Organize overrides by category
     const appliedOverrides = [
       {
         category: 'Performance Thresholds',
         changes: Object.entries(impactReport.performanceImpact.executionTimeChanges).map(
-          ([component, change]) => `${component}: ${change.from}ms → ${change.to}ms (${change.percentChange > 0 ? '+' : ''}${change.percentChange}%)`
+            ([component, change]) => `${component}: ${change.from}ms → ${change.to}ms (${change.percentChange > 0 ? '+' : ''}${change.percentChange}%)`
         ),
         impact: Object.keys(impactReport.performanceImpact.executionTimeChanges).length > 2 ? 'high' as const : 'medium' as const
       },
@@ -681,17 +683,17 @@ export class UnifiedDiagnosticSystem {
     Object.keys(expectedExecutionTimes).forEach(key => {
       const expected = expectedExecutionTimes[key as keyof typeof expectedExecutionTimes];
       const actual = actualAverages[key as keyof typeof actualAverages];
-      
+
       if (actual > 0 && expected > 0) {
         const percent = ((actual - expected) / expected) * 100;
         let significance: 'normal' | 'notable' | 'significant' = 'normal';
-        
-        if (Math.abs(percent) > 50) {
+
+        if (Math.abs(percent) > 50)
           significance = 'significant';
-        } else if (Math.abs(percent) > 25) {
+        else if (Math.abs(percent) > 25)
           significance = 'notable';
-        }
-        
+
+
         deviations[key] = { percent: Math.round(percent), significance };
       }
     });
@@ -741,7 +743,7 @@ export class UnifiedDiagnosticSystem {
     // Add error rate recommendations
     const totalErrors = Object.values(this.stats.errorCount).reduce((sum, count) => sum + count, 0);
     const errorRate = totalErrors / Math.max(this.stats.performanceMetrics.totalOperations, 1);
-    
+
     if (errorRate > 0.05) {
       recommendations.push({
         type: 'warning',
@@ -774,13 +776,13 @@ export class UnifiedDiagnosticSystem {
     const issues: string[] = [];
     const recommendations: string[] = [];
     const config = this.configManager.getConfig();
-    
+
     if (!this.isInitialized) {
       issues.push('System not initialized');
       recommendations.push('Call initializeComponents() to initialize the system');
       return { status: 'critical', issues, recommendations };
     }
-    
+
     const resourceStats = this.resourceManager!.getResourceStats();
 
     // Check resource usage
@@ -792,7 +794,7 @@ export class UnifiedDiagnosticSystem {
     // Check error rate
     const totalErrors = Object.values(this.stats.errorCount).reduce((sum, count) => sum + count, 0);
     const errorRate = totalErrors / Math.max(this.stats.performanceMetrics.totalOperations, 1);
-    
+
     if (errorRate > 0.1) {
       issues.push(`High error rate: ${(errorRate * 100).toFixed(1)}%`);
       recommendations.push('Review recent errors and consider adjusting timeout thresholds');
@@ -801,44 +803,44 @@ export class UnifiedDiagnosticSystem {
     // Check performance
     const avgExecutionTimes = Object.values(this.stats.performanceMetrics.averageExecutionTime);
     const avgOverall = avgExecutionTimes.reduce((sum, time) => sum + time, 0) / Math.max(avgExecutionTimes.length, 1);
-    
+
     if (avgOverall > 2000) {
       issues.push(`Slow performance: average ${avgOverall.toFixed(0)}ms`);
       recommendations.push('Consider enabling parallel analysis or optimizing operations');
     }
 
     const status = issues.length > 2 ? 'critical' : issues.length > 0 ? 'warning' : 'healthy';
-    
+
     return { status, issues, recommendations };
   }
 
   // Cleanup and disposal
   async dispose(): Promise<void> {
     console.info('[UnifiedSystem] Disposing unified diagnostic system');
-    
+
     try {
       const disposePromises: Promise<void>[] = [];
-      
-      if (this.pageAnalyzer) {
+
+      if (this.pageAnalyzer)
         disposePromises.push(this.pageAnalyzer.dispose());
-      }
-      if (this.parallelAnalyzer) {
+
+      if (this.parallelAnalyzer)
         disposePromises.push(this.parallelAnalyzer.dispose());
-      }
-      if (this.resourceManager) {
+
+      if (this.resourceManager)
         disposePromises.push(this.resourceManager.dispose());
-      }
-      if (this.resourceMonitor) {
+
+      if (this.resourceMonitor)
         this.resourceMonitor.dispose(); // dispose() returns void, not Promise<void>
-      }
-      
+
+
       await Promise.all(disposePromises);
-      
+
       // Reset initialization state
       this.isInitialized = false;
       this.initializationPromise = undefined;
       this.initializationError = undefined;
-      
+
       console.info('[UnifiedSystem] All components disposed successfully');
     } catch (error) {
       console.error('[UnifiedSystem] Error during disposal:', error);

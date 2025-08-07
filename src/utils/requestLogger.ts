@@ -11,13 +11,13 @@ const LOG_DIR = join(PROJECT_ROOT, 'logs');
 const LOG_FILE = join(LOG_DIR, 'mcp-requests.log');
 
 // Check if file logging is enabled via environment variable
-const FILE_LOGGING_ENABLED = process.env.PLAYWRIGHT_MCP_LOG_REQUESTS === 'file' || 
+const FILE_LOGGING_ENABLED = process.env.PLAYWRIGHT_MCP_LOG_REQUESTS === 'file' ||
                             process.env.PLAYWRIGHT_MCP_LOG_REQUESTS === 'both';
 
 // Ensure log directory exists if file logging is enabled
-if (FILE_LOGGING_ENABLED && !existsSync(LOG_DIR)) {
+if (FILE_LOGGING_ENABLED && !existsSync(LOG_DIR))
   mkdirSync(LOG_DIR, { recursive: true });
-}
+
 
 export interface RequestLogEntry {
   timestamp: string;
@@ -30,10 +30,10 @@ export function logRequest(toolName: string, params: any): void {
   try {
     const timestamp = new Date().toISOString();
     const requestId = Math.random().toString(36).substring(7);
-    
+
     // Debug logging (always available via DEBUG env var)
     requestDebug('Tool: %s (ID: %s) - Parameters: %o', toolName, requestId, params);
-    
+
     // File logging (only if enabled)
     if (FILE_LOGGING_ENABLED) {
       // Format as human-readable log entry
@@ -42,7 +42,7 @@ export function logRequest(toolName: string, params: any): void {
         `Parameters: ${JSON.stringify(params, null, 2)}`,
         '---'
       ].join('\n');
-      
+
       appendFileSync(LOG_FILE, logEntry + '\n', 'utf-8');
     }
   } catch (error) {
@@ -58,10 +58,10 @@ export function getLogFilePath(): string {
 export function logServerStart(): void {
   try {
     const timestamp = new Date().toISOString();
-    
+
     // Debug logging
     requestDebug('=== MCP Server Started === PID: %d, Node: %s', process.pid, process.version);
-    
+
     // File logging (only if enabled)
     if (FILE_LOGGING_ENABLED) {
       const logEntry = [
@@ -71,7 +71,7 @@ export function logServerStart(): void {
         `Log Mode: ${process.env.PLAYWRIGHT_MCP_LOG_REQUESTS || 'debug only'}`,
         '---'
       ].join('\n');
-      
+
       appendFileSync(LOG_FILE, logEntry + '\n', 'utf-8');
       requestDebug('Request logging to file enabled: %s', LOG_FILE);
     }

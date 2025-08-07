@@ -37,7 +37,7 @@ export class DiagnosticError extends Error {
   ) {
     const enhancedMessage = `[${context.component}:${context.operation}] ${message}`;
     super(enhancedMessage);
-    
+
     this.name = 'DiagnosticError';
     this.timestamp = context.timestamp;
     this.component = context.component;
@@ -50,9 +50,9 @@ export class DiagnosticError extends Error {
     this.context = context.context;
 
     // Maintain stack trace for debugging
-    if (Error.captureStackTrace) {
+    if (Error.captureStackTrace)
       Error.captureStackTrace(this, DiagnosticError);
-    }
+
   }
 
   /**
@@ -65,14 +65,14 @@ export class DiagnosticError extends Error {
     additionalContext?: Partial<DiagnosticErrorContext>
   ): DiagnosticError {
     return new DiagnosticError(
-      error.message,
-      {
-        timestamp: Date.now(),
-        component,
-        operation,
-        ...additionalContext
-      },
-      error
+        error.message,
+        {
+          timestamp: Date.now(),
+          component,
+          operation,
+          ...additionalContext
+        },
+        error
     );
   }
 
@@ -86,22 +86,22 @@ export class DiagnosticError extends Error {
     executionTime: number,
     threshold: number
   ): DiagnosticError {
-    const impact = executionTime > threshold * 3 ? 'high' : 
-                   executionTime > threshold * 2 ? 'medium' : 'low';
-    
+    const impact = executionTime > threshold * 3 ? 'high' :
+      executionTime > threshold * 2 ? 'medium' : 'low';
+
     return new DiagnosticError(
-      `Performance issue: ${message} (${executionTime}ms > ${threshold}ms)`,
-      {
-        timestamp: Date.now(),
-        component,
-        operation,
-        executionTime,
-        performanceImpact: impact,
-        suggestions: [
-          `Operation took longer than expected (${executionTime}ms vs ${threshold}ms threshold)`,
-          'Consider optimizing this operation or increasing timeout thresholds'
-        ]
-      }
+        `Performance issue: ${message} (${executionTime}ms > ${threshold}ms)`,
+        {
+          timestamp: Date.now(),
+          component,
+          operation,
+          executionTime,
+          performanceImpact: impact,
+          suggestions: [
+            `Operation took longer than expected (${executionTime}ms vs ${threshold}ms threshold)`,
+            'Consider optimizing this operation or increasing timeout thresholds'
+          ]
+        }
     );
   }
 
@@ -116,21 +116,21 @@ export class DiagnosticError extends Error {
     memoryLimit: number
   ): DiagnosticError {
     const impact = memoryUsage > memoryLimit * 2 ? 'high' :
-                   memoryUsage > memoryLimit * 1.5 ? 'medium' : 'low';
+      memoryUsage > memoryLimit * 1.5 ? 'medium' : 'low';
 
     return new DiagnosticError(
-      `Resource issue: ${message} (${(memoryUsage / 1024 / 1024).toFixed(2)}MB)`,
-      {
-        timestamp: Date.now(),
-        component,
-        operation,
-        memoryUsage,
-        performanceImpact: impact,
-        suggestions: [
-          `Memory usage exceeded expectations (${(memoryUsage / 1024 / 1024).toFixed(2)}MB vs ${(memoryLimit / 1024 / 1024).toFixed(2)}MB limit)`,
-          'Consider enabling resource cleanup or reducing analysis scope'
-        ]
-      }
+        `Resource issue: ${message} (${(memoryUsage / 1024 / 1024).toFixed(2)}MB)`,
+        {
+          timestamp: Date.now(),
+          component,
+          operation,
+          memoryUsage,
+          performanceImpact: impact,
+          suggestions: [
+            `Memory usage exceeded expectations (${(memoryUsage / 1024 / 1024).toFixed(2)}MB vs ${(memoryLimit / 1024 / 1024).toFixed(2)}MB limit)`,
+            'Consider enabling resource cleanup or reducing analysis scope'
+          ]
+        }
     );
   }
 
@@ -162,15 +162,15 @@ export class DiagnosticError extends Error {
    */
   toString(): string {
     const parts = [this.message];
-    
-    if (this.executionTime !== undefined) {
+
+    if (this.executionTime !== undefined)
       parts.push(`Execution Time: ${this.executionTime}ms`);
-    }
-    
-    if (this.memoryUsage !== undefined) {
+
+
+    if (this.memoryUsage !== undefined)
       parts.push(`Memory Usage: ${(this.memoryUsage / 1024 / 1024).toFixed(2)}MB`);
-    }
-    
+
+
     if (this.suggestions.length > 0) {
       parts.push('Suggestions:');
       this.suggestions.forEach(suggestion => {

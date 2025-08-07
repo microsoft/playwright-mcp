@@ -77,7 +77,7 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
     try {
       // Log the request
       logRequest(request.params.name, request.params.arguments || {});
-      
+
       return await backend.callTool(tool, tool.inputSchema.parse(request.params.arguments || {}));
     } catch (error) {
       return errorResult(String(error));

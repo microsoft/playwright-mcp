@@ -5,10 +5,12 @@
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';
 import { expectationSchema } from '../schemas/expectation.js';
-import { ElementDiscovery, type SearchCriteria } from '../diagnostics/ElementDiscovery.js';
+import { ElementDiscovery  } from '../diagnostics/ElementDiscovery.js';
 import { PageAnalyzer } from '../diagnostics/PageAnalyzer.js';
 import { UnifiedDiagnosticSystem } from '../diagnostics/UnifiedSystem.js';
-import { SmartConfigManager, type SmartConfig } from '../diagnostics/SmartConfig.js';
+import { SmartConfigManager  } from '../diagnostics/SmartConfig.js';
+import type { SearchCriteria } from '../diagnostics/ElementDiscovery.js';
+import type { SmartConfig } from '../diagnostics/SmartConfig.js';
 
 const findElementsSchema = z.object({
   searchCriteria: z.object({
@@ -35,23 +37,23 @@ export const browserFindElements = defineTabTool({
     inputSchema: findElementsSchema,
   },
   handle: async (tab, params, response) => {
-    const { 
-      searchCriteria, 
-      maxResults, 
-      includeDiagnosticInfo, 
+    const {
+      searchCriteria,
+      maxResults,
+      includeDiagnosticInfo,
       useUnifiedSystem = true,
       enableEnhancedDiscovery = true,
       performanceThreshold = 500
     } = params;
-    
+
     let unifiedSystem: UnifiedDiagnosticSystem | null = null;
     let elementDiscovery: ElementDiscovery | null = null;
-    
+
     try {
       const startTime = Date.now();
       let alternatives: any[] = [];
       let operationResult: any;
-      
+
       if (useUnifiedSystem) {
         // Configure unified system with element discovery optimizations
         const configOverrides: Partial<SmartConfig> = {
@@ -108,34 +110,34 @@ export const browserFindElements = defineTabTool({
             }
           }
         };
-        
+
         unifiedSystem = UnifiedDiagnosticSystem.getInstance(tab.page, configOverrides);
-        
+
         // Use unified system for element discovery with enhanced error handling
         operationResult = await unifiedSystem.findAlternativeElements({
           originalSelector: '', // Not used in this context
           searchCriteria,
           maxResults
         });
-        
+
         if (operationResult.success) {
           alternatives = operationResult.data;
         } else {
           // Handle enhanced error from unified system
           const errorInfo = operationResult.error;
           let errorMessage = `Element discovery failed: ${errorInfo?.message || 'Unknown error'}`;
-          
+
           if (errorInfo?.suggestions && errorInfo.suggestions.length > 0) {
             errorMessage += '\n\nSuggestions:';
             errorInfo.suggestions.forEach((suggestion: string) => {
               errorMessage += `\n- ${suggestion}`;
             });
           }
-          
+
           response.addError(errorMessage);
           return;
         }
-        
+
         console.info(`[browser_find_elements] Used unified system (${operationResult.executionTime}ms)`);
       } else {
         // Legacy element discovery
@@ -145,10 +147,10 @@ export const browserFindElements = defineTabTool({
           searchCriteria,
           maxResults
         });
-        
+
         console.info('[browser_find_elements] Used legacy element discovery');
       }
-      
+
       const searchTime = Date.now() - startTime;
 
       if (alternatives.length === 0) {
@@ -166,9 +168,9 @@ export const browserFindElements = defineTabTool({
         resultsText.push(`${index + 1}. Selector: ${alt.selector}`);
         resultsText.push(`   Confidence: ${(alt.confidence * 100).toFixed(0)}%`);
         resultsText.push(`   Reason: ${alt.reason}`);
-        if (index < alternatives.length - 1) {
+        if (index < alternatives.length - 1)
           resultsText.push('');
-        }
+
       });
 
       // Add diagnostic information if requested
@@ -178,33 +180,33 @@ export const browserFindElements = defineTabTool({
           const diagResult = await unifiedSystem.analyzePageStructure();
           if (diagResult.success) {
             const diagnosticInfo = diagResult.data;
-            
+
             resultsText.push('', '### Enhanced Diagnostic Information');
             resultsText.push(`- Analysis time: ${diagResult.executionTime}ms`);
-            
-            if (diagResult.memoryUsage) {
+
+            if (diagResult.memoryUsage)
               resultsText.push(`- Memory usage: ${(diagResult.memoryUsage / 1024 / 1024).toFixed(2)}MB`);
-            }
-            
+
+
             if ('structureAnalysis' in diagnosticInfo) {
               // Parallel analysis result
               const structure = diagnosticInfo.structureAnalysis;
               resultsText.push(`- Page has ${structure.iframes.count} iframes detected: ${structure.iframes.detected}`);
               resultsText.push(`- Total visible elements: ${structure.elements.totalVisible}`);
               resultsText.push(`- Total interactable elements: ${structure.elements.totalInteractable}`);
-              
-              if (structure.modalStates.blockedBy.length > 0) {
+
+              if (structure.modalStates.blockedBy.length > 0)
                 resultsText.push(`- Page blocked by: ${structure.modalStates.blockedBy.join(', ')}`);
-              }
+
             } else {
               // Standard analysis result
               resultsText.push(`- Page has ${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`);
               resultsText.push(`- Total visible elements: ${diagnosticInfo.elements.totalVisible}`);
               resultsText.push(`- Total interactable elements: ${diagnosticInfo.elements.totalInteractable}`);
-              
-              if (diagnosticInfo.modalStates.blockedBy.length > 0) {
+
+              if (diagnosticInfo.modalStates.blockedBy.length > 0)
                 resultsText.push(`- Page blocked by: ${diagnosticInfo.modalStates.blockedBy.join(', ')}`);
-              }
+
             }
           } else {
             resultsText.push('', '### Diagnostic Information');
@@ -215,43 +217,43 @@ export const browserFindElements = defineTabTool({
           const pageAnalyzer = new PageAnalyzer(tab.page);
           try {
             const diagnosticInfo = await pageAnalyzer.analyzePageStructure();
-          
+
             resultsText.push('', '### Diagnostic Information');
             resultsText.push(`- Page has ${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`);
             resultsText.push(`- Total visible elements: ${diagnosticInfo.elements.totalVisible}`);
             resultsText.push(`- Total interactable elements: ${diagnosticInfo.elements.totalInteractable}`);
-            
-            if (diagnosticInfo.modalStates.blockedBy.length > 0) {
+
+            if (diagnosticInfo.modalStates.blockedBy.length > 0)
               resultsText.push(`- Page blocked by: ${diagnosticInfo.modalStates.blockedBy.join(', ')}`);
-            }
+
           } finally {
             await pageAnalyzer.dispose();
           }
         }
       }
-      
+
       // Add unified system performance information if available
       if (useUnifiedSystem && operationResult && enableEnhancedDiscovery) {
         resultsText.push('');
         resultsText.push('### Enhanced Discovery Information');
         resultsText.push(`- Discovery execution time: ${operationResult.executionTime}ms`);
-        
-        if (operationResult.memoryUsage) {
+
+        if (operationResult.memoryUsage)
           resultsText.push(`- Memory usage: ${(operationResult.memoryUsage / 1024 / 1024).toFixed(2)}MB`);
-        }
-        
-        if (operationResult.executionTime > performanceThreshold) {
+
+
+        if (operationResult.executionTime > performanceThreshold)
           resultsText.push(`- ⚠️ Discovery exceeded performance threshold (${performanceThreshold}ms)`);
-        } else {
+        else
           resultsText.push(`- ✅ Discovery within performance threshold`);
-        }
+
       }
-      
+
       // Track performance internally but don't report to agent unless it's critical
       const totalTime = Date.now() - startTime;
-      if (totalTime > 300) {
+      if (totalTime > 300)
         console.warn(`[Performance] browser_find_elements took ${totalTime}ms (target: <300ms)`);
-      }
+
 
       response.addResult(resultsText.join('\n'));
 
@@ -259,9 +261,9 @@ export const browserFindElements = defineTabTool({
       response.addError(`Error finding elements: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       // Cleanup: unified system manages its own lifecycle, only dispose legacy elementDiscovery
-      if (elementDiscovery) {
+      if (elementDiscovery)
         await elementDiscovery.dispose();
-      }
+
     }
   }
 });

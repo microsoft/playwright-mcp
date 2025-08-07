@@ -11,11 +11,11 @@ const console = defineTabTool({
   },
   handle: async (tab, params, response) => {
     const messages = tab.consoleMessages();
-    if (messages.length === 0) {
+    if (messages.length === 0)
       response.addResult('No console messages');
-    } else {
+    else
       messages.forEach(message => response.addResult(message.toString()));
-    }
+
   },
 });
 export default [

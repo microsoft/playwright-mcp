@@ -17,8 +17,12 @@ __tests__/
 test-results.json
 *-test.json
 
-# Serena cache
-.serena/cache/
+# Build outputs
+dist/
+benchmark/lib/
+
+# Serena
+.serena/
 
 # Request logs
 logs/

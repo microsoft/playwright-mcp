@@ -2,10 +2,10 @@
  * Element discovery for finding alternative elements
  */
 
-import type * as playwright from 'playwright';
-import type { IDisposable } from './PageAnalyzer.js';
 import { SmartHandleBatch } from './SmartHandle.js';
 import { DiagnosticError } from './DiagnosticError.js';
+import type * as playwright from 'playwright';
+import type { IDisposable } from './PageAnalyzer.js';
 
 export interface SearchCriteria {
   text?: string;
@@ -38,29 +38,30 @@ export class ElementDiscovery implements IDisposable {
   }
 
   async dispose(): Promise<void> {
-    if (this.isDisposed) return;
-    
+    if (this.isDisposed)
+      return;
+
     try {
       await this.smartHandleBatch.disposeAll();
     } catch (error) {
       console.warn('[ElementDiscovery] Failed to dispose smart handles:', error);
     }
-    
+
     this.page = null;
     this.isDisposed = true;
   }
 
   private checkDisposed(): void {
-    if (this.isDisposed) {
+    if (this.isDisposed)
       throw new Error('ElementDiscovery has been disposed');
-    }
+
   }
 
   private getPage(): playwright.Page {
     this.checkDisposed();
-    if (!this.page) {
+    if (!this.page)
       throw new Error('Page reference is null');
-    }
+
     return this.page;
   }
 
@@ -73,22 +74,22 @@ export class ElementDiscovery implements IDisposable {
       await element.dispose();
     } catch (error) {
       const diagnosticError = DiagnosticError.from(
-        error instanceof Error ? error : new Error('Unknown dispose error'),
-        'ElementDiscovery',
-        'dispose',
-        {
-          performanceImpact: 'low',
-          suggestions: [
-            'Element dispose failed but processing continues',
-            'This may indicate browser connection issues',
-            'Consider checking browser/page state'
-          ]
-        }
+          error instanceof Error ? error : new Error('Unknown dispose error'),
+          'ElementDiscovery',
+          'dispose',
+          {
+            performanceImpact: 'low',
+            suggestions: [
+              'Element dispose failed but processing continues',
+              'This may indicate browser connection issues',
+              'Consider checking browser/page state'
+            ]
+          }
       );
 
       console.warn(
-        `[ElementDiscovery:dispose] Failed to dispose element during ${operation}:`,
-        diagnosticError.toJSON()
+          `[ElementDiscovery:dispose] Failed to dispose element during ${operation}:`,
+          diagnosticError.toJSON()
       );
     }
   }
@@ -155,11 +156,12 @@ export class ElementDiscovery implements IDisposable {
     let totalFound = 0;
 
     for (const selector of strategies) {
-      if (totalFound >= maxResults) break;
+      if (totalFound >= maxResults)
+        break;
 
       try {
         const elements = await page.$$(selector);
-        
+
         for (const element of elements) {
           if (totalFound >= maxResults) {
             // Dispose excess elements immediately
@@ -172,16 +174,16 @@ export class ElementDiscovery implements IDisposable {
             const value = await element.getAttribute('value') || '';
             const placeholder = await element.getAttribute('placeholder') || '';
             const ariaLabel = await element.getAttribute('aria-label') || '';
-            
+
             const allText = [textContent, value, placeholder, ariaLabel].join(' ').trim();
-            
+
             // Calculate confidence based on text similarity
             const confidence = this.calculateTextSimilarity(text, allText);
-            
+
             if (confidence > 0.3) {
               // Wrap element in smart handle for automatic disposal
               const smartElement = this.smartHandleBatch.add(element);
-              
+
               alternatives.push({
                 selector: await this.generateSelector(element),
                 confidence,
@@ -216,7 +218,7 @@ export class ElementDiscovery implements IDisposable {
 
     try {
       const elements = await page.$$(`[role="${role}"]`);
-      
+
       for (const element of elements) {
         if (totalFound >= maxResults) {
           await this.safeDispose(element, `findByRole-excess-${totalFound}`);
@@ -225,10 +227,10 @@ export class ElementDiscovery implements IDisposable {
 
         try {
           const confidence = 0.7; // Base confidence for role match
-          
+
           // Wrap element in smart handle
           const smartElement = this.smartHandleBatch.add(element);
-          
+
           alternatives.push({
             selector: await this.generateSelector(element),
             confidence,
@@ -272,10 +274,10 @@ export class ElementDiscovery implements IDisposable {
 
         try {
           const confidence = 0.5; // Base confidence for tag name match
-          
+
           // Wrap element in smart handle
           const smartElement = this.smartHandleBatch.add(element);
-          
+
           alternatives.push({
             selector: await this.generateSelector(element),
             confidence,
@@ -302,11 +304,12 @@ export class ElementDiscovery implements IDisposable {
     let totalFound = 0;
 
     for (const [attrName, attrValue] of Object.entries(attributes)) {
-      if (totalFound >= maxResults) break;
+      if (totalFound >= maxResults)
+        break;
 
       try {
         const elements = await page.$$(`[${attrName}="${attrValue}"]`);
-        
+
         for (const element of elements) {
           if (totalFound >= maxResults) {
             await this.safeDispose(element, `findByAttributes-excess-${totalFound}`);
@@ -316,7 +319,7 @@ export class ElementDiscovery implements IDisposable {
           try {
             // Wrap element in smart handle
             const smartElement = this.smartHandleBatch.add(element);
-            
+
             alternatives.push({
               selector: await this.generateSelector(element),
               confidence: 0.9, // High confidence for exact attribute match
@@ -354,11 +357,12 @@ export class ElementDiscovery implements IDisposable {
     let totalFound = 0;
 
     for (const tagSelector of tags) {
-      if (totalFound >= maxResults) break;
+      if (totalFound >= maxResults)
+        break;
 
       try {
         const elements = await page.$$(tagSelector);
-        
+
         for (const element of elements) {
           if (totalFound >= maxResults) {
             await this.safeDispose(element, `findImplicitRole-excess-${totalFound}`);
@@ -368,7 +372,7 @@ export class ElementDiscovery implements IDisposable {
           try {
             // Wrap element in smart handle
             const smartElement = this.smartHandleBatch.add(element);
-            
+
             alternatives.push({
               selector: await this.generateSelector(element),
               confidence: 0.6,
@@ -393,15 +397,18 @@ export class ElementDiscovery implements IDisposable {
   private async generateSelector(element: playwright.ElementHandle): Promise<string> {
     return await element.evaluate(el => {
       // Generate a unique selector for the element
-      if (!(el instanceof Element)) return 'unknown';
-      
+      if (!(el instanceof Element))
+        return 'unknown';
+
       const tag = el.tagName.toLowerCase();
       const id = el.id ? `#${el.id}` : '';
       const classes = el.className ? `.${el.className.split(' ').join('.')}` : '';
-      
-      if (id) return `${tag}${id}`;
-      if (classes) return `${tag}${classes}`;
-      
+
+      if (id)
+        return `${tag}${id}`;
+      if (classes)
+        return `${tag}${classes}`;
+
       // Fallback to nth-child selector
       const parent = el.parentElement;
       if (parent) {
@@ -409,7 +416,7 @@ export class ElementDiscovery implements IDisposable {
         const index = siblings.indexOf(el as Element) + 1;
         return `${parent.tagName.toLowerCase()} > ${tag}:nth-child(${index})`;
       }
-      
+
       return tag;
     });
   }
@@ -417,11 +424,14 @@ export class ElementDiscovery implements IDisposable {
   private calculateTextSimilarity(target: string, candidate: string): number {
     const targetLower = target.toLowerCase().trim();
     const candidateLower = candidate.toLowerCase().trim();
-    
-    if (targetLower === candidateLower) return 1.0;
-    if (candidateLower.includes(targetLower)) return 0.8;
-    if (targetLower.includes(candidateLower)) return 0.6;
-    
+
+    if (targetLower === candidateLower)
+      return 1.0;
+    if (candidateLower.includes(targetLower))
+      return 0.8;
+    if (targetLower.includes(candidateLower))
+      return 0.6;
+
     // Simple Levenshtein distance-based similarity
     const distance = this.levenshteinDistance(targetLower, candidateLower);
     const maxLen = Math.max(targetLower.length, candidateLower.length);
@@ -429,26 +439,28 @@ export class ElementDiscovery implements IDisposable {
   }
 
   private levenshteinDistance(a: string, b: string): number {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
+    if (a.length === 0)
+      return b.length;
+    if (b.length === 0)
+      return a.length;
 
     const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
 
-    for (let i = 0; i <= a.length; i += 1) {
+    for (let i = 0; i <= a.length; i += 1)
       matrix[0][i] = i;
-    }
 
-    for (let j = 0; j <= b.length; j += 1) {
+
+    for (let j = 0; j <= b.length; j += 1)
       matrix[j][0] = j;
-    }
+
 
     for (let j = 1; j <= b.length; j += 1) {
       for (let i = 1; i <= a.length; i += 1) {
         const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
         matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1,
-          matrix[j - 1][i] + 1,
-          matrix[j - 1][i - 1] + indicator,
+            matrix[j][i - 1] + 1,
+            matrix[j - 1][i] + 1,
+            matrix[j - 1][i - 1] + indicator,
         );
       }
     }
@@ -478,7 +490,7 @@ export class ElementDiscovery implements IDisposable {
     activeHandles: number;
     isDisposed: boolean;
     maxBatchSize: number;
-  } {
+    } {
     return {
       activeHandles: this.smartHandleBatch.getActiveCount(),
       isDisposed: this.isDisposed,

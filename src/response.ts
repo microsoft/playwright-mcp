@@ -297,7 +297,7 @@ ${this._code.join('\n')}
       try {
         // Check if navigation is in progress
         const isNavigating = await this._isPageNavigating(currentTab);
-        
+
         if (isNavigating && attempt < maxRetries) {
           // Wait for navigation to complete before snapshot
           await this._waitForNavigationStability(currentTab);
@@ -306,16 +306,16 @@ ${this._code.join('\n')}
         // Attempt snapshot capture
         if (options?.selector || options?.maxLength) {
           this._tabSnapshot = await currentTab.capturePartialSnapshot(
-            options.selector,
-            options.maxLength
+              options.selector,
+              options.maxLength
           );
         } else {
           this._tabSnapshot = await currentTab.captureSnapshot();
         }
-        
+
         // Success - break out of retry loop
         break;
-        
+
       } catch (error: any) {
         const errorMessage = error?.message || '';
         const isContextError = errorMessage.includes('Execution context was destroyed') ||
@@ -350,7 +350,8 @@ ${this._code.join('\n')}
       // Check Tab's internal navigation state if available
       if ('isNavigating' in tab && typeof (tab as any).isNavigating === 'function') {
         const tabNavigating = (tab as any).isNavigating();
-        if (tabNavigating) return true;
+        if (tabNavigating)
+          return true;
       }
 
       // Multiple checks for navigation state
@@ -390,7 +391,7 @@ ${this._code.join('\n')}
       try {
         await tab.waitForLoadState('load', { timeout: 1000 });
         await tab.waitForLoadState('networkidle', { timeout: 500 }).catch(() => {});
-        
+
         // Additional stability check
         const isStable = await tab.page.evaluate(() => document.readyState === 'complete').catch(() => false);
         if (isStable) {
@@ -401,7 +402,7 @@ ${this._code.join('\n')}
       } catch (error) {
         // Continue waiting
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
@@ -417,7 +418,7 @@ ${this._code.join('\n')}
       // Create a minimal snapshot with available information
       const url = tab.page.url();
       const title = await tab.page.title().catch(() => '');
-      
+
       return {
         url,
         title,

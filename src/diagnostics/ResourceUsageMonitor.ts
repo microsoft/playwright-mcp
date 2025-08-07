@@ -1,6 +1,6 @@
 /**
  * ResourceUsageMonitor - Phase 2 Resource Monitoring System
- * 
+ *
  * Monitors memory usage, CPU time, and operation timelines for parallel analysis
  */
 
@@ -16,7 +16,7 @@ export class ResourceUsageMonitor {
   startMonitoring(operationName: string): void {
     const startTime = Date.now();
     const startMemory = process.memoryUsage();
-    
+
     this.operations.set(operationName, {
       startTime,
       startMemory
@@ -37,9 +37,9 @@ export class ResourceUsageMonitor {
    */
   async stopMonitoring(operationName: string): Promise<ResourceUsage> {
     const operation = this.operations.get(operationName);
-    if (!operation) {
+    if (!operation)
       throw new Error(`Operation '${operationName}' was not started or already stopped`);
-    }
+
 
     const endTime = Date.now();
     const endMemory = process.memoryUsage();
@@ -56,10 +56,10 @@ export class ResourceUsageMonitor {
 
     // Update timeline
     const timelineIndex = this.timeline.findIndex(
-      (entry, index) => entry.operationName === operationName && !entry.endTime && 
+        (entry, index) => entry.operationName === operationName && !entry.endTime &&
       index === this.timeline.map(t => t.operationName).lastIndexOf(operationName)
     );
-    
+
     if (timelineIndex !== -1) {
       this.timeline[timelineIndex].endTime = endTime;
       this.timeline[timelineIndex].duration = duration;
@@ -96,7 +96,7 @@ export class ResourceUsageMonitor {
   getResourceUsage(): ResourceUsage {
     const memoryUsage = process.memoryUsage();
     const currentTime = Date.now();
-    
+
     return {
       memoryUsage: this.formatMemoryUsage(memoryUsage),
       cpuTime: 0, // Not available in Node.js without additional measurement
@@ -106,7 +106,7 @@ export class ResourceUsageMonitor {
         duration: entry.duration || 0,
         memoryDelta: 0 // Would need baseline to calculate
       })),
-      duration: this.timeline.length > 0 ? 
+      duration: this.timeline.length > 0 ?
         currentTime - Math.min(...this.timeline.map(t => t.startTime)) : 0,
       operationName: 'ResourceUsageMonitor'
     };
@@ -116,9 +116,9 @@ export class ResourceUsageMonitor {
    * Get peak memory usage from timeline
    */
   getPeakMemoryUsage(): number {
-    if (this.timeline.length === 0) {
+    if (this.timeline.length === 0)
       return 0;
-    }
+
 
     return Math.max(...this.timeline.map(entry => entry.memoryUsage?.used || entry.memoryUsage?.heapUsed || 0));
   }

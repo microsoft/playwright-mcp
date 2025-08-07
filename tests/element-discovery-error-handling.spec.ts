@@ -41,15 +41,15 @@ test.describe('ElementDiscovery Error Handling', () => {
   });
 
   test.afterEach(async () => {
-    if (elementDiscovery) {
+    if (elementDiscovery)
       await elementDiscovery.dispose();
-    }
+
   });
 
   test('should handle dispose errors gracefully in findByText', async () => {
     // Test the critical path where dispose() fails
     const startTime = Date.now();
-    
+
     const alternatives = await elementDiscovery.findAlternativeElements({
       originalSelector: '#test',
       searchCriteria: { text: 'test' },
@@ -57,10 +57,10 @@ test.describe('ElementDiscovery Error Handling', () => {
     });
 
     const executionTime = Date.now() - startTime;
-    
+
     // Should continue processing despite dispose errors
     expect(alternatives.length).toBeGreaterThan(0);
-    
+
     // Should not take excessive time due to dispose errors
     expect(executionTime).toBeLessThan(1000);
   });
@@ -82,7 +82,7 @@ test.describe('ElementDiscovery Error Handling', () => {
     await (elementDiscovery as any).safeDispose(mockElement, 'test-operation');
 
     // Dispose errors should be logged as warnings with DiagnosticError context
-    expect(warnCalls.some(call => 
+    expect(warnCalls.some(call =>
       call[0].includes('[ElementDiscovery:dispose]')
     )).toBe(true);
 
@@ -125,7 +125,7 @@ test.describe('ElementDiscovery Error Handling', () => {
 
   test('should maintain resource cleanup guarantees', async () => {
     let disposeCallCount = 0;
-    
+
     const mockElement = {
       dispose: async () => {
         disposeCallCount++;
@@ -143,9 +143,9 @@ test.describe('ElementDiscovery Error Handling', () => {
 
     // Should attempt dispose even if it fails
     expect(disposeCallCount).toBeGreaterThan(0);
-    
+
     // Should log dispose failures appropriately
-    expect(warnCalls.some(call => 
+    expect(warnCalls.some(call =>
       call[0].includes('dispose')
     )).toBe(true);
 
@@ -154,18 +154,18 @@ test.describe('ElementDiscovery Error Handling', () => {
 
   test('should create properly structured DiagnosticError for dispose failures', async () => {
     const originalError = new Error('Element handle is invalid');
-    
+
     const diagnosticError = DiagnosticError.from(
-      originalError,
-      'ElementDiscovery',
-      'dispose',
-      {
-        performanceImpact: 'medium',
-        suggestions: [
-          'Ensure elements are valid before disposal',
-          'Implement retry logic for dispose operations'
-        ]
-      }
+        originalError,
+        'ElementDiscovery',
+        'dispose',
+        {
+          performanceImpact: 'medium',
+          suggestions: [
+            'Ensure elements are valid before disposal',
+            'Implement retry logic for dispose operations'
+          ]
+        }
     );
 
     expect(diagnosticError.component).toBe('ElementDiscovery');
@@ -177,16 +177,16 @@ test.describe('ElementDiscovery Error Handling', () => {
 
   test('should handle memory pressure scenarios during dispose', async () => {
     let memoryUsage = 80 * 1024 * 1024; // Start at 80MB (near limit)
-    
+
     const mockElement = {
       dispose: async () => {
         memoryUsage += 30 * 1024 * 1024; // Exceed limit by 30MB
         throw DiagnosticError.resource(
-          'Memory limit exceeded during dispose',
-          'ElementDiscovery',
-          'dispose',
-          memoryUsage,
-          100 * 1024 * 1024 // 100MB limit
+            'Memory limit exceeded during dispose',
+            'ElementDiscovery',
+            'dispose',
+            memoryUsage,
+            100 * 1024 * 1024 // 100MB limit
         );
       }
     };
@@ -199,7 +199,7 @@ test.describe('ElementDiscovery Error Handling', () => {
     await (elementDiscovery as any).safeDispose(mockElement, 'memory-pressure-test');
 
     // Should log resource-related warnings
-    expect(warnCalls.some(call => 
+    expect(warnCalls.some(call =>
       call[0].includes('dispose')
     )).toBe(true);
 

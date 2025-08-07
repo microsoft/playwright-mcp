@@ -28,9 +28,9 @@ export class FrameReferenceManager implements IDisposable {
    * Track a frame and store its metadata
    */
   trackFrame(frame: playwright.Frame): void {
-    if (this.disposed) {
+    if (this.disposed)
       throw new Error('FrameReferenceManager has been disposed');
-    }
+
 
     try {
       const metadata: FrameMetadata = {
@@ -76,16 +76,17 @@ export class FrameReferenceManager implements IDisposable {
    */
   updateElementCount(frame: playwright.Frame, count: number): void {
     const metadata = this.frameRefs.get(frame);
-    if (metadata) {
+    if (metadata)
       metadata.elementCount = count;
-    }
+
   }
 
   /**
    * Clean up detached frames that are no longer accessible
    */
   async cleanupDetachedFrames(): Promise<void> {
-    if (this.disposed) return;
+    if (this.disposed)
+      return;
 
     const framesToRemove: playwright.Frame[] = [];
 
@@ -99,21 +100,21 @@ export class FrameReferenceManager implements IDisposable {
       } catch (error) {
         // Frame is likely detached
         const metadata = this.frameRefs.get(frame);
-        if (metadata) {
+        if (metadata)
           metadata.isDetached = true;
-        }
+
         framesToRemove.push(frame);
       }
     }
 
     // Remove detached frames from active tracking
-    for (const frame of framesToRemove) {
+    for (const frame of framesToRemove)
       this.activeFrames.delete(frame);
-    }
 
-    if (framesToRemove.length > 0) {
+
+    if (framesToRemove.length > 0)
       console.log(`[FrameReferenceManager] Cleaned up ${framesToRemove.length} detached frames`);
-    }
+
   }
 
   /**
@@ -124,7 +125,7 @@ export class FrameReferenceManager implements IDisposable {
     totalTracked: number;
     detachedCount: number;
     averageElementCount: number;
-  } {
+    } {
     let detachedCount = 0;
     let totalElements = 0;
     let framesWithElementCount = 0;
@@ -132,9 +133,9 @@ export class FrameReferenceManager implements IDisposable {
     for (const frame of this.activeFrames) {
       const metadata = this.frameRefs.get(frame);
       if (metadata) {
-        if (metadata.isDetached) {
+        if (metadata.isDetached)
           detachedCount++;
-        }
+
         if (typeof metadata.elementCount === 'number') {
           totalElements += metadata.elementCount;
           framesWithElementCount++;
@@ -142,8 +143,8 @@ export class FrameReferenceManager implements IDisposable {
       }
     }
 
-    const averageElementCount = framesWithElementCount > 0 
-      ? totalElements / framesWithElementCount 
+    const averageElementCount = framesWithElementCount > 0
+      ? totalElements / framesWithElementCount
       : 0;
 
     return {
@@ -160,7 +161,7 @@ export class FrameReferenceManager implements IDisposable {
   findPerformanceIssues(): {
     largeFrames: Array<{ frame: playwright.Frame; elementCount: number; url: string }>;
     oldFrames: Array<{ frame: playwright.Frame; age: number; url: string }>;
-  } {
+    } {
     const now = Date.now();
     const largeFrames: Array<{ frame: playwright.Frame; elementCount: number; url: string }> = [];
     const oldFrames: Array<{ frame: playwright.Frame; age: number; url: string }> = [];
@@ -201,7 +202,8 @@ export class FrameReferenceManager implements IDisposable {
   }
 
   async dispose(): Promise<void> {
-    if (this.disposed) return;
+    if (this.disposed)
+      return;
 
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);

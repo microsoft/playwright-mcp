@@ -129,7 +129,7 @@ export class DiagnosticThresholds {
     // @ts-ignore - Type-safe conversion ensuring all properties are defined (guaranteed by mergeWithDefaults)
     const thresholds = this.currentThresholds;
     return {
-      executionTime: { 
+      executionTime: {
         // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
         pageAnalysis: thresholds.executionTime.pageAnalysis,
         // @ts-ignore
@@ -139,7 +139,7 @@ export class DiagnosticThresholds {
         // @ts-ignore
         parallelAnalysis: thresholds.executionTime.parallelAnalysis
       },
-      memory: { 
+      memory: {
         // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
         maxMemoryUsage: thresholds.memory.maxMemoryUsage,
         // @ts-ignore
@@ -147,7 +147,7 @@ export class DiagnosticThresholds {
         // @ts-ignore
         gcTriggerThreshold: thresholds.memory.gcTriggerThreshold
       },
-      performance: { 
+      performance: {
         // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
         domElementLimit: thresholds.performance.domElementLimit,
         // @ts-ignore
@@ -155,7 +155,7 @@ export class DiagnosticThresholds {
         // @ts-ignore
         largeSubtreeThreshold: thresholds.performance.largeSubtreeThreshold
       },
-      dom: { 
+      dom: {
         // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
         totalElements: thresholds.dom.totalElements,
         // @ts-ignore
@@ -173,7 +173,7 @@ export class DiagnosticThresholds {
         // @ts-ignore
         largeSubtreeThreshold: thresholds.dom.largeSubtreeThreshold
       },
-      interaction: { 
+      interaction: {
         // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
         clickableElements: thresholds.interaction.clickableElements,
         // @ts-ignore
@@ -181,7 +181,7 @@ export class DiagnosticThresholds {
         // @ts-ignore
         clickableHigh: thresholds.interaction.clickableHigh
       },
-      layout: { 
+      layout: {
         // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
         fixedElements: thresholds.layout.fixedElements,
         // @ts-ignore
@@ -238,101 +238,101 @@ export class DiagnosticThresholds {
   private mergeWithDefaults(config: DiagnosticThresholdsConfig): Required<DiagnosticThresholdsConfig> {
     // Deep clone defaults and explicitly cast to ensure TypeScript recognizes all properties as defined
     const result = JSON.parse(JSON.stringify(DEFAULT_THRESHOLDS)) as Required<DiagnosticThresholdsConfig>;
-    
+
     // Override with provided config values using explicit checks and assignments
     if (config.executionTime) {
-      if (config.executionTime.pageAnalysis !== undefined) {
+      if (config.executionTime.pageAnalysis !== undefined)
         result.executionTime.pageAnalysis = config.executionTime.pageAnalysis;
-      }
-      if (config.executionTime.elementDiscovery !== undefined) {
+
+      if (config.executionTime.elementDiscovery !== undefined)
         result.executionTime.elementDiscovery = config.executionTime.elementDiscovery;
-      }
-      if (config.executionTime.resourceMonitoring !== undefined) {
+
+      if (config.executionTime.resourceMonitoring !== undefined)
         result.executionTime.resourceMonitoring = config.executionTime.resourceMonitoring;
-      }
-      if (config.executionTime.parallelAnalysis !== undefined) {
+
+      if (config.executionTime.parallelAnalysis !== undefined)
         result.executionTime.parallelAnalysis = config.executionTime.parallelAnalysis;
-      }
+
     }
-    
+
     if (config.memory) {
-      if (config.memory.maxMemoryUsage !== undefined) {
+      if (config.memory.maxMemoryUsage !== undefined)
         result.memory.maxMemoryUsage = config.memory.maxMemoryUsage;
-      }
-      if (config.memory.memoryLeakThreshold !== undefined) {
+
+      if (config.memory.memoryLeakThreshold !== undefined)
         result.memory.memoryLeakThreshold = config.memory.memoryLeakThreshold;
-      }
-      if (config.memory.gcTriggerThreshold !== undefined) {
+
+      if (config.memory.gcTriggerThreshold !== undefined)
         result.memory.gcTriggerThreshold = config.memory.gcTriggerThreshold;
-      }
+
     }
-    
+
     if (config.performance) {
-      if (config.performance.domElementLimit !== undefined) {
+      if (config.performance.domElementLimit !== undefined)
         result.performance.domElementLimit = config.performance.domElementLimit;
-      }
-      if (config.performance.maxDepthLimit !== undefined) {
+
+      if (config.performance.maxDepthLimit !== undefined)
         result.performance.maxDepthLimit = config.performance.maxDepthLimit;
-      }
-      if (config.performance.largeSubtreeThreshold !== undefined) {
+
+      if (config.performance.largeSubtreeThreshold !== undefined)
         result.performance.largeSubtreeThreshold = config.performance.largeSubtreeThreshold;
-      }
+
     }
-    
+
     if (config.dom) {
-      if (config.dom.totalElements !== undefined) {
+      if (config.dom.totalElements !== undefined)
         result.dom.totalElements = config.dom.totalElements;
-      }
-      if (config.dom.maxDepth !== undefined) {
+
+      if (config.dom.maxDepth !== undefined)
         result.dom.maxDepth = config.dom.maxDepth;
-      }
-      if (config.dom.largeSubtrees !== undefined) {
+
+      if (config.dom.largeSubtrees !== undefined)
         result.dom.largeSubtrees = config.dom.largeSubtrees;
-      }
-      if (config.dom.elementsWarning !== undefined) {
+
+      if (config.dom.elementsWarning !== undefined)
         result.dom.elementsWarning = config.dom.elementsWarning;
-      }
-      if (config.dom.elementsDanger !== undefined) {
+
+      if (config.dom.elementsDanger !== undefined)
         result.dom.elementsDanger = config.dom.elementsDanger;
-      }
-      if (config.dom.depthWarning !== undefined) {
+
+      if (config.dom.depthWarning !== undefined)
         result.dom.depthWarning = config.dom.depthWarning;
-      }
-      if (config.dom.depthDanger !== undefined) {
+
+      if (config.dom.depthDanger !== undefined)
         result.dom.depthDanger = config.dom.depthDanger;
-      }
-      if (config.dom.largeSubtreeThreshold !== undefined) {
+
+      if (config.dom.largeSubtreeThreshold !== undefined)
         result.dom.largeSubtreeThreshold = config.dom.largeSubtreeThreshold;
-      }
+
     }
-    
+
     if (config.interaction) {
-      if (config.interaction.clickableElements !== undefined) {
+      if (config.interaction.clickableElements !== undefined)
         result.interaction.clickableElements = config.interaction.clickableElements;
-      }
-      if (config.interaction.formElements !== undefined) {
+
+      if (config.interaction.formElements !== undefined)
         result.interaction.formElements = config.interaction.formElements;
-      }
-      if (config.interaction.clickableHigh !== undefined) {
+
+      if (config.interaction.clickableHigh !== undefined)
         result.interaction.clickableHigh = config.interaction.clickableHigh;
-      }
+
     }
-    
+
     if (config.layout) {
-      if (config.layout.fixedElements !== undefined) {
+      if (config.layout.fixedElements !== undefined)
         result.layout.fixedElements = config.layout.fixedElements;
-      }
-      if (config.layout.highZIndexElements !== undefined) {
+
+      if (config.layout.highZIndexElements !== undefined)
         result.layout.highZIndexElements = config.layout.highZIndexElements;
-      }
-      if (config.layout.highZIndexThreshold !== undefined) {
+
+      if (config.layout.highZIndexThreshold !== undefined)
         result.layout.highZIndexThreshold = config.layout.highZIndexThreshold;
-      }
-      if (config.layout.excessiveZIndexThreshold !== undefined) {
+
+      if (config.layout.excessiveZIndexThreshold !== undefined)
         result.layout.excessiveZIndexThreshold = config.layout.excessiveZIndexThreshold;
-      }
+
     }
-    
+
     return result;
   }
 
@@ -351,85 +351,85 @@ export class DiagnosticThresholds {
 
     // 実行時間の閾値検証
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
-    if (exec.pageAnalysis <= 0) {
+    if (exec.pageAnalysis <= 0)
       errors.push('pageAnalysis execution time must be positive');
-    }
+
     // @ts-ignore
-    if (exec.elementDiscovery <= 0) {
+    if (exec.elementDiscovery <= 0)
       errors.push('elementDiscovery execution time must be positive');
-    }
+
     // @ts-ignore
-    if (exec.resourceMonitoring <= 0) {
+    if (exec.resourceMonitoring <= 0)
       errors.push('resourceMonitoring execution time must be positive');
-    }
+
     // @ts-ignore
-    if (exec.parallelAnalysis <= 0) {
+    if (exec.parallelAnalysis <= 0)
       errors.push('parallelAnalysis execution time must be positive');
-    }
+
 
     // メモリ閾値検証
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
-    if (mem.maxMemoryUsage <= 0) {
+    if (mem.maxMemoryUsage <= 0)
       errors.push('maxMemoryUsage must be positive');
-    }
+
     // @ts-ignore
-    if (mem.memoryLeakThreshold <= 0) {
+    if (mem.memoryLeakThreshold <= 0)
       errors.push('memoryLeakThreshold must be positive');
-    }
+
     // @ts-ignore
-    if (mem.gcTriggerThreshold <= 0) {
+    if (mem.gcTriggerThreshold <= 0)
       errors.push('gcTriggerThreshold must be positive');
-    }
+
     // @ts-ignore
-    if (mem.memoryLeakThreshold >= mem.maxMemoryUsage) {
+    if (mem.memoryLeakThreshold >= mem.maxMemoryUsage)
       errors.push('memoryLeakThreshold should be less than maxMemoryUsage');
-    }
+
 
     // DOM閾値検証
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
-    if (dom.elementsWarning <= 0) {
+    if (dom.elementsWarning <= 0)
       errors.push('elementsWarning must be positive');
-    }
+
     // @ts-ignore
-    if (dom.elementsDanger <= dom.elementsWarning) {
+    if (dom.elementsDanger <= dom.elementsWarning)
       errors.push('elementsDanger must be greater than elementsWarning');
-    }
+
     // @ts-ignore
-    if (dom.depthWarning <= 0) {
+    if (dom.depthWarning <= 0)
       errors.push('depthWarning must be positive');
-    }
+
     // @ts-ignore
-    if (dom.depthDanger <= dom.depthWarning) {
+    if (dom.depthDanger <= dom.depthWarning)
       errors.push('depthDanger must be greater than depthWarning');
-    }
+
     // @ts-ignore
-    if (dom.largeSubtreeThreshold <= 0) {
+    if (dom.largeSubtreeThreshold <= 0)
       errors.push('largeSubtreeThreshold must be positive');
-    }
+
 
     // インタラクション閾値検証
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
-    if (inter.clickableElements <= 0) {
+    if (inter.clickableElements <= 0)
       errors.push('clickableElements threshold must be positive');
-    }
+
     // @ts-ignore
-    if (inter.formElements <= 0) {
+    if (inter.formElements <= 0)
       errors.push('formElements threshold must be positive');
-    }
+
 
     // レイアウト閾値検証
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
-    if (layout.highZIndexThreshold <= 0) {
+    if (layout.highZIndexThreshold <= 0)
       errors.push('highZIndexThreshold must be positive');
-    }
-    // @ts-ignore
-    if (layout.excessiveZIndexThreshold <= layout.highZIndexThreshold) {
-      errors.push('excessiveZIndexThreshold must be greater than highZIndexThreshold');
-    }
 
-    if (errors.length > 0) {
+    // @ts-ignore
+    if (layout.excessiveZIndexThreshold <= layout.highZIndexThreshold)
+      errors.push('excessiveZIndexThreshold must be greater than highZIndexThreshold');
+
+
+    if (errors.length > 0)
       throw new Error(`Invalid threshold configuration: ${errors.join(', ')}`);
-    }
+
   }
 
   /**
@@ -440,7 +440,7 @@ export class DiagnosticThresholds {
     customizations: string[];
     warnings: string[];
     defaultsUsed: string[];
-  } {
+    } {
     const customizations: string[] = [];
     const warnings: string[] = [];
     const defaultsUsed: string[] = [];
@@ -456,42 +456,42 @@ export class DiagnosticThresholds {
     const defaultsLayout = defaults.layout;
 
     // DOM閾値のカスタマイゼーション検出
-    if (currentDom.elementsWarning !== defaultsDom.elementsWarning) {
+    if (currentDom.elementsWarning !== defaultsDom.elementsWarning)
       customizations.push(`DOM elements warning: ${currentDom.elementsWarning} (default: ${defaultsDom.elementsWarning})`);
-    }
-    if (currentDom.elementsDanger !== defaultsDom.elementsDanger) {
+
+    if (currentDom.elementsDanger !== defaultsDom.elementsDanger)
       customizations.push(`DOM elements danger: ${currentDom.elementsDanger} (default: ${defaultsDom.elementsDanger})`);
-    }
-    if (currentDom.depthWarning !== defaultsDom.depthWarning) {
+
+    if (currentDom.depthWarning !== defaultsDom.depthWarning)
       customizations.push(`DOM depth warning: ${currentDom.depthWarning} (default: ${defaultsDom.depthWarning})`);
-    }
-    if (currentDom.depthDanger !== defaultsDom.depthDanger) {
+
+    if (currentDom.depthDanger !== defaultsDom.depthDanger)
       customizations.push(`DOM depth danger: ${currentDom.depthDanger} (default: ${defaultsDom.depthDanger})`);
-    }
+
 
     // レイアウト閾値のカスタマイゼーション検出
-    if (currentLayout.excessiveZIndexThreshold !== defaultsLayout.excessiveZIndexThreshold) {
+    if (currentLayout.excessiveZIndexThreshold !== defaultsLayout.excessiveZIndexThreshold)
       customizations.push(`Z-index excessive: ${currentLayout.excessiveZIndexThreshold} (default: ${defaultsLayout.excessiveZIndexThreshold})`);
-    }
+
 
     // 警告レベルの判定
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
-    if (currentDom.elementsWarning > 2000) {
+    if (currentDom.elementsWarning > 2000)
       warnings.push('DOM elements warning threshold is very high - may not catch performance issues early');
-    }
+
     // @ts-ignore
-    if (currentDom.depthWarning > 25) {
+    if (currentDom.depthWarning > 25)
       warnings.push('DOM depth warning threshold is very high - deeply nested structures may cause performance issues');
-    }
+
     // @ts-ignore
-    if (currentLayout.excessiveZIndexThreshold < 1000) {
+    if (currentLayout.excessiveZIndexThreshold < 1000)
       warnings.push('Excessive z-index threshold is low - may generate false positives');
-    }
+
 
     // デフォルト値が使用されている項目
-    if (customizations.length === 0) {
+    if (customizations.length === 0)
       defaultsUsed.push('All thresholds using default values');
-    }
+
 
     return {
       status: 'valid',

@@ -1,6 +1,6 @@
 /**
  * ParallelPageAnalyzer - Phase 2 Parallel Analysis Engine
- * 
+ *
  * Performs parallel structure and performance analysis with resource monitoring
  */
 
@@ -55,17 +55,17 @@ export class ParallelPageAnalyzer {
       // Process results
       results.forEach((result, index) => {
         const stepName = index === 0 ? 'structure-analysis' : 'performance-metrics';
-        
+
         if (result.status === 'fulfilled') {
           const { data, step } = result.value;
           analysisSteps.push(step);
           console.info(`[ParallelPageAnalyzer] Step '${stepName}' completed successfully in ${step.duration}ms`);
-          
-          if (stepName === 'structure-analysis') {
+
+          if (stepName === 'structure-analysis')
             structureAnalysis = data;
-          } else {
+          else
             performanceMetrics = data;
-          }
+
         } else {
           const errorMsg = result.reason?.message || 'Unknown error';
           console.error(`[ParallelPageAnalyzer] Step '${stepName}' failed: ${errorMsg}`);
@@ -111,7 +111,7 @@ export class ParallelPageAnalyzer {
    * Execute analysis step with individual monitoring
    */
   private async executeWithMonitoring<T>(
-    stepName: string, 
+    stepName: string,
     analysisFunction: () => Promise<T>
   ): Promise<{ data: T; step: { step: string; duration: number; memoryDelta: number } }> {
     console.info(`[ParallelPageAnalyzer] Starting step: ${stepName}`);
