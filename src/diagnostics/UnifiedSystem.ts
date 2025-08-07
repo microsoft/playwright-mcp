@@ -9,7 +9,6 @@ import { ParallelPageAnalyzer } from './ParallelPageAnalyzer.js';
 import { ElementDiscovery } from './ElementDiscovery.js';
 import { ResourceManager } from './ResourceManager.js';
 import { EnhancedErrorHandler } from './EnhancedErrorHandler.js';
-import { ResourceUsageMonitor } from './ResourceUsageMonitor.js';
 import type { DiagnosticComponent } from './DiagnosticError.js';
 import type { SmartConfig } from './SmartConfig.js';
 import type * as playwright from 'playwright';
@@ -36,7 +35,6 @@ export interface OperationResult<T = any> {
   data?: T;
   error?: DiagnosticError;
   executionTime: number;
-  memoryUsage?: number;
 }
 
 export class UnifiedDiagnosticSystem {
@@ -49,7 +47,6 @@ export class UnifiedDiagnosticSystem {
   private elementDiscovery?: ElementDiscovery;
   private resourceManager?: ResourceManager;
   private errorHandler?: EnhancedErrorHandler;
-  private resourceMonitor?: ResourceUsageMonitor;
 
   // Initialization state management
   private isInitialized: boolean = false;
@@ -151,8 +148,6 @@ export class UnifiedDiagnosticSystem {
             this.parallelAnalyzer = new ParallelPageAnalyzer(this.page);
 
             // Initialize optional components based on configuration
-            if (this.configManager.getConfig().features.enableResourceLeakDetection)
-              this.resourceMonitor = new ResourceUsageMonitor();
 
           }
         ]
@@ -231,10 +226,6 @@ export class UnifiedDiagnosticSystem {
 
     if (this.parallelAnalyzer)
       components.push(this.parallelAnalyzer as any);
-
-    if (this.resourceMonitor)
-      components.push(this.resourceMonitor as any);
-
   }
 
   private async cleanupPartialInitialization(components: Array<{ dispose: () => Promise<void> }>): Promise<void> {
@@ -256,7 +247,6 @@ export class UnifiedDiagnosticSystem {
     this.elementDiscovery = undefined;
     this.resourceManager = undefined;
     this.errorHandler = undefined;
-    this.resourceMonitor = undefined;
   }
 
   /**
@@ -331,12 +321,6 @@ export class UnifiedDiagnosticSystem {
   private setupConfigurationListener(): void {
     this.configManager.onConfigChange(config => {
       // console.info('[UnifiedSystem] Configuration updated, reinitializing components if needed');
-
-      // Update resource monitor based on new configuration
-      if (config.features.enableResourceLeakDetection && !this.resourceMonitor) {
-        // Resource monitor would need to be reinitialized
-        // console.info('[UnifiedSystem] Resource monitoring enabled');
-      }
     });
   }
 
@@ -353,9 +337,6 @@ export class UnifiedDiagnosticSystem {
       component.toLowerCase() as 'pageAnalyzer' | 'elementDiscovery' | 'resourceManager'
     );
 
-    let resourceSnapshot: any;
-    if (this.resourceMonitor && (options?.enableResourceMonitoring ?? config.performance.enableResourceMonitoring))
-      resourceSnapshot = await this.resourceMonitor.getResourceUsage();
 
 
     try {
@@ -373,19 +354,11 @@ export class UnifiedDiagnosticSystem {
 
       // Check for performance issues
 
-      // Calculate memory usage if monitoring is enabled
-      let memoryUsage: number | undefined;
-      if (resourceSnapshot && this.resourceMonitor) {
-        const currentUsage = await this.resourceMonitor.getResourceUsage();
-        memoryUsage = currentUsage.memoryUsage.heapUsed - resourceSnapshot.memoryUsage.heapUsed;
-
-      }
 
       return {
         success: true,
         data: result,
-        executionTime,
-        memoryUsage
+        executionTime
       };
 
     } catch (error) {
@@ -497,7 +470,6 @@ export class UnifiedDiagnosticSystem {
             component: error.component,
             operation: error.operation,
             executionTime: error.executionTime,
-            memoryUsage: error.memoryUsage,
             performanceImpact: error.performanceImpact,
             suggestions: [...error.suggestions, ...(enrichedPlaywrightError.suggestions || [])]
           },
@@ -820,10 +792,6 @@ export class UnifiedDiagnosticSystem {
 
       if (this.resourceManager)
         disposePromises.push(this.resourceManager.dispose());
-
-      if (this.resourceMonitor)
-        this.resourceMonitor.dispose(); // dispose() returns void, not Promise<void>
-
 
       await Promise.all(disposePromises);
 

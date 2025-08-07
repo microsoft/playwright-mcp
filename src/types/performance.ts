@@ -174,11 +174,12 @@ export interface PerformanceOptimization {
 export interface ParallelAnalysisResult {
   structureAnalysis: any;
   performanceMetrics: any;
-  resourceUsage: any;
+  resourceUsage: null;  // Removed resource monitoring
   executionTime: number;
   errors: Array<{ step: string; error: string }>;
 }
 
+// ResourceUsage interface kept for compatibility but no longer used
 export interface ResourceUsage {
   memoryUsage: {
     used: number;

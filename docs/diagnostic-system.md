@@ -12,7 +12,6 @@ The Playwright MCP Server includes a comprehensive three-phase diagnostic system
 
 ### Phase 2: Advanced Analysis
 - **ParallelPageAnalyzer**: Concurrent multi-aspect analysis
-- **ResourceUsageMonitor**: Memory and CPU tracking
 - **FrameReferenceManager**: Advanced iframe management
 - **ResourceManager**: Lifecycle management for handles
 
@@ -61,7 +60,6 @@ const system = UnifiedDiagnosticSystem.getInstance(page, {
 const result = await system.analyzePageStructure(true);
 if (result.success) {
   console.log('Analysis completed in', result.executionTime, 'ms');
-  console.log('Memory usage:', result.memoryUsage);
 }
 
 // Find alternative elements with enhanced discovery
@@ -90,7 +88,6 @@ Performs concurrent analysis of multiple page aspects for improved performance.
 #### Parallel Analysis Components
 - **Structure Analysis**: DOM tree, iframes, modal states
 - **Performance Metrics**: DOM complexity, interaction elements, resources
-- **Resource Usage**: Memory snapshots, CPU time tracking
 - **Frame Management**: Concurrent iframe analysis
 
 ```typescript
@@ -99,7 +96,6 @@ const result = await parallelAnalyzer.runParallelAnalysis();
 
 console.log('Parallel execution time:', result.executionTime, 'ms');
 console.log('Tasks completed:', result.tasksCompleted);
-console.log('Memory peak:', result.resourceUsage.peakMemory);
 ```
 
 ### 3. SmartConfig System
@@ -154,7 +150,6 @@ const handleId = globalResourceManager.trackResource(elementHandle, 'dispose');
 // Get resource statistics
 const stats = globalResourceManager.getResourceStats();
 console.log('Active resources:', stats.activeCount);
-console.log('Memory usage:', stats.memoryUsage);
 
 // Automatic cleanup happens on timeout
 ```
@@ -241,7 +236,6 @@ Now includes Phase 2 and Phase 3 capabilities:
 **Unified System Status:** Active with enhanced error handling and monitoring
 **Configuration:** Custom overrides applied
 **Analysis Type:** Enhanced Parallel Analysis (234ms)
-**Memory Usage:** 45.67MB
 
 ## Applied Configuration Overrides
 - **Resource Monitoring: Enabled**
@@ -263,17 +257,11 @@ Now includes Phase 2 and Phase 3 capabilities:
 ⚡ Consider enabling parallel analysis for better performance
 
 ## Page Structure Analysis (Parallel)
-[Parallel execution data with resource monitoring]
-
-### Resource Usage Monitoring
-- **Peak Memory Usage:** 67.89 MB
-- **CPU Time:** 234ms
-- **Current Memory Usage:** 45.67 MB
+[Parallel execution data]
 
 **Analysis Steps Performance:**
-1. **Structure Analysis**: 89ms (Memory Δ: 12.34MB)
-2. **Performance Metrics**: 123ms (Memory Δ: 23.45MB)
-3. **Resource Monitoring**: 22ms (Memory Δ: 5.67MB)
+1. **Structure Analysis**: 89ms
+2. **Performance Metrics**: 123ms
 ```
 
 ### browser_find_elements (Enhanced)

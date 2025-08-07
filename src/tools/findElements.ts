@@ -181,9 +181,6 @@ export const browserFindElements = defineTabTool({
             resultsText.push('', '### Enhanced Diagnostic Information');
             resultsText.push(`- Analysis time: ${diagResult.executionTime}ms`);
 
-            if (diagResult.memoryUsage)
-              resultsText.push(`- Memory usage: ${(diagResult.memoryUsage / 1024 / 1024).toFixed(2)}MB`);
-
 
             if ('structureAnalysis' in diagnosticInfo) {
               // Parallel analysis result
@@ -234,9 +231,6 @@ export const browserFindElements = defineTabTool({
         resultsText.push('');
         resultsText.push('### Enhanced Discovery Information');
         resultsText.push(`- Discovery execution time: ${operationResult.executionTime}ms`);
-
-        if (operationResult.memoryUsage)
-          resultsText.push(`- Memory usage: ${(operationResult.memoryUsage / 1024 / 1024).toFixed(2)}MB`);
 
 
         if (operationResult.executionTime > performanceThreshold)

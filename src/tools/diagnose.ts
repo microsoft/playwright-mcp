@@ -183,7 +183,6 @@ export const browserDiagnose = defineTabTool({
         // Execute analysis using unified system or legacy approach
         let diagnosticInfo: any;
         let performanceMetrics: any;
-        let resourceUsageInfo: any;
         let systemHealthInfo: any;
 
         if (unifiedSystem) {
@@ -214,7 +213,6 @@ export const browserDiagnose = defineTabTool({
             if ('structureAnalysis' in diagnosticInfo) {
               // Parallel analysis result
               performanceMetrics = diagnosticInfo.performanceMetrics;
-              resourceUsageInfo = diagnosticInfo.resourceUsage;
               diagnosticInfo = diagnosticInfo.structureAnalysis;
 
               // Executed Enhanced Parallel Analysis
@@ -226,9 +224,6 @@ export const browserDiagnose = defineTabTool({
               reportSections.push(`**Analysis Type:** Standard Analysis (${structureResult.executionTime}ms)`);
               reportSections.push(`**Analysis Status:** ${useParallelAnalysis ? 'Parallel analysis requested but fell back to standard' : 'Standard analysis by configuration'}`);
             }
-
-            if (structureResult.memoryUsage)
-              reportSections.push(`**Memory Usage:** ${(structureResult.memoryUsage / 1024 / 1024).toFixed(2)}MB`);
 
           } else {
             reportSections.push(`**Analysis Error:** ${structureResult.error?.message || 'Unknown error'}`);
@@ -347,13 +342,11 @@ export const browserDiagnose = defineTabTool({
             const parallelResult = await pageAnalyzer.runParallelAnalysis();
             diagnosticInfo = parallelResult.structureAnalysis;
             performanceMetrics = parallelResult.performanceMetrics;
-            resourceUsageInfo = parallelResult.resourceUsage;
 
             // Add parallel analysis info to report
             reportSections.push(
                 '# Enhanced Diagnostic Report (Parallel Analysis)',
                 `**Parallel Analysis Execution Time:** ${parallelResult.executionTime}ms`,
-                `**Resource Monitoring:** ${resourceUsageInfo ? 'Enabled' : 'Disabled'}`,
                 ''
             );
 
@@ -575,24 +568,6 @@ export const browserDiagnose = defineTabTool({
           } catch (error) {
             reportSections.push('');
             reportSections.push(`- **Browser timing metrics unavailable:** ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-
-          // Phase 2: Add resource usage information from parallel analysis
-          if (resourceUsageInfo && useParallelAnalysis) {
-            reportSections.push('### Resource Usage Monitoring');
-            reportSections.push(`- **Peak Memory Usage:** ${(resourceUsageInfo.peakMemory / 1024 / 1024).toFixed(2)} MB`);
-            reportSections.push(`- **CPU Time:** ${resourceUsageInfo.cpuTime}ms`);
-            reportSections.push(`- **Current Memory Usage:** ${(resourceUsageInfo.memoryUsage.heapUsed / 1024 / 1024).toFixed(2)} MB`);
-            reportSections.push(`- **External Memory:** ${(resourceUsageInfo.memoryUsage.external / 1024 / 1024).toFixed(2)} MB`);
-
-            if (resourceUsageInfo.analysisSteps.length > 0) {
-              reportSections.push('');
-              reportSections.push('**Analysis Steps Performance:**');
-              resourceUsageInfo.analysisSteps.forEach((step: any, index: number) => {
-                const memoryDeltaMB = (step.memoryDelta / 1024 / 1024).toFixed(2);
-                reportSections.push(`${index + 1}. **${step.step}**: ${step.duration}ms (Memory Δ: ${memoryDeltaMB}MB)`);
-              });
-            }
           }
 
           reportSections.push('');
