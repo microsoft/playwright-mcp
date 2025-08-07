@@ -94,7 +94,7 @@ export class BrowserServerBackend implements ServerBackend {
   }
 
   private _defineContextSwitchTool(isVSCode: boolean) {
-    const contextSwitchers: { name: string, description: string, switch(options: any): Promise<void> }[] = [];
+    const contextSwitchers: { name: string, description?: string, switch(options: any): Promise<void> }[] = [];
     for (const factory of this._browserContextFactories) {
       contextSwitchers.push({
         name: factory.name,
@@ -109,7 +109,6 @@ export class BrowserServerBackend implements ServerBackend {
     if (isVSCode) {
       contextSwitchers.push({
         name: 'vscode',
-        description: 'TODO',
         switch: async (options: any) => {
           if (!options.connectionString || !options.lib)
             this.onChangeProxyTarget?.('', {});
@@ -130,7 +129,7 @@ export class BrowserServerBackend implements ServerBackend {
         title: 'Connect to a browser context',
         description: [
           'Connect to a browser using one of the available methods:',
-          ...contextSwitchers.map(({ name, description }) => `- "${name}": ${description}`),
+          ...contextSwitchers.filter(c => c.description).map(c => `- "${c.name}": ${c.description}`),
           `By default, you're connected to the first method. Only call this tool to change it.`,
         ].join('\n'),
         inputSchema: z.object({
