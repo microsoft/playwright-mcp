@@ -23,6 +23,24 @@ export interface DiagnosticConfig {
   /** Overall diagnostic level */
   level: DiagnosticLevel;
   
+  /** Enable alternative element suggestions - top level flag for compatibility */
+  enableAlternativeSuggestions?: boolean;
+  
+  /** Enable page structure analysis - top level flag for compatibility */
+  enablePageAnalysis?: boolean;
+  
+  /** Enable performance metrics - top level flag for compatibility */
+  enablePerformanceMetrics?: boolean;
+  
+  /** Enable detailed error information - top level flag for compatibility */
+  enableDetailedErrors?: boolean;
+  
+  /** Maximum number of alternative elements to suggest */
+  maxAlternatives?: number;
+  
+  /** Maximum number of errors to keep in history */
+  maxErrorHistory?: number;
+  
   /** Feature toggles for fine-grained control */
   features?: {
     /** Enable alternative element suggestions */
@@ -84,45 +102,16 @@ export class DiagnosticLevelManager {
     };
   }
 
-  /**
-   * Check if a feature should be enabled based on level and feature toggles
-   */
-  shouldEnableFeature(feature: keyof NonNullable<DiagnosticConfig['features']>): boolean {
-    // First check explicit feature toggle
-    if (this.config.features?.[feature] !== undefined) {
-      return this.config.features[feature]!;
-    }
-
-    // Then check based on level
-    switch (this.config.level) {
-      case DiagnosticLevel.NONE:
-        return false;
-        
-      case DiagnosticLevel.BASIC:
-        // Only critical features
-        return feature === 'iframeDetection' || feature === 'modalDetection';
-        
-      case DiagnosticLevel.STANDARD:
-        // Standard features but not performance or accessibility
-        return feature !== 'performanceTracking' && feature !== 'accessibilityAnalysis';
-        
-      case DiagnosticLevel.DETAILED:
-        // All features except accessibility
-        return feature !== 'accessibilityAnalysis';
-        
-      case DiagnosticLevel.FULL:
-        // All features enabled
-        return true;
-        
-      default:
-        return false;
-    }
-  }
 
   /**
    * Get the maximum number of alternatives to suggest
    */
   getMaxAlternatives(): number {
+    // Check top-level setting first
+    if (this.config.maxAlternatives !== undefined) {
+      return this.config.maxAlternatives;
+    }
+    
     // Check if there's a custom threshold first
     if (this.config.thresholds?.maxAlternatives !== undefined) {
       return this.config.thresholds.maxAlternatives;
@@ -163,6 +152,55 @@ export class DiagnosticLevelManager {
    */
   updateConfig(partial: Partial<DiagnosticConfig>): void {
     this.config = this.mergeConfig({ ...this.config, ...partial });
+  }
+
+  /**
+   * Compatibility methods for top-level flags
+   */
+  
+  shouldEnableFeature(feature: string): boolean {
+    // Handle top-level compatibility flags first
+    if (feature === 'alternativeSuggestions' && this.config.enableAlternativeSuggestions !== undefined) {
+      return this.config.enableAlternativeSuggestions;
+    }
+    
+    if (feature === 'pageAnalysis' && this.config.enablePageAnalysis !== undefined) {
+      return this.config.enablePageAnalysis;
+    }
+    
+    if (feature === 'performanceMetrics' && this.config.enablePerformanceMetrics !== undefined) {
+      return this.config.enablePerformanceMetrics;
+    }
+
+    // First check explicit feature toggle
+    if (this.config.features?.[feature as keyof NonNullable<DiagnosticConfig['features']>] !== undefined) {
+      return this.config.features[feature as keyof NonNullable<DiagnosticConfig['features']>]!;
+    }
+
+    // Then check based on level
+    switch (this.config.level) {
+      case DiagnosticLevel.NONE:
+        return false;
+        
+      case DiagnosticLevel.BASIC:
+        // Only critical features
+        return feature === 'iframeDetection' || feature === 'modalDetection';
+        
+      case DiagnosticLevel.STANDARD:
+        // Standard features but not performance or accessibility
+        return feature !== 'performanceTracking' && feature !== 'accessibilityAnalysis';
+        
+      case DiagnosticLevel.DETAILED:
+        // All features except accessibility
+        return feature !== 'accessibilityAnalysis';
+        
+      case DiagnosticLevel.FULL:
+        // All features enabled
+        return true;
+        
+      default:
+        return false;
+    }
   }
 
   /**

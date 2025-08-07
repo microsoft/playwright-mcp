@@ -1,6 +1,6 @@
 # Diagnostic System
 
-The Playwright MCP Server includes a comprehensive diagnostic system that helps identify and resolve issues with browser automation. This system provides detailed information about page structure, element discovery, and enhanced error handling.
+The Playwright MCP Server includes a comprehensive diagnostic system that helps identify and resolve issues with browser automation. This system provides detailed information about page structure, element discovery, performance metrics, and enhanced error handling.
 
 ## Core Components
 
@@ -12,17 +12,54 @@ Analyzes the current page structure and provides insights about potential automa
 - **Modal State Analysis**: Detects active dialogs and file choosers
 - **Element Statistics**: Counts visible and interactable elements
 - **Accessibility Metrics**: Identifies elements with missing ARIA attributes
+- **Performance Metrics**: Comprehensive DOM complexity, interaction, resource, and layout analysis
 
 #### Usage
 ```typescript
 import { PageAnalyzer } from './src/diagnostics/PageAnalyzer.js';
 
 const analyzer = new PageAnalyzer(page);
-const analysis = await analyzer.analyzePageStructure();
 
+// Basic page structure analysis
+const analysis = await analyzer.analyzePageStructure();
 console.log(`Found ${analysis.iframes.count} iframes`);
 console.log(`${analysis.elements.totalInteractable} interactable elements`);
+
+// Performance metrics analysis
+const metrics = await analyzer.analyzePerformanceMetrics();
+console.log(`DOM elements: ${metrics.domMetrics.totalElements}`);
+console.log(`DOM depth: ${metrics.domMetrics.maxDepth}`);
+console.log(`Warnings: ${metrics.warnings.length}`);
 ```
+
+#### Performance Metrics
+
+The `analyzePerformanceMetrics()` method provides comprehensive insights:
+
+**DOM Metrics:**
+- Total element count with warning/danger thresholds (1500/3000)
+- Maximum DOM depth with thresholds (15/20 levels)
+- Large subtree detection (>500 elements)
+
+**Interaction Metrics:**
+- Clickable elements count
+- Form elements count
+- Disabled elements count
+
+**Resource Metrics:**
+- Image count and estimated size
+- Script tags (inline vs external)
+- Stylesheet count
+
+**Layout Metrics:**
+- Fixed position elements with purpose detection
+- High z-index elements (>1000) with excessive threshold (>9999)
+- Overflow hidden element count
+
+**Performance Warnings:**
+- Automatic threshold-based warnings
+- Categorized by type: dom_complexity, interaction_overload, resource_heavy, layout_issue
+- Severity levels: warning, danger
 
 ### 2. ElementDiscovery
 Finds alternative elements when the original selector fails.
@@ -88,6 +125,34 @@ Provides high-level error enhancement with tool-specific optimizations.
 - **Performance Monitoring**: Tracks operation performance
 - **Tool-specific Suggestions**: Provides suggestions based on the tool being used
 
+### 5. DiagnosticLevel
+Controls the level of diagnostic detail provided in responses.
+
+#### Levels
+- **none**: No diagnostics (minimal output)
+- **basic**: Critical information only (iframes, modals, interactable elements)
+- **standard**: Default level with comprehensive analysis
+- **detailed**: Includes performance metrics
+- **full**: All available information including layout analysis
+
+#### Usage
+```typescript
+import { DiagnosticLevelManager } from './src/diagnostics/DiagnosticLevel.js';
+
+const manager = new DiagnosticLevelManager();
+
+// Set global diagnostic level
+manager.setLevel('detailed');
+
+// Check if a feature should be enabled
+if (manager.shouldInclude('performanceMetrics')) {
+  // Include performance metrics in output
+}
+
+// Get configuration for a specific level
+const config = manager.getConfiguration('basic');
+```
+
 ## New MCP Tools
 
 ### browser_find_elements
@@ -134,7 +199,7 @@ Found 3 elements matching the criteria:
 ```
 
 ### browser_diagnose
-Generate comprehensive diagnostic reports.
+Generate comprehensive diagnostic reports with performance analysis.
 
 ```json
 {
@@ -145,7 +210,8 @@ Generate comprehensive diagnostic reports.
     },
     "includePerformanceMetrics": true,
     "includeAccessibilityInfo": true,
-    "includeTroubleshootingSuggestions": true
+    "includeTroubleshootingSuggestions": true,
+    "diagnosticLevel": "detailed"
   }
 }
 ```
@@ -174,6 +240,37 @@ Found 2 matching elements:
 
 ## Performance Metrics
 - **Diagnosis execution time:** 45ms
+
+### DOM Complexity
+- **Total DOM elements:** 2456
+- **Max DOM depth:** 18 levels
+- **Large subtrees detected:** 2
+  1. **ul#large-list**: 600 elements (Large list structure)
+  2. **div.container**: 800 elements (Large container element)
+
+### Interaction Elements
+- **Clickable elements:** 125
+- **Form elements:** 15
+- **Disabled elements:** 3
+
+### Resource Load
+- **Images:** 24 (Large >1MB estimated)
+- **Script tags:** 12 (8 external, 4 inline)
+- **Stylesheets:** 5
+
+### Layout Analysis
+- **Fixed position elements:** 2
+  1. **nav#main-nav**: Fixed navigation element (z-index: 1000)
+- **High z-index elements:** 3
+  1. **div.modal-overlay**: z-index 9999 (Extremely high z-index - potential issue)
+- **Overflow hidden elements:** 8
+
+### Performance Warnings
+- ⚠️ **dom_complexity**: High DOM complexity: 2456 elements (threshold: 1500)
+- ⚠️ **dom_complexity**: Deep DOM structure: 18 levels (threshold: 15)
+- ⚠️ **interaction_overload**: High number of clickable elements: 125 (threshold: 100)
+
+### Browser Performance Timing
 - **DOM Content Loaded:** 234.56ms
 - **Load Complete:** 456.78ms
 - **First Paint:** 123.45ms
@@ -198,9 +295,22 @@ Found 2 matching elements:
 The diagnostic system is designed to operate efficiently:
 
 - **Analysis Time**: Page structure analysis completes within 300ms
+- **Performance Metrics**: Complete analysis within 1 second
 - **Memory Efficient**: Minimal memory footprint during diagnosis
 - **Non-blocking**: Diagnostic operations don't interfere with existing automation
 - **Cached Results**: Similar analyses are cached to improve performance
+
+### Performance Thresholds
+
+The system uses predefined thresholds to generate warnings:
+
+| Metric | Warning Level | Danger Level | Description |
+|--------|--------------|--------------|-------------|
+| DOM Elements | 1500 | 3000 | Total elements in the DOM |
+| DOM Depth | 15 | 20 | Maximum nesting level |
+| Large Subtree | 500 | - | Elements in a single subtree |
+| Clickable Elements | 100 | - | Interactive elements count |
+| High Z-Index | 1000 | 9999 | Z-index values |
 
 ## Integration with Existing Tools
 
@@ -253,16 +363,23 @@ When your selector doesn't work, use `browser_find_elements`:
 ```
 
 ### 3. Performance Analysis
-Monitor page load performance during automation:
+Monitor page complexity and performance characteristics:
 
 ```json
 {
   "name": "browser_diagnose",
   "arguments": {
-    "includePerformanceMetrics": true
+    "includePerformanceMetrics": true,
+    "diagnosticLevel": "detailed"
   }
 }
 ```
+
+This provides insights into:
+- DOM complexity that might slow automation
+- Resource load that affects page speed
+- Layout issues that could interfere with element interaction
+- Automatic warnings when thresholds are exceeded
 
 ### 4. Accessibility Auditing
 Check accessibility compliance:
@@ -280,9 +397,16 @@ Check accessibility compliance:
 
 1. **Use Diagnostic Tools Proactively**: Run diagnostics before starting complex automation
 2. **Leverage Alternative Elements**: When selectors fail, check suggested alternatives
-3. **Monitor Performance**: Use performance metrics to identify slow-loading pages
+3. **Monitor Performance**: Use performance metrics to identify pages with complexity issues
 4. **Handle IFrames**: Pay attention to iframe warnings in diagnostic reports
 5. **Consider Accessibility**: Use accessibility info to create more robust selectors
+6. **Set Appropriate Diagnostic Levels**: 
+   - Use `basic` for quick checks
+   - Use `standard` for general debugging
+   - Use `detailed` when performance is a concern
+   - Use `full` for comprehensive analysis
+7. **Watch for Performance Warnings**: Address warnings to prevent automation failures
+8. **Analyze Large Subtrees**: Refactor selectors to avoid traversing large DOM sections
 
 ## Error Handling Improvements
 

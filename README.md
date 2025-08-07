@@ -464,12 +464,17 @@ http.createServer(async (req, res) => {
 
 - **browser_diagnose**
   - Title: Diagnose page
-  - Description: Generate a comprehensive diagnostic report of the current page including elements, iframes, modal states, and optional performance metrics.
+  - Description: Analyze page complexity and performance characteristics. Reports on: iframe count, DOM size, modal states, element statistics. Use for: debugging slow pages, understanding page structure, or monitoring page complexity.
   - Parameters:
     - `searchForElements` (object, optional): Search for specific elements and include them in the report
     - `includePerformanceMetrics` (boolean, optional): Include performance metrics in the report
     - `includeAccessibilityInfo` (boolean, optional): Include accessibility information
     - `includeTroubleshootingSuggestions` (boolean, optional): Include troubleshooting suggestions
+    - `diagnosticLevel` (string, optional): Level of diagnostic detail: none (no diagnostics), basic (critical only), standard (default), detailed (with metrics), full (all info)
+    - `useParallelAnalysis` (boolean, optional): Use Phase 2 parallel analysis for improved performance and resource monitoring
+    - `useUnifiedSystem` (boolean, optional): Use Phase 3 unified diagnostic system with enhanced error handling and monitoring
+    - `configOverrides` (object, optional): Runtime configuration overrides for diagnostic system
+    - `includeSystemStats` (boolean, optional): Include unified system statistics and health information
     - `expectation` (object, optional): undefined
   - Read-only: **true**
 
@@ -517,6 +522,9 @@ http.createServer(async (req, res) => {
     - `searchCriteria` (object): Search criteria for finding elements
     - `maxResults` (number, optional): Maximum number of results to return
     - `includeDiagnosticInfo` (boolean, optional): Include diagnostic information about the page
+    - `useUnifiedSystem` (boolean, optional): Use unified diagnostic system for enhanced error handling
+    - `enableEnhancedDiscovery` (boolean, optional): Enable enhanced element discovery with contextual suggestions
+    - `performanceThreshold` (number, optional): Performance threshold in milliseconds for element discovery
     - `expectation` (object, optional): undefined
   - Read-only: **true**
 

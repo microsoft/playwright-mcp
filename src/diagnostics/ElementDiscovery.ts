@@ -3,6 +3,8 @@
  */
 
 import type * as playwright from 'playwright';
+import type { IDisposable } from './PageAnalyzer.js';
+import { SmartHandleBatch } from './SmartHandle.js';
 
 export interface SearchCriteria {
   text?: string;
@@ -16,6 +18,7 @@ export interface AlternativeElement {
   confidence: number;
   reason: string;
   element?: playwright.ElementHandle;
+  elementId?: string; // Resource ID for tracking
 }
 
 export interface ElementDiscoveryOptions {
@@ -24,45 +27,91 @@ export interface ElementDiscoveryOptions {
   maxResults?: number;
 }
 
-export class ElementDiscovery {
-  constructor(private page: playwright.Page) {}
+export class ElementDiscovery implements IDisposable {
+  private isDisposed = false;
+  private readonly smartHandleBatch: SmartHandleBatch;
+  private readonly maxBatchSize = 100; // Limit for large searches
+
+  constructor(private page: playwright.Page | null) {
+    this.smartHandleBatch = new SmartHandleBatch();
+  }
+
+  async dispose(): Promise<void> {
+    if (this.isDisposed) return;
+    
+    try {
+      await this.smartHandleBatch.disposeAll();
+    } catch (error) {
+      console.warn('[ElementDiscovery] Failed to dispose smart handles:', error);
+    }
+    
+    this.page = null;
+    this.isDisposed = true;
+  }
+
+  private checkDisposed(): void {
+    if (this.isDisposed) {
+      throw new Error('ElementDiscovery has been disposed');
+    }
+  }
+
+  private getPage(): playwright.Page {
+    this.checkDisposed();
+    if (!this.page) {
+      throw new Error('Page reference is null');
+    }
+    return this.page;
+  }
 
   async findAlternativeElements(options: ElementDiscoveryOptions): Promise<AlternativeElement[]> {
+    const page = this.getPage();
     const { searchCriteria, maxResults = 10 } = options;
     const alternatives: AlternativeElement[] = [];
 
-    // Search by text content
-    if (searchCriteria.text) {
-      const textMatches = await this.findByText(searchCriteria.text);
-      alternatives.push(...textMatches);
+    // Apply batch size limit for large searches
+    const effectiveMaxResults = Math.min(maxResults, this.maxBatchSize);
+
+    try {
+      // Search by text content
+      if (searchCriteria.text) {
+        const textMatches = await this.findByText(searchCriteria.text, effectiveMaxResults);
+        alternatives.push(...textMatches);
+      }
+
+      // Search by ARIA role
+      if (searchCriteria.role) {
+        const roleMatches = await this.findByRole(searchCriteria.role, effectiveMaxResults);
+        alternatives.push(...roleMatches);
+      }
+
+      // Search by tag name
+      if (searchCriteria.tagName) {
+        const tagMatches = await this.findByTagName(searchCriteria.tagName, effectiveMaxResults);
+        alternatives.push(...tagMatches);
+      }
+
+      // Search by attributes
+      if (searchCriteria.attributes) {
+        const attributeMatches = await this.findByAttributes(searchCriteria.attributes, effectiveMaxResults);
+        alternatives.push(...attributeMatches);
+      }
+
+      // Remove duplicates and sort by confidence
+      const uniqueAlternatives = this.deduplicateAndSort(alternatives);
+
+      // Limit results
+      return uniqueAlternatives.slice(0, effectiveMaxResults);
+
+    } catch (error) {
+      console.error('[ElementDiscovery] Search failed:', error);
+      // Ensure cleanup on error
+      await this.smartHandleBatch.disposeAll();
+      throw error;
     }
-
-    // Search by ARIA role
-    if (searchCriteria.role) {
-      const roleMatches = await this.findByRole(searchCriteria.role);
-      alternatives.push(...roleMatches);
-    }
-
-    // Search by tag name
-    if (searchCriteria.tagName) {
-      const tagMatches = await this.findByTagName(searchCriteria.tagName);
-      alternatives.push(...tagMatches);
-    }
-
-    // Search by attributes
-    if (searchCriteria.attributes) {
-      const attributeMatches = await this.findByAttributes(searchCriteria.attributes);
-      alternatives.push(...attributeMatches);
-    }
-
-    // Remove duplicates and sort by confidence
-    const uniqueAlternatives = this.deduplicateAndSort(alternatives);
-
-    // Limit results
-    return uniqueAlternatives.slice(0, maxResults);
   }
 
-  private async findByText(text: string): Promise<AlternativeElement[]> {
+  private async findByText(text: string, maxResults: number): Promise<AlternativeElement[]> {
+    const page = this.getPage();
     // Use multiple strategies to find text
     const strategies = [
       `text=${text}`,
@@ -73,29 +122,52 @@ export class ElementDiscovery {
     ];
 
     const alternatives: AlternativeElement[] = [];
+    let totalFound = 0;
 
     for (const selector of strategies) {
+      if (totalFound >= maxResults) break;
+
       try {
-        const elements = await this.page.$$(selector);
+        const elements = await page.$$(selector);
         
         for (const element of elements) {
-          const textContent = await element.textContent() || '';
-          const value = await element.getAttribute('value') || '';
-          const placeholder = await element.getAttribute('placeholder') || '';
-          const ariaLabel = await element.getAttribute('aria-label') || '';
-          
-          const allText = [textContent, value, placeholder, ariaLabel].join(' ').trim();
-          
-          // Calculate confidence based on text similarity
-          const confidence = this.calculateTextSimilarity(text, allText);
-          
-          if (confidence > 0.3) {
-            alternatives.push({
-              selector: await this.generateSelector(element),
-              confidence,
-              reason: `text match: "${allText.substring(0, 50).trim()}"`,
-              element
-            });
+          if (totalFound >= maxResults) {
+            // Dispose excess elements immediately
+            await element.dispose();
+            break;
+          }
+
+          try {
+            const textContent = await element.textContent() || '';
+            const value = await element.getAttribute('value') || '';
+            const placeholder = await element.getAttribute('placeholder') || '';
+            const ariaLabel = await element.getAttribute('aria-label') || '';
+            
+            const allText = [textContent, value, placeholder, ariaLabel].join(' ').trim();
+            
+            // Calculate confidence based on text similarity
+            const confidence = this.calculateTextSimilarity(text, allText);
+            
+            if (confidence > 0.3) {
+              // Wrap element in smart handle for automatic disposal
+              const smartElement = this.smartHandleBatch.add(element);
+              
+              alternatives.push({
+                selector: await this.generateSelector(element),
+                confidence,
+                reason: `text match: "${allText.substring(0, 50).trim()}"`,
+                element: smartElement,
+                elementId: `text_${totalFound}`
+              });
+              totalFound++;
+            } else {
+              // Dispose elements that don't meet confidence threshold
+              await element.dispose();
+            }
+          } catch (elementError) {
+            // Dispose element on error and continue
+            await element.dispose();
+            continue;
           }
         }
       } catch (error) {
@@ -107,60 +179,126 @@ export class ElementDiscovery {
     return alternatives;
   }
 
-  private async findByRole(role: string): Promise<AlternativeElement[]> {
-    const elements = await this.page.$$(`[role="${role}"]`);
+  private async findByRole(role: string, maxResults: number): Promise<AlternativeElement[]> {
+    const page = this.getPage();
     const alternatives: AlternativeElement[] = [];
+    let totalFound = 0;
 
-    for (const element of elements) {
-      const confidence = 0.7; // Base confidence for role match
+    try {
+      const elements = await page.$$(`[role="${role}"]`);
       
-      alternatives.push({
-        selector: await this.generateSelector(element),
-        confidence,
-        reason: `role match: "${role}"`,
-        element
-      });
-    }
+      for (const element of elements) {
+        if (totalFound >= maxResults) {
+          await element.dispose();
+          break;
+        }
 
-    // Also find elements with implicit roles
-    const implicitRoleElements = await this.findImplicitRoleElements(role);
-    alternatives.push(...implicitRoleElements);
-
-    return alternatives;
-  }
-
-  private async findByTagName(tagName: string): Promise<AlternativeElement[]> {
-    const elements = await this.page.$$(tagName);
-    const alternatives: AlternativeElement[] = [];
-
-    for (const element of elements) {
-      const confidence = 0.5; // Base confidence for tag name match
-      
-      alternatives.push({
-        selector: await this.generateSelector(element),
-        confidence,
-        reason: `tag name match: "${tagName}"`,
-        element
-      });
-    }
-
-    return alternatives;
-  }
-
-  private async findByAttributes(attributes: Record<string, string>): Promise<AlternativeElement[]> {
-    const alternatives: AlternativeElement[] = [];
-
-    for (const [attrName, attrValue] of Object.entries(attributes)) {
-      try {
-        const elements = await this.page.$$(`[${attrName}="${attrValue}"]`);
-        
-        for (const element of elements) {
+        try {
+          const confidence = 0.7; // Base confidence for role match
+          
+          // Wrap element in smart handle
+          const smartElement = this.smartHandleBatch.add(element);
+          
           alternatives.push({
             selector: await this.generateSelector(element),
-            confidence: 0.9, // High confidence for exact attribute match
-            reason: `attribute match: ${attrName}="${attrValue}"`,
-            element
+            confidence,
+            reason: `role match: "${role}"`,
+            element: smartElement,
+            elementId: `role_${totalFound}`
           });
+          totalFound++;
+        } catch (elementError) {
+          await element.dispose();
+          continue;
+        }
+      }
+
+      // Also find elements with implicit roles
+      if (totalFound < maxResults) {
+        const implicitRoleElements = await this.findImplicitRoleElements(role, maxResults - totalFound);
+        alternatives.push(...implicitRoleElements);
+      }
+
+    } catch (error) {
+      console.warn('[ElementDiscovery] Role search failed:', error);
+    }
+
+    return alternatives;
+  }
+
+  private async findByTagName(tagName: string, maxResults: number): Promise<AlternativeElement[]> {
+    const page = this.getPage();
+    const alternatives: AlternativeElement[] = [];
+    let totalFound = 0;
+
+    try {
+      const elements = await page.$$(tagName);
+
+      for (const element of elements) {
+        if (totalFound >= maxResults) {
+          await element.dispose();
+          break;
+        }
+
+        try {
+          const confidence = 0.5; // Base confidence for tag name match
+          
+          // Wrap element in smart handle
+          const smartElement = this.smartHandleBatch.add(element);
+          
+          alternatives.push({
+            selector: await this.generateSelector(element),
+            confidence,
+            reason: `tag name match: "${tagName}"`,
+            element: smartElement,
+            elementId: `tag_${totalFound}`
+          });
+          totalFound++;
+        } catch (elementError) {
+          await element.dispose();
+          continue;
+        }
+      }
+    } catch (error) {
+      console.warn('[ElementDiscovery] Tag name search failed:', error);
+    }
+
+    return alternatives;
+  }
+
+  private async findByAttributes(attributes: Record<string, string>, maxResults: number): Promise<AlternativeElement[]> {
+    const page = this.getPage();
+    const alternatives: AlternativeElement[] = [];
+    let totalFound = 0;
+
+    for (const [attrName, attrValue] of Object.entries(attributes)) {
+      if (totalFound >= maxResults) break;
+
+      try {
+        const elements = await page.$$(`[${attrName}="${attrValue}"]`);
+        
+        for (const element of elements) {
+          if (totalFound >= maxResults) {
+            await element.dispose();
+            break;
+          }
+
+          try {
+            // Wrap element in smart handle
+            const smartElement = this.smartHandleBatch.add(element);
+            
+            alternatives.push({
+              selector: await this.generateSelector(element),
+              confidence: 0.9, // High confidence for exact attribute match
+              reason: `attribute match: ${attrName}="${attrValue}"`,
+              element: smartElement,
+              elementId: `attr_${totalFound}`
+            });
+            totalFound++;
+          } catch (elementError) {
+            await element.dispose();
+            continue;
+          }
         }
       } catch (error) {
         // Continue with other attributes if one fails
@@ -171,7 +309,8 @@ export class ElementDiscovery {
     return alternatives;
   }
 
-  private async findImplicitRoleElements(role: string): Promise<AlternativeElement[]> {
+  private async findImplicitRoleElements(role: string, maxResults: number): Promise<AlternativeElement[]> {
+    const page = this.getPage();
     const roleTagMapping: Record<string, string[]> = {
       'button': ['button', 'input[type="button"]', 'input[type="submit"]'],
       'textbox': ['input[type="text"]', 'input[type="email"]', 'textarea'],
@@ -182,17 +321,39 @@ export class ElementDiscovery {
 
     const tags = roleTagMapping[role] || [];
     const alternatives: AlternativeElement[] = [];
+    let totalFound = 0;
 
     for (const tagSelector of tags) {
-      const elements = await this.page.$$(tagSelector);
-      
-      for (const element of elements) {
-        alternatives.push({
-          selector: await this.generateSelector(element),
-          confidence: 0.6,
-          reason: `implicit role match: "${role}" via ${tagSelector}`,
-          element
-        });
+      if (totalFound >= maxResults) break;
+
+      try {
+        const elements = await page.$$(tagSelector);
+        
+        for (const element of elements) {
+          if (totalFound >= maxResults) {
+            await element.dispose();
+            break;
+          }
+
+          try {
+            // Wrap element in smart handle
+            const smartElement = this.smartHandleBatch.add(element);
+            
+            alternatives.push({
+              selector: await this.generateSelector(element),
+              confidence: 0.6,
+              reason: `implicit role match: "${role}" via ${tagSelector}`,
+              element: smartElement,
+              elementId: `implicit_${totalFound}`
+            });
+            totalFound++;
+          } catch (elementError) {
+            await element.dispose();
+            continue;
+          }
+        }
+      } catch (error) {
+        continue;
       }
     }
 
@@ -278,5 +439,20 @@ export class ElementDiscovery {
 
     // Sort by confidence descending
     return unique.sort((a, b) => b.confidence - a.confidence);
+  }
+
+  /**
+   * Get statistics about current memory usage
+   */
+  getMemoryStats(): {
+    activeHandles: number;
+    isDisposed: boolean;
+    maxBatchSize: number;
+  } {
+    return {
+      activeHandles: this.smartHandleBatch.getActiveCount(),
+      isDisposed: this.isDisposed,
+      maxBatchSize: this.maxBatchSize
+    };
   }
 }
