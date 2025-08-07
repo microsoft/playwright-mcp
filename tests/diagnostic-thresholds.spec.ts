@@ -3,24 +3,24 @@
  * Verifies DiagnosticThresholds and SmartConfig integration behavior
  */
 
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
+import { test, expect } from '@playwright/test';
 import { DiagnosticThresholds, getCurrentThresholds  } from '../src/diagnostics/DiagnosticThresholds.js';
 import { SmartConfigManager } from '../src/diagnostics/SmartConfig.js';
 
 
-describe('DiagnosticThresholds - Unit4 Configuration System', () => {
+test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
 
-  beforeEach(() => {
+  test.beforeEach(() => {
     // Reset instance before each test
     DiagnosticThresholds.reset();
   });
 
-  afterEach(() => {
+  test.afterEach(() => {
     // Cleanup after each test
     DiagnosticThresholds.reset();
   });
 
-  describe('Basic functionality tests', () => {
+  test.describe('Basic functionality tests', () => {
     test('default thresholds are correctly set', () => {
       const thresholds = getCurrentThresholds();
       const metrics = thresholds.getMetricsThresholds();
@@ -54,7 +54,7 @@ describe('DiagnosticThresholds - Unit4 Configuration System', () => {
     });
   });
 
-  describe('Runtime configuration change tests', () => {
+  test.describe('Runtime configuration change tests', () => {
     test('partial threshold updates work', () => {
       const thresholds = getCurrentThresholds();
 
@@ -117,7 +117,7 @@ describe('DiagnosticThresholds - Unit4 Configuration System', () => {
     });
   });
 
-  describe('Configuration validation tests', () => {
+  test.describe('Configuration validation tests', () => {
     test('valid configuration passes validation', () => {
       const thresholds = getCurrentThresholds();
 
@@ -173,7 +173,7 @@ describe('DiagnosticThresholds - Unit4 Configuration System', () => {
     });
   });
 
-  describe('設定診断機能テスト', () => {
+  test.describe('Configuration diagnostics tests', () => {
     test('デフォルト設定の診断', () => {
       const thresholds = getCurrentThresholds();
       const diagnostics = thresholds.getConfigDiagnostics();
@@ -221,20 +221,20 @@ describe('DiagnosticThresholds - Unit4 Configuration System', () => {
   });
 });
 
-describe('SmartConfig統合テスト', () => {
+test.describe('SmartConfig integration tests', () => {
 
-  beforeEach(() => {
+  test.beforeEach(() => {
     DiagnosticThresholds.reset();
     // SmartConfigManagerのインスタンスも新しく取得する必要がある
     (SmartConfigManager as any).instance = null;
   });
 
-  afterEach(() => {
+  test.afterEach(() => {
     DiagnosticThresholds.reset();
     (SmartConfigManager as any).instance = null;
   });
 
-  describe('SmartConfigManagerとの統合', () => {
+  test.describe('SmartConfigManager integration', () => {
     test('SmartConfigがDiagnosticThresholdsから閾値を取得', () => {
       // カスタム閾値を設定
       const thresholds = getCurrentThresholds();
@@ -307,7 +307,7 @@ describe('SmartConfig統合テスト', () => {
     });
   });
 
-  describe('エラーハンドリングテスト', () => {
+  test.describe('Error handling tests', () => {
     test('設定同期エラーの適切な処理', () => {
       const smartConfig = SmartConfigManager.getInstance();
 
@@ -340,14 +340,14 @@ describe('SmartConfig統合テスト', () => {
   });
 });
 
-describe('統合シナリオテスト', () => {
+test.describe('Integration scenario tests', () => {
 
-  beforeEach(() => {
+  test.beforeEach(() => {
     DiagnosticThresholds.reset();
     (SmartConfigManager as any).instance = null;
   });
 
-  afterEach(() => {
+  test.afterEach(() => {
     DiagnosticThresholds.reset();
     (SmartConfigManager as any).instance = null;
   });

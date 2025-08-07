@@ -1,5 +1,5 @@
 {
-  "name": "tontoko/fast-playwright-mcp",
+  "name": "@tontoko/fast-playwright-mcp",
   "version": "0.0.32",
   "description": "Fast Playwright Tools for MCP",
   "type": "module",
