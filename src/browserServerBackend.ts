@@ -56,9 +56,8 @@ export class BrowserServerBackend implements ServerBackend {
 
   async initialize(info: mcpServer.InitializeInfo): Promise<void> {
     let rootPath: string | undefined;
-    if (info.capabilities.roots) {
-      const { roots } = info.roots!;
-      const firstRootUri = roots[0]?.uri;
+    if (info.roots) {
+      const firstRootUri = info.roots.roots[0]?.uri;
       const url = firstRootUri ? new URL(firstRootUri) : undefined;
       rootPath = url ? fileURLToPath(url) : undefined;
     }

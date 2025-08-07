@@ -47,7 +47,6 @@ export type ToolSchema<Input extends z.Schema> = {
 export type ToolHandler = (toolName: string, params: any) => Promise<ToolResponse>;
 
 export interface InitializeInfo {
-  capabilities: ClientCapabilities;
   clientVersion: Implementation;
   roots?: ListRootsResult;
 }
@@ -135,9 +134,9 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
     }
   });
 
-  const tools = backend.tools();
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    return { tools: tools.map(tool => ({
+    await initializedPromise;
+    return { tools: backend.tools().map(tool => ({
       name: tool.name,
       description: tool.description,
       inputSchema: zodToJsonSchema(tool.inputSchema),
@@ -163,7 +162,7 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
       content: [{ type: 'text', text: '### Result\n' + messages.join('\n') }],
       isError: true,
     });
-    const tool = tools.find(tool => tool.name === request.params.name) as ToolSchema<any>;
+    const tool = backend.tools().find(tool => tool.name === request.params.name) as ToolSchema<any>;
     if (!tool)
       return errorResult(`Error: Tool "${request.params.name}" not found`);
 
@@ -188,10 +187,9 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
 
 async function getInitializeInfo(server: Server) {
   const info: InitializeInfo = {
-    capabilities: server.getClientCapabilities()! as ClientCapabilities,
     clientVersion: server.getClientVersion()!,
   };
-  if (info.capabilities.roots?.listRoots && isVSCode(info.clientVersion))
+  if (server.getClientCapabilities()?.roots?.listRoots && isVSCode(info.clientVersion))
     info.roots = await server.listRoots();
   return info;
 }
