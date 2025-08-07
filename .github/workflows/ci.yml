@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Use Node.js 18
+    - name: Use Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
@@ -32,11 +32,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
-    - name: Use Node.js 18
+    - name: Use Node.js 20
       uses: actions/setup-node@v4
       with:
-        # https://github.com/microsoft/playwright-mcp/issues/344
-        node-version: '18.19'
+        node-version: '20'
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
@@ -55,10 +54,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Use Node.js 18
+    - name: Use Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
