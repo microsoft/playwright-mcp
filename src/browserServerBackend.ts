@@ -134,7 +134,7 @@ export class BrowserServerBackend implements ServerBackend {
         ].join('\n'),
         inputSchema: z.object({
           method: z.enum(contextSwitchers.map(c => c.name) as [string, ...string[]]).describe('The method to use to connect to the browser'),
-          options: askForOptions ? z.object({}).optional().describe('options for the connection method') : z.void(),
+          options: askForOptions ? z.any().optional().describe('options for the connection method') : z.void(),
         }),
         type: 'readOnly',
       },
@@ -145,7 +145,7 @@ export class BrowserServerBackend implements ServerBackend {
           response.addError('Unknown connection method: ' + params.method);
           return;
         }
-        await contextSwitcher.switch({});
+        await contextSwitcher.switch(params.options);
         response.addResult('Successfully changed connection method.');
       }
     }));
