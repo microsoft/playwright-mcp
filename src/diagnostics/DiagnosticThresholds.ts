@@ -222,7 +222,7 @@ export class DiagnosticThresholds {
   }
 
   /**
-   * ランタイムでの閾値更新
+   * Update thresholds at runtime
    */
   updateThresholds(partialConfig: DiagnosticThresholdsConfig): void {
     const mergedConfig = this.mergeWithDefaults(partialConfig);
@@ -232,8 +232,8 @@ export class DiagnosticThresholds {
   }
 
   /**
-   * 設定とデフォルト値をマージ
-   * 型安全な方法ですべてのプロパティが定義されることを保証
+   * Merge configuration with default values
+   * Ensures all properties are defined in a type-safe manner
    */
   private mergeWithDefaults(config: DiagnosticThresholdsConfig): Required<DiagnosticThresholdsConfig> {
     // Deep clone defaults and explicitly cast to ensure TypeScript recognizes all properties as defined
@@ -337,7 +337,7 @@ export class DiagnosticThresholds {
   }
 
   /**
-   * 閾値設定の妥当性検証
+   * Validate threshold configuration
    */
   private validateThresholds(thresholds: Required<DiagnosticThresholdsConfig>): void {
     const errors: string[] = [];
@@ -349,7 +349,7 @@ export class DiagnosticThresholds {
     const inter = thresholds.interaction;
     const layout = thresholds.layout;
 
-    // 実行時間の閾値検証
+    // Validate execution time thresholds
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
     if (exec.pageAnalysis <= 0)
       errors.push('pageAnalysis execution time must be positive');
@@ -367,7 +367,7 @@ export class DiagnosticThresholds {
       errors.push('parallelAnalysis execution time must be positive');
 
 
-    // メモリ閾値検証
+    // Validate memory thresholds
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
     if (mem.maxMemoryUsage <= 0)
       errors.push('maxMemoryUsage must be positive');
@@ -385,7 +385,7 @@ export class DiagnosticThresholds {
       errors.push('memoryLeakThreshold should be less than maxMemoryUsage');
 
 
-    // DOM閾値検証
+    // Validate DOM thresholds
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
     if (dom.elementsWarning <= 0)
       errors.push('elementsWarning must be positive');
@@ -407,7 +407,7 @@ export class DiagnosticThresholds {
       errors.push('largeSubtreeThreshold must be positive');
 
 
-    // インタラクション閾値検証
+    // Validate interaction thresholds
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
     if (inter.clickableElements <= 0)
       errors.push('clickableElements threshold must be positive');
@@ -417,7 +417,7 @@ export class DiagnosticThresholds {
       errors.push('formElements threshold must be positive');
 
 
-    // レイアウト閾値検証
+    // Validate layout thresholds
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
     if (layout.highZIndexThreshold <= 0)
       errors.push('highZIndexThreshold must be positive');
@@ -433,7 +433,7 @@ export class DiagnosticThresholds {
   }
 
   /**
-   * 設定状態の診断情報を取得
+   * Get configuration diagnostic information
    */
   getConfigDiagnostics(): {
     status: 'valid' | 'invalid';
@@ -445,7 +445,7 @@ export class DiagnosticThresholds {
     const warnings: string[] = [];
     const defaultsUsed: string[] = [];
 
-    // デフォルト値と比較してカスタマイゼーションを検出
+    // Detect customizations by comparing with default values
     const defaults = DEFAULT_THRESHOLDS;
     const current = this.currentThresholds;
 
@@ -455,7 +455,7 @@ export class DiagnosticThresholds {
     const currentLayout = current.layout;
     const defaultsLayout = defaults.layout;
 
-    // DOM閾値のカスタマイゼーション検出
+    // Detect DOM threshold customizations
     if (currentDom.elementsWarning !== defaultsDom.elementsWarning)
       customizations.push(`DOM elements warning: ${currentDom.elementsWarning} (default: ${defaultsDom.elementsWarning})`);
 
@@ -469,12 +469,12 @@ export class DiagnosticThresholds {
       customizations.push(`DOM depth danger: ${currentDom.depthDanger} (default: ${defaultsDom.depthDanger})`);
 
 
-    // レイアウト閾値のカスタマイゼーション検出
+    // Detect layout threshold customizations
     if (currentLayout.excessiveZIndexThreshold !== defaultsLayout.excessiveZIndexThreshold)
       customizations.push(`Z-index excessive: ${currentLayout.excessiveZIndexThreshold} (default: ${defaultsLayout.excessiveZIndexThreshold})`);
 
 
-    // 警告レベルの判定
+    // Determine warning level
     // @ts-ignore - Properties guaranteed to be defined after mergeWithDefaults
     if (currentDom.elementsWarning > 2000)
       warnings.push('DOM elements warning threshold is very high - may not catch performance issues early');
@@ -488,7 +488,7 @@ export class DiagnosticThresholds {
       warnings.push('Excessive z-index threshold is low - may generate false positives');
 
 
-    // デフォルト値が使用されている項目
+    // Items using default values
     if (customizations.length === 0)
       defaultsUsed.push('All thresholds using default values');
 
@@ -502,7 +502,7 @@ export class DiagnosticThresholds {
   }
 
   /**
-   * デフォルト設定にリセット
+   * Reset to default configuration
    */
   resetToDefaults(): void {
     this.currentThresholds = { ...DEFAULT_THRESHOLDS };
@@ -510,14 +510,14 @@ export class DiagnosticThresholds {
 }
 
 /**
- * グローバル便利関数：現在の診断閾値を取得
+ * Global utility function: Get current diagnostic thresholds
  */
 export function getCurrentThresholds(): DiagnosticThresholds {
   return DiagnosticThresholds.getInstance();
 }
 
 /**
- * グローバル便利関数：MetricsThresholds形式で現在の閾値を取得
+ * Global utility function: Get current thresholds in MetricsThresholds format
  */
 export function getMetricsThresholds(): MetricsThresholds {
   return getCurrentThresholds().getMetricsThresholds();

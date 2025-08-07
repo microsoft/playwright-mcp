@@ -330,17 +330,17 @@ export class SmartConfigManager {
   reset(): void {
     const previousConfig = { ...this.config };
     this.config = this.createDefaultConfig();
-    // DiagnosticThresholdsもリセット
+    // Also reset DiagnosticThresholds
     this.thresholdsManager.resetToDefaults();
     this.notifyListeners();
   }
 
   /**
-   * DiagnosticThresholds との同期（閾値管理統合）
+   * Sync with DiagnosticThresholds (integrated threshold management)
    */
   private syncThresholdsWithManager(thresholds: MetricsThresholds): void {
     try {
-      // MetricsThresholds を DiagnosticThresholdsConfig 形式に変換
+      // Convert MetricsThresholds to DiagnosticThresholdsConfig format
       const thresholdsConfig: DiagnosticThresholdsConfig = {
         executionTime: thresholds.executionTime,
         memory: thresholds.memory,
@@ -350,7 +350,7 @@ export class SmartConfigManager {
         layout: thresholds.layout
       };
 
-      // DiagnosticThresholds を更新
+      // Update DiagnosticThresholds
       this.thresholdsManager.updateThresholds(thresholdsConfig);
     } catch (error) {
       // Silently ignore sync errors
@@ -358,14 +358,14 @@ export class SmartConfigManager {
   }
 
   /**
-   * DiagnosticThresholds から最新の閾値を取得
+   * Get latest thresholds from DiagnosticThresholds
    */
   getThresholdsFromManager(): MetricsThresholds {
     return this.thresholdsManager.getMetricsThresholds();
   }
 
   /**
-   * 閾値設定の統合状態を取得
+   * Get integrated threshold configuration status
    */
   getThresholdsStatus(): {
     isInSync: boolean;
@@ -380,7 +380,7 @@ export class SmartConfigManager {
     const managerThresholds = this.thresholdsManager.getMetricsThresholds();
     const configThresholds = this.config.performance.thresholds;
 
-    // 同期状態をチェック
+    // Check synchronization status
     const isInSync = JSON.stringify(managerThresholds) === JSON.stringify(configThresholds);
 
     return {
@@ -393,10 +393,10 @@ export class SmartConfigManager {
   }
 
   /**
-   * 環境別設定で閾値管理を統合
+   * Integrate threshold management with environment-specific configuration
    */
   configureForEnvironment(env: 'development' | 'production' | 'testing'): void {
-    // 既存の設定適用
+    // Apply existing configuration
     const envConfigs = {
       development: {
         diagnostic: { level: DiagnosticLevel.FULL },
@@ -405,7 +405,7 @@ export class SmartConfigManager {
           enableResourceMonitoring: true,
           enablePerformanceWarnings: true,
           autoOptimization: true,
-          thresholds: this.thresholdsManager.getMetricsThresholds()  // 統合された閾値使用
+          thresholds: this.thresholdsManager.getMetricsThresholds()  // Use integrated thresholds
         },
         errorHandling: {
           enableErrorEnrichment: true,
@@ -429,7 +429,7 @@ export class SmartConfigManager {
           enableResourceMonitoring: true,
           enablePerformanceWarnings: false,
           autoOptimization: true,
-          thresholds: this.thresholdsManager.getMetricsThresholds()  // 統合された閾値使用
+          thresholds: this.thresholdsManager.getMetricsThresholds()  // Use integrated thresholds
         },
         errorHandling: {
           enableErrorEnrichment: true,
@@ -453,7 +453,7 @@ export class SmartConfigManager {
           enableResourceMonitoring: false,
           enablePerformanceWarnings: false,
           autoOptimization: false,
-          thresholds: this.thresholdsManager.getMetricsThresholds()  // 統合された閾値使用
+          thresholds: this.thresholdsManager.getMetricsThresholds()  // Use integrated thresholds
         },
         errorHandling: {
           enableErrorEnrichment: false,
@@ -476,14 +476,14 @@ export class SmartConfigManager {
   }
 
   /**
-   * 閾値のみを更新（DiagnosticThresholds 経由）
+   * Update only thresholds (via DiagnosticThresholds)
    */
   updateThresholds(thresholdsConfig: DiagnosticThresholdsConfig): void {
     try {
-      // DiagnosticThresholds を更新
+      // Update DiagnosticThresholds
       this.thresholdsManager.updateThresholds(thresholdsConfig);
 
-      // SmartConfig の閾値も同期更新
+      // Also sync update SmartConfig thresholds
       const updatedThresholds = this.thresholdsManager.getMetricsThresholds();
       this.updateConfig({
         performance: {
@@ -497,7 +497,7 @@ export class SmartConfigManager {
   }
 
   /**
-   * 設定変更の影響を詳細にレポートする
+   * Report detailed impact of configuration changes
    */
   getConfigurationImpactReport(): {
     activeOverrides: string[];
@@ -517,7 +517,7 @@ export class SmartConfigManager {
       errors: string[];
     };
     } {
-    // デフォルト設定と現在の設定を比較
+    // Compare default configuration with current configuration
     const defaultConfig = this.createDefaultConfig();
     const currentConfig = this.getConfig();
 
@@ -529,7 +529,7 @@ export class SmartConfigManager {
     const warnings: string[] = [];
     const errors: string[] = [];
 
-    // パフォーマンス閾値の変更をチェック
+    // Check performance threshold changes
     const defaultThresholds = defaultConfig.performance.thresholds.executionTime;
     const currentThresholds = currentConfig.performance.thresholds.executionTime;
 
@@ -549,7 +549,7 @@ export class SmartConfigManager {
       }
     });
 
-    // 機能フラグの変更をチェック
+    // Check feature flag changes
     const featureChecks = [
       { key: 'enableParallelAnalysis', name: 'Parallel Analysis' },
       { key: 'enableSmartHandleManagement', name: 'Smart Handle Management' },
@@ -574,23 +574,23 @@ export class SmartConfigManager {
       }
     });
 
-    // エラーハンドリング設定の変更をチェック
+    // Check error handling configuration changes
     if (defaultConfig.errorHandling.enableErrorEnrichment !== currentConfig.errorHandling.enableErrorEnrichment) {
       const status = currentConfig.errorHandling.enableErrorEnrichment ? 'Enabled' : 'Disabled';
       modified.push(`Error Enrichment: ${status}`);
       activeOverrides.push(`Error Enrichment: ${status}`);
     }
 
-    // 診断レベルの変更をチェック
+    // Check diagnostic level changes
     if (defaultConfig.diagnostic.level !== currentConfig.diagnostic.level) {
       modified.push(`Diagnostic Level: ${defaultConfig.diagnostic.level} → ${currentConfig.diagnostic.level}`);
       activeOverrides.push(`Diagnostic Level: ${defaultConfig.diagnostic.level} → ${currentConfig.diagnostic.level}`);
     }
 
-    // バリデーション
+    // Validation
     const isValid = errors.length === 0;
 
-    // パフォーマンス影響の評価
+    // Evaluate performance impact
     let memoryImpact = 'Minimal';
     const recommendedOptimizations: string[] = [];
 
@@ -604,7 +604,7 @@ export class SmartConfigManager {
       recommendedOptimizations.push('Only enable for debugging sessions');
     }
 
-    // パフォーマンス警告の生成
+    // Generate performance warnings
     Object.entries(executionTimeChanges).forEach(([component, change]) => {
       if (change.percentChange > 50)
         warnings.push(`${component} timeout increased significantly (+${change.percentChange}%) - may mask performance issues`);
@@ -638,7 +638,7 @@ export class SmartConfigManager {
   }
 
   /**
-   * 設定変更のサマリーを取得
+   * Get configuration change summary
    */
   getConfigurationSummary(): {
     totalOverrides: number;
@@ -652,7 +652,7 @@ export class SmartConfigManager {
                               impactReport.featureChanges.disabled.length +
                               Object.keys(impactReport.performanceImpact.executionTimeChanges).length;
 
-    // パフォーマンスリスクの評価
+    // Evaluate performance risk
     let performanceRisk: 'low' | 'medium' | 'high' = 'low';
 
     if (impactReport.validationStatus.errors.length > 0)
@@ -661,7 +661,7 @@ export class SmartConfigManager {
       performanceRisk = 'medium';
 
 
-    // 推奨事項の生成
+    // Generate recommendation
     let recommendation = 'Configuration is optimal';
 
     if (performanceRisk === 'high')
