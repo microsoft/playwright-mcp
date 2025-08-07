@@ -67,7 +67,7 @@ export type ServerBackendFactory = () => ServerBackend;
 
 export class ServerBackendSwitcher implements ServerBackend {
   private _target: ServerBackend;
-  private _initialized?: InitializeInfo;
+  private _initializeInfo?: InitializeInfo;
 
   constructor(private readonly _targetFactories: Record<string, (options: any) => ServerBackend>) {
     const defaultTargetFactory = this._targetFactories[''];
@@ -88,9 +88,9 @@ export class ServerBackendSwitcher implements ServerBackend {
     old.onChangeProxyTarget = undefined;
     this._target = target;
     this._target.onChangeProxyTarget = this._handleChangeProxyTarget;
-    if (this._initialized) {
+    if (this._initializeInfo) {
       old.serverClosed?.();
-      await this.initialize(this._initialized);
+      await this.initialize(this._initializeInfo);
     }
   }
 
@@ -103,7 +103,7 @@ export class ServerBackendSwitcher implements ServerBackend {
   }
 
   async initialize(info: InitializeInfo): Promise<void> {
-    this._initialized = info;
+    this._initializeInfo = info;
     await this._target.initialize?.(info);
   }
 
@@ -117,7 +117,7 @@ export class ServerBackendSwitcher implements ServerBackend {
 
   serverClosed(): void {
     this._target.serverClosed?.();
-    this._initialized = undefined;
+    this._initializeInfo = undefined;
   }
 }
 
