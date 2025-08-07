@@ -21,7 +21,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { ManualPromise } from '../manualPromise.js';
 import { logUnhandledError } from '../log.js';
 
-import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
+import type { ImageContent, Implementation, ListRootsResult, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 export type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
@@ -46,10 +46,16 @@ export type ToolSchema<Input extends z.Schema> = {
 
 export type ToolHandler = (toolName: string, params: any) => Promise<ToolResponse>;
 
+export interface InitializeInfo {
+  capabilities: ClientCapabilities;
+  clientVersion: Implementation;
+  roots?: ListRootsResult;
+}
+
 export interface ServerBackend {
   name: string;
   version: string;
-  initialize?(server: Server): Promise<void>;
+  initialize?(info: InitializeInfo): Promise<void>;
   tools(): ToolSchema<any>[];
   callTool(schema: ToolSchema<any>, parsedArguments: any): Promise<ToolResponse>;
   serverClosed?(): void;
@@ -64,7 +70,7 @@ interface ServerBackendProxyDelegate {
 }
 
 export class ServerBackendProxy implements ServerBackend {
-  private _server?: Server;
+  private _initialized?: InitializeInfo;
   constructor(private _backend: ServerBackend, private _delegate: ServerBackendProxyDelegate) {
     this._backend.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
   }
@@ -74,9 +80,9 @@ export class ServerBackendProxy implements ServerBackend {
     old.onChangeProxyTarget = undefined;
     this._backend = backend;
     this._backend.onChangeProxyTarget = this._delegate.onChangeProxyTarget;
-    if (this._server) {
+    if (this._initialized) {
       old.serverClosed?.();
-      await this.initialize(this._server);
+      await this.initialize(this._initialized);
     }
   }
 
@@ -88,9 +94,9 @@ export class ServerBackendProxy implements ServerBackend {
     return this._backend.version;
   }
 
-  async initialize(server: Server): Promise<void> {
-    this._server = server;
-    await this._backend.initialize?.(server);
+  async initialize(info: InitializeInfo): Promise<void> {
+    this._initialized = info;
+    await this._backend.initialize?.(info);
   }
 
   tools(): ToolSchema<any>[] {
@@ -103,7 +109,7 @@ export class ServerBackendProxy implements ServerBackend {
 
   serverClosed(): void {
     this._backend.serverClosed?.();
-    this._server = undefined;
+    this._initialized = undefined;
   }
 }
 
@@ -159,11 +165,31 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
       return errorResult(String(error));
     }
   });
-  addServerListener(server, 'initialized', () => {
-    backend.initialize?.(server).then(() => initializedPromise.resolve()).catch(logUnhandledError);
+  addServerListener(server, 'initialized', async () => {
+    try {
+      const info = await getInitializeInfo(server);
+      await backend.initialize?.(info);
+      initializedPromise.resolve();
+    } catch (e) {
+      logUnhandledError(e);
+    }
   });
   addServerListener(server, 'close', () => backend.serverClosed?.());
   return server;
+}
+
+async function getInitializeInfo(server: Server) {
+  const info: InitializeInfo = {
+    capabilities: server.getClientCapabilities()! as ClientCapabilities,
+    clientVersion: server.getClientVersion()!,
+  };
+  if (info.capabilities.roots?.listRoots && isVSCode(info.clientVersion))
+    info.roots = await server.listRoots();
+  return info;
+}
+
+export function isVSCode(clientVersion: Implementation): boolean {
+  return clientVersion.name === 'Visual Studio Code' || clientVersion.name === 'Visual Studio Code - Insiders';
 }
 
 const startHeartbeat = (server: Server) => {

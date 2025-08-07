@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { FullConfig } from '../config.js';
-import { Server, ServerBackend, ToolSchema } from '../mcp/server.js';
+import { InitializeInfo, ServerBackend, ToolSchema } from '../mcp/server.js';
 import { filteredTools } from '../tools.js';
 import { ProcessHost } from './processHost.js';
 import { VSCodeInitParams } from './vscodeMain.js';
@@ -64,14 +64,10 @@ export class VSCodeServerBackend extends ProcessHost implements ServerBackend {
     return response as any;
   }
 
-  async initialize(server: Server) {
+  async initialize(info: InitializeInfo) {
     await this.sendMessage({
       method: 'initialize',
-      params: {
-        capabilities: server.getClientCapabilities(),
-        roots: await server.listRoots(),
-        clientVersion: server.getClientVersion()
-      }
+      params: info
     });
   }
 }

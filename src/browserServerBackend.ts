@@ -25,9 +25,9 @@ import { filteredTools } from './tools.js';
 import { packageJSON } from './package.js';
 import { defineTool  } from './tools/tool.js';
 
+import * as mcpServer from './mcp/server.js';
 import type { Tool } from './tools/tool.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
-import type * as mcpServer from './mcp/server.js';
 import type { ServerBackend } from './mcp/server.js';
 
 type NonEmptyArray<T> = [T, ...T[]];
@@ -54,26 +54,25 @@ export class BrowserServerBackend implements ServerBackend {
       this._tools.push(this._defineContextSwitchTool(factories));
   }
 
-  async initialize(server: mcpServer.Server): Promise<void> {
-    const capabilities = server.getClientCapabilities() as mcpServer.ClientCapabilities;
+  async initialize(info: mcpServer.InitializeInfo): Promise<void> {
     let rootPath: string | undefined;
-    if (capabilities.roots && (
-      server.getClientVersion()?.name === 'Visual Studio Code' ||
-      server.getClientVersion()?.name === 'Visual Studio Code - Insiders')) {
-      const { roots } = await server.listRoots();
+    if (info.capabilities.roots) {
+      const { roots } = info.roots!;
       const firstRootUri = roots[0]?.uri;
       const url = firstRootUri ? new URL(firstRootUri) : undefined;
       rootPath = url ? fileURLToPath(url) : undefined;
-
-      this._tools.push(this._defineConnectVSCodeTool());
     }
+
+    if (mcpServer.isVSCode(info.clientVersion))
+      this._tools.push(this._defineConnectVSCodeTool());
+
     this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config, rootPath) : undefined;
     this._context = new Context({
       tools: this._tools,
       config: this._config,
       browserContextFactory: this._browserContextFactory,
       sessionLog: this._sessionLog,
-      clientInfo: { ...server.getClientVersion(), rootPath },
+      clientInfo: { ...info.clientVersion, rootPath },
     });
   }
 

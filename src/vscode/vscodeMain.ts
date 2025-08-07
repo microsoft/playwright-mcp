@@ -18,10 +18,9 @@ import { BrowserServerBackend } from '../browserServerBackend.js';
 import { FullConfig } from '../config.js';
 import { logUnhandledError } from '../log.js';
 import { ProcessRunner } from './process.js';
-import { ClientCapabilities, Server } from '../mcp/server.js';
+import { InitializeInfo } from '../mcp/server.js';
 import type { BrowserContextFactory, ClientInfo } from '../browserContextFactory.js';
 import type * as playwright from 'playwright';
-import type * as mcpTypes from '@modelcontextprotocol/sdk/types.js';
 
 export interface VSCodeInitParams {
   config: FullConfig;
@@ -33,7 +32,8 @@ export class VSCodeMain extends ProcessRunner {
   private _backend: BrowserServerBackend;
   constructor(params: VSCodeInitParams) {
     super();
-    this._backend = new BrowserServerBackend(params.config, [new VSCodeContextFactory(params.config, params.connectionString, params.lib)]);
+    const factory = new VSCodeContextFactory(params.config, params.connectionString, params.lib);
+    this._backend = new BrowserServerBackend(params.config, [factory]);
     this._backend.onChangeProxyTarget = target => this.dispatchEvent('changeProxyTarget', target);
   }
 
@@ -46,14 +46,8 @@ export class VSCodeMain extends ProcessRunner {
     return await this._backend.callTool(tool!, parsedArguments);
   }
 
-  async initialize(params: { capabilities: ClientCapabilities, roots: mcpTypes.ListRootsResult, clientVersion: mcpTypes.Implementation }) {
-    // todo: change initialize interface to accept params
-    const serverMock: Pick<Server, 'getClientCapabilities' | 'getClientVersion' | 'listRoots'> = {
-      getClientCapabilities: () => params.capabilities,
-      getClientVersion: () => params.clientVersion,
-      listRoots: async () => params.roots,
-    };
-    await this._backend.initialize(serverMock as any);
+  async initialize(params: InitializeInfo) {
+    await this._backend.initialize(params);
   }
 }
 
