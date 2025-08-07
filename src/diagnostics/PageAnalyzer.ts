@@ -275,8 +275,9 @@ export class PageAnalyzer implements IDisposable {
           );
 
           let node: Node | null;
-          while (node = walker.nextNode())
+          while ((node = walker.nextNode()) !== null) {
             elements.push(node as Element);
+          }
 
           return elements;
         };

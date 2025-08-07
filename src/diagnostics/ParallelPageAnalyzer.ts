@@ -45,11 +45,11 @@ export class ParallelPageAnalyzer {
         const stepName = index === 0 ? 'structure-analysis' : 'performance-metrics';
 
         if (result.status === 'fulfilled') {
-          if (stepName === 'structure-analysis') {
+          if (stepName === 'structure-analysis')
             structureAnalysis = result.value;
-          } else {
+          else
             performanceMetrics = result.value;
-          }
+
         } else {
           const errorMsg = result.reason?.message || 'Unknown error';
           errors.push({
@@ -93,8 +93,8 @@ export class ParallelPageAnalyzer {
    */
   async dispose(): Promise<void> {
     // Dispose the internal pageAnalyzer
-    if (this.pageAnalyzer) {
+    if (this.pageAnalyzer)
       await this.pageAnalyzer.dispose();
-    }
+
   }
 }

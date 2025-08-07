@@ -49,9 +49,9 @@ export class ResourceManager implements SmartTracker {
 
     for (const [id, { resource, disposeMethod }] of this.resources.entries()) {
       try {
-        if (resource && typeof resource[disposeMethod] === 'function') {
+        if (resource && typeof resource[disposeMethod] === 'function')
           disposePromises.push(resource[disposeMethod]());
-        }
+
       } catch (error) {
         // Failed to dispose resource - continue cleanup
       }
@@ -88,9 +88,9 @@ export class ResourceManager implements SmartTracker {
     let expiredCount = 0;
 
     for (const [, { timestamp }] of this.resources.entries()) {
-      if (now - timestamp > this.disposeTimeout) {
+      if (now - timestamp > this.disposeTimeout)
         expiredCount++;
-      }
+
     }
 
     return {
@@ -112,18 +112,18 @@ export class ResourceManager implements SmartTracker {
     const expiredIds: string[] = [];
 
     for (const [id, { timestamp }] of this.resources.entries()) {
-      if (now - timestamp > this.disposeTimeout) {
+      if (now - timestamp > this.disposeTimeout)
         expiredIds.push(id);
-      }
+
     }
 
     for (const id of expiredIds) {
       const entry = this.resources.get(id);
       if (entry) {
         try {
-          if (entry.resource && typeof entry.resource[entry.disposeMethod] === 'function') {
+          if (entry.resource && typeof entry.resource[entry.disposeMethod] === 'function')
             await entry.resource[entry.disposeMethod]();
-          }
+
         } catch (error) {
           // Failed to dispose expired resource - continue cleanup
         }

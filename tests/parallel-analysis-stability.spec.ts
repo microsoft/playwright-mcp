@@ -156,17 +156,17 @@ test.describe('Parallel Analysis Stability', () => {
     const originalConsoleError = console.error;
 
     // console.info = (...args) => {
-      consoleLogs.push(`INFO: ${args.join(' ')}`);
-      originalConsoleInfo(...args);
-    };
+    //   consoleLogs.push(`INFO: ${args.join(' ')}`);
+    //   originalConsoleInfo(...args);
+    // };
     // console.warn = (...args) => {
-      consoleLogs.push(`WARN: ${args.join(' ')}`);
-      originalConsoleWarn(...args);
-    };
+    //   consoleLogs.push(`WARN: ${args.join(' ')}`);
+    //   originalConsoleWarn(...args);
+    // };
     // console.error = (...args) => {
-      consoleLogs.push(`ERROR: ${args.join(' ')}`);
-      originalConsoleError(...args);
-    };
+    //   consoleLogs.push(`ERROR: ${args.join(' ')}`);
+    //   originalConsoleError(...args);
+    // };
 
     try {
       const unifiedSystem = UnifiedDiagnosticSystem.getInstance(page, {

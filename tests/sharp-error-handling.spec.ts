@@ -75,10 +75,10 @@ test.describe('Sharp Error Handling Tests', () => {
     const validResult = await processImage(validPng, 'image/png', { format: 'jpeg', quality: 80 });
 
     // console.log('Valid PNG result:', {
-      contentType: validResult.contentType,
-      size: `${validResult.originalSize.width}x${validResult.originalSize.height}`,
-      dataLength: validResult.data.length
-    });
+    //   contentType: validResult.contentType,
+    //   size: `${validResult.originalSize.width}x${validResult.originalSize.height}`,
+    //   dataLength: validResult.data.length
+    // });
 
     expect(validResult.contentType).toBe('image/jpeg');
     expect(validResult.originalSize.width).toBeGreaterThan(0);

@@ -278,9 +278,14 @@ export class UnifiedDiagnosticSystem {
   }
 
   static getInstance(page: playwright.Page, config?: Partial<SmartConfig>): UnifiedDiagnosticSystem {
-    if (!UnifiedDiagnosticSystem.instances.has(page))
-      UnifiedDiagnosticSystem.instances.set(page, new UnifiedDiagnosticSystem(page, config));
-
+    if (!UnifiedDiagnosticSystem.instances.has(page)) {
+      const instance = new UnifiedDiagnosticSystem(page, config);
+      UnifiedDiagnosticSystem.instances.set(page, instance);
+      // Initialize components asynchronously without blocking getInstance
+      void instance.initializeComponents().catch(error => {
+        // Initialization errors will be caught when methods are called
+      });
+    }
     return UnifiedDiagnosticSystem.instances.get(page)!;
   }
 
@@ -336,7 +341,6 @@ export class UnifiedDiagnosticSystem {
     const componentConfig = this.configManager.getComponentConfig(
       component.toLowerCase() as 'pageAnalyzer' | 'elementDiscovery' | 'resourceManager'
     );
-
 
 
     try {
@@ -500,9 +504,9 @@ export class UnifiedDiagnosticSystem {
 
         if (recommendation.recommended || forceParallel) {
           // console.info(`[UnifiedSystem] Parallel analysis execution - recommendation: ${recommendation.recommended}, forced: ${forceParallel === true}`);
-          if (!recommendation.recommended && forceParallel)
+          if (!recommendation.recommended && forceParallel) {
             // console.info(`[UnifiedSystem] Overriding recommendation (${recommendation.reason}) due to force flag`);
-
+          }
           return await this.parallelAnalyzer!.runParallelAnalysis();
         } else {
           // console.info(`[UnifiedSystem] Falling back to standard analysis - reason: ${recommendation.reason}`);

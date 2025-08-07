@@ -25,9 +25,9 @@ async function run(delegate: LLMDelegate) {
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
   await client.ping();
-  for (const task of tasks) {
+  for (const task of tasks)
     await runTask(delegate, client, task);
-  }
+
   await client.close();
 }
 const tasks = [

@@ -139,7 +139,6 @@ export class SmartConfigManager {
   }
 
   updateConfig(updates: Partial<SmartConfig>): void {
-    const previousConfig = { ...this.config };
     this.config = this.deepMerge(this.config, updates);
 
     // If thresholds are updated, sync DiagnosticThresholds as well
@@ -328,7 +327,6 @@ export class SmartConfigManager {
 
   // Reset to defaults
   reset(): void {
-    const previousConfig = { ...this.config };
     this.config = this.createDefaultConfig();
     // Also reset DiagnosticThresholds
     this.thresholdsManager.resetToDefaults();

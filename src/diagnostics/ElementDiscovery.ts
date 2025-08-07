@@ -73,7 +73,7 @@ export class ElementDiscovery implements IDisposable {
     try {
       await element.dispose();
     } catch (error) {
-      const diagnosticError = DiagnosticError.from(
+      DiagnosticError.from(
           error instanceof Error ? error : new Error('Unknown dispose error'),
           'ElementDiscovery',
           'dispose',
