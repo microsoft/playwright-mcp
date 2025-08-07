@@ -1,6 +1,6 @@
 /**
- * Unit4 設定駆動アーキテクチャテスト
- * DiagnosticThresholds とSmartConfig統合の動作検証
+ * Configuration-driven architecture tests
+ * Verifies DiagnosticThresholds and SmartConfig integration behavior
  */
 
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
@@ -10,21 +10,21 @@ import { SmartConfigManager } from '../src/diagnostics/SmartConfig.js';
 describe('DiagnosticThresholds - Unit4 Configuration System', () => {
   
   beforeEach(() => {
-    // テスト開始前にインスタンスをリセット
+    // Reset instance before each test
     DiagnosticThresholds.reset();
   });
 
   afterEach(() => {
-    // テスト後にクリーンアップ
+    // Cleanup after each test
     DiagnosticThresholds.reset();
   });
 
-  describe('基本機能テスト', () => {
-    test('デフォルト閾値が正しく設定される', () => {
+  describe('Basic functionality tests', () => {
+    test('default thresholds are correctly set', () => {
       const thresholds = getCurrentThresholds();
       const metrics = thresholds.getMetricsThresholds();
       
-      // デフォルト値の検証
+      // Verify default values
       expect(metrics.dom.elementsWarning).toBe(1500);
       expect(metrics.dom.elementsDanger).toBe(3000);
       expect(metrics.dom.depthWarning).toBe(15);
@@ -33,14 +33,14 @@ describe('DiagnosticThresholds - Unit4 Configuration System', () => {
       expect(metrics.layout.excessiveZIndexThreshold).toBe(9999);
     });
 
-    test('シングルトンパターンが正しく動作', () => {
+    test('singleton pattern works correctly', () => {
       const instance1 = getCurrentThresholds();
       const instance2 = getCurrentThresholds();
       
       expect(instance1).toBe(instance2);
     });
 
-    test('カテゴリ別閾値取得が機能する', () => {
+    test('category-specific threshold retrieval works', () => {
       const thresholds = getCurrentThresholds();
       
       const domThresholds = thresholds.getDomThresholds();
@@ -53,11 +53,11 @@ describe('DiagnosticThresholds - Unit4 Configuration System', () => {
     });
   });
 
-  describe('ランタイム設定変更テスト', () => {
-    test('閾値の部分更新が機能する', () => {
+  describe('Runtime configuration change tests', () => {
+    test('partial threshold updates work', () => {
       const thresholds = getCurrentThresholds();
       
-      // 一部の閾値を更新
+      // Update some thresholds
       thresholds.updateThresholds({
         dom: {
           elementsWarning: 2000,
@@ -68,12 +68,12 @@ describe('DiagnosticThresholds - Unit4 Configuration System', () => {
       const metrics = thresholds.getMetricsThresholds();
       expect(metrics.dom.elementsWarning).toBe(2000);
       expect(metrics.dom.elementsDanger).toBe(4000);
-      // 他の値は変更されていない
+      // Other values remain unchanged
       expect(metrics.dom.depthWarning).toBe(15);
       expect(metrics.layout.highZIndexThreshold).toBe(1000);
     });
 
-    test('複数カテゴリの同時更新が機能する', () => {
+    test('simultaneous updates of multiple categories work', () => {
       const thresholds = getCurrentThresholds();
       
       thresholds.updateThresholds({
@@ -96,10 +96,10 @@ describe('DiagnosticThresholds - Unit4 Configuration System', () => {
       expect(metrics.layout.highZIndexThreshold).toBe(2000);
     });
 
-    test('デフォルトリセットが機能する', () => {
+    test('default reset works', () => {
       const thresholds = getCurrentThresholds();
       
-      // 値を変更
+      // Change values
       thresholds.updateThresholds({
         dom: {
           elementsWarning: 9999,
@@ -107,17 +107,17 @@ describe('DiagnosticThresholds - Unit4 Configuration System', () => {
         }
       });
 
-      // リセット
+      // Reset
       thresholds.resetToDefaults();
 
       const metrics = thresholds.getMetricsThresholds();
-      expect(metrics.dom.elementsWarning).toBe(1500);  // デフォルトに戻る
-      expect(metrics.dom.elementsDanger).toBe(3000);   // デフォルトに戻る
+      expect(metrics.dom.elementsWarning).toBe(1500);  // Returns to default
+      expect(metrics.dom.elementsDanger).toBe(3000);   // Returns to default
     });
   });
 
-  describe('設定検証テスト', () => {
-    test('有効な設定は検証を通過', () => {
+  describe('Configuration validation tests', () => {
+    test('valid configuration passes validation', () => {
       const thresholds = getCurrentThresholds();
       
       // 有効な設定

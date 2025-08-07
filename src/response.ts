@@ -1,30 +1,12 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import { renderModalStates } from './tab.js';
 import { mergeExpectations } from './schemas/expectation.js';
 import { processImage } from './utils/imageProcessor.js';
 import { ResponseDiffDetector } from './utils/responseDiffDetector.js';
-
 import type { Tab, TabSnapshot } from './tab.js';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Context } from './context.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
 import type { DiffResult } from './types/diff.js';
-
 export class Response {
   private _result: string[] = [];
   private _code: string[] = [];
@@ -35,14 +17,11 @@ export class Response {
   private _tabSnapshot: TabSnapshot | undefined;
   private _expectation: NonNullable<ExpectationOptions>;
   private _diffResult: DiffResult | undefined;
-
   readonly toolName: string;
   readonly toolArgs: Record<string, any>;
   private _isError: boolean | undefined;
-
   // Static diff detector instance shared across all responses
   private static diffDetector: ResponseDiffDetector = new ResponseDiffDetector();
-
   constructor(context: Context, toolName: string, toolArgs: Record<string, any>, expectation?: ExpectationOptions) {
     this._context = context;
     this.toolName = toolName;
@@ -51,48 +30,37 @@ export class Response {
     const actualExpectation = expectation || toolArgs.expectation;
     this._expectation = mergeExpectations(toolName, actualExpectation);
   }
-
   addResult(result: string) {
     this._result.push(result);
   }
-
   addError(error: string) {
     this._result.push(error);
     this._isError = true;
   }
-
   isError() {
     return this._isError;
   }
-
   result() {
     return this._result.join('\n');
   }
-
   addCode(code: string) {
     this._code.push(code);
   }
-
   code() {
     return this._code.join('\n');
   }
-
   addImage(image: { contentType: string, data: Buffer }) {
     this._images.push(image);
   }
-
   images() {
     return this._images;
   }
-
   setIncludeSnapshot() {
     this._includeSnapshot = true;
   }
-
   setIncludeTabs() {
     this._includeTabs = true;
   }
-
   async finish() {
     // All the async snapshotting post-action is happening here.
     // Everything below should race against modal states.
@@ -112,7 +80,6 @@ export class Response {
     }
     for (const tab of this._context.tabs())
       await tab.updateTitle();
-
     // Process images if image options are specified
     if (this._expectation.imageOptions && this._images.length > 0) {
       const processedImages = [];
@@ -138,7 +105,6 @@ export class Response {
       // Replace original images with processed ones
       this._images = processedImages;
     }
-
     // Perform diff detection if enabled
     if (this._expectation.diffOptions?.enabled) {
       try {
@@ -166,14 +132,11 @@ export class Response {
       }
     }
   }
-
   tabSnapshot(): TabSnapshot | undefined {
     return this._tabSnapshot;
   }
-
   serialize(): { content: (TextContent | ImageContent)[], isError?: boolean } {
     const response: string[] = [];
-
     // Add diff information if available and has differences
     if (this._diffResult?.hasDifference && this._diffResult.formattedDiff) {
       response.push('### Changes from previous response');
@@ -185,14 +148,12 @@ export class Response {
       response.push('```');
       response.push('');
     }
-
     // Start with command result.
     if (this._result.length) {
       response.push('### Result');
       response.push(this._result.join('\n'));
       response.push('');
     }
-
     // Add code if it exists and expectation allows it.
     if (this._code.length && this._expectation.includeCode) {
       response.push(`### Ran Playwright code
@@ -201,16 +162,13 @@ ${this._code.join('\n')}
 \`\`\``);
       response.push('');
     }
-
     // List browser tabs based on expectation.
     const shouldIncludeTabs = this._expectation.includeTabs || this._includeTabs;
     const shouldIncludeSnapshot = this._expectation.includeSnapshot || this._includeSnapshot;
-
     if (shouldIncludeTabs) {
       const tabsMarkdown = renderTabsMarkdown(this._context.tabs(), true);
       response.push(...tabsMarkdown);
     }
-
     // Add snapshot if provided and expectation allows it.
     if (shouldIncludeSnapshot && this._tabSnapshot?.modalStates.length) {
       response.push(...renderModalStates(this._context, this._tabSnapshot.modalStates));
@@ -219,25 +177,20 @@ ${this._code.join('\n')}
       response.push(this.renderFilteredTabSnapshot(this._tabSnapshot));
       response.push('');
     }
-
     // Main response part
     const content: (TextContent | ImageContent)[] = [
       { type: 'text', text: response.join('\n') },
     ];
-
     // Image attachments.
     if (this._context.config.imageResponses !== 'omit') {
       for (const image of this._images)
         content.push({ type: 'image', data: image.data.toString('base64'), mimeType: image.contentType });
     }
-
     return { content, isError: this._isError };
   }
-
   private renderFilteredTabSnapshot(tabSnapshot: TabSnapshot): string {
     const lines: string[] = [];
     const consoleOptions = this._expectation.consoleOptions;
-
     // Include console messages based on expectation
     if (this._expectation.includeConsole && tabSnapshot.consoleMessages.length) {
       const filteredMessages = this.filterConsoleMessages(tabSnapshot.consoleMessages, consoleOptions);
@@ -248,7 +201,6 @@ ${this._code.join('\n')}
         lines.push('');
       }
     }
-
     // Include downloads based on expectation
     if (this._expectation.includeDownloads && tabSnapshot.downloads.length) {
       lines.push(`### Downloads`);
@@ -260,29 +212,22 @@ ${this._code.join('\n')}
       }
       lines.push('');
     }
-
     lines.push(`### Page state`);
     lines.push(`- Page URL: ${tabSnapshot.url}`);
     lines.push(`- Page Title: ${tabSnapshot.title}`);
-
     // Only include snapshot if expectation allows it
     if (this._expectation.includeSnapshot) {
       lines.push(`- Page Snapshot:`);
       lines.push('```yaml');
-
       // Use the snapshot as-is (length restrictions handled in tab.ts)
       const snapshot = tabSnapshot.ariaSnapshot;
-
       lines.push(snapshot);
       lines.push('```');
     }
-
     return lines.join('\n');
   }
-
   private filterConsoleMessages(messages: any[], options?: NonNullable<ExpectationOptions>['consoleOptions']): any[] {
     let filtered = messages;
-
     // Filter by levels if specified
     if (options?.levels && options.levels.length > 0) {
       filtered = filtered.filter(msg => {
@@ -290,35 +235,28 @@ ${this._code.join('\n')}
         return options.levels!.includes(level);
       });
     }
-
     // Limit number of messages
     const maxMessages = options?.maxMessages ?? 10;
     if (filtered.length > maxMessages)
       filtered = filtered.slice(0, maxMessages);
-
-
     return filtered;
   }
-
   /**
    * Build content string for diff detection
    * Includes all relevant response information to detect meaningful changes
    */
   private buildContentForDiff(): string {
     const content: string[] = [];
-
     // Include result content
     if (this._result.length) {
       content.push('### Result');
       content.push(this._result.join('\n'));
     }
-
     // Include code if available
     if (this._code.length) {
       content.push('### Code');
       content.push(this._code.join('\n'));
     }
-
     // Include tab snapshot if available and expectation allows it
     if (this._tabSnapshot && this._expectation.includeSnapshot) {
       content.push('### Page State');
@@ -327,7 +265,6 @@ ${this._code.join('\n')}
       content.push('Snapshot:');
       content.push(this._tabSnapshot.ariaSnapshot);
     }
-
     // Include console messages if available and expectation allows it
     if (this._tabSnapshot?.consoleMessages.length && this._expectation.includeConsole) {
       const filteredMessages = this.filterConsoleMessages(
@@ -339,15 +276,12 @@ ${this._code.join('\n')}
         filteredMessages.forEach(msg => content.push(`- ${msg.toString()}`));
       }
     }
-
     return content.join('\n');
   }
 }
-
 function renderTabsMarkdown(tabs: Tab[], force: boolean = false): string[] {
   if (tabs.length === 1 && !force)
     return [];
-
   if (!tabs.length) {
     return [
       '### Open tabs',
@@ -355,7 +289,6 @@ function renderTabsMarkdown(tabs: Tab[], force: boolean = false): string[] {
       '',
     ];
   }
-
   const lines: string[] = ['### Open tabs'];
   for (let i = 0; i < tabs.length; i++) {
     const tab = tabs[i];
@@ -365,7 +298,6 @@ function renderTabsMarkdown(tabs: Tab[], force: boolean = false): string[] {
   lines.push('');
   return lines;
 }
-
 function trim(text: string, maxLength: number) {
   if (text.length <= maxLength)
     return text;

@@ -1,6 +1,4 @@
-
 import type { ExpectationOptions } from '../schemas/expectation.js';
-
 export interface ImageProcessingResult {
   data: Buffer;
   contentType: string;
@@ -8,28 +6,19 @@ export interface ImageProcessingResult {
   processedSize: { width: number; height: number };
   compressionRatio: number;
 }
-
 /**
  * Validate image processing options
  */
 export function validateImageOptions(options: NonNullable<ExpectationOptions>['imageOptions']): string[] {
   const errors: string[] = [];
-
   if (options?.quality !== undefined && (options.quality < 1 || options.quality > 100))
     errors.push('Image quality must be between 1 and 100');
-
-
   if (options?.maxWidth !== undefined && options.maxWidth < 1)
     errors.push('Max width must be greater than 0');
-
-
   if (options?.maxHeight !== undefined && options.maxHeight < 1)
     errors.push('Max height must be greater than 0');
-
-
   return errors;
 }
-
 /**
  * Process image using Sharp library
  */
@@ -40,7 +29,6 @@ export async function processImage(
 ): Promise<ImageProcessingResult> {
   try {
     const sharp = await import('sharp');
-
     if (!options) {
       // Get metadata for no-operation case
       const metadata = await sharp.default(imageData).metadata();
@@ -48,7 +36,6 @@ export async function processImage(
         width: metadata.width || 0,
         height: metadata.height || 0
       };
-
       return {
         data: imageData,
         contentType: originalContentType,
@@ -57,49 +44,37 @@ export async function processImage(
         compressionRatio: 1.0
       };
     }
-
     let processor = sharp.default(imageData);
     const metadata = await processor.metadata();
     const originalSize = {
       width: metadata.width || 0,
       height: metadata.height || 0
     };
-
     const processedSize = { ...originalSize };
-
     // Apply resize operations
     if (options.maxWidth || options.maxHeight) {
       const resizeOptions: { width?: number; height?: number; fit?: 'inside' } = {
         fit: 'inside' // Maintain aspect ratio
       };
-
       if (options.maxWidth)
         resizeOptions.width = options.maxWidth;
-
-
       if (options.maxHeight)
         resizeOptions.height = options.maxHeight;
-
-
       processor = processor.resize(resizeOptions);
-
       // Calculate processed size
       if (options.maxWidth && originalSize.width > options.maxWidth) {
         const ratio = options.maxWidth / originalSize.width;
         processedSize.width = options.maxWidth;
         processedSize.height = Math.round(originalSize.height * ratio);
       }
-
       if (options.maxHeight && processedSize.height > options.maxHeight) {
         const ratio = options.maxHeight / processedSize.height;
         processedSize.height = options.maxHeight;
         processedSize.width = Math.round(processedSize.width * ratio);
       }
     }
-
     // Apply format conversion and quality settings
     let contentType = originalContentType;
-
     if (options.format) {
       switch (options.format) {
         case 'jpeg':
@@ -117,10 +92,8 @@ export async function processImage(
           break;
       }
     }
-
     const processedData = await processor.toBuffer();
     const compressionRatio = imageData.length > 0 ? processedData.length / imageData.length : 1.0;
-
     return {
       data: processedData,
       contentType,

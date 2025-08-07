@@ -66,7 +66,7 @@ export class SmartConfigManager {
 
   private constructor(initialConfig?: Partial<SmartConfig>) {
     this.config = this.createDefaultConfig();
-    // 統合された閾値管理システムを初期化
+    // Initialize integrated threshold management system
     this.thresholdsManager = DiagnosticThresholds.getInstance();
     if (initialConfig) {
       this.updateConfig(initialConfig);
@@ -81,7 +81,7 @@ export class SmartConfigManager {
   }
 
   private createDefaultConfig(): SmartConfig {
-    // DiagnosticThresholds から閾値を取得（ハードコーディング解消）
+    // Get thresholds from DiagnosticThresholds (eliminate hardcoding)
     const defaultThresholds = DiagnosticThresholds.getInstance().getMetricsThresholds();
     
     return {
@@ -140,7 +140,7 @@ export class SmartConfigManager {
     const previousConfig = { ...this.config };
     this.config = this.deepMerge(this.config, updates);
     
-    // 閾値が更新された場合、DiagnosticThresholdsも同期更新
+    // If thresholds are updated, sync DiagnosticThresholds as well
     if (updates.performance?.thresholds) {
       this.syncThresholdsWithManager(updates.performance.thresholds);
     }

@@ -1,23 +1,6 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import { program, Option } from 'commander';
 // @ts-ignore
 import { startTraceViewerServer } from 'playwright-core/lib/server';
-
 import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
 import { packageJSON } from './package.js';
@@ -27,7 +10,6 @@ import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
 import { logServerStart } from './utils/requestLogger.js';
-
 program
     .version('Version ' + packageJSON.version)
     .name(packageJSON.name)
@@ -62,14 +44,12 @@ program
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
       setupExitWatchdog();
-
       if (options.vision) {
         // eslint-disable-next-line no-console
         console.error('The --vision option is deprecated, use --caps=vision instead');
         options.caps = 'vision';
       }
       const config = await resolveCLIConfig(options);
-
       if (options.extension) {
         await runWithExtension(config);
         return;
@@ -78,7 +58,6 @@ program
         await runLoopTools(config);
         return;
       }
-
       const browserContextFactory = contextFactory(config);
       const factories: FactoryList = [browserContextFactory];
       if (options.connectTool)
@@ -86,7 +65,6 @@ program
       const serverBackendFactory = () => new BrowserServerBackend(config, factories);
       logServerStart();
       await mcpTransport.start(serverBackendFactory, config.server);
-
       if (config.saveTrace) {
         const server = await startTraceViewerServer();
         const urlPrefix = server.urlPrefix('human-readable');
@@ -95,7 +73,6 @@ program
         console.error('\nTrace viewer listening on ' + url);
       }
     });
-
 function setupExitWatchdog() {
   let isExiting = false;
   const handleExit = async () => {
@@ -106,10 +83,8 @@ function setupExitWatchdog() {
     await Context.disposeAll();
     process.exit(0);
   };
-
   process.stdin.on('close', handleExit);
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
 }
-
 void program.parseAsync(process.argv);

@@ -1,28 +1,9 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import { z } from 'zod';
-
 import { defineTabTool } from './tool.js';
 import * as javascript from '../javascript.js';
 import { generateLocator } from './utils.js';
 import { expectationSchema } from '../schemas/expectation.js';
-
 import type * as playwright from 'playwright';
-
 const screenshotSchema = z.object({
   type: z.enum(['png', 'jpeg']).default('png').describe('Image format for the screenshot. Default is png.'),
   filename: z.string().optional().describe('File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified.'),
@@ -41,7 +22,6 @@ const screenshotSchema = z.object({
   message: 'fullPage cannot be used with element screenshots.',
   path: ['fullPage']
 });
-
 const screenshot = defineTabTool({
   capability: 'core',
   schema: {
@@ -51,7 +31,6 @@ const screenshot = defineTabTool({
     inputSchema: screenshotSchema,
     type: 'readOnly',
   },
-
   handle: async (tab, params, response) => {
     const fileType = params.type || 'png';
     const fileName = await tab.context.outputFile(params.filename ?? `page-${new Date().toISOString()}.${fileType}`);
@@ -63,18 +42,14 @@ const screenshot = defineTabTool({
       ...(params.fullPage !== undefined && { fullPage: params.fullPage })
     };
     const isElementScreenshot = params.element && params.ref;
-
     const screenshotTarget = isElementScreenshot ? params.element : (params.fullPage ? 'full page' : 'viewport');
     response.addCode(`// Screenshot ${screenshotTarget} and save it as ${fileName}`);
-
     // Only get snapshot when element screenshot is needed
     const locator = isElementScreenshot ? await tab.refLocator({ element: params.element!, ref: params.ref! }) : null;
-
     if (locator)
       response.addCode(`await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`);
     else
       response.addCode(`await page.screenshot(${javascript.formatObject(options)});`);
-
     const buffer = locator ? await locator.screenshot(options) : await tab.page.screenshot(options);
     response.addResult(`Took the ${screenshotTarget} screenshot and saved it as ${fileName}`);
     response.addImage({
@@ -83,7 +58,6 @@ const screenshot = defineTabTool({
     });
   }
 });
-
 export default [
   screenshot,
 ];

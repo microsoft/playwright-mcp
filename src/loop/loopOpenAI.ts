@@ -1,28 +1,9 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import type OpenAI from 'openai';
 import type { LLMDelegate, LLMConversation, LLMToolCall, LLMTool } from './loop.js';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-
 const model = 'gpt-4.1';
-
 export class OpenAIDelegate implements LLMDelegate {
   private _openai: OpenAI | undefined;
-
   async openai(): Promise<OpenAI> {
     if (!this._openai) {
       const oai = await import('openai');
@@ -30,14 +11,12 @@ export class OpenAIDelegate implements LLMDelegate {
     }
     return this._openai;
   }
-
   createConversation(task: string, tools: Tool[], oneShot: boolean): LLMConversation {
     const genericTools: LLMTool[] = tools.map(tool => ({
       name: tool.name,
       description: tool.description || '',
       inputSchema: tool.inputSchema,
     }));
-
     if (!oneShot) {
       genericTools.push({
         name: 'done',
@@ -48,7 +27,6 @@ export class OpenAIDelegate implements LLMDelegate {
         },
       });
     }
-
     return {
       messages: [{
         role: 'user',
@@ -57,11 +35,9 @@ export class OpenAIDelegate implements LLMDelegate {
       tools: genericTools,
     };
   }
-
   async makeApiCall(conversation: LLMConversation): Promise<LLMToolCall[]> {
     // Convert generic messages to OpenAI format
     const openaiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
-
     for (const message of conversation.messages) {
       if (message.role === 'user') {
         openaiMessages.push({
@@ -70,7 +46,6 @@ export class OpenAIDelegate implements LLMDelegate {
         });
       } else if (message.role === 'assistant') {
         const toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[] = [];
-
         if (message.toolCalls) {
           for (const toolCall of message.toolCalls) {
             toolCalls.push({
@@ -83,17 +58,13 @@ export class OpenAIDelegate implements LLMDelegate {
             });
           }
         }
-
         const assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam = {
           role: 'assistant'
         };
-
         if (message.content)
           assistantMessage.content = message.content;
-
         if (toolCalls.length > 0)
           assistantMessage.tool_calls = toolCalls;
-
         openaiMessages.push(assistantMessage);
       } else if (message.role === 'tool') {
         openaiMessages.push({
@@ -103,7 +74,6 @@ export class OpenAIDelegate implements LLMDelegate {
         });
       }
     }
-
     // Convert generic tools to OpenAI format
     const openaiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = conversation.tools.map(tool => ({
       type: 'function',
@@ -113,7 +83,6 @@ export class OpenAIDelegate implements LLMDelegate {
         parameters: tool.inputSchema,
       },
     }));
-
     const openai = await this.openai();
     const response = await openai.chat.completions.create({
       model,
@@ -121,9 +90,7 @@ export class OpenAIDelegate implements LLMDelegate {
       tools: openaiTools,
       tool_choice: 'auto'
     });
-
     const message = response.choices[0].message;
-
     // Extract tool calls and add assistant message to generic conversation
     const toolCalls = message.tool_calls || [];
     const genericToolCalls: LLMToolCall[] = toolCalls.map(toolCall => {
@@ -134,17 +101,14 @@ export class OpenAIDelegate implements LLMDelegate {
         id: toolCall.id,
       };
     });
-
     // Add assistant message to generic conversation
     conversation.messages.push({
       role: 'assistant',
       content: message.content || '',
       toolCalls: genericToolCalls.length > 0 ? genericToolCalls : undefined
     });
-
     return genericToolCalls;
   }
-
   addToolResults(
     conversation: LLMConversation,
     results: Array<{ toolCallId: string; content: string; isError?: boolean }>
@@ -158,11 +122,9 @@ export class OpenAIDelegate implements LLMDelegate {
       });
     }
   }
-
   checkDoneToolCall(toolCall: LLMToolCall): string | null {
     if (toolCall.name === 'done')
       return toolCall.arguments.result;
-
     return null;
   }
 }

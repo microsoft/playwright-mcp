@@ -1,28 +1,10 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { devices } from 'playwright';
 import { sanitizeForFilePath } from './utils.js';
-
 import type { Config, ToolCapability } from '../config.js';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';
-
 export type CLIOptions = {
   allowedOrigins?: string[];
   blockedOrigins?: string[];
@@ -50,7 +32,6 @@ export type CLIOptions = {
   userDataDir?: string;
   viewportSize?: string;
 };
-
 const defaultConfig: FullConfig = {
   browser: {
     browserName: 'chromium',
@@ -70,9 +51,7 @@ const defaultConfig: FullConfig = {
   server: {},
   saveTrace: false,
 };
-
 type BrowserUserConfig = NonNullable<Config['browser']>;
-
 export type FullConfig = Config & {
   browser: Omit<BrowserUserConfig, 'browserName'> & {
     browserName: 'chromium' | 'firefox' | 'webkit';
@@ -83,11 +62,9 @@ export type FullConfig = Config & {
   saveTrace: boolean;
   server: NonNullable<Config['server']>,
 };
-
 export async function resolveConfig(config: Config): Promise<FullConfig> {
   return mergeConfig(defaultConfig, config);
 }
-
 export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConfig> {
   const configInFile = await loadConfig(cliOptions.config);
   const envOverrides = configFromEnv();
@@ -98,7 +75,6 @@ export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConf
   result = mergeConfig(result, cliOverrides);
   return result;
 }
-
 export function configFromCLIOptions(cliOptions: CLIOptions): Config {
   let browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
   let channel: string | undefined;
@@ -122,18 +98,15 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
       browserName = 'webkit';
       break;
   }
-
   // Launch options
   const launchOptions: LaunchOptions = {
     channel,
     executablePath: cliOptions.executablePath,
     headless: cliOptions.headless,
   };
-
   // --no-sandbox was passed, disable the sandbox
   if (cliOptions.sandbox === false)
     launchOptions.chromiumSandbox = false;
-
   if (cliOptions.proxyServer) {
     launchOptions.proxy = {
       server: cliOptions.proxyServer
@@ -141,18 +114,14 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
     if (cliOptions.proxyBypass)
       launchOptions.proxy.bypass = cliOptions.proxyBypass;
   }
-
   if (cliOptions.device && cliOptions.cdpEndpoint)
     throw new Error('Device emulation is not supported with cdpEndpoint.');
-
   // Context options
   const contextOptions: BrowserContextOptions = cliOptions.device ? devices[cliOptions.device] : {};
   if (cliOptions.storageState)
     contextOptions.storageState = cliOptions.storageState;
-
   if (cliOptions.userAgent)
     contextOptions.userAgent = cliOptions.userAgent;
-
   if (cliOptions.viewportSize) {
     try {
       const [width, height] = cliOptions.viewportSize.split(',').map(n => +n);
@@ -163,13 +132,10 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
       throw new Error('Invalid viewport size format: use "width,height", for example --viewport-size="800,600"');
     }
   }
-
   if (cliOptions.ignoreHttpsErrors)
     contextOptions.ignoreHTTPSErrors = true;
-
   if (cliOptions.blockServiceWorkers)
     contextOptions.serviceWorkers = 'block';
-
   const result: Config = {
     browser: {
       browserName,
@@ -193,10 +159,8 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
     outputDir: cliOptions.outputDir,
     imageResponses: cliOptions.imageResponses,
   };
-
   return result;
 }
-
 function configFromEnv(): Config {
   const options: CLIOptions = {};
   options.allowedOrigins = semicolonSeparatedList(process.env.PLAYWRIGHT_MCP_ALLOWED_ORIGINS);
@@ -226,34 +190,28 @@ function configFromEnv(): Config {
   options.viewportSize = envToString(process.env.PLAYWRIGHT_MCP_VIEWPORT_SIZE);
   return configFromCLIOptions(options);
 }
-
 async function loadConfig(configFile: string | undefined): Promise<Config> {
   if (!configFile)
     return {};
-
   try {
     return JSON.parse(await fs.promises.readFile(configFile, 'utf8'));
   } catch (error) {
     throw new Error(`Failed to load config file: ${configFile}, ${error}`);
   }
 }
-
 export async function outputFile(config: FullConfig, rootPath: string | undefined, name: string): Promise<string> {
   const outputDir = config.outputDir
     ?? (rootPath ? path.join(rootPath, '.playwright-mcp') : undefined)
     ?? path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString()));
-
   await fs.promises.mkdir(outputDir, { recursive: true });
   const fileName = sanitizeForFilePath(name);
   return path.join(outputDir, fileName);
 }
-
 function pickDefined<T extends object>(obj: T | undefined): Partial<T> {
   return Object.fromEntries(
       Object.entries(obj ?? {}).filter(([_, v]) => v !== undefined)
   ) as Partial<T>;
 }
-
 function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
   const browser: FullConfig['browser'] = {
     ...pickDefined(base.browser),
@@ -270,10 +228,8 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
       ...pickDefined(overrides.browser?.contextOptions),
     },
   };
-
   if (browser.browserName !== 'chromium' && browser.launchOptions)
     delete browser.launchOptions.channel;
-
   return {
     ...pickDefined(base),
     ...pickDefined(overrides),
@@ -288,25 +244,21 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
     },
   } as FullConfig;
 }
-
 export function semicolonSeparatedList(value: string | undefined): string[] | undefined {
   if (!value)
     return undefined;
   return value.split(';').map(v => v.trim());
 }
-
 export function commaSeparatedList(value: string | undefined): string[] | undefined {
   if (!value)
     return undefined;
   return value.split(',').map(v => v.trim());
 }
-
 function envToNumber(value: string | undefined): number | undefined {
   if (!value)
     return undefined;
   return +value;
 }
-
 function envToBoolean(value: string | undefined): boolean | undefined {
   if (value === 'true' || value === '1')
     return true;
@@ -314,7 +266,6 @@ function envToBoolean(value: string | undefined): boolean | undefined {
     return false;
   return undefined;
 }
-
 function envToString(value: string | undefined): string | undefined {
   return value ? value.trim() : undefined;
 }

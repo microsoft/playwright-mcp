@@ -1,19 +1,3 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { FullConfig } from './config.js';
@@ -24,26 +8,20 @@ import { SessionLog } from './sessionLog.js';
 import { filteredTools } from './tools.js';
 import { packageJSON } from './package.js';
 import { defineTool  } from './tools/tool.js';
-
 import type { Tool } from './tools/tool.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
 import type * as mcpServer from './mcp/server.js';
 import type { ServerBackend } from './mcp/server.js';
-
 type NonEmptyArray<T> = [T, ...T[]];
-
 export type FactoryList = NonEmptyArray<BrowserContextFactory>;
-
 export class BrowserServerBackend implements ServerBackend {
   name = 'Playwright';
   version = packageJSON.version;
-
   private _tools: Tool[];
   private _context: Context | undefined;
   private _sessionLog: SessionLog | undefined;
   private _config: FullConfig;
   private _browserContextFactory: BrowserContextFactory;
-
   constructor(config: FullConfig, factories: FactoryList) {
     this._config = config;
     this._browserContextFactory = factories[0];
@@ -51,7 +29,6 @@ export class BrowserServerBackend implements ServerBackend {
     if (factories.length > 1)
       this._tools.push(this._defineContextSwitchTool(factories));
   }
-
   async initialize(server: mcpServer.Server): Promise<void> {
     const capabilities = server.getClientCapabilities() as mcpServer.ClientCapabilities;
     let rootPath: string | undefined;
@@ -70,11 +47,9 @@ export class BrowserServerBackend implements ServerBackend {
       clientInfo: { ...server.getClientVersion(), rootPath },
     });
   }
-
   tools(): mcpServer.ToolSchema<any>[] {
     return this._tools.map(tool => tool.schema);
   }
-
   async callTool(schema: mcpServer.ToolSchema<any>, parsedArguments: any) {
     const context = this._context!;
     const response = new Response(context, schema.name, parsedArguments, parsedArguments.expectation);
@@ -91,16 +66,13 @@ export class BrowserServerBackend implements ServerBackend {
     }
     return response.serialize();
   }
-
   serverClosed() {
     void this._context!.dispose().catch(logUnhandledError);
   }
-
   private _defineContextSwitchTool(factories: FactoryList): Tool<any> {
     const self = this;
     return defineTool({
       capability: 'core',
-
       schema: {
         name: 'browser_connect',
         title: 'Connect to a browser context',
@@ -113,7 +85,6 @@ export class BrowserServerBackend implements ServerBackend {
         }),
         type: 'readOnly',
       },
-
       async handle(context, params, response) {
         const factory = factories.find(factory => factory.name === params.method);
         if (!factory) {
@@ -125,7 +96,6 @@ export class BrowserServerBackend implements ServerBackend {
       }
     });
   }
-
   private async _setContextFactory(newFactory: BrowserContextFactory) {
     if (this._context) {
       const options = {

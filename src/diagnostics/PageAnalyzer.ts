@@ -41,7 +41,7 @@ export class PageAnalyzer implements IDisposable {
 
   constructor(private page: playwright.Page | null) {
     this.frameManager = new FrameReferenceManager();
-    // 設定システムから閾値を取得（ハードコーディング解消）
+    // Get thresholds from configuration system (eliminate hardcoding)
     this.metricsThresholds = getCurrentThresholds().getMetricsThresholds();
   }
 

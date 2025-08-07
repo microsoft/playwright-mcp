@@ -1,28 +1,9 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import type Anthropic from '@anthropic-ai/sdk';
 import type { LLMDelegate, LLMConversation, LLMToolCall, LLMTool } from './loop.js';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-
 const model = 'claude-sonnet-4-20250514';
-
 export class ClaudeDelegate implements LLMDelegate {
   private _anthropic: Anthropic | undefined;
-
   async anthropic(): Promise<Anthropic> {
     if (!this._anthropic) {
       const anthropic = await import('@anthropic-ai/sdk');
@@ -30,14 +11,12 @@ export class ClaudeDelegate implements LLMDelegate {
     }
     return this._anthropic;
   }
-
   createConversation(task: string, tools: Tool[], oneShot: boolean): LLMConversation {
     const llmTools: LLMTool[] = tools.map(tool => ({
       name: tool.name,
       description: tool.description || '',
       inputSchema: tool.inputSchema,
     }));
-
     if (!oneShot) {
       llmTools.push({
         name: 'done',
@@ -48,7 +27,6 @@ export class ClaudeDelegate implements LLMDelegate {
         },
       });
     }
-
     return {
       messages: [{
         role: 'user',
@@ -57,11 +35,9 @@ export class ClaudeDelegate implements LLMDelegate {
       tools: llmTools,
     };
   }
-
   async makeApiCall(conversation: LLMConversation): Promise<LLMToolCall[]> {
     // Convert generic messages to Claude format
     const claudeMessages: Anthropic.Messages.MessageParam[] = [];
-
     for (const message of conversation.messages) {
       if (message.role === 'user') {
         claudeMessages.push({
@@ -70,7 +46,6 @@ export class ClaudeDelegate implements LLMDelegate {
         });
       } else if (message.role === 'assistant') {
         const content: Anthropic.Messages.ContentBlock[] = [];
-
         // Add text content
         if (message.content) {
           content.push({
@@ -79,7 +54,6 @@ export class ClaudeDelegate implements LLMDelegate {
             citations: []
           });
         }
-
         // Add tool calls
         if (message.toolCalls) {
           for (const toolCall of message.toolCalls) {
@@ -91,7 +65,6 @@ export class ClaudeDelegate implements LLMDelegate {
             });
           }
         }
-
         claudeMessages.push({
           role: 'assistant',
           content
@@ -105,7 +78,6 @@ export class ClaudeDelegate implements LLMDelegate {
           content: message.content,
           is_error: message.isError,
         };
-
         if (lastMessage && lastMessage.role === 'user' && Array.isArray(lastMessage.content)) {
           // Add to existing tool results message
           (lastMessage.content as Anthropic.Messages.ToolResultBlockParam[]).push(toolResult);
@@ -118,14 +90,12 @@ export class ClaudeDelegate implements LLMDelegate {
         }
       }
     }
-
     // Convert generic tools to Claude format
     const claudeTools: Anthropic.Messages.Tool[] = conversation.tools.map(tool => ({
       name: tool.name,
       description: tool.description,
       input_schema: tool.inputSchema,
     }));
-
     const anthropic = await this.anthropic();
     const response = await anthropic.messages.create({
       model,
@@ -133,27 +103,22 @@ export class ClaudeDelegate implements LLMDelegate {
       messages: claudeMessages,
       tools: claudeTools,
     });
-
     // Extract tool calls and add assistant message to generic conversation
     const toolCalls = response.content.filter(block => block.type === 'tool_use') as Anthropic.Messages.ToolUseBlock[];
     const textContent = response.content.filter(block => block.type === 'text').map(block => (block as Anthropic.Messages.TextBlock).text).join('');
-
     const llmToolCalls: LLMToolCall[] = toolCalls.map(toolCall => ({
       name: toolCall.name,
       arguments: toolCall.input as any,
       id: toolCall.id,
     }));
-
     // Add assistant message to generic conversation
     conversation.messages.push({
       role: 'assistant',
       content: textContent,
       toolCalls: llmToolCalls.length > 0 ? llmToolCalls : undefined
     });
-
     return llmToolCalls;
   }
-
   addToolResults(
     conversation: LLMConversation,
     results: Array<{ toolCallId: string; content: string; isError?: boolean }>
@@ -167,11 +132,9 @@ export class ClaudeDelegate implements LLMDelegate {
       });
     }
   }
-
   checkDoneToolCall(toolCall: LLMToolCall): string | null {
     if (toolCall.name === 'done')
       return (toolCall.arguments as { result: string }).result;
-
     return null;
   }
 }

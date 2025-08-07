@@ -1,6 +1,6 @@
 /**
- * DiagnosticThresholds - 診断システムの閾値管理クラス
- * すべてのハードコーディングされた閾値を中央集約化
+ * DiagnosticThresholds - Diagnostic system threshold management class
+ * Centralizes all hardcoded thresholds
  */
 
 import type { MetricsThresholds } from '../types/performance.js';
@@ -46,8 +46,8 @@ export interface DiagnosticThresholdsConfig {
 }
 
 /**
- * デフォルト閾値設定
- * すべてのハードコーディング値をここに集約
+ * Default threshold settings
+ * Consolidates all hardcoded values here
  */
 const DEFAULT_THRESHOLDS: Required<DiagnosticThresholdsConfig> = {
   executionTime: {
@@ -90,8 +90,8 @@ const DEFAULT_THRESHOLDS: Required<DiagnosticThresholdsConfig> = {
 };
 
 /**
- * 診断システムの閾値管理（シングルトン）
- * 設定の検証、デフォルト値フォールバック、ランタイム設定変更をサポート
+ * Diagnostic system threshold management (singleton)
+ * Supports configuration validation, default value fallback, and runtime configuration changes
  */
 export class DiagnosticThresholds {
   private static instance: DiagnosticThresholds | null = null;
@@ -103,27 +103,27 @@ export class DiagnosticThresholds {
   }
 
   /**
-   * シングルトンインスタンスを取得
+   * Get singleton instance
    */
   static getInstance(config?: DiagnosticThresholdsConfig): DiagnosticThresholds {
     if (!DiagnosticThresholds.instance) {
       DiagnosticThresholds.instance = new DiagnosticThresholds(config);
     } else if (config) {
-      // 既存インスタンスに設定を更新
+      // Update configuration to existing instance
       DiagnosticThresholds.instance.updateThresholds(config);
     }
     return DiagnosticThresholds.instance;
   }
 
   /**
-   * インスタンスをリセット（テスト用）
+   * Reset instance (for testing)
    */
   static reset(): void {
     DiagnosticThresholds.instance = null;
   }
 
   /**
-   * 現在の閾値設定をMetricsThresholds形式で取得
+   * Get current threshold settings in MetricsThresholds format
    */
   getMetricsThresholds(): MetricsThresholds {
     // @ts-ignore - Type-safe conversion ensuring all properties are defined (guaranteed by mergeWithDefaults)
@@ -195,7 +195,7 @@ export class DiagnosticThresholds {
   }
 
   /**
-   * 特定カテゴリの閾値を取得
+   * Get thresholds for specific categories
    */
   getDomThresholds() {
     return this.currentThresholds.dom;

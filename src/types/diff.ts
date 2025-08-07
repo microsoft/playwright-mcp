@@ -1,7 +1,3 @@
-/*
- * Copyright (c) Microsoft Corporation.
- */
-
 export interface DiffOptions {
   enabled: boolean;
   threshold: number;
@@ -10,26 +6,22 @@ export interface DiffOptions {
   ignoreWhitespace: boolean;
   context: number;
 }
-
 export interface DiffSegment {
   type: 'add' | 'remove' | 'equal';
   value: string;
 }
-
 export interface DiffMetadata {
   addedLines: number;
   removedLines: number;
   contextLines: number;
   totalLines: number;
 }
-
 export interface DiffResult {
   hasDifference: boolean;
   similarity: number;
   formattedDiff: string;
   metadata: DiffMetadata;
 }
-
 export interface ResponseStorage {
   toolName: string;
   timestamp: number;

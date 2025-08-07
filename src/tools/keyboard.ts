@@ -1,30 +1,11 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import { z } from 'zod';
-
 import { defineTabTool } from './tool.js';
 import { elementSchema } from './snapshot.js';
 import { generateLocator } from './utils.js';
 import * as javascript from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
-
 const pressKey = defineTabTool({
   capability: 'core',
-
   schema: {
     name: 'browser_press_key',
     title: 'Press a key',
@@ -35,24 +16,20 @@ const pressKey = defineTabTool({
     }),
     type: 'destructive',
   },
-
   handle: async (tab, params, response) => {
     response.addCode(`// Press ${params.key}`);
     response.addCode(`await page.keyboard.press('${params.key}');`);
-
     await tab.waitForCompletion(async () => {
       await tab.page.keyboard.press(params.key);
     });
   },
 });
-
 const typeSchema = elementSchema.extend({
   text: z.string().describe('Text to type into the element'),
   submit: z.boolean().optional().describe('Whether to submit entered text (press Enter after)'),
   slowly: z.boolean().optional().describe('Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'),
   expectation: expectationSchema
 });
-
 const type = defineTabTool({
   capability: 'core',
   schema: {
@@ -62,10 +39,8 @@ const type = defineTabTool({
     inputSchema: typeSchema,
     type: 'destructive',
   },
-
   handle: async (tab, params, response) => {
     const locator = await tab.refLocator(params);
-
     await tab.waitForCompletion(async () => {
       if (params.slowly) {
         response.addCode(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
@@ -74,7 +49,6 @@ const type = defineTabTool({
         response.addCode(`await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`);
         await locator.fill(params.text);
       }
-
       if (params.submit) {
         response.addCode(`await page.${await generateLocator(locator)}.press('Enter');`);
         await locator.press('Enter');
@@ -82,7 +56,6 @@ const type = defineTabTool({
     });
   },
 });
-
 export default [
   pressKey,
   type,

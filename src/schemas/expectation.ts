@@ -1,6 +1,4 @@
-
 import { z } from 'zod';
-
 /**
  * Schema for diff options configuration
  */
@@ -12,7 +10,6 @@ export const diffOptionsSchema = z.object({
   ignoreWhitespace: z.boolean().default(true),
   context: z.number().min(0).default(3)
 }).optional();
-
 /**
  * Schema for expectation configuration that controls response content
  */
@@ -41,9 +38,7 @@ export const expectationSchema = z.object({
   }).optional(),
   diffOptions: diffOptionsSchema
 }).optional();
-
 export type ExpectationOptions = z.infer<typeof expectationSchema>;
-
 /**
  * Tool-specific default expectation configurations
  * These optimize token usage based on typical tool usage patterns
@@ -58,7 +53,6 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: false
   },
-
   browser_click: {
     includeSnapshot: false,
     includeConsole: false,
@@ -66,7 +60,6 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: false
   },
-
   browser_type: {
     includeSnapshot: false,
     includeConsole: false,
@@ -74,7 +67,6 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: false
   },
-
   browser_take_screenshot: {
     includeSnapshot: false,
     includeConsole: false,
@@ -82,7 +74,6 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: false
   },
-
   // Snapshot tool must include snapshot as that's its purpose
   browser_snapshot: {
     includeSnapshot: true,
@@ -91,7 +82,6 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: false
   },
-
   // All tools default to minimal output
   browser_evaluate: {
     includeSnapshot: false,
@@ -100,7 +90,6 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeTabs: false,
     includeCode: false
   },
-
   browser_wait_for: {
     includeSnapshot: false,
     includeConsole: false,
@@ -109,7 +98,6 @@ const TOOL_DEFAULTS: Record<string, Required<Omit<NonNullable<ExpectationOptions
     includeCode: false
   }
 };
-
 /**
  * General default configuration for tools without specific settings
  */
@@ -120,7 +108,6 @@ const GENERAL_DEFAULT: Required<Omit<NonNullable<ExpectationOptions>, 'snapshotO
   includeTabs: false,
   includeCode: false
 };
-
 /**
  * Get default expectation configuration for a specific tool
  * @param toolName - Name of the tool (e.g., 'click', 'navigate', 'screenshot')
@@ -129,7 +116,6 @@ const GENERAL_DEFAULT: Required<Omit<NonNullable<ExpectationOptions>, 'snapshotO
 export function getDefaultExpectation(toolName: string): Required<Omit<NonNullable<ExpectationOptions>, 'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'>> {
   return TOOL_DEFAULTS[toolName] || GENERAL_DEFAULT;
 }
-
 /**
  * Merge user-provided expectation with tool-specific defaults
  * @param toolName - Name of the tool
@@ -141,11 +127,8 @@ export function mergeExpectations(
   userExpectation?: ExpectationOptions
 ): NonNullable<ExpectationOptions> {
   const defaults = getDefaultExpectation(toolName);
-
   if (!userExpectation)
     return defaults;
-
-
   return {
     includeSnapshot: userExpectation.includeSnapshot ?? defaults.includeSnapshot,
     includeConsole: userExpectation.includeConsole ?? defaults.includeConsole,

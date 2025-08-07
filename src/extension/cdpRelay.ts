@@ -1,27 +1,10 @@
 /**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
  * WebSocket server that bridges Playwright MCP and Chrome Extension
  *
  * Endpoints:
  * - /cdp/guid - Full CDP interface for Playwright MCP
  * - /extension/guid - Extension connection for chrome.debugger forwarding
  */
-
 import { spawn } from 'child_process';
 import http from 'http';
 import debug from 'debug';
@@ -31,19 +14,15 @@ import { logUnhandledError } from '../log.js';
 import { ManualPromise } from '../manualPromise.js';
 import type websocket from 'ws';
 import type { ClientInfo } from '../browserContextFactory.js';
-
 // @ts-ignore
 const { registry } = await import('playwright-core/lib/server/registry/index');
-
 const debugLogger = debug('pw:mcp:relay');
-
 type CDPCommand = {
   id: number;
   sessionId?: string;
   method: string;
   params?: any;
 };
-
 type CDPResponse = {
   id?: number;
   sessionId?: string;
@@ -52,7 +31,6 @@ type CDPResponse = {
   result?: any;
   error?: { code?: number; message: string };
 };
-
 export class CDPRelayServer {
   private _wsHost: string;
   private _browserChannel: string;
@@ -68,28 +46,22 @@ export class CDPRelayServer {
   } | undefined;
   private _nextSessionId: number = 1;
   private _extensionConnectionPromise!: ManualPromise<void>;
-
   constructor(server: http.Server, browserChannel: string) {
     this._wsHost = httpAddressToString(server.address()).replace(/^http/, 'ws');
     this._browserChannel = browserChannel;
-
     const uuid = crypto.randomUUID();
     this._cdpPath = `/cdp/${uuid}`;
     this._extensionPath = `/extension/${uuid}`;
-
     this._resetExtensionConnection();
     this._wss = new WebSocketServer({ server });
     this._wss.on('connection', this._onConnection.bind(this));
   }
-
   cdpEndpoint() {
     return `${this._wsHost}${this._cdpPath}`;
   }
-
   extensionEndpoint() {
     return `${this._wsHost}${this._extensionPath}`;
   }
-
   async ensureExtensionConnectionForMCPContext(clientInfo: ClientInfo, abortSignal: AbortSignal) {
     debugLogger('Ensuring extension connection for MCP context');
     if (this._extensionConnection)
@@ -102,7 +74,6 @@ export class CDPRelayServer {
     ]);
     debugLogger('Extension connection established');
   }
-
   private _connectBrowser(clientInfo: ClientInfo) {
     const mcpRelayEndpoint = `${this._wsHost}${this._extensionPath}`;
     // Need to specify "key" in the manifest.json to make the id stable when loading from file.
@@ -116,7 +87,6 @@ export class CDPRelayServer {
     const executablePath = executableInfo.executablePath();
     if (!executablePath)
       throw new Error(`"${this._browserChannel}" executable not found. Make sure it is installed at a standard location.`);
-
     spawn(executablePath, [href], {
       windowsHide: true,
       detached: true,
@@ -124,17 +94,14 @@ export class CDPRelayServer {
       stdio: 'ignore',
     });
   }
-
   stop(): void {
     this.closeConnections('Server stopped');
     this._wss.close();
   }
-
   closeConnections(reason: string) {
     this._closePlaywrightConnection(reason);
     this._closeExtensionConnection(reason);
   }
-
   private _onConnection(ws: WebSocket, request: http.IncomingMessage): void {
     const url = new URL(`http://localhost${request.url}`);
     debugLogger(`New connection to ${url.pathname}`);
@@ -147,7 +114,6 @@ export class CDPRelayServer {
       ws.close(4004, 'Invalid path');
     }
   }
-
   private _handlePlaywrightConnection(ws: WebSocket): void {
     if (this._playwrightConnection) {
       debugLogger('Rejecting second Playwright connection');
@@ -175,26 +141,22 @@ export class CDPRelayServer {
     });
     debugLogger('Playwright MCP connected');
   }
-
   private _closeExtensionConnection(reason: string) {
     this._extensionConnection?.close(reason);
     this._extensionConnectionPromise.reject(new Error(reason));
     this._resetExtensionConnection();
   }
-
   private _resetExtensionConnection() {
     this._connectedTabInfo = undefined;
     this._extensionConnection = null;
     this._extensionConnectionPromise = new ManualPromise();
     void this._extensionConnectionPromise.catch(logUnhandledError);
   }
-
   private _closePlaywrightConnection(reason: string) {
     if (this._playwrightConnection?.readyState === WebSocket.OPEN)
       this._playwrightConnection.close(1000, reason);
     this._playwrightConnection = null;
   }
-
   private _handleExtensionConnection(ws: WebSocket): void {
     if (this._extensionConnection) {
       ws.close(1000, 'Another extension connection already established');
@@ -211,7 +173,6 @@ export class CDPRelayServer {
     this._extensionConnection.onmessage = this._handleExtensionMessage.bind(this);
     this._extensionConnectionPromise.resolve();
   }
-
   private _handleExtensionMessage(method: string, params: any) {
     switch (method) {
       case 'forwardCDPEvent':
@@ -228,7 +189,6 @@ export class CDPRelayServer {
         break;
     }
   }
-
   private async _handlePlaywrightMessage(message: CDPCommand): Promise<void> {
     debugLogger('← Playwright:', `${message.method} (id=${message.id})`);
     const { id, sessionId, method, params } = message;
@@ -244,7 +204,6 @@ export class CDPRelayServer {
       });
     }
   }
-
   private async _handleCDPCommand(method: string, params: any, sessionId: string | undefined): Promise<any> {
     switch (method) {
       case 'Browser.getVersion': {
@@ -287,7 +246,6 @@ export class CDPRelayServer {
     }
     return await this._forwardToExtension(method, params, sessionId);
   }
-
   private async _forwardToExtension(method: string, params: any, sessionId: string | undefined): Promise<any> {
     if (!this._extensionConnection)
       throw new Error('Extension not connected');
@@ -296,13 +254,11 @@ export class CDPRelayServer {
       sessionId = undefined;
     return await this._extensionConnection.send('forwardCDPCommand', { sessionId, method, params });
   }
-
   private _sendToPlaywright(message: CDPResponse): void {
     debugLogger('→ Playwright:', `${message.method ?? `response(id=${message.id})`}`);
     this._playwrightConnection?.send(JSON.stringify(message));
   }
 }
-
 type ExtensionResponse = {
   id?: number;
   method?: string;
@@ -310,22 +266,18 @@ type ExtensionResponse = {
   result?: any;
   error?: string;
 };
-
 class ExtensionConnection {
   private readonly _ws: WebSocket;
   private readonly _callbacks = new Map<number, { resolve: (o: any) => void, reject: (e: Error) => void, error: Error }>();
   private _lastId = 0;
-
   onmessage?: (method: string, params: any) => void;
   onclose?: (self: ExtensionConnection, reason: string) => void;
-
   constructor(ws: WebSocket) {
     this._ws = ws;
     this._ws.on('message', this._onMessage.bind(this));
     this._ws.on('close', this._onClose.bind(this));
     this._ws.on('error', this._onError.bind(this));
   }
-
   async send(method: string, params?: any, sessionId?: string): Promise<any> {
     if (this._ws.readyState !== WebSocket.OPEN)
       throw new Error(`Unexpected WebSocket state: ${this._ws.readyState}`);
@@ -336,13 +288,11 @@ class ExtensionConnection {
       this._callbacks.set(id, { resolve, reject, error });
     });
   }
-
   close(message: string) {
     debugLogger('closing extension connection:', message);
     if (this._ws.readyState === WebSocket.OPEN)
       this._ws.close(1000, message);
   }
-
   private _onMessage(event: websocket.RawData) {
     const eventData = event.toString();
     let parsedJson;
@@ -360,7 +310,6 @@ class ExtensionConnection {
       this._ws.close();
     }
   }
-
   private _handleParsedMessage(object: ExtensionResponse) {
     if (object.id && this._callbacks.has(object.id)) {
       const callback = this._callbacks.get(object.id)!;
@@ -378,18 +327,15 @@ class ExtensionConnection {
       this.onmessage?.(object.method!, object.params);
     }
   }
-
   private _onClose(event: websocket.CloseEvent) {
     debugLogger(`<ws closed> code=${event.code} reason=${event.reason}`);
     this._dispose();
     this.onclose?.(this, event.reason);
   }
-
   private _onError(event: websocket.ErrorEvent) {
     debugLogger(`<ws error> message=${event.message} type=${event.type} target=${event.target}`);
     this._dispose();
   }
-
   private _dispose() {
     for (const callback of this._callbacks.values())
       callback.reject(new Error('WebSocket closed'));

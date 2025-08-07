@@ -1,4 +1,3 @@
-
 import { Response } from '../response.js';
 import { mergeExpectations } from '../schemas/expectation.js';
 import type { Context } from '../context.js';
@@ -10,19 +9,16 @@ import type {
   StepResult
 } from '../types/batch.js';
 import type { ExpectationOptions } from '../schemas/expectation.js';
-
 /**
  * Executes multiple browser tools in sequence with optimized response handling
  */
 export class BatchExecutor {
   private toolRegistry: Map<string, Tool<any>>;
   private context: Context;
-
   constructor(context: Context, toolRegistry: Map<string, Tool<any>>) {
     this.context = context;
     this.toolRegistry = toolRegistry;
   }
-
   /**
    * Validates all steps in the batch before execution
    * @param steps - Array of steps to validate
@@ -32,24 +28,19 @@ export class BatchExecutor {
       const tool = this.toolRegistry.get(step.tool);
       if (!tool)
         throw new Error(`Unknown tool: ${step.tool}`);
-
-
       // Validate arguments using tool's schema
       try {
         const parseResult = tool.schema.inputSchema.safeParse({
           ...step.arguments,
           expectation: step.expectation
         });
-
         if (!parseResult.success)
           throw new Error(`Invalid arguments: ${parseResult.error.message}`);
-
       } catch (error) {
         throw new Error(`Invalid arguments for ${step.tool} at step ${index}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   }
-
   /**
    * Executes a batch of steps in sequence
    * @param options - Batch execution options
@@ -59,18 +50,14 @@ export class BatchExecutor {
     const results: StepResult[] = [];
     const startTime = Date.now();
     let stopReason: BatchResult['stopReason'] = 'completed';
-
     // Pre-validation phase
     await this.validateAllSteps(options.steps);
-
     // Execution phase
     for (const [index, step] of options.steps.entries()) {
       const stepStartTime = Date.now();
-
       try {
         const result = await this.executeStep(step, options.globalExpectation);
         const stepEndTime = Date.now();
-
         results.push({
           stepIndex: index,
           toolName: step.tool,
@@ -81,7 +68,6 @@ export class BatchExecutor {
       } catch (error) {
         const stepEndTime = Date.now();
         const errorMessage = error instanceof Error ? error.message : String(error);
-
         results.push({
           stepIndex: index,
           toolName: step.tool,
@@ -89,7 +75,6 @@ export class BatchExecutor {
           error: errorMessage,
           executionTimeMs: stepEndTime - stepStartTime
         });
-
         // Determine if we should continue or stop
         if (options.stopOnFirstError && !step.continueOnError) {
           stopReason = 'error';
@@ -97,11 +82,9 @@ export class BatchExecutor {
         }
       }
     }
-
     const totalExecutionTime = Date.now() - startTime;
     const successfulSteps = results.filter(r => r.success).length;
     const failedSteps = results.filter(r => !r.success).length;
-
     return {
       steps: results,
       totalSteps: options.steps.length,
@@ -111,7 +94,6 @@ export class BatchExecutor {
       stopReason
     };
   }
-
   /**
    * Executes a single step with merged expectations
    * @param step - Step to execute
@@ -122,34 +104,26 @@ export class BatchExecutor {
     const tool = this.toolRegistry.get(step.tool);
     if (!tool)
       throw new Error(`Unknown tool: ${step.tool}`);
-
-
     // Merge expectations: step expectation takes precedence over global
     const mergedExpectation = this.mergeStepExpectations(
         step.tool,
         globalExpectation,
         step.expectation
     );
-
     // Create arguments with merged expectation
     const argsWithExpectation = {
       ...step.arguments,
       expectation: mergedExpectation
     };
-
     // Create response instance for this step
     const response = new Response(this.context, step.tool, argsWithExpectation, mergedExpectation);
-
     // Execute the tool
     await tool.handle(this.context, argsWithExpectation, response);
-
     // Finish the response (capture snapshots, etc.)
     await response.finish();
-
     // Return serialized response
     return response.serialize();
   }
-
   /**
    * Merges global and step-level expectations
    * @param toolName - Name of the tool being executed
@@ -164,7 +138,6 @@ export class BatchExecutor {
   ): ExpectationOptions {
     // Start with tool defaults
     let merged = mergeExpectations(toolName, undefined);
-
     // Apply global expectation if provided
     if (globalExpectation) {
       merged = mergeExpectations(toolName, {
@@ -172,7 +145,6 @@ export class BatchExecutor {
         ...globalExpectation
       });
     }
-
     // Apply step expectation if provided (highest priority)
     if (stepExpectation) {
       merged = mergeExpectations(toolName, {
@@ -180,7 +152,6 @@ export class BatchExecutor {
         ...stepExpectation
       });
     }
-
     return merged;
   }
 }

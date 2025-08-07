@@ -1,26 +1,8 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 import { expectationSchema } from '../schemas/expectation.js';
-
 const listTabs = defineTool({
   capability: 'core-tabs',
-
   schema: {
     name: 'browser_tab_list',
     title: 'List tabs',
@@ -30,16 +12,13 @@ const listTabs = defineTool({
     }),
     type: 'readOnly',
   },
-
   handle: async (context, params, response) => {
     await context.ensureTab();
     response.setIncludeTabs();
   },
 });
-
 const selectTab = defineTool({
   capability: 'core-tabs',
-
   schema: {
     name: 'browser_tab_select',
     title: 'Select a tab',
@@ -50,16 +29,13 @@ const selectTab = defineTool({
     }),
     type: 'readOnly',
   },
-
   handle: async (context, params, response) => {
     await context.selectTab(params.index);
     response.setIncludeSnapshot();
   },
 });
-
 const newTab = defineTool({
   capability: 'core-tabs',
-
   schema: {
     name: 'browser_tab_new',
     title: 'Open a new tab',
@@ -70,7 +46,6 @@ const newTab = defineTool({
     }),
     type: 'readOnly',
   },
-
   handle: async (context, params, response) => {
     const tab = await context.newTab();
     if (params.url)
@@ -78,10 +53,8 @@ const newTab = defineTool({
     response.setIncludeSnapshot();
   },
 });
-
 const closeTab = defineTool({
   capability: 'core-tabs',
-
   schema: {
     name: 'browser_tab_close',
     title: 'Close a tab',
@@ -92,13 +65,11 @@ const closeTab = defineTool({
     }),
     type: 'destructive',
   },
-
   handle: async (context, params, response) => {
     await context.closeTab(params.index);
     response.setIncludeSnapshot();
   },
 });
-
 export default [
   listTabs,
   newTab,

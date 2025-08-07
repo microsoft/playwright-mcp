@@ -1,19 +1,3 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import common from './tools/common.js';
 import console from './tools/console.js';
 import dialogs from './tools/dialogs.js';
@@ -32,10 +16,8 @@ import mouse from './tools/mouse.js';
 import { batchExecuteTool } from './tools/batchExecute.js';
 import { browserFindElements } from './tools/findElements.js';
 import { browserDiagnose } from './tools/diagnose.js';
-
 import type { Tool } from './tools/tool.js';
 import type { FullConfig } from './config.js';
-
 export const allTools: Tool<any>[] = [
   ...common,
   ...console,
@@ -56,7 +38,6 @@ export const allTools: Tool<any>[] = [
   browserFindElements,
   browserDiagnose,
 ];
-
 export function filteredTools(config: FullConfig) {
   return allTools.filter(tool => tool.capability.startsWith('core') || config.capabilities?.includes(tool.capability));
 }

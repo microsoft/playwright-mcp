@@ -68,7 +68,7 @@ export const browserDiagnose = defineTabTool({
         return;
       }
 
-      // 設定システムの検証
+      // Configuration system validation
       try {
         const thresholdsManager = getCurrentThresholds();
         const configDiagnostics = thresholdsManager.getConfigDiagnostics();
@@ -77,7 +77,7 @@ export const browserDiagnose = defineTabTool({
           console.warn('[browser_diagnose] Configuration warnings:', configDiagnostics.warnings);
         }
         
-        // 診断レベルがfullの場合、設定状態を報告
+        // Report configuration status when diagnostic level is full
         if (diagnosticLevel === 'full' && includeSystemStats) {
           response.addResult(`## Configuration Status\n- **Thresholds Status**: ${configDiagnostics.status}\n- **Customizations**: ${configDiagnostics.customizations.length} active\n- **Warnings**: ${configDiagnostics.warnings.length} items\n\n`);
         }
@@ -129,11 +129,11 @@ export const browserDiagnose = defineTabTool({
           }
           
           if (configOverrides.performanceThresholds) {
-            // 設定システムから基本閾値を取得し、カスタマイズを適用
+            // Get base thresholds from configuration system and apply customizations
             const baseThresholds = getCurrentThresholds().getMetricsThresholds();
             const customThresholds = { ...baseThresholds };
             
-            // カスタマイズされた閾値を適用
+            // Apply customized thresholds
             const thresholdChanges: string[] = [];
             if (configOverrides.performanceThresholds.pageAnalysis) {
               const oldValue = customThresholds.executionTime.pageAnalysis;

@@ -1,9 +1,7 @@
-
 import { createHash } from 'crypto';
 import diff from 'fast-diff';
 import { DiffOptions, DiffResult, DiffSegment, ResponseStorage, DiffMetadata } from '../types/diff.js';
 import { DiffFormatter } from './diffFormatter.js';
-
 /**
  * ResponseDiffDetector handles diff detection between consecutive responses
  * for the same tool, providing efficient token usage through change detection.
@@ -11,7 +9,6 @@ import { DiffFormatter } from './diffFormatter.js';
 export class ResponseDiffDetector {
   private storage: Map<string, ResponseStorage> = new Map();
   private formatter: DiffFormatter = new DiffFormatter();
-
   /**
    * Detect differences between current response and previously stored response
    * @param current Current response content
@@ -22,7 +19,6 @@ export class ResponseDiffDetector {
   async detectDiff(current: string, toolName: string, options: DiffOptions): Promise<DiffResult> {
     const cacheKey = this.generateCacheKey(toolName);
     const previous = this.storage.get(cacheKey);
-
     if (!previous) {
       // First call for this tool - no differences to detect
       this.storeResponse(current, toolName);
@@ -38,11 +34,9 @@ export class ResponseDiffDetector {
         }
       };
     }
-
     const diffSegments = this.calculateDiff(previous.content, current);
     const similarity = this.calculateSimilarity(previous.content, current);
     const hasDifference = similarity < (1 - options.threshold);
-
     let formattedDiff = '';
     const metadata: DiffMetadata = {
       addedLines: 0,
@@ -50,7 +44,6 @@ export class ResponseDiffDetector {
       contextLines: 0,
       totalLines: current.split('\n').length
     };
-
     if (hasDifference) {
       // Calculate metadata
       diffSegments.forEach(segment => {
@@ -60,9 +53,7 @@ export class ResponseDiffDetector {
           metadata.removedLines += segment.value.split('\n').length - 1;
         else
           metadata.contextLines += segment.value.split('\n').length - 1;
-
       });
-
       // Format the diff based on requested format
       switch (options.format) {
         case 'unified':
@@ -75,7 +66,6 @@ export class ResponseDiffDetector {
           formattedDiff = this.formatter.formatMinimal(diffSegments);
           break;
       }
-
       // Limit output size
       if (formattedDiff.split('\n').length > options.maxDiffLines) {
         const lines = formattedDiff.split('\n');
@@ -83,10 +73,8 @@ export class ResponseDiffDetector {
           `\n... (${lines.length - options.maxDiffLines} more lines truncated)`;
       }
     }
-
     // Store current response for next comparison
     this.storeResponse(current, toolName);
-
     return {
       hasDifference,
       similarity,
@@ -94,7 +82,6 @@ export class ResponseDiffDetector {
       metadata
     };
   }
-
   /**
    * Store response content for future diff comparison
    * @param content Response content to store
@@ -103,7 +90,6 @@ export class ResponseDiffDetector {
   storeResponse(content: string, toolName: string): void {
     const cacheKey = this.generateCacheKey(toolName);
     const hash = createHash('sha256').update(content).digest('hex');
-
     this.storage.set(cacheKey, {
       toolName,
       timestamp: Date.now(),
@@ -111,7 +97,6 @@ export class ResponseDiffDetector {
       hash
     });
   }
-
   /**
    * Generate cache key for tool-specific storage
    * @param toolName Name of the tool
@@ -120,7 +105,6 @@ export class ResponseDiffDetector {
   private generateCacheKey(toolName: string): string {
     return `diff_cache_${toolName}`;
   }
-
   /**
    * Calculate diff segments using fast-diff library
    * @param oldText Previous content
@@ -134,7 +118,6 @@ export class ResponseDiffDetector {
       value
     }));
   }
-
   /**
    * Calculate similarity ratio between two strings
    * @param text1 First text
@@ -148,18 +131,14 @@ export class ResponseDiffDetector {
       return 1.0;
     if (text1.length === 0 || text2.length === 0)
       return 0.0;
-
     const diffSegments = this.calculateDiff(text1, text2);
     let equalChars = 0;
     let totalChars = 0;
-
     diffSegments.forEach(segment => {
       totalChars += segment.value.length;
       if (segment.type === 'equal')
         equalChars += segment.value.length;
-
     });
-
     return totalChars > 0 ? equalChars / totalChars : 0.0;
   }
 }
