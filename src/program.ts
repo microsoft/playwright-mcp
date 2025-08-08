@@ -21,11 +21,15 @@ import { startTraceViewerServer } from 'playwright-core/lib/server';
 import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
 import { packageJSON } from './package.js';
-import { createExtensionContextFactory, runWithExtension } from './extension/main.js';
-import { BrowserServerBackend, FactoryList } from './browserServerBackend.js';
+import { createExtensionServerBackendFactory, runWithExtension } from './extension/main.js';
+import { BrowserServerBackend } from './browserServerBackend.js';
 import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
+import { ServerBackendSwitcher } from './mcp/serverBackendSwitcher.js';
+import { ProxyBackend } from './mcp/proxyBackend.js';
+
+import type { BackendFactoryList } from './mcp/serverBackendSwitcher.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -57,6 +61,7 @@ program
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .addOption(new Option('--extension', 'Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright MCP Bridge" browser extension to be installed.').hideHelp())
     .addOption(new Option('--connect-tool', 'Allow to switch between different browser connection methods.').hideHelp())
+    .addOption(new Option('--external-mcp <url>', 'external HTTP MCP server to connect to').hideHelp())
     .addOption(new Option('--loop-tools', 'Run loop tools').hideHelp())
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
@@ -79,11 +84,21 @@ program
       }
 
       const browserContextFactory = contextFactory(config);
-      const factories: FactoryList = [browserContextFactory];
+      const backends: BackendFactoryList = [{
+        name: 'default',
+        description: 'Default Playwright MCP server backend',
+        create: () => new BrowserServerBackend(config, browserContextFactory),
+      }];
       if (options.connectTool)
-        factories.push(createExtensionContextFactory(config));
-      const serverBackendFactory = () => new BrowserServerBackend(config, factories);
-      await mcpTransport.start(serverBackendFactory, config.server);
+        backends.push(createExtensionServerBackendFactory(config));
+      if (options.externalMcp) {
+        backends.push({
+          name: 'ProxyBackend',
+          description: 'Proxy backend for external MCP server',
+          create: () => new ProxyBackend(options.externalMcp),
+        });
+      }
+      await mcpTransport.start(createServerBackendSwitcherFactory(backends), config.server);
 
       if (config.saveTrace) {
         const server = await startTraceViewerServer();
@@ -93,6 +108,14 @@ program
         console.error('\nTrace viewer listening on ' + url);
       }
     });
+
+function createServerBackendSwitcherFactory(backends: BackendFactoryList) {
+  return {
+    name: 'ServerBackendSwitcher',
+    description: 'Switch between different server backends',
+    create: () => new ServerBackendSwitcher(backends),
+  };
+}
 
 function setupExitWatchdog() {
   let isExiting = false;

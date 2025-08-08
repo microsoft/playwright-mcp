@@ -21,11 +21,18 @@ import * as mcpTransport from '../mcp/transport.js';
 import type { FullConfig } from '../config.js';
 
 export async function runWithExtension(config: FullConfig) {
-  const contextFactory = new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
-  const serverBackendFactory = () => new BrowserServerBackend(config, [contextFactory]);
-  await mcpTransport.start(serverBackendFactory, config.server);
+  await mcpTransport.start(createExtensionServerBackendFactory(config), config.server);
 }
 
-export function createExtensionContextFactory(config: FullConfig) {
+export function createExtensionServerBackendFactory(config: FullConfig) {
+  return {
+    name: 'extension',
+    description: 'Connect to a browser using the Playwright MCP extension',
+    create: () => new BrowserServerBackend(config, createExtensionContextFactory(config)),
+  };
+}
+
+
+function createExtensionContextFactory(config: FullConfig) {
   return new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
 }
