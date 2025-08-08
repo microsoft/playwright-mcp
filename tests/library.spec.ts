@@ -44,7 +44,7 @@ test(
  `
     );
     expect(
-      child_process.execSync(`node ${file}`, { encoding: 'utf-8' })
+      child_process.execSync('node', [file], { encoding: 'utf-8' })
     ).toContain('OK');
   }
 );

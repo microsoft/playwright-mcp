@@ -50,6 +50,8 @@ export class TestServer {
   }
 
   static async createHTTPS(port: number): Promise<TestServer> {
+    const passphrase =
+      process.env.TEST_SSL_PASSPHRASE || 'test-default-passphrase';
     const server = new TestServer(port, {
       key: await fs.promises.readFile(
         path.join(path.dirname(__filename), 'key.pem')
@@ -57,7 +59,7 @@ export class TestServer {
       cert: await fs.promises.readFile(
         path.join(path.dirname(__filename), 'cert.pem')
       ),
-      passphrase: 'aaaa',
+      passphrase,
     });
     await new Promise((x) => server._server.once('listening', x));
     return server;
