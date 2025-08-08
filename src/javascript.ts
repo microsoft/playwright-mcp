@@ -8,13 +8,13 @@ export function escapeWithQuotes(text: string, char = "'") {
     .substring(1, stringified.length - 1)
     .replace(/\\"/g, '"');
   if (char === "'") {
-    return char + escapedText.replace(/[']/g, "'") + char;
+    return char + escapedText.replace(/'/g, "'") + char;
   }
   if (char === '"') {
-    return char + escapedText.replace(/["]/g, '"') + char;
+    return char + escapedText.replace(/"/g, '"') + char;
   }
   if (char === '`') {
-    return char + escapedText.replace(/[`]/g, '`') + char;
+    return char + escapedText.replace(/`/g, '`') + char;
   }
   throw new Error('Invalid escape char');
 }

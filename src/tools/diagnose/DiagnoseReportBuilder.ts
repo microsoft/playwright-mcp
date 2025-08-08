@@ -117,12 +117,127 @@ export interface ReportOptions {
 }
 
 export class DiagnoseReportBuilder {
-  private reportBuilder: DiagnosticReportBuilder;
+  private readonly reportBuilder: DiagnosticReportBuilder;
   private readonly tab: Tab;
 
   constructor(tab: Tab) {
     this.tab = tab;
     this.reportBuilder = new DiagnosticReportBuilder();
+  }
+
+  private addKeyValuePairs(
+    pairs: Array<[string, string | number]>,
+    headerText?: string,
+    subHeaderText?: string,
+    headerLevel = 2
+  ): void {
+    if (headerText) {
+      this.reportBuilder.addHeader(headerText, 1).addEmptyLine();
+    }
+    if (subHeaderText) {
+      this.reportBuilder.addHeader(subHeaderText, headerLevel);
+    }
+
+    for (const [key, value] of pairs) {
+      this.reportBuilder.addKeyValue(key, value);
+    }
+
+    this.reportBuilder.addEmptyLine();
+  }
+
+  private addOptionalListSection<T>(
+    title: string,
+    items: T[] | undefined,
+    formatter: (item: T) => string,
+    headerLevel = 2
+  ): void {
+    if (!items?.length) return;
+
+    this.reportBuilder.addSection(
+      title,
+      (builder) => {
+        for (const item of items) {
+          builder.addListItem(formatter(item));
+        }
+      },
+      headerLevel
+    );
+  }
+
+  private shouldIncludeSection(
+    options: ReportOptions,
+    section: 'accessibility' | 'performance' | 'troubleshooting'
+  ): boolean {
+    const sectionConfig = {
+      accessibility:
+        options.includeAccessibilityInfo || options.diagnosticLevel === 'full',
+      performance:
+        options.includePerformanceMetrics ||
+        options.diagnosticLevel === 'detailed' ||
+        options.diagnosticLevel === 'full',
+      troubleshooting:
+        options.includeTroubleshootingSuggestions ||
+        ['standard', 'detailed', 'full'].includes(options.diagnosticLevel),
+    };
+
+    return sectionConfig[section] && options.diagnosticLevel !== 'basic';
+  }
+
+  private addElementList<T>(
+    title: string,
+    elements: T[] | undefined,
+    formatter: (element: T, index: number) => string,
+    maxItems = 5
+  ): void {
+    if (!elements?.length) return;
+
+    this.reportBuilder.addEmptyLine().addLine(`**${title}:**`);
+
+    for (const [index, element] of elements.slice(0, maxItems).entries()) {
+      this.reportBuilder.addLine(formatter(element, index));
+    }
+  }
+
+  private getStatusIcon(
+    level: string,
+    type: 'performance' | 'impact' | 'recommendation'
+  ): string {
+    const iconMaps = {
+      performance: {
+        significant: '🔴',
+        notable: '🟡',
+        minimal: '🟢',
+        normal: '🟢',
+        default: '⚪',
+      },
+      impact: {
+        high: '🔴',
+        medium: '🟡',
+        low: '🟢',
+        default: '🟢',
+      },
+      recommendation: {
+        warning: '⚠️',
+        optimization: '⚡',
+        info: 'ℹ️',
+        default: 'ℹ️',
+      },
+    };
+
+    return (
+      iconMaps[type][level as keyof (typeof iconMaps)[typeof type]] ||
+      iconMaps[type].default
+    );
+  }
+
+  private formatMetricName(key: string): string {
+    const nameMap: Record<string, string> = {
+      domContentLoaded: 'DOM Content Loaded',
+      loadComplete: 'Load Complete',
+      firstPaint: 'First Paint',
+      firstContentfulPaint: 'First Contentful Paint',
+    };
+    return nameMap[key] || key;
   }
 
   async buildReport(
@@ -159,46 +274,34 @@ export class DiagnoseReportBuilder {
     options: ReportOptions
   ): void {
     if (unifiedSystem) {
-      this.reportBuilder
-        .addHeader('Unified Diagnostic System Report', 1)
-        .addKeyValue(
-          'Unified System Status',
-          'Active with enhanced error handling and monitoring'
-        )
-        .addKeyValue(
-          'Configuration',
-          options.appliedOverrides?.length
-            ? 'Custom overrides applied'
-            : 'Default settings'
-        )
-        .addEmptyLine();
+      this.addKeyValuePairs(
+        [
+          [
+            'Unified System Status',
+            'Active with enhanced error handling and monitoring',
+          ],
+          [
+            'Configuration',
+            options.appliedOverrides?.length
+              ? 'Custom overrides applied'
+              : 'Default settings',
+          ],
+          ['Analysis Type', analysisResult.analysisType],
+          ['Analysis Status', analysisResult.analysisStatus],
+        ],
+        'Unified Diagnostic System Report'
+      );
 
-      if (options.appliedOverrides?.length) {
-        this.reportBuilder.addSection(
-          'Applied Configuration Overrides',
-          (builder) => {
-            if (options.appliedOverrides) {
-              for (const override of options.appliedOverrides) {
-                builder.addListItem(`**${override}**`);
-              }
-            }
-          }
-        );
-      }
-
-      this.reportBuilder
-        .addKeyValue('Analysis Type', analysisResult.analysisType)
-        .addKeyValue('Analysis Status', analysisResult.analysisStatus);
-
-      if (analysisResult.errors?.length) {
-        this.reportBuilder.addSection('Analysis Warnings', (builder) => {
-          if (analysisResult.errors) {
-            for (const error of analysisResult.errors) {
-              builder.addListItem(`**${error}**`);
-            }
-          }
-        });
-      }
+      this.addOptionalListSection(
+        'Applied Configuration Overrides',
+        options.appliedOverrides,
+        (item) => `**${item}**`
+      );
+      this.addOptionalListSection(
+        'Analysis Warnings',
+        analysisResult.errors,
+        (item) => `**${item}**`
+      );
 
       this.addSystemHealthSection(analysisResult, unifiedSystem, options);
     }
@@ -267,12 +370,12 @@ export class DiagnoseReportBuilder {
       (val: number) => val > 0
     );
 
-    if (!hasActualData) {
-      return;
-    }
+    if (!hasActualData) return;
 
-    this.reportBuilder.addEmptyLine();
-    this.reportBuilder.addLine('**Performance Baseline Comparison:**');
+    this.reportBuilder
+      .addEmptyLine()
+      .addLine('**Performance Baseline Comparison:**');
+
     for (const component of Object.keys(expectedExecutionTimes)) {
       const expected =
         expectedExecutionTimes[
@@ -282,61 +385,37 @@ export class DiagnoseReportBuilder {
       const deviation = deviations[component];
 
       if (actual > 0) {
-        const performanceIndicator = this.getPerformanceIndicator(deviation);
+        const indicator = this.getStatusIcon(
+          deviation?.significance || 'normal',
+          'performance'
+        );
         const deviationText = deviation
           ? ` (${deviation.percent > 0 ? '+' : ''}${deviation.percent}% ${deviation.significance})`
           : '';
 
         this.reportBuilder.addLine(
-          `  ${performanceIndicator} **${component}**: Expected ${expected}ms, Actual ${actual.toFixed(0)}ms${deviationText}`
+          `  ${indicator} **${component}**: Expected ${expected}ms, Actual ${actual.toFixed(0)}ms${deviationText}`
         );
       }
     }
   }
 
-  private getPerformanceIndicator(
-    deviation: PerformanceDeviation | null
-  ): string {
-    if (!deviation) {
-      return '⚪';
-    }
-
-    switch (deviation.significance) {
-      case 'significant':
-        return '🔴';
-      case 'notable':
-        return '🟡';
-      default:
-        return '🟢';
-    }
-  }
-
   private addAppliedOverridesDetails(configReport: ConfigReport): void {
-    if (configReport.appliedOverrides.length === 0) {
-      return;
-    }
+    if (configReport.appliedOverrides.length === 0) return;
 
-    this.reportBuilder.addEmptyLine();
-    this.reportBuilder.addLine('**Applied Configuration Changes:**');
+    this.reportBuilder
+      .addEmptyLine()
+      .addLine('**Applied Configuration Changes:**');
+
     for (const override of configReport.appliedOverrides) {
-      const impactIcon = this.getImpactIcon(override.impact);
+      const impactIcon = this.getStatusIcon(override.impact, 'impact');
       this.reportBuilder.addLine(
         `  ${impactIcon} **${override.category}** (${override.impact} impact):`
       );
+
       for (const change of override.changes) {
         this.reportBuilder.addLine(`    - ${change}`);
       }
-    }
-  }
-
-  private getImpactIcon(impact: string): string {
-    switch (impact) {
-      case 'high':
-        return '🔴';
-      case 'medium':
-        return '🟡';
-      default:
-        return '🟢';
     }
   }
 
@@ -344,49 +423,33 @@ export class DiagnoseReportBuilder {
     const highPriorityRecs = configReport.recommendations.filter(
       (r) => r.priority === 'high'
     );
+    if (highPriorityRecs.length === 0) return;
 
-    if (highPriorityRecs.length === 0) {
-      return;
-    }
+    this.reportBuilder
+      .addEmptyLine()
+      .addLine('**High Priority Recommendations:**');
 
-    this.reportBuilder.addEmptyLine();
-    this.reportBuilder.addLine('**High Priority Recommendations:**');
     for (const rec of highPriorityRecs) {
-      const typeIcon = this.getRecommendationTypeIcon(rec.type);
+      const typeIcon = this.getStatusIcon(rec.type, 'recommendation');
       this.reportBuilder.addLine(`  ${typeIcon} ${rec.message}`);
-    }
-  }
-
-  private getRecommendationTypeIcon(type: string): string {
-    switch (type) {
-      case 'warning':
-        return '⚠️';
-      case 'optimization':
-        return '⚡';
-      default:
-        return 'ℹ️';
     }
   }
 
   private addSystemIssuesAndRecommendations(
     systemHealthInfo: NonNullable<AnalysisResult['systemHealthInfo']>
   ): void {
-    if (systemHealthInfo.issues.length > 0) {
-      this.reportBuilder.addEmptyLine();
-      this.reportBuilder.addHeader('System Issues', 3);
-      for (const issue of systemHealthInfo.issues) {
-        this.reportBuilder.addListItem(`⚠️ ${issue}`);
-      }
-    }
-
-    if (systemHealthInfo.recommendations.length > 0) {
-      this.reportBuilder.addEmptyLine();
-      this.reportBuilder.addHeader('System Recommendations', 3);
-      for (const rec of systemHealthInfo.recommendations) {
-        this.reportBuilder.addListItem(`💡 ${rec}`);
-      }
-    }
-
+    this.addOptionalListSection(
+      'System Issues',
+      systemHealthInfo.issues,
+      (item) => `⚠️ ${item}`,
+      3
+    );
+    this.addOptionalListSection(
+      'System Recommendations',
+      systemHealthInfo.recommendations,
+      (item) => `💡 ${item}`,
+      3
+    );
     this.reportBuilder.addEmptyLine();
   }
 
@@ -394,67 +457,83 @@ export class DiagnoseReportBuilder {
     diagnosticInfo: PageStructureAnalysis,
     options: ReportOptions
   ): Promise<void> {
-    if (options.diagnosticLevel === 'basic') {
-      this.reportBuilder
-        .addHeader('Basic Diagnostic Report', 1)
-        .addKeyValue('URL', this.tab.page.url())
-        .addEmptyLine()
-        .addHeader('Critical Information', 2);
+    const isBasic = options.diagnosticLevel === 'basic';
+    const title = isBasic
+      ? 'Basic Diagnostic Report'
+      : 'Page Diagnostic Report';
+    const url = this.tab.page.url();
 
-      if (diagnosticInfo.iframes.detected) {
-        this.reportBuilder.addKeyValue(
-          'IFrames detected',
-          diagnosticInfo.iframes.count
-        );
-      }
+    const basicKeyValues: Array<[string, string | number]> = [['URL', url]];
 
-      if (diagnosticInfo.modalStates.blockedBy.length > 0) {
-        this.reportBuilder.addKeyValue(
-          'Active modals',
-          diagnosticInfo.modalStates.blockedBy.join(', ')
-        );
-      }
-
-      this.reportBuilder
-        .addKeyValue(
-          'Interactable elements',
-          diagnosticInfo.elements.totalInteractable
-        )
-        .addEmptyLine();
-    } else {
-      this.reportBuilder
-        .addHeader('Page Diagnostic Report', 1)
-        .addKeyValue('URL', this.tab.page.url())
-        .addKeyValue('Title', await this.tab.page.title())
-        .addEmptyLine()
-        .addHeader('Page Structure Analysis', 2)
-        .addKeyValue(
-          'IFrames',
-          `${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`
-        )
-        .addKeyValue(
-          'Accessible iframes',
-          diagnosticInfo.iframes.accessible.length
-        )
-        .addKeyValue(
-          'Inaccessible iframes',
-          diagnosticInfo.iframes.inaccessible.length
-        )
-        .addEmptyLine()
-        .addKeyValue(
-          'Total visible elements',
-          diagnosticInfo.elements.totalVisible
-        )
-        .addKeyValue(
-          'Total interactable elements',
-          diagnosticInfo.elements.totalInteractable
-        )
-        .addKeyValue(
-          'Elements missing ARIA',
-          diagnosticInfo.elements.missingAria
-        )
-        .addEmptyLine();
+    if (!isBasic) {
+      basicKeyValues.push(['Title', await this.tab.page.title()]);
     }
+
+    this.addKeyValuePairs(basicKeyValues, title);
+
+    if (isBasic) {
+      this.addBasicDiagnosticInfo(diagnosticInfo);
+    } else {
+      this.addDetailedPageStructure(diagnosticInfo);
+    }
+  }
+
+  private addBasicDiagnosticInfo(diagnosticInfo: PageStructureAnalysis): void {
+    this.reportBuilder.addHeader('Critical Information', 2);
+
+    const criticalInfo: Array<[string, string | number, boolean]> = [
+      [
+        'IFrames detected',
+        diagnosticInfo.iframes.count,
+        diagnosticInfo.iframes.detected,
+      ],
+      [
+        'Active modals',
+        diagnosticInfo.modalStates.blockedBy.join(', '),
+        diagnosticInfo.modalStates.blockedBy.length > 0,
+      ],
+      [
+        'Interactable elements',
+        diagnosticInfo.elements.totalInteractable,
+        true,
+      ],
+    ];
+
+    for (const [key, value, condition] of criticalInfo) {
+      if (condition) {
+        this.reportBuilder.addKeyValue(key, value);
+      }
+    }
+
+    this.reportBuilder.addEmptyLine();
+  }
+
+  private addDetailedPageStructure(
+    diagnosticInfo: PageStructureAnalysis
+  ): void {
+    this.reportBuilder.addHeader('Page Structure Analysis', 2);
+
+    const structureData = [
+      [
+        'IFrames',
+        `${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`,
+      ],
+      ['Accessible iframes', diagnosticInfo.iframes.accessible.length],
+      ['Inaccessible iframes', diagnosticInfo.iframes.inaccessible.length],
+    ];
+
+    this.addKeyValuePairs(structureData);
+
+    const elementData = [
+      ['Total visible elements', diagnosticInfo.elements.totalVisible],
+      [
+        'Total interactable elements',
+        diagnosticInfo.elements.totalInteractable,
+      ],
+      ['Elements missing ARIA', diagnosticInfo.elements.missingAria],
+    ];
+
+    this.addKeyValuePairs(elementData);
   }
 
   private addModalStatesSection(diagnosticInfo: PageStructureAnalysis): void {
@@ -569,49 +648,36 @@ export class DiagnoseReportBuilder {
   }
 
   private addLayoutMetrics(metrics: PageMetrics): void {
-    this.reportBuilder
-      .addEmptyLine()
-      .addHeader('Layout Analysis', 3)
-      .addKeyValue(
+    const layoutData: Array<[string, number]> = [
+      [
         'Fixed position elements',
-        metrics?.layoutMetrics?.fixedElements?.length || 0
-      )
-      .addKeyValue(
+        metrics?.layoutMetrics?.fixedElements?.length || 0,
+      ],
+      [
         'High z-index elements',
-        metrics?.layoutMetrics?.highZIndexElements?.length || 0
-      )
-      .addKeyValue(
+        metrics?.layoutMetrics?.highZIndexElements?.length || 0,
+      ],
+      [
         'Overflow hidden elements',
-        metrics?.layoutMetrics?.overflowHiddenElements || 0
-      );
+        metrics?.layoutMetrics?.overflowHiddenElements || 0,
+      ],
+    ];
 
-    if (
-      metrics?.layoutMetrics?.fixedElements?.length &&
-      metrics.layoutMetrics.fixedElements.length > 0
-    ) {
-      this.reportBuilder.addEmptyLine().addLine('**Fixed Elements:**');
-      for (const [index, element] of metrics.layoutMetrics.fixedElements
-        .slice(0, 5)
-        .entries()) {
-        this.reportBuilder.addLine(
-          `${index + 1}. **${element.selector}**: ${element.purpose} (z-index: ${element.zIndex})`
-        );
-      }
-    }
+    this.addKeyValuePairs(layoutData, undefined, 'Layout Analysis', 3);
 
-    if (
-      metrics?.layoutMetrics?.highZIndexElements?.length &&
-      metrics.layoutMetrics.highZIndexElements.length > 0
-    ) {
-      this.reportBuilder.addEmptyLine().addLine('**High Z-Index Elements:**');
-      for (const [index, element] of metrics.layoutMetrics.highZIndexElements
-        .slice(0, 5)
-        .entries()) {
-        this.reportBuilder.addLine(
-          `${index + 1}. **${element.selector}**: z-index ${element.zIndex} (${element.description})`
-        );
-      }
-    }
+    this.addElementList(
+      'Fixed Elements',
+      metrics?.layoutMetrics?.fixedElements,
+      (element, index) =>
+        `${index + 1}. **${element.selector}**: ${element.purpose} (z-index: ${element.zIndex})`
+    );
+
+    this.addElementList(
+      'High Z-Index Elements',
+      metrics?.layoutMetrics?.highZIndexElements,
+      (element, index) =>
+        `${index + 1}. **${element.selector}**: z-index ${element.zIndex} (${element.description})`
+    );
   }
 
   private addPerformanceWarnings(metrics: PageMetrics): void {
@@ -646,40 +712,23 @@ export class DiagnoseReportBuilder {
         };
       });
 
-      if (
-        browserMetrics.domContentLoaded ||
-        browserMetrics.loadComplete ||
-        browserMetrics.firstPaint ||
-        browserMetrics.firstContentfulPaint
-      ) {
-        this.reportBuilder
-          .addEmptyLine()
-          .addHeader('Browser Performance Timing', 3);
+      const metricsWithValues = Object.entries(browserMetrics)
+        .filter(([_, value]) => value)
+        .map(
+          ([key, value]) =>
+            [
+              this.formatMetricName(key),
+              `${(value as number).toFixed(2)}ms`,
+            ] as [string, string]
+        );
 
-        if (browserMetrics.domContentLoaded) {
-          this.reportBuilder.addKeyValue(
-            'DOM Content Loaded',
-            `${browserMetrics.domContentLoaded.toFixed(2)}ms`
-          );
-        }
-        if (browserMetrics.loadComplete) {
-          this.reportBuilder.addKeyValue(
-            'Load Complete',
-            `${browserMetrics.loadComplete.toFixed(2)}ms`
-          );
-        }
-        if (browserMetrics.firstPaint) {
-          this.reportBuilder.addKeyValue(
-            'First Paint',
-            `${browserMetrics.firstPaint.toFixed(2)}ms`
-          );
-        }
-        if (browserMetrics.firstContentfulPaint) {
-          this.reportBuilder.addKeyValue(
-            'First Contentful Paint',
-            `${browserMetrics.firstContentfulPaint.toFixed(2)}ms`
-          );
-        }
+      if (metricsWithValues.length > 0) {
+        this.addKeyValuePairs(
+          metricsWithValues,
+          undefined,
+          'Browser Performance Timing',
+          3
+        );
       }
     } catch (error) {
       addErrorSection(
@@ -694,21 +743,7 @@ export class DiagnoseReportBuilder {
     diagnosticInfo: PageStructureAnalysis,
     options: ReportOptions
   ): Promise<void> {
-    const shouldIncludeA11y =
-      (options.includeAccessibilityInfo ||
-        options.diagnosticLevel === 'full') &&
-      options.diagnosticLevel !== 'basic';
-
-    if (!shouldIncludeA11y) {
-      return;
-    }
-
-    this.reportBuilder
-      .addHeader('Accessibility Information', 2)
-      .addKeyValue(
-        'Elements with missing ARIA labels',
-        diagnosticInfo.elements.missingAria
-      );
+    if (!this.shouldIncludeSection(options, 'accessibility')) return;
 
     const a11yMetrics = await this.tab.page.evaluate(() => {
       const headings = document.querySelectorAll(
@@ -723,30 +758,27 @@ export class DiagnoseReportBuilder {
       return { headings, landmarks, imagesWithAlt: altTexts, totalImages };
     });
 
-    this.reportBuilder
-      .addKeyValue('Heading elements', a11yMetrics.headings)
-      .addKeyValue('Landmark elements', a11yMetrics.landmarks)
-      .addKeyValue(
+    const a11yData: Array<[string, string | number]> = [
+      [
+        'Elements with missing ARIA labels',
+        diagnosticInfo.elements.missingAria,
+      ],
+      ['Heading elements', a11yMetrics.headings],
+      ['Landmark elements', a11yMetrics.landmarks],
+      [
         'Images with alt text',
-        `${a11yMetrics.imagesWithAlt}/${a11yMetrics.totalImages}`
-      )
-      .addEmptyLine();
+        `${a11yMetrics.imagesWithAlt}/${a11yMetrics.totalImages}`,
+      ],
+    ];
+
+    this.addKeyValuePairs(a11yData, 'Accessibility Information');
   }
 
   private addTroubleshootingSection(
     diagnosticInfo: PageStructureAnalysis,
     options: ReportOptions
   ): void {
-    const shouldIncludeTroubleshooting =
-      (options.includeTroubleshootingSuggestions ||
-        options.diagnosticLevel === 'standard' ||
-        options.diagnosticLevel === 'detailed' ||
-        options.diagnosticLevel === 'full') &&
-      options.diagnosticLevel !== 'basic';
-
-    if (!shouldIncludeTroubleshooting) {
-      return;
-    }
+    if (!this.shouldIncludeSection(options, 'troubleshooting')) return;
 
     this.reportBuilder.addHeader('Troubleshooting Suggestions', 2);
 

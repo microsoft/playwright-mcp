@@ -296,7 +296,7 @@ function formatValue(
  * Builder class for creating array of items with conditional additions
  */
 export class ArrayBuilder<T> {
-  private items: T[] = [];
+  private readonly items: T[] = [];
 
   addIf(condition: boolean, item: T): this {
     if (condition) {

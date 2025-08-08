@@ -142,54 +142,16 @@ export class Response {
   }
   serialize(): { content: (TextContent | ImageContent)[]; isError?: boolean } {
     const response: string[] = [];
-    // Add diff information if available and has differences
-    if (this._diffResult?.hasDifference && this._diffResult.formattedDiff) {
-      response.push('### Changes from previous response');
-      response.push(
-        `Similarity: ${(this._diffResult.similarity * 100).toFixed(1)}%`
-      );
-      response.push(
-        `Changes: ${this._diffResult.metadata.addedLines} additions, ${this._diffResult.metadata.removedLines} deletions`
-      );
-      response.push('');
-      response.push('```diff');
-      response.push(this._diffResult.formattedDiff);
-      response.push('```');
-      response.push('');
-    }
-    // Start with command result.
-    if (this._result.length) {
-      response.push('### Result');
-      response.push(this._result.join('\n'));
-      response.push('');
-    }
-    // Add code if it exists and expectation allows it.
-    if (this._code.length && this._expectation.includeCode) {
-      response.push(`### Ran Playwright code
-\`\`\`js
-${this._code.join('\n')}
-\`\`\``);
-      response.push('');
-    }
-    // List browser tabs based on expectation.
-    const shouldIncludeTabs =
-      this._expectation.includeTabs || this._includeTabs;
-    const shouldIncludeSnapshot =
-      this._expectation.includeSnapshot || this._includeSnapshot;
+    this._addDiffSectionToResponse(response);
+    this._addResultSectionToResponse(response);
+    this._addCodeSectionToResponse(response);
+    const { shouldIncludeTabs, shouldIncludeSnapshot } =
+      this._getInclusionFlags();
+
     if (shouldIncludeTabs) {
-      const tabsMarkdown = renderTabsMarkdown(this._context.tabs(), true);
-      response.push(...tabsMarkdown);
+      response.push(...renderTabsMarkdown(this._context.tabs(), true));
     }
-    // Add snapshot if provided and expectation allows it.
-    if (shouldIncludeSnapshot && this._tabSnapshot?.modalStates.length) {
-      response.push(
-        ...renderModalStates(this._context, this._tabSnapshot.modalStates)
-      );
-      response.push('');
-    } else if (shouldIncludeSnapshot && this._tabSnapshot) {
-      response.push(this.renderFilteredTabSnapshot(this._tabSnapshot));
-      response.push('');
-    }
+    this._addSnapshotSectionToResponse(response, shouldIncludeSnapshot);
     // Main response part
     const content: (TextContent | ImageContent)[] = [
       { type: 'text', text: response.join('\n') },
@@ -207,23 +169,20 @@ ${this._code.join('\n')}
     return { content, isError: this._isError };
   }
   private renderFilteredTabSnapshot(tabSnapshot: TabSnapshot): string {
-    const lines: string[] = [];
+    const sections = [
+      this.buildConsoleSection(tabSnapshot),
+      this.buildDownloadsSection(tabSnapshot),
+      this.buildPageStateSection(tabSnapshot),
+    ].filter(Boolean);
 
-    this.addConsoleMessagesToLines(lines, tabSnapshot);
-    this.addDownloadsToLines(lines, tabSnapshot);
-    this.addPageStateToLines(lines, tabSnapshot);
-
-    return lines.join('\n');
+    return sections.join('\n');
   }
 
-  private addConsoleMessagesToLines(
-    lines: string[],
-    tabSnapshot: TabSnapshot
-  ): void {
+  private buildConsoleSection(tabSnapshot: TabSnapshot): string | null {
     if (
       !(this._expectation.includeConsole && tabSnapshot.consoleMessages.length)
     ) {
-      return;
+      return null;
     }
 
     const filteredMessages = this.filterConsoleMessages(
@@ -231,42 +190,33 @@ ${this._code.join('\n')}
       this._expectation.consoleOptions
     );
 
-    if (filteredMessages.length) {
-      const builder = new TextReportBuilder();
-      builder.addSection('New console messages', (b) => {
-        for (const message of filteredMessages) {
-          b.addListItem(trim(message.toString(), 100));
-        }
-      });
-      lines.push(...builder.getSections());
-    }
-  }
+    if (!filteredMessages.length) return null;
 
-  private addDownloadsToLines(lines: string[], tabSnapshot: TabSnapshot): void {
-    if (!(this._expectation.includeDownloads && tabSnapshot.downloads.length)) {
-      return;
-    }
-
-    const builder = new TextReportBuilder();
-    builder.addSection('Downloads', (b) => {
-      for (const entry of tabSnapshot.downloads) {
-        if (entry.finished) {
-          b.addListItem(
-            `Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`
-          );
-        } else {
-          b.addListItem(
-            `Downloading file ${entry.download.suggestedFilename()} ...`
-          );
-        }
+    return this.buildSection('New console messages', (b) => {
+      for (const message of filteredMessages) {
+        b.addListItem(trim(message.toString(), 100));
       }
     });
-    lines.push(...builder.getSections());
   }
 
-  private addPageStateToLines(lines: string[], tabSnapshot: TabSnapshot): void {
-    const builder = new TextReportBuilder();
-    builder.addSection('Page state', (b) => {
+  private buildDownloadsSection(tabSnapshot: TabSnapshot): string | null {
+    if (!(this._expectation.includeDownloads && tabSnapshot.downloads.length)) {
+      return null;
+    }
+
+    return this.buildSection('Downloads', (b) => {
+      for (const entry of tabSnapshot.downloads) {
+        const filename = entry.download.suggestedFilename();
+        const status = entry.finished
+          ? `Downloaded file ${filename} to ${entry.outputFile}`
+          : `Downloading file ${filename} ...`;
+        b.addListItem(status);
+      }
+    });
+  }
+
+  private buildPageStateSection(tabSnapshot: TabSnapshot): string {
+    return this.buildSection('Page state', (b) => {
       b.addKeyValue('Page URL', tabSnapshot.url);
       b.addKeyValue('Page Title', tabSnapshot.title);
 
@@ -275,106 +225,206 @@ ${this._code.join('\n')}
         b.addCodeBlock(tabSnapshot.ariaSnapshot, 'yaml');
       }
     });
-    lines.push(...builder.getSections());
+  }
+
+  private buildSection(
+    title: string,
+    contentFn: (builder: TextReportBuilder) => void
+  ): string {
+    const builder = new TextReportBuilder();
+    builder.addSection(title, contentFn);
+    return builder.getSections().join('\n');
   }
   private filterConsoleMessages(
     messages: ConsoleMessage[],
     options?: NonNullable<ExpectationOptions>['consoleOptions']
   ): ConsoleMessage[] {
-    let filtered = messages;
-    // Filter by levels if specified
-    if (options?.levels && options.levels.length > 0) {
-      filtered = filtered.filter((msg) => {
-        const level = msg.type || 'log';
-        return options.levels?.includes(
-          level as 'log' | 'warn' | 'error' | 'info'
-        );
-      });
+    return this._applyConsoleFilters(messages, options ?? {});
+  }
+
+  private _applyConsoleFilters(
+    messages: ConsoleMessage[],
+    options: NonNullable<ExpectationOptions>['consoleOptions']
+  ): ConsoleMessage[] {
+    const levelFiltered = this._filterByLevels(messages, options?.levels);
+    return this._limitMessages(levelFiltered, options?.maxMessages ?? 10);
+  }
+
+  private _filterByLevels(
+    messages: ConsoleMessage[],
+    levels?: ('log' | 'warn' | 'error' | 'info')[]
+  ): ConsoleMessage[] {
+    if (!levels?.length) return messages;
+
+    return messages.filter((msg) => {
+      const level = (msg.type || 'log') as 'log' | 'warn' | 'error' | 'info';
+      return levels.includes(level);
+    });
+  }
+
+  private _limitMessages(
+    messages: ConsoleMessage[],
+    maxMessages: number
+  ): ConsoleMessage[] {
+    return messages.length > maxMessages
+      ? messages.slice(0, maxMessages)
+      : messages;
+  }
+
+  private _addDiffSectionToResponse(response: string[]): void {
+    if (!(this._diffResult?.hasDifference && this._diffResult.formattedDiff)) {
+      return;
     }
-    // Limit number of messages
-    const maxMessages = options?.maxMessages ?? 10;
-    if (filtered.length > maxMessages) {
-      filtered = filtered.slice(0, maxMessages);
+
+    response.push(
+      '### Changes from previous response',
+      `Similarity: ${(this._diffResult.similarity * 100).toFixed(1)}%`,
+      `Changes: ${this._diffResult.metadata.addedLines} additions, ${this._diffResult.metadata.removedLines} deletions`,
+      '',
+      '```diff',
+      this._diffResult.formattedDiff,
+      '```',
+      ''
+    );
+  }
+
+  private _addResultSectionToResponse(response: string[]): void {
+    if (this._result.length) {
+      response.push('### Result', this._result.join('\n'), '');
     }
-    return filtered;
+  }
+
+  private _addCodeSectionToResponse(response: string[]): void {
+    if (this._code.length && this._expectation.includeCode) {
+      response.push(
+        `### Ran Playwright code\n\`\`\`js\n${this._code.join('\n')}\n\`\`\``,
+        ''
+      );
+    }
+  }
+
+  private _getInclusionFlags() {
+    return {
+      shouldIncludeTabs: this._expectation.includeTabs || this._includeTabs,
+      shouldIncludeSnapshot:
+        this._expectation.includeSnapshot || this._includeSnapshot,
+    };
+  }
+
+  private _addSnapshotSectionToResponse(
+    response: string[],
+    shouldIncludeSnapshot: boolean
+  ): void {
+    if (!(shouldIncludeSnapshot && this._tabSnapshot)) {
+      return;
+    }
+
+    if (this._tabSnapshot.modalStates.length) {
+      response.push(
+        ...renderModalStates(this._context, this._tabSnapshot.modalStates),
+        ''
+      );
+    } else {
+      response.push(this.renderFilteredTabSnapshot(this._tabSnapshot), '');
+    }
   }
   /**
    * Build content string for diff detection
    * Includes all relevant response information to detect meaningful changes
    */
   private buildContentForDiff(): string {
-    const content: string[] = [];
-    // Include result content
-    if (this._result.length) {
-      content.push('### Result');
-      content.push(this._result.join('\n'));
-    }
-    // Include code if available
-    if (this._code.length) {
-      content.push('### Code');
-      content.push(this._code.join('\n'));
-    }
-    // Include tab snapshot if available and expectation allows it
-    if (this._tabSnapshot && this._expectation.includeSnapshot) {
-      content.push('### Page State');
-      content.push(`URL: ${this._tabSnapshot.url}`);
-      content.push(`Title: ${this._tabSnapshot.title}`);
-      content.push('Snapshot:');
-      content.push(this._tabSnapshot.ariaSnapshot);
-    }
-    // Include console messages if available and expectation allows it
-    if (
-      this._tabSnapshot?.consoleMessages.length &&
-      this._expectation.includeConsole
-    ) {
-      const filteredMessages = this.filterConsoleMessages(
-        this._tabSnapshot.consoleMessages,
-        this._expectation.consoleOptions
-      );
-      if (filteredMessages.length) {
-        content.push('### Console Messages');
-        for (const msg of filteredMessages) {
-          content.push(`- ${msg.toString()}`);
-        }
-      }
-    }
-    return content.join('\n');
+    const sections = [
+      this.buildResultDiffSection(),
+      this.buildCodeDiffSection(),
+      this.buildSnapshotDiffSection(),
+      this.buildConsoleMessagesDiffSection(),
+    ].filter(Boolean);
+
+    return sections.join('\n');
   }
 
-  /**
-   * Navigation retry configuration
-   */
+  private buildResultDiffSection(): string | null {
+    return this._result.length
+      ? ['### Result', this._result.join('\n')].join('\n')
+      : null;
+  }
+
+  private buildCodeDiffSection(): string | null {
+    return this._code.length
+      ? ['### Code', this._code.join('\n')].join('\n')
+      : null;
+  }
+
+  private buildSnapshotDiffSection(): string | null {
+    if (!(this._tabSnapshot && this._expectation.includeSnapshot)) {
+      return null;
+    }
+
+    return [
+      '### Page State',
+      `URL: ${this._tabSnapshot.url}`,
+      `Title: ${this._tabSnapshot.title}`,
+      'Snapshot:',
+      this._tabSnapshot.ariaSnapshot,
+    ].join('\n');
+  }
+
+  private buildConsoleMessagesDiffSection(): string | null {
+    if (
+      !(
+        this._tabSnapshot?.consoleMessages.length &&
+        this._expectation.includeConsole
+      )
+    ) {
+      return null;
+    }
+
+    const filteredMessages = this.filterConsoleMessages(
+      this._tabSnapshot.consoleMessages,
+      this._expectation.consoleOptions
+    );
+
+    if (!filteredMessages.length) return null;
+
+    const messageLines = filteredMessages.map((msg) => `- ${msg.toString()}`);
+    return ['### Console Messages', ...messageLines].join('\n');
+  }
+
   private _getNavigationRetryConfig() {
     return {
       maxRetries: 3,
       retryDelay: 500,
       stabilityTimeout: 3000,
       evaluationTimeout: 200,
-    };
+    } as const;
   }
 
-  /**
-   * Captures snapshot with navigation detection and retry logic
-   * Handles "Execution context was destroyed" errors gracefully
-   */
   private async _captureSnapshotWithNavigationHandling(): Promise<void> {
     const currentTab = this._context.currentTabOrDie();
-    const { maxRetries, retryDelay } = this._getNavigationRetryConfig();
+    const { maxRetries } = this._getNavigationRetryConfig();
 
-    // Sequential retry attempts are intentional - we need to wait for each attempt
+    await this._executeWithRetry(
+      () => this._performSnapshotCapture(currentTab),
+      maxRetries
+    );
+  }
+
+  private async _executeWithRetry(
+    operation: () => Promise<void>,
+    maxRetries: number
+  ): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         // biome-ignore lint/nursery/noAwaitInLoop: Sequential retry logic is required
-        await this._handleNavigationIfNeeded(currentTab, attempt, maxRetries);
-        await this._attemptSnapshotCapture(currentTab);
-        break; // Success - exit retry loop
+        await operation();
+        return;
       } catch (error: unknown) {
         const shouldRetry = await this._handleSnapshotError(
           error,
           attempt,
           maxRetries,
-          retryDelay,
-          currentTab
+          this._getNavigationRetryConfig().retryDelay,
+          this._context.currentTabOrDie()
         );
         if (!shouldRetry) {
           break;
@@ -383,13 +433,13 @@ ${this._code.join('\n')}
     }
   }
 
-  private async _handleNavigationIfNeeded(
-    tab: Tab,
-    attempt: number,
-    maxRetries: number
-  ): Promise<void> {
-    const isNavigating = await this._isPageNavigating(tab);
-    if (isNavigating && attempt < maxRetries) {
+  private async _performSnapshotCapture(tab: Tab): Promise<void> {
+    await this._handleNavigationIfNeeded(tab);
+    await this._attemptSnapshotCapture(tab);
+  }
+
+  private async _handleNavigationIfNeeded(tab: Tab): Promise<void> {
+    if (await this._isPageNavigating(tab)) {
       await this._waitForNavigationStability(tab);
     }
   }
@@ -414,29 +464,36 @@ ${this._code.join('\n')}
     tab: Tab
   ): Promise<boolean> {
     const errorMessage = (error as Error)?.message || '';
-    const isContextError = this._isContextDestroyedError(errorMessage);
 
-    if (isContextError && attempt < maxRetries) {
-      await new Promise((resolve) => setTimeout(resolve, retryDelay * attempt));
-      return true; // Continue retrying
+    if (this._isRecoverableError(errorMessage) && attempt < maxRetries) {
+      await this._delayRetry(retryDelay, attempt);
+      return true;
     }
 
     if (attempt === maxRetries) {
-      await this._handleFinalAttemptFailure(tab);
+      await this._handleFinalFailure(tab);
     }
 
-    return false; // Stop retrying
+    return false;
   }
 
-  private _isContextDestroyedError(errorMessage: string): boolean {
-    return (
-      errorMessage.includes('Execution context was destroyed') ||
-      errorMessage.includes('Target closed') ||
-      errorMessage.includes('Session closed')
-    );
+  private _isRecoverableError(errorMessage: string): boolean {
+    const recoverableErrors = [
+      'Execution context was destroyed',
+      'Target closed',
+      'Session closed',
+    ];
+    return recoverableErrors.some((err) => errorMessage.includes(err));
   }
 
-  private async _handleFinalAttemptFailure(tab: Tab): Promise<void> {
+  private async _delayRetry(
+    retryDelay: number,
+    attempt: number
+  ): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, retryDelay * attempt));
+  }
+
+  private async _handleFinalFailure(tab: Tab): Promise<void> {
     try {
       this._tabSnapshot = await this._captureBasicSnapshot(tab);
     } catch (error) {
@@ -445,129 +502,145 @@ ${this._code.join('\n')}
     }
   }
 
-  /**
-   * Checks if the page is currently navigating
-   */
   private async _isPageNavigating(tab: Tab): Promise<boolean> {
     try {
-      // Check Tab's internal navigation state if available
-      if (
-        'isNavigating' in tab &&
-        typeof (tab as { isNavigating?: () => boolean }).isNavigating ===
-          'function'
-      ) {
-        const tabNavigating = (
-          tab as { isNavigating: () => boolean }
-        ).isNavigating();
-        if (tabNavigating) {
-          return true;
-        }
+      // Check Tab's internal navigation state first
+      if (this._hasInternalNavigationState(tab)) {
+        return (tab as { isNavigating: () => boolean }).isNavigating();
       }
 
-      // Multiple checks for navigation state
-      const [readyState, isLoading] = (await Promise.race([
-        tab.page
-          .evaluate(() => [
-            document.readyState,
-            (window as { performance?: { timing?: { loadEventEnd?: number } } })
-              .performance?.timing?.loadEventEnd === 0,
-          ])
-          .catch(() => [null, null]),
-        new Promise((resolve) =>
-          setTimeout(
-            () => resolve([null, null]),
-            this._getNavigationRetryConfig().evaluationTimeout
-          )
-        ),
-      ])) as [string | null, boolean | null];
-
-      return readyState === 'loading' || isLoading === true;
+      // Race condition: evaluate navigation state with timeout
+      const navigationState = await this._evaluateNavigationState(tab);
+      return this._isNavigationInProgress(navigationState);
     } catch (error) {
-      // If we can't check, assume navigation might be happening
       console.debug('Navigation check failed (assuming in progress):', error);
       return true;
     }
   }
 
-  /**
-   * Waits for navigation to stabilize
-   */
-  private async _waitForNavigationStability(tab: Tab): Promise<void> {
-    const stabilityTimeout = this._getNavigationRetryConfig().stabilityTimeout;
-    const startTime = Date.now();
+  private _hasInternalNavigationState(tab: Tab): boolean {
+    return (
+      'isNavigating' in tab &&
+      typeof (tab as { isNavigating?: () => boolean }).isNavigating ===
+        'function'
+    );
+  }
 
-    // Use Tab's navigation completion method if available
-    if (
+  private async _evaluateNavigationState(
+    tab: Tab
+  ): Promise<[string | null, boolean | null]> {
+    return (await Promise.race([
+      tab.page
+        .evaluate(() => [
+          document.readyState,
+          (window as { performance?: { timing?: { loadEventEnd?: number } } })
+            .performance?.timing?.loadEventEnd === 0,
+        ])
+        .catch(() => [null, null]),
+      new Promise<[null, null]>((resolve) =>
+        setTimeout(
+          () => resolve([null, null]),
+          this._getNavigationRetryConfig().evaluationTimeout
+        )
+      ),
+    ])) as [string | null, boolean | null];
+  }
+
+  private _isNavigationInProgress(
+    state: [string | null, boolean | null]
+  ): boolean {
+    const [readyState, isLoading] = state;
+    return readyState === 'loading' || isLoading === true;
+  }
+
+  private async _waitForNavigationStability(tab: Tab): Promise<void> {
+    // Try built-in navigation completion first
+    if (await this._tryBuiltInNavigationCompletion(tab)) {
+      return;
+    }
+
+    // Fall back to manual stability checking
+    await this._performManualStabilityCheck(tab);
+  }
+
+  private async _tryBuiltInNavigationCompletion(tab: Tab): Promise<boolean> {
+    if (!this._hasNavigationCompletionMethod(tab)) {
+      return false;
+    }
+
+    try {
+      await (
+        tab as { waitForNavigationComplete: () => Promise<void> }
+      ).waitForNavigationComplete();
+      return true;
+    } catch (error) {
+      console.debug('Tab navigation completion failed:', error);
+      return false;
+    }
+  }
+
+  private _hasNavigationCompletionMethod(tab: Tab): boolean {
+    return (
       'waitForNavigationComplete' in tab &&
       typeof (tab as { waitForNavigationComplete?: () => Promise<void> })
         .waitForNavigationComplete === 'function'
-    ) {
-      try {
-        await (
-          tab as { waitForNavigationComplete: () => Promise<void> }
-        ).waitForNavigationComplete();
-        return;
-      } catch (error) {
-        // Fall through to manual detection
-        console.debug('Tab navigation completion failed:', error);
-      }
-    }
+    );
+  }
 
-    // Sequential waiting is intentional here - we need to check stability repeatedly
+  private async _performManualStabilityCheck(tab: Tab): Promise<void> {
+    const { stabilityTimeout } = this._getNavigationRetryConfig();
+    const startTime = Date.now();
+
     while (Date.now() - startTime < stabilityTimeout) {
-      try {
-        // biome-ignore lint/nursery/noAwaitInLoop: Sequential stability checking is required
-        await tab.waitForLoadState('load', { timeout: 1000 });
-        await tab
-          .waitForLoadState('networkidle', { timeout: 500 })
-          .catch(() => {
-            // Ignore network idle timeout
-          });
-
-        // Additional stability check
-        const isStable = await tab.page
-          .evaluate(() => document.readyState === 'complete')
-          .catch(() => false);
-        if (isStable) {
-          // Small delay to ensure DOM is fully settled
-          await new Promise((resolve) => setTimeout(resolve, 200));
-          return;
-        }
-      } catch (error) {
-        // Continue waiting
-        console.debug('Page stability check failed (retrying):', error);
+      if (await this._checkPageStability(tab)) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        return;
       }
-
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
-  /**
-   * Attempts to capture a basic snapshot with minimal requirements
-   */
+  private async _checkPageStability(tab: Tab): Promise<boolean> {
+    try {
+      // biome-ignore lint/nursery/noAwaitInLoop: Sequential stability checking is required
+      await tab.waitForLoadState('load', { timeout: 1000 });
+      await tab
+        .waitForLoadState('networkidle', { timeout: 500 })
+        .catch(() => {});
+
+      return await tab.page
+        .evaluate(() => document.readyState === 'complete')
+        .catch(() => false);
+    } catch (error) {
+      console.debug('Page stability check failed (retrying):', error);
+      return false;
+    }
+  }
+
   private async _captureBasicSnapshot(tab: Tab): Promise<TabSnapshot> {
     try {
-      // Try basic snapshot without complex operations
       return await tab.captureSnapshot();
     } catch (error) {
-      // Create a minimal snapshot with available information
       console.warn(
         'Basic snapshot capture failed, creating minimal snapshot:',
         error
       );
-      const url = tab.page.url();
-      const title = await tab.page.title().catch(() => '');
-
-      return {
-        url,
-        title,
-        ariaSnapshot:
-          '// Snapshot unavailable due to navigation context issues',
-        modalStates: [],
-        consoleMessages: [],
-        downloads: [],
-      };
+      return await this._createMinimalSnapshot(tab);
     }
+  }
+
+  private async _createMinimalSnapshot(tab: Tab): Promise<TabSnapshot> {
+    const url = tab.page.url();
+    const title = await tab.page.title().catch(() => '');
+
+    return {
+      url,
+      title,
+      ariaSnapshot: '// Snapshot unavailable due to navigation context issues',
+      modalStates: [],
+      consoleMessages: [],
+      downloads: [],
+    };
   }
 }
 function renderTabsMarkdown(tabs: Tab[], force = false): string[] {

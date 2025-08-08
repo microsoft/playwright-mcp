@@ -287,16 +287,18 @@ export class UnifiedDiagnosticSystem {
       this.stats.errorCount[component]++;
 
       // Create enhanced diagnostic error
-      const enhancedDiagnosticError =
-        error instanceof DiagnosticError
-          ? error
-          : DiagnosticError.from(
-              error instanceof Error
-                ? error
-                : new Error(getErrorMessage(error)),
-              component,
-              operation,
-              {
+      let enhancedDiagnosticError: DiagnosticError;
+      if (error instanceof DiagnosticError) {
+        enhancedDiagnosticError = error;
+      } else {
+        const baseError = error instanceof Error 
+          ? error 
+          : new Error(getErrorMessage(error));
+        enhancedDiagnosticError = DiagnosticError.from(
+          baseError,
+          component,
+          operation,
+          {
                 executionTime,
                 timestamp: startTime,
               }

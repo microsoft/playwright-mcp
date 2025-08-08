@@ -322,10 +322,8 @@ export class CDPRelayServer {
     });
   }
   private _sendToPlaywright(message: CDPResponse): void {
-    debugLogger(
-      '→ Playwright:',
-      `${message.method ?? `response(id=${message.id})`}`
-    );
+    const messageDesc = message.method ?? `response(id=${message.id})`;
+    debugLogger('→ Playwright:', messageDesc);
     this._playwrightConnection?.send(JSON.stringify(message));
   }
 }

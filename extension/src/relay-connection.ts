@@ -38,12 +38,12 @@ type ProtocolResponse = {
 export class RelayConnection {
   private _debuggee: chrome.debugger.Debuggee;
   private _ws: WebSocket;
-  private _eventListener: (
+  private readonly _eventListener: (
     source: chrome.debugger.DebuggerSession,
     method: string,
     params?: object
   ) => void;
-  private _detachListener: (
+  private readonly _detachListener: (
     source: chrome.debugger.Debuggee,
     reason: string
   ) => void;

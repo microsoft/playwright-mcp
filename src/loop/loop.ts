@@ -78,9 +78,10 @@ export async function runTask(
 }
 
 function createTaskContent(task: string, oneShot: boolean): string {
-  return oneShot
-    ? `Perform following task: ${task}.`
-    : `Perform following task: ${task}. Once the task is complete, call the "done" tool.`;
+  if (oneShot) {
+    return `Perform following task: ${task}.`;
+  }
+  return `Perform following task: ${task}. Once the task is complete, call the "done" tool.`;
 }
 
 async function processToolCalls(
