@@ -21,7 +21,7 @@ test.describe('Browser Batch Execute', () => {
     // Setup test page with clickable button
     server.setContent('/', `
       <title>Test Page</title>
-      <button data-testid="success">Click Me</button>
+      <button>Click Me</button>
     `, 'text/html');
 
     const result = await client.callTool({
@@ -31,11 +31,11 @@ test.describe('Browser Batch Execute', () => {
           {
             tool: 'browser_navigate',
             arguments: { url: server.PREFIX },
-            expectation: { includeSnapshot: false, includeConsole: false }
+            expectation: { includeSnapshot: true, includeConsole: false }
           },
           {
             tool: 'browser_click',
-            arguments: { element: 'button', ref: 'button[data-testid="success"]' },
+            arguments: { element: 'Click Me button', ref: 'e2' },
             expectation: { includeSnapshot: true, includeConsole: false }
           }
         ],
@@ -55,8 +55,15 @@ test.describe('Browser Batch Execute', () => {
   });
 
   test('should handle batch execution with individual step errors when continueOnError=true', async ({ client, server }) => {
-    const result = await client.callTool('browser_batch_execute', {
-      steps: [
+    server.setContent('/', `
+      <title>Test Page</title>
+      <button>Click Me</button>
+    `, 'text/html');
+
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: [
         {
           tool: 'browser_navigate',
           arguments: { url: server.PREFIX },
@@ -64,31 +71,39 @@ test.describe('Browser Batch Execute', () => {
         },
         {
           tool: 'browser_click',
-          arguments: { element: 'button', ref: 'button[data-testid="nonexistent"]' },
+          arguments: { element: 'nonexistent button', ref: 'nonexistent' },
           continueOnError: true,
           expectation: { includeSnapshot: false }
         },
         {
           tool: 'browser_click',
-          arguments: { element: 'button', ref: 'button[data-testid="success"]' },
+          arguments: { element: 'Click Me button', ref: 'e2' },
           expectation: { includeSnapshot: true }
         }
-      ],
-      stopOnFirstError: false
+        ],
+        stopOnFirstError: false
+      }
     });
 
-    expect(result).toContain('Batch Execution Summary');
-    expect(result).toContain('Total Steps: 3');
-    expect(result).toContain('Successful: 2');
-    expect(result).toContain('Failed: 1');
-    expect(result).toContain('✅ Step 1: browser_navigate');
-    expect(result).toContain('❌ Step 2: browser_click');
-    expect(result).toContain('✅ Step 3: browser_click');
+    expect(result.content[0].text).toContain('Batch Execution Summary');
+    expect(result.content[0].text).toContain('Total Steps: 3');
+    expect(result.content[0].text).toContain('Successful: 2');
+    expect(result.content[0].text).toContain('Failed: 1');
+    expect(result.content[0].text).toContain('✅ Step 1: browser_navigate');
+    expect(result.content[0].text).toContain('❌ Step 2: browser_click');
+    expect(result.content[0].text).toContain('✅ Step 3: browser_click');
   });
 
   test('should stop on first error when stopOnFirstError=true and step has continueOnError=false', async ({ client, server }) => {
-    const result = await client.callTool('browser_batch_execute', {
-      steps: [
+    server.setContent('/', `
+      <title>Test Page</title>
+      <button>Click Me</button>
+    `, 'text/html');
+
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: [
         {
           tool: 'browser_navigate',
           arguments: { url: server.PREFIX },
@@ -96,33 +111,41 @@ test.describe('Browser Batch Execute', () => {
         },
         {
           tool: 'browser_click',
-          arguments: { element: 'button', ref: 'button[data-testid="nonexistent"]' },
+          arguments: { element: 'nonexistent button', ref: 'nonexistent' },
           continueOnError: false,
           expectation: { includeSnapshot: false }
         },
         {
           tool: 'browser_click',
-          arguments: { element: 'button', ref: 'button[data-testid="success"]' },
+          arguments: { element: 'Click Me button', ref: 'e2' },
           expectation: { includeSnapshot: false }
         }
-      ],
-      stopOnFirstError: true
+        ],
+        stopOnFirstError: true
+      }
     });
 
-    expect(result).toContain('Batch Execution Summary');
-    expect(result).toContain('❌ Stopped on Error');
-    expect(result).toContain('Total Steps: 3');
-    expect(result).toContain('Successful: 1');
-    expect(result).toContain('Failed: 1');
-    expect(result).toContain('✅ Step 1: browser_navigate');
-    expect(result).toContain('❌ Step 2: browser_click');
+    expect(result.content[0].text).toContain('Batch Execution Summary');
+    expect(result.content[0].text).toContain('❌ Stopped on Error');
+    expect(result.content[0].text).toContain('Total Steps: 3');
+    expect(result.content[0].text).toContain('Successful: 1');
+    expect(result.content[0].text).toContain('Failed: 1');
+    expect(result.content[0].text).toContain('✅ Step 1: browser_navigate');
+    expect(result.content[0].text).toContain('❌ Step 2: browser_click');
     // Step 3 should not be executed
-    expect(result).not.toContain('Step 3: browser_click');
+    expect(result.content[0].text).not.toContain('Step 3: browser_click');
   });
 
   test('should properly merge global and step-level expectations', async ({ client, server }) => {
-    const result = await client.callTool('browser_batch_execute', {
-      steps: [
+    server.setContent('/', `
+      <title>Test Page</title>
+      <button>Click Me</button>
+    `, 'text/html');
+
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: [
         {
           tool: 'browser_navigate',
           arguments: { url: server.PREFIX },
@@ -130,101 +153,135 @@ test.describe('Browser Batch Execute', () => {
         },
         {
           tool: 'browser_click',
-          arguments: { element: 'button', ref: 'button[data-testid="success"]' }
+          arguments: { element: 'Click Me button', ref: 'e2' }
           // No step-level expectation, should use global
         }
-      ],
-      globalExpectation: {
-        includeSnapshot: false,
-        includeConsole: false,
-        includeTabs: false,
-        includeDownloads: false
+        ],
+        globalExpectation: {
+          includeSnapshot: false,
+          includeConsole: false,
+          includeTabs: false,
+          includeDownloads: false
+        }
       }
     });
 
-    expect(result).toContain('✅ Completed');
-    expect(result).toContain('Successful: 2');
-    expect(result).toContain('Failed: 0');
+    expect(result.content[0].text).toContain('✅ Completed');
+    expect(result.content[0].text).toContain('Successful: 2');
+    expect(result.content[0].text).toContain('Failed: 0');
   });
 
   test('should validate unknown tool names', async ({ client }) => {
-    const result = await client.callTool('browser_batch_execute', {
-      steps: [
-        {
-          tool: 'unknown_tool',
-          arguments: { param: 'value' }
-        }
-      ]
-    });
-
-    expect(result).toContain('### Result');
-    expect(result).toContain('Unknown tool: unknown_tool');
-  });
-
-  test('should handle complex batch workflows', async ({ client, server }) => {
-    const result = await client.callTool('browser_batch_execute', {
-      steps: [
-        {
-          tool: 'browser_navigate',
-          arguments: { url: server.PREFIX + '/input.html' },
-          expectation: { includeSnapshot: false }
-        },
-        {
-          tool: 'browser_type',
-          arguments: { text: 'Hello World', element: 'input', ref: '#input' },
-          expectation: { includeSnapshot: false }
-        },
-        {
-          tool: 'browser_click',
-          arguments: { element: 'button', ref: '#submit' },
-          expectation: { includeSnapshot: true }
-        }
-      ],
-      globalExpectation: {
-        includeConsole: false,
-        includeTabs: false,
-        includeDownloads: false
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: [
+          {
+            tool: 'unknown_tool',
+            arguments: { param: 'value' }
+          }
+        ]
       }
     });
 
-    expect(result).toContain('✅ Completed');
-    expect(result).toContain('Total Steps: 3');
-    expect(result).toContain('Successful: 3');
-    expect(result).toContain('Failed: 0');
+    expect(result.content[0].text).toContain('### Result');
+    expect(result.content[0].text).toContain('Unknown tool: unknown_tool');
+  });
+
+  test('should handle complex batch workflows', async ({ client, server }) => {
+    server.setContent('/input.html', `
+      <title>Input Page</title>
+      <input id="input" type="text" />
+      <button id="submit">Submit</button>
+    `, 'text/html');
+
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: [
+        {
+          tool: 'browser_navigate',
+          arguments: { url: server.PREFIX + 'input.html' },
+          expectation: { includeSnapshot: true }
+        },
+        {
+          tool: 'browser_type',
+          arguments: { text: 'Hello World', element: 'textbox', ref: 'e2' },
+          expectation: { includeSnapshot: true }
+        },
+        {
+          tool: 'browser_click',
+          arguments: { element: 'Submit button', ref: 'e3' },
+          expectation: { includeSnapshot: true }
+        }
+        ],
+        globalExpectation: {
+          includeConsole: false,
+          includeTabs: false,
+          includeDownloads: false
+        }
+      }
+    });
+
+    expect(result.content[0].text).toContain('✅ Completed');
+    expect(result.content[0].text).toContain('Total Steps: 3');
+    expect(result.content[0].text).toContain('Successful: 3');
+    expect(result.content[0].text).toContain('Failed: 0');
   });
 
   test('should track execution time for each step', async ({ client, server }) => {
-    const result = await client.callTool('browser_batch_execute', {
-      steps: [
+    server.setContent('/', `
+      <title>Test Page</title>
+      <button>Click Me</button>
+    `, 'text/html');
+
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: [
         {
           tool: 'browser_navigate',
           arguments: { url: server.PREFIX },
           expectation: { includeSnapshot: false }
         },
         {
-          tool: 'wait',
-          arguments: { duration: 100 }, // 100ms wait
+          tool: 'browser_click',
+          arguments: { element: 'Click Me button', ref: 'e2' },
           expectation: { includeSnapshot: false }
         }
-      ],
-      globalExpectation: { includeConsole: false }
+        ],
+        globalExpectation: { includeConsole: false }
+      }
     });
 
-    expect(result).toContain('✅ Completed');
-    expect(result).toContain('Total Steps: 2');
-    expect(result).toContain('Total Time:');
-    expect(result).toMatch(/\d+ms/); // Should contain execution time in milliseconds
+    expect(result.content[0].text).toContain('✅ Completed');
+    expect(result.content[0].text).toContain('Total Steps: 2');
+    expect(result.content[0].text).toContain('Total Time:');
+    expect(result.content[0].text).toMatch(/\d+ms/); // Should contain execution time in milliseconds
   });
 
   test('should handle empty steps array validation', async ({ client }) => {
-    await expect(client('browser_batch_execute', {
-      steps: []
-    })).rejects.toThrow();
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: []
+      }
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('Array must contain at least 1 element');
   });
 
   test('should optimize token usage with minimal expectations', async ({ client, server }) => {
-    const result = await client.callTool('browser_batch_execute', {
-      steps: [
+    server.setContent('/', `
+      <title>Test Page</title>
+      <button>Click Me</button>
+    `, 'text/html');
+
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: [
         {
           tool: 'browser_navigate',
           arguments: { url: server.PREFIX },
@@ -236,11 +293,12 @@ test.describe('Browser Batch Execute', () => {
             includeCode: false
           }
         }
-      ]
+        ]
+      }
     });
 
-    expect(result).toContain('✅ Completed');
+    expect(result.content[0].text).toContain('✅ Completed');
     // Should have minimal content due to aggressive filtering
-    expect(result.split('\n').length).toBeLessThan(20);
+    expect(result.content[0].text.split('\n').length).toBeLessThan(20);
   });
 });

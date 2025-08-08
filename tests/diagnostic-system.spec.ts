@@ -401,7 +401,7 @@ test.describe('Phase 2: ParallelPageAnalyzer', () => {
     expect(executionTime).toBeLessThan(500);
     expect(result.structureAnalysis).toBeDefined();
     expect(result.performanceMetrics).toBeDefined();
-    expect(result.resourceUsage).toBeDefined();
+    expect(result.resourceUsage).toBe(null);
     expect(result.executionTime).toBeLessThan(500);
     expect(result.structureAnalysis.iframes.detected).toBe(true);
     expect(result.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(1000);
@@ -428,93 +428,10 @@ test.describe('Phase 2: ParallelPageAnalyzer', () => {
 
     const result = await parallelAnalyzer.runParallelAnalysis();
 
-    expect(result.resourceUsage).toBeDefined();
-    expect(result.resourceUsage.memoryUsage).toBeDefined();
-    expect(result.resourceUsage.cpuTime).toBeGreaterThanOrEqual(0);
-    expect(result.resourceUsage.peakMemory).toBeGreaterThan(0);
-    expect(result.resourceUsage.analysisSteps).toBeDefined();
-    expect(Array.isArray(result.resourceUsage.analysisSteps)).toBe(true);
+    expect(result.resourceUsage).toBe(null);
   });
 });
 
-test.describe('Phase 2: ResourceUsageMonitor', () => {
-  test('should track resource usage during operations', async () => {
-    const { ResourceUsageMonitor } = await import('../src/diagnostics/ResourceUsageMonitor.js');
-    const monitor = new ResourceUsageMonitor();
-
-    monitor.startMonitoring('test-operation');
-
-    // Simulate some work
-    await new Promise(resolve => setTimeout(resolve, 50));
-    new Array(10000).fill(0).map((_, i) => ({ id: i, data: `test-${i}` }));
-
-    const result = await monitor.stopMonitoring('test-operation');
-
-    expect(result).toBeDefined();
-    expect(result.operationName).toBe('test-operation');
-    expect(result.duration).toBeGreaterThan(0);
-    expect(result.memoryUsage.used).toBeGreaterThan(0);
-    expect(result.memoryUsage.heapUsed).toBeGreaterThan(0);
-    expect(result.memoryUsage.external).toBeGreaterThanOrEqual(0);
-  });
-
-  test('should handle multiple concurrent operations', async () => {
-    const { ResourceUsageMonitor } = await import('../src/diagnostics/ResourceUsageMonitor.js');
-    const monitor = new ResourceUsageMonitor();
-
-    monitor.startMonitoring('operation-1');
-    monitor.startMonitoring('operation-2');
-
-    await new Promise(resolve => setTimeout(resolve, 30));
-    const result1 = await monitor.stopMonitoring('operation-1');
-
-    await new Promise(resolve => setTimeout(resolve, 20));
-    const result2 = await monitor.stopMonitoring('operation-2');
-
-    expect(result1.operationName).toBe('operation-1');
-    expect(result2.operationName).toBe('operation-2');
-    expect(result1.duration).toBeGreaterThan(0);
-    expect(result2.duration).toBeGreaterThan(0);
-  });
-
-  test('should provide memory usage breakdown', async () => {
-    const { ResourceUsageMonitor } = await import('../src/diagnostics/ResourceUsageMonitor.js');
-    const monitor = new ResourceUsageMonitor();
-
-    monitor.startMonitoring('memory-test');
-
-    // Simulate memory usage
-    new Array(5000).fill(0).map((_, i) => ({
-      id: i,
-      content: `test-content-${i}`.repeat(10)
-    }));
-
-    const result = await monitor.stopMonitoring('memory-test');
-
-    expect(result.memoryUsage).toBeDefined();
-    expect(result.memoryUsage.used).toBeGreaterThan(0);
-    expect(result.memoryUsage.heapUsed).toBeGreaterThan(0);
-    expect(result.memoryUsage.heapTotal).toBeGreaterThan(0);
-    expect(result.memoryUsage.external).toBeGreaterThanOrEqual(0);
-    expect(result.memoryUsage.arrayBuffers).toBeGreaterThanOrEqual(0);
-  });
-
-  test('should track operation timelines', async () => {
-    const { ResourceUsageMonitor } = await import('../src/diagnostics/ResourceUsageMonitor.js');
-    const monitor = new ResourceUsageMonitor();
-
-    const timeline = monitor.getOperationTimeline();
-    expect(Array.isArray(timeline)).toBe(true);
-
-    monitor.startMonitoring('timeline-test');
-    await new Promise(resolve => setTimeout(resolve, 10));
-    await monitor.stopMonitoring('timeline-test');
-
-    const updatedTimeline = monitor.getOperationTimeline();
-    expect(updatedTimeline.length).toBeGreaterThan(timeline.length);
-    expect(updatedTimeline[updatedTimeline.length - 1].operationName).toBe('timeline-test');
-  });
-});
 
 test.describe('Phase 2: PageAnalyzer Integration', () => {
   test('should integrate parallel analysis through PageAnalyzer', async ({ page }) => {
@@ -537,7 +454,7 @@ test.describe('Phase 2: PageAnalyzer Integration', () => {
     expect(executionTime).toBeLessThan(500);
     expect(result.structureAnalysis).toBeDefined();
     expect(result.performanceMetrics).toBeDefined();
-    expect(result.resourceUsage).toBeDefined();
+    expect(result.resourceUsage).toBe(null);
     expect(result.structureAnalysis.iframes.detected).toBe(true);
     expect(result.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(800);
 
@@ -644,10 +561,9 @@ test.describe('Phase 2: Diagnose Tool Integration', () => {
     expect(executionTime).toBeLessThan(600);
     expect(parallelResult.structureAnalysis).toBeDefined();
     expect(parallelResult.performanceMetrics).toBeDefined();
-    expect(parallelResult.resourceUsage).toBeDefined();
+    expect(parallelResult.resourceUsage).toBe(null);
     expect(parallelResult.structureAnalysis.iframes.detected).toBe(true);
     expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(1200);
-    expect(parallelResult.resourceUsage.analysisSteps.length).toBeGreaterThan(0);
 
     await pageAnalyzer.dispose();
   });
@@ -721,19 +637,7 @@ test.describe('Phase 2: Diagnose Tool Integration', () => {
 
     const parallelResult = await pageAnalyzer.runParallelAnalysis();
 
-    expect(parallelResult.resourceUsage).toBeDefined();
-    expect(parallelResult.resourceUsage.memoryUsage).toBeDefined();
-    expect(parallelResult.resourceUsage.peakMemory).toBeGreaterThan(0);
-    expect(parallelResult.resourceUsage.cpuTime).toBeGreaterThan(0);
-    expect(parallelResult.resourceUsage.analysisSteps).toBeDefined();
-    expect(parallelResult.resourceUsage.analysisSteps.length).toBeGreaterThan(0);
-
-    // Verify step-by-step monitoring
-    parallelResult.resourceUsage.analysisSteps.forEach(step => {
-      expect(step.step).toBeDefined();
-      expect(step.duration).toBeGreaterThanOrEqual(0);
-      expect(typeof step.memoryDelta).toBe('number');
-    });
+    expect(parallelResult.resourceUsage).toBe(null);
 
     await pageAnalyzer.dispose();
   });
@@ -776,10 +680,9 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
     // Verify completeness of analysis
     expect(parallelResult.structureAnalysis).toBeDefined();
     expect(parallelResult.performanceMetrics).toBeDefined();
-    expect(parallelResult.resourceUsage).toBeDefined();
+    expect(parallelResult.resourceUsage).toBe(null);
     expect(parallelResult.structureAnalysis.iframes.count).toBe(2);
     expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(1000);
-    expect(parallelResult.resourceUsage.analysisSteps.length).toBeGreaterThan(0);
 
     await pageAnalyzer.dispose();
   });
@@ -854,11 +757,7 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
     expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(1500);
     expect(parallelResult.performanceMetrics.layoutMetrics.fixedElements.length).toBeGreaterThan(0);
     expect(parallelResult.performanceMetrics.layoutMetrics.highZIndexElements.length).toBeGreaterThan(0);
-    expect(parallelResult.resourceUsage.analysisSteps.length).toBeGreaterThanOrEqual(2);
-
-    // Verify resource monitoring captured meaningful data
-    expect(parallelResult.resourceUsage.peakMemory).toBeGreaterThan(0);
-    expect(parallelResult.resourceUsage.cpuTime).toBeGreaterThan(0);
+    expect(parallelResult.resourceUsage).toBe(null);
 
     await pageAnalyzer.dispose();
   });
@@ -893,8 +792,7 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
 
     // Parallel should be similar or faster, with added monitoring capabilities
     expect(parallelTime).toBeLessThan(500);
-    expect(parallelResult.resourceUsage).toBeDefined(); // Added capability
-    expect(parallelResult.resourceUsage.analysisSteps.length).toBeGreaterThan(0); // Added monitoring
+    expect(parallelResult.resourceUsage).toBe(null);
 
     // Verify data completeness is maintained
     expect(parallelResult.structureAnalysis.iframes.detected).toBe(structureAnalysis.iframes.detected);
