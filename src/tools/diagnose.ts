@@ -332,8 +332,7 @@ export const browserDiagnose = defineTabTool({
 
         } else if (useParallelAnalysis) {
           // Legacy parallel analysis - ensure pageAnalyzer exists
-          if (!pageAnalyzer)
-            pageAnalyzer = new PageAnalyzer(tab.page);
+          pageAnalyzer ??= new PageAnalyzer(tab.page);
 
 
           const parallelRecommendation = await pageAnalyzer.shouldUseParallelAnalysis();
@@ -368,8 +367,7 @@ export const browserDiagnose = defineTabTool({
           }
         } else {
           // Standard analysis (legacy mode) - ensure pageAnalyzer exists
-          if (!pageAnalyzer)
-            pageAnalyzer = new PageAnalyzer(tab.page);
+          pageAnalyzer ??= new PageAnalyzer(tab.page);
 
           diagnosticInfo = await pageAnalyzer.analyzePageStructure();
         }

@@ -119,13 +119,13 @@ export class Context {
    * Gets or creates the batch executor for this context
    */
   getBatchExecutor(): BatchExecutor {
-    if (!this._batchExecutor) {
+    this._batchExecutor ??= (() => {
       // Create tool registry from available tools
       const toolRegistry = new Map();
       for (const tool of this.tools)
         toolRegistry.set(tool.schema.name, tool);
-      this._batchExecutor = new BatchExecutor(this, toolRegistry);
-    }
+      return new BatchExecutor(this, toolRegistry);
+    })();
     return this._batchExecutor;
   }
   private async _closeBrowserContextImpl() {
@@ -157,12 +157,13 @@ export class Context {
     }
   }
   private _ensureBrowserContext() {
-    if (!this._browserContextPromise) {
-      this._browserContextPromise = this._setupBrowserContext();
-      this._browserContextPromise.catch(() => {
+    this._browserContextPromise ??= (() => {
+      const promise = this._setupBrowserContext();
+      promise.catch(() => {
         this._browserContextPromise = undefined;
       });
-    }
+      return promise;
+    })();
     return this._browserContextPromise;
   }
   private async _setupBrowserContext(): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
