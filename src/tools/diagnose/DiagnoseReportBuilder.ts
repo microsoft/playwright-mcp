@@ -10,6 +10,7 @@ import type {
 import type { UnifiedDiagnosticSystem } from '../../diagnostics/unified-system.js';
 import type { Tab } from '../../tab.js';
 import { DiagnosticReportBuilder } from '../../utils/reportBuilder.js';
+import { ArrayBuilder } from '../../utils/codeDeduplicationUtils.js';
 import type { AnalysisResult } from './DiagnoseAnalysisRunner.js';
 
 interface PerformanceDeviation {
@@ -827,42 +828,30 @@ export class DiagnoseReportBuilder {
 
     this.reportBuilder.addHeader('Troubleshooting Suggestions', 2);
 
-    const suggestions: string[] = [];
-
-    if (diagnosticInfo.iframes.detected) {
-      suggestions.push(
+    const suggestions = new ArrayBuilder<string>()
+      .addIf(
+        diagnosticInfo.iframes.detected,
         'Elements might be inside iframes - use frameLocator() for iframe interactions'
-      );
-    }
-
-    if (diagnosticInfo.modalStates.blockedBy.length > 0) {
-      suggestions.push(
+      )
+      .addIf(
+        diagnosticInfo.modalStates.blockedBy.length > 0,
         `Active modal states (${diagnosticInfo.modalStates.blockedBy.join(', ')}) may block interactions`
-      );
-    }
-
-    if (diagnosticInfo.elements.missingAria > 0) {
-      suggestions.push(
+      )
+      .addIf(
+        diagnosticInfo.elements.missingAria > 0,
         `${diagnosticInfo.elements.missingAria} elements lack proper ARIA attributes - consider using text-based selectors`
-      );
-    }
-
-    if (
-      diagnosticInfo.elements.totalInteractable <
-      diagnosticInfo.elements.totalVisible * 0.1
-    ) {
-      suggestions.push(
+      )
+      .addIf(
+        diagnosticInfo.elements.totalInteractable < diagnosticInfo.elements.totalVisible * 0.1,
         'Low ratio of interactable elements - page might still be loading or have CSS issues'
-      );
-    }
+      )
+      .build();
 
-    if (suggestions.length === 0) {
-      suggestions.push(
-        'No obvious issues detected - page appears to be in good state for automation'
-      );
-    }
+    const finalSuggestions = suggestions.length === 0 
+      ? ['No obvious issues detected - page appears to be in good state for automation']
+      : suggestions;
 
-    for (const suggestion of suggestions) {
+    for (const suggestion of finalSuggestions) {
       this.reportBuilder.addListItem(suggestion);
     }
     this.reportBuilder.addEmptyLine();

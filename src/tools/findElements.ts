@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { ElementDiscovery } from '../diagnostics/element-discovery.js';
 import { PageAnalyzer } from '../diagnostics/page-analyzer.js';
 import type { SmartConfig } from '../diagnostics/smart-config.js';
+import { ArrayBuilder } from '../utils/codeDeduplicationUtils.js';
 
 // Type definitions for diagnostic info structures
 type DiagnosticInfo = {
@@ -385,48 +386,34 @@ function addParallelAnalysisInfo(
   structure: StructureAnalysis,
   resultsText: string[]
 ): void {
-  resultsText.push(
-    `- Page has ${structure.iframes?.count || 0} iframes detected: ${structure.iframes?.detected}`
-  );
-  resultsText.push(
-    `- Total visible elements: ${structure.elements?.totalVisible || 0}`
-  );
-  resultsText.push(
-    `- Total interactable elements: ${structure.elements?.totalInteractable || 0}`
-  );
+  const analysisInfo = new ArrayBuilder<string>()
+    .add(`- Page has ${structure.iframes?.count || 0} iframes detected: ${structure.iframes?.detected}`)
+    .add(`- Total visible elements: ${structure.elements?.totalVisible || 0}`)
+    .add(`- Total interactable elements: ${structure.elements?.totalInteractable || 0}`)
+    .addIf(
+      !!(structure.modalStates?.blockedBy && structure.modalStates.blockedBy.length > 0),
+      `- Page blocked by: ${structure.modalStates?.blockedBy?.join(', ') || ''}`
+    )
+    .build();
 
-  if (
-    structure.modalStates?.blockedBy &&
-    structure.modalStates.blockedBy.length > 0
-  ) {
-    resultsText.push(
-      `- Page blocked by: ${structure.modalStates.blockedBy.join(', ')}`
-    );
-  }
+  resultsText.push(...analysisInfo);
 }
 
 function addStandardAnalysisInfo(
   diagnosticInfo: DiagnosticInfo,
   resultsText: string[]
 ): void {
-  resultsText.push(
-    `- Page has ${diagnosticInfo?.iframes?.count || 0} iframes detected: ${diagnosticInfo?.iframes?.detected}`
-  );
-  resultsText.push(
-    `- Total visible elements: ${diagnosticInfo?.elements?.totalVisible || 0}`
-  );
-  resultsText.push(
-    `- Total interactable elements: ${diagnosticInfo?.elements?.totalInteractable || 0}`
-  );
+  const analysisInfo = new ArrayBuilder<string>()
+    .add(`- Page has ${diagnosticInfo?.iframes?.count || 0} iframes detected: ${diagnosticInfo?.iframes?.detected}`)
+    .add(`- Total visible elements: ${diagnosticInfo?.elements?.totalVisible || 0}`)
+    .add(`- Total interactable elements: ${diagnosticInfo?.elements?.totalInteractable || 0}`)
+    .addIf(
+      !!(diagnosticInfo?.modalStates?.blockedBy && diagnosticInfo.modalStates.blockedBy.length > 0),
+      () => `- Page blocked by: ${diagnosticInfo?.modalStates?.blockedBy?.join(', ') || ''}`
+    )
+    .build();
 
-  if (
-    diagnosticInfo?.modalStates?.blockedBy &&
-    diagnosticInfo.modalStates.blockedBy.length > 0
-  ) {
-    resultsText.push(
-      `- Page blocked by: ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
-    );
-  }
+  resultsText.push(...analysisInfo);
 }
 
 async function addLegacyDiagnosticInfo(
