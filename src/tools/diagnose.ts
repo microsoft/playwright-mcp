@@ -294,7 +294,9 @@ export const browserDiagnose = defineTabTool({
 
             if ('structureAnalysis' in diagnosticInfo) {
               // Parallel analysis result
+              // biome-ignore lint/suspicious/noExplicitAny: Complex diagnostic info structure requires type assertion
               performanceMetrics = (diagnosticInfo as any).performanceMetrics;
+              // biome-ignore lint/suspicious/noExplicitAny: Complex diagnostic info structure requires type assertion
               diagnosticInfo = (diagnosticInfo as any).structureAnalysis;
 
               // Executed Enhanced Parallel Analysis
@@ -612,6 +614,7 @@ export const browserDiagnose = defineTabTool({
 
           try {
             // Get comprehensive performance metrics - use parallel analysis data if available
+            // biome-ignore lint/suspicious/noExplicitAny: Comprehensive metrics have complex dynamic structure
             let comprehensiveMetrics: any;
 
             if (performanceMetrics) {

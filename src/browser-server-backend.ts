@@ -8,6 +8,7 @@ import type * as mcpServer from './mcp/server.js';
 import type { ServerBackend } from './mcp/server.js';
 import { packageJSON } from './package.js';
 import { Response } from './response.js';
+import type { ExpectationOptions } from './schemas/expectation.js';
 import { SessionLog } from './sessionLog.js';
 import type { Tool } from './tools/tool.js';
 import { defineTool } from './tools/tool.js';
@@ -70,8 +71,7 @@ export class BrowserServerBackend implements ServerBackend {
       context,
       schema.name,
       parsedArguments,
-      // biome-ignore lint/suspicious/noExplicitAny: ExpectationOptions type needs to be cast from unknown arguments
-      parsedArguments.expectation as any
+      parsedArguments.expectation as ExpectationOptions | undefined
     );
 
     const matchedTool = this._tools.find((t) => t.schema.name === schema.name);

@@ -50,12 +50,12 @@ const evaluate = defineTabTool({
       );
     }
     await tab.waitForCompletion(async () => {
-      const receiver =
-        locator ??
-        (tab.page as unknown as {
-          _evaluateFunction: (fn: string) => Promise<unknown>;
-        });
-      const result = await (receiver as any)._evaluateFunction(params.function);
+      let result: unknown;
+      if (locator) {
+        result = await locator.evaluate(params.function);
+      } else {
+        result = await tab.page.evaluate(params.function);
+      }
       response.addResult(JSON.stringify(result, null, 2) || 'undefined');
     });
   },

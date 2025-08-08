@@ -19,6 +19,9 @@ import { ManualPromise } from '../manualPromise.js';
 // @ts-expect-error - playwright internal module
 const { registry } = await import('playwright-core/lib/server/registry/index');
 const debugLogger = debug('pw:mcp:relay');
+
+// Regex constants for performance
+const HTTP_TO_WS_REGEX = /^http/;
 // CDP parameter types - using unknown for better type safety
 type CDPParams = Record<string, unknown> | undefined;
 
@@ -45,6 +48,8 @@ export class CDPRelayServer {
   private _wss: WebSocketServer;
   private _playwrightConnection: WebSocket | null = null;
   private _extensionConnection: ExtensionConnection | null = null;
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Used in line 274 for session ID generation
+  private _nextSessionId = 0;
   private _connectedTabInfo:
     | {
         targetInfo: Record<string, unknown>;
@@ -54,7 +59,10 @@ export class CDPRelayServer {
     | undefined;
   private _extensionConnectionPromise!: ManualPromise<void>;
   constructor(server: http.Server, browserChannel: string) {
-    this._wsHost = httpAddressToString(server.address()).replace(/^http/, 'ws');
+    this._wsHost = httpAddressToString(server.address()).replace(
+      HTTP_TO_WS_REGEX,
+      'ws'
+    );
     this._browserChannel = browserChannel;
     const uuid = crypto.randomUUID();
     this._cdpPath = `/cdp/${uuid}`;
@@ -171,7 +179,7 @@ export class CDPRelayServer {
     this._connectedTabInfo = undefined;
     this._extensionConnection = null;
     this._extensionConnectionPromise = new ManualPromise();
-    void this._extensionConnectionPromise.catch(logUnhandledError);
+    this._extensionConnectionPromise.catch(logUnhandledError);
   }
   private _closePlaywrightConnection(reason: string) {
     if (this._playwrightConnection?.readyState === WebSocket.OPEN) {
@@ -201,20 +209,28 @@ export class CDPRelayServer {
       this._handleExtensionMessage.bind(this);
     this._extensionConnectionPromise.resolve();
   }
-  private _handleExtensionMessage(method: string, params: any) {
+  private _handleExtensionMessage(
+    method: string,
+    params: Record<string, unknown>
+  ) {
     switch (method) {
       case 'forwardCDPEvent': {
-        const sessionId = params.sessionId || this._connectedTabInfo?.sessionId;
+        const sessionId =
+          (params.sessionId as string | undefined) ||
+          this._connectedTabInfo?.sessionId;
         this._sendToPlaywright({
           sessionId,
-          method: params.method,
-          params: params.params,
+          method: params.method as string | undefined,
+          params: params.params as CDPParams,
         });
         break;
       }
       case 'detachedFromTab':
         debugLogger('← Debugger detached from tab:', params);
         this._connectedTabInfo = undefined;
+        break;
+      default:
+        debugLogger(`← Extension: unhandled method ${method}`, params);
         break;
     }
   }
@@ -280,6 +296,9 @@ export class CDPRelayServer {
       case 'Target.getTargetInfo': {
         return this._connectedTabInfo?.targetInfo;
       }
+      default:
+        // Fall through to forward to extension
+        break;
     }
     return await this._forwardToExtension(method, params, sessionId);
   }
@@ -292,11 +311,12 @@ export class CDPRelayServer {
       throw new Error('Extension not connected');
     }
     // Top level sessionId is only passed between the relay and the client.
+    let effectiveSessionId = sessionId;
     if (this._connectedTabInfo?.sessionId === sessionId) {
-      sessionId = undefined;
+      effectiveSessionId = undefined;
     }
     return await this._extensionConnection.send('forwardCDPCommand', {
-      sessionId,
+      sessionId: effectiveSessionId,
       method,
       params,
     });
@@ -312,17 +332,19 @@ export class CDPRelayServer {
 type ExtensionResponse = {
   id?: number;
   method?: string;
-  params?: any;
-  result?: any;
+  params?: Record<string, unknown>;
+  result?: unknown;
   error?: string;
 };
 class ExtensionConnection {
   private readonly _ws: WebSocket;
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Used in line 356 for message ID generation
+  private _lastId = 0;
   private readonly _callbacks = new Map<
     number,
-    { resolve: (o: any) => void; reject: (e: Error) => void; error: Error }
+    { resolve: (o: unknown) => void; reject: (e: Error) => void; error: Error }
   >();
-  onmessage?: (method: string, params: any) => void;
+  onmessage?: (method: string, params: Record<string, unknown>) => void;
   onclose?: (self: ExtensionConnection, reason: string) => void;
   constructor(ws: WebSocket) {
     this._ws = ws;
@@ -330,7 +352,7 @@ class ExtensionConnection {
     this._ws.on('close', this._onClose.bind(this));
     this._ws.on('error', this._onError.bind(this));
   }
-  async send(
+  send(
     method: string,
     params?: CDPParams,
     sessionId?: string
@@ -353,7 +375,7 @@ class ExtensionConnection {
   }
   private _onMessage(event: websocket.RawData) {
     const eventData = event.toString();
-    let parsedJson;
+    let parsedJson: ExtensionResponse;
     try {
       parsedJson = JSON.parse(eventData);
     } catch (e: unknown) {
@@ -374,7 +396,10 @@ class ExtensionConnection {
   }
   private _handleParsedMessage(object: ExtensionResponse) {
     if (object.id && this._callbacks.has(object.id)) {
-      const callback = this._callbacks.get(object.id)!;
+      const callback = this._callbacks.get(object.id);
+      if (!callback) {
+        return;
+      }
       this._callbacks.delete(object.id);
       if (object.error) {
         const error = callback.error;
@@ -385,8 +410,8 @@ class ExtensionConnection {
       }
     } else if (object.id) {
       debugLogger('← Extension: unexpected response', object);
-    } else {
-      this.onmessage?.(object.method!, object.params);
+    } else if (object.method) {
+      this.onmessage?.(object.method, object.params || {});
     }
   }
   private _onClose(event: websocket.CloseEvent) {

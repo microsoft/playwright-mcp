@@ -1,6 +1,6 @@
-import * as crypto from 'node:crypto';
+import { createHash as cryptoCreateHash } from 'node:crypto';
 export function createHash(data: string): string {
-  return crypto.createHash('sha256').update(data).digest('hex').slice(0, 7);
+  return cryptoCreateHash('sha256').update(data).digest('hex').slice(0, 7);
 }
 export function sanitizeForFilePath(input: string) {
   const sanitize = (str: string) =>

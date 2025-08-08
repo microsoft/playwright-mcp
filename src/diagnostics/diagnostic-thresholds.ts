@@ -45,11 +45,52 @@ export interface DiagnosticThresholdsConfig {
   };
 }
 
+// Define the fully resolved config type to ensure all properties are required
+export interface ResolvedDiagnosticThresholdsConfig {
+  executionTime: {
+    pageAnalysis: number;
+    elementDiscovery: number;
+    resourceMonitoring: number;
+    parallelAnalysis: number;
+  };
+  memory: {
+    maxMemoryUsage: number;
+    memoryLeakThreshold: number;
+    gcTriggerThreshold: number;
+  };
+  performance: {
+    domElementLimit: number;
+    maxDepthLimit: number;
+    largeSubtreeThreshold: number;
+  };
+  dom: {
+    totalElements: number;
+    maxDepth: number;
+    largeSubtrees: number;
+    elementsWarning: number;
+    elementsDanger: number;
+    depthWarning: number;
+    depthDanger: number;
+    largeSubtreeThreshold: number;
+  };
+  interaction: {
+    clickableElements: number;
+    formElements: number;
+    clickableHigh: number;
+  };
+  layout: {
+    fixedElements: number;
+    highZIndexElements: number;
+    highZIndexThreshold: number;
+    excessiveZIndexThreshold: number;
+  };
+}
+
 /**
  * Default threshold settings
  * Consolidates all hardcoded values here
  */
-const DEFAULT_THRESHOLDS: Required<DiagnosticThresholdsConfig> = {
+const DEFAULT_THRESHOLDS: ResolvedDiagnosticThresholdsConfig = {
   executionTime: {
     pageAnalysis: 1000,
     elementDiscovery: 500,
@@ -95,7 +136,7 @@ const DEFAULT_THRESHOLDS: Required<DiagnosticThresholdsConfig> = {
  */
 export class DiagnosticThresholds {
   private static instance: DiagnosticThresholds | null = null;
-  private currentThresholds: Required<DiagnosticThresholdsConfig>;
+  private currentThresholds: ResolvedDiagnosticThresholdsConfig;
 
   private constructor(initialConfig?: DiagnosticThresholdsConfig) {
     this.currentThresholds = this.mergeWithDefaults(initialConfig || {});
@@ -131,41 +172,41 @@ export class DiagnosticThresholds {
     const thresholds = this.currentThresholds;
     return {
       executionTime: {
-        pageAnalysis: thresholds.executionTime.pageAnalysis!,
-        elementDiscovery: thresholds.executionTime.elementDiscovery!,
-        resourceMonitoring: thresholds.executionTime.resourceMonitoring!,
-        parallelAnalysis: thresholds.executionTime.parallelAnalysis!,
+        pageAnalysis: thresholds.executionTime.pageAnalysis,
+        elementDiscovery: thresholds.executionTime.elementDiscovery,
+        resourceMonitoring: thresholds.executionTime.resourceMonitoring,
+        parallelAnalysis: thresholds.executionTime.parallelAnalysis,
       },
       memory: {
-        maxMemoryUsage: thresholds.memory.maxMemoryUsage!,
-        memoryLeakThreshold: thresholds.memory.memoryLeakThreshold!,
-        gcTriggerThreshold: thresholds.memory.gcTriggerThreshold!,
+        maxMemoryUsage: thresholds.memory.maxMemoryUsage,
+        memoryLeakThreshold: thresholds.memory.memoryLeakThreshold,
+        gcTriggerThreshold: thresholds.memory.gcTriggerThreshold,
       },
       performance: {
-        domElementLimit: thresholds.performance.domElementLimit!,
-        maxDepthLimit: thresholds.performance.maxDepthLimit!,
-        largeSubtreeThreshold: thresholds.performance.largeSubtreeThreshold!,
+        domElementLimit: thresholds.performance.domElementLimit,
+        maxDepthLimit: thresholds.performance.maxDepthLimit,
+        largeSubtreeThreshold: thresholds.performance.largeSubtreeThreshold,
       },
       dom: {
-        totalElements: thresholds.dom.totalElements!,
-        maxDepth: thresholds.dom.maxDepth!,
-        largeSubtrees: thresholds.dom.largeSubtrees!,
-        elementsWarning: thresholds.dom.elementsWarning!,
-        elementsDanger: thresholds.dom.elementsDanger!,
-        depthWarning: thresholds.dom.depthWarning!,
-        depthDanger: thresholds.dom.depthDanger!,
-        largeSubtreeThreshold: thresholds.dom.largeSubtreeThreshold!,
+        totalElements: thresholds.dom.totalElements,
+        maxDepth: thresholds.dom.maxDepth,
+        largeSubtrees: thresholds.dom.largeSubtrees,
+        elementsWarning: thresholds.dom.elementsWarning,
+        elementsDanger: thresholds.dom.elementsDanger,
+        depthWarning: thresholds.dom.depthWarning,
+        depthDanger: thresholds.dom.depthDanger,
+        largeSubtreeThreshold: thresholds.dom.largeSubtreeThreshold,
       },
       interaction: {
-        clickableElements: thresholds.interaction.clickableElements!,
-        formElements: thresholds.interaction.formElements!,
-        clickableHigh: thresholds.interaction.clickableHigh!,
+        clickableElements: thresholds.interaction.clickableElements,
+        formElements: thresholds.interaction.formElements,
+        clickableHigh: thresholds.interaction.clickableHigh,
       },
       layout: {
-        fixedElements: thresholds.layout.fixedElements!,
-        highZIndexElements: thresholds.layout.highZIndexElements!,
-        highZIndexThreshold: thresholds.layout.highZIndexThreshold!,
-        excessiveZIndexThreshold: thresholds.layout.excessiveZIndexThreshold!,
+        fixedElements: thresholds.layout.fixedElements,
+        highZIndexElements: thresholds.layout.highZIndexElements,
+        highZIndexThreshold: thresholds.layout.highZIndexThreshold,
+        excessiveZIndexThreshold: thresholds.layout.excessiveZIndexThreshold,
       },
     };
   }
@@ -210,7 +251,7 @@ export class DiagnosticThresholds {
    * Ensures all properties are defined in a type-safe manner
    */
   private mergeExecutionTimeConfig(
-    result: Required<DiagnosticThresholdsConfig>,
+    result: ResolvedDiagnosticThresholdsConfig,
     config: DiagnosticThresholdsConfig
   ): void {
     if (!config.executionTime) {
@@ -234,7 +275,7 @@ export class DiagnosticThresholds {
   }
 
   private mergeMemoryConfig(
-    result: Required<DiagnosticThresholdsConfig>,
+    result: ResolvedDiagnosticThresholdsConfig,
     config: DiagnosticThresholdsConfig
   ): void {
     if (!config.memory) {
@@ -254,7 +295,7 @@ export class DiagnosticThresholds {
   }
 
   private mergePerformanceConfig(
-    result: Required<DiagnosticThresholdsConfig>,
+    result: ResolvedDiagnosticThresholdsConfig,
     config: DiagnosticThresholdsConfig
   ): void {
     if (!config.performance) {
@@ -275,7 +316,7 @@ export class DiagnosticThresholds {
   }
 
   private mergeDomConfig(
-    result: Required<DiagnosticThresholdsConfig>,
+    result: ResolvedDiagnosticThresholdsConfig,
     config: DiagnosticThresholdsConfig
   ): void {
     if (!config.dom) {
@@ -310,7 +351,7 @@ export class DiagnosticThresholds {
   }
 
   private mergeInteractionConfig(
-    result: Required<DiagnosticThresholdsConfig>,
+    result: ResolvedDiagnosticThresholdsConfig,
     config: DiagnosticThresholdsConfig
   ): void {
     if (!config.interaction) {
@@ -330,7 +371,7 @@ export class DiagnosticThresholds {
   }
 
   private mergeLayoutConfig(
-    result: Required<DiagnosticThresholdsConfig>,
+    result: ResolvedDiagnosticThresholdsConfig,
     config: DiagnosticThresholdsConfig
   ): void {
     if (!config.layout) {
@@ -354,10 +395,10 @@ export class DiagnosticThresholds {
 
   private mergeWithDefaults(
     config: DiagnosticThresholdsConfig
-  ): Required<DiagnosticThresholdsConfig> {
+  ): ResolvedDiagnosticThresholdsConfig {
     const result = JSON.parse(
       JSON.stringify(DEFAULT_THRESHOLDS)
-    ) as Required<DiagnosticThresholdsConfig>;
+    ) as ResolvedDiagnosticThresholdsConfig;
 
     this.mergeExecutionTimeConfig(result, config);
     this.mergeMemoryConfig(result, config);
@@ -373,93 +414,116 @@ export class DiagnosticThresholds {
    * Validate threshold configuration
    */
   private validateThresholds(
-    thresholds: Required<DiagnosticThresholdsConfig>
+    thresholds: ResolvedDiagnosticThresholdsConfig
   ): void {
     const errors: string[] = [];
 
-    const exec = thresholds.executionTime;
-    const mem = thresholds.memory;
-    const dom = thresholds.dom;
-    const inter = thresholds.interaction;
-    const layout = thresholds.layout;
-
-    // Validate execution time thresholds
-    if (exec.pageAnalysis! <= 0) {
-      errors.push('pageAnalysis execution time must be positive');
-    }
-
-    if (exec.elementDiscovery! <= 0) {
-      errors.push('elementDiscovery execution time must be positive');
-    }
-
-    if (exec.resourceMonitoring! <= 0) {
-      errors.push('resourceMonitoring execution time must be positive');
-    }
-
-    if (exec.parallelAnalysis! <= 0) {
-      errors.push('parallelAnalysis execution time must be positive');
-    }
-
-    // Validate memory thresholds
-    if (mem.maxMemoryUsage! <= 0) {
-      errors.push('maxMemoryUsage must be positive');
-    }
-
-    if (mem.memoryLeakThreshold! <= 0) {
-      errors.push('memoryLeakThreshold must be positive');
-    }
-
-    if (mem.gcTriggerThreshold! <= 0) {
-      errors.push('gcTriggerThreshold must be positive');
-    }
-
-    if (mem.memoryLeakThreshold! >= mem.maxMemoryUsage!) {
-      errors.push('memoryLeakThreshold should be less than maxMemoryUsage');
-    }
-
-    // Validate DOM thresholds
-    if (dom.elementsWarning! <= 0) {
-      errors.push('elementsWarning must be positive');
-    }
-
-    if (dom.elementsDanger! <= dom.elementsWarning!) {
-      errors.push('elementsDanger must be greater than elementsWarning');
-    }
-
-    if (dom.depthWarning! <= 0) {
-      errors.push('depthWarning must be positive');
-    }
-
-    if (dom.depthDanger! <= dom.depthWarning!) {
-      errors.push('depthDanger must be greater than depthWarning');
-    }
-
-    if (dom.largeSubtreeThreshold! <= 0) {
-      errors.push('largeSubtreeThreshold must be positive');
-    }
-
-    // Validate interaction thresholds
-    if (inter.clickableElements! <= 0) {
-      errors.push('clickableElements threshold must be positive');
-    }
-
-    if (inter.formElements! <= 0) {
-      errors.push('formElements threshold must be positive');
-    }
-
-    // Validate layout thresholds
-    if (layout.highZIndexThreshold! <= 0) {
-      errors.push('highZIndexThreshold must be positive');
-    }
-
-    if (layout.excessiveZIndexThreshold! <= layout.highZIndexThreshold!) {
-      errors.push(
-        'excessiveZIndexThreshold must be greater than highZIndexThreshold'
-      );
-    }
+    this.validateExecutionTimeThresholds(thresholds.executionTime, errors);
+    this.validateMemoryThresholds(thresholds.memory, errors);
+    this.validateDomThresholds(thresholds.dom, errors);
+    this.validateInteractionThresholds(thresholds.interaction, errors);
+    this.validateLayoutThresholds(thresholds.layout, errors);
 
     if (errors.length > 0) {
       throw new Error(`Invalid threshold configuration: ${errors.join(', ')}`);
+    }
+  }
+
+  /**
+   * Validate execution time thresholds
+   */
+  private validateExecutionTimeThresholds(
+    exec: ResolvedDiagnosticThresholdsConfig['executionTime'],
+    errors: string[]
+  ): void {
+    if (exec.pageAnalysis <= 0) {
+      errors.push('pageAnalysis execution time must be positive');
+    }
+    if (exec.elementDiscovery <= 0) {
+      errors.push('elementDiscovery execution time must be positive');
+    }
+    if (exec.resourceMonitoring <= 0) {
+      errors.push('resourceMonitoring execution time must be positive');
+    }
+    if (exec.parallelAnalysis <= 0) {
+      errors.push('parallelAnalysis execution time must be positive');
+    }
+  }
+
+  /**
+   * Validate memory thresholds
+   */
+  private validateMemoryThresholds(
+    mem: ResolvedDiagnosticThresholdsConfig['memory'],
+    errors: string[]
+  ): void {
+    if (mem.maxMemoryUsage <= 0) {
+      errors.push('maxMemoryUsage must be positive');
+    }
+    if (mem.memoryLeakThreshold <= 0) {
+      errors.push('memoryLeakThreshold must be positive');
+    }
+    if (mem.gcTriggerThreshold <= 0) {
+      errors.push('gcTriggerThreshold must be positive');
+    }
+    if (mem.memoryLeakThreshold >= mem.maxMemoryUsage) {
+      errors.push('memoryLeakThreshold should be less than maxMemoryUsage');
+    }
+  }
+
+  /**
+   * Validate DOM thresholds
+   */
+  private validateDomThresholds(
+    dom: ResolvedDiagnosticThresholdsConfig['dom'],
+    errors: string[]
+  ): void {
+    if (dom.elementsWarning <= 0) {
+      errors.push('elementsWarning must be positive');
+    }
+    if (dom.elementsDanger <= dom.elementsWarning) {
+      errors.push('elementsDanger must be greater than elementsWarning');
+    }
+    if (dom.depthWarning <= 0) {
+      errors.push('depthWarning must be positive');
+    }
+    if (dom.depthDanger <= dom.depthWarning) {
+      errors.push('depthDanger must be greater than depthWarning');
+    }
+    if (dom.largeSubtreeThreshold <= 0) {
+      errors.push('largeSubtreeThreshold must be positive');
+    }
+  }
+
+  /**
+   * Validate interaction thresholds
+   */
+  private validateInteractionThresholds(
+    inter: ResolvedDiagnosticThresholdsConfig['interaction'],
+    errors: string[]
+  ): void {
+    if (inter.clickableElements <= 0) {
+      errors.push('clickableElements threshold must be positive');
+    }
+    if (inter.formElements <= 0) {
+      errors.push('formElements threshold must be positive');
+    }
+  }
+
+  /**
+   * Validate layout thresholds
+   */
+  private validateLayoutThresholds(
+    layout: ResolvedDiagnosticThresholdsConfig['layout'],
+    errors: string[]
+  ): void {
+    if (layout.highZIndexThreshold <= 0) {
+      errors.push('highZIndexThreshold must be positive');
+    }
+    if (layout.excessiveZIndexThreshold <= layout.highZIndexThreshold) {
+      errors.push(
+        'excessiveZIndexThreshold must be greater than highZIndexThreshold'
+      );
     }
   }
 
@@ -487,25 +551,25 @@ export class DiagnosticThresholds {
     const defaultsLayout = defaults.layout;
 
     // Detect DOM threshold customizations
-    if (currentDom.elementsWarning! !== defaultsDom.elementsWarning) {
+    if (currentDom.elementsWarning !== defaultsDom.elementsWarning) {
       customizations.push(
         `DOM elements warning: ${currentDom.elementsWarning} (default: ${defaultsDom.elementsWarning})`
       );
     }
 
-    if (currentDom.elementsDanger! !== defaultsDom.elementsDanger) {
+    if (currentDom.elementsDanger !== defaultsDom.elementsDanger) {
       customizations.push(
         `DOM elements danger: ${currentDom.elementsDanger} (default: ${defaultsDom.elementsDanger})`
       );
     }
 
-    if (currentDom.depthWarning! !== defaultsDom.depthWarning) {
+    if (currentDom.depthWarning !== defaultsDom.depthWarning) {
       customizations.push(
         `DOM depth warning: ${currentDom.depthWarning} (default: ${defaultsDom.depthWarning})`
       );
     }
 
-    if (currentDom.depthDanger! !== defaultsDom.depthDanger) {
+    if (currentDom.depthDanger !== defaultsDom.depthDanger) {
       customizations.push(
         `DOM depth danger: ${currentDom.depthDanger} (default: ${defaultsDom.depthDanger})`
       );
@@ -513,7 +577,7 @@ export class DiagnosticThresholds {
 
     // Detect layout threshold customizations
     if (
-      currentLayout.excessiveZIndexThreshold! !==
+      currentLayout.excessiveZIndexThreshold !==
       defaultsLayout.excessiveZIndexThreshold
     ) {
       customizations.push(
@@ -522,19 +586,19 @@ export class DiagnosticThresholds {
     }
 
     // Determine warning level
-    if (currentDom.elementsWarning! > 2000) {
+    if (currentDom.elementsWarning > 2000) {
       warnings.push(
         'DOM elements warning threshold is very high - may not catch performance issues early'
       );
     }
 
-    if (currentDom.depthWarning! > 25) {
+    if (currentDom.depthWarning > 25) {
       warnings.push(
         'DOM depth warning threshold is very high - deeply nested structures may cause performance issues'
       );
     }
 
-    if (currentLayout.excessiveZIndexThreshold! < 1000) {
+    if (currentLayout.excessiveZIndexThreshold < 1000) {
       warnings.push(
         'Excessive z-index threshold is low - may generate false positives'
       );

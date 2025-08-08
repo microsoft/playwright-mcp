@@ -90,22 +90,33 @@ export class FrameReferenceManager implements IDisposable {
 
     const framesToRemove: playwright.Frame[] = [];
 
-    for (const frame of this.activeFrames) {
-      try {
-        // Try to access frame properties to check if it's still attached
-        await Promise.race([
-          frame.url(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), 1000)
-          ),
-        ]);
-      } catch (_error) {
-        // Frame is likely detached
+    // Parallelize frame accessibility checks for better performance
+    const frameCheckPromises = Array.from(this.activeFrames).map(
+      async (frame) => {
+        try {
+          // Try to access frame properties to check if it's still attached
+          await Promise.race([
+            frame.url(),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Timeout')), 1000)
+            ),
+          ]);
+          return { frame, isDetached: false };
+        } catch (_error) {
+          // Frame is likely detached
+          return { frame, isDetached: true };
+        }
+      }
+    );
+
+    const frameCheckResults = await Promise.all(frameCheckPromises);
+
+    for (const { frame, isDetached } of frameCheckResults) {
+      if (isDetached) {
         const metadata = this.frameRefs.get(frame);
         if (metadata) {
           metadata.isDetached = true;
         }
-
         framesToRemove.push(frame);
       }
     }

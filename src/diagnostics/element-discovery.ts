@@ -154,11 +154,13 @@ export class ElementDiscovery extends DiagnosticBase {
       }
 
       try {
+        // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution needed for early termination based on totalFound
         const elements = await page.$$(selector);
 
         for (const element of elements) {
           if (totalFound >= maxResults) {
             // Dispose excess elements immediately
+            // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
             await this.safeDispose(element, `findByText-excess-${totalFound}`);
             break;
           }
@@ -225,6 +227,7 @@ export class ElementDiscovery extends DiagnosticBase {
 
       for (const element of elements) {
         if (totalFound >= maxResults) {
+          // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
           await this.safeDispose(element, `findByRole-excess-${totalFound}`);
           break;
         }
@@ -277,6 +280,7 @@ export class ElementDiscovery extends DiagnosticBase {
 
       for (const element of elements) {
         if (totalFound >= maxResults) {
+          // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
           await this.safeDispose(element, `findByTagName-excess-${totalFound}`);
           break;
         }
@@ -324,10 +328,12 @@ export class ElementDiscovery extends DiagnosticBase {
       }
 
       try {
+        // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution needed for early termination based on totalFound
         const elements = await page.$$(`[${attrName}="${attrValue}"]`);
 
         for (const element of elements) {
           if (totalFound >= maxResults) {
+            // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
             await this.safeDispose(
               element,
               `findByAttributes-excess-${totalFound}`
@@ -389,10 +395,12 @@ export class ElementDiscovery extends DiagnosticBase {
       }
 
       try {
+        // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution needed for early termination based on totalFound
         const elements = await page.$$(tagSelector);
 
         for (const element of elements) {
           if (totalFound >= maxResults) {
+            // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
             await this.safeDispose(
               element,
               `findImplicitRole-excess-${totalFound}`

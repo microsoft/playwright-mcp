@@ -145,7 +145,7 @@ export class SmartConfigManager {
   }
 
   updateConfig(updates: Partial<SmartConfig>): void {
-    this.config = this.deepMerge(this.config, updates);
+    this.config = this.mergeDeep(this.config, updates);
 
     // If thresholds are updated, sync DiagnosticThresholds as well
     if (updates.performance?.thresholds) {
@@ -155,33 +155,30 @@ export class SmartConfigManager {
     this.notifyListeners();
   }
 
-  private deepMerge<T extends Record<string, any>>(
-    target: T,
-    source: Partial<T>
-  ): T {
-    if (source === null || typeof source !== 'object') {
-      return source as any;
-    }
-
-    if (Array.isArray(source)) {
-      return source as any;
-    }
-
+  private mergeDeep(
+    target: SmartConfig,
+    source: Partial<SmartConfig>
+  ): SmartConfig {
     const result = { ...target };
 
     for (const key in source) {
       if (Object.hasOwn(source, key)) {
+        const sourceValue = source[key as keyof SmartConfig];
+        const targetValue = target[key as keyof SmartConfig];
+
         if (
-          typeof source[key] === 'object' &&
-          source[key] !== null &&
-          !Array.isArray(source[key])
+          typeof sourceValue === 'object' &&
+          sourceValue !== null &&
+          !Array.isArray(sourceValue) &&
+          typeof targetValue === 'object' &&
+          targetValue !== null &&
+          !Array.isArray(targetValue)
         ) {
-          result[key] = this.deepMerge(
-            (target[key] as Record<string, any>) || {},
-            source[key] as Record<string, any>
-          ) as any;
+          // biome-ignore lint/suspicious/noExplicitAny: Deep merge requires flexible typing
+          (result as any)[key] = { ...targetValue, ...sourceValue };
         } else {
-          (result as any)[key] = source[key];
+          // biome-ignore lint/suspicious/noExplicitAny: Deep merge requires flexible typing
+          (result as any)[key] = sourceValue;
         }
       }
     }
@@ -500,22 +497,58 @@ export class SmartConfigManager {
       errors: string[];
     };
   } {
-    // Compare default configuration with current configuration
     const defaultConfig = this.createDefaultConfig();
     const currentConfig = this.getConfig();
 
     const activeOverrides: string[] = [];
+    const executionTimeChanges = this.analyzeThresholdChanges(
+      defaultConfig,
+      currentConfig,
+      activeOverrides
+    );
+
+    const featureChanges = this.analyzeFeatureChanges(
+      defaultConfig,
+      currentConfig,
+      activeOverrides
+    );
+
+    this.analyzeConfigurationChanges(
+      defaultConfig,
+      currentConfig,
+      featureChanges.modified,
+      activeOverrides
+    );
+
+    const performanceImpact = this.evaluatePerformanceImpact(
+      currentConfig,
+      defaultConfig,
+      executionTimeChanges
+    );
+
+    const validationStatus = this.generateValidationWarnings(
+      executionTimeChanges,
+      featureChanges.enabled
+    );
+
+    return {
+      activeOverrides,
+      performanceImpact,
+      featureChanges,
+      validationStatus,
+    };
+  }
+
+  private analyzeThresholdChanges(
+    defaultConfig: SmartConfig,
+    currentConfig: SmartConfig,
+    activeOverrides: string[]
+  ): Record<string, { from: number; to: number; percentChange: number }> {
     const executionTimeChanges: Record<
       string,
       { from: number; to: number; percentChange: number }
     > = {};
-    const enabled: string[] = [];
-    const disabled: string[] = [];
-    const modified: string[] = [];
-    const warnings: string[] = [];
-    const errors: string[] = [];
 
-    // Check performance threshold changes
     const defaultThresholds =
       defaultConfig.performance.thresholds.executionTime;
     const currentThresholds =
@@ -540,7 +573,18 @@ export class SmartConfigManager {
       }
     }
 
-    // Check feature flag changes
+    return executionTimeChanges;
+  }
+
+  private analyzeFeatureChanges(
+    defaultConfig: SmartConfig,
+    currentConfig: SmartConfig,
+    activeOverrides: string[]
+  ): { enabled: string[]; disabled: string[]; modified: string[] } {
+    const enabled: string[] = [];
+    const disabled: string[] = [];
+    const modified: string[] = [];
+
     const featureChecks = [
       { key: 'enableParallelAnalysis', name: 'Parallel Analysis' },
       { key: 'enableSmartHandleManagement', name: 'Smart Handle Management' },
@@ -568,7 +612,15 @@ export class SmartConfigManager {
       }
     }
 
-    // Check error handling configuration changes
+    return { enabled, disabled, modified };
+  }
+
+  private analyzeConfigurationChanges(
+    defaultConfig: SmartConfig,
+    currentConfig: SmartConfig,
+    modified: string[],
+    activeOverrides: string[]
+  ): void {
     if (
       defaultConfig.errorHandling.enableErrorEnrichment !==
       currentConfig.errorHandling.enableErrorEnrichment
@@ -580,7 +632,6 @@ export class SmartConfigManager {
       activeOverrides.push(`Error Enrichment: ${status}`);
     }
 
-    // Check diagnostic level changes
     if (defaultConfig.diagnostic.level !== currentConfig.diagnostic.level) {
       modified.push(
         `Diagnostic Level: ${defaultConfig.diagnostic.level} → ${currentConfig.diagnostic.level}`
@@ -589,11 +640,23 @@ export class SmartConfigManager {
         `Diagnostic Level: ${defaultConfig.diagnostic.level} → ${currentConfig.diagnostic.level}`
       );
     }
+  }
 
-    // Validation
-    const isValid = errors.length === 0;
-
-    // Evaluate performance impact
+  private evaluatePerformanceImpact(
+    currentConfig: SmartConfig,
+    defaultConfig: SmartConfig,
+    executionTimeChanges: Record<
+      string,
+      { from: number; to: number; percentChange: number }
+    >
+  ): {
+    executionTimeChanges: Record<
+      string,
+      { from: number; to: number; percentChange: number }
+    >;
+    memoryImpact: string;
+    recommendedOptimizations: string[];
+  } {
     let memoryImpact = 'Minimal';
     const recommendedOptimizations: string[] = [];
 
@@ -613,7 +676,23 @@ export class SmartConfigManager {
       recommendedOptimizations.push('Only enable for debugging sessions');
     }
 
-    // Generate performance warnings
+    return {
+      executionTimeChanges,
+      memoryImpact,
+      recommendedOptimizations,
+    };
+  }
+
+  private generateValidationWarnings(
+    executionTimeChanges: Record<
+      string,
+      { from: number; to: number; percentChange: number }
+    >,
+    enabledFeatures: string[]
+  ): { isValid: boolean; warnings: string[]; errors: string[] } {
+    const warnings: string[] = [];
+    const errors: string[] = [];
+
     for (const [component, change] of Object.entries(executionTimeChanges)) {
       if (change.percentChange > 50) {
         warnings.push(
@@ -626,30 +705,14 @@ export class SmartConfigManager {
       }
     }
 
-    if (enabled.length > 3) {
+    if (enabledFeatures.length > 3) {
       warnings.push(
-        `Many features enabled (${enabled.length}) - consider selective enablement for better performance`
+        `Many features enabled (${enabledFeatures.length}) - consider selective enablement for better performance`
       );
     }
 
-    return {
-      activeOverrides,
-      performanceImpact: {
-        executionTimeChanges,
-        memoryImpact,
-        recommendedOptimizations,
-      },
-      featureChanges: {
-        enabled,
-        disabled,
-        modified,
-      },
-      validationStatus: {
-        isValid,
-        warnings,
-        errors,
-      },
-    };
+    const isValid = errors.length === 0;
+    return { isValid, warnings, errors };
   }
 
   /**

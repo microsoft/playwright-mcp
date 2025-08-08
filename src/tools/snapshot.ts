@@ -30,7 +30,7 @@ const snapshot = defineTool({
         options.maxLength
       );
       // Store the snapshot in response for later use
-      (response as any)._tabSnapshot = snapshot;
+      response.setTabSnapshot(snapshot);
     }
   },
 });

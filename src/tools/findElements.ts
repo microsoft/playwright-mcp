@@ -77,16 +77,45 @@ export const browserFindElements = defineTabTool({
     let unifiedSystem: UnifiedDiagnosticSystem | null = null;
     let elementDiscovery: ElementDiscovery | null = null;
 
+    interface ElementAlternative {
+      ref: string;
+      element: string;
+      confidence: number;
+      textContent: string;
+      attributes: Record<string, string>;
+      selector: string;
+    }
+
+    interface OperationError {
+      message?: string;
+      suggestions?: string[];
+    }
+
+    interface OperationResult {
+      success: boolean;
+      data?: ElementAlternative[];
+      error?: OperationError;
+      executionTime?: number;
+    }
+
+    interface DiagnosticResult {
+      data?: {
+        structureAnalysis?: {
+          iframes?: { count: number; detected: boolean };
+          elements?: { totalVisible: number; totalInteractable: number };
+          modalStates?: { blockedBy: string[] };
+        };
+        // Also support direct properties for standard analysis
+        iframes?: { count: number; detected: boolean };
+        elements?: { totalVisible: number; totalInteractable: number };
+        modalStates?: { blockedBy: string[] };
+      };
+      executionTime?: number;
+    }
+
     try {
-      let alternatives: Array<{
-        ref: string;
-        element: string;
-        confidence: number;
-        textContent: string;
-        attributes: Record<string, string>;
-        selector: string;
-      }> = [];
-      let operationResult: any;
+      let alternatives: ElementAlternative[] = [];
+      let operationResult: OperationResult | undefined;
 
       if (useUnifiedSystem) {
         // Configure unified system with element discovery optimizations
@@ -153,14 +182,14 @@ export const browserFindElements = defineTabTool({
         // Use unified system for element discovery with enhanced error handling
         operationResult = (await unifiedSystem.findAlternativeElements(
           searchCriteria
-        )) as any;
+        )) as OperationResult;
 
         if (operationResult.success) {
-          alternatives = (operationResult as any).data || [];
+          alternatives = operationResult.data || [];
         } else {
           // Handle enhanced error from unified system
-          const errorInfo = (operationResult as any).error;
-          let errorMessage = `Element discovery failed: ${(errorInfo as any)?.message || 'Unknown error'}`;
+          const errorInfo = operationResult.error;
+          let errorMessage = `Element discovery failed: ${errorInfo?.message || 'Unknown error'}`;
 
           if (errorInfo?.suggestions && errorInfo.suggestions.length > 0) {
             errorMessage += '\n\nSuggestions:';
@@ -194,6 +223,13 @@ export const browserFindElements = defineTabTool({
           selector: result.selector,
         }));
 
+        // Initialize operation result for legacy discovery
+        operationResult = {
+          success: true,
+          data: alternatives,
+          executionTime: 0,
+        };
+
         // Used legacy element discovery
       }
 
@@ -216,7 +252,7 @@ export const browserFindElements = defineTabTool({
           `   Confidence: ${(alt.confidence * 100).toFixed(0)}%`
         );
         resultsText.push(
-          `   Reason: ${(alt as any).reason || 'No reason provided'}`
+          `   Reason: ${(alt as ElementAlternative & { reason?: string }).reason || 'No reason provided'}`
         );
         if (index < alternatives.length - 1) {
           resultsText.push('');
@@ -229,46 +265,52 @@ export const browserFindElements = defineTabTool({
           // Use unified system for diagnostic information
           const diagResult = await unifiedSystem.analyzePageStructure();
           if (diagResult.success) {
-            const diagnosticInfo = (diagResult as any).data;
+            const diagnosticInfo = (diagResult as DiagnosticResult).data;
 
             resultsText.push('', '### Enhanced Diagnostic Information');
             resultsText.push(
-              `- Analysis time: ${(diagResult as any).executionTime || 0}ms`
+              `- Analysis time: ${(diagResult as DiagnosticResult).executionTime || 0}ms`
             );
 
-            if ('structureAnalysis' in diagnosticInfo) {
+            if (diagnosticInfo?.structureAnalysis) {
               // Parallel analysis result
-              const structure = (diagnosticInfo as any).structureAnalysis;
+              const structure = diagnosticInfo.structureAnalysis;
               resultsText.push(
-                `- Page has ${(structure as any)?.iframes?.count || 0} iframes detected: ${(structure as any)?.iframes?.detected}`
+                `- Page has ${structure.iframes?.count || 0} iframes detected: ${structure.iframes?.detected}`
               );
               resultsText.push(
-                `- Total visible elements: ${(structure as any)?.elements?.totalVisible || 0}`
+                `- Total visible elements: ${structure.elements?.totalVisible || 0}`
               );
               resultsText.push(
-                `- Total interactable elements: ${(structure as any)?.elements?.totalInteractable || 0}`
+                `- Total interactable elements: ${structure.elements?.totalInteractable || 0}`
               );
 
-              if ((structure as any)?.modalStates?.blockedBy?.length > 0) {
+              if (
+                structure.modalStates?.blockedBy &&
+                structure.modalStates.blockedBy.length > 0
+              ) {
                 resultsText.push(
-                  `- Page blocked by: ${(structure as any).modalStates.blockedBy.join(', ')}`
+                  `- Page blocked by: ${structure.modalStates.blockedBy.join(', ')}`
                 );
               }
             } else {
               // Standard analysis result
               resultsText.push(
-                `- Page has ${(diagnosticInfo as any)?.iframes?.count || 0} iframes detected: ${(diagnosticInfo as any)?.iframes?.detected}`
+                `- Page has ${diagnosticInfo?.iframes?.count || 0} iframes detected: ${diagnosticInfo?.iframes?.detected}`
               );
               resultsText.push(
-                `- Total visible elements: ${(diagnosticInfo as any)?.elements?.totalVisible || 0}`
+                `- Total visible elements: ${diagnosticInfo?.elements?.totalVisible || 0}`
               );
               resultsText.push(
-                `- Total interactable elements: ${(diagnosticInfo as any)?.elements?.totalInteractable || 0}`
+                `- Total interactable elements: ${diagnosticInfo?.elements?.totalInteractable || 0}`
               );
 
-              if ((diagnosticInfo as any)?.modalStates?.blockedBy?.length > 0) {
+              if (
+                diagnosticInfo?.modalStates?.blockedBy &&
+                diagnosticInfo.modalStates.blockedBy.length > 0
+              ) {
                 resultsText.push(
-                  `- Page blocked by: ${(diagnosticInfo as any).modalStates.blockedBy.join(', ')}`
+                  `- Page blocked by: ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
                 );
               }
             }
@@ -311,10 +353,13 @@ export const browserFindElements = defineTabTool({
         resultsText.push('');
         resultsText.push('### Enhanced Discovery Information');
         resultsText.push(
-          `- Discovery execution time: ${(operationResult as any)?.executionTime || 0}ms`
+          `- Discovery execution time: ${operationResult.executionTime || 0}ms`
         );
 
-        if ((operationResult as any)?.executionTime > performanceThreshold) {
+        if (
+          operationResult.executionTime &&
+          operationResult.executionTime > performanceThreshold
+        ) {
           resultsText.push(
             `- ⚠️ Discovery exceeded performance threshold (${performanceThreshold}ms)`
           );

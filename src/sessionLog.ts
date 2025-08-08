@@ -22,6 +22,7 @@ type LogEntry = {
 export class SessionLog {
   private _folder: string;
   private _file: string;
+  private _ordinal = 0;
   private _pendingEntries: LogEntry[] = [];
   private _sessionFileQueue = Promise.resolve();
   private _flushEntriesTimeout: NodeJS.Timeout | undefined;

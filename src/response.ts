@@ -71,6 +71,9 @@ export class Response {
   setIncludeTabs() {
     this._includeTabs = true;
   }
+  setTabSnapshot(snapshot: TabSnapshot) {
+    this._tabSnapshot = snapshot;
+  }
   async finish() {
     // All the async snapshotting post-action is happening here.
     // Everything below should race against modal states.

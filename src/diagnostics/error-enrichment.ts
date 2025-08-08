@@ -59,15 +59,13 @@ export interface BatchFailureOptions {
 export class ErrorEnrichment extends DiagnosticBase {
   private readonly pageAnalyzer: PageAnalyzer;
   private readonly elementDiscovery: ElementDiscovery;
+  protected readonly logger: ReturnType<typeof createDiagnosticLogger>;
 
   constructor(page: playwright.Page) {
     super(page, 'ErrorEnrichment');
     this.pageAnalyzer = new PageAnalyzer(page);
     this.elementDiscovery = new ElementDiscovery(page);
-    (this as any).logger = createDiagnosticLogger(
-      'ErrorEnrichment',
-      'enrichment'
-    );
+    this.logger = createDiagnosticLogger('ErrorEnrichment', 'enrichment');
   }
 
   protected async performDispose(): Promise<void> {

@@ -38,7 +38,7 @@ export const allTools: Tool<any>[] = [
   browserFindElements,
   browserDiagnose,
 ];
-export function filteredTools(config: FullConfig): Tool<any>[] {
+export function filteredTools(config: FullConfig): Tool[] {
   return allTools.filter(
     (tool) =>
       tool.capability.startsWith('core') ||

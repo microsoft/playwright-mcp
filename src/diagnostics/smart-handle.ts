@@ -19,7 +19,10 @@ export class SmartHandle<T extends playwright.ElementHandle>
   constructor(resource: T, tracker?: SmartTracker) {
     this.resource = resource;
     this.tracker = tracker || globalResourceManager;
-    this.resourceId = this.tracker.trackResource(resource, 'dispose');
+    this.resourceId = this.tracker.trackResource(
+      resource as Record<string, unknown>,
+      'dispose'
+    );
   }
 
   get(target: T, prop: string | symbol, _receiver: unknown): unknown {

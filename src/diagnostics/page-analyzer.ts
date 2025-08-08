@@ -81,82 +81,11 @@ export class PageAnalyzer extends DiagnosticBase {
     const accessible: Array<{ src: string; accessible: boolean }> = [];
     const inaccessible: Array<{ src: string; reason: string }> = [];
 
-    // Dispose iframes immediately after processing to prevent leaks
     try {
-      for (const iframe of iframes) {
-        const src = (await iframe.getAttribute('src')) || 'about:blank';
-
-        try {
-          // Try to access the iframe's content
-          const frame = await iframe.contentFrame();
-          if (frame) {
-            // Track frame in frame manager
-            this.frameManager.trackFrame(frame);
-            this.frameRefs.add(frame);
-
-            try {
-              // Try to access frame content with timeout to verify it's truly accessible
-              await Promise.race([
-                frame.url(),
-                new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error('Timeout')), 1000)
-                ),
-              ]);
-              accessible.push({ src, accessible: true });
-
-              // Update frame metadata with element count for performance tracking
-              try {
-                const elementCount = await frame.$$eval(
-                  '*',
-                  (elements) => elements.length
-                );
-                this.frameManager.updateElementCount(frame, elementCount);
-              } catch (countError) {
-                this.logger.warn('Failed to count frame elements', countError);
-              }
-            } catch (_frameError) {
-              inaccessible.push({
-                src,
-                reason:
-                  'Frame content not accessible - cross-origin or blocked',
-              });
-            }
-          } else {
-            inaccessible.push({
-              src,
-              reason: 'Content frame not available',
-            });
-          }
-        } catch (error) {
-          inaccessible.push({
-            src,
-            reason: error instanceof Error ? error.message : 'Access denied',
-          });
-        } finally {
-          // Dispose iframe element handle to prevent memory leak
-          try {
-            await iframe.dispose();
-          } catch (disposeError) {
-            this.logger.warn('Failed to dispose iframe element', disposeError);
-          }
-        }
-      }
-
-      // Clean up any detached frames after analysis
+      await this.processIframes(iframes, accessible, inaccessible);
       await this.frameManager.cleanupDetachedFrames();
     } catch (error) {
-      // iframe analysis failed - continuing with processing
-      // Ensure cleanup even on error
-      for (const iframe of iframes) {
-        try {
-          await iframe.dispose();
-        } catch (disposeError) {
-          this.logger.warn(
-            'Error during iframe disposal cleanup',
-            disposeError
-          );
-        }
-      }
+      await this.cleanupIframesOnError(iframes);
       throw error;
     }
 
@@ -166,6 +95,114 @@ export class PageAnalyzer extends DiagnosticBase {
       accessible,
       inaccessible,
     };
+  }
+
+  private async processIframes(
+    iframes: any[],
+    accessible: Array<{ src: string; accessible: boolean }>,
+    inaccessible: Array<{ src: string; reason: string }>
+  ): Promise<void> {
+    for (const iframe of iframes) {
+      const src = (await iframe.getAttribute('src')) || 'about:blank';
+
+      try {
+        await this.processIndividualIframe(
+          iframe,
+          src,
+          accessible,
+          inaccessible
+        );
+      } catch (error) {
+        this.addInaccessibleIframe(inaccessible, src, error);
+      } finally {
+        await this.disposeIframeElement(iframe);
+      }
+    }
+  }
+
+  private async processIndividualIframe(
+    iframe: any,
+    src: string,
+    accessible: Array<{ src: string; accessible: boolean }>,
+    inaccessible: Array<{ src: string; reason: string }>
+  ): Promise<void> {
+    const frame = await iframe.contentFrame();
+    if (!frame) {
+      inaccessible.push({
+        src,
+        reason: 'Content frame not available',
+      });
+      return;
+    }
+
+    this.frameManager.trackFrame(frame);
+    this.frameRefs.add(frame);
+
+    try {
+      await this.verifyFrameAccessibility(frame);
+      accessible.push({ src, accessible: true });
+      await this.updateFrameMetadata(frame);
+    } catch (_frameError) {
+      inaccessible.push({
+        src,
+        reason: 'Frame content not accessible - cross-origin or blocked',
+      });
+    }
+  }
+
+  private async verifyFrameAccessibility(frame: any): Promise<void> {
+    await Promise.race([
+      frame.url(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 1000)
+      ),
+    ]);
+  }
+
+  private async updateFrameMetadata(frame: any): Promise<void> {
+    try {
+      const elementCount = await frame.$$eval(
+        '*',
+        (elements: Element[]) => elements.length
+      );
+      this.frameManager.updateElementCount(frame, elementCount);
+    } catch (countError) {
+      this.logger.warn('Failed to count frame elements', countError);
+    }
+  }
+
+  private addInaccessibleIframe(
+    inaccessible: Array<{ src: string; reason: string }>,
+    src: string,
+    error: unknown
+  ): void {
+    inaccessible.push({
+      src,
+      reason: error instanceof Error ? error.message : 'Access denied',
+    });
+  }
+
+  private async disposeIframeElement(iframe: any): Promise<void> {
+    try {
+      await iframe.dispose();
+    } catch (disposeError) {
+      this.logger.warn('Failed to dispose iframe element', disposeError);
+    }
+  }
+
+  private async cleanupIframesOnError(iframes: any[]): Promise<void> {
+    await Promise.all(
+      iframes.map(async (iframe) => {
+        try {
+          await iframe.dispose();
+        } catch (disposeError) {
+          this.logger.warn(
+            'Error during iframe disposal cleanup',
+            disposeError
+          );
+        }
+      })
+    );
   }
 
   private async analyzeModalStates() {
@@ -268,7 +305,6 @@ export class PageAnalyzer extends DiagnosticBase {
 
     try {
       const metricsData = await page.evaluate(() => {
-        // DOM complexity analysis using TreeWalker for efficiency
         const getAllElementsWithTreeWalker = () => {
           const elements: Element[] = [];
           const walker = document.createTreeWalker(
@@ -277,18 +313,15 @@ export class PageAnalyzer extends DiagnosticBase {
             null
           );
 
-          let node: Node | null;
-          while ((node = walker.nextNode()) !== null) {
+          let node: Node | null = walker.nextNode();
+          while (node !== null) {
             elements.push(node as Element);
+            node = walker.nextNode();
           }
 
           return elements;
         };
 
-        const allElements = getAllElementsWithTreeWalker();
-        const totalElements = allElements.length;
-
-        // Calculate DOM depth
         const getMaxDepth = (element: Element, currentDepth = 0): number => {
           let maxChildDepth = currentDepth;
           for (const child of Array.from(element.children)) {
@@ -297,14 +330,7 @@ export class PageAnalyzer extends DiagnosticBase {
           }
           return maxChildDepth;
         };
-        const maxDepth = getMaxDepth(document.documentElement);
 
-        // Find large subtrees using TreeWalker for efficiency
-        const largeSubtrees: Array<{
-          selector: string;
-          elementCount: number;
-          description: string;
-        }> = [];
         const countDescendants = (rootElement: Element): number => {
           const walker = document.createTreeWalker(
             rootElement,
@@ -315,32 +341,48 @@ export class PageAnalyzer extends DiagnosticBase {
           while (walker.nextNode()) {
             count++;
           }
-
-          return count - 1; // Exclude the root element itself
+          return count - 1;
         };
 
-        const analyzeSubtree = (element: Element, selector: string) => {
+        const getSubtreeDescription = (
+          tagName: string,
+          element: Element
+        ): string => {
+          if (tagName === 'ul' || tagName === 'ol') {
+            return 'Large list structure';
+          }
+          if (tagName === 'table') {
+            return 'Large table structure';
+          }
+          if (
+            tagName === 'div' &&
+            (element.className.includes('container') ||
+              element.className.includes('wrapper'))
+          ) {
+            return 'Large container element';
+          }
+          return 'Large subtree';
+        };
+
+        const buildElementSelector = (element: Element): string => {
+          const tagName = element.tagName.toLowerCase();
+          const id = element.id ? `#${element.id}` : '';
+          const className = element.className
+            ? `.${element.className.split(' ')[0]}`
+            : '';
+          return `${tagName}${id}${className}`;
+        };
+
+        const analyzeSubtree = (
+          element: Element,
+          selector: string,
+          largeSubtrees: any[]
+        ) => {
           const descendantCount = countDescendants(element);
           if (descendantCount >= 500) {
             const tagName = element.tagName.toLowerCase();
-            const id = element.id ? `#${element.id}` : '';
-            const className = element.className
-              ? `.${element.className.split(' ')[0]}`
-              : '';
-            const fullSelector = `${tagName}${id}${className}`;
-
-            let description = 'Large subtree';
-            if (tagName === 'ul' || tagName === 'ol') {
-              description = 'Large list structure';
-            } else if (tagName === 'table') {
-              description = 'Large table structure';
-            } else if (
-              tagName === 'div' &&
-              (element.className.includes('container') ||
-                element.className.includes('wrapper'))
-            ) {
-              description = 'Large container element';
-            }
+            const fullSelector = buildElementSelector(element);
+            const description = getSubtreeDescription(tagName, element);
 
             largeSubtrees.push({
               selector: fullSelector || selector,
@@ -350,29 +392,32 @@ export class PageAnalyzer extends DiagnosticBase {
           }
         };
 
-        // Check body and major containers for large subtrees
-        if (document.body) {
-          analyzeSubtree(document.body, 'body');
-          const containers = document.body.querySelectorAll(
-            'div, section, main, article, aside'
-          );
-          for (const [index, container] of containers.entries()) {
-            analyzeSubtree(container, `container-${index}`);
+        const analyzeLargeSubtrees = () => {
+          const largeSubtrees: Array<{
+            selector: string;
+            elementCount: number;
+            description: string;
+          }> = [];
+
+          if (document.body) {
+            analyzeSubtree(document.body, 'body', largeSubtrees);
+            const containers = document.body.querySelectorAll(
+              'div, section, main, article, aside'
+            );
+            for (const [index, container] of containers.entries()) {
+              analyzeSubtree(container, `container-${index}`, largeSubtrees);
+            }
           }
-        }
 
-        // Interaction elements analysis using efficient element filtering
-        let clickableElements = 0;
-        let formElements = 0;
-        let disabledElements = 0;
+          return largeSubtrees;
+        };
 
-        // Analyze elements in a single pass for efficiency
-        for (const element of allElements) {
-          const tagName = element.tagName.toLowerCase();
-          const type = (element as HTMLInputElement).type?.toLowerCase();
-
-          // Check if clickable
-          if (
+        const isClickableElement = (
+          element: Element,
+          tagName: string,
+          type?: string
+        ): boolean => {
+          return (
             tagName === 'button' ||
             (tagName === 'input' &&
               ['button', 'submit', 'reset'].includes(type || '')) ||
@@ -382,131 +427,184 @@ export class PageAnalyzer extends DiagnosticBase {
             element.getAttribute('role') === 'link' ||
             (element.hasAttribute('tabindex') &&
               element.getAttribute('tabindex') !== '-1')
-          ) {
-            clickableElements++;
-          }
+          );
+        };
 
-          // Check if form element
-          if (
+        const isFormElement = (tagName: string, type?: string): boolean => {
+          return (
             ['input', 'select', 'textarea'].includes(tagName) ||
             (tagName === 'button' && type === 'submit')
-          ) {
-            formElements++;
-          }
+          );
+        };
 
-          // Check if disabled
-          if (
+        const isDisabledElement = (element: Element): boolean => {
+          return (
             (element as HTMLElement).hasAttribute('disabled') ||
             element.getAttribute('aria-disabled') === 'true'
-          ) {
-            disabledElements++;
-          }
-        }
+          );
+        };
 
-        // Resource analysis
-        const images = document.querySelectorAll('img');
-        const imageCount = images.length;
-        let estimatedImageSize = 0;
-        let sizeDescription = 'Small (estimated)';
+        const analyzeInteractionElements = (allElements: Element[]) => {
+          let clickableElements = 0;
+          let formElements = 0;
+          let disabledElements = 0;
 
-        if (imageCount > 0) {
-          // Rough estimation based on image count and common sizes
-          estimatedImageSize = imageCount * 50; // Assume 50KB per image on average
-          if (estimatedImageSize > 1000) {
-            sizeDescription = 'Large (>1MB estimated)';
-          } else if (estimatedImageSize > 500) {
-            sizeDescription = 'Medium (>500KB estimated)';
-          }
-        }
-
-        const scriptTags = document.querySelectorAll('script').length;
-        const inlineScripts =
-          document.querySelectorAll('script:not([src])').length;
-        const externalScripts = scriptTags - inlineScripts;
-        const stylesheetCount = document.querySelectorAll(
-          'link[rel="stylesheet"], style'
-        ).length;
-
-        // Layout analysis
-        const fixedElements: Array<{
-          selector: string;
-          purpose: string;
-          zIndex: number;
-        }> = [];
-        const highZIndexElements: Array<{
-          selector: string;
-          zIndex: number;
-          description: string;
-        }> = [];
-        let overflowHiddenElements = 0;
-
-        for (const [index, element] of allElements.entries()) {
-          const style = window.getComputedStyle(element);
-          const position = style.position;
-          const zIndex = Number.parseInt(style.zIndex || '0', 10);
-
-          // Fixed elements analysis
-          if (position === 'fixed') {
+          for (const element of allElements) {
             const tagName = element.tagName.toLowerCase();
-            let purpose = 'Unknown fixed element';
+            const type = (element as HTMLInputElement).type?.toLowerCase();
 
-            if (
-              tagName === 'nav' ||
-              element.getAttribute('role') === 'navigation' ||
-              element.className.toLowerCase().includes('nav')
-            ) {
-              purpose = 'Fixed navigation element';
-            } else if (
-              tagName === 'header' ||
-              element.className.toLowerCase().includes('header')
-            ) {
-              purpose = 'Fixed header element';
-            } else if (
-              element.className.toLowerCase().includes('modal') ||
-              element.className.toLowerCase().includes('dialog')
-            ) {
-              purpose = 'Modal or dialog overlay';
-            } else if (
-              element.className.toLowerCase().includes('toolbar') ||
-              element.className.toLowerCase().includes('controls')
-            ) {
-              purpose = 'Fixed toolbar or controls';
+            if (isClickableElement(element, tagName, type)) {
+              clickableElements++;
             }
 
-            fixedElements.push({
-              selector: element.id
-                ? `#${element.id}`
-                : `${tagName}:nth-child(${index + 1})`,
-              purpose,
-              zIndex,
-            });
-          }
-
-          // High z-index elements
-          if (zIndex >= 1000) {
-            let description = 'High z-index element';
-            if (zIndex >= 9999) {
-              description = 'Extremely high z-index (potential issue)';
-            } else if (element.className.toLowerCase().includes('modal')) {
-              description = 'Modal with high z-index';
-            } else if (element.className.toLowerCase().includes('tooltip')) {
-              description = 'Tooltip with high z-index';
+            if (isFormElement(tagName, type)) {
+              formElements++;
             }
 
-            highZIndexElements.push({
-              selector: element.id
-                ? `#${element.id}`
-                : `${element.tagName.toLowerCase()}:nth-child(${index + 1})`,
-              zIndex,
-              description,
-            });
+            if (isDisabledElement(element)) {
+              disabledElements++;
+            }
           }
 
-          // Overflow hidden elements
-          if (style.overflow === 'hidden') {
-            overflowHiddenElements++;
+          return { clickableElements, formElements, disabledElements };
+        };
+
+        const analyzeResourceMetrics = () => {
+          const images = document.querySelectorAll('img');
+          const imageCount = images.length;
+          let sizeDescription = 'Small (estimated)';
+
+          if (imageCount > 0) {
+            const estimatedImageSize = imageCount * 50;
+            if (estimatedImageSize > 1000) {
+              sizeDescription = 'Large (>1MB estimated)';
+            } else if (estimatedImageSize > 500) {
+              sizeDescription = 'Medium (>500KB estimated)';
+            }
           }
-        }
+
+          const scriptTags = document.querySelectorAll('script').length;
+          const inlineScripts =
+            document.querySelectorAll('script:not([src])').length;
+          const externalScripts = scriptTags - inlineScripts;
+          const stylesheetCount = document.querySelectorAll(
+            'link[rel="stylesheet"], style'
+          ).length;
+
+          return {
+            imageCount,
+            estimatedImageSize: sizeDescription,
+            scriptTags,
+            inlineScripts,
+            externalScripts,
+            stylesheetCount,
+          };
+        };
+
+        const getFixedElementPurpose = (
+          tagName: string,
+          element: Element
+        ): string => {
+          if (
+            tagName === 'nav' ||
+            element.getAttribute('role') === 'navigation' ||
+            element.className.toLowerCase().includes('nav')
+          ) {
+            return 'Fixed navigation element';
+          }
+          if (
+            tagName === 'header' ||
+            element.className.toLowerCase().includes('header')
+          ) {
+            return 'Fixed header element';
+          }
+          if (
+            element.className.toLowerCase().includes('modal') ||
+            element.className.toLowerCase().includes('dialog')
+          ) {
+            return 'Modal or dialog overlay';
+          }
+          if (
+            element.className.toLowerCase().includes('toolbar') ||
+            element.className.toLowerCase().includes('controls')
+          ) {
+            return 'Fixed toolbar or controls';
+          }
+          return 'Unknown fixed element';
+        };
+
+        const getZIndexDescription = (
+          zIndex: number,
+          element: Element
+        ): string => {
+          if (zIndex >= 9999) {
+            return 'Extremely high z-index (potential issue)';
+          }
+          if (element.className.toLowerCase().includes('modal')) {
+            return 'Modal with high z-index';
+          }
+          if (element.className.toLowerCase().includes('tooltip')) {
+            return 'Tooltip with high z-index';
+          }
+          return 'High z-index element';
+        };
+
+        const analyzeLayoutElements = (allElements: Element[]) => {
+          const fixedElements: Array<{
+            selector: string;
+            purpose: string;
+            zIndex: number;
+          }> = [];
+          const highZIndexElements: Array<{
+            selector: string;
+            zIndex: number;
+            description: string;
+          }> = [];
+          let overflowHiddenElements = 0;
+
+          for (const [index, element] of allElements.entries()) {
+            const style = window.getComputedStyle(element);
+            const position = style.position;
+            const zIndex = Number.parseInt(style.zIndex || '0', 10);
+            const tagName = element.tagName.toLowerCase();
+
+            if (position === 'fixed') {
+              const purpose = getFixedElementPurpose(tagName, element);
+              fixedElements.push({
+                selector: element.id
+                  ? `#${element.id}`
+                  : `${tagName}:nth-child(${index + 1})`,
+                purpose,
+                zIndex,
+              });
+            }
+
+            if (zIndex >= 1000) {
+              const description = getZIndexDescription(zIndex, element);
+              highZIndexElements.push({
+                selector: element.id
+                  ? `#${element.id}`
+                  : `${element.tagName.toLowerCase()}:nth-child(${index + 1})`,
+                zIndex,
+                description,
+              });
+            }
+
+            if (style.overflow === 'hidden') {
+              overflowHiddenElements++;
+            }
+          }
+
+          return { fixedElements, highZIndexElements, overflowHiddenElements };
+        };
+
+        const allElements = getAllElementsWithTreeWalker();
+        const totalElements = allElements.length;
+        const maxDepth = getMaxDepth(document.documentElement);
+        const largeSubtrees = analyzeLargeSubtrees();
+        const interaction = analyzeInteractionElements(allElements);
+        const resource = analyzeResourceMetrics();
+        const layout = analyzeLayoutElements(allElements);
 
         return {
           dom: {
@@ -514,24 +612,9 @@ export class PageAnalyzer extends DiagnosticBase {
             maxDepth,
             largeSubtrees,
           },
-          interaction: {
-            clickableElements,
-            formElements,
-            disabledElements,
-          },
-          resource: {
-            imageCount,
-            estimatedImageSize: sizeDescription,
-            scriptTags,
-            inlineScripts,
-            externalScripts,
-            stylesheetCount,
-          },
-          layout: {
-            fixedElements,
-            highZIndexElements,
-            overflowHiddenElements,
-          },
+          interaction,
+          resource,
+          layout,
         };
       });
 

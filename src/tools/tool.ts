@@ -16,7 +16,9 @@ export type DialogModalState = {
   dialog: playwright.Dialog;
 };
 export type ModalState = FileUploadModalState | DialogModalState;
-export type Tool<Input extends z.ZodType = z.ZodType<any, any, any>> = {
+export type Tool<
+  Input extends z.ZodType = z.ZodType<unknown, z.ZodTypeDef, unknown>,
+> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
   handle: (

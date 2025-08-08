@@ -7,7 +7,10 @@ export interface IDisposable {
 }
 
 export interface ResourceTracker {
-  trackResource<T>(resource: T, disposeMethod: keyof T): string;
+  trackResource<T extends Record<string, unknown>>(
+    resource: T,
+    disposeMethod: keyof T
+  ): string;
   untrackResource(id: string): void;
   disposeAll(): Promise<void>;
   getActiveCount(): number;
@@ -22,15 +25,16 @@ export interface SmartTracker extends ResourceTracker {
  * Central resource management system for handling disposable resources
  * like ElementHandles and Frames to prevent memory leaks
  */
+interface TrackedResource {
+  resource: Record<string, unknown>;
+  disposeMethod: string;
+  timestamp: number;
+}
+
 export class ResourceManager implements SmartTracker {
-  private readonly resources = new Map<
-    string,
-    {
-      resource: { [key: string]: unknown };
-      disposeMethod: string;
-      timestamp: number;
-    }
-  >();
+  private readonly resources = new Map<string, TrackedResource>();
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: nextId is used in trackResource method
+  private nextId = 0;
   private disposeTimeout = 30_000; // 30 seconds default
   private cleanupInterval: NodeJS.Timeout | null = null;
 
@@ -38,10 +42,13 @@ export class ResourceManager implements SmartTracker {
     this.startCleanupTimer();
   }
 
-  trackResource<T>(resource: T, disposeMethod: keyof T): string {
+  trackResource<T extends Record<string, unknown>>(
+    resource: T,
+    disposeMethod: keyof T
+  ): string {
     const id = `resource_${this.nextId++}`;
     this.resources.set(id, {
-      resource: resource as any,
+      resource,
       disposeMethod: disposeMethod as string,
       timestamp: Date.now(),
     });
@@ -60,7 +67,8 @@ export class ResourceManager implements SmartTracker {
     )) {
       try {
         if (resource && typeof resource[disposeMethod] === 'function') {
-          disposePromises.push(resource[disposeMethod]());
+          const disposeFn = resource[disposeMethod] as () => Promise<void>;
+          disposePromises.push(disposeFn());
         }
       } catch (error) {
         // Failed to dispose resource - continue cleanup
@@ -84,7 +92,7 @@ export class ResourceManager implements SmartTracker {
     return this.disposeTimeout;
   }
 
-  createSmartHandle<T>(
+  createSmartHandle<T extends Record<string, unknown>>(
     resource: T,
     disposeMethod: keyof T
   ): { handle: T; id: string } {
@@ -141,7 +149,11 @@ export class ResourceManager implements SmartTracker {
             entry.resource &&
             typeof entry.resource[entry.disposeMethod] === 'function'
           ) {
-            await (entry.resource as any)[entry.disposeMethod]();
+            const disposeFn = entry.resource[
+              entry.disposeMethod
+            ] as () => Promise<void>;
+            // biome-ignore lint/nursery/noAwaitInLoop: Sequential resource disposal is necessary to prevent memory leaks
+            await disposeFn();
           }
         } catch (error) {
           // Failed to dispose expired resource - continue cleanup

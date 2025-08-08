@@ -113,6 +113,7 @@ export class UnifiedDiagnosticSystem {
             this.elementDiscovery = new ElementDiscovery(this.page);
             this.errorHandler = new EnhancedErrorHandler(
               this.page,
+              // biome-ignore lint/suspicious/noExplicitAny: Component config requires dynamic type handling
               componentConfig.diagnostic as any
             );
 
@@ -260,7 +261,7 @@ export class UnifiedDiagnosticSystem {
           timeout
         );
         // Store timeout ID for potential cleanup (though not used in this simple case)
-        void timeoutId;
+        // timeoutId is available for cleanup if needed
       });
 
       const result = await Promise.race([fn(), timeoutPromise]);
@@ -531,10 +532,10 @@ export class UnifiedDiagnosticSystem {
     await this.ensureInitialized();
     const handle = await creator();
     const smartHandle = this.resourceManager?.createSmartHandle(
-      handle,
-      'dispose' as keyof T
+      handle as Record<string, unknown>,
+      'dispose'
     );
-    return smartHandle?.handle ?? handle;
+    return (smartHandle?.handle as T) ?? handle;
   }
 
   // Configuration management

@@ -478,69 +478,20 @@ export class EnhancedErrorHandler extends DiagnosticBase {
     const suggestions: string[] = [];
 
     try {
-      // Get page diagnostic information for context
       const pageStructure = await this.pageAnalyzer.analyzePageStructure();
 
-      // Component-specific contextual suggestions
-      switch (component) {
-        case 'PageAnalyzer':
-          if (pageStructure.elements.totalVisible > 10_000) {
-            suggestions.push(
-              'Page has many elements - consider using parallel analysis'
-            );
-          }
-
-          if (pageStructure.iframes.detected) {
-            suggestions.push(
-              'Multiple iframes detected - they may affect analysis performance'
-            );
-          }
-
-          break;
-
-        case 'ElementDiscovery':
-          if (context?.selector && pageStructure.elements.missingAria > 0) {
-            suggestions.push(
-              'Many elements lack ARIA attributes - try text-based selectors'
-            );
-          }
-
-          if (pageStructure.modalStates.blockedBy.length > 0) {
-            suggestions.push('Modal dialogs may be hiding target elements');
-          }
-
-          break;
-
-        case 'ResourceManager':
-          if (
-            context?.memoryUsage &&
-            (context.memoryUsage as any) > 50 * 1024 * 1024
-          ) {
-            suggestions.push(
-              'High memory usage detected - consider more aggressive cleanup'
-            );
-          }
-
-          break;
-      }
-
-      // Operation-specific suggestions
-      if (
-        operation.includes('parallel') &&
-        pageStructure.elements.totalVisible < 1000
-      ) {
-        suggestions.push(
-          'Parallel analysis may not be beneficial for simple pages'
-        );
-      }
-
-      if (operation.includes('timeout')) {
-        suggestions.push(
-          'Consider adjusting timeout thresholds based on page complexity'
-        );
-      }
+      this.addComponentSpecificSuggestions(
+        suggestions,
+        component,
+        pageStructure,
+        context
+      );
+      this.addOperationSpecificSuggestions(
+        suggestions,
+        operation,
+        pageStructure
+      );
     } catch (contextError) {
-      // Failed to generate contextual suggestions - continue with available suggestions
       this.logger.warn(
         `Context generation failed for ${component}:${operation}:`,
         contextError
@@ -548,6 +499,104 @@ export class EnhancedErrorHandler extends DiagnosticBase {
     }
 
     return suggestions;
+  }
+
+  private addComponentSpecificSuggestions(
+    suggestions: string[],
+    component: DiagnosticComponent,
+    pageStructure: any,
+    context?: Record<string, unknown>
+  ): void {
+    switch (component) {
+      case 'PageAnalyzer':
+        this.addPageAnalyzerSuggestions(suggestions, pageStructure);
+        break;
+
+      case 'ElementDiscovery':
+        this.addElementDiscoverySuggestions(
+          suggestions,
+          pageStructure,
+          context
+        );
+        break;
+
+      case 'ResourceManager':
+        this.addResourceManagerSuggestions(suggestions, context);
+        break;
+
+      default:
+        // No specific suggestions for other components
+        break;
+    }
+  }
+
+  private addPageAnalyzerSuggestions(
+    suggestions: string[],
+    pageStructure: any
+  ): void {
+    if (pageStructure.elements.totalVisible > 10_000) {
+      suggestions.push(
+        'Page has many elements - consider using parallel analysis'
+      );
+    }
+
+    if (pageStructure.iframes.detected) {
+      suggestions.push(
+        'Multiple iframes detected - they may affect analysis performance'
+      );
+    }
+  }
+
+  private addElementDiscoverySuggestions(
+    suggestions: string[],
+    pageStructure: any,
+    context?: Record<string, unknown>
+  ): void {
+    if (context?.selector && pageStructure.elements.missingAria > 0) {
+      suggestions.push(
+        'Many elements lack ARIA attributes - try text-based selectors'
+      );
+    }
+
+    if (pageStructure.modalStates.blockedBy.length > 0) {
+      suggestions.push('Modal dialogs may be hiding target elements');
+    }
+  }
+
+  private addResourceManagerSuggestions(
+    suggestions: string[],
+    context?: Record<string, unknown>
+  ): void {
+    if (
+      context?.memoryUsage &&
+      typeof context.memoryUsage === 'number' &&
+      context.memoryUsage > 50 * 1024 * 1024
+    ) {
+      suggestions.push(
+        'High memory usage detected - consider more aggressive cleanup'
+      );
+    }
+  }
+
+  private addOperationSpecificSuggestions(
+    suggestions: string[],
+    operation: string,
+    pageStructure: any
+  ): void {
+    if (
+      operation.includes('parallel') &&
+      pageStructure.elements.totalVisible < 1000
+    ) {
+      suggestions.push(
+        'Parallel analysis may not be beneficial for simple pages'
+      );
+    }
+
+    if (operation.includes('timeout')) {
+      suggestions.push(
+        'Consider adjusting timeout thresholds based on page complexity'
+      );
+    }
   }
 
   private addToErrorHistory(
