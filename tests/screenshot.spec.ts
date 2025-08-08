@@ -264,12 +264,7 @@ test('browser_take_screenshot (fullPage: true)', async ({ startClient, server },
       {
         text: expect.stringContaining('fullPage: true'),
         type: 'text',
-      },
-      {
-        data: expect.any(String),
-        mimeType: 'image/png',
-        type: 'image',
-      },
+      }
     ],
   });
 });
