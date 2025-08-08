@@ -67,36 +67,39 @@ type WorkerFixtures = {
   _workerServers: { server: TestServer; httpsServer: TestServer };
 };
 
+// Helper function to wrap client.callTool with default expectations for tests
+function wrapClientWithDefaultExpectations(client: Client): void {
+  const originalCallTool = client.callTool.bind(client);
+  client.callTool = (request: any) => {
+    // Add default expectation for tests if not specified
+    if (request.arguments && !request.arguments.expectation) {
+      request.arguments.expectation = {
+        includeSnapshot: true,
+        includeConsole: true,
+        includeDownloads: true,
+        includeTabs: true,
+        includeCode: true,
+      };
+    } else if (request.arguments?.expectation) {
+      // Merge with defaults if expectation is partially specified
+      request.arguments.expectation = {
+        includeSnapshot: request.arguments.expectation.includeSnapshot ?? true,
+        includeConsole: request.arguments.expectation.includeConsole ?? true,
+        includeDownloads:
+          request.arguments.expectation.includeDownloads ?? true,
+        includeTabs: request.arguments.expectation.includeTabs ?? true,
+        includeCode: request.arguments.expectation.includeCode ?? true,
+        ...request.arguments.expectation,
+      };
+    }
+    return originalCallTool(request);
+  };
+}
+
 export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   client: async ({ startClient }, use) => {
     const { client } = await startClient();
-    // Wrap callTool to add default expectations for tests
-    const originalCallTool = client.callTool.bind(client);
-    client.callTool = (request: any) => {
-      // Add default expectation for tests if not specified
-      if (request.arguments && !request.arguments.expectation) {
-        request.arguments.expectation = {
-          includeSnapshot: true,
-          includeConsole: true,
-          includeDownloads: true,
-          includeTabs: true,
-          includeCode: true,
-        };
-      } else if (request.arguments?.expectation) {
-        // Merge with defaults if expectation is partially specified
-        request.arguments.expectation = {
-          includeSnapshot:
-            request.arguments.expectation.includeSnapshot ?? true,
-          includeConsole: request.arguments.expectation.includeConsole ?? true,
-          includeDownloads:
-            request.arguments.expectation.includeDownloads ?? true,
-          includeTabs: request.arguments.expectation.includeTabs ?? true,
-          includeCode: request.arguments.expectation.includeCode ?? true,
-          ...request.arguments.expectation,
-        };
-      }
-      return originalCallTool(request);
-    };
+    wrapClientWithDefaultExpectations(client);
     await use(client);
   },
 
@@ -155,34 +158,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
       await client.connect(transport);
       await client.ping();
 
-      // Wrap callTool to add default expectations for tests
-      const originalCallTool = client.callTool.bind(client);
-      client.callTool = (request: any) => {
-        // Add default expectation for tests if not specified
-        if (request.arguments && !request.arguments.expectation) {
-          request.arguments.expectation = {
-            includeSnapshot: true,
-            includeConsole: true,
-            includeDownloads: true,
-            includeTabs: true,
-            includeCode: true,
-          };
-        } else if (request.arguments?.expectation) {
-          // Merge with defaults if expectation is partially specified
-          request.arguments.expectation = {
-            includeSnapshot:
-              request.arguments.expectation.includeSnapshot ?? true,
-            includeConsole:
-              request.arguments.expectation.includeConsole ?? true,
-            includeDownloads:
-              request.arguments.expectation.includeDownloads ?? true,
-            includeTabs: request.arguments.expectation.includeTabs ?? true,
-            includeCode: request.arguments.expectation.includeCode ?? true,
-            ...request.arguments.expectation,
-          };
-        }
-        return originalCallTool(request);
-      };
+      wrapClientWithDefaultExpectations(client);
 
       return { client, stderr: () => stderrBuffer };
     });

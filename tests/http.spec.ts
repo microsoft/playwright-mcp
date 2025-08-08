@@ -45,6 +45,83 @@ const LISTENING_URL_REGEX = /Listening on (http:\/\/.*)/;
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = nodeUrl.fileURLToPath(import.meta.url);
 
+// Helper function to check browser lifecycle assertions
+interface BrowserLifecycleExpectations {
+  httpSessions: number;
+  contexts: number;
+  browserContextType: 'isolated' | 'persistent';
+  obtainBrowser?: number;
+  closeBrowser?: number;
+  userDataDir?: number;
+}
+
+function expectBrowserLifecycle(
+  stderr: () => string,
+  expectations: BrowserLifecycleExpectations
+): void {
+  const lines = stderr().split('\n');
+
+  // HTTP session assertions
+  expect(
+    lines.filter((line) => line.match(CREATE_HTTP_SESSION_REGEX)).length
+  ).toBe(expectations.httpSessions);
+  expect(
+    lines.filter((line) => line.match(DELETE_HTTP_SESSION_REGEX)).length
+  ).toBe(expectations.httpSessions);
+
+  // Context assertions
+  expect(lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length).toBe(
+    expectations.contexts
+  );
+  expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
+    expectations.contexts
+  );
+
+  // Browser context type-specific assertions
+  if (expectations.browserContextType === 'isolated') {
+    expect(
+      lines.filter((line) => line.match(CREATE_BROWSER_CONTEXT_ISOLATED_REGEX))
+        .length
+    ).toBe(expectations.contexts);
+    expect(
+      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX))
+        .length
+    ).toBe(expectations.contexts);
+
+    // Browser isolation assertions (optional)
+    if (expectations.obtainBrowser !== undefined) {
+      expect(
+        lines.filter((line) => line.match(OBTAIN_BROWSER_ISOLATED_REGEX)).length
+      ).toBe(expectations.obtainBrowser);
+    }
+    if (expectations.closeBrowser !== undefined) {
+      expect(
+        lines.filter((line) => line.match(CLOSE_BROWSER_ISOLATED_REGEX)).length
+      ).toBe(expectations.closeBrowser);
+    }
+  } else if (expectations.browserContextType === 'persistent') {
+    expect(
+      lines.filter((line) =>
+        line.match(CREATE_BROWSER_CONTEXT_PERSISTENT_REGEX)
+      ).length
+    ).toBe(expectations.contexts);
+    expect(
+      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_PERSISTENT_REGEX))
+        .length
+    ).toBe(expectations.contexts);
+
+    // User data directory assertions (optional)
+    if (expectations.userDataDir !== undefined) {
+      expect(
+        lines.filter((line) => line.match(LOCK_USER_DATA_DIR_REGEX)).length
+      ).toBe(expectations.userDataDir);
+      expect(
+        lines.filter((line) => line.match(RELEASE_USER_DATA_DIR_REGEX)).length
+      ).toBe(expectations.userDataDir);
+    }
+  }
+}
+
 const test = baseTest.extend<{
   serverEndpoint: (options?: {
     args?: string[];
@@ -156,36 +233,13 @@ test('http transport browser lifecycle (isolated)', async ({
   await client2.close();
 
   expect(() => {
-    const lines = stderr().split('\n');
-    expect(
-      lines.filter((line) => line.match(CREATE_HTTP_SESSION_REGEX)).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(DELETE_HTTP_SESSION_REGEX)).length
-    ).toBe(2);
-
-    expect(
-      lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
-    ).toBe(2);
-    expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
-      2
-    );
-
-    expect(
-      lines.filter((line) => line.match(CREATE_BROWSER_CONTEXT_ISOLATED_REGEX))
-        .length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX))
-        .length
-    ).toBe(2);
-
-    expect(
-      lines.filter((line) => line.match(OBTAIN_BROWSER_ISOLATED_REGEX)).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_ISOLATED_REGEX)).length
-    ).toBe(2);
+    expectBrowserLifecycle(stderr, {
+      httpSessions: 2,
+      contexts: 2,
+      browserContextType: 'isolated',
+      obtainBrowser: 2,
+      closeBrowser: 2,
+    });
   }).toPass();
 });
 
@@ -227,36 +281,13 @@ test('http transport browser lifecycle (isolated, multiclient)', async ({
   await client3.close();
 
   expect(() => {
-    const lines = stderr().split('\n');
-    expect(
-      lines.filter((line) => line.match(CREATE_HTTP_SESSION_REGEX)).length
-    ).toBe(3);
-    expect(
-      lines.filter((line) => line.match(DELETE_HTTP_SESSION_REGEX)).length
-    ).toBe(3);
-
-    expect(
-      lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
-    ).toBe(3);
-    expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
-      3
-    );
-
-    expect(
-      lines.filter((line) => line.match(CREATE_BROWSER_CONTEXT_ISOLATED_REGEX))
-        .length
-    ).toBe(3);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX))
-        .length
-    ).toBe(3);
-
-    expect(
-      lines.filter((line) => line.match(OBTAIN_BROWSER_ISOLATED_REGEX)).length
-    ).toBe(1);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_ISOLATED_REGEX)).length
-    ).toBe(1);
+    expectBrowserLifecycle(stderr, {
+      httpSessions: 3,
+      contexts: 3,
+      browserContextType: 'isolated',
+      obtainBrowser: 1,
+      closeBrowser: 1,
+    });
   }).toPass();
 });
 
@@ -287,37 +318,12 @@ test('http transport browser lifecycle (persistent)', async ({
   await client2.close();
 
   expect(() => {
-    const lines = stderr().split('\n');
-    expect(
-      lines.filter((line) => line.match(CREATE_HTTP_SESSION_REGEX)).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(DELETE_HTTP_SESSION_REGEX)).length
-    ).toBe(2);
-
-    expect(
-      lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
-    ).toBe(2);
-    expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
-      2
-    );
-
-    expect(
-      lines.filter((line) =>
-        line.match(CREATE_BROWSER_CONTEXT_PERSISTENT_REGEX)
-      ).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_PERSISTENT_REGEX))
-        .length
-    ).toBe(2);
-
-    expect(
-      lines.filter((line) => line.match(LOCK_USER_DATA_DIR_REGEX)).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(RELEASE_USER_DATA_DIR_REGEX)).length
-    ).toBe(2);
+    expectBrowserLifecycle(stderr, {
+      httpSessions: 2,
+      contexts: 2,
+      browserContextType: 'persistent',
+      userDataDir: 2,
+    });
   }).toPass();
 });
 
