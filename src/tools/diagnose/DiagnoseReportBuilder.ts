@@ -9,8 +9,8 @@ import type {
 } from '../../diagnostics/page-analyzer.js';
 import type { UnifiedDiagnosticSystem } from '../../diagnostics/unified-system.js';
 import type { Tab } from '../../tab.js';
-import { DiagnosticReportBuilder } from '../../utils/reportBuilder.js';
 import { ArrayBuilder } from '../../utils/codeDeduplicationUtils.js';
+import { DiagnosticReportBuilder } from '../../utils/reportBuilder.js';
 import type { AnalysisResult } from './DiagnoseAnalysisRunner.js';
 
 interface PerformanceDeviation {
@@ -842,14 +842,18 @@ export class DiagnoseReportBuilder {
         `${diagnosticInfo.elements.missingAria} elements lack proper ARIA attributes - consider using text-based selectors`
       )
       .addIf(
-        diagnosticInfo.elements.totalInteractable < diagnosticInfo.elements.totalVisible * 0.1,
+        diagnosticInfo.elements.totalInteractable <
+          diagnosticInfo.elements.totalVisible * 0.1,
         'Low ratio of interactable elements - page might still be loading or have CSS issues'
       )
       .build();
 
-    const finalSuggestions = suggestions.length === 0 
-      ? ['No obvious issues detected - page appears to be in good state for automation']
-      : suggestions;
+    const finalSuggestions =
+      suggestions.length === 0
+        ? [
+            'No obvious issues detected - page appears to be in good state for automation',
+          ]
+        : suggestions;
 
     for (const suggestion of finalSuggestions) {
       this.reportBuilder.addListItem(suggestion);

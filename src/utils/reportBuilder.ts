@@ -250,80 +250,75 @@ export class DiagnosticReportBuilder extends TextReportBuilder {
 }
 
 /**
- * Utility functions for common formatting tasks
+ * Format file sizes
  */
-export class FormatUtils {
-  /**
-   * Format file sizes
-   */
-  static formatFileSize(bytes: number): string {
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = bytes;
-    let unitIndex = 0;
+export function formatFileSize(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = bytes;
+  let unitIndex = 0;
 
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-
-    return `${size.toFixed(1)}${units[unitIndex]}`;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
   }
 
-  /**
-   * Format duration with appropriate units
-   */
-  static formatDuration(ms: number): string {
-    if (ms < 1000) {
-      return `${Math.round(ms)}ms`;
-    }
-    if (ms < 60_000) {
-      return `${(ms / 1000).toFixed(1)}s`;
-    }
-    const minutes = Math.floor(ms / 60_000);
-    const seconds = Math.round((ms % 60_000) / 1000);
-    return `${minutes}m ${seconds}s`;
-  }
+  return `${size.toFixed(1)}${units[unitIndex]}`;
+}
 
-  /**
-   * Format confidence percentage
-   */
-  static formatConfidence(confidence: number): string {
-    return `${Math.round(confidence * 100)}%`;
+/**
+ * Format duration with appropriate units
+ */
+export function formatDuration(ms: number): string {
+  if (ms < 1000) {
+    return `${Math.round(ms)}ms`;
   }
-
-  /**
-   * Generate performance indicator icons
-   */
-  static getPerformanceIcon(
-    value: number,
-    thresholds: { good: number; warning: number }
-  ): string {
-    if (value <= thresholds.good) {
-      return '🟢';
-    }
-    if (value <= thresholds.warning) {
-      return '🟡';
-    }
-    return '🔴';
+  if (ms < 60_000) {
+    return `${(ms / 1000).toFixed(1)}s`;
   }
+  const minutes = Math.floor(ms / 60_000);
+  const seconds = Math.round((ms % 60_000) / 1000);
+  return `${minutes}m ${seconds}s`;
+}
 
-  /**
-   * Generate status icons
-   */
-  static getStatusIcon(
-    status: 'success' | 'warning' | 'error' | 'info'
-  ): string {
-    switch (status) {
-      case 'success':
-        return '✅';
-      case 'warning':
-        return '⚠️';
-      case 'error':
-        return '🚨';
-      case 'info':
-        return 'ℹ️';
-      default:
-        return '⚪';
-    }
+/**
+ * Format confidence percentage
+ */
+export function formatConfidencePercentage(confidence: number): string {
+  return `${Math.round(confidence * 100)}%`;
+}
+
+/**
+ * Generate performance indicator icons
+ */
+export function getPerformanceStatusIcon(
+  value: number,
+  thresholds: { good: number; warning: number }
+): string {
+  if (value <= thresholds.good) {
+    return '🟢';
+  }
+  if (value <= thresholds.warning) {
+    return '🟡';
+  }
+  return '🔴';
+}
+
+/**
+ * Generate status icons
+ */
+export function getReportStatusIcon(
+  status: 'success' | 'warning' | 'error' | 'info'
+): string {
+  switch (status) {
+    case 'success':
+      return '✅';
+    case 'warning':
+      return '⚠️';
+    case 'error':
+      return '🚨';
+    case 'info':
+      return 'ℹ️';
+    default:
+      return '⚪';
   }
 }

@@ -41,7 +41,7 @@ import { expectationSchema } from '../schemas/expectation.js';
 import type { Tab } from '../tab.js';
 import {
   DiagnosticReportBuilder,
-  FormatUtils,
+  formatConfidencePercentage,
 } from '../utils/reportBuilder.js';
 import { defineTabTool } from './tool.js';
 
@@ -318,7 +318,7 @@ function formatElementResults(alternatives: ElementAlternative[]): string[] {
   for (const [index, alt] of alternatives.entries()) {
     builder.addLine(`${index + 1}. Selector: ${alt.selector}`);
     builder.addLine(
-      `   Confidence: ${FormatUtils.formatConfidence(alt.confidence)}`
+      `   Confidence: ${formatConfidencePercentage(alt.confidence)}`
     );
     builder.addLine(
       `   Reason: ${(alt as ElementAlternative & { reason?: string }).reason || 'No reason provided'}`
@@ -387,11 +387,18 @@ function addParallelAnalysisInfo(
   resultsText: string[]
 ): void {
   const analysisInfo = new ArrayBuilder<string>()
-    .add(`- Page has ${structure.iframes?.count || 0} iframes detected: ${structure.iframes?.detected}`)
+    .add(
+      `- Page has ${structure.iframes?.count || 0} iframes detected: ${structure.iframes?.detected}`
+    )
     .add(`- Total visible elements: ${structure.elements?.totalVisible || 0}`)
-    .add(`- Total interactable elements: ${structure.elements?.totalInteractable || 0}`)
+    .add(
+      `- Total interactable elements: ${structure.elements?.totalInteractable || 0}`
+    )
     .addIf(
-      !!(structure.modalStates?.blockedBy && structure.modalStates.blockedBy.length > 0),
+      !!(
+        structure.modalStates?.blockedBy &&
+        structure.modalStates.blockedBy.length > 0
+      ),
       `- Page blocked by: ${structure.modalStates?.blockedBy?.join(', ') || ''}`
     )
     .build();
@@ -404,12 +411,22 @@ function addStandardAnalysisInfo(
   resultsText: string[]
 ): void {
   const analysisInfo = new ArrayBuilder<string>()
-    .add(`- Page has ${diagnosticInfo?.iframes?.count || 0} iframes detected: ${diagnosticInfo?.iframes?.detected}`)
-    .add(`- Total visible elements: ${diagnosticInfo?.elements?.totalVisible || 0}`)
-    .add(`- Total interactable elements: ${diagnosticInfo?.elements?.totalInteractable || 0}`)
+    .add(
+      `- Page has ${diagnosticInfo?.iframes?.count || 0} iframes detected: ${diagnosticInfo?.iframes?.detected}`
+    )
+    .add(
+      `- Total visible elements: ${diagnosticInfo?.elements?.totalVisible || 0}`
+    )
+    .add(
+      `- Total interactable elements: ${diagnosticInfo?.elements?.totalInteractable || 0}`
+    )
     .addIf(
-      !!(diagnosticInfo?.modalStates?.blockedBy && diagnosticInfo.modalStates.blockedBy.length > 0),
-      () => `- Page blocked by: ${diagnosticInfo?.modalStates?.blockedBy?.join(', ') || ''}`
+      !!(
+        diagnosticInfo?.modalStates?.blockedBy &&
+        diagnosticInfo.modalStates.blockedBy.length > 0
+      ),
+      () =>
+        `- Page blocked by: ${diagnosticInfo?.modalStates?.blockedBy?.join(', ') || ''}`
     )
     .build();
 

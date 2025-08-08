@@ -3,96 +3,82 @@
  */
 
 /**
- * Common patterns for building diagnostic reports
+ * Format performance metrics with icons and thresholds
  */
-export class ReportFormatter {
-  /**
-   * Format performance metrics with icons and thresholds
-   */
-  static formatPerformanceMetric(
-    name: string,
-    value: number,
-    unit: string,
-    threshold?: number
-  ): string {
-    const icon = threshold && value > threshold ? '⚠️' : '✅';
-    const thresholdText = threshold ? ` (threshold: ${threshold}${unit})` : '';
-    return `${icon} **${name}**: ${value}${unit}${thresholdText}`;
-  }
+export function formatPerformanceMetric(
+  name: string,
+  value: number,
+  unit: string,
+  threshold?: number
+): string {
+  const icon = threshold && value > threshold ? '⚠️' : '✅';
+  const thresholdText = threshold ? ` (threshold: ${threshold}${unit})` : '';
+  return `${icon} **${name}**: ${value}${unit}${thresholdText}`;
+}
 
-  /**
-   * Format diagnostic key-value pairs
-   */
-  static formatDiagnosticKeyValue(
-    key: string,
-    value: string | number | boolean
-  ): string {
-    let formattedValue: string;
-    if (typeof value === 'boolean') {
-      formattedValue = value ? 'Yes' : 'No';
-    } else {
-      formattedValue = value.toString();
-    }
-    return `- **${key}:** ${formattedValue}`;
+/**
+ * Format diagnostic key-value pairs
+ */
+export function formatDiagnosticKeyValue(
+  key: string,
+  value: string | number | boolean
+): string {
+  let formattedValue: string;
+  if (typeof value === 'boolean') {
+    formattedValue = value ? 'Yes' : 'No';
+  } else {
+    formattedValue = value.toString();
   }
+  return `- **${key}:** ${formattedValue}`;
+}
 
-  /**
-   * Format element counts with consistent styling
-   */
-  static formatElementCounts(counts: {
-    total?: number;
-    visible?: number;
-    interactable?: number;
-    disabled?: number;
-  }): string[] {
-    const results: string[] = [];
-    if (counts.total !== undefined) {
-      results.push(
-        ReportFormatter.formatDiagnosticKeyValue('Total elements', counts.total)
-      );
-    }
-    if (counts.visible !== undefined) {
-      results.push(
-        ReportFormatter.formatDiagnosticKeyValue(
-          'Visible elements',
-          counts.visible
-        )
-      );
-    }
-    if (counts.interactable !== undefined) {
-      results.push(
-        ReportFormatter.formatDiagnosticKeyValue(
-          'Interactable elements',
-          counts.interactable
-        )
-      );
-    }
-    if (counts.disabled !== undefined) {
-      results.push(
-        ReportFormatter.formatDiagnosticKeyValue(
-          'Disabled elements',
-          counts.disabled
-        )
-      );
-    }
-    return results;
+/**
+ * Format element counts with consistent styling
+ */
+export function formatElementCounts(counts: {
+  total?: number;
+  visible?: number;
+  interactable?: number;
+  disabled?: number;
+}): string[] {
+  const results: string[] = [];
+  if (counts.total !== undefined) {
+    results.push(formatDiagnosticKeyValue('Total elements', counts.total));
   }
+  if (counts.visible !== undefined) {
+    results.push(formatDiagnosticKeyValue('Visible elements', counts.visible));
+  }
+  if (counts.interactable !== undefined) {
+    results.push(
+      formatDiagnosticKeyValue('Interactable elements', counts.interactable)
+    );
+  }
+  if (counts.disabled !== undefined) {
+    results.push(
+      formatDiagnosticKeyValue('Disabled elements', counts.disabled)
+    );
+  }
+  return results;
+}
 
-  /**
-   * Create a section with header and content
-   */
-  static buildSection(title: string, content: string[], level = 2): string[] {
-    const prefix = '#'.repeat(level);
-    return [`${prefix} ${title}`, ...content, ''];
-  }
+/**
+ * Create a section with header and content
+ */
+export function buildSection(
+  title: string,
+  content: string[],
+  level = 2
+): string[] {
+  const prefix = '#'.repeat(level);
+  return [`${prefix} ${title}`, ...content, ''];
+}
 
-  /**
-   * Format list items with consistent indentation
-   */
-  static formatListItems(items: string[], level = 0): string[] {
-    const indent = '  '.repeat(level);
-    return items.map((item) => `${indent}- ${item}`);
-  }
+/**
+ * Format list items with consistent indentation
+ */
+export function formatListItems(items: string[], level = 0): string[] {
+  const indent = '  '.repeat(level);
+  return items.map((item) => `${indent}- ${item}`);
 }
 
 /**
@@ -175,141 +161,134 @@ export class ArrayBuilder<T> {
 }
 
 /**
- * Common string formatting utilities
+ * Join array with newlines (most common pattern)
  */
-export class StringUtils {
-  /**
-   * Join array with newlines (most common pattern)
-   */
-  static joinLines(lines: string[]): string {
-    return lines.join('\n');
+export function joinLines(lines: string[]): string {
+  return lines.join('\n');
+}
+
+/**
+ * Format confidence as percentage
+ */
+export function formatConfidence(confidence: number): string {
+  return `${Math.round(confidence * 100)}%`;
+}
+
+/**
+ * Format execution time with appropriate units
+ */
+export function formatExecutionTime(ms: number): string {
+  if (ms < 1000) {
+    return `${Math.round(ms)}ms`;
+  }
+  if (ms < 60_000) {
+    return `${(ms / 1000).toFixed(1)}s`;
+  }
+  const minutes = Math.floor(ms / 60_000);
+  const seconds = Math.round((ms % 60_000) / 1000);
+  return `${minutes}m ${seconds}s`;
+}
+
+/**
+ * Truncate text at word boundaries
+ */
+export function truncateAtWordBoundary(
+  text: string,
+  maxLength: number
+): string {
+  if (text.length <= maxLength) {
+    return text;
   }
 
-  /**
-   * Format confidence as percentage
-   */
-  static formatConfidence(confidence: number): string {
-    return `${Math.round(confidence * 100)}%`;
-  }
-
-  /**
-   * Format execution time with appropriate units
-   */
-  static formatExecutionTime(ms: number): string {
-    if (ms < 1000) {
-      return `${Math.round(ms)}ms`;
-    }
-    if (ms < 60_000) {
-      return `${(ms / 1000).toFixed(1)}s`;
-    }
-    const minutes = Math.floor(ms / 60_000);
-    const seconds = Math.round((ms % 60_000) / 1000);
-    return `${minutes}m ${seconds}s`;
-  }
-
-  /**
-   * Truncate text at word boundaries
-   */
-  static truncateAtWordBoundary(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
-      return text;
-    }
-
-    let truncateIndex = maxLength;
-    if (
-      text[maxLength] &&
-      text[maxLength] !== ' ' &&
-      text[maxLength] !== '\n'
-    ) {
-      for (let i = maxLength - 1; i >= 0; i--) {
-        if (text[i] === ' ' || text[i] === '\n') {
-          truncateIndex = i;
-          break;
-        }
-      }
-      if (maxLength - truncateIndex > 20) {
-        truncateIndex = maxLength;
+  let truncateIndex = maxLength;
+  if (text[maxLength] && text[maxLength] !== ' ' && text[maxLength] !== '\n') {
+    for (let i = maxLength - 1; i >= 0; i--) {
+      if (text[i] === ' ' || text[i] === '\n') {
+        truncateIndex = i;
+        break;
       }
     }
+    if (maxLength - truncateIndex > 20) {
+      truncateIndex = maxLength;
+    }
+  }
 
-    return text.substring(0, truncateIndex).trim();
+  return text.substring(0, truncateIndex).trim();
+}
+
+/**
+ * Format error message with suggestions
+ */
+export function formatError(error: {
+  message: string;
+  suggestions?: string[];
+}): string[] {
+  const result = [`Error: ${error.message}`];
+  if (error.suggestions && error.suggestions.length > 0) {
+    result.push('', 'Suggestions:');
+    result.push(...error.suggestions.map((s) => `- ${s}`));
+  }
+  return result;
+}
+
+/**
+ * Safe error message extraction
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+/**
+ * Get status icon for consistent status representation
+ */
+export function getStatusIcon(
+  status: 'success' | 'warning' | 'error' | 'info'
+): string {
+  switch (status) {
+    case 'success':
+      return '✅';
+    case 'warning':
+      return '⚠️';
+    case 'error':
+      return '🚨';
+    case 'info':
+      return 'ℹ️';
+    default:
+      return '⚪';
   }
 }
 
 /**
- * Common error handling patterns
+ * Get performance icon based on value and thresholds
  */
-export class ErrorFormatting {
-  /**
-   * Format error message with suggestions
-   */
-  static formatError(error: {
-    message: string;
-    suggestions?: string[];
-  }): string[] {
-    const result = [`Error: ${error.message}`];
-    if (error.suggestions && error.suggestions.length > 0) {
-      result.push('', 'Suggestions:');
-      result.push(...error.suggestions.map((s) => `- ${s}`));
-    }
-    return result;
+export function getPerformanceIcon(
+  value: number,
+  thresholds: { good: number; warning: number }
+): string {
+  if (value <= thresholds.good) {
+    return '🟢';
   }
-
-  /**
-   * Safe error message extraction
-   */
-  static getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-    return String(error);
+  if (value <= thresholds.warning) {
+    return '🟡';
   }
+  return '🔴';
 }
 
 /**
- * Icon utilities for consistent status representation
+ * Get impact icon based on impact level
  */
-export class IconUtils {
-  static getStatusIcon(
-    status: 'success' | 'warning' | 'error' | 'info'
-  ): string {
-    switch (status) {
-      case 'success':
-        return '✅';
-      case 'warning':
-        return '⚠️';
-      case 'error':
-        return '🚨';
-      case 'info':
-        return 'ℹ️';
-      default:
-        return '⚪';
-    }
-  }
-
-  static getPerformanceIcon(
-    value: number,
-    thresholds: { good: number; warning: number }
-  ): string {
-    if (value <= thresholds.good) {
+export function getImpactIcon(impact: 'low' | 'medium' | 'high'): string {
+  switch (impact) {
+    case 'low':
       return '🟢';
-    }
-    if (value <= thresholds.warning) {
+    case 'medium':
       return '🟡';
-    }
-    return '🔴';
-  }
-
-  static getImpactIcon(impact: 'low' | 'medium' | 'high'): string {
-    switch (impact) {
-      case 'low':
-        return '🟢';
-      case 'medium':
-        return '🟡';
-      case 'high':
-        return '🔴';
-      default:
-        return '⚪';
-    }
+    case 'high':
+      return '🔴';
+    default:
+      return '⚪';
   }
 }
