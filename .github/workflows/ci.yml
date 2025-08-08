@@ -83,3 +83,28 @@ jobs:
         npm run test -- --project=chromium-docker
       env:
         MCP_IN_DOCKER: 1
+
+  build_extension:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./extension
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    - name: Install dependencies
+      run: npm ci
+    - name: Build extension
+      run: npm run build
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: extension
+        path: ./extension/dist
+        retention-days: 7

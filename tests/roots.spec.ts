@@ -30,6 +30,7 @@ test('should use separate user data by root path', async ({
   server,
 }, testInfo) => {
   const { client } = await startClient({
+    clientName: 'Visual Studio Code', // Simulate VS Code client, roots only work with it
     roots: [
       {
         name: 'test',
@@ -58,6 +59,7 @@ test('check that trace is saved in workspace', async ({
   const rootPath = testInfo.outputPath('workspace');
   const { client } = await startClient({
     args: ['--save-trace'],
+    clientName: 'Visual Studio Code - Insiders', // Simulate VS Code client, roots only work with it
     roots: [
       {
         name: 'workspace',
