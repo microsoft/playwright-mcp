@@ -67,30 +67,47 @@ type WorkerFixtures = {
   _workerServers: { server: TestServer; httpsServer: TestServer };
 };
 
+// Default expectations for test cases
+const DEFAULT_TEST_EXPECTATIONS = {
+  includeSnapshot: true,
+  includeConsole: true,
+  includeDownloads: true,
+  includeTabs: true,
+  includeCode: true,
+} as const;
+
+// Helper function to merge expectations with defaults
+function mergeWithDefaultExpectations(existingExpectation: any): any {
+  return {
+    includeSnapshot:
+      existingExpectation?.includeSnapshot ??
+      DEFAULT_TEST_EXPECTATIONS.includeSnapshot,
+    includeConsole:
+      existingExpectation?.includeConsole ??
+      DEFAULT_TEST_EXPECTATIONS.includeConsole,
+    includeDownloads:
+      existingExpectation?.includeDownloads ??
+      DEFAULT_TEST_EXPECTATIONS.includeDownloads,
+    includeTabs:
+      existingExpectation?.includeTabs ?? DEFAULT_TEST_EXPECTATIONS.includeTabs,
+    includeCode:
+      existingExpectation?.includeCode ?? DEFAULT_TEST_EXPECTATIONS.includeCode,
+    ...existingExpectation,
+  };
+}
+
 // Helper function to wrap client.callTool with default expectations for tests
 function wrapClientWithDefaultExpectations(client: Client): void {
   const originalCallTool = client.callTool.bind(client);
   client.callTool = (request: any) => {
     // Add default expectation for tests if not specified
     if (request.arguments && !request.arguments.expectation) {
-      request.arguments.expectation = {
-        includeSnapshot: true,
-        includeConsole: true,
-        includeDownloads: true,
-        includeTabs: true,
-        includeCode: true,
-      };
+      request.arguments.expectation = { ...DEFAULT_TEST_EXPECTATIONS };
     } else if (request.arguments?.expectation) {
       // Merge with defaults if expectation is partially specified
-      request.arguments.expectation = {
-        includeSnapshot: request.arguments.expectation.includeSnapshot ?? true,
-        includeConsole: request.arguments.expectation.includeConsole ?? true,
-        includeDownloads:
-          request.arguments.expectation.includeDownloads ?? true,
-        includeTabs: request.arguments.expectation.includeTabs ?? true,
-        includeCode: request.arguments.expectation.includeCode ?? true,
-        ...request.arguments.expectation,
-      };
+      request.arguments.expectation = mergeWithDefaultExpectations(
+        request.arguments.expectation
+      );
     }
     return originalCallTool(request);
   };

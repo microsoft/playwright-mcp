@@ -2,6 +2,9 @@
  * Common test utilities and helpers to reduce code duplication
  */
 
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { expect } from '@playwright/test';
 import { DiagnosticThresholds } from '../src/diagnostics/diagnostic-thresholds.js';
 import { SmartConfigManager } from '../src/diagnostics/smart-config.js';
 
@@ -274,5 +277,150 @@ export function expectDiagnosticError(
     throw new Error(
       `Expected operation "${expectedOperation}", got "${error.operation}"`
     );
+  }
+}
+
+/**
+ * HTTP Transport Test Helpers
+ */
+
+/**
+ * Create and connect an HTTP client for testing
+ */
+export async function createHttpClient(
+  url: URL,
+  clientName = 'test',
+  clientVersion = '1.0.0'
+): Promise<{ client: Client; transport: StreamableHTTPClientTransport }> {
+  const transport = new StreamableHTTPClientTransport(new URL('/mcp', url));
+  const client = new Client({ name: clientName, version: clientVersion });
+  await client.connect(transport);
+  return { client, transport };
+}
+
+/**
+ * Lifecycle helper for HTTP client test patterns
+ */
+export async function withHttpClient<T>(
+  url: URL,
+  testFunction: (
+    client: Client,
+    transport: StreamableHTTPClientTransport
+  ) => Promise<T>,
+  clientName = 'test'
+): Promise<T> {
+  const { client, transport } = await createHttpClient(url, clientName);
+  try {
+    return await testFunction(client, transport);
+  } finally {
+    await transport.terminateSession();
+    await client.close();
+  }
+}
+
+/**
+ * Execute a browser navigation call for testing
+ */
+export async function navigateToUrl(client: Client, url: string): Promise<any> {
+  return await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url },
+  });
+}
+
+/**
+ * Browser lifecycle assertion patterns for HTTP tests
+ */
+export interface BrowserLifecycleExpectations {
+  httpSessions: number;
+  contexts: number;
+  browserContextType: 'isolated' | 'persistent';
+  obtainBrowser?: number;
+  closeBrowser?: number;
+  userDataDir?: number;
+}
+
+// Regex constants for browser lifecycle testing
+const BROWSER_LIFECYCLE_PATTERNS = {
+  CREATE_HTTP_SESSION: /create http session/,
+  DELETE_HTTP_SESSION: /delete http session/,
+  CREATE_CONTEXT: /create context/,
+  CLOSE_CONTEXT: /close context/,
+  CREATE_BROWSER_CONTEXT_ISOLATED: /create browser context \(isolated\)/,
+  CLOSE_BROWSER_CONTEXT_ISOLATED: /close browser context \(isolated\)/,
+  CREATE_BROWSER_CONTEXT_PERSISTENT: /create browser context \(persistent\)/,
+  CLOSE_BROWSER_CONTEXT_PERSISTENT: /close browser context \(persistent\)/,
+  OBTAIN_BROWSER_ISOLATED: /obtain browser \(isolated\)/,
+  CLOSE_BROWSER_ISOLATED: /close browser \(isolated\)/,
+  LOCK_USER_DATA_DIR: /lock user data dir/,
+  RELEASE_USER_DATA_DIR: /release user data dir/,
+};
+
+/**
+ * Check browser lifecycle assertions based on stderr output
+ */
+export function expectBrowserLifecycle(
+  stderr: () => string,
+  expectations: BrowserLifecycleExpectations
+): void {
+  const lines = stderr().split('\n');
+
+  // Count occurrences of each pattern
+  const countMatches = (pattern: RegExp) =>
+    lines.filter((line) => line.match(pattern)).length;
+
+  // HTTP session assertions
+  expect(countMatches(BROWSER_LIFECYCLE_PATTERNS.CREATE_HTTP_SESSION)).toBe(
+    expectations.httpSessions
+  );
+  expect(countMatches(BROWSER_LIFECYCLE_PATTERNS.DELETE_HTTP_SESSION)).toBe(
+    expectations.httpSessions
+  );
+
+  // Context assertions
+  expect(countMatches(BROWSER_LIFECYCLE_PATTERNS.CREATE_CONTEXT)).toBe(
+    expectations.contexts
+  );
+  expect(countMatches(BROWSER_LIFECYCLE_PATTERNS.CLOSE_CONTEXT)).toBe(
+    expectations.contexts
+  );
+
+  // Browser context type-specific assertions
+  if (expectations.browserContextType === 'isolated') {
+    expect(
+      countMatches(BROWSER_LIFECYCLE_PATTERNS.CREATE_BROWSER_CONTEXT_ISOLATED)
+    ).toBe(expectations.contexts);
+    expect(
+      countMatches(BROWSER_LIFECYCLE_PATTERNS.CLOSE_BROWSER_CONTEXT_ISOLATED)
+    ).toBe(expectations.contexts);
+
+    // Optional browser isolation assertions
+    if (expectations.obtainBrowser !== undefined) {
+      expect(
+        countMatches(BROWSER_LIFECYCLE_PATTERNS.OBTAIN_BROWSER_ISOLATED)
+      ).toBe(expectations.obtainBrowser);
+    }
+    if (expectations.closeBrowser !== undefined) {
+      expect(
+        countMatches(BROWSER_LIFECYCLE_PATTERNS.CLOSE_BROWSER_ISOLATED)
+      ).toBe(expectations.closeBrowser);
+    }
+  } else if (expectations.browserContextType === 'persistent') {
+    expect(
+      countMatches(BROWSER_LIFECYCLE_PATTERNS.CREATE_BROWSER_CONTEXT_PERSISTENT)
+    ).toBe(expectations.contexts);
+    expect(
+      countMatches(BROWSER_LIFECYCLE_PATTERNS.CLOSE_BROWSER_CONTEXT_PERSISTENT)
+    ).toBe(expectations.contexts);
+
+    // Optional user data directory assertions
+    if (expectations.userDataDir !== undefined) {
+      expect(countMatches(BROWSER_LIFECYCLE_PATTERNS.LOCK_USER_DATA_DIR)).toBe(
+        expectations.userDataDir
+      );
+      expect(
+        countMatches(BROWSER_LIFECYCLE_PATTERNS.RELEASE_USER_DATA_DIR)
+      ).toBe(expectations.userDataDir);
+    }
   }
 }

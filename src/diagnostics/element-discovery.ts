@@ -136,82 +136,125 @@ export class ElementDiscovery extends DiagnosticBase {
     maxResults: number
   ): Promise<AlternativeElement[]> {
     const page = this.getPage();
-    // Use multiple strategies to find text
-    const strategies = [
+    const strategies = this.getTextSearchStrategies(text);
+    const alternatives: AlternativeElement[] = [];
+    let totalFound = 0;
+
+    for (const selector of strategies) {
+      if (totalFound >= maxResults) break;
+      
+      totalFound = await this.processTextStrategy(
+        page, selector, text, alternatives, totalFound, maxResults
+      );
+    }
+
+    return alternatives;
+  }
+
+  private getTextSearchStrategies(text: string): string[] {
+    return [
       `text=${text}`,
       `text*=${text}`,
       `[value="${text}"]`,
       `[placeholder="${text}"]`,
       `[aria-label="${text}"]`,
     ];
+  }
 
-    const alternatives: AlternativeElement[] = [];
-    let totalFound = 0;
+  private async processTextStrategy(
+    page: playwright.Page,
+    selector: string,
+    text: string,
+    alternatives: AlternativeElement[],
+    totalFound: number,
+    maxResults: number
+  ): Promise<number> {
+    try {
+      // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution needed for early termination based on totalFound
+      const elements = await page.$$(selector);
+      return await this.processTextElements(elements, text, alternatives, totalFound, maxResults);
+    } catch (error) {
+      this.logger.warn(`Strategy failed for selector '${selector}':`, error);
+      return totalFound;
+    }
+  }
 
-    for (const selector of strategies) {
-      if (totalFound >= maxResults) {
+  private async processTextElements(
+    elements: playwright.ElementHandle[],
+    text: string,
+    alternatives: AlternativeElement[],
+    totalFound: number,
+    maxResults: number
+  ): Promise<number> {
+    let currentFound = totalFound;
+
+    for (const element of elements) {
+      if (currentFound >= maxResults) {
+        // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
+        await this.safeDispose(element, `findByText-excess-${currentFound}`);
         break;
       }
 
-      try {
-        // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution needed for early termination based on totalFound
-        const elements = await page.$$(selector);
-
-        for (const element of elements) {
-          if (totalFound >= maxResults) {
-            // Dispose excess elements immediately
-            // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
-            await this.safeDispose(element, `findByText-excess-${totalFound}`);
-            break;
-          }
-
-          try {
-            const [textContent, value, placeholder, ariaLabel] =
-              await Promise.all([
-                element.textContent().then((content) => content || ''),
-                element.getAttribute('value').then((attr) => attr || ''),
-                element.getAttribute('placeholder').then((attr) => attr || ''),
-                element.getAttribute('aria-label').then((attr) => attr || ''),
-              ]);
-
-            const allText = [textContent, value, placeholder, ariaLabel]
-              .join(' ')
-              .trim();
-
-            // Calculate confidence based on text similarity
-            const confidence = this.calculateTextSimilarity(text, allText);
-
-            if (confidence > 0.3) {
-              // Wrap element in smart handle for automatic disposal
-              const smartElement = this.smartHandleBatch.add(element);
-
-              alternatives.push({
-                selector: await this.generateSelector(element),
-                confidence,
-                reason: `text match: "${allText.substring(0, 50).trim()}"`,
-                element: smartElement,
-                elementId: `text_${totalFound}`,
-              });
-              totalFound++;
-            } else {
-              // Dispose elements that don't meet confidence threshold
-              await this.safeDispose(
-                element,
-                `findByText-threshold-${totalFound}`
-              );
-            }
-          } catch (_elementError) {
-            // Dispose element on error and continue with nested error handling
-            await this.safeDispose(element, `findByText-element-${totalFound}`);
-          }
-        }
-      } catch (error) {
-        // Continue with other strategies if one fails
-        this.logger.warn(`Strategy failed for selector '${selector}':`, error);
-      }
+      const elementProcessed = await this.processTextElement(
+        element, text, alternatives, currentFound
+      );
+      if (elementProcessed) currentFound++;
     }
 
-    return alternatives;
+    return currentFound;
+  }
+
+  private async processTextElement(
+    element: playwright.ElementHandle,
+    text: string,
+    alternatives: AlternativeElement[],
+    totalFound: number
+  ): Promise<boolean> {
+    try {
+      const elementText = await this.extractElementText(element);
+      const confidence = this.calculateTextSimilarity(text, elementText);
+
+      return await this.handleTextMatchResult(
+        element, elementText, confidence, alternatives, totalFound
+      );
+    } catch (_elementError) {
+      await this.safeDispose(element, `findByText-element-${totalFound}`);
+      return false;
+    }
+  }
+
+  private async extractElementText(element: playwright.ElementHandle): Promise<string> {
+    const [textContent, value, placeholder, ariaLabel] = await Promise.all([
+      element.textContent().then((content) => content || ''),
+      element.getAttribute('value').then((attr) => attr || ''),
+      element.getAttribute('placeholder').then((attr) => attr || ''),
+      element.getAttribute('aria-label').then((attr) => attr || ''),
+    ]);
+
+    return [textContent, value, placeholder, ariaLabel].join(' ').trim();
+  }
+
+  private async handleTextMatchResult(
+    element: playwright.ElementHandle,
+    elementText: string,
+    confidence: number,
+    alternatives: AlternativeElement[],
+    totalFound: number
+  ): Promise<boolean> {
+    if (confidence > 0.3) {
+      const smartElement = this.smartHandleBatch.add(element);
+      alternatives.push({
+        selector: await this.generateSelector(element),
+        confidence,
+        reason: `text match: "${elementText.substring(0, 50).trim()}"`,
+        element: smartElement,
+        elementId: `text_${totalFound}`,
+      });
+      return true;
+    }
+    
+    await this.safeDispose(element, `findByText-threshold-${totalFound}`);
+    return false;
   }
 
   private async findByRole(
