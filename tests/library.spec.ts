@@ -20,7 +20,7 @@ import { test, expect } from './fixtures.js';
 test('library can be used from CommonJS', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/456' } }, async ({}, testInfo) => {
   const file = testInfo.outputPath('main.cjs');
   await fs.writeFile(file, `
-    import('@playwright/mcp')
+    import('@tontoko/fast-playwright-mcp')
       .then(playwrightMCP => playwrightMCP.createConnection())
       .then(() => console.log('OK'));
  `);

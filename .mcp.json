@@ -5,7 +5,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@playwright/mcp@latest",
+        "@tontoko/fast-playwright-mcp@latest",
         "--isolated"
       ],
       "env": {}

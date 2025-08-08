@@ -39,7 +39,7 @@ export const DEFAULT_CONFIG: BenchmarkConfig = {
   servers: {
     original: {
       command: 'npx',
-      args: ['-y', '@playwright/mcp@latest', '--isolated', '--headless'],
+      args: ['-y', '@tontoko/fast-playwright-mcp@latest', '--isolated', '--headless'],
       env: {
         PWMCP_HEADLESS: 'true',
         PWMCP_DISABLE_WEB_SECURITY: 'true',
@@ -91,6 +91,6 @@ export const ALTERNATIVE_URLS = [
  */
 export const KILL_COMMANDS = [
   ['pkill', '-f', 'cli.js --isolated'],
-  ['pkill', '-f', '@playwright/mcp.*--isolated'],
+  ['pkill', '-f', '@tontoko/fast-playwright-mcp.*--isolated'],
   ['pkill', '-f', 'playwright-mcp.*--isolated'],
 ];
