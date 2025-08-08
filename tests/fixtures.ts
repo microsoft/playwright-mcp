@@ -34,7 +34,7 @@ const PW_MCP_TEST_REGEX = /^pw:mcp:test /;
 const USER_DATA_DIR_REGEX = /user data dir.*/;
 const CODE_FRAME_START_REGEX = /^```js\n/;
 const CODE_FRAME_END_REGEX = /\n```$/;
-const SECTION_HEADER_REGEX = /^### /m;
+const SECTION_HEADER_REGEX = /^## /gm;
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
@@ -59,14 +59,16 @@ type TestFixtures = {
   server: TestServer;
   httpsServer: TestServer;
   mcpHeadless: boolean;
+  mcpBrowser: string | undefined;
+  mcpMode: 'docker' | undefined;
 };
 
 type WorkerFixtures = {
   _workerServers: { server: TestServer; httpsServer: TestServer };
 };
 
-export const test = (baseTest as any).extend({
-  client: async ({ startClient }: any, use: any) => {
+export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
+  client: async ({ startClient }, use) => {
     const { client } = await startClient();
     // Wrap callTool to add default expectations for tests
     const originalCallTool = client.callTool.bind(client);
@@ -98,11 +100,7 @@ export const test = (baseTest as any).extend({
     await use(client);
   },
 
-  startClient: async (
-    { mcpHeadless, mcpBrowser, mcpMode }: any,
-    use: any,
-    testInfo: any
-  ) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
     const configDir = path.dirname(test.info().config.configFile ?? '.');
     let client: Client | undefined;
 
@@ -192,14 +190,13 @@ export const test = (baseTest as any).extend({
     await client?.close();
   },
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  wsEndpoint: async (_: any, use: any) => {
+  wsEndpoint: async ({}, use) => {
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
   },
 
-  cdpServer: async ({ mcpBrowser }: any, use: any, testInfo: any) => {
+  cdpServer: async ({ mcpBrowser }, use, testInfo) => {
     test.skip(
       !['chrome', 'msedge', 'chromium'].includes(mcpBrowser ?? ''),
       'CDP is not supported for non-Chromium browsers'
@@ -233,8 +230,7 @@ export const test = (baseTest as any).extend({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_: any, use: any, workerInfo: any) => {
+    async ({}, use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 
@@ -248,16 +244,16 @@ export const test = (baseTest as any).extend({
     { scope: 'worker' },
   ],
 
-  server: async ({ _workerServers }: any, use: any) => {
+  server: async ({ _workerServers }, use) => {
     _workerServers.server.reset();
     await use(_workerServers.server);
   },
 
-  httpsServer: async ({ _workerServers }: any, use: any) => {
+  httpsServer: async ({ _workerServers }, use) => {
     _workerServers.httpsServer.reset();
     await use(_workerServers.httpsServer);
   },
-} as any);
+});
 
 function createTransport(
   args: string[],
@@ -374,19 +370,36 @@ function parseResponse(response: any) {
   };
 }
 
+// Regex patterns at top level to comply with BiomeJS rules
+const SECTION_REGEX = /^(##+ .+)$/gm;
+const HEADER_CLEANUP_REGEX = /^#+\s*/;
+
 function parseSections(text: string): Map<string, string> {
   const sections = new Map<string, string>();
-  const sectionHeaders = text.split(SECTION_HEADER_REGEX).slice(1); // Remove empty first element
 
-  for (const section of sectionHeaders) {
-    const firstNewlineIndex = section.indexOf('\n');
-    if (firstNewlineIndex === -1) {
-      continue;
-    }
+  // Handle both ## and ### headers
+  let match: RegExpExecArray | null;
+  const sectionMatches: { header: string; index: number }[] = [];
 
-    const sectionName = section.substring(0, firstNewlineIndex);
-    const sectionContent = section.substring(firstNewlineIndex + 1).trim();
-    sections.set(sectionName, sectionContent);
+  // Separate assignment from condition to comply with BiomeJS
+  match = SECTION_REGEX.exec(text);
+  while (match !== null) {
+    sectionMatches.push({
+      header: match[1].replace(HEADER_CLEANUP_REGEX, '').trim(),
+      index: match.index,
+    });
+    match = SECTION_REGEX.exec(text);
+  }
+
+  for (let i = 0; i < sectionMatches.length; i++) {
+    const currentSection = sectionMatches[i];
+    const nextSection = sectionMatches[i + 1];
+
+    const contentStart = text.indexOf('\n', currentSection.index) + 1;
+    const contentEnd = nextSection ? nextSection.index : text.length;
+
+    const content = text.substring(contentStart, contentEnd).trim();
+    sections.set(currentSection.header, content);
   }
 
   return sections;
