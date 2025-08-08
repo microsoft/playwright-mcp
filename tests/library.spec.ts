@@ -17,13 +17,20 @@ import child_process from 'child_process';
 import fs from 'fs/promises';
 import { test, expect } from './fixtures.js';
 
-test.skip('library can be used from CommonJS', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/456' } }, async ({}, testInfo) => {
+test('library can be used from CommonJS', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/456' } }, async ({}, testInfo) => {
   const file = testInfo.outputPath('main.cjs');
+  const projectRoot = process.cwd();
   await fs.writeFile(file, `
-    const path = require('path');
-    import(path.join(__dirname, '../../index.js'))
+    import('${projectRoot}/index.js')
       .then(playwrightMCP => playwrightMCP.createConnection())
-      .then(() => console.log('OK'));
+      .then(() => {
+        console.log('OK');
+        process.exit(0);
+      })
+      .catch(err => {
+        console.error(err);
+        process.exit(1);
+      });
  `);
   expect(child_process.execSync(`node ${file}`, { encoding: 'utf-8' })).toContain('OK');
 });

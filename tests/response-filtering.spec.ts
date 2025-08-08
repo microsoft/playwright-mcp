@@ -51,9 +51,14 @@ test.describe('Response Filtering', () => {
     };
   }
 
-  test('should include all content by default', async () => {
+  test('should include all content when explicitly requested', async () => {
     const mockContext = createMockContext();
-    const response = new Response(mockContext as any, 'navigate', { url: 'test' });
+    const expectation: ExpectationOptions = {
+      includeCode: true,
+      includeSnapshot: true,
+      includeTabs: true
+    };
+    const response = new Response(mockContext as any, 'navigate', { url: 'test' }, expectation);
     response.addResult('Navigation successful');
     response.addCode('page.goto("test")');
     response.setIncludeSnapshot();
@@ -159,10 +164,10 @@ test.describe('Response Filtering', () => {
 
   test('should merge user expectation with tool defaults', async () => {
     const mockContext = createMockContext();
-    // Click tool defaults to includeSnapshot=true, includeConsole=false
-    // User overrides includeSnapshot=false but doesn't specify includeConsole
+    // Token optimization: all defaults are now false
+    // User overrides includeCode=true but doesn't specify others
     const expectation: ExpectationOptions = {
-      includeSnapshot: false
+      includeCode: true
     };
 
     const response = new Response(mockContext as any, 'click', { element: 'button' }, expectation);
@@ -172,10 +177,10 @@ test.describe('Response Filtering', () => {
     await response.finish();
     const serialized = response.serialize();
 
-    // Should respect user's includeSnapshot=false
+    // Should use default includeSnapshot=false
     expect(serialized.content[0].text).not.toContain('### Page state');
 
-    // Should use tool default for includeCode=true
+    // Should respect user's includeCode=true
     expect(serialized.content[0].text).toContain('### Ran Playwright code');
   });
 

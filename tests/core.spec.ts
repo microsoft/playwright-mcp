@@ -116,12 +116,22 @@ test('browser_resize', async ({ client, server }) => {
     arguments: {
       width: 390,
       height: 780,
+      expectation: {
+        includeCode: true
+      }
     },
   });
   expect(response).toHaveResponse({
     code: `await page.setViewportSize({ width: 390, height: 780 });`,
   });
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toHaveResponse({
+  await expect.poll(() => client.callTool({ 
+    name: 'browser_snapshot',
+    arguments: {
+      expectation: {
+        includeSnapshot: true
+      }
+    }
+  })).toHaveResponse({
     pageState: expect.stringContaining(`Window size: 390x780`),
   });
 });

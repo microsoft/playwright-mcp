@@ -39,37 +39,37 @@ test.describe('Expectation Unit Tests', () => {
   test('mergeExpectations should use tool defaults when user expectation is undefined', () => {
     const merged = mergeExpectations('browser_navigate', undefined);
 
-    // Navigate tool defaults should be all true
-    expect(merged.includeSnapshot).toBe(true);
-    expect(merged.includeConsole).toBe(true);
-    expect(merged.includeDownloads).toBe(true);
-    expect(merged.includeTabs).toBe(true);
-    expect(merged.includeCode).toBe(true);
+    // Navigate tool defaults should be all false (token optimization)
+    expect(merged.includeSnapshot).toBe(false);
+    expect(merged.includeConsole).toBe(false);
+    expect(merged.includeDownloads).toBe(false);
+    expect(merged.includeTabs).toBe(false);
+    expect(merged.includeCode).toBe(false);
   });
 
   test('mergeExpectations should use tool defaults for click tool', () => {
     const merged = mergeExpectations('browser_click', undefined);
 
-    // Click tool defaults
-    expect(merged.includeSnapshot).toBe(true);
+    // Click tool defaults (all false for token optimization)
+    expect(merged.includeSnapshot).toBe(false);
     expect(merged.includeConsole).toBe(false);
     expect(merged.includeDownloads).toBe(false);
     expect(merged.includeTabs).toBe(false);
-    expect(merged.includeCode).toBe(true);
+    expect(merged.includeCode).toBe(false);
   });
 
   test('mergeExpectations should partially override tool defaults', () => {
     const userExpectation = {
-      includeSnapshot: false
+      includeSnapshot: true  // Changed to true since default is now false
       // Other values should use tool defaults
     };
 
     const merged = mergeExpectations('browser_click', userExpectation);
 
-    expect(merged.includeSnapshot).toBe(false); // User override
+    expect(merged.includeSnapshot).toBe(true); // User override
     expect(merged.includeConsole).toBe(false); // Tool default
     expect(merged.includeDownloads).toBe(false); // Tool default
     expect(merged.includeTabs).toBe(false); // Tool default
-    expect(merged.includeCode).toBe(true); // Tool default
+    expect(merged.includeCode).toBe(false); // Tool default (now false)
   });
 });

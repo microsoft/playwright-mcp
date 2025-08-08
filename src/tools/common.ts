@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { defineTabTool, defineTool } from './tool.js';
+import { expectationSchema } from '../schemas/expectation.js';
 const close = defineTool({
   capability: 'core',
   schema: {
@@ -24,6 +25,7 @@ const resize = defineTabTool({
     inputSchema: z.object({
       width: z.number().describe('Width of the browser window'),
       height: z.number().describe('Height of the browser window'),
+      expectation: expectationSchema
     }),
     type: 'readOnly',
   },

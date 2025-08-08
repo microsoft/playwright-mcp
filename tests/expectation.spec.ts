@@ -52,11 +52,11 @@ test.describe('Expectation Schema', () => {
     const minimalExpectation = {};
     const result = expectationSchema.parse(minimalExpectation);
 
-    expect(result.includeSnapshot).toBe(true);
-    expect(result.includeConsole).toBe(true);
-    expect(result.includeDownloads).toBe(true);
-    expect(result.includeTabs).toBe(true);
-    expect(result.includeCode).toBe(true);
+    expect(result.includeSnapshot).toBe(false);
+    expect(result.includeConsole).toBe(false);
+    expect(result.includeDownloads).toBe(false);
+    expect(result.includeTabs).toBe(false);
+    expect(result.includeCode).toBe(false);
   });
 
   test('should parse undefined as valid (optional schema)', () => {
@@ -147,20 +147,20 @@ test.describe('Expectation Schema', () => {
 test.describe('Default Expectation Configuration', () => {
   test('should return appropriate defaults for navigate tool', () => {
     const defaults = getDefaultExpectation('browser_navigate');
-    expect(defaults.includeSnapshot).toBe(true);
-    expect(defaults.includeConsole).toBe(true);
-    expect(defaults.includeDownloads).toBe(true);
-    expect(defaults.includeTabs).toBe(true);
-    expect(defaults.includeCode).toBe(true);
+    expect(defaults.includeSnapshot).toBe(false);
+    expect(defaults.includeConsole).toBe(false);
+    expect(defaults.includeDownloads).toBe(false);
+    expect(defaults.includeTabs).toBe(false);
+    expect(defaults.includeCode).toBe(false);
   });
 
   test('should return appropriate defaults for click tool', () => {
     const defaults = getDefaultExpectation('browser_click');
-    expect(defaults.includeSnapshot).toBe(true);
+    expect(defaults.includeSnapshot).toBe(false);
     expect(defaults.includeConsole).toBe(false);
     expect(defaults.includeDownloads).toBe(false);
     expect(defaults.includeTabs).toBe(false);
-    expect(defaults.includeCode).toBe(true);
+    expect(defaults.includeCode).toBe(false);
   });
 
   test('should return appropriate defaults for screenshot tool', () => {
@@ -175,18 +175,18 @@ test.describe('Default Expectation Configuration', () => {
   test('should return appropriate defaults for evaluate tool', () => {
     const defaults = getDefaultExpectation('browser_evaluate');
     expect(defaults.includeSnapshot).toBe(false);
-    expect(defaults.includeConsole).toBe(true);
+    expect(defaults.includeConsole).toBe(false);
     expect(defaults.includeDownloads).toBe(false);
     expect(defaults.includeTabs).toBe(false);
-    expect(defaults.includeCode).toBe(true);
+    expect(defaults.includeCode).toBe(false);
   });
 
   test('should return general defaults for unknown tool', () => {
     const defaults = getDefaultExpectation('unknown_tool');
-    expect(defaults.includeSnapshot).toBe(true);
-    expect(defaults.includeConsole).toBe(true);
-    expect(defaults.includeDownloads).toBe(true);
-    expect(defaults.includeTabs).toBe(true);
-    expect(defaults.includeCode).toBe(true);
+    expect(defaults.includeSnapshot).toBe(false);
+    expect(defaults.includeConsole).toBe(false);
+    expect(defaults.includeDownloads).toBe(false);
+    expect(defaults.includeTabs).toBe(false);
+    expect(defaults.includeCode).toBe(false);
   });
 });
