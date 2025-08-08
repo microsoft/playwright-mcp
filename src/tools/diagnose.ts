@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import { expectationSchema } from '../schemas/expectation.js';
+import { getErrorMessage } from '../utils/commonFormatters.js';
 import { DiagnoseAnalysisRunner } from './diagnose/DiagnoseAnalysisRunner.js';
 import type { ConfigOverrides } from './diagnose/DiagnoseConfigHandler.js';
 import { DiagnoseConfigHandler } from './diagnose/DiagnoseConfigHandler.js';
@@ -180,7 +181,7 @@ export const browserDiagnose = defineTabTool({
       }
     } catch (error) {
       response.addError(
-        `Error generating diagnostic report: ${error instanceof Error ? error.message : String(error)}`
+        `Error generating diagnostic report: ${getErrorMessage(error)}`
       );
     }
   },

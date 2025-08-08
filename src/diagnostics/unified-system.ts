@@ -3,6 +3,7 @@
  */
 
 import type * as playwright from 'playwright';
+import { getErrorMessage } from '../utils/commonFormatters.js';
 import { createDiagnosticLogger } from './common/diagnostic-base.js';
 import {
   createAdvancedStage,
@@ -290,7 +291,9 @@ export class UnifiedDiagnosticSystem {
         error instanceof DiagnosticError
           ? error
           : DiagnosticError.from(
-              error instanceof Error ? error : new Error(String(error)),
+              error instanceof Error
+                ? error
+                : new Error(getErrorMessage(error)),
               component,
               operation,
               {

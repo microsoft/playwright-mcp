@@ -32,7 +32,7 @@ export function formatObject(value: unknown, indent = '  '): string {
     const obj = value as Record<string, unknown>;
     const keys = Object.keys(obj)
       .filter((key) => obj[key] !== undefined)
-      .sort();
+      .sort((a, b) => a.localeCompare(b));
     if (!keys.length) {
       return '{}';
     }

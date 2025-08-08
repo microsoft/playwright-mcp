@@ -6,6 +6,7 @@ import type {
   StepResult,
 } from '../types/batch.js';
 import { batchExecuteSchema } from '../types/batch.js';
+import { getErrorMessage } from '../utils/commonFormatters.js';
 import { defineTool } from './tool.js';
 export const batchExecuteTool = defineTool({
   capability: 'core',
@@ -27,8 +28,7 @@ export const batchExecuteTool = defineTool({
 
       processExecutionResult(result, response);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = getErrorMessage(error);
       response.addError(`Batch execution failed: ${errorMessage}`);
     }
   },

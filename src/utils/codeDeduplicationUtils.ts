@@ -232,16 +232,6 @@ export function formatError(error: {
 }
 
 /**
- * Safe error message extraction
- */
-export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
-}
-
-/**
  * Get status icon for consistent status representation
  */
 export function getStatusIcon(

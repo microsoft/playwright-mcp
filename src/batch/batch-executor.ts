@@ -9,6 +9,7 @@ import type {
   BatchStep,
   StepResult,
 } from '../types/batch.js';
+import { getErrorMessage } from '../utils/commonFormatters.js';
 
 // Type for serialized response content
 export interface SerializedResponse {
@@ -46,7 +47,7 @@ export class BatchExecutor {
         }
       } catch (error) {
         throw new Error(
-          `Invalid arguments for ${step.tool} at step ${index}: ${error instanceof Error ? error.message : String(error)}`
+          `Invalid arguments for ${step.tool} at step ${index}: ${getErrorMessage(error)}`
         );
       }
     }
@@ -78,8 +79,7 @@ export class BatchExecutor {
         });
       } catch (error) {
         const stepEndTime = Date.now();
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = getErrorMessage(error);
         results.push({
           stepIndex: index,
           toolName: step.tool,

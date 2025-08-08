@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { ElementDiscovery } from '../diagnostics/element-discovery.js';
 import { PageAnalyzer } from '../diagnostics/page-analyzer.js';
 import type { SmartConfig } from '../diagnostics/smart-config.js';
-import { ArrayBuilder } from '../utils/codeDeduplicationUtils.js';
+import { ArrayBuilder } from '../utils/diagnosticReportUtils.js';
 
 // Type definitions for diagnostic info structures
 type DiagnosticInfo = {
@@ -39,6 +39,7 @@ type OperationError = {
 import { UnifiedDiagnosticSystem } from '../diagnostics/unified-system.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import type { Tab } from '../tab.js';
+import { getErrorMessage } from '../utils/commonFormatters.js';
 import {
   DiagnosticReportBuilder,
   formatConfidencePercentage,
@@ -119,9 +120,7 @@ export const browserFindElements = defineTabTool({
 
       response.addResult(resultsText.join('\n'));
     } catch (error) {
-      response.addError(
-        `Error finding elements: ${error instanceof Error ? error.message : String(error)}`
-      );
+      response.addError(`Error finding elements: ${getErrorMessage(error)}`);
     } finally {
       await cleanupResources();
     }
@@ -425,8 +424,7 @@ function addStandardAnalysisInfo(
         diagnosticInfo?.modalStates?.blockedBy &&
         diagnosticInfo.modalStates.blockedBy.length > 0
       ),
-      () =>
-        `- Page blocked by: ${diagnosticInfo?.modalStates?.blockedBy?.join(', ') || ''}`
+      `- Page blocked by: ${diagnosticInfo?.modalStates?.blockedBy?.join(', ') || ''}`
     )
     .build();
 

@@ -9,7 +9,16 @@ import type {
 } from '../../diagnostics/page-analyzer.js';
 import type { UnifiedDiagnosticSystem } from '../../diagnostics/unified-system.js';
 import type { Tab } from '../../tab.js';
-import { ArrayBuilder } from '../../utils/codeDeduplicationUtils.js';
+import { getErrorMessage } from '../../utils/commonFormatters.js';
+import {
+  ArrayBuilder,
+  addDomComplexityMetrics,
+  addErrorSection,
+  addInteractionMetrics,
+  addModalStatesIfPresent,
+  addResourceMetrics,
+  addSystemHealthSection,
+} from '../../utils/diagnosticReportUtils.js';
 import { DiagnosticReportBuilder } from '../../utils/reportBuilder.js';
 import type { AnalysisResult } from './DiagnoseAnalysisRunner.js';
 
@@ -208,25 +217,15 @@ export class DiagnoseReportBuilder {
 
     const systemStats = unifiedSystem.getSystemStats();
 
-    this.reportBuilder.addSection('Unified System Health', (builder) => {
-      builder
-        .addKeyValue('System Status', systemHealthInfo.status)
-        .addKeyValue(
-          'Total Operations',
-          systemStats.performanceMetrics.totalOperations
-        )
-        .addKeyValue(
-          'Success Rate',
-          `${(systemStats.performanceMetrics.successRate * 100).toFixed(1)}%`
-        )
-        .addKeyValue('Active Handles', systemStats.resourceUsage.currentHandles)
-        .addKeyValue(
-          'Total Errors',
-          Object.values(systemStats.errorCount).reduce(
-            (sum, count) => sum + count,
-            0
-          )
-        );
+    addSystemHealthSection(this.reportBuilder, {
+      status: systemHealthInfo.status,
+      totalOperations: systemStats.performanceMetrics.totalOperations,
+      successRate: systemStats.performanceMetrics.successRate,
+      activeHandles: systemStats.resourceUsage.currentHandles,
+      totalErrors: Object.values(systemStats.errorCount).reduce(
+        (sum, count) => sum + count,
+        0
+      ),
     });
 
     this.addConfigurationImpactSection(unifiedSystem, options);
@@ -459,15 +458,7 @@ export class DiagnoseReportBuilder {
   }
 
   private addModalStatesSection(diagnosticInfo: PageStructureAnalysis): void {
-    if (diagnosticInfo.modalStates.blockedBy.length > 0) {
-      this.reportBuilder
-        .addHeader('Modal States', 2)
-        .addKeyValue(
-          'Active modals',
-          diagnosticInfo.modalStates.blockedBy.join(', ')
-        )
-        .addEmptyLine();
-    }
+    addModalStatesIfPresent(this.reportBuilder, diagnosticInfo.modalStates);
   }
 
   private async addElementSearchSection(options: ReportOptions): Promise<void> {
@@ -530,9 +521,9 @@ export class DiagnoseReportBuilder {
         pageAnalyzer
       );
 
-      this.addDomComplexityMetrics(comprehensiveMetrics);
-      this.addInteractionMetrics(comprehensiveMetrics);
-      this.addResourceMetrics(comprehensiveMetrics);
+      addDomComplexityMetrics(this.reportBuilder, comprehensiveMetrics);
+      addInteractionMetrics(this.reportBuilder, comprehensiveMetrics);
+      addResourceMetrics(this.reportBuilder, comprehensiveMetrics);
 
       if (options.diagnosticLevel === 'full') {
         this.addLayoutMetrics(comprehensiveMetrics);
@@ -540,12 +531,11 @@ export class DiagnoseReportBuilder {
 
       this.addPerformanceWarnings(comprehensiveMetrics);
     } catch (error) {
-      this.reportBuilder
-        .addEmptyLine()
-        .addKeyValue(
-          'Error analyzing performance metrics',
-          error instanceof Error ? error.message : 'Unknown error'
-        );
+      addErrorSection(
+        this.reportBuilder,
+        error,
+        'analyzing performance metrics'
+      );
     }
 
     await this.addBrowserPerformanceMetrics();
@@ -571,78 +561,11 @@ export class DiagnoseReportBuilder {
         return perfResult.data as PageMetrics;
       }
       throw new Error(
-        `Performance metrics analysis failed: ${perfResult.error?.message || 'Unknown error'}`
+        `Performance metrics analysis failed: ${getErrorMessage(perfResult.error)}`
       );
     }
 
     throw new Error('No performance analyzer available');
-  }
-
-  private addDomComplexityMetrics(metrics: PageMetrics): void {
-    this.reportBuilder
-      .addEmptyLine()
-      .addHeader('DOM Complexity', 3)
-      .addKeyValue(
-        'Total DOM elements',
-        metrics?.domMetrics?.totalElements || 0
-      )
-      .addKeyValue(
-        'Max DOM depth',
-        `${metrics?.domMetrics?.maxDepth || 0} levels`
-      );
-
-    if (
-      metrics?.domMetrics?.largeSubtrees?.length &&
-      metrics.domMetrics.largeSubtrees.length > 0
-    ) {
-      this.reportBuilder.addKeyValue(
-        'Large subtrees detected',
-        metrics.domMetrics.largeSubtrees.length
-      );
-      for (const [index, subtree] of metrics.domMetrics.largeSubtrees
-        .slice(0, 3)
-        .entries()) {
-        this.reportBuilder.addLine(
-          `  ${index + 1}. **${subtree.selector}**: ${subtree.elementCount} elements (${subtree.description})`
-        );
-      }
-    }
-  }
-
-  private addInteractionMetrics(metrics: PageMetrics): void {
-    this.reportBuilder
-      .addEmptyLine()
-      .addHeader('Interaction Elements', 3)
-      .addKeyValue(
-        'Clickable elements',
-        metrics?.interactionMetrics?.clickableElements || 0
-      )
-      .addKeyValue(
-        'Form elements',
-        metrics?.interactionMetrics?.formElements || 0
-      )
-      .addKeyValue(
-        'Disabled elements',
-        metrics?.interactionMetrics?.disabledElements || 0
-      );
-  }
-
-  private addResourceMetrics(metrics: PageMetrics): void {
-    this.reportBuilder
-      .addEmptyLine()
-      .addHeader('Resource Load', 3)
-      .addKeyValue(
-        'Images',
-        `${metrics?.resourceMetrics?.imageCount || 0} (${metrics?.resourceMetrics?.estimatedImageSize || 'Unknown'})`
-      )
-      .addKeyValue(
-        'Script tags',
-        `${metrics?.resourceMetrics?.scriptTags || 0} (${metrics?.resourceMetrics?.externalScripts || 0} external, ${metrics?.resourceMetrics?.inlineScripts || 0} inline)`
-      )
-      .addKeyValue(
-        'Stylesheets',
-        metrics?.resourceMetrics?.stylesheetCount || 0
-      );
   }
 
   private addLayoutMetrics(metrics: PageMetrics): void {
@@ -759,12 +682,11 @@ export class DiagnoseReportBuilder {
         }
       }
     } catch (error) {
-      this.reportBuilder
-        .addEmptyLine()
-        .addKeyValue(
-          'Browser timing metrics unavailable',
-          error instanceof Error ? error.message : 'Unknown error'
-        );
+      addErrorSection(
+        this.reportBuilder,
+        error,
+        'retrieving browser timing metrics'
+      );
     }
   }
 

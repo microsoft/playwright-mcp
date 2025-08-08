@@ -5,6 +5,7 @@ import type {
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import debug from 'debug';
+import { getErrorMessage } from '../utils/commonFormatters.js';
 export type LLMToolCall = {
   name: string;
   arguments: Record<string, unknown>;
@@ -140,7 +141,7 @@ async function executeToolCall(
     debug('tool')(error);
     return {
       toolCallId: id,
-      content: `Error while executing tool "${name}": ${error instanceof Error ? error.message : String(error)}\n\nPlease try to recover and complete the task.`,
+      content: `Error while executing tool "${name}": ${getErrorMessage(error)}\n\nPlease try to recover and complete the task.`,
       isError: true,
     };
   }
