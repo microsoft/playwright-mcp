@@ -165,7 +165,8 @@ function parseViewportSize(viewportSize: string): {
       throw new Error('bad values');
     }
     return { width, height };
-  } catch (_e) {
+  } catch (error) {
+    console.warn('Viewport size parsing failed:', error);
     throw new Error(
       'Invalid viewport size format: use "width,height", for example --viewport-size="800,600"'
     );

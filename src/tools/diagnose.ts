@@ -129,7 +129,7 @@ export const browserDiagnose = defineTabTool({
       }
 
       // Initialize systems
-      const systemConfig = await configHandler.initializeSystems(
+      const systemConfig = configHandler.initializeSystems(
         tab,
         useUnifiedSystem,
         useParallelAnalysis,

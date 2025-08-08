@@ -79,7 +79,7 @@ const ConnectApp: React.FC = () => {
         type: 'connecting',
         message: `MCP client "${info}" is trying to connect. Do you want to continue?`,
       });
-    } catch (_e) {
+    } catch (_error) {
       setStatus({ type: 'error', message: 'Failed to parse client version.' });
       return;
     }

@@ -4,7 +4,7 @@ export function createHash(data: string): string {
 }
 // Regex to match file system unsafe characters
 // biome-ignore lint/suspicious/noControlCharactersInRegex: Control characters are intentionally excluded for filesystem safety
-const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001F]+/g;
+const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\x00-\x1F]+/g;
 
 export function sanitizeForFilePath(input: string) {
   const sanitize = (str: string) => str.replace(UNSAFE_FILENAME_CHARS, '-');

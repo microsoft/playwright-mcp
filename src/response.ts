@@ -9,6 +9,7 @@ import type { ConsoleMessage, Tab, TabSnapshot } from './tab.js';
 import { renderModalStates } from './tab.js';
 import type { DiffResult } from './types/diff.js';
 import { processImage } from './utils/imageProcessor.js';
+import { TextReportBuilder } from './utils/reportBuilder.js';
 import { ResponseDiffDetector } from './utils/responseDiffDetector.js';
 export class Response {
   private _result: string[] = [];
@@ -100,10 +101,9 @@ export class Response {
               contentType: processedResult.contentType,
               data: processedResult.data,
             };
-          } catch (_error) {
+          } catch (error) {
             // If processing fails, keep the original image
-            // Image processing failed silently
-            // Image processing failed
+            console.warn('Image processing failed:', error);
             return image;
           }
         })
@@ -125,15 +125,14 @@ export class Response {
             this._expectation.diffOptions.ignoreWhitespace ?? true,
           context: this._expectation.diffOptions.context ?? 3,
         };
-        this._diffResult = await Response.diffDetector.detectDiff(
+        this._diffResult = Response.diffDetector.detectDiff(
           currentContent,
           this.toolName,
           diffOptions
         );
-      } catch (_error) {
+      } catch (error) {
         // Gracefully handle diff detection errors
-        // Diff detection failed silently
-        // Diff detection failed
+        console.warn('Diff detection failed:', error);
         this._diffResult = undefined;
       }
     }
@@ -233,11 +232,13 @@ ${this._code.join('\n')}
     );
 
     if (filteredMessages.length) {
-      lines.push('### New console messages');
-      for (const message of filteredMessages) {
-        lines.push(`- ${trim(message.toString(), 100)}`);
-      }
-      lines.push('');
+      const builder = new TextReportBuilder();
+      builder.addSection('New console messages', (b) => {
+        for (const message of filteredMessages) {
+          b.addListItem(trim(message.toString(), 100));
+        }
+      });
+      lines.push(...builder.getSections());
     }
   }
 
@@ -246,32 +247,35 @@ ${this._code.join('\n')}
       return;
     }
 
-    lines.push('### Downloads');
-    for (const entry of tabSnapshot.downloads) {
-      if (entry.finished) {
-        lines.push(
-          `- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`
-        );
-      } else {
-        lines.push(
-          `- Downloading file ${entry.download.suggestedFilename()} ...`
-        );
+    const builder = new TextReportBuilder();
+    builder.addSection('Downloads', (b) => {
+      for (const entry of tabSnapshot.downloads) {
+        if (entry.finished) {
+          b.addListItem(
+            `Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`
+          );
+        } else {
+          b.addListItem(
+            `Downloading file ${entry.download.suggestedFilename()} ...`
+          );
+        }
       }
-    }
-    lines.push('');
+    });
+    lines.push(...builder.getSections());
   }
 
   private addPageStateToLines(lines: string[], tabSnapshot: TabSnapshot): void {
-    lines.push('### Page state');
-    lines.push(`- Page URL: ${tabSnapshot.url}`);
-    lines.push(`- Page Title: ${tabSnapshot.title}`);
+    const builder = new TextReportBuilder();
+    builder.addSection('Page state', (b) => {
+      b.addKeyValue('Page URL', tabSnapshot.url);
+      b.addKeyValue('Page Title', tabSnapshot.title);
 
-    if (this._expectation.includeSnapshot) {
-      lines.push('- Page Snapshot:');
-      lines.push('```yaml');
-      lines.push(tabSnapshot.ariaSnapshot);
-      lines.push('```');
-    }
+      if (this._expectation.includeSnapshot) {
+        b.addLine('- Page Snapshot:');
+        b.addCodeBlock(tabSnapshot.ariaSnapshot, 'yaml');
+      }
+    });
+    lines.push(...builder.getSections());
   }
   private filterConsoleMessages(
     messages: ConsoleMessage[],
@@ -435,7 +439,8 @@ ${this._code.join('\n')}
   private async _handleFinalAttemptFailure(tab: Tab): Promise<void> {
     try {
       this._tabSnapshot = await this._captureBasicSnapshot(tab);
-    } catch (_finalError) {
+    } catch (error) {
+      console.warn('Failed to capture basic snapshot:', error);
       this._tabSnapshot = undefined;
     }
   }
@@ -477,9 +482,9 @@ ${this._code.join('\n')}
       ])) as [string | null, boolean | null];
 
       return readyState === 'loading' || isLoading === true;
-    } catch (_error) {
+    } catch (error) {
       // If we can't check, assume navigation might be happening
-      // Navigation check failed silently
+      console.debug('Navigation check failed (assuming in progress):', error);
       return true;
     }
   }
@@ -502,9 +507,9 @@ ${this._code.join('\n')}
           tab as { waitForNavigationComplete: () => Promise<void> }
         ).waitForNavigationComplete();
         return;
-      } catch (_error) {
+      } catch (error) {
         // Fall through to manual detection
-        // URL stability check failed silently
+        console.debug('Tab navigation completion failed:', error);
       }
     }
 
@@ -528,9 +533,9 @@ ${this._code.join('\n')}
           await new Promise((resolve) => setTimeout(resolve, 200));
           return;
         }
-      } catch (_error) {
+      } catch (error) {
         // Continue waiting
-        // Page readyState check failed silently
+        console.debug('Page stability check failed (retrying):', error);
       }
 
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -544,9 +549,12 @@ ${this._code.join('\n')}
     try {
       // Try basic snapshot without complex operations
       return await tab.captureSnapshot();
-    } catch (_error) {
+    } catch (error) {
       // Create a minimal snapshot with available information
-      // Snapshot creation failed silently
+      console.warn(
+        'Basic snapshot capture failed, creating minimal snapshot:',
+        error
+      );
       const url = tab.page.url();
       const title = await tab.page.title().catch(() => '');
 

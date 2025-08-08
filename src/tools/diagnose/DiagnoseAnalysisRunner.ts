@@ -84,7 +84,7 @@ export class DiagnoseAnalysisRunner {
 
     let systemHealthInfo: AnalysisResult['systemHealthInfo'];
     if (includeSystemStats) {
-      const healthResult = await unifiedSystem.performHealthCheck();
+      const healthResult = unifiedSystem.performHealthCheck();
       systemHealthInfo = {
         ...healthResult,
         timestamp: Date.now(),

@@ -9,6 +9,7 @@ import type {
 } from '../../diagnostics/page-analyzer.js';
 import type { UnifiedDiagnosticSystem } from '../../diagnostics/unified-system.js';
 import type { Tab } from '../../tab.js';
+import { DiagnosticReportBuilder } from '../../utils/reportBuilder.js';
 import type { AnalysisResult } from './DiagnoseAnalysisRunner.js';
 
 interface PerformanceDeviation {
@@ -106,11 +107,12 @@ export interface ReportOptions {
 }
 
 export class DiagnoseReportBuilder {
-  private reportSections: string[] = [];
-  private tab: Tab;
+  private reportBuilder: DiagnosticReportBuilder;
+  private readonly tab: Tab;
 
   constructor(tab: Tab) {
     this.tab = tab;
+    this.reportBuilder = new DiagnosticReportBuilder();
   }
 
   async buildReport(
@@ -119,15 +121,15 @@ export class DiagnoseReportBuilder {
     pageAnalyzer: PageAnalyzer | null,
     options: ReportOptions
   ): Promise<string> {
-    this.reportSections = [];
+    this.reportBuilder.clear();
 
     if (options.diagnosticLevel === 'none') {
       return 'Diagnostics disabled (level: none)';
     }
 
-    await this.addReportHeader(analysisResult, unifiedSystem, options);
+    this.addReportHeader(analysisResult, unifiedSystem, options);
     await this.addPageStructureSection(analysisResult.diagnosticInfo, options);
-    await this.addModalStatesSection(analysisResult.diagnosticInfo);
+    this.addModalStatesSection(analysisResult.diagnosticInfo);
     await this.addElementSearchSection(options);
     await this.addPerformanceSection(
       analysisResult,
@@ -136,50 +138,59 @@ export class DiagnoseReportBuilder {
       options
     );
     await this.addAccessibilitySection(analysisResult.diagnosticInfo, options);
-    await this.addTroubleshootingSection(
-      analysisResult.diagnosticInfo,
-      options
-    );
+    this.addTroubleshootingSection(analysisResult.diagnosticInfo, options);
 
-    return this.reportSections.join('\n');
+    return this.reportBuilder.build();
   }
 
-  private async addReportHeader(
+  private addReportHeader(
     analysisResult: AnalysisResult,
     unifiedSystem: UnifiedDiagnosticSystem | null,
     options: ReportOptions
-  ): Promise<void> {
+  ): void {
     if (unifiedSystem) {
-      this.reportSections.push(
-        '# Unified Diagnostic System Report',
-        '**Unified System Status:** Active with enhanced error handling and monitoring',
-        `**Configuration:** ${options.appliedOverrides?.length ? 'Custom overrides applied' : 'Default settings'}`,
-        ''
-      );
+      this.reportBuilder
+        .addHeader('Unified Diagnostic System Report', 1)
+        .addKeyValue(
+          'Unified System Status',
+          'Active with enhanced error handling and monitoring'
+        )
+        .addKeyValue(
+          'Configuration',
+          options.appliedOverrides?.length
+            ? 'Custom overrides applied'
+            : 'Default settings'
+        )
+        .addEmptyLine();
 
       if (options.appliedOverrides?.length) {
-        this.reportSections.push('## Applied Configuration Overrides');
-        for (const override of options.appliedOverrides) {
-          this.reportSections.push(`- **${override}**`);
-        }
-        this.reportSections.push('');
+        this.reportBuilder.addSection(
+          'Applied Configuration Overrides',
+          (builder) => {
+            if (options.appliedOverrides) {
+              for (const override of options.appliedOverrides) {
+                builder.addListItem(`**${override}**`);
+              }
+            }
+          }
+        );
       }
 
-      this.reportSections.push(
-        `**Analysis Type:** ${analysisResult.analysisType}`
-      );
-      this.reportSections.push(
-        `**Analysis Status:** ${analysisResult.analysisStatus}`
-      );
+      this.reportBuilder
+        .addKeyValue('Analysis Type', analysisResult.analysisType)
+        .addKeyValue('Analysis Status', analysisResult.analysisStatus);
 
       if (analysisResult.errors?.length) {
-        this.reportSections.push('## Analysis Warnings');
-        for (const error of analysisResult.errors) {
-          this.reportSections.push(`- **${error}**`);
-        }
+        this.reportBuilder.addSection('Analysis Warnings', (builder) => {
+          if (analysisResult.errors) {
+            for (const error of analysisResult.errors) {
+              builder.addListItem(`**${error}**`);
+            }
+          }
+        });
       }
 
-      await this.addSystemHealthSection(analysisResult, unifiedSystem, options);
+      this.addSystemHealthSection(analysisResult, unifiedSystem, options);
     }
   }
 
@@ -192,28 +203,33 @@ export class DiagnoseReportBuilder {
       return;
     }
 
+    const systemHealthInfo = analysisResult.systemHealthInfo;
+
     const systemStats = unifiedSystem.getSystemStats();
 
-    this.reportSections.push('');
-    this.reportSections.push('## Unified System Health');
-    this.reportSections.push(
-      `- **System Status:** ${analysisResult.systemHealthInfo.status}`
-    );
-    this.reportSections.push(
-      `- **Total Operations:** ${systemStats.performanceMetrics.totalOperations}`
-    );
-    this.reportSections.push(
-      `- **Success Rate:** ${(systemStats.performanceMetrics.successRate * 100).toFixed(1)}%`
-    );
-    this.reportSections.push(
-      `- **Active Handles:** ${systemStats.resourceUsage.currentHandles}`
-    );
-    this.reportSections.push(
-      `- **Total Errors:** ${Object.values(systemStats.errorCount).reduce((sum, count) => sum + count, 0)}`
-    );
+    this.reportBuilder.addSection('Unified System Health', (builder) => {
+      builder
+        .addKeyValue('System Status', systemHealthInfo.status)
+        .addKeyValue(
+          'Total Operations',
+          systemStats.performanceMetrics.totalOperations
+        )
+        .addKeyValue(
+          'Success Rate',
+          `${(systemStats.performanceMetrics.successRate * 100).toFixed(1)}%`
+        )
+        .addKeyValue('Active Handles', systemStats.resourceUsage.currentHandles)
+        .addKeyValue(
+          'Total Errors',
+          Object.values(systemStats.errorCount).reduce(
+            (sum, count) => sum + count,
+            0
+          )
+        );
+    });
 
     this.addConfigurationImpactSection(unifiedSystem, options);
-    this.addSystemIssuesAndRecommendations(analysisResult.systemHealthInfo);
+    this.addSystemIssuesAndRecommendations(systemHealthInfo);
   }
 
   private addConfigurationImpactSection(
@@ -226,10 +242,17 @@ export class DiagnoseReportBuilder {
 
     const configReport = unifiedSystem.getConfigurationReport();
 
-    this.reportSections.push('');
-    this.reportSections.push('### Configuration Impact Analysis');
-    this.reportSections.push(
-      `- **Configuration Status:** ${configReport.configurationStatus.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}`
+    this.reportBuilder.addSection(
+      'Configuration Impact Analysis',
+      (builder) => {
+        builder.addKeyValue(
+          'Configuration Status',
+          configReport.configurationStatus
+            .replace('-', ' ')
+            .replace(/\b\w/g, (l) => l.toUpperCase())
+        );
+      },
+      3
     );
 
     this.addPerformanceBaselineComparison(configReport);
@@ -248,8 +271,8 @@ export class DiagnoseReportBuilder {
       return;
     }
 
-    this.reportSections.push('');
-    this.reportSections.push('**Performance Baseline Comparison:**');
+    this.reportBuilder.addEmptyLine();
+    this.reportBuilder.addLine('**Performance Baseline Comparison:**');
     for (const component of Object.keys(expectedExecutionTimes)) {
       const expected =
         expectedExecutionTimes[
@@ -264,7 +287,7 @@ export class DiagnoseReportBuilder {
           ? ` (${deviation.percent > 0 ? '+' : ''}${deviation.percent}% ${deviation.significance})`
           : '';
 
-        this.reportSections.push(
+        this.reportBuilder.addLine(
           `  ${performanceIndicator} **${component}**: Expected ${expected}ms, Actual ${actual.toFixed(0)}ms${deviationText}`
         );
       }
@@ -293,15 +316,15 @@ export class DiagnoseReportBuilder {
       return;
     }
 
-    this.reportSections.push('');
-    this.reportSections.push('**Applied Configuration Changes:**');
+    this.reportBuilder.addEmptyLine();
+    this.reportBuilder.addLine('**Applied Configuration Changes:**');
     for (const override of configReport.appliedOverrides) {
       const impactIcon = this.getImpactIcon(override.impact);
-      this.reportSections.push(
+      this.reportBuilder.addLine(
         `  ${impactIcon} **${override.category}** (${override.impact} impact):`
       );
       for (const change of override.changes) {
-        this.reportSections.push(`    - ${change}`);
+        this.reportBuilder.addLine(`    - ${change}`);
       }
     }
   }
@@ -326,11 +349,11 @@ export class DiagnoseReportBuilder {
       return;
     }
 
-    this.reportSections.push('');
-    this.reportSections.push('**High Priority Recommendations:**');
+    this.reportBuilder.addEmptyLine();
+    this.reportBuilder.addLine('**High Priority Recommendations:**');
     for (const rec of highPriorityRecs) {
       const typeIcon = this.getRecommendationTypeIcon(rec.type);
-      this.reportSections.push(`  ${typeIcon} ${rec.message}`);
+      this.reportBuilder.addLine(`  ${typeIcon} ${rec.message}`);
     }
   }
 
@@ -349,22 +372,22 @@ export class DiagnoseReportBuilder {
     systemHealthInfo: NonNullable<AnalysisResult['systemHealthInfo']>
   ): void {
     if (systemHealthInfo.issues.length > 0) {
-      this.reportSections.push('');
-      this.reportSections.push('### System Issues');
+      this.reportBuilder.addEmptyLine();
+      this.reportBuilder.addHeader('System Issues', 3);
       for (const issue of systemHealthInfo.issues) {
-        this.reportSections.push(`- ⚠️ ${issue}`);
+        this.reportBuilder.addListItem(`⚠️ ${issue}`);
       }
     }
 
     if (systemHealthInfo.recommendations.length > 0) {
-      this.reportSections.push('');
-      this.reportSections.push('### System Recommendations');
+      this.reportBuilder.addEmptyLine();
+      this.reportBuilder.addHeader('System Recommendations', 3);
       for (const rec of systemHealthInfo.recommendations) {
-        this.reportSections.push(`- 💡 ${rec}`);
+        this.reportBuilder.addListItem(`💡 ${rec}`);
       }
     }
 
-    this.reportSections.push('');
+    this.reportBuilder.addEmptyLine();
   }
 
   private async addPageStructureSection(
@@ -372,55 +395,77 @@ export class DiagnoseReportBuilder {
     options: ReportOptions
   ): Promise<void> {
     if (options.diagnosticLevel === 'basic') {
-      this.reportSections.push(
-        '# Basic Diagnostic Report',
-        `**URL:** ${this.tab.page.url()}`,
-        '',
-        '## Critical Information'
-      );
+      this.reportBuilder
+        .addHeader('Basic Diagnostic Report', 1)
+        .addKeyValue('URL', this.tab.page.url())
+        .addEmptyLine()
+        .addHeader('Critical Information', 2);
 
       if (diagnosticInfo.iframes.detected) {
-        this.reportSections.push(
-          `- **IFrames detected:** ${diagnosticInfo.iframes.count}`
+        this.reportBuilder.addKeyValue(
+          'IFrames detected',
+          diagnosticInfo.iframes.count
         );
       }
 
       if (diagnosticInfo.modalStates.blockedBy.length > 0) {
-        this.reportSections.push(
-          `- **Active modals:** ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
+        this.reportBuilder.addKeyValue(
+          'Active modals',
+          diagnosticInfo.modalStates.blockedBy.join(', ')
         );
       }
 
-      this.reportSections.push(
-        `- **Interactable elements:** ${diagnosticInfo.elements.totalInteractable}`
-      );
-      this.reportSections.push('');
+      this.reportBuilder
+        .addKeyValue(
+          'Interactable elements',
+          diagnosticInfo.elements.totalInteractable
+        )
+        .addEmptyLine();
     } else {
-      this.reportSections.push(
-        '# Page Diagnostic Report',
-        `**URL:** ${this.tab.page.url()}`,
-        `**Title:** ${await this.tab.page.title()}`,
-        '',
-        '## Page Structure Analysis',
-        `- **IFrames:** ${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`,
-        `- **Accessible iframes:** ${diagnosticInfo.iframes.accessible.length}`,
-        `- **Inaccessible iframes:** ${diagnosticInfo.iframes.inaccessible.length}`,
-        '',
-        `- **Total visible elements:** ${diagnosticInfo.elements.totalVisible}`,
-        `- **Total interactable elements:** ${diagnosticInfo.elements.totalInteractable}`,
-        `- **Elements missing ARIA:** ${diagnosticInfo.elements.missingAria}`,
-        ''
-      );
+      this.reportBuilder
+        .addHeader('Page Diagnostic Report', 1)
+        .addKeyValue('URL', this.tab.page.url())
+        .addKeyValue('Title', await this.tab.page.title())
+        .addEmptyLine()
+        .addHeader('Page Structure Analysis', 2)
+        .addKeyValue(
+          'IFrames',
+          `${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`
+        )
+        .addKeyValue(
+          'Accessible iframes',
+          diagnosticInfo.iframes.accessible.length
+        )
+        .addKeyValue(
+          'Inaccessible iframes',
+          diagnosticInfo.iframes.inaccessible.length
+        )
+        .addEmptyLine()
+        .addKeyValue(
+          'Total visible elements',
+          diagnosticInfo.elements.totalVisible
+        )
+        .addKeyValue(
+          'Total interactable elements',
+          diagnosticInfo.elements.totalInteractable
+        )
+        .addKeyValue(
+          'Elements missing ARIA',
+          diagnosticInfo.elements.missingAria
+        )
+        .addEmptyLine();
     }
   }
 
   private addModalStatesSection(diagnosticInfo: PageStructureAnalysis): void {
     if (diagnosticInfo.modalStates.blockedBy.length > 0) {
-      this.reportSections.push('## Modal States');
-      this.reportSections.push(
-        `- **Active modals:** ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
-      );
-      this.reportSections.push('');
+      this.reportBuilder
+        .addHeader('Modal States', 2)
+        .addKeyValue(
+          'Active modals',
+          diagnosticInfo.modalStates.blockedBy.join(', ')
+        )
+        .addEmptyLine();
     }
   }
 
@@ -436,23 +481,23 @@ export class DiagnoseReportBuilder {
       maxResults: 10,
     });
 
-    this.reportSections.push('## Element Search Results');
+    this.reportBuilder.addHeader('Element Search Results', 2);
     if (foundElements.length === 0) {
-      this.reportSections.push(
-        '- No elements found matching the search criteria'
+      this.reportBuilder.addListItem(
+        'No elements found matching the search criteria'
       );
     } else {
-      this.reportSections.push(
+      this.reportBuilder.addLine(
         `Found ${foundElements.length} matching elements:`
       );
       for (const [index, element] of foundElements.entries()) {
-        this.reportSections.push(
+        this.reportBuilder.addLine(
           `${index + 1}. **${element.selector}** (${(element.confidence * 100).toFixed(0)}% confidence)`
         );
-        this.reportSections.push(`   - ${element.reason}`);
+        this.reportBuilder.addLine(`   - ${element.reason}`);
       }
     }
-    this.reportSections.push('');
+    this.reportBuilder.addEmptyLine();
   }
 
   private async addPerformanceSection(
@@ -473,10 +518,9 @@ export class DiagnoseReportBuilder {
 
     const diagnosisTime = Date.now() - options.startTime;
 
-    this.reportSections.push('## Performance Metrics');
-    this.reportSections.push(
-      `- **Diagnosis execution time:** ${diagnosisTime}ms`
-    );
+    this.reportBuilder
+      .addHeader('Performance Metrics', 2)
+      .addKeyValue('Diagnosis execution time', `${diagnosisTime}ms`);
 
     try {
       const comprehensiveMetrics = await this.getComprehensiveMetrics(
@@ -495,14 +539,16 @@ export class DiagnoseReportBuilder {
 
       this.addPerformanceWarnings(comprehensiveMetrics);
     } catch (error) {
-      this.reportSections.push('');
-      this.reportSections.push(
-        `- **Error analyzing performance metrics:** ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      this.reportBuilder
+        .addEmptyLine()
+        .addKeyValue(
+          'Error analyzing performance metrics',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
     }
 
     await this.addBrowserPerformanceMetrics();
-    this.reportSections.push('');
+    this.reportBuilder.addEmptyLine();
   }
 
   private async getComprehensiveMetrics(
@@ -532,26 +578,30 @@ export class DiagnoseReportBuilder {
   }
 
   private addDomComplexityMetrics(metrics: PageMetrics): void {
-    this.reportSections.push('');
-    this.reportSections.push('### DOM Complexity');
-    this.reportSections.push(
-      `- **Total DOM elements:** ${metrics?.domMetrics?.totalElements || 0}`
-    );
-    this.reportSections.push(
-      `- **Max DOM depth:** ${metrics?.domMetrics?.maxDepth || 0} levels`
-    );
+    this.reportBuilder
+      .addEmptyLine()
+      .addHeader('DOM Complexity', 3)
+      .addKeyValue(
+        'Total DOM elements',
+        metrics?.domMetrics?.totalElements || 0
+      )
+      .addKeyValue(
+        'Max DOM depth',
+        `${metrics?.domMetrics?.maxDepth || 0} levels`
+      );
 
     if (
       metrics?.domMetrics?.largeSubtrees?.length &&
       metrics.domMetrics.largeSubtrees.length > 0
     ) {
-      this.reportSections.push(
-        `- **Large subtrees detected:** ${metrics.domMetrics.largeSubtrees.length}`
+      this.reportBuilder.addKeyValue(
+        'Large subtrees detected',
+        metrics.domMetrics.largeSubtrees.length
       );
       for (const [index, subtree] of metrics.domMetrics.largeSubtrees
         .slice(0, 3)
         .entries()) {
-        this.reportSections.push(
+        this.reportBuilder.addLine(
           `  ${index + 1}. **${subtree.selector}**: ${subtree.elementCount} elements (${subtree.description})`
         );
       }
@@ -559,56 +609,67 @@ export class DiagnoseReportBuilder {
   }
 
   private addInteractionMetrics(metrics: PageMetrics): void {
-    this.reportSections.push('');
-    this.reportSections.push('### Interaction Elements');
-    this.reportSections.push(
-      `- **Clickable elements:** ${metrics?.interactionMetrics?.clickableElements || 0}`
-    );
-    this.reportSections.push(
-      `- **Form elements:** ${metrics?.interactionMetrics?.formElements || 0}`
-    );
-    this.reportSections.push(
-      `- **Disabled elements:** ${metrics?.interactionMetrics?.disabledElements || 0}`
-    );
+    this.reportBuilder
+      .addEmptyLine()
+      .addHeader('Interaction Elements', 3)
+      .addKeyValue(
+        'Clickable elements',
+        metrics?.interactionMetrics?.clickableElements || 0
+      )
+      .addKeyValue(
+        'Form elements',
+        metrics?.interactionMetrics?.formElements || 0
+      )
+      .addKeyValue(
+        'Disabled elements',
+        metrics?.interactionMetrics?.disabledElements || 0
+      );
   }
 
   private addResourceMetrics(metrics: PageMetrics): void {
-    this.reportSections.push('');
-    this.reportSections.push('### Resource Load');
-    this.reportSections.push(
-      `- **Images:** ${metrics?.resourceMetrics?.imageCount || 0} (${metrics?.resourceMetrics?.estimatedImageSize || 'Unknown'})`
-    );
-    this.reportSections.push(
-      `- **Script tags:** ${metrics?.resourceMetrics?.scriptTags || 0} (${metrics?.resourceMetrics?.externalScripts || 0} external, ${metrics?.resourceMetrics?.inlineScripts || 0} inline)`
-    );
-    this.reportSections.push(
-      `- **Stylesheets:** ${metrics?.resourceMetrics?.stylesheetCount || 0}`
-    );
+    this.reportBuilder
+      .addEmptyLine()
+      .addHeader('Resource Load', 3)
+      .addKeyValue(
+        'Images',
+        `${metrics?.resourceMetrics?.imageCount || 0} (${metrics?.resourceMetrics?.estimatedImageSize || 'Unknown'})`
+      )
+      .addKeyValue(
+        'Script tags',
+        `${metrics?.resourceMetrics?.scriptTags || 0} (${metrics?.resourceMetrics?.externalScripts || 0} external, ${metrics?.resourceMetrics?.inlineScripts || 0} inline)`
+      )
+      .addKeyValue(
+        'Stylesheets',
+        metrics?.resourceMetrics?.stylesheetCount || 0
+      );
   }
 
   private addLayoutMetrics(metrics: PageMetrics): void {
-    this.reportSections.push('');
-    this.reportSections.push('### Layout Analysis');
-    this.reportSections.push(
-      `- **Fixed position elements:** ${metrics?.layoutMetrics?.fixedElements?.length || 0}`
-    );
-    this.reportSections.push(
-      `- **High z-index elements:** ${metrics?.layoutMetrics?.highZIndexElements?.length || 0}`
-    );
-    this.reportSections.push(
-      `- **Overflow hidden elements:** ${metrics?.layoutMetrics?.overflowHiddenElements || 0}`
-    );
+    this.reportBuilder
+      .addEmptyLine()
+      .addHeader('Layout Analysis', 3)
+      .addKeyValue(
+        'Fixed position elements',
+        metrics?.layoutMetrics?.fixedElements?.length || 0
+      )
+      .addKeyValue(
+        'High z-index elements',
+        metrics?.layoutMetrics?.highZIndexElements?.length || 0
+      )
+      .addKeyValue(
+        'Overflow hidden elements',
+        metrics?.layoutMetrics?.overflowHiddenElements || 0
+      );
 
     if (
       metrics?.layoutMetrics?.fixedElements?.length &&
       metrics.layoutMetrics.fixedElements.length > 0
     ) {
-      this.reportSections.push('');
-      this.reportSections.push('**Fixed Elements:**');
+      this.reportBuilder.addEmptyLine().addLine('**Fixed Elements:**');
       for (const [index, element] of metrics.layoutMetrics.fixedElements
         .slice(0, 5)
         .entries()) {
-        this.reportSections.push(
+        this.reportBuilder.addLine(
           `${index + 1}. **${element.selector}**: ${element.purpose} (z-index: ${element.zIndex})`
         );
       }
@@ -618,12 +679,11 @@ export class DiagnoseReportBuilder {
       metrics?.layoutMetrics?.highZIndexElements?.length &&
       metrics.layoutMetrics.highZIndexElements.length > 0
     ) {
-      this.reportSections.push('');
-      this.reportSections.push('**High Z-Index Elements:**');
+      this.reportBuilder.addEmptyLine().addLine('**High Z-Index Elements:**');
       for (const [index, element] of metrics.layoutMetrics.highZIndexElements
         .slice(0, 5)
         .entries()) {
-        this.reportSections.push(
+        this.reportBuilder.addLine(
           `${index + 1}. **${element.selector}**: z-index ${element.zIndex} (${element.description})`
         );
       }
@@ -632,12 +692,11 @@ export class DiagnoseReportBuilder {
 
   private addPerformanceWarnings(metrics: PageMetrics): void {
     if (metrics?.warnings?.length && metrics.warnings.length > 0) {
-      this.reportSections.push('');
-      this.reportSections.push('### Performance Warnings');
+      this.reportBuilder.addEmptyLine().addHeader('Performance Warnings', 3);
       for (const warning of metrics.warnings) {
         const icon = warning.level === 'danger' ? '🚨' : '⚠️';
-        this.reportSections.push(
-          `- ${icon} **${warning.type}**: ${warning.message}`
+        this.reportBuilder.addListItem(
+          `${icon} **${warning.type}**: ${warning.message}`
         );
       }
     }
@@ -669,35 +728,42 @@ export class DiagnoseReportBuilder {
         browserMetrics.firstPaint ||
         browserMetrics.firstContentfulPaint
       ) {
-        this.reportSections.push('');
-        this.reportSections.push('### Browser Performance Timing');
+        this.reportBuilder
+          .addEmptyLine()
+          .addHeader('Browser Performance Timing', 3);
 
         if (browserMetrics.domContentLoaded) {
-          this.reportSections.push(
-            `- **DOM Content Loaded:** ${browserMetrics.domContentLoaded.toFixed(2)}ms`
+          this.reportBuilder.addKeyValue(
+            'DOM Content Loaded',
+            `${browserMetrics.domContentLoaded.toFixed(2)}ms`
           );
         }
         if (browserMetrics.loadComplete) {
-          this.reportSections.push(
-            `- **Load Complete:** ${browserMetrics.loadComplete.toFixed(2)}ms`
+          this.reportBuilder.addKeyValue(
+            'Load Complete',
+            `${browserMetrics.loadComplete.toFixed(2)}ms`
           );
         }
         if (browserMetrics.firstPaint) {
-          this.reportSections.push(
-            `- **First Paint:** ${browserMetrics.firstPaint.toFixed(2)}ms`
+          this.reportBuilder.addKeyValue(
+            'First Paint',
+            `${browserMetrics.firstPaint.toFixed(2)}ms`
           );
         }
         if (browserMetrics.firstContentfulPaint) {
-          this.reportSections.push(
-            `- **First Contentful Paint:** ${browserMetrics.firstContentfulPaint.toFixed(2)}ms`
+          this.reportBuilder.addKeyValue(
+            'First Contentful Paint',
+            `${browserMetrics.firstContentfulPaint.toFixed(2)}ms`
           );
         }
       }
     } catch (error) {
-      this.reportSections.push('');
-      this.reportSections.push(
-        `- **Browser timing metrics unavailable:** ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      this.reportBuilder
+        .addEmptyLine()
+        .addKeyValue(
+          'Browser timing metrics unavailable',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
     }
   }
 
@@ -714,10 +780,12 @@ export class DiagnoseReportBuilder {
       return;
     }
 
-    this.reportSections.push('## Accessibility Information');
-    this.reportSections.push(
-      `- **Elements with missing ARIA labels:** ${diagnosticInfo.elements.missingAria}`
-    );
+    this.reportBuilder
+      .addHeader('Accessibility Information', 2)
+      .addKeyValue(
+        'Elements with missing ARIA labels',
+        diagnosticInfo.elements.missingAria
+      );
 
     const a11yMetrics = await this.tab.page.evaluate(() => {
       const headings = document.querySelectorAll(
@@ -732,14 +800,14 @@ export class DiagnoseReportBuilder {
       return { headings, landmarks, imagesWithAlt: altTexts, totalImages };
     });
 
-    this.reportSections.push(`- **Heading elements:** ${a11yMetrics.headings}`);
-    this.reportSections.push(
-      `- **Landmark elements:** ${a11yMetrics.landmarks}`
-    );
-    this.reportSections.push(
-      `- **Images with alt text:** ${a11yMetrics.imagesWithAlt}/${a11yMetrics.totalImages}`
-    );
-    this.reportSections.push('');
+    this.reportBuilder
+      .addKeyValue('Heading elements', a11yMetrics.headings)
+      .addKeyValue('Landmark elements', a11yMetrics.landmarks)
+      .addKeyValue(
+        'Images with alt text',
+        `${a11yMetrics.imagesWithAlt}/${a11yMetrics.totalImages}`
+      )
+      .addEmptyLine();
   }
 
   private addTroubleshootingSection(
@@ -757,7 +825,7 @@ export class DiagnoseReportBuilder {
       return;
     }
 
-    this.reportSections.push('## Troubleshooting Suggestions');
+    this.reportBuilder.addHeader('Troubleshooting Suggestions', 2);
 
     const suggestions: string[] = [];
 
@@ -795,8 +863,8 @@ export class DiagnoseReportBuilder {
     }
 
     for (const suggestion of suggestions) {
-      this.reportSections.push(`- ${suggestion}`);
+      this.reportBuilder.addListItem(suggestion);
     }
-    this.reportSections.push('');
+    this.reportBuilder.addEmptyLine();
   }
 }

@@ -38,6 +38,10 @@ type OperationError = {
 import { UnifiedDiagnosticSystem } from '../diagnostics/unified-system.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import type { Tab } from '../tab.js';
+import {
+  DiagnosticReportBuilder,
+  FormatUtils,
+} from '../utils/reportBuilder.js';
 import { defineTabTool } from './tool.js';
 
 const findElementsSchema = z
@@ -303,23 +307,27 @@ function buildErrorMessage(errorInfo?: OperationError): string {
 }
 
 function formatElementResults(alternatives: ElementAlternative[]): string[] {
-  const resultsText = [
-    `Found ${alternatives.length} elements matching the criteria:`,
-    '',
-  ];
+  const builder = new DiagnosticReportBuilder();
+
+  builder.addLine(
+    `Found ${alternatives.length} elements matching the criteria:`
+  );
+  builder.addEmptyLine();
 
   for (const [index, alt] of alternatives.entries()) {
-    resultsText.push(`${index + 1}. Selector: ${alt.selector}`);
-    resultsText.push(`   Confidence: ${(alt.confidence * 100).toFixed(0)}%`);
-    resultsText.push(
+    builder.addLine(`${index + 1}. Selector: ${alt.selector}`);
+    builder.addLine(
+      `   Confidence: ${FormatUtils.formatConfidence(alt.confidence)}`
+    );
+    builder.addLine(
       `   Reason: ${(alt as ElementAlternative & { reason?: string }).reason || 'No reason provided'}`
     );
     if (index < alternatives.length - 1) {
-      resultsText.push('');
+      builder.addEmptyLine();
     }
   }
 
-  return resultsText;
+  return builder.getSections();
 }
 
 async function addDiagnosticInfoIfRequested(
@@ -343,19 +351,23 @@ async function addUnifiedDiagnosticInfo(
   resultsText: string[]
 ): Promise<void> {
   const diagResult = await unifiedSystem.analyzePageStructure();
+  const builder = new DiagnosticReportBuilder();
 
   if (diagResult.success) {
     const diagnosticInfo = diagResult.data as DiagnosticInfo;
-    resultsText.push('', '### Enhanced Diagnostic Information');
-    resultsText.push(`- Analysis time: ${diagResult.executionTime || 0}ms`);
-
-    addStructuralDiagnosticInfo(diagnosticInfo, resultsText);
+    builder.addSection('Enhanced Diagnostic Information', (b) => {
+      b.addKeyValue('Analysis time', `${diagResult.executionTime || 0}ms`);
+      addStructuralDiagnosticInfo(diagnosticInfo, b.getSections());
+    });
   } else {
-    resultsText.push('', '### Diagnostic Information');
-    resultsText.push(
-      `- Error getting diagnostic information: ${diagResult.error?.message || 'Unknown error'}`
-    );
+    builder.addSection('Diagnostic Information', (b) => {
+      b.addListItem(
+        `Error getting diagnostic information: ${diagResult.error?.message || 'Unknown error'}`
+      );
+    });
   }
+
+  resultsText.push('', ...builder.getSections());
 }
 
 function addStructuralDiagnosticInfo(
@@ -460,22 +472,26 @@ function addPerformanceInfoIfAvailable(
     return;
   }
 
-  resultsText.push('');
-  resultsText.push('### Enhanced Discovery Information');
-  resultsText.push(
-    `- Discovery execution time: ${context.operationResult.executionTime || 0}ms`
-  );
-
-  if (
-    context.operationResult.executionTime &&
-    context.operationResult.executionTime > context.performanceThreshold
-  ) {
-    resultsText.push(
-      `- ⚠️ Discovery exceeded performance threshold (${context.performanceThreshold}ms)`
+  const builder = new DiagnosticReportBuilder();
+  builder.addSection('Enhanced Discovery Information', (b) => {
+    b.addKeyValue(
+      'Discovery execution time',
+      `${context.operationResult?.executionTime || 0}ms`
     );
-  } else {
-    resultsText.push('- ✅ Discovery within performance threshold');
-  }
+
+    if (
+      context.operationResult?.executionTime &&
+      context.operationResult?.executionTime > context.performanceThreshold
+    ) {
+      b.addListItem(
+        `⚠️ Discovery exceeded performance threshold (${context.performanceThreshold}ms)`
+      );
+    } else {
+      b.addListItem('✅ Discovery within performance threshold');
+    }
+  });
+
+  resultsText.push('', ...builder.getSections());
 }
 
 let contextInstance: FindElementsContext | null = null;

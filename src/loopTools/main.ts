@@ -17,7 +17,7 @@ class LoopToolsServerBackend implements ServerBackend {
   readonly version = packageJSON.version;
   private _config: FullConfig;
   private _context: Context | undefined;
-  private _tools = [perform, snapshot];
+  private readonly _tools = [perform, snapshot];
   constructor(config: FullConfig) {
     this._config = config;
   }

@@ -39,7 +39,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   > = new Map();
   private readonly _onPageClose: (tab: Tab) => void;
   private _modalStates: ModalState[] = [];
-  private _downloads: {
+  private readonly _downloads: {
     download: playwright.Download;
     finished: boolean;
     outputFile: string;

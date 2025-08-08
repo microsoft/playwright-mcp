@@ -34,7 +34,8 @@ export class DiagnoseConfigHandler {
     try {
       const thresholdsManager = getCurrentThresholds();
       return thresholdsManager.getConfigDiagnostics();
-    } catch (_error) {
+    } catch (error) {
+      console.warn('Configuration validation failed:', error);
       return {
         status: 'failed',
         warnings: [

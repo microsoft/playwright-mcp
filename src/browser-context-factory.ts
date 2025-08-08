@@ -191,7 +191,7 @@ class PersistentContextFactory implements BrowserContextFactory {
   readonly config: FullConfig;
   readonly name = 'persistent';
   readonly description = 'Create a new persistent browser context';
-  private _userDataDirs = new Set<string>();
+  private readonly _userDataDirs = new Set<string>();
   constructor(config: FullConfig) {
     this.config = config;
   }
