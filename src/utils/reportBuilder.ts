@@ -280,12 +280,8 @@ export function formatDuration(ms: number): string {
   return `${minutes}m ${seconds}s`;
 }
 
-/**
- * Format confidence percentage
- */
-export function formatConfidencePercentage(confidence: number): string {
-  return `${Math.round(confidence * 100)}%`;
-}
+// Re-export formatConfidence from commonFormatters to avoid duplication
+export { formatConfidence as formatConfidencePercentage } from './commonFormatters.js';
 
 /**
  * Generate performance indicator icons

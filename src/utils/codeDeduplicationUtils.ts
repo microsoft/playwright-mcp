@@ -167,27 +167,7 @@ export function joinLines(lines: string[]): string {
   return lines.join('\n');
 }
 
-/**
- * Format confidence as percentage
- */
-export function formatConfidence(confidence: number): string {
-  return `${Math.round(confidence * 100)}%`;
-}
-
-/**
- * Format execution time with appropriate units
- */
-export function formatExecutionTime(ms: number): string {
-  if (ms < 1000) {
-    return `${Math.round(ms)}ms`;
-  }
-  if (ms < 60_000) {
-    return `${(ms / 1000).toFixed(1)}s`;
-  }
-  const minutes = Math.floor(ms / 60_000);
-  const seconds = Math.round((ms % 60_000) / 1000);
-  return `${minutes}m ${seconds}s`;
-}
+// formatConfidence and formatExecutionTime moved to commonFormatters.ts to avoid duplication
 
 /**
  * Truncate text at word boundaries
