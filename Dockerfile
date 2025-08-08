@@ -16,7 +16,7 @@ WORKDIR /app
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
-  npm ci --omit=dev && \
+  npm ci --omit=dev --ignore-scripts && \
   # Install system dependencies for playwright
   npx -y playwright-core install-deps chromium
 
@@ -28,7 +28,7 @@ FROM base AS builder
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
-  npm ci
+  npm ci --ignore-scripts
 
 # Copy the rest of the app
 COPY *.json *.js *.ts .

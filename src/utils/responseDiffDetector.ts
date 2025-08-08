@@ -74,18 +74,17 @@ export class ResponseDiffDetector {
 
       // Format the diff based on requested format
       switch (options.format) {
-        case 'unified':
-        default:
-          formattedDiff = this.formatter.formatUnified(
-            diffSegments,
-            options.context
-          );
-          break;
         case 'split':
           formattedDiff = this.formatter.formatSplit(diffSegments);
           break;
         case 'minimal':
           formattedDiff = this.formatter.formatMinimal(diffSegments);
+          break;
+        default:
+          formattedDiff = this.formatter.formatUnified(
+            diffSegments,
+            options.context
+          );
           break;
       }
 

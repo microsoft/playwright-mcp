@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import child_process from 'node:child_process';
 import fs from 'node:fs/promises';
 import { expect, test } from './fixtures.js';
@@ -25,6 +26,7 @@ test(
       description: 'https://github.com/microsoft/playwright-mcp/issues/456',
     },
   },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async ({}, testInfo) => {
     const file = testInfo.outputPath('main.cjs');
     const projectRoot = process.cwd();

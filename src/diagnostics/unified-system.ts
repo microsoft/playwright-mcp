@@ -291,18 +291,18 @@ export class UnifiedDiagnosticSystem {
       if (error instanceof DiagnosticError) {
         enhancedDiagnosticError = error;
       } else {
-        const baseError = error instanceof Error 
-          ? error 
-          : new Error(getErrorMessage(error));
+        const baseError =
+          error instanceof Error ? error : new Error(getErrorMessage(error));
         enhancedDiagnosticError = DiagnosticError.from(
           baseError,
           component,
           operation,
           {
-                executionTime,
-                timestamp: startTime,
-              }
-            );
+            executionTime,
+            timestamp: startTime,
+          }
+        );
+      }
 
       // Apply error enrichment if enabled
       let enrichedError = enhancedDiagnosticError;

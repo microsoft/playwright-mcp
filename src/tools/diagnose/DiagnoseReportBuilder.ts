@@ -126,7 +126,7 @@ export class DiagnoseReportBuilder {
   }
 
   private addKeyValuePairs(
-    pairs: Array<[string, string | number]>,
+    pairs: [string, string | number][],
     headerText?: string,
     subHeaderText?: string,
     headerLevel = 2
@@ -151,7 +151,9 @@ export class DiagnoseReportBuilder {
     formatter: (item: T) => string,
     headerLevel = 2
   ): void {
-    if (!items?.length) return;
+    if (!items?.length) {
+      return;
+    }
 
     this.reportBuilder.addSection(
       title,
@@ -189,7 +191,9 @@ export class DiagnoseReportBuilder {
     formatter: (element: T, index: number) => string,
     maxItems = 5
   ): void {
-    if (!elements?.length) return;
+    if (!elements?.length) {
+      return;
+    }
 
     this.reportBuilder.addEmptyLine().addLine(`**${title}:**`);
 
@@ -370,7 +374,9 @@ export class DiagnoseReportBuilder {
       (val: number) => val > 0
     );
 
-    if (!hasActualData) return;
+    if (!hasActualData) {
+      return;
+    }
 
     this.reportBuilder
       .addEmptyLine()
@@ -401,7 +407,9 @@ export class DiagnoseReportBuilder {
   }
 
   private addAppliedOverridesDetails(configReport: ConfigReport): void {
-    if (configReport.appliedOverrides.length === 0) return;
+    if (configReport.appliedOverrides.length === 0) {
+      return;
+    }
 
     this.reportBuilder
       .addEmptyLine()
@@ -423,7 +431,9 @@ export class DiagnoseReportBuilder {
     const highPriorityRecs = configReport.recommendations.filter(
       (r) => r.priority === 'high'
     );
-    if (highPriorityRecs.length === 0) return;
+    if (highPriorityRecs.length === 0) {
+      return;
+    }
 
     this.reportBuilder
       .addEmptyLine()
@@ -463,7 +473,7 @@ export class DiagnoseReportBuilder {
       : 'Page Diagnostic Report';
     const url = this.tab.page.url();
 
-    const basicKeyValues: Array<[string, string | number]> = [['URL', url]];
+    const basicKeyValues: [string, string | number][] = [['URL', url]];
 
     if (!isBasic) {
       basicKeyValues.push(['Title', await this.tab.page.title()]);
@@ -481,7 +491,7 @@ export class DiagnoseReportBuilder {
   private addBasicDiagnosticInfo(diagnosticInfo: PageStructureAnalysis): void {
     this.reportBuilder.addHeader('Critical Information', 2);
 
-    const criticalInfo: Array<[string, string | number, boolean]> = [
+    const criticalInfo: [string, string | number, boolean][] = [
       [
         'IFrames detected',
         diagnosticInfo.iframes.count,
@@ -513,7 +523,7 @@ export class DiagnoseReportBuilder {
   ): void {
     this.reportBuilder.addHeader('Page Structure Analysis', 2);
 
-    const structureData = [
+    const structureData: [string, string | number][] = [
       [
         'IFrames',
         `${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`,
@@ -524,7 +534,7 @@ export class DiagnoseReportBuilder {
 
     this.addKeyValuePairs(structureData);
 
-    const elementData = [
+    const elementData: [string, string | number][] = [
       ['Total visible elements', diagnosticInfo.elements.totalVisible],
       [
         'Total interactable elements',
@@ -648,7 +658,7 @@ export class DiagnoseReportBuilder {
   }
 
   private addLayoutMetrics(metrics: PageMetrics): void {
-    const layoutData: Array<[string, number]> = [
+    const layoutData: [string, number][] = [
       [
         'Fixed position elements',
         metrics?.layoutMetrics?.fixedElements?.length || 0,
@@ -743,7 +753,9 @@ export class DiagnoseReportBuilder {
     diagnosticInfo: PageStructureAnalysis,
     options: ReportOptions
   ): Promise<void> {
-    if (!this.shouldIncludeSection(options, 'accessibility')) return;
+    if (!this.shouldIncludeSection(options, 'accessibility')) {
+      return;
+    }
 
     const a11yMetrics = await this.tab.page.evaluate(() => {
       const headings = document.querySelectorAll(
@@ -758,7 +770,7 @@ export class DiagnoseReportBuilder {
       return { headings, landmarks, imagesWithAlt: altTexts, totalImages };
     });
 
-    const a11yData: Array<[string, string | number]> = [
+    const a11yData: [string, string | number][] = [
       [
         'Elements with missing ARIA labels',
         diagnosticInfo.elements.missingAria,
@@ -778,7 +790,9 @@ export class DiagnoseReportBuilder {
     diagnosticInfo: PageStructureAnalysis,
     options: ReportOptions
   ): void {
-    if (!this.shouldIncludeSection(options, 'troubleshooting')) return;
+    if (!this.shouldIncludeSection(options, 'troubleshooting')) {
+      return;
+    }
 
     this.reportBuilder.addHeader('Troubleshooting Suggestions', 2);
 

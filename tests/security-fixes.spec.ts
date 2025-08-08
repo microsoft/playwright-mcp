@@ -2,7 +2,6 @@
  * Security fixes validation tests
  */
 
-import child_process from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
@@ -31,7 +30,8 @@ test.describe('Security Fixes Validation', () => {
 
     // Should use array form: execSync('node', [file])
     expect(libraryContent).toContain("execSync('node', [file]");
-    expect(libraryContent).not.toContain('execSync(`node ${file}`');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: Testing for template string pattern
+    expect(libraryContent).not.toContain('execSync(`node ${file}`)');
 
     // Check update-readme.js uses secure options
     const updateReadmePath = path.join(process.cwd(), 'utils/update-readme.js');

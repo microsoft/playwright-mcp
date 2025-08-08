@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -130,7 +131,9 @@ export const test = (baseTest as any).extend({
 
       client = new Client(
         { name: options?.clientName ?? 'test', version: '1.0.0' },
-        options?.roots ? { capabilities: { roots: {} } } : undefined
+        options?.roots
+          ? { capabilities: { roots: Object.create(null) } }
+          : undefined
       );
       if (options?.roots) {
         client.setRequestHandler(ListRootsRequestSchema, (_request) => {
@@ -189,7 +192,8 @@ export const test = (baseTest as any).extend({
     await client?.close();
   },
 
-  wsEndpoint: async ({}: any, use: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  wsEndpoint: async (_: any, use: any) => {
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
@@ -229,7 +233,8 @@ export const test = (baseTest as any).extend({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    async ({}: any, use: any, workerInfo: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async (_: any, use: any, workerInfo: any) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 

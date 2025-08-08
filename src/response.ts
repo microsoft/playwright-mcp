@@ -190,7 +190,9 @@ export class Response {
       this._expectation.consoleOptions
     );
 
-    if (!filteredMessages.length) return null;
+    if (!filteredMessages.length) {
+      return null;
+    }
 
     return this.buildSection('New console messages', (b) => {
       for (const message of filteredMessages) {
@@ -239,7 +241,10 @@ export class Response {
     messages: ConsoleMessage[],
     options?: NonNullable<ExpectationOptions>['consoleOptions']
   ): ConsoleMessage[] {
-    return this._applyConsoleFilters(messages, options ?? {});
+    return this._applyConsoleFilters(
+      messages,
+      options ?? { maxMessages: 10, removeDuplicates: false }
+    );
   }
 
   private _applyConsoleFilters(
@@ -254,7 +259,9 @@ export class Response {
     messages: ConsoleMessage[],
     levels?: ('log' | 'warn' | 'error' | 'info')[]
   ): ConsoleMessage[] {
-    if (!levels?.length) return messages;
+    if (!levels?.length) {
+      return messages;
+    }
 
     return messages.filter((msg) => {
       const level = (msg.type || 'log') as 'log' | 'warn' | 'error' | 'info';
@@ -384,7 +391,9 @@ export class Response {
       this._expectation.consoleOptions
     );
 
-    if (!filteredMessages.length) return null;
+    if (!filteredMessages.length) {
+      return null;
+    }
 
     const messageLines = filteredMessages.map((msg) => `- ${msg.toString()}`);
     return ['### Console Messages', ...messageLines].join('\n');
@@ -592,6 +601,7 @@ export class Response {
     const startTime = Date.now();
 
     while (Date.now() - startTime < stabilityTimeout) {
+      // biome-ignore lint/nursery/noAwaitInLoop: Sequential stability checking is required
       if (await this._checkPageStability(tab)) {
         await new Promise((resolve) => setTimeout(resolve, 200));
         return;
@@ -602,11 +612,10 @@ export class Response {
 
   private async _checkPageStability(tab: Tab): Promise<boolean> {
     try {
-      // biome-ignore lint/nursery/noAwaitInLoop: Sequential stability checking is required
       await tab.waitForLoadState('load', { timeout: 1000 });
-      await tab
-        .waitForLoadState('networkidle', { timeout: 500 })
-        .catch(() => {});
+      await tab.waitForLoadState('networkidle', { timeout: 500 }).catch(() => {
+        // Ignore networkidle timeout as it's not critical for stability check
+      });
 
       return await tab.page
         .evaluate(() => document.readyState === 'complete')
