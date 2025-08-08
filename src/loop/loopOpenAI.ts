@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type OpenAI from 'openai';
 import type {
@@ -143,7 +142,7 @@ export class OpenAIDelegate implements LLMDelegate {
   }
   checkDoneToolCall(toolCall: LLMToolCall): string | null {
     if (toolCall.name === 'done') {
-      return toolCall.arguments.result;
+      return (toolCall.arguments as { result?: string }).result || '';
     }
     return null;
   }

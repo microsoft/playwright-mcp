@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DiagnosticThresholds - Diagnostic system threshold management class
  * Centralizes all hardcoded thresholds
@@ -132,67 +131,41 @@ export class DiagnosticThresholds {
     const thresholds = this.currentThresholds;
     return {
       executionTime: {
-        pageAnalysis: (thresholds.executionTime?.pageAnalysis ??
-          DEFAULT_THRESHOLDS.executionTime.pageAnalysis) as number,
-        elementDiscovery: (thresholds.executionTime?.elementDiscovery ??
-          DEFAULT_THRESHOLDS.executionTime.elementDiscovery) as number,
-        resourceMonitoring: (thresholds.executionTime?.resourceMonitoring ??
-          DEFAULT_THRESHOLDS.executionTime.resourceMonitoring) as number,
-        parallelAnalysis: (thresholds.executionTime?.parallelAnalysis ??
-          DEFAULT_THRESHOLDS.executionTime.parallelAnalysis) as number,
+        pageAnalysis: thresholds.executionTime.pageAnalysis!,
+        elementDiscovery: thresholds.executionTime.elementDiscovery!,
+        resourceMonitoring: thresholds.executionTime.resourceMonitoring!,
+        parallelAnalysis: thresholds.executionTime.parallelAnalysis!,
       },
       memory: {
-        maxMemoryUsage: (thresholds.memory?.maxMemoryUsage ??
-          DEFAULT_THRESHOLDS.memory.maxMemoryUsage) as number,
-        memoryLeakThreshold: (thresholds.memory?.memoryLeakThreshold ??
-          DEFAULT_THRESHOLDS.memory.memoryLeakThreshold) as number,
-        gcTriggerThreshold: (thresholds.memory?.gcTriggerThreshold ??
-          DEFAULT_THRESHOLDS.memory.gcTriggerThreshold) as number,
+        maxMemoryUsage: thresholds.memory.maxMemoryUsage!,
+        memoryLeakThreshold: thresholds.memory.memoryLeakThreshold!,
+        gcTriggerThreshold: thresholds.memory.gcTriggerThreshold!,
       },
       performance: {
-        domElementLimit: (thresholds.performance?.domElementLimit ??
-          DEFAULT_THRESHOLDS.performance.domElementLimit) as number,
-        maxDepthLimit: (thresholds.performance?.maxDepthLimit ??
-          DEFAULT_THRESHOLDS.performance.maxDepthLimit) as number,
-        largeSubtreeThreshold: (thresholds.performance?.largeSubtreeThreshold ??
-          DEFAULT_THRESHOLDS.performance.largeSubtreeThreshold) as number,
+        domElementLimit: thresholds.performance.domElementLimit!,
+        maxDepthLimit: thresholds.performance.maxDepthLimit!,
+        largeSubtreeThreshold: thresholds.performance.largeSubtreeThreshold!,
       },
       dom: {
-        totalElements: (thresholds.dom?.totalElements ??
-          DEFAULT_THRESHOLDS.dom.totalElements) as number,
-        maxDepth: (thresholds.dom?.maxDepth ??
-          DEFAULT_THRESHOLDS.dom.maxDepth) as number,
-        largeSubtrees: (thresholds.dom?.largeSubtrees ??
-          DEFAULT_THRESHOLDS.dom.largeSubtrees) as number,
-        elementsWarning: (thresholds.dom?.elementsWarning ??
-          DEFAULT_THRESHOLDS.dom.elementsWarning) as number,
-        elementsDanger: (thresholds.dom?.elementsDanger ??
-          DEFAULT_THRESHOLDS.dom.elementsDanger) as number,
-        depthWarning: (thresholds.dom?.depthWarning ??
-          DEFAULT_THRESHOLDS.dom.depthWarning) as number,
-        depthDanger: (thresholds.dom?.depthDanger ??
-          DEFAULT_THRESHOLDS.dom.depthDanger) as number,
-        largeSubtreeThreshold: (thresholds.dom?.largeSubtreeThreshold ??
-          DEFAULT_THRESHOLDS.dom.largeSubtreeThreshold) as number,
+        totalElements: thresholds.dom.totalElements!,
+        maxDepth: thresholds.dom.maxDepth!,
+        largeSubtrees: thresholds.dom.largeSubtrees!,
+        elementsWarning: thresholds.dom.elementsWarning!,
+        elementsDanger: thresholds.dom.elementsDanger!,
+        depthWarning: thresholds.dom.depthWarning!,
+        depthDanger: thresholds.dom.depthDanger!,
+        largeSubtreeThreshold: thresholds.dom.largeSubtreeThreshold!,
       },
       interaction: {
-        clickableElements: (thresholds.interaction?.clickableElements ??
-          DEFAULT_THRESHOLDS.interaction.clickableElements) as number,
-        formElements: (thresholds.interaction?.formElements ??
-          DEFAULT_THRESHOLDS.interaction.formElements) as number,
-        clickableHigh: (thresholds.interaction?.clickableHigh ??
-          DEFAULT_THRESHOLDS.interaction.clickableHigh) as number,
+        clickableElements: thresholds.interaction.clickableElements!,
+        formElements: thresholds.interaction.formElements!,
+        clickableHigh: thresholds.interaction.clickableHigh!,
       },
       layout: {
-        fixedElements: (thresholds.layout?.fixedElements ??
-          DEFAULT_THRESHOLDS.layout.fixedElements) as number,
-        highZIndexElements: (thresholds.layout?.highZIndexElements ??
-          DEFAULT_THRESHOLDS.layout.highZIndexElements) as number,
-        highZIndexThreshold: (thresholds.layout?.highZIndexThreshold ??
-          DEFAULT_THRESHOLDS.layout.highZIndexThreshold) as number,
-        excessiveZIndexThreshold: (thresholds.layout
-          ?.excessiveZIndexThreshold ??
-          DEFAULT_THRESHOLDS.layout.excessiveZIndexThreshold) as number,
+        fixedElements: thresholds.layout.fixedElements!,
+        highZIndexElements: thresholds.layout.highZIndexElements!,
+        highZIndexThreshold: thresholds.layout.highZIndexThreshold!,
+        excessiveZIndexThreshold: thresholds.layout.excessiveZIndexThreshold!,
       },
     };
   }
@@ -228,11 +201,8 @@ export class DiagnosticThresholds {
    * Update thresholds at runtime
    */
   updateThresholds(partialConfig: DiagnosticThresholdsConfig): void {
-    const mergedConfig = this.mergeWithDefaults(partialConfig);
-    const updatedThresholds =
-      mergedConfig as Required<DiagnosticThresholdsConfig>;
-    this.validateThresholds(updatedThresholds);
-    this.currentThresholds = updatedThresholds;
+    this.currentThresholds = this.mergeWithDefaults(partialConfig);
+    this.validateThresholds(this.currentThresholds);
   }
 
   /**
@@ -407,125 +377,82 @@ export class DiagnosticThresholds {
   ): void {
     const errors: string[] = [];
 
-    const exec = thresholds.executionTime ?? {};
-    const mem = thresholds.memory ?? {};
-    const dom = thresholds.dom ?? {};
-    const inter = thresholds.interaction ?? {};
-    const layout = thresholds.layout ?? {};
+    const exec = thresholds.executionTime;
+    const mem = thresholds.memory;
+    const dom = thresholds.dom;
+    const inter = thresholds.interaction;
+    const layout = thresholds.layout;
 
     // Validate execution time thresholds
-    if (
-      (exec.pageAnalysis ?? DEFAULT_THRESHOLDS.executionTime.pageAnalysis) <= 0
-    ) {
+    if (exec.pageAnalysis! <= 0) {
       errors.push('pageAnalysis execution time must be positive');
     }
 
-    if (
-      (exec.elementDiscovery ??
-        DEFAULT_THRESHOLDS.executionTime.elementDiscovery) <= 0
-    ) {
+    if (exec.elementDiscovery! <= 0) {
       errors.push('elementDiscovery execution time must be positive');
     }
 
-    if (
-      (exec.resourceMonitoring ??
-        DEFAULT_THRESHOLDS.executionTime.resourceMonitoring) <= 0
-    ) {
+    if (exec.resourceMonitoring! <= 0) {
       errors.push('resourceMonitoring execution time must be positive');
     }
 
-    if (
-      (exec.parallelAnalysis ??
-        DEFAULT_THRESHOLDS.executionTime.parallelAnalysis) <= 0
-    ) {
+    if (exec.parallelAnalysis! <= 0) {
       errors.push('parallelAnalysis execution time must be positive');
     }
 
     // Validate memory thresholds
-    if ((mem.maxMemoryUsage ?? DEFAULT_THRESHOLDS.memory.maxMemoryUsage) <= 0) {
+    if (mem.maxMemoryUsage! <= 0) {
       errors.push('maxMemoryUsage must be positive');
     }
 
-    if (
-      (mem.memoryLeakThreshold ??
-        DEFAULT_THRESHOLDS.memory.memoryLeakThreshold) <= 0
-    ) {
+    if (mem.memoryLeakThreshold! <= 0) {
       errors.push('memoryLeakThreshold must be positive');
     }
 
-    if (
-      (mem.gcTriggerThreshold ??
-        DEFAULT_THRESHOLDS.memory.gcTriggerThreshold) <= 0
-    ) {
+    if (mem.gcTriggerThreshold! <= 0) {
       errors.push('gcTriggerThreshold must be positive');
     }
 
-    if (
-      (mem.memoryLeakThreshold ??
-        DEFAULT_THRESHOLDS.memory.memoryLeakThreshold) >=
-      (mem.maxMemoryUsage ?? DEFAULT_THRESHOLDS.memory.maxMemoryUsage)
-    ) {
+    if (mem.memoryLeakThreshold! >= mem.maxMemoryUsage!) {
       errors.push('memoryLeakThreshold should be less than maxMemoryUsage');
     }
 
     // Validate DOM thresholds
-    if ((dom.elementsWarning ?? DEFAULT_THRESHOLDS.dom.elementsWarning) <= 0) {
+    if (dom.elementsWarning! <= 0) {
       errors.push('elementsWarning must be positive');
     }
 
-    if (
-      (dom.elementsDanger ?? DEFAULT_THRESHOLDS.dom.elementsDanger) <=
-      (dom.elementsWarning ?? DEFAULT_THRESHOLDS.dom.elementsWarning)
-    ) {
+    if (dom.elementsDanger! <= dom.elementsWarning!) {
       errors.push('elementsDanger must be greater than elementsWarning');
     }
 
-    if ((dom.depthWarning ?? DEFAULT_THRESHOLDS.dom.depthWarning) <= 0) {
+    if (dom.depthWarning! <= 0) {
       errors.push('depthWarning must be positive');
     }
 
-    if (
-      (dom.depthDanger ?? DEFAULT_THRESHOLDS.dom.depthDanger) <=
-      (dom.depthWarning ?? DEFAULT_THRESHOLDS.dom.depthWarning)
-    ) {
+    if (dom.depthDanger! <= dom.depthWarning!) {
       errors.push('depthDanger must be greater than depthWarning');
     }
 
-    if (
-      (dom.largeSubtreeThreshold ??
-        DEFAULT_THRESHOLDS.dom.largeSubtreeThreshold) <= 0
-    ) {
+    if (dom.largeSubtreeThreshold! <= 0) {
       errors.push('largeSubtreeThreshold must be positive');
     }
 
     // Validate interaction thresholds
-    if (
-      (inter.clickableElements ??
-        DEFAULT_THRESHOLDS.interaction.clickableElements) <= 0
-    ) {
+    if (inter.clickableElements! <= 0) {
       errors.push('clickableElements threshold must be positive');
     }
 
-    if (
-      (inter.formElements ?? DEFAULT_THRESHOLDS.interaction.formElements) <= 0
-    ) {
+    if (inter.formElements! <= 0) {
       errors.push('formElements threshold must be positive');
     }
 
     // Validate layout thresholds
-    if (
-      (layout.highZIndexThreshold ??
-        DEFAULT_THRESHOLDS.layout.highZIndexThreshold) <= 0
-    ) {
+    if (layout.highZIndexThreshold! <= 0) {
       errors.push('highZIndexThreshold must be positive');
     }
 
-    if (
-      (layout.excessiveZIndexThreshold ??
-        DEFAULT_THRESHOLDS.layout.excessiveZIndexThreshold) <=
-      (layout.highZIndexThreshold ??
-        DEFAULT_THRESHOLDS.layout.highZIndexThreshold)
-    ) {
+    if (layout.excessiveZIndexThreshold! <= layout.highZIndexThreshold!) {
       errors.push(
         'excessiveZIndexThreshold must be greater than highZIndexThreshold'
       );
@@ -554,31 +481,31 @@ export class DiagnosticThresholds {
     const current = this.currentThresholds;
 
     // Type-safe comparisons using local variables
-    const currentDom = current.dom ?? {};
+    const currentDom = current.dom;
     const defaultsDom = defaults.dom;
-    const currentLayout = current.layout ?? {};
+    const currentLayout = current.layout;
     const defaultsLayout = defaults.layout;
 
     // Detect DOM threshold customizations
-    if (currentDom.elementsWarning !== defaultsDom.elementsWarning) {
+    if (currentDom.elementsWarning! !== defaultsDom.elementsWarning) {
       customizations.push(
         `DOM elements warning: ${currentDom.elementsWarning} (default: ${defaultsDom.elementsWarning})`
       );
     }
 
-    if (currentDom.elementsDanger !== defaultsDom.elementsDanger) {
+    if (currentDom.elementsDanger! !== defaultsDom.elementsDanger) {
       customizations.push(
         `DOM elements danger: ${currentDom.elementsDanger} (default: ${defaultsDom.elementsDanger})`
       );
     }
 
-    if (currentDom.depthWarning !== defaultsDom.depthWarning) {
+    if (currentDom.depthWarning! !== defaultsDom.depthWarning) {
       customizations.push(
         `DOM depth warning: ${currentDom.depthWarning} (default: ${defaultsDom.depthWarning})`
       );
     }
 
-    if (currentDom.depthDanger !== defaultsDom.depthDanger) {
+    if (currentDom.depthDanger! !== defaultsDom.depthDanger) {
       customizations.push(
         `DOM depth danger: ${currentDom.depthDanger} (default: ${defaultsDom.depthDanger})`
       );
@@ -586,7 +513,7 @@ export class DiagnosticThresholds {
 
     // Detect layout threshold customizations
     if (
-      currentLayout.excessiveZIndexThreshold !==
+      currentLayout.excessiveZIndexThreshold! !==
       defaultsLayout.excessiveZIndexThreshold
     ) {
       customizations.push(
@@ -595,25 +522,19 @@ export class DiagnosticThresholds {
     }
 
     // Determine warning level
-    if (
-      (currentDom.elementsWarning ?? DEFAULT_THRESHOLDS.dom.elementsWarning) >
-      2000
-    ) {
+    if (currentDom.elementsWarning! > 2000) {
       warnings.push(
         'DOM elements warning threshold is very high - may not catch performance issues early'
       );
     }
 
-    if ((currentDom.depthWarning ?? DEFAULT_THRESHOLDS.dom.depthWarning) > 25) {
+    if (currentDom.depthWarning! > 25) {
       warnings.push(
         'DOM depth warning threshold is very high - deeply nested structures may cause performance issues'
       );
     }
 
-    if (
-      (currentLayout.excessiveZIndexThreshold ??
-        DEFAULT_THRESHOLDS.layout.excessiveZIndexThreshold) < 1000
-    ) {
+    if (currentLayout.excessiveZIndexThreshold! < 1000) {
       warnings.push(
         'Excessive z-index threshold is low - may generate false positives'
       );

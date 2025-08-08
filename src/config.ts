@@ -1,7 +1,6 @@
-// @ts-nocheck
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { promises as fsPromises } from 'node:fs';
+import { platform, tmpdir } from 'node:os';
+import { join as pathJoin } from 'node:path';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';
 import { devices } from 'playwright';
 import type { Config, ToolCapability } from '../config.js';
@@ -38,7 +37,7 @@ const defaultConfig: FullConfig = {
     browserName: 'chromium',
     launchOptions: {
       channel: 'chrome',
-      headless: os.platform() === 'linux' && !process.env.DISPLAY,
+      headless: platform() === 'linux' && !process.env.DISPLAY,
       chromiumSandbox: true,
     },
     contextOptions: {
@@ -259,7 +258,7 @@ async function loadConfig(configFile: string | undefined): Promise<Config> {
     return {};
   }
   try {
-    return JSON.parse(await fs.promises.readFile(configFile, 'utf8'));
+    return JSON.parse(await fsPromises.readFile(configFile, 'utf8'));
   } catch (error) {
     throw new Error(`Failed to load config file: ${configFile}, ${error}`);
   }
@@ -271,15 +270,15 @@ export async function outputFile(
 ): Promise<string> {
   const outputDir =
     config.outputDir ??
-    (rootPath ? path.join(rootPath, '.playwright-mcp') : undefined) ??
-    path.join(
-      os.tmpdir(),
+    (rootPath ? pathJoin(rootPath, '.playwright-mcp') : undefined) ??
+    pathJoin(
+      tmpdir(),
       'playwright-mcp-output',
       sanitizeForFilePath(new Date().toISOString())
     );
-  await fs.promises.mkdir(outputDir, { recursive: true });
+  await fsPromises.mkdir(outputDir, { recursive: true });
   const fileName = sanitizeForFilePath(name);
-  return path.join(outputDir, fileName);
+  return pathJoin(outputDir, fileName);
 }
 function pickDefined<T extends object>(obj: T | undefined): Partial<T> {
   return Object.fromEntries(

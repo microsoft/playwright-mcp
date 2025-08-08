@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Base class for diagnostic components providing common initialization and cleanup patterns
  */

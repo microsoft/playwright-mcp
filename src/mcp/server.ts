@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type {
@@ -25,7 +24,7 @@ export type ToolResponse = {
   content: (TextContent | ImageContent)[];
   isError?: boolean;
 };
-export type ToolSchema<Input extends z.Schema> = {
+export type ToolSchema<Input extends z.ZodType = z.ZodType<any, any, any>> = {
   name: string;
   title: string;
   description: string;
@@ -40,9 +39,9 @@ export interface ServerBackend {
   name: string;
   version: string;
   initialize?(server: Server): Promise<void>;
-  tools(): ToolSchema<unknown>[];
+  tools(): ToolSchema<any>[];
   callTool(
-    schema: ToolSchema<unknown>,
+    schema: ToolSchema<any>,
     parsedArguments: Record<string, unknown>
   ): Promise<ToolResponse>;
   serverClosed?(): void;
@@ -99,7 +98,7 @@ export function createServer(
     });
     const tool = tools.find(
       (tool) => tool.name === request.params.name
-    ) as ToolSchema<unknown>;
+    ) as ToolSchema<any>;
     if (!tool) {
       return errorResult(`Error: Tool "${request.params.name}" not found`);
     }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type {
   ImageContent,
   TextContent,
@@ -6,7 +5,7 @@ import type {
 import type { Context } from './context.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
 import { mergeExpectations } from './schemas/expectation.js';
-import type { Tab, TabSnapshot } from './tab.js';
+import type { ConsoleMessage, Tab, TabSnapshot } from './tab.js';
 import { renderModalStates } from './tab.js';
 import type { DiffResult } from './types/diff.js';
 import { processImage } from './utils/imageProcessor.js';
@@ -37,7 +36,8 @@ export class Response {
     this.toolName = toolName;
     this.toolArgs = toolArgs;
     // Use expectation from toolArgs if not provided directly
-    const actualExpectation = expectation || toolArgs.expectation;
+    const actualExpectation =
+      expectation || (toolArgs.expectation as ExpectationOptions | undefined);
     this._expectation = mergeExpectations(toolName, actualExpectation);
   }
   addResult(result: string) {
@@ -255,19 +255,17 @@ ${this._code.join('\n')}
     return lines.join('\n');
   }
   private filterConsoleMessages(
-    messages: Array<{
-      type: () => string;
-      text: () => string;
-      toString: () => string;
-    }>,
+    messages: ConsoleMessage[],
     options?: NonNullable<ExpectationOptions>['consoleOptions']
-  ): Array<{ type: () => string; text: () => string; toString: () => string }> {
+  ): ConsoleMessage[] {
     let filtered = messages;
     // Filter by levels if specified
     if (options?.levels && options.levels.length > 0) {
       filtered = filtered.filter((msg) => {
         const level = msg.type || 'log';
-        return options.levels?.includes(level);
+        return options.levels?.includes(
+          level as 'log' | 'warn' | 'error' | 'info'
+        );
       });
     }
     // Limit number of messages
@@ -365,7 +363,7 @@ ${this._code.join('\n')}
         // Success - break out of retry loop
         break;
       } catch (error: unknown) {
-        const errorMessage = error?.message || '';
+        const errorMessage = (error as Error)?.message || '';
         const isContextError =
           errorMessage.includes('Execution context was destroyed') ||
           errorMessage.includes('Target closed') ||

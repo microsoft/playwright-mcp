@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { BrowserServerBackend } from '../browser-server-backend.js';
 import type { FullConfig } from '../config.js';
 import { start } from '../mcp/transport.js';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for diagnostic level control functionality
  */

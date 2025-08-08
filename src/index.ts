@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { BrowserContext } from 'playwright';
 import type { Config } from '../config.js';

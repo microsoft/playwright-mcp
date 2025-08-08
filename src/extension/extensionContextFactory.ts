@@ -1,4 +1,3 @@
-// @ts-nocheck
 import debug from 'debug';
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 import type {

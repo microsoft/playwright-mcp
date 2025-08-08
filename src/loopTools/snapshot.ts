@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 export const snapshot = defineTool({

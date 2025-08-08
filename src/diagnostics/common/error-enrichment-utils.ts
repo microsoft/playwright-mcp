@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Common error enrichment utilities and patterns
  */

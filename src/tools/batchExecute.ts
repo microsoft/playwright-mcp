@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { BatchExecuteOptions, BatchResult } from '../types/batch.js';
 import { batchExecuteSchema } from '../types/batch.js';
 import { defineTool } from './tool.js';
@@ -14,7 +13,7 @@ export const batchExecuteTool = defineTool({
   handle: async (context, params: BatchExecuteOptions, response) => {
     try {
       // Get or create batch executor from context
-      const batchExecutor = context.getBatchExecutor?.();
+      const batchExecutor = context.getBatchExecutor();
       if (!batchExecutor) {
         response.addError(
           'Batch executor not available. Please ensure the browser context is properly initialized.'
@@ -55,7 +54,14 @@ export const batchExecuteTool = defineTool({
       }
       // Add aggregated information from successful steps if any had content
       const successfulStepsWithContent = result.steps.filter(
-        (s) => s.success && s.result?.content?.[0]?.text && !s.result.isError
+        (s) =>
+          s.success &&
+          s.result &&
+          typeof s.result === 'object' &&
+          'content' in s.result &&
+          Array.isArray(s.result.content) &&
+          s.result.content[0]?.text &&
+          !('isError' in s.result && s.result.isError)
       );
       if (
         successfulStepsWithContent.length > 0 &&
@@ -65,7 +71,13 @@ export const batchExecuteTool = defineTool({
         response.addResult('### Final State');
         // Use content from the last successful step that had meaningful output
         const lastStep = successfulStepsWithContent.at(-1);
-        if (lastStep.result?.content?.[0]?.text) {
+        if (
+          lastStep?.result &&
+          typeof lastStep.result === 'object' &&
+          'content' in lastStep.result &&
+          Array.isArray(lastStep.result.content) &&
+          lastStep.result.content[0]?.text
+        ) {
           response.addResult(lastStep.result.content[0].text);
         }
       }

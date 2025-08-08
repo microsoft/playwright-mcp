@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Common performance tracking and metrics collection utility
  */

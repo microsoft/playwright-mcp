@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Unified configuration system for all diagnostic components
  */
@@ -156,26 +155,33 @@ export class SmartConfigManager {
     this.notifyListeners();
   }
 
-  private deepMerge(
-    target: Record<string, unknown>,
-    source: Record<string, unknown>
-  ): Record<string, unknown> {
+  private deepMerge<T extends Record<string, any>>(
+    target: T,
+    source: Partial<T>
+  ): T {
     if (source === null || typeof source !== 'object') {
-      return source;
+      return source as any;
     }
 
     if (Array.isArray(source)) {
-      return [...source];
+      return source as any;
     }
 
     const result = { ...target };
 
     for (const key in source) {
       if (Object.hasOwn(source, key)) {
-        if (typeof source[key] === 'object' && !Array.isArray(source[key])) {
-          result[key] = this.deepMerge(target[key] || {}, source[key]);
+        if (
+          typeof source[key] === 'object' &&
+          source[key] !== null &&
+          !Array.isArray(source[key])
+        ) {
+          result[key] = this.deepMerge(
+            (target[key] as Record<string, any>) || {},
+            source[key] as Record<string, any>
+          ) as any;
         } else {
-          result[key] = source[key];
+          (result as any)[key] = source[key];
         }
       }
     }

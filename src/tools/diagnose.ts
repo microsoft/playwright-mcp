@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * browser_diagnose tool - Comprehensive page diagnostic information
  */
@@ -254,13 +253,17 @@ export const browserDiagnose = defineTabTool({
 
         // Execute analysis using unified system or legacy approach
         let diagnosticInfo: import('../diagnostics/page-analyzer.js').PageStructureAnalysis;
-        let performanceMetrics: import('../types/performance.js').PerformanceMetrics;
-        let systemHealthInfo: {
-          status: string;
-          issues: string[];
-          recommendations: string[];
-          timestamp: number;
-        };
+        let performanceMetrics:
+          | import('../types/performance.js').PerformanceMetrics
+          | undefined;
+        let systemHealthInfo:
+          | {
+              status: string;
+              issues: string[];
+              recommendations: string[];
+              timestamp: number;
+            }
+          | undefined;
 
         if (unifiedSystem) {
           // Use unified system for enhanced analysis with error handling
@@ -286,12 +289,13 @@ export const browserDiagnose = defineTabTool({
           const structureResult =
             await unifiedSystem.analyzePageStructure(useParallelAnalysis);
           if (structureResult.success) {
-            diagnosticInfo = structureResult.data;
+            diagnosticInfo =
+              structureResult.data as import('../diagnostics/page-analyzer.js').PageStructureAnalysis;
 
             if ('structureAnalysis' in diagnosticInfo) {
               // Parallel analysis result
-              performanceMetrics = diagnosticInfo.performanceMetrics;
-              diagnosticInfo = diagnosticInfo.structureAnalysis;
+              performanceMetrics = (diagnosticInfo as any).performanceMetrics;
+              diagnosticInfo = (diagnosticInfo as any).structureAnalysis;
 
               // Executed Enhanced Parallel Analysis
               reportSections.push(
@@ -332,7 +336,11 @@ export const browserDiagnose = defineTabTool({
 
           // Get system health information if requested
           if (includeSystemStats) {
-            systemHealthInfo = await unifiedSystem.performHealthCheck();
+            const healthResult = await unifiedSystem.performHealthCheck();
+            systemHealthInfo = {
+              ...healthResult,
+              timestamp: Date.now(),
+            };
             const systemStats = unifiedSystem.getSystemStats();
 
             reportSections.push('');
@@ -473,7 +481,8 @@ export const browserDiagnose = defineTabTool({
 
           if (parallelRecommendation.recommended || useParallelAnalysis) {
             const parallelResult = await pageAnalyzer.runParallelAnalysis();
-            diagnosticInfo = parallelResult.structureAnalysis;
+            diagnosticInfo =
+              parallelResult.structureAnalysis as import('../diagnostics/page-analyzer.js').PageStructureAnalysis;
             performanceMetrics = parallelResult.performanceMetrics;
 
             // Add parallel analysis info to report
@@ -603,7 +612,7 @@ export const browserDiagnose = defineTabTool({
 
           try {
             // Get comprehensive performance metrics - use parallel analysis data if available
-            let comprehensiveMetrics: unknown;
+            let comprehensiveMetrics: any;
 
             if (performanceMetrics) {
               comprehensiveMetrics = performanceMetrics;
@@ -630,13 +639,13 @@ export const browserDiagnose = defineTabTool({
             reportSections.push('');
             reportSections.push('### DOM Complexity');
             reportSections.push(
-              `- **Total DOM elements:** ${comprehensiveMetrics.domMetrics.totalElements}`
+              `- **Total DOM elements:** ${comprehensiveMetrics?.domMetrics?.totalElements || 0}`
             );
             reportSections.push(
-              `- **Max DOM depth:** ${comprehensiveMetrics.domMetrics.maxDepth} levels`
+              `- **Max DOM depth:** ${comprehensiveMetrics?.domMetrics?.maxDepth || 0} levels`
             );
 
-            if (comprehensiveMetrics.domMetrics.largeSubtrees.length > 0) {
+            if (comprehensiveMetrics?.domMetrics?.largeSubtrees?.length > 0) {
               reportSections.push(
                 `- **Large subtrees detected:** ${comprehensiveMetrics.domMetrics.largeSubtrees.length}`
               );
@@ -656,26 +665,26 @@ export const browserDiagnose = defineTabTool({
             reportSections.push('');
             reportSections.push('### Interaction Elements');
             reportSections.push(
-              `- **Clickable elements:** ${comprehensiveMetrics.interactionMetrics.clickableElements}`
+              `- **Clickable elements:** ${comprehensiveMetrics?.interactionMetrics?.clickableElements || 0}`
             );
             reportSections.push(
-              `- **Form elements:** ${comprehensiveMetrics.interactionMetrics.formElements}`
+              `- **Form elements:** ${comprehensiveMetrics?.interactionMetrics?.formElements || 0}`
             );
             reportSections.push(
-              `- **Disabled elements:** ${comprehensiveMetrics.interactionMetrics.disabledElements}`
+              `- **Disabled elements:** ${comprehensiveMetrics?.interactionMetrics?.disabledElements || 0}`
             );
 
             // Resource Metrics
             reportSections.push('');
             reportSections.push('### Resource Load');
             reportSections.push(
-              `- **Images:** ${comprehensiveMetrics.resourceMetrics.imageCount} (${comprehensiveMetrics.resourceMetrics.estimatedImageSize})`
+              `- **Images:** ${comprehensiveMetrics?.resourceMetrics?.imageCount || 0} (${comprehensiveMetrics?.resourceMetrics?.estimatedImageSize || 'Unknown'})`
             );
             reportSections.push(
-              `- **Script tags:** ${comprehensiveMetrics.resourceMetrics.scriptTags} (${comprehensiveMetrics.resourceMetrics.externalScripts} external, ${comprehensiveMetrics.resourceMetrics.inlineScripts} inline)`
+              `- **Script tags:** ${comprehensiveMetrics?.resourceMetrics?.scriptTags || 0} (${comprehensiveMetrics?.resourceMetrics?.externalScripts || 0} external, ${comprehensiveMetrics?.resourceMetrics?.inlineScripts || 0} inline)`
             );
             reportSections.push(
-              `- **Stylesheets:** ${comprehensiveMetrics.resourceMetrics.stylesheetCount}`
+              `- **Stylesheets:** ${comprehensiveMetrics?.resourceMetrics?.stylesheetCount || 0}`
             );
 
             // Layout Metrics (available in full level only)
@@ -683,16 +692,18 @@ export const browserDiagnose = defineTabTool({
               reportSections.push('');
               reportSections.push('### Layout Analysis');
               reportSections.push(
-                `- **Fixed position elements:** ${comprehensiveMetrics.layoutMetrics.fixedElements.length}`
+                `- **Fixed position elements:** ${comprehensiveMetrics?.layoutMetrics?.fixedElements?.length || 0}`
               );
               reportSections.push(
-                `- **High z-index elements:** ${comprehensiveMetrics.layoutMetrics.highZIndexElements.length}`
+                `- **High z-index elements:** ${comprehensiveMetrics?.layoutMetrics?.highZIndexElements?.length || 0}`
               );
               reportSections.push(
-                `- **Overflow hidden elements:** ${comprehensiveMetrics.layoutMetrics.overflowHiddenElements}`
+                `- **Overflow hidden elements:** ${comprehensiveMetrics?.layoutMetrics?.overflowHiddenElements || 0}`
               );
 
-              if (comprehensiveMetrics.layoutMetrics.fixedElements.length > 0) {
+              if (
+                comprehensiveMetrics?.layoutMetrics?.fixedElements?.length > 0
+              ) {
                 reportSections.push('');
                 reportSections.push('**Fixed Elements:**');
                 for (const [
@@ -708,7 +719,8 @@ export const browserDiagnose = defineTabTool({
               }
 
               if (
-                comprehensiveMetrics.layoutMetrics.highZIndexElements.length > 0
+                comprehensiveMetrics?.layoutMetrics?.highZIndexElements
+                  ?.length > 0
               ) {
                 reportSections.push('');
                 reportSections.push('**High Z-Index Elements:**');
@@ -726,10 +738,10 @@ export const browserDiagnose = defineTabTool({
             }
 
             // Warnings
-            if ((comprehensiveMetrics as any)?.warnings?.length > 0) {
+            if (comprehensiveMetrics?.warnings?.length > 0) {
               reportSections.push('');
               reportSections.push('### Performance Warnings');
-              for (const warning of (comprehensiveMetrics as any).warnings) {
+              for (const warning of comprehensiveMetrics.warnings) {
                 const icon = warning.level === 'danger' ? '🚨' : '⚠️';
                 reportSections.push(
                   `- ${icon} **${warning.type}**: ${warning.message}`

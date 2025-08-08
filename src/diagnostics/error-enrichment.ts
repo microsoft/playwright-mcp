@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Error enrichment with diagnostic information and suggestions
  */

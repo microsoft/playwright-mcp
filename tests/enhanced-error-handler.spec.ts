@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Enhanced Error Handler Tests - Integration of diagnostic systems with error handling
  */

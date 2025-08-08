@@ -49,6 +49,7 @@ export class BenchmarkEngine {
           ? scenario.fastSteps
           : scenario.steps;
 
+      // biome-ignore lint/nursery/noAwaitInLoop: Scenarios must be executed sequentially to prevent interference
       const result = await this.runScenario(serverType, steps);
 
       results.push({
@@ -76,6 +77,7 @@ export class BenchmarkEngine {
     // Steps must run sequentially within each scenario
     for (const step of steps) {
       try {
+        // biome-ignore lint/nursery/noAwaitInLoop: Steps must be executed sequentially within each scenario
         const result = await this.executeStepWithRetry(serverType, step);
         totalSize += result.size;
         totalTokens += result.tokens;

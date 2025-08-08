@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { DiffSegment } from '../types/diff.js';
 
 /**

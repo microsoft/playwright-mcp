@@ -1,6 +1,6 @@
-// @ts-nocheck
 import type * as playwright from 'playwright';
-//
+
+// @ts-expect-error - playwright-core internal module without proper types
 import { asLocator } from 'playwright-core/lib/utils';
 import type { Tab } from '../tab.js';
 export async function waitForCompletion<R>(

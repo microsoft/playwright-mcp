@@ -1,4 +1,3 @@
-// @ts-nocheck
 import dotenv from 'dotenv';
 import type { FullConfig } from '../config.js';
 import type * as mcpServer from '../mcp/server.js';
@@ -19,23 +18,27 @@ class LoopToolsServerBackend implements ServerBackend {
   readonly version = packageJSON.version;
   private _config: FullConfig;
   private _context: Context | undefined;
-  private _tools: Tool<unknown>[] = [perform, snapshot];
+  private _tools: Tool<any>[] = [perform, snapshot];
   constructor(config: FullConfig) {
     this._config = config;
   }
   async initialize() {
     this._context = await Context.create(this._config);
   }
-  tools(): mcpServer.ToolSchema<unknown>[] {
+  tools(): mcpServer.ToolSchema<any>[] {
     return this._tools.map((tool) => tool.schema);
   }
   async callTool(
-    schema: mcpServer.ToolSchema<unknown>,
+    schema: mcpServer.ToolSchema<any>,
     parsedArguments: Record<string, unknown>
   ): Promise<mcpServer.ToolResponse> {
     const tool = this._tools.find((t) => t.schema.name === schema.name);
-    if (!tool) throw new Error(`Tool not found: ${schema.name}`);
-    if (!this._context) throw new Error('Context not initialized');
+    if (!tool) {
+      throw new Error(`Tool not found: ${schema.name}`);
+    }
+    if (!this._context) {
+      throw new Error('Context not initialized');
+    }
     return await tool.handle(this._context, parsedArguments);
   }
   serverClosed() {

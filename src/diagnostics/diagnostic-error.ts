@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Structured error for diagnostic operations with enhanced context
  */

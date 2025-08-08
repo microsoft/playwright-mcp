@@ -1,4 +1,3 @@
-// @ts-nocheck
 import debug from 'debug';
 
 const resourceDebug = debug('pw:mcp:resource');
@@ -56,7 +55,9 @@ export class ResourceManager implements SmartTracker {
   async disposeAll(): Promise<void> {
     const disposePromises: Promise<void>[] = [];
 
-    for (const [id, { resource, disposeMethod }] of this.resources.entries()) {
+    for (const [id, { resource, disposeMethod }] of Array.from(
+      this.resources.entries()
+    )) {
       try {
         if (resource && typeof resource[disposeMethod] === 'function') {
           disposePromises.push(resource[disposeMethod]());
@@ -100,7 +101,7 @@ export class ResourceManager implements SmartTracker {
     const now = Date.now();
     let expiredCount = 0;
 
-    for (const [, { timestamp }] of this.resources.entries()) {
+    for (const [, { timestamp }] of Array.from(this.resources.entries())) {
       if (now - timestamp > this.disposeTimeout) {
         expiredCount++;
       }
@@ -126,7 +127,7 @@ export class ResourceManager implements SmartTracker {
     const now = Date.now();
     const expiredIds: string[] = [];
 
-    for (const [id, { timestamp }] of this.resources.entries()) {
+    for (const [id, { timestamp }] of Array.from(this.resources.entries())) {
       if (now - timestamp > this.disposeTimeout) {
         expiredIds.push(id);
       }

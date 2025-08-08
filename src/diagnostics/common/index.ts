@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Common diagnostic utilities and base classes
  *

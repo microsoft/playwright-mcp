@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * WebSocket server that bridges Playwright MCP and Chrome Extension
  *
@@ -17,6 +16,7 @@ import { logUnhandledError } from '../log.js';
 import { ManualPromise } from '../manualPromise.js';
 
 //
+// @ts-expect-error - playwright internal module
 const { registry } = await import('playwright-core/lib/server/registry/index');
 const debugLogger = debug('pw:mcp:relay');
 // CDP parameter types - using unknown for better type safety
@@ -255,8 +255,10 @@ export class CDPRelayServer {
           break;
         }
         // Simulate auto-attach behavior with real target info
-        const { targetInfo } =
-          await this._extensionConnection?.send('attachToTab');
+        const result = (await this._extensionConnection?.send(
+          'attachToTab'
+        )) as { targetInfo: Record<string, unknown> };
+        const targetInfo = result.targetInfo;
         this._connectedTabInfo = {
           targetInfo,
           sessionId: `pw-tab-${this._nextSessionId++}`,
@@ -356,7 +358,7 @@ class ExtensionConnection {
       parsedJson = JSON.parse(eventData);
     } catch (e: unknown) {
       debugLogger(
-        `<closing ws> Closing websocket due to malformed JSON. eventData=${eventData} e=${e?.message}`
+        `<closing ws> Closing websocket due to malformed JSON. eventData=${eventData} e=${(e as Error)?.message}`
       );
       this._ws.close();
       return;
@@ -365,7 +367,7 @@ class ExtensionConnection {
       this._handleParsedMessage(parsedJson);
     } catch (e: unknown) {
       debugLogger(
-        `<closing ws> Closing websocket due to failed onmessage callback. eventData=${eventData} e=${e?.message}`
+        `<closing ws> Closing websocket due to failed onmessage callback. eventData=${eventData} e=${(e as Error)?.message}`
       );
       this._ws.close();
     }

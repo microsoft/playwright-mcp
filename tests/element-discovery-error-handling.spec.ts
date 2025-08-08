@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Test suite for ElementDiscovery error handling improvements
  * Testing Unit2 implementation: Enhanced dispose() error handling

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Test for parallel analysis stability improvements
  * Verifies that parallel analysis mode selection is consistent and predictable

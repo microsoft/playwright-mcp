@@ -1,7 +1,6 @@
-// @ts-nocheck
-import fs from 'node:fs';
-import net from 'node:net';
-import path from 'node:path';
+import { promises as fsPromises } from 'node:fs';
+import { type AddressInfo, createServer } from 'node:net';
+import { join as pathJoin } from 'node:path';
 import {
   type Browser,
   type BrowserContext,
@@ -11,6 +10,7 @@ import {
   webkit,
 } from 'playwright';
 //
+// @ts-expect-error - Type definitions for playwright-core internal registry are not available
 import { registryDirectory } from 'playwright-core/lib/server/registry/index';
 import type { FullConfig } from './config.js';
 import { outputFile } from './config.js';
@@ -217,6 +217,7 @@ class PersistentContextFactory implements BrowserContextFactory {
     const browserType = getBrowserType(this.config.browser.browserName);
     for (let i = 0; i < 5; i++) {
       try {
+        // biome-ignore lint/nursery/noAwaitInLoop: Sequential retry loop required for browser launch
         const browserContext = await browserType.launchPersistentContext(
           userDataDir,
           {
@@ -274,8 +275,8 @@ class PersistentContextFactory implements BrowserContextFactory {
       this.config.browser?.browserName;
     // Hesitant putting hundreds of files into the user's workspace, so using it for hashing instead.
     const rootPathToken = rootPath ? `-${createHash(rootPath)}` : '';
-    const result = path.join(dir, `mcp-${browserToken}${rootPathToken}`);
-    await fs.promises.mkdir(result, { recursive: true });
+    const result = pathJoin(dir, `mcp-${browserToken}${rootPathToken}`);
+    await fsPromises.mkdir(result, { recursive: true });
     return result;
   }
 }
@@ -287,9 +288,9 @@ async function injectCdpPort(browserConfig: FullConfig['browser']) {
 }
 function findFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
-    const server = net.createServer();
+    const server = createServer();
     server.listen(0, () => {
-      const { port } = server.address() as net.AddressInfo;
+      const { port } = server.address() as AddressInfo;
       server.close(() => resolve(port));
     });
     server.on('error', reject);

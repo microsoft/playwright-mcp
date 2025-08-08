@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { ExpectationOptions } from '../schemas/expectation.js';
 export interface ImageProcessingResult {
   data: Buffer;

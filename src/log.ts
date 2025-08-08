@@ -1,4 +1,3 @@
-// @ts-nocheck
 import debug from 'debug';
 
 const errorsDebug = debug('pw:mcp:errors');

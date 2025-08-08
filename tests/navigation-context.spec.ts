@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { Response } from '../src/response.js';
 import { Tab } from '../src/tab.js';
 import { waitForCompletion } from '../src/tools/utils.js';

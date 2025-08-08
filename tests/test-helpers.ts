@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Common test utilities and helpers to reduce code duplication
  */

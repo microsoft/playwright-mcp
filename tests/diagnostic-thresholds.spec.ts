@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Configuration-driven architecture tests
  * Verifies DiagnosticThresholds and SmartConfig integration behavior

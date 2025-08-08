@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { z } from 'zod';
 /**
  * Schema for diff options configuration

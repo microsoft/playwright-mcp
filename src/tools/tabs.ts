@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { z } from 'zod';
 import { expectationSchema } from '../schemas/expectation.js';
 import { defineTool } from './tool.js';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ParallelPageAnalyzer - Phase 2 Parallel Analysis Engine
  *
@@ -13,7 +12,6 @@ export class ParallelPageAnalyzer {
   private readonly pageAnalyzer: PageAnalyzer;
 
   constructor(page: Page) {
-    this.page = page;
     this.pageAnalyzer = new PageAnalyzer(page);
   }
 
@@ -45,14 +43,17 @@ export class ParallelPageAnalyzer {
       const results = await Promise.allSettled(analysisPromises);
 
       // Process results
-      for (const [index, result] of results.entries()) {
+      for (let index = 0; index < results.length; index++) {
+        const result = results[index];
         const stepName =
           index === 0 ? 'structure-analysis' : 'performance-metrics';
 
         if (result.status === 'fulfilled') {
           if (stepName === 'structure-analysis') {
+            // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for dynamic analysis result
             structureAnalysis = result.value as any;
           } else {
+            // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for dynamic analysis result
             performanceMetrics = result.value as any;
           }
         } else {
@@ -76,11 +77,16 @@ export class ParallelPageAnalyzer {
 
     return {
       structureAnalysis: {
+        // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for optional analysis result properties
         domMetrics: (structureAnalysis as any)?.domMetrics,
+        // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for optional analysis result properties
         interactionMetrics: (structureAnalysis as any)?.interactionMetrics,
+        // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for optional analysis result properties
         layoutMetrics: (structureAnalysis as any)?.layoutMetrics,
+        // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for optional analysis result properties
         resourceMetrics: (structureAnalysis as any)?.resourceMetrics,
       },
+      // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for fallback empty performance metrics
       performanceMetrics: performanceMetrics || ({} as any),
       resourceUsage: null,
       executionTime,

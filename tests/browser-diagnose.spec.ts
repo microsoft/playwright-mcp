@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * browser_diagnose Tool Tests
  */

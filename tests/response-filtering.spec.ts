@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *

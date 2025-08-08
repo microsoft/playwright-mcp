@@ -199,6 +199,7 @@ export async function withRetry<T>(
   // Retry attempts must run sequentially to respect retry delays
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      // biome-ignore lint/nursery/noAwaitInLoop: Retry attempts must be executed sequentially to respect delays
       return await operation();
     } catch (error: unknown) {
       lastError = error as Error;

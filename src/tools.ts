@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { FullConfig } from './config.js';
 import { batchExecuteTool } from './tools/batchExecute.js';
 import common from './tools/common.js';
@@ -19,7 +18,7 @@ import snapshot from './tools/snapshot.js';
 import tabs from './tools/tabs.js';
 import type { Tool } from './tools/tool.js';
 import wait from './tools/wait.js';
-export const allTools: Tool[] = [
+export const allTools: Tool<any>[] = [
   ...common,
   ...console,
   ...dialogs,
@@ -39,7 +38,7 @@ export const allTools: Tool[] = [
   browserFindElements,
   browserDiagnose,
 ];
-export function filteredTools(config: FullConfig) {
+export function filteredTools(config: FullConfig): Tool<any>[] {
   return allTools.filter(
     (tool) =>
       tool.capability.startsWith('core') ||

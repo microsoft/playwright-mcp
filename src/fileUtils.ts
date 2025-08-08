@@ -1,4 +1,3 @@
-// @ts-nocheck
 import os from 'node:os';
 import path from 'node:path';
 import type { FullConfig } from './config.js';

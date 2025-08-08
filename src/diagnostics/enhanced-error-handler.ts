@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Enhanced error handler that integrates diagnostic information with unified system support
  */

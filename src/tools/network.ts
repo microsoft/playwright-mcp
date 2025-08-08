@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type * as playwright from 'playwright';
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';

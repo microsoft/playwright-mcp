@@ -1,4 +1,3 @@
-// @ts-nocheck
 import debug from 'debug';
 import type * as playwright from 'playwright';
 import type * as actions from './actions.js';
@@ -188,16 +187,20 @@ export class Context {
   private async _setupRequestInterception(context: playwright.BrowserContext) {
     if (this.config.network?.allowedOrigins?.length) {
       await context.route('**', (route) => route.abort('blockedbyclient'));
-      for (const origin of this.config.network.allowedOrigins) {
-        await context.route(`*://${origin}/**`, (route) => route.continue());
-      }
+      await Promise.all(
+        this.config.network.allowedOrigins.map((origin) =>
+          context.route(`*://${origin}/**`, (route) => route.continue())
+        )
+      );
     }
     if (this.config.network?.blockedOrigins?.length) {
-      for (const origin of this.config.network.blockedOrigins) {
-        await context.route(`*://${origin}/**`, (route) =>
-          route.abort('blockedbyclient')
-        );
-      }
+      await Promise.all(
+        this.config.network.blockedOrigins.map((origin) =>
+          context.route(`*://${origin}/**`, (route) =>
+            route.abort('blockedbyclient')
+          )
+        )
+      );
     }
   }
   private _ensureBrowserContext() {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type Anthropic from '@anthropic-ai/sdk';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type {
@@ -114,7 +113,9 @@ export class ClaudeDelegate implements LLMDelegate {
       (tool) => ({
         name: tool.name,
         description: tool.description,
-        input_schema: tool.inputSchema,
+        input_schema: tool.inputSchema as Record<string, unknown> & {
+          type: 'object';
+        },
       })
     );
     const anthropic = await this.anthropic();

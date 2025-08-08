@@ -1,4 +1,3 @@
-// @ts-nocheck
 export class ManualPromise<T = void> extends Promise<T> {
   private _resolve!: (t: T) => void;
   private _reject!: (e: Error) => void;
@@ -84,10 +83,12 @@ export class LongStandingScope {
     }
     this._terminatePromises.set(terminatePromise, frames);
     try {
-      return await Promise.race([
-        terminatePromise.then((e) => (safe ? defaultValue : Promise.reject(e))),
+      return (await Promise.race([
+        terminatePromise.then((e) =>
+          safe ? (defaultValue as T) : Promise.reject(e)
+        ),
         ...promises,
-      ]);
+      ])) as T;
     } finally {
       this._terminatePromises.delete(terminatePromise);
     }

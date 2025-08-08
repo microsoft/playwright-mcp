@@ -1,6 +1,6 @@
-// @ts-nocheck
 import { Option, program } from 'commander';
-//
+
+// @ts-expect-error - playwright-core internal module without proper types
 import { startTraceViewerServer } from 'playwright-core/lib/server';
 import { contextFactory } from './browser-context-factory.js';
 import {

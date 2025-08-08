@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Element discovery for finding alternative elements
  */

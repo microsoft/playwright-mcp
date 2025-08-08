@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Context } from '../context.js';
 import { Response } from '../response.js';
 import type { ExpectationOptions } from '../schemas/expectation.js';
@@ -67,6 +66,7 @@ export class BatchExecutor {
     for (const [index, step] of options.steps.entries()) {
       const stepStartTime = Date.now();
       try {
+        // biome-ignore lint/nursery/noAwaitInLoop: Batch steps must be executed sequentially in order
         const result = await this.executeStep(step, options.globalExpectation);
         const stepEndTime = Date.now();
         results.push({

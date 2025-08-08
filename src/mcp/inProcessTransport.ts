@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type {
   Transport,
@@ -23,7 +22,10 @@ export class InProcessTransport implements Transport {
     await this._server.connect(this._serverTransport);
     this._connected = true;
   }
-  send(message: JSONRPCMessage, _options?: TransportSendOptions): void {
+  async send(
+    message: JSONRPCMessage,
+    _options?: TransportSendOptions
+  ): Promise<void> {
     if (!this._connected) {
       throw new Error('Transport not connected');
     }
@@ -52,13 +54,16 @@ class InProcessServerTransport implements Transport {
   constructor(clientTransport: InProcessTransport) {
     this._clientTransport = clientTransport;
   }
-  start(): void {
+  async start(): Promise<void> {
     // No-op for in-process transport
   }
-  send(message: JSONRPCMessage, _options?: TransportSendOptions): void {
+  async send(
+    message: JSONRPCMessage,
+    _options?: TransportSendOptions
+  ): Promise<void> {
     this._clientTransport._receiveFromServer(message);
   }
-  close(): void {
+  async close(): Promise<void> {
     this.onclose?.();
   }
   onclose?: (() => void) | undefined;

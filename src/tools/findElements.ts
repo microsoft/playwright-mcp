@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * browser_find_elements tool - Find elements using multiple search criteria
  */
@@ -152,30 +151,9 @@ export const browserFindElements = defineTabTool({
         );
 
         // Use unified system for element discovery with enhanced error handling
-        operationResult = (await unifiedSystem.findAlternativeElements({
-          originalSelector: '', // Not used in this context
-          searchCriteria,
-          maxResults,
-        })) as {
-          success: boolean;
-          elements: {
-            ref: string;
-            element: string;
-            confidence: number;
-            textContent: string;
-            attributes: Record<string, string>;
-            selector: string;
-          }[];
-          message?: string;
-          error?: string;
-          alternatives?: {
-            ref: string;
-            element: string;
-            confidence: number;
-            selector: string;
-          }[];
-          data?: any;
-        };
+        operationResult = (await unifiedSystem.findAlternativeElements(
+          searchCriteria
+        )) as any;
 
         if (operationResult.success) {
           alternatives = (operationResult as any).data || [];
@@ -200,11 +178,21 @@ export const browserFindElements = defineTabTool({
       } else {
         // Legacy element discovery
         elementDiscovery = new ElementDiscovery(tab.page);
-        alternatives = await elementDiscovery.findAlternativeElements({
+        const legacyResults = await elementDiscovery.findAlternativeElements({
           originalSelector: '', // Not used in this context
           searchCriteria,
           maxResults,
         });
+
+        // Convert legacy results to expected format
+        alternatives = legacyResults.map((result) => ({
+          ref: result.selector,
+          element: result.selector,
+          confidence: result.confidence,
+          textContent: '',
+          attributes: {},
+          selector: result.selector,
+        }));
 
         // Used legacy element discovery
       }

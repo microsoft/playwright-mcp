@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * browser_find_elements Tool Tests
  */

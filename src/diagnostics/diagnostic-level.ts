@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Diagnostic level configuration for controlling the depth of diagnostic information
  */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Unified diagnostic system that integrates all components
  */
@@ -96,7 +95,7 @@ export class UnifiedDiagnosticSystem {
   async initializeComponents(): Promise<void> {
     const stages = [
       createCoreStage('core-infrastructure', [
-        () => {
+        async () => {
           this.resourceManager = new ResourceManager();
           this.initializationManager.trackPartialInitialization(
             this.resourceManager
@@ -107,14 +106,14 @@ export class UnifiedDiagnosticSystem {
         'page-dependent',
         ['core-infrastructure'],
         [
-          () => {
+          async () => {
             const componentConfig =
               this.configManager.getComponentConfig('pageAnalyzer');
             this.pageAnalyzer = new PageAnalyzer(this.page);
             this.elementDiscovery = new ElementDiscovery(this.page);
             this.errorHandler = new EnhancedErrorHandler(
               this.page,
-              componentConfig.diagnostic
+              componentConfig.diagnostic as any
             );
 
             this.initializationManager.trackPartialInitialization(
@@ -127,7 +126,7 @@ export class UnifiedDiagnosticSystem {
         ]
       ),
       createAdvancedStage('advanced-features', [
-        () => {
+        async () => {
           this.parallelAnalyzer = new ParallelPageAnalyzer(this.page);
           this.initializationManager.trackPartialInitialization(
             this.parallelAnalyzer
@@ -233,22 +232,35 @@ export class UnifiedDiagnosticSystem {
   ): Promise<OperationResult<T>> {
     const startTime = Date.now();
     const config = this.configManager.getConfig();
-    const componentConfig = this.configManager.getComponentConfig(
-      component.toLowerCase() as
-        | 'pageAnalyzer'
-        | 'elementDiscovery'
-        | 'resourceManager'
-    );
+    let componentConfigType:
+      | 'pageAnalyzer'
+      | 'elementDiscovery'
+      | 'resourceManager';
+    switch (component) {
+      case 'ElementDiscovery':
+        componentConfigType = 'elementDiscovery';
+        break;
+      case 'ResourceManager':
+        componentConfigType = 'resourceManager';
+        break;
+      default:
+        componentConfigType = 'pageAnalyzer';
+    }
+    const componentConfig =
+      this.configManager.getComponentConfig(componentConfigType);
 
     try {
       // Apply timeout if specified
-      const timeout =
-        options?.timeout || componentConfig.executionTimeout || 10_000;
+      const timeout = Number(
+        options?.timeout || componentConfig.executionTimeout || 10_000
+      );
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(
+        const timeoutId = setTimeout(
           () => reject(new Error(`Operation timeout after ${timeout}ms`)),
           timeout
         );
+        // Store timeout ID for potential cleanup (though not used in this simple case)
+        void timeoutId;
       });
 
       const result = await Promise.race([fn(), timeoutPromise]);
@@ -273,10 +285,15 @@ export class UnifiedDiagnosticSystem {
       const enhancedDiagnosticError =
         error instanceof DiagnosticError
           ? error
-          : DiagnosticError.from(error as Error, component, operation, {
-              executionTime,
-              timestamp: startTime,
-            });
+          : DiagnosticError.from(
+              error instanceof Error ? error : new Error(String(error)),
+              component,
+              operation,
+              {
+                executionTime,
+                timestamp: startTime,
+              }
+            );
 
       // Apply error enrichment if enabled
       let enrichedError = enhancedDiagnosticError;
@@ -470,8 +487,10 @@ export class UnifiedDiagnosticSystem {
         }
       );
     }
-    return this.executeOperation('analyzePageStructure', 'PageAnalyzer', () =>
-      this.pageAnalyzer?.analyzePageStructure()
+    return this.executeOperation(
+      'analyzePageStructure',
+      'PageAnalyzer',
+      async () => this.pageAnalyzer?.analyzePageStructure()
     );
   }
 
@@ -485,7 +504,12 @@ export class UnifiedDiagnosticSystem {
     return this.executeOperation(
       'findAlternativeElements',
       'ElementDiscovery',
-      () => this.elementDiscovery?.findAlternativeElements(searchCriteria)
+      async () =>
+        this.elementDiscovery?.findAlternativeElements({
+          originalSelector: '',
+          searchCriteria,
+          maxResults: 10,
+        })
     );
   }
 
@@ -494,7 +518,7 @@ export class UnifiedDiagnosticSystem {
     return this.executeOperation(
       'analyzePerformanceMetrics',
       'PageAnalyzer',
-      () => this.pageAnalyzer?.analyzePerformanceMetrics()
+      async () => this.pageAnalyzer?.analyzePerformanceMetrics()
     );
   }
 
@@ -510,7 +534,7 @@ export class UnifiedDiagnosticSystem {
       handle,
       'dispose' as keyof T
     );
-    return smartHandle.handle;
+    return smartHandle?.handle ?? handle;
   }
 
   // Configuration management
@@ -617,14 +641,29 @@ export class UnifiedDiagnosticSystem {
       : 'customized';
   }
 
-  private buildAppliedOverrides(impactReport: any) {
+  private buildAppliedOverrides(impactReport: {
+    performanceImpact: {
+      executionTimeChanges: Record<
+        string,
+        { from: number; to: number; percentChange: number }
+      >;
+    };
+    featureChanges: {
+      enabled: string[];
+      disabled: string[];
+      modified: string[];
+    };
+  }) {
     return [
       {
         category: 'Performance Thresholds',
         changes: Object.entries(
           impactReport.performanceImpact.executionTimeChanges
         ).map(
-          ([component, change]: [string, any]) =>
+          ([component, change]: [
+            string,
+            { from: number; to: number; percentChange: number },
+          ]) =>
             `${component}: ${change.from}ms → ${change.to}ms (${change.percentChange > 0 ? '+' : ''}${change.percentChange}%)`
         ),
         impact:
@@ -654,7 +693,17 @@ export class UnifiedDiagnosticSystem {
     ].filter((override) => override.changes.length > 0);
   }
 
-  private calculatePerformanceBaseline(config: any) {
+  private calculatePerformanceBaseline(config: {
+    performance: {
+      thresholds: {
+        executionTime: {
+          pageAnalysis: number;
+          elementDiscovery: number;
+          resourceMonitoring: number;
+        };
+      };
+    };
+  }) {
     const expectedExecutionTimes = {
       pageAnalysis: config.performance.thresholds.executionTime.pageAnalysis,
       elementDiscovery:
@@ -714,7 +763,14 @@ export class UnifiedDiagnosticSystem {
   }
 
   private generateAllRecommendations(
-    impactReport: any,
+    impactReport: {
+      performanceImpact: {
+        recommendedOptimizations: string[];
+      };
+      validationStatus: {
+        warnings: string[];
+      };
+    },
     deviations: Record<string, { percent: number; significance: string }>
   ) {
     const recommendations: Array<{
@@ -736,7 +792,11 @@ export class UnifiedDiagnosticSystem {
   }
 
   private addPerformanceRecommendations(
-    recommendations: any[],
+    recommendations: Array<{
+      type: 'optimization' | 'warning' | 'info';
+      message: string;
+      priority: 'low' | 'medium' | 'high';
+    }>,
     deviations: Record<string, { percent: number; significance: string }>
   ) {
     for (const [component, deviation] of Object.entries(deviations)) {
@@ -759,8 +819,19 @@ export class UnifiedDiagnosticSystem {
   }
 
   private addConfigurationRecommendations(
-    recommendations: any[],
-    impactReport: any
+    recommendations: Array<{
+      type: 'optimization' | 'warning' | 'info';
+      message: string;
+      priority: 'low' | 'medium' | 'high';
+    }>,
+    impactReport: {
+      performanceImpact: {
+        recommendedOptimizations: string[];
+      };
+      validationStatus: {
+        warnings: string[];
+      };
+    }
   ) {
     if (impactReport.performanceImpact.recommendedOptimizations.length > 0) {
       for (const optimization of impactReport.performanceImpact
@@ -782,7 +853,13 @@ export class UnifiedDiagnosticSystem {
     }
   }
 
-  private addErrorRateRecommendations(recommendations: any[]) {
+  private addErrorRateRecommendations(
+    recommendations: Array<{
+      type: 'optimization' | 'warning' | 'info';
+      message: string;
+      priority: 'low' | 'medium' | 'high';
+    }>
+  ) {
     const totalErrors = Object.values(this.stats.errorCount).reduce(
       (sum, count) => sum + count,
       0
@@ -800,7 +877,11 @@ export class UnifiedDiagnosticSystem {
   }
 
   private sortRecommendations(
-    recommendations: Array<{ priority: 'low' | 'medium' | 'high' }>
+    recommendations: Array<{
+      type: 'optimization' | 'warning' | 'info';
+      message: string;
+      priority: 'low' | 'medium' | 'high';
+    }>
   ) {
     return recommendations.sort((a, b) => {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
@@ -827,6 +908,12 @@ export class UnifiedDiagnosticSystem {
     }
 
     const resourceStats = this.resourceManager?.getResourceStats();
+
+    if (!resourceStats) {
+      issues.push('Resource manager not initialized');
+      recommendations.push('Initialize the system components');
+      return { status: 'critical', issues, recommendations };
+    }
 
     // Check resource usage
     if (resourceStats.activeCount > config.maxConcurrentHandles * 0.9) {

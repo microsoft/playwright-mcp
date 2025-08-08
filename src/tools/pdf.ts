@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { z } from 'zod';
 import * as javascript from '../javascript.js';
 import { defineTabTool } from './tool.js';

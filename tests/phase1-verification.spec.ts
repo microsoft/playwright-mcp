@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Phase 1 Memory Leak Prevention Verification Tests
  */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Page analysis for diagnostic information
  */

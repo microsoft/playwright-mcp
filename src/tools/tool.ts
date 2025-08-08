@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type * as playwright from 'playwright';
 import type { z } from 'zod';
 import type { ToolCapability } from '../../config.js';
@@ -17,7 +16,7 @@ export type DialogModalState = {
   dialog: playwright.Dialog;
 };
 export type ModalState = FileUploadModalState | DialogModalState;
-export type Tool<Input extends z.Schema = z.Schema> = {
+export type Tool<Input extends z.ZodType = z.ZodType<any, any, any>> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
   handle: (
@@ -26,12 +25,12 @@ export type Tool<Input extends z.Schema = z.Schema> = {
     response: Response
   ) => Promise<void>;
 };
-export function defineTool<Input extends z.Schema>(
+export function defineTool<Input extends z.ZodType>(
   tool: Tool<Input>
 ): Tool<Input> {
   return tool;
 }
-export type TabTool<Input extends z.Schema = z.Schema> = {
+export type TabTool<Input extends z.ZodType = z.ZodType<any, any, any>> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
   clearsModalState?: ModalState['type'];
@@ -41,7 +40,7 @@ export type TabTool<Input extends z.Schema = z.Schema> = {
     response: Response
   ) => Promise<void>;
 };
-export function defineTabTool<Input extends z.Schema>(
+export function defineTabTool<Input extends z.ZodType>(
   tool: TabTool<Input>
 ): Tool<Input> {
   return {

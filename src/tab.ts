@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { EventEmitter } from 'node:events';
 import type * as playwright from 'playwright';
 import type { Context } from './context.js';

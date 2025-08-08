@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import type { BrowserContextFactory } from './browser-context-factory.js';
@@ -53,10 +52,12 @@ export class BrowserServerBackend implements ServerBackend {
       clientInfo: { ...server.getClientVersion(), rootPath },
     });
   }
+  // biome-ignore lint/suspicious/noExplicitAny: MCP server schema requires any for generic tool arguments
   tools(): mcpServer.ToolSchema<any>[] {
     return this._tools.map((tool) => tool.schema);
   }
   async callTool(
+    // biome-ignore lint/suspicious/noExplicitAny: MCP server schema requires any for generic tool arguments
     schema: mcpServer.ToolSchema<any>,
     parsedArguments: Record<string, unknown>
   ) {
@@ -69,6 +70,7 @@ export class BrowserServerBackend implements ServerBackend {
       context,
       schema.name,
       parsedArguments,
+      // biome-ignore lint/suspicious/noExplicitAny: ExpectationOptions type needs to be cast from unknown arguments
       parsedArguments.expectation as any
     );
 
@@ -92,6 +94,7 @@ export class BrowserServerBackend implements ServerBackend {
   serverClosed() {
     this._context?.dispose().catch(logUnhandledError);
   }
+  // biome-ignore lint/suspicious/noExplicitAny: Tool type requires any for generic tool arguments
   private _defineContextSwitchTool(factories: FactoryList): Tool<any> {
     const self = this;
     return defineTool({

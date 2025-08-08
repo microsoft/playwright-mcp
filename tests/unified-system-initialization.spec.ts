@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Unit tests for UnifiedSystem initialization improvements (Unit3)
  * Testing initializeComponents method and dependency management

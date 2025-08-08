@@ -28,6 +28,10 @@
         "False"
       ],
       "env": {}
+    },
+    "ultracite": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://www.ultracite.ai/api/mcp/mcp"]
     }
   }
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { contextFactory } from '../browser-context-factory.js';
 import { BrowserServerBackend } from '../browser-server-backend.js';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { ExpectationOptions } from '../schemas/expectation.js';
 /**
  * Console message interface for filtering

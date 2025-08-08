@@ -1,4 +1,3 @@
-// @ts-nocheck
 import fs from 'node:fs';
 import path from 'node:path';
 import type * as actions from './actions.js';
@@ -66,7 +65,7 @@ export class SessionLog {
     code = code.trim();
     if (isUpdate) {
       const lastEntry = this._pendingEntries.at(-1);
-      if (lastEntry.userAction?.name === action.name) {
+      if (lastEntry?.userAction?.name === action.name) {
         lastEntry.userAction = action;
         lastEntry.code = code;
         return;

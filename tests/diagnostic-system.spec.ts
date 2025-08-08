@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Diagnostic System Tests - PageAnalyzer, ElementDiscovery, ErrorEnrichment
  */

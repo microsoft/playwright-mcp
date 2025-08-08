@@ -1,5 +1,4 @@
-// @ts-nocheck
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 export function createHash(data: string): string {
   return crypto.createHash('sha256').update(data).digest('hex').slice(0, 7);
 }
