@@ -28,8 +28,8 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   private _lastTitle = 'about:blank';
   private _consoleMessages: ConsoleMessage[] = [];
   private _recentConsoleMessages: ConsoleMessage[] = [];
-  private _requests: Map<playwright.Request, playwright.Response | null> = new Map();
-  private _onPageClose: (tab: Tab) => void;
+  private readonly _requests: Map<playwright.Request, playwright.Response | null> = new Map();
+  private readonly _onPageClose: (tab: Tab) => void;
   private _modalStates: ModalState[] = [];
   private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
   private _navigationState: {

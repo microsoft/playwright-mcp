@@ -7,8 +7,8 @@ import { DiffFormatter } from './diffFormatter.js';
  * for the same tool, providing efficient token usage through change detection.
  */
 export class ResponseDiffDetector {
-  private storage: Map<string, ResponseStorage> = new Map();
-  private formatter: DiffFormatter = new DiffFormatter();
+  private readonly storage: Map<string, ResponseStorage> = new Map();
+  private readonly formatter: DiffFormatter = new DiffFormatter();
   /**
    * Detect differences between current response and previously stored response
    * @param current Current response content

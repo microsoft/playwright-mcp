@@ -69,19 +69,19 @@ export interface EnhancedPlaywrightError extends EnrichedError {
 }
 
 export class EnhancedErrorHandler {
-  private pageAnalyzer: PageAnalyzer;
-  private elementDiscovery: ElementDiscovery;
-  private errorEnrichment: ErrorEnrichment;
-  private diagnosticManager: DiagnosticLevelManager;
+  private readonly pageAnalyzer: PageAnalyzer;
+  private readonly elementDiscovery: ElementDiscovery;
+  private readonly errorEnrichment: ErrorEnrichment;
+  private readonly diagnosticManager: DiagnosticLevelManager;
   private errorHistory: Array<{
     error: DiagnosticError;
     timestamp: number;
     component: DiagnosticComponent;
     resolved: boolean;
   }> = [];
-  private maxErrorHistory: number = 100;
+  private readonly maxErrorHistory: number;
 
-  constructor(private page: playwright.Page, diagnosticConfig?: Partial<DiagnosticConfig>) {
+  constructor(private readonly page: playwright.Page, diagnosticConfig?: Partial<DiagnosticConfig>) {
     this.pageAnalyzer = new PageAnalyzer(page);
     this.elementDiscovery = new ElementDiscovery(page);
     this.errorEnrichment = new ErrorEnrichment(page);

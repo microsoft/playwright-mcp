@@ -33,7 +33,7 @@ export class ElementDiscovery implements IDisposable {
   private readonly smartHandleBatch: SmartHandleBatch;
   private readonly maxBatchSize = 100; // Limit for large searches
 
-  constructor(private page: playwright.Page | null) {
+  constructor(private readonly page: playwright.Page | null) {
     this.smartHandleBatch = new SmartHandleBatch();
   }
 
@@ -44,7 +44,7 @@ export class ElementDiscovery implements IDisposable {
     try {
       await this.smartHandleBatch.disposeAll();
     } catch (error) {
-      // Failed to dispose smart handles - continue with cleanup
+      console.warn('[ElementDiscovery:dispose] Failed to dispose smart handles:', error);
     }
 
     this.page = null;
@@ -73,7 +73,7 @@ export class ElementDiscovery implements IDisposable {
     try {
       await element.dispose();
     } catch (error) {
-      DiagnosticError.from(
+      const diagnosticError = DiagnosticError.from(
           error instanceof Error ? error : new Error('Unknown dispose error'),
           'ElementDiscovery',
           'dispose',
@@ -87,7 +87,7 @@ export class ElementDiscovery implements IDisposable {
           }
       );
 
-      // Element dispose failed during operation, but processing continues
+      console.warn(`[ElementDiscovery:dispose] Element dispose failed during ${operation}:`, diagnosticError.message);
     }
   }
 

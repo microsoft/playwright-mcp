@@ -73,7 +73,7 @@ export interface DiagnosticConfig {
 }
 
 export class DiagnosticLevelManager {
-  private static defaultConfig: DiagnosticConfig = {
+  private static readonly defaultConfig: DiagnosticConfig = {
     level: DiagnosticLevel.STANDARD,
     features: undefined,
     thresholds: {
@@ -81,7 +81,7 @@ export class DiagnosticLevelManager {
     }
   };
 
-  private config: DiagnosticConfig;
+  private readonly config: DiagnosticConfig;
 
   constructor(config?: Partial<DiagnosticConfig>) {
     this.config = this.mergeConfig(config);

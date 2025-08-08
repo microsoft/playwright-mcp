@@ -12,7 +12,7 @@ export class SmartHandle<T extends playwright.ElementHandle> implements ProxyHan
   private readonly tracker: SmartTracker;
 
   constructor(
-    private resource: T,
+    private readonly resource: T,
     tracker?: SmartTracker
   ) {
     this.tracker = tracker || globalResourceManager;
@@ -52,7 +52,6 @@ export class SmartHandle<T extends playwright.ElementHandle> implements ProxyHan
         await this.resource.dispose();
 
     } catch (error) {
-      // console.warn('[SmartHandle] Dispose failed:', error);
     } finally {
       this.disposed = true;
       this.tracker.untrackResource(this.resourceId);
@@ -86,7 +85,7 @@ export function createSmartHandle<T extends playwright.ElementHandle>(
  * Batch manager for handling multiple smart handles efficiently
  */
 export class SmartHandleBatch {
-  private handles: SmartHandle<any>[] = [];
+  private readonly handles: SmartHandle<any>[] = [];
   private disposed = false;
 
   add<T extends playwright.ElementHandle>(handle: T, tracker?: SmartTracker): T {

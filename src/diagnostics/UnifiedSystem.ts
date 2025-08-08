@@ -38,7 +38,7 @@ export interface OperationResult<T = any> {
 }
 
 export class UnifiedDiagnosticSystem {
-  private static instances = new Map<playwright.Page, UnifiedDiagnosticSystem>();
+  private static readonly instances = new Map<playwright.Page, UnifiedDiagnosticSystem>();
 
   private readonly page: playwright.Page;
   private readonly configManager: SmartConfigManager;
@@ -54,7 +54,7 @@ export class UnifiedDiagnosticSystem {
   private initializationError?: DiagnosticError;
 
   private stats: SystemStats;
-  private operationHistory: Array<{
+  private readonly operationHistory: Array<{
     operation: string;
     component: DiagnosticComponent;
     timestamp: number;
@@ -159,7 +159,6 @@ export class UnifiedDiagnosticSystem {
 
     try {
       for (const stage of initializationStages) {
-        // console.info(`[UnifiedSystem] Initializing stage: ${stage.name}`);
 
         // Check dependencies
         if (stage.dependencies) {
@@ -179,13 +178,9 @@ export class UnifiedDiagnosticSystem {
         this.collectDisposableComponents(partiallyInitializedComponents);
 
         completedStages.add(stage.name);
-        // console.info(`[UnifiedSystem] Stage '${stage.name}' completed successfully`);
       }
 
-      // console.info('[UnifiedSystem] All components initialized successfully');
-
     } catch (error) {
-      // console.error(`[UnifiedSystem] Initialization failed:`, error);
 
       // Clean up any partially initialized components
       await this.cleanupPartialInitialization(partiallyInitializedComponents);
@@ -229,7 +224,6 @@ export class UnifiedDiagnosticSystem {
   }
 
   private async cleanupPartialInitialization(components: Array<{ dispose: () => Promise<void> }>): Promise<void> {
-    // console.info('[UnifiedSystem] Cleaning up partially initialized components');
 
     for (const component of components) {
       try {
@@ -237,7 +231,6 @@ export class UnifiedDiagnosticSystem {
           await component.dispose();
 
       } catch (cleanupError) {
-        // console.warn('[UnifiedSystem] Error during component cleanup:', cleanupError);
       }
     }
 
@@ -325,7 +318,6 @@ export class UnifiedDiagnosticSystem {
 
   private setupConfigurationListener(): void {
     this.configManager.onConfigChange(config => {
-      // console.info('[UnifiedSystem] Configuration updated, reinitializing components if needed');
     });
   }
 
@@ -388,7 +380,6 @@ export class UnifiedDiagnosticSystem {
         try {
           enrichedError = await this.enrichError(diagnosticError, operation);
         } catch (enrichmentError) {
-          // console.warn('[UnifiedSystem] Error enrichment failed:', enrichmentError);
         }
       }
 
@@ -483,7 +474,6 @@ export class UnifiedDiagnosticSystem {
       return enrichedDiagnosticError;
     } catch (enrichmentError) {
       // Return original error if enrichment fails
-      // console.warn('[UnifiedSystem] Error enrichment failed:', enrichmentError);
       return error;
     }
   }
@@ -497,24 +487,16 @@ export class UnifiedDiagnosticSystem {
     const shouldUseParallel = forceParallel ?? config.features.enableParallelAnalysis;
 
     if (shouldUseParallel) {
-      // console.info(`[UnifiedSystem] Using parallel analysis - forced: ${forceParallel === true}, config enabled: ${config.features.enableParallelAnalysis}`);
-
       return this.executeOperation('analyzePageStructure', 'PageAnalyzer', async () => {
         const recommendation = await this.pageAnalyzer!.shouldUseParallelAnalysis();
 
         if (recommendation.recommended || forceParallel) {
-          // console.info(`[UnifiedSystem] Parallel analysis execution - recommendation: ${recommendation.recommended}, forced: ${forceParallel === true}`);
-          if (!recommendation.recommended && forceParallel) {
-            // console.info(`[UnifiedSystem] Overriding recommendation (${recommendation.reason}) due to force flag`);
-          }
           return await this.parallelAnalyzer!.runParallelAnalysis();
         } else {
-          // console.info(`[UnifiedSystem] Falling back to standard analysis - reason: ${recommendation.reason}`);
           return await this.pageAnalyzer!.analyzePageStructure();
         }
       });
     } else {
-      // console.info('[UnifiedSystem] Using standard analysis - parallel analysis disabled');
       return this.executeOperation('analyzePageStructure', 'PageAnalyzer', () =>
         this.pageAnalyzer!.analyzePageStructure()
       );
@@ -783,7 +765,6 @@ export class UnifiedDiagnosticSystem {
 
   // Cleanup and disposal
   async dispose(): Promise<void> {
-    // console.info('[UnifiedSystem] Disposing unified diagnostic system');
 
     try {
       const disposePromises: Promise<void>[] = [];
@@ -803,10 +784,7 @@ export class UnifiedDiagnosticSystem {
       this.isInitialized = false;
       this.initializationPromise = undefined;
       this.initializationError = undefined;
-
-      // console.info('[UnifiedSystem] All components disposed successfully');
     } catch (error) {
-      // console.error('[UnifiedSystem] Error during disposal:', error);
     }
   }
 }

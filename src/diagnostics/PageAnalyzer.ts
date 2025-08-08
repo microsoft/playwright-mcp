@@ -36,10 +36,10 @@ export class PageAnalyzer implements IDisposable {
   private readonly metricsThresholds: MetricsThresholds;
 
   private isDisposed = false;
-  private frameRefs: Set<playwright.Frame> = new Set();
-  private frameManager: FrameReferenceManager;
+  private readonly frameRefs: Set<playwright.Frame> = new Set();
+  private readonly frameManager: FrameReferenceManager;
 
-  constructor(private page: playwright.Page | null) {
+  constructor(private readonly page: playwright.Page | null) {
     this.frameManager = new FrameReferenceManager();
     // Get thresholds from configuration system (eliminate hardcoding)
     this.metricsThresholds = getCurrentThresholds().getMetricsThresholds();
@@ -52,7 +52,7 @@ export class PageAnalyzer implements IDisposable {
     try {
       await this.frameManager.dispose();
     } catch (error) {
-      // Failed to dispose frame manager - continue with cleanup
+      console.warn('[PageAnalyzer:dispose] Failed to dispose frame manager:', error);
     }
 
     this.frameRefs.clear();
@@ -122,8 +122,7 @@ export class PageAnalyzer implements IDisposable {
                 const elementCount = await frame.$$eval('*', elements => elements.length);
                 this.frameManager.updateElementCount(frame, elementCount);
               } catch (countError) {
-                // Element counting failed, but frame is still accessible
-                // Failed to count frame elements - using default count
+                console.warn('[PageAnalyzer:analyzeIframes] Failed to count frame elements:', countError);
               }
 
             } catch (frameError) {
@@ -148,7 +147,7 @@ export class PageAnalyzer implements IDisposable {
           try {
             await iframe.dispose();
           } catch (disposeError) {
-            // Failed to dispose iframe element - continue with cleanup
+            console.warn('[PageAnalyzer:analyzeIframes] Failed to dispose iframe element:', disposeError);
           }
         }
       }
@@ -163,7 +162,7 @@ export class PageAnalyzer implements IDisposable {
         try {
           await iframe.dispose();
         } catch (disposeError) {
-          // Ignore disposal errors during error cleanup
+          console.warn('[PageAnalyzer:analyzeIframes] Error during iframe disposal cleanup:', disposeError);
         }
       }
       throw error;

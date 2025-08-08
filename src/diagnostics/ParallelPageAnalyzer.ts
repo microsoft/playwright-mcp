@@ -9,8 +9,8 @@ import { PageAnalyzer } from './PageAnalyzer.js';
 import { ParallelAnalysisResult } from '../types/performance.js';
 
 export class ParallelPageAnalyzer {
-  private page: Page;
-  private pageAnalyzer: PageAnalyzer;
+  private readonly page: Page;
+  private readonly pageAnalyzer: PageAnalyzer;
 
   constructor(page: Page) {
     this.page = page;

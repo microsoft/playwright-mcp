@@ -15,8 +15,8 @@ export interface FrameMetadata {
  * Prevents memory leaks and provides proper cleanup for detached frames
  */
 export class FrameReferenceManager implements IDisposable {
-  private frameRefs = new WeakMap<playwright.Frame, FrameMetadata>();
-  private activeFrames = new Set<playwright.Frame>();
+  private readonly frameRefs = new WeakMap<playwright.Frame, FrameMetadata>();
+  private readonly activeFrames = new Set<playwright.Frame>();
   private cleanupInterval: NodeJS.Timeout | null = null;
   private disposed = false;
 

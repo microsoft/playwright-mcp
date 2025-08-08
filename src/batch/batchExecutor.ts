@@ -13,8 +13,8 @@ import type { ExpectationOptions } from '../schemas/expectation.js';
  * Executes multiple browser tools in sequence with optimized response handling
  */
 export class BatchExecutor {
-  private toolRegistry: Map<string, Tool<any>>;
-  private context: Context;
+  private readonly toolRegistry: Map<string, Tool<any>>;
+  private readonly context: Context;
   constructor(context: Context, toolRegistry: Map<string, Tool<any>>) {
     this.context = context;
     this.toolRegistry = toolRegistry;

@@ -49,10 +49,10 @@ export interface BatchFailureOptions {
 }
 
 export class ErrorEnrichment {
-  private pageAnalyzer: PageAnalyzer;
-  private elementDiscovery: ElementDiscovery;
+  private readonly pageAnalyzer: PageAnalyzer;
+  private readonly elementDiscovery: ElementDiscovery;
 
-  constructor(private page: playwright.Page) {
+  constructor(private readonly page: playwright.Page) {
     this.pageAnalyzer = new PageAnalyzer(page);
     this.elementDiscovery = new ElementDiscovery(page);
   }

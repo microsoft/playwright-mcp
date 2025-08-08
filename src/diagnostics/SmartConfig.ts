@@ -63,8 +63,8 @@ export interface SmartConfig {
 export class SmartConfigManager {
   private static instance: SmartConfigManager;
   private config: SmartConfig;
-  private listeners: Array<(config: SmartConfig) => void> = [];
-  private thresholdsManager: DiagnosticThresholds;
+  private readonly listeners: Array<(config: SmartConfig) => void> = [];
+  private readonly thresholdsManager: DiagnosticThresholds;
 
   private constructor(initialConfig?: Partial<SmartConfig>) {
     this.config = this.createDefaultConfig();
@@ -231,7 +231,7 @@ export class SmartConfigManager {
       try {
         listener(this.config);
       } catch (error) {
-        // Silently ignore listener errors
+        console.warn('[SmartConfig:notifyConfigChange] Config change listener failed:', error);
       }
     });
   }
@@ -351,7 +351,7 @@ export class SmartConfigManager {
       // Update DiagnosticThresholds
       this.thresholdsManager.updateThresholds(thresholdsConfig);
     } catch (error) {
-      // Silently ignore sync errors
+      console.warn('[SmartConfig:syncThresholds] Failed to sync thresholds:', error);
     }
   }
 

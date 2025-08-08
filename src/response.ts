@@ -11,17 +11,17 @@ export class Response {
   private _result: string[] = [];
   private _code: string[] = [];
   private _images: { contentType: string, data: Buffer }[] = [];
-  private _context: Context;
+  private readonly _context: Context;
   private _includeSnapshot = false;
   private _includeTabs = false;
   private _tabSnapshot: TabSnapshot | undefined;
-  private _expectation: NonNullable<ExpectationOptions>;
+  private readonly _expectation: NonNullable<ExpectationOptions>;
   private _diffResult: DiffResult | undefined;
   readonly toolName: string;
   readonly toolArgs: Record<string, any>;
   private _isError: boolean | undefined;
   // Static diff detector instance shared across all responses
-  private static diffDetector: ResponseDiffDetector = new ResponseDiffDetector();
+  private static readonly diffDetector: ResponseDiffDetector = new ResponseDiffDetector();
   constructor(context: Context, toolName: string, toolArgs: Record<string, any>, expectation?: ExpectationOptions) {
     this._context = context;
     this.toolName = toolName;
