@@ -94,7 +94,7 @@ test('navigate with extension', async ({ browserWithExtension, startClient, serv
   });
 
   const selectorPage = await confirmationPagePromise;
-  await selectorPage.getByRole('button', { name: 'Continue' }).click();
+  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP Extension' }).getByRole('button', { name: 'Connect' }).click();
 
   expect(await navigateResponse).toHaveResponse({
     pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),

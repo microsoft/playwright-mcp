@@ -44,7 +44,7 @@ class TabShareExtension {
   private _onMessage(message: PageMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
     switch (message.type) {
       case 'connectToMCPRelay':
-        this._connectToRelay(message.mcpRelayUrl!, sender.tab!.id!).then(
+        this._connectToRelay(sender.tab!.id!, message.mcpRelayUrl!).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true;
@@ -54,7 +54,7 @@ class TabShareExtension {
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true;
       case 'connectToTab':
-        this._connectTab(message.tabId, message.windowId, message.mcpRelayUrl!).then(
+        this._connectTab(sender.tab!.id!, message.tabId, message.windowId, message.mcpRelayUrl!).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true; // Return true to indicate that the response will be sent asynchronously
@@ -62,7 +62,7 @@ class TabShareExtension {
     return false;
   }
 
-  private async _connectToRelay(mcpRelayUrl: string, selectorTabId: number): Promise<void> {
+  private async _connectToRelay(selectorTabId: number, mcpRelayUrl: string): Promise<void> {
     try {
       debugLog(`Connecting to relay at ${mcpRelayUrl}`);
       const socket = new WebSocket(mcpRelayUrl);
@@ -86,7 +86,7 @@ class TabShareExtension {
     }
   }
 
-  private async _connectTab(tabId: number, windowId: number, mcpRelayUrl: string): Promise<void> {
+  private async _connectTab(selectorTabId: number, tabId: number, windowId: number, mcpRelayUrl: string): Promise<void> {
     try {
       debugLog(`Connecting tab ${tabId} to relay at ${mcpRelayUrl}`);
       try {
@@ -96,10 +96,10 @@ class TabShareExtension {
       }
       await this._setConnectedTabId(null);
 
-      this._activeConnection = this._pendingTabSelection.get(tabId)?.connection;
+      this._activeConnection = this._pendingTabSelection.get(selectorTabId)?.connection;
       if (!this._activeConnection)
         throw new Error('No active MCP relay connection');
-      this._pendingTabSelection.delete(tabId);
+      this._pendingTabSelection.delete(selectorTabId);
 
       this._activeConnection.setTabId(tabId);
       this._activeConnection.onclose = () => {

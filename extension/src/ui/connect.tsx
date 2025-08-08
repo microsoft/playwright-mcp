@@ -29,7 +29,6 @@ type StatusType = 'connected' | 'error' | 'connecting';
 
 const ConnectApp: React.FC = () => {
   const [tabs, setTabs] = useState<TabInfo[]>([]);
-  const [selectedTab, setSelectedTab] = useState<TabInfo | undefined>();
   const [status, setStatus] = useState<{ type: StatusType; message: string } | null>(null);
   const [showButtons, setShowButtons] = useState(true);
   const [showTabList, setShowTabList] = useState(true);
@@ -54,7 +53,7 @@ const ConnectApp: React.FC = () => {
       setClientInfo(info);
       setStatus({
         type: 'connecting',
-        message: `MCP client "${info}" is trying to connect. Do you want to continue?`
+        message: `🎭 Playwright MCP started from  "${info}" is trying to connect. Do you want to continue?`
       });
     } catch (e) {
       setStatus({ type: 'error', message: 'Failed to parse client version.' });
@@ -73,30 +72,22 @@ const ConnectApp: React.FC = () => {
 
   const loadTabs = useCallback(async () => {
     const response = await chrome.runtime.sendMessage({ type: 'getTabs' });
-    if (response.success) {
+    if (response.success)
       setTabs(response.tabs);
-      const currentTab = response.tabs.find((tab: TabInfo) => tab.id === response.currentTabId);
-      setSelectedTab(currentTab);
-    } else {
+    else
       setStatus({ type: 'error', message: 'Failed to load tabs: ' + response.error });
-    }
   }, []);
 
-  const handleContinue = useCallback(async () => {
+  const handleConnectToTab = useCallback(async (tab: TabInfo) => {
     setShowButtons(false);
     setShowTabList(false);
-
-    if (!selectedTab) {
-      setStatus({ type: 'error', message: 'Tab not selected.' });
-      return;
-    }
 
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'connectToTab',
         mcpRelayUrl,
-        tabId: selectedTab.id,
-        windowId: selectedTab.windowId,
+        tabId: tab.id,
+        windowId: tab.windowId,
       });
 
       if (response?.success) {
@@ -113,7 +104,7 @@ const ConnectApp: React.FC = () => {
         message: `MCP client "${clientInfo}" failed to connect: ${e}`
       });
     }
-  }, [selectedTab, clientInfo, mcpRelayUrl]);
+  }, [clientInfo, mcpRelayUrl]);
 
   const handleReject = useCallback(() => {
     setShowButtons(false);
@@ -122,45 +113,41 @@ const ConnectApp: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    chrome.runtime.onMessage.addListener(message => {
+    const listener = (message: any) => {
       if (message.type === 'connectionTimeout')
         handleReject();
-    });
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => {
+      chrome.runtime.onMessage.removeListener(listener);
+    };
   }, []);
 
   return (
     <div className='app-container'>
       <div className='content-wrapper'>
-        <h1 className='main-title'>
-          Playwright MCP Extension
-        </h1>
-
-        {status && <StatusBanner type={status.type} message={status.message} />}
-
-        {showButtons && (
-          <div className='button-container'>
-            <Button variant='primary' onClick={handleContinue}>
-              Continue
-            </Button>
-            <Button variant='default' onClick={handleReject}>
-              Reject
-            </Button>
+        {status && (
+          <div className='status-container'>
+            <StatusBanner type={status.type} message={status.message} />
+            {showButtons && (
+              <Button variant='reject' onClick={handleReject}>
+                Reject
+              </Button>
+            )}
           </div>
         )}
 
-
         {showTabList && (
           <div>
-            <h2 className='tab-section-title'>
+            <div className='tab-section-title'>
               Select page to expose to MCP server:
-            </h2>
+            </div>
             <div>
               {tabs.map(tab => (
                 <TabItem
                   key={tab.id}
                   tab={tab}
-                  isSelected={selectedTab?.id === tab.id}
-                  onSelect={() => setSelectedTab(tab)}
+                  onConnect={() => handleConnectToTab(tab)}
                 />
               ))}
             </div>
@@ -175,7 +162,7 @@ const StatusBanner: React.FC<{ type: StatusType; message: string }> = ({ type, m
   return <div className={`status-banner ${type}`}>{message}</div>;
 };
 
-const Button: React.FC<{ variant: 'primary' | 'default'; onClick: () => void; children: React.ReactNode }> = ({
+const Button: React.FC<{ variant: 'primary' | 'default' | 'reject'; onClick: () => void; children: React.ReactNode }> = ({
   variant,
   onClick,
   children
@@ -187,20 +174,12 @@ const Button: React.FC<{ variant: 'primary' | 'default'; onClick: () => void; ch
   );
 };
 
-const TabItem: React.FC<{ tab: TabInfo; isSelected: boolean; onSelect: () => void }> = ({
+const TabItem: React.FC<{ tab: TabInfo; onConnect: () => void }> = ({
   tab,
-  isSelected,
-  onSelect
+  onConnect
 }) => {
-  const className = `tab-item ${isSelected ? 'selected' : ''}`.trim();
-
   return (
-    <div className={className} onClick={onSelect}>
-      <input
-        type='radio'
-        className='tab-radio'
-        checked={isSelected}
-      />
+    <div className='tab-item'>
       <img
         src={tab.favIconUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'}
         alt=''
@@ -210,6 +189,9 @@ const TabItem: React.FC<{ tab: TabInfo; isSelected: boolean; onSelect: () => voi
         <div className='tab-title'>{tab.title || 'Untitled'}</div>
         <div className='tab-url'>{tab.url}</div>
       </div>
+      <Button variant='primary' onClick={onConnect}>
+        Connect
+      </Button>
     </div>
   );
 };
