@@ -26,7 +26,6 @@ test(
       description: 'https://github.com/microsoft/playwright-mcp/issues/456',
     },
   },
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async ({}, testInfo) => {
     const file = testInfo.outputPath('main.cjs');
     const projectRoot = process.cwd();
