@@ -16,7 +16,9 @@ test.describe('Navigation Context Handling', () => {
         config: { imageResponses: 'include' },
       } as any;
 
-      const tab = new Tab(mockContext, page, () => {});
+      const tab = new Tab(mockContext, page, () => {
+        // No-op callback for test
+      });
 
       // Navigate to a page that will trigger context changes
       await page.goto(
@@ -45,14 +47,18 @@ test.describe('Navigation Context Handling', () => {
         config: { imageResponses: 'include' },
       } as any;
 
-      const tab = new Tab(mockContext, page, () => {});
+      const tab = new Tab(mockContext, page, () => {
+        // No-op callback for test
+      });
 
       await page.goto('data:text/html,<html><body><h1>Test</h1></body></html>');
 
       const result = await waitForCompletion(tab, async () => {
         // Trigger a request before navigation to simulate the scenario
         await page.evaluate(() => {
-          fetch('/api/test').catch(() => {}); // Ignore network errors in test
+          fetch('/api/test').catch(() => {
+            /* Ignore network errors in test */
+          });
         });
         // Then navigate
         await page.goto(
@@ -74,7 +80,9 @@ test.describe('Navigation Context Handling', () => {
         config: { imageResponses: 'include' },
       } as any;
 
-      const tab = new Tab(mockContext, page, () => {});
+      const tab = new Tab(mockContext, page, () => {
+        // No-op callback for test
+      });
 
       await page.goto('data:text/html,<html><body><h1>Test</h1></body></html>');
 
@@ -102,7 +110,9 @@ test.describe('Navigation Context Handling', () => {
         config: { imageResponses: 'include' },
       } as any;
 
-      const tab = new Tab(mockContext, page, () => {});
+      const tab = new Tab(mockContext, page, () => {
+        // No-op callback for test
+      });
 
       await page.goto(
         'data:text/html,<html><body><h1>Initial</h1></body></html>'
@@ -139,7 +149,9 @@ test.describe('Navigation Context Handling', () => {
         config: { imageResponses: 'include' },
       } as any;
 
-      const tab = new Tab(mockContext, page, () => {});
+      const tab = new Tab(mockContext, page, () => {
+        // No-op callback for test
+      });
 
       await page.goto('data:text/html,<html><body><h1>Test</h1></body></html>');
 
@@ -173,7 +185,9 @@ test.describe('Navigation Context Handling', () => {
         config: { imageResponses: 'include' },
       } as any;
 
-      const tab = new Tab(mockContext, page, () => {});
+      const tab = new Tab(mockContext, page, () => {
+        // No-op callback for test
+      });
 
       await page.goto(
         'data:text/html,<html><body><h1>Original</h1></body></html>'
@@ -214,7 +228,9 @@ test.describe('Navigation Context Handling', () => {
         config: { imageResponses: 'include' },
       } as any;
 
-      const tab = new Tab(mockContext, page, () => {});
+      const tab = new Tab(mockContext, page, () => {
+        // No-op callback for test
+      });
 
       // Create a page that responds to Enter key with navigation
       await page.goto(`data:text/html,
@@ -261,7 +277,9 @@ test.describe('Navigation Context Handling', () => {
         config: { imageResponses: 'include' },
       } as any;
 
-      const tab = new Tab(mockContext, page, () => {});
+      const tab = new Tab(mockContext, page, () => {
+        // No-op callback for test
+      });
 
       await page.goto(
         'data:text/html,<html><body><h1>Initial</h1></body></html>'

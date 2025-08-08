@@ -11,7 +11,8 @@ export type ConsoleMethod = 'log' | 'info' | 'warn' | 'error';
  * Console capture utility for testing
  */
 export class ConsoleCapture {
-  private originalMethods: Map<ConsoleMethod, Function> = new Map();
+  private originalMethods: Map<ConsoleMethod, (...args: any[]) => void> =
+    new Map();
   private capturedMessages: Array<{ level: ConsoleMethod; args: any[] }> = [];
 
   /**
@@ -153,14 +154,16 @@ export function createMockElement(
   } = {}
 ): any {
   return {
-    dispose: async () => {
+    dispose: () => {
       if (options.disposeError) {
         throw options.disposeError;
       }
+      return Promise.resolve();
     },
     textContent: async () => options.textContent || 'mock content',
     getAttribute: async (name: string) => options.attributes?.[name] || null,
-    evaluate: async (_fn: Function) => options.selector || 'mock-selector',
+    evaluate: async (_fn: (...args: any[]) => any) =>
+      options.selector || 'mock-selector',
   };
 }
 

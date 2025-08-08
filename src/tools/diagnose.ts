@@ -3,13 +3,12 @@
  */
 
 import { z } from 'zod';
-import { getCurrentThresholds } from '../diagnostics/diagnostic-thresholds.js';
-import { ElementDiscovery } from '../diagnostics/element-discovery.js';
-import { PageAnalyzer } from '../diagnostics/page-analyzer.js';
-import type { SmartConfig } from '../diagnostics/smart-config.js';
-
-import { UnifiedDiagnosticSystem } from '../diagnostics/unified-system.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import { DiagnoseAnalysisRunner } from './diagnose/DiagnoseAnalysisRunner.js';
+import type { ConfigOverrides } from './diagnose/DiagnoseConfigHandler.js';
+import { DiagnoseConfigHandler } from './diagnose/DiagnoseConfigHandler.js';
+import type { SearchCriteria } from './diagnose/DiagnoseReportBuilder.js';
+import { DiagnoseReportBuilder } from './diagnose/DiagnoseReportBuilder.js';
 import { defineTabTool } from './tool.js';
 
 const diagnoseSchema = z
@@ -96,9 +95,9 @@ export const browserDiagnose = defineTabTool({
   handle: async (tab, params, response) => {
     const {
       searchForElements,
-      includePerformanceMetrics,
-      includeAccessibilityInfo,
-      includeTroubleshootingSuggestions,
+      includePerformanceMetrics = false,
+      includeAccessibilityInfo = false,
+      includeTroubleshootingSuggestions = false,
       diagnosticLevel = 'standard',
       useParallelAnalysis = false,
       useUnifiedSystem = true,
@@ -107,818 +106,76 @@ export const browserDiagnose = defineTabTool({
     } = params;
 
     try {
-      // Check diagnostic level
       if (diagnosticLevel === 'none') {
         response.addResult('Diagnostics disabled (level: none)');
         return;
       }
 
-      // Configuration system validation
-      try {
-        const thresholdsManager = getCurrentThresholds();
-        const configDiagnostics = thresholdsManager.getConfigDiagnostics();
+      const startTime = Date.now();
+      const configHandler = new DiagnoseConfigHandler();
 
-        // Report configuration status when diagnostic level is full
-        if (diagnosticLevel === 'full' && includeSystemStats) {
-          response.addResult(
-            `## Configuration Status\n- **Thresholds Status**: ${configDiagnostics.status}\n- **Customizations**: ${configDiagnostics.customizations.length} active\n- **Warnings**: ${configDiagnostics.warnings.length} items\n\n`
-          );
-        }
-      } catch (_configError) {
-        // Configuration validation failed - included in error response
+      // Validate configuration
+      const configDiagnostics = configHandler.validateConfiguration();
+      if (diagnosticLevel === 'full' && includeSystemStats) {
+        response.addResult(
+          `## Configuration Status\n- **Thresholds Status**: ${configDiagnostics.status}\n- **Customizations**: ${configDiagnostics.customizations.length} active\n- **Warnings**: ${configDiagnostics.warnings.length} items\n\n`
+        );
+      }
+
+      if (configDiagnostics.status === 'failed') {
         response.addError(
           'Configuration system validation failed - using fallback settings'
         );
       }
 
-      const startTime = Date.now();
-      let unifiedSystem: UnifiedDiagnosticSystem | null = null;
-      let pageAnalyzer: PageAnalyzer | null = null;
-      const appliedOverrides: string[] = [];
-
-      // Initialize unified system or fallback to direct PageAnalyzer
-      if (useUnifiedSystem) {
-        // Apply configuration overrides if provided
-        const configUpdates: Partial<SmartConfig> = {};
-
-        if (configOverrides) {
-          if (configOverrides.enableResourceMonitoring !== undefined) {
-            configUpdates.features = {
-              enableParallelAnalysis: true,
-              enableSmartHandleManagement: true,
-              enableAdvancedElementDiscovery: true,
-              enableResourceLeakDetection:
-                configOverrides.enableResourceMonitoring,
-              enableRealTimeMonitoring: false,
-            };
-            appliedOverrides.push(
-              `Resource Monitoring: ${configOverrides.enableResourceMonitoring ? 'Enabled' : 'Disabled'}`
-            );
-          }
-
-          if (configOverrides.enableErrorEnrichment !== undefined) {
-            configUpdates.errorHandling = {
-              enableErrorEnrichment: configOverrides.enableErrorEnrichment,
-              enableContextualSuggestions: true,
-              logLevel: 'warn' as const,
-              maxErrorHistory: 100,
-              enablePerformanceErrorDetection: true,
-            };
-            appliedOverrides.push(
-              `Error Enrichment: ${configOverrides.enableErrorEnrichment ? 'Enabled' : 'Disabled'}`
-            );
-          }
-
-          if (configOverrides.enableAdaptiveThresholds !== undefined) {
-            configUpdates.runtime = {
-              enableAdaptiveThresholds:
-                configOverrides.enableAdaptiveThresholds,
-              enableAutoTuning: false,
-              statsCollectionEnabled: true,
-            };
-            appliedOverrides.push(
-              `Adaptive Thresholds: ${configOverrides.enableAdaptiveThresholds ? 'Enabled' : 'Disabled'}`
-            );
-          }
-
-          if (configOverrides.performanceThresholds) {
-            // Get base thresholds from configuration system and apply customizations
-            const baseThresholds =
-              getCurrentThresholds().getMetricsThresholds();
-            const customThresholds = { ...baseThresholds };
-
-            // Apply customized thresholds
-            const thresholdChanges: string[] = [];
-            if (configOverrides.performanceThresholds.pageAnalysis) {
-              const oldValue = customThresholds.executionTime.pageAnalysis;
-              customThresholds.executionTime.pageAnalysis =
-                configOverrides.performanceThresholds.pageAnalysis;
-              thresholdChanges.push(
-                `Page Analysis: ${oldValue}ms → ${configOverrides.performanceThresholds.pageAnalysis}ms`
-              );
-            }
-            if (configOverrides.performanceThresholds.elementDiscovery) {
-              const oldValue = customThresholds.executionTime.elementDiscovery;
-              customThresholds.executionTime.elementDiscovery =
-                configOverrides.performanceThresholds.elementDiscovery;
-              thresholdChanges.push(
-                `Element Discovery: ${oldValue}ms → ${configOverrides.performanceThresholds.elementDiscovery}ms`
-              );
-            }
-            if (configOverrides.performanceThresholds.resourceMonitoring) {
-              const oldValue =
-                customThresholds.executionTime.resourceMonitoring;
-              customThresholds.executionTime.resourceMonitoring =
-                configOverrides.performanceThresholds.resourceMonitoring;
-              thresholdChanges.push(
-                `Resource Monitoring: ${oldValue}ms → ${configOverrides.performanceThresholds.resourceMonitoring}ms`
-              );
-            }
-
-            if (thresholdChanges.length > 0) {
-              appliedOverrides.push(
-                `Performance Thresholds: ${thresholdChanges.join(', ')}`
-              );
-            }
-
-            configUpdates.performance = {
-              enableMetricsCollection: true,
-              enableResourceMonitoring: true,
-              enablePerformanceWarnings: true,
-              autoOptimization: true,
-              thresholds: customThresholds,
-            };
-          }
-        }
-
-        unifiedSystem = UnifiedDiagnosticSystem.getInstance(
-          tab.page,
-          configUpdates
-        );
-        // Using unified diagnostic system
-
-        // Store applied overrides for reporting
-        if (appliedOverrides.length > 0) {
-          // Applied configuration overrides
-        }
-      } else {
-        pageAnalyzer = new PageAnalyzer(tab.page);
-        // Using legacy PageAnalyzer
-      }
+      // Initialize systems
+      const systemConfig = await configHandler.initializeSystems(
+        tab,
+        useUnifiedSystem,
+        useParallelAnalysis,
+        configOverrides as ConfigOverrides
+      );
 
       try {
-        const reportSections: string[] = [];
-
-        // Track applied overrides for reporting (removed duplicate - using the one from line 97)
-
-        // Execute analysis using unified system or legacy approach
-        let diagnosticInfo: import('../diagnostics/page-analyzer.js').PageStructureAnalysis;
-        let performanceMetrics:
-          | import('../types/performance.js').PerformanceMetrics
-          | undefined;
-        let systemHealthInfo:
-          | {
-              status: string;
-              issues: string[];
-              recommendations: string[];
-              timestamp: number;
-            }
-          | undefined;
-
-        if (unifiedSystem) {
-          // Use unified system for enhanced analysis with error handling
-          reportSections.push(
-            '# Unified Diagnostic System Report',
-            '**Unified System Status:** Active with enhanced error handling and monitoring',
-            `**Configuration:** ${configOverrides ? 'Custom overrides applied' : 'Default settings'}`,
-            ''
-          );
-
-          // Add configuration override details to the report
-          if (appliedOverrides.length > 0) {
-            reportSections.push('## Applied Configuration Overrides');
-            for (const override of appliedOverrides) {
-              reportSections.push(`- **${override}**`);
-            }
-            reportSections.push('');
-          }
-
-          // Execute page structure analysis through unified system with detailed logging
-          // Analysis parameters configured
-
-          const structureResult =
-            await unifiedSystem.analyzePageStructure(useParallelAnalysis);
-          if (structureResult.success) {
-            diagnosticInfo =
-              structureResult.data as import('../diagnostics/page-analyzer.js').PageStructureAnalysis;
-
-            if ('structureAnalysis' in diagnosticInfo) {
-              // Parallel analysis result
-              // biome-ignore lint/suspicious/noExplicitAny: Complex diagnostic info structure requires type assertion
-              performanceMetrics = (diagnosticInfo as any).performanceMetrics;
-              // biome-ignore lint/suspicious/noExplicitAny: Complex diagnostic info structure requires type assertion
-              diagnosticInfo = (diagnosticInfo as any).structureAnalysis;
-
-              // Executed Enhanced Parallel Analysis
-              reportSections.push(
-                `**Analysis Type:** Enhanced Parallel Analysis (${structureResult.executionTime}ms)`
-              );
-              reportSections.push(
-                '**Parallel Analysis Status:** Successfully executed with resource monitoring'
-              );
-            } else {
-              // Standard analysis result
-              // Executed Standard Analysis
-              reportSections.push(
-                `**Analysis Type:** Standard Analysis (${structureResult.executionTime}ms)`
-              );
-              reportSections.push(
-                `**Analysis Status:** ${useParallelAnalysis ? 'Parallel analysis requested but fell back to standard' : 'Standard analysis by configuration'}`
-              );
-            }
-          } else {
-            reportSections.push(
-              `**Analysis Error:** ${structureResult.error?.message || 'Unknown error'}`
-            );
-            if (
-              structureResult.error?.suggestions &&
-              structureResult.error.suggestions.length > 0
-            ) {
-              reportSections.push('**Error Suggestions:**');
-              for (const suggestion of structureResult.error.suggestions) {
-                reportSections.push(`- ${suggestion}`);
-              }
-            }
-            // Fallback to basic error case
-            response.addError(
-              `Unified system analysis failed: ${structureResult.error?.message || 'Unknown error'}`
-            );
-            return;
-          }
-
-          // Get system health information if requested
-          if (includeSystemStats) {
-            const healthResult = await unifiedSystem.performHealthCheck();
-            systemHealthInfo = {
-              ...healthResult,
-              timestamp: Date.now(),
-            };
-            const systemStats = unifiedSystem.getSystemStats();
-
-            reportSections.push('');
-            reportSections.push('## Unified System Health');
-            reportSections.push(
-              `- **System Status:** ${systemHealthInfo.status}`
-            );
-            reportSections.push(
-              `- **Total Operations:** ${systemStats.performanceMetrics.totalOperations}`
-            );
-            reportSections.push(
-              `- **Success Rate:** ${(systemStats.performanceMetrics.successRate * 100).toFixed(1)}%`
-            );
-            reportSections.push(
-              `- **Active Handles:** ${systemStats.resourceUsage.currentHandles}`
-            );
-            reportSections.push(
-              `- **Total Errors:** ${Object.values(systemStats.errorCount).reduce((sum, count) => sum + count, 0)}`
-            );
-
-            // Add configuration impact report when config overrides are applied
-            if (appliedOverrides.length > 0) {
-              const configReport = unifiedSystem.getConfigurationReport();
-
-              reportSections.push('');
-              reportSections.push('### Configuration Impact Analysis');
-              reportSections.push(
-                `- **Configuration Status:** ${configReport.configurationStatus.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}`
-              );
-
-              // Performance baseline comparison
-              const { expectedExecutionTimes, actualAverages, deviations } =
-                configReport.performanceBaseline;
-              const hasActualData = Object.values(actualAverages).some(
-                (val) => val > 0
-              );
-
-              if (hasActualData) {
-                reportSections.push('');
-                reportSections.push('**Performance Baseline Comparison:**');
-                for (const component of Object.keys(expectedExecutionTimes)) {
-                  const expected =
-                    expectedExecutionTimes[
-                      component as keyof typeof expectedExecutionTimes
-                    ];
-                  const actual =
-                    actualAverages[component as keyof typeof actualAverages];
-                  const deviation = deviations[component];
-
-                  if (actual > 0) {
-                    let performanceIndicator = '⚪';
-                    if (deviation) {
-                      if (deviation.significance === 'significant') {
-                        performanceIndicator = '🔴';
-                      } else if (deviation.significance === 'notable') {
-                        performanceIndicator = '🟡';
-                      } else {
-                        performanceIndicator = '🟢';
-                      }
-                    }
-
-                    const deviationText = deviation
-                      ? ` (${deviation.percent > 0 ? '+' : ''}${deviation.percent}% ${deviation.significance})`
-                      : '';
-
-                    reportSections.push(
-                      `  ${performanceIndicator} **${component}**: Expected ${expected}ms, Actual ${actual.toFixed(0)}ms${deviationText}`
-                    );
-                  }
-                }
-              }
-
-              // Applied overrides by category
-              if (configReport.appliedOverrides.length > 0) {
-                reportSections.push('');
-                reportSections.push('**Applied Configuration Changes:**');
-                for (const override of configReport.appliedOverrides) {
-                  let impactIcon = '🟢';
-                  if (override.impact === 'high') {
-                    impactIcon = '🔴';
-                  } else if (override.impact === 'medium') {
-                    impactIcon = '🟡';
-                  }
-                  reportSections.push(
-                    `  ${impactIcon} **${override.category}** (${override.impact} impact):`
-                  );
-                  for (const change of override.changes) {
-                    reportSections.push(`    - ${change}`);
-                  }
-                }
-              }
-
-              // Recommendations
-              if (configReport.recommendations.length > 0) {
-                const highPriorityRecs = configReport.recommendations.filter(
-                  (r) => r.priority === 'high'
-                );
-                if (highPriorityRecs.length > 0) {
-                  reportSections.push('');
-                  reportSections.push('**High Priority Recommendations:**');
-                  for (const rec of highPriorityRecs) {
-                    let typeIcon = 'ℹ️';
-                    if (rec.type === 'warning') {
-                      typeIcon = '⚠️';
-                    } else if (rec.type === 'optimization') {
-                      typeIcon = '⚡';
-                    }
-                    reportSections.push(`  ${typeIcon} ${rec.message}`);
-                  }
-                }
-              }
-            }
-
-            if (systemHealthInfo.issues.length > 0) {
-              reportSections.push('');
-              reportSections.push('### System Issues');
-              for (const issue of systemHealthInfo.issues) {
-                reportSections.push(`- ⚠️ ${issue}`);
-              }
-            }
-
-            if (systemHealthInfo.recommendations.length > 0) {
-              reportSections.push('');
-              reportSections.push('### System Recommendations');
-              for (const rec of systemHealthInfo.recommendations) {
-                reportSections.push(`- 💡 ${rec}`);
-              }
-            }
-
-            reportSections.push('');
-          }
-        } else if (useParallelAnalysis) {
-          // Legacy parallel analysis - ensure pageAnalyzer exists
-          pageAnalyzer ??= new PageAnalyzer(tab.page);
-
-          const parallelRecommendation =
-            await pageAnalyzer.shouldUseParallelAnalysis();
-
-          if (parallelRecommendation.recommended || useParallelAnalysis) {
-            const parallelResult = await pageAnalyzer.runParallelAnalysis();
-            diagnosticInfo =
-              parallelResult.structureAnalysis as import('../diagnostics/page-analyzer.js').PageStructureAnalysis;
-            performanceMetrics = parallelResult.performanceMetrics;
-
-            // Add parallel analysis info to report
-            reportSections.push(
-              '# Enhanced Diagnostic Report (Parallel Analysis)',
-              `**Parallel Analysis Execution Time:** ${parallelResult.executionTime}ms`,
-              ''
-            );
-
-            if (parallelResult.errors.length > 0) {
-              reportSections.push('## Analysis Warnings');
-              for (const error of parallelResult.errors) {
-                reportSections.push(`- **${error.step}**: ${error.error}`);
-              }
-              reportSections.push('');
-            }
-          } else {
-            // Fallback to standard analysis
-            diagnosticInfo = await pageAnalyzer.analyzePageStructure();
-            reportSections.push(
-              '# Standard Diagnostic Report',
-              `**Parallel Analysis:** Not recommended - ${parallelRecommendation.reason}`,
-              ''
-            );
-          }
-        } else {
-          // Standard analysis (legacy mode) - ensure pageAnalyzer exists
-          pageAnalyzer ??= new PageAnalyzer(tab.page);
-
-          diagnosticInfo = await pageAnalyzer.analyzePageStructure();
-        }
-
-        // Basic level: Only critical information
-        if (diagnosticLevel === 'basic') {
-          reportSections.push(
-            '# Basic Diagnostic Report',
-            `**URL:** ${tab.page.url()}`,
-            '',
-            '## Critical Information'
-          );
-
-          if (diagnosticInfo.iframes.detected) {
-            reportSections.push(
-              `- **IFrames detected:** ${diagnosticInfo.iframes.count}`
-            );
-          }
-
-          if (diagnosticInfo.modalStates.blockedBy.length > 0) {
-            reportSections.push(
-              `- **Active modals:** ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
-            );
-          }
-
-          reportSections.push(
-            `- **Interactable elements:** ${diagnosticInfo.elements.totalInteractable}`
-          );
-          reportSections.push('');
-        } else {
-          // Standard level and above
-          reportSections.push(
-            '# Page Diagnostic Report',
-            `**URL:** ${tab.page.url()}`,
-            `**Title:** ${await tab.page.title()}`,
-            '',
-            '## Page Structure Analysis',
-            `- **IFrames:** ${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`,
-            `- **Accessible iframes:** ${diagnosticInfo.iframes.accessible.length}`,
-            `- **Inaccessible iframes:** ${diagnosticInfo.iframes.inaccessible.length}`,
-            '',
-            `- **Total visible elements:** ${diagnosticInfo.elements.totalVisible}`,
-            `- **Total interactable elements:** ${diagnosticInfo.elements.totalInteractable}`,
-            `- **Elements missing ARIA:** ${diagnosticInfo.elements.missingAria}`,
-            ''
-          );
-        }
-
-        // Modal state information
-        if (diagnosticInfo.modalStates.blockedBy.length > 0) {
-          reportSections.push('## Modal States');
-          reportSections.push(
-            `- **Active modals:** ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
-          );
-          reportSections.push('');
-        }
-
-        // Element search results (available in standard level and above)
-        if (searchForElements && diagnosticLevel !== 'basic') {
-          const elementDiscovery = new ElementDiscovery(tab.page);
-          const foundElements = await elementDiscovery.findAlternativeElements({
-            originalSelector: '',
-            searchCriteria: searchForElements,
-            maxResults: 10,
-          });
-
-          reportSections.push('## Element Search Results');
-          if (foundElements.length === 0) {
-            reportSections.push(
-              '- No elements found matching the search criteria'
-            );
-          } else {
-            reportSections.push(
-              `Found ${foundElements.length} matching elements:`
-            );
-            for (const [index, element] of foundElements.entries()) {
-              reportSections.push(
-                `${index + 1}. **${element.selector}** (${(element.confidence * 100).toFixed(0)}% confidence)`
-              );
-              reportSections.push(`   - ${element.reason}`);
-            }
-          }
-          reportSections.push('');
-        }
-
-        // Performance metrics (available in detailed and full levels, or when explicitly requested)
-        if (
-          (includePerformanceMetrics ||
-            diagnosticLevel === 'detailed' ||
-            diagnosticLevel === 'full') &&
-          diagnosticLevel !== 'basic'
-        ) {
-          const diagnosisTime = Date.now() - startTime;
-
-          reportSections.push('## Performance Metrics');
-          reportSections.push(
-            `- **Diagnosis execution time:** ${diagnosisTime}ms`
-          );
-
-          try {
-            // Get comprehensive performance metrics - use parallel analysis data if available
-            // biome-ignore lint/suspicious/noExplicitAny: Comprehensive metrics have complex dynamic structure
-            let comprehensiveMetrics: any;
-
-            if (performanceMetrics) {
-              comprehensiveMetrics = performanceMetrics;
-            } else if (pageAnalyzer) {
-              comprehensiveMetrics =
-                await pageAnalyzer.analyzePerformanceMetrics();
-            } else if (unifiedSystem) {
-              // If using unified system but no performance metrics are available,
-              // get performance metrics through unified system
-              const perfResult =
-                await unifiedSystem.analyzePerformanceMetrics();
-              if (perfResult.success) {
-                comprehensiveMetrics = perfResult.data;
-              } else {
-                throw new Error(
-                  `Performance metrics analysis failed: ${perfResult.error?.message || 'Unknown error'}`
-                );
-              }
-            } else {
-              throw new Error('No performance analyzer available');
-            }
-
-            // DOM Complexity Metrics
-            reportSections.push('');
-            reportSections.push('### DOM Complexity');
-            reportSections.push(
-              `- **Total DOM elements:** ${comprehensiveMetrics?.domMetrics?.totalElements || 0}`
-            );
-            reportSections.push(
-              `- **Max DOM depth:** ${comprehensiveMetrics?.domMetrics?.maxDepth || 0} levels`
-            );
-
-            if (comprehensiveMetrics?.domMetrics?.largeSubtrees?.length > 0) {
-              reportSections.push(
-                `- **Large subtrees detected:** ${comprehensiveMetrics.domMetrics.largeSubtrees.length}`
-              );
-              for (const [
-                index,
-                subtree,
-              ] of comprehensiveMetrics.domMetrics.largeSubtrees
-                .slice(0, 3)
-                .entries()) {
-                reportSections.push(
-                  `  ${index + 1}. **${subtree.selector}**: ${subtree.elementCount} elements (${subtree.description})`
-                );
-              }
-            }
-
-            // Interaction Metrics
-            reportSections.push('');
-            reportSections.push('### Interaction Elements');
-            reportSections.push(
-              `- **Clickable elements:** ${comprehensiveMetrics?.interactionMetrics?.clickableElements || 0}`
-            );
-            reportSections.push(
-              `- **Form elements:** ${comprehensiveMetrics?.interactionMetrics?.formElements || 0}`
-            );
-            reportSections.push(
-              `- **Disabled elements:** ${comprehensiveMetrics?.interactionMetrics?.disabledElements || 0}`
-            );
-
-            // Resource Metrics
-            reportSections.push('');
-            reportSections.push('### Resource Load');
-            reportSections.push(
-              `- **Images:** ${comprehensiveMetrics?.resourceMetrics?.imageCount || 0} (${comprehensiveMetrics?.resourceMetrics?.estimatedImageSize || 'Unknown'})`
-            );
-            reportSections.push(
-              `- **Script tags:** ${comprehensiveMetrics?.resourceMetrics?.scriptTags || 0} (${comprehensiveMetrics?.resourceMetrics?.externalScripts || 0} external, ${comprehensiveMetrics?.resourceMetrics?.inlineScripts || 0} inline)`
-            );
-            reportSections.push(
-              `- **Stylesheets:** ${comprehensiveMetrics?.resourceMetrics?.stylesheetCount || 0}`
-            );
-
-            // Layout Metrics (available in full level only)
-            if (diagnosticLevel === 'full') {
-              reportSections.push('');
-              reportSections.push('### Layout Analysis');
-              reportSections.push(
-                `- **Fixed position elements:** ${comprehensiveMetrics?.layoutMetrics?.fixedElements?.length || 0}`
-              );
-              reportSections.push(
-                `- **High z-index elements:** ${comprehensiveMetrics?.layoutMetrics?.highZIndexElements?.length || 0}`
-              );
-              reportSections.push(
-                `- **Overflow hidden elements:** ${comprehensiveMetrics?.layoutMetrics?.overflowHiddenElements || 0}`
-              );
-
-              if (
-                comprehensiveMetrics?.layoutMetrics?.fixedElements?.length > 0
-              ) {
-                reportSections.push('');
-                reportSections.push('**Fixed Elements:**');
-                for (const [
-                  index,
-                  element,
-                ] of comprehensiveMetrics.layoutMetrics.fixedElements
-                  .slice(0, 5)
-                  .entries()) {
-                  reportSections.push(
-                    `${index + 1}. **${element.selector}**: ${element.purpose} (z-index: ${element.zIndex})`
-                  );
-                }
-              }
-
-              if (
-                comprehensiveMetrics?.layoutMetrics?.highZIndexElements
-                  ?.length > 0
-              ) {
-                reportSections.push('');
-                reportSections.push('**High Z-Index Elements:**');
-                for (const [
-                  index,
-                  element,
-                ] of comprehensiveMetrics.layoutMetrics.highZIndexElements
-                  .slice(0, 5)
-                  .entries()) {
-                  reportSections.push(
-                    `${index + 1}. **${element.selector}**: z-index ${element.zIndex} (${element.description})`
-                  );
-                }
-              }
-            }
-
-            // Warnings
-            if (comprehensiveMetrics?.warnings?.length > 0) {
-              reportSections.push('');
-              reportSections.push('### Performance Warnings');
-              for (const warning of comprehensiveMetrics.warnings) {
-                const icon = warning.level === 'danger' ? '🚨' : '⚠️';
-                reportSections.push(
-                  `- ${icon} **${warning.type}**: ${warning.message}`
-                );
-              }
-            }
-          } catch (error) {
-            reportSections.push('');
-            reportSections.push(
-              `- **Error analyzing performance metrics:** ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
-          }
-
-          // Get basic browser performance metrics as fallback/additional info
-          try {
-            const browserMetrics = await tab.page.evaluate(() => {
-              const navigation = performance.getEntriesByType(
-                'navigation'
-              )[0] as PerformanceNavigationTiming;
-              const paint = performance.getEntriesByType('paint');
-
-              return {
-                domContentLoaded:
-                  navigation?.domContentLoadedEventEnd -
-                  navigation?.domContentLoadedEventStart,
-                loadComplete:
-                  navigation?.loadEventEnd - navigation?.loadEventStart,
-                firstPaint: paint.find((p) => p.name === 'first-paint')
-                  ?.startTime,
-                firstContentfulPaint: paint.find(
-                  (p) => p.name === 'first-contentful-paint'
-                )?.startTime,
-              };
-            });
-
-            if (
-              browserMetrics.domContentLoaded ||
-              browserMetrics.loadComplete ||
-              browserMetrics.firstPaint ||
-              browserMetrics.firstContentfulPaint
-            ) {
-              reportSections.push('');
-              reportSections.push('### Browser Performance Timing');
-              if (browserMetrics.domContentLoaded) {
-                reportSections.push(
-                  `- **DOM Content Loaded:** ${browserMetrics.domContentLoaded.toFixed(2)}ms`
-                );
-              }
-
-              if (browserMetrics.loadComplete) {
-                reportSections.push(
-                  `- **Load Complete:** ${browserMetrics.loadComplete.toFixed(2)}ms`
-                );
-              }
-
-              if (browserMetrics.firstPaint) {
-                reportSections.push(
-                  `- **First Paint:** ${browserMetrics.firstPaint.toFixed(2)}ms`
-                );
-              }
-
-              if (browserMetrics.firstContentfulPaint) {
-                reportSections.push(
-                  `- **First Contentful Paint:** ${browserMetrics.firstContentfulPaint.toFixed(2)}ms`
-                );
-              }
-            }
-          } catch (error) {
-            reportSections.push('');
-            reportSections.push(
-              `- **Browser timing metrics unavailable:** ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
-          }
-
-          reportSections.push('');
-        }
-
-        // Accessibility information (available in full level, or when explicitly requested)
-        if (
-          (includeAccessibilityInfo || diagnosticLevel === 'full') &&
-          diagnosticLevel !== 'basic'
-        ) {
-          reportSections.push('## Accessibility Information');
-          reportSections.push(
-            `- **Elements with missing ARIA labels:** ${diagnosticInfo.elements.missingAria}`
-          );
-
-          // Get basic accessibility metrics
-          const a11yMetrics = await tab.page.evaluate(() => {
-            const headings = document.querySelectorAll(
-              'h1, h2, h3, h4, h5, h6'
-            ).length;
-            const landmarks = document.querySelectorAll(
-              '[role="main"], [role="navigation"], [role="banner"], [role="contentinfo"], main, nav, header, footer'
-            ).length;
-            const altTexts = document.querySelectorAll('img[alt]').length;
-            const totalImages = document.querySelectorAll('img').length;
-
-            return {
-              headings,
-              landmarks,
-              imagesWithAlt: altTexts,
-              totalImages,
-            };
-          });
-
-          reportSections.push(
-            `- **Heading elements:** ${a11yMetrics.headings}`
-          );
-          reportSections.push(
-            `- **Landmark elements:** ${a11yMetrics.landmarks}`
-          );
-          reportSections.push(
-            `- **Images with alt text:** ${a11yMetrics.imagesWithAlt}/${a11yMetrics.totalImages}`
-          );
-          reportSections.push('');
-        }
-
-        // Troubleshooting suggestions (available in standard level and above, or when explicitly requested)
-        if (
-          (includeTroubleshootingSuggestions ||
-            diagnosticLevel === 'standard' ||
-            diagnosticLevel === 'detailed' ||
-            diagnosticLevel === 'full') &&
-          diagnosticLevel !== 'basic'
-        ) {
-          reportSections.push('## Troubleshooting Suggestions');
-
-          const suggestions: string[] = [];
-
-          if (diagnosticInfo.iframes.detected) {
-            suggestions.push(
-              'Elements might be inside iframes - use frameLocator() for iframe interactions'
-            );
-          }
-
-          if (diagnosticInfo.modalStates.blockedBy.length > 0) {
-            suggestions.push(
-              `Active modal states (${diagnosticInfo.modalStates.blockedBy.join(', ')}) may block interactions`
-            );
-          }
-
-          if (diagnosticInfo.elements.missingAria > 0) {
-            suggestions.push(
-              `${diagnosticInfo.elements.missingAria} elements lack proper ARIA attributes - consider using text-based selectors`
-            );
-          }
-
-          if (
-            diagnosticInfo.elements.totalInteractable <
-            diagnosticInfo.elements.totalVisible * 0.1
-          ) {
-            suggestions.push(
-              'Low ratio of interactable elements - page might still be loading or have CSS issues'
-            );
-          }
-
-          if (suggestions.length === 0) {
-            suggestions.push(
-              'No obvious issues detected - page appears to be in good state for automation'
-            );
-          }
-
-          for (const suggestion of suggestions) {
-            reportSections.push(`- ${suggestion}`);
-          }
-          reportSections.push('');
-        }
-
-        response.addResult(reportSections.join('\n'));
+        // Run analysis
+        const analysisRunner = new DiagnoseAnalysisRunner();
+        const analysisResult = await analysisRunner.runAnalysis(
+          systemConfig.unifiedSystem || null,
+          systemConfig.pageAnalyzer || null,
+          useParallelAnalysis,
+          includeSystemStats
+        );
+
+        // Build report
+        const reportBuilder = new DiagnoseReportBuilder(tab);
+        const reportOptions = {
+          diagnosticLevel: diagnosticLevel as
+            | 'none'
+            | 'basic'
+            | 'standard'
+            | 'detailed'
+            | 'full',
+          includePerformanceMetrics,
+          includeAccessibilityInfo,
+          includeTroubleshootingSuggestions,
+          includeSystemStats,
+          searchForElements: searchForElements as SearchCriteria | undefined,
+          appliedOverrides: systemConfig.appliedOverrides,
+          startTime,
+        };
+
+        const report = await reportBuilder.buildReport(
+          analysisResult,
+          systemConfig.unifiedSystem || null,
+          systemConfig.pageAnalyzer || null,
+          reportOptions
+        );
+
+        response.addResult(report);
       } finally {
         // Cleanup: unified system manages its own lifecycle, only dispose legacy pageAnalyzer
-        if (!unifiedSystem && pageAnalyzer) {
-          await pageAnalyzer.dispose();
+        if (!systemConfig.unifiedSystem && systemConfig.pageAnalyzer) {
+          await systemConfig.pageAnalyzer.dispose();
         }
       }
     } catch (error) {

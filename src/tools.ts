@@ -16,9 +16,9 @@ import pdf from './tools/pdf.js';
 import screenshot from './tools/screenshot.js';
 import snapshot from './tools/snapshot.js';
 import tabs from './tools/tabs.js';
-import type { Tool } from './tools/tool.js';
+import type { AnyTool } from './tools/tool.js';
 import wait from './tools/wait.js';
-export const allTools: Tool<any>[] = [
+export const allTools: AnyTool[] = [
   ...common,
   ...console,
   ...dialogs,
@@ -38,7 +38,7 @@ export const allTools: Tool<any>[] = [
   browserFindElements,
   browserDiagnose,
 ];
-export function filteredTools(config: FullConfig): Tool[] {
+export function filteredTools(config: FullConfig): AnyTool[] {
   return allTools.filter(
     (tool) =>
       tool.capability.startsWith('core') ||

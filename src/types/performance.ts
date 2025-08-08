@@ -70,8 +70,12 @@ export interface PerformanceMetrics {
     clickableElements: number;
     formElements: number;
     disabledElements: number;
+    iframes: number;
   };
   resourceMetrics?: {
+    totalRequests: number;
+    totalSize: number;
+    loadTime: number;
     imageCount: number;
     estimatedImageSize: string;
     scriptTags: number;
@@ -80,6 +84,9 @@ export interface PerformanceMetrics {
     stylesheetCount: number;
   };
   layoutMetrics?: {
+    viewportWidth: number;
+    viewportHeight: number;
+    scrollHeight: number;
     fixedElements: Array<{
       selector: string;
       purpose: string;

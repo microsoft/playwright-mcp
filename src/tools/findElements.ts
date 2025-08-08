@@ -6,8 +6,38 @@ import { z } from 'zod';
 import { ElementDiscovery } from '../diagnostics/element-discovery.js';
 import { PageAnalyzer } from '../diagnostics/page-analyzer.js';
 import type { SmartConfig } from '../diagnostics/smart-config.js';
+
+// Type definitions for diagnostic info structures
+type DiagnosticInfo = {
+  iframes?: { count: number; detected: boolean };
+  elements?: { totalVisible: number; totalInteractable: number };
+  modalStates?: { blockedBy: string[] };
+  structureAnalysis?: StructureAnalysis;
+};
+
+type StructureAnalysis = {
+  iframes?: { count: number; detected: boolean };
+  elements?: { totalVisible: number; totalInteractable: number };
+  modalStates?: { blockedBy: string[] };
+};
+
+type OperationResult<T = unknown> = {
+  success: boolean;
+  data?: T;
+  error?: OperationError;
+  executionTime: number;
+};
+
+type OperationError = {
+  message: string;
+  code?: string;
+  cause?: unknown;
+  suggestions?: string[];
+};
+
 import { UnifiedDiagnosticSystem } from '../diagnostics/unified-system.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import type { Tab } from '../tab.js';
 import { defineTabTool } from './tool.js';
 
 const findElementsSchema = z
@@ -65,173 +95,11 @@ export const browserFindElements = defineTabTool({
     inputSchema: findElementsSchema,
   },
   handle: async (tab, params, response) => {
-    const {
-      searchCriteria,
-      maxResults,
-      includeDiagnosticInfo,
-      useUnifiedSystem = true,
-      enableEnhancedDiscovery = true,
-      performanceThreshold = 500,
-    } = params;
-
-    let unifiedSystem: UnifiedDiagnosticSystem | null = null;
-    let elementDiscovery: ElementDiscovery | null = null;
-
-    interface ElementAlternative {
-      ref: string;
-      element: string;
-      confidence: number;
-      textContent: string;
-      attributes: Record<string, string>;
-      selector: string;
-    }
-
-    interface OperationError {
-      message?: string;
-      suggestions?: string[];
-    }
-
-    interface OperationResult {
-      success: boolean;
-      data?: ElementAlternative[];
-      error?: OperationError;
-      executionTime?: number;
-    }
-
-    interface DiagnosticResult {
-      data?: {
-        structureAnalysis?: {
-          iframes?: { count: number; detected: boolean };
-          elements?: { totalVisible: number; totalInteractable: number };
-          modalStates?: { blockedBy: string[] };
-        };
-        // Also support direct properties for standard analysis
-        iframes?: { count: number; detected: boolean };
-        elements?: { totalVisible: number; totalInteractable: number };
-        modalStates?: { blockedBy: string[] };
-      };
-      executionTime?: number;
-    }
+    const context = new FindElementsContext(params);
+    contextInstance = context;
 
     try {
-      let alternatives: ElementAlternative[] = [];
-      let operationResult: OperationResult | undefined;
-
-      if (useUnifiedSystem) {
-        // Configure unified system with element discovery optimizations
-        const configOverrides: Partial<SmartConfig> = {
-          features: {
-            enableParallelAnalysis: true,
-            enableSmartHandleManagement: true,
-            enableAdvancedElementDiscovery: enableEnhancedDiscovery,
-            enableResourceLeakDetection: true,
-            enableRealTimeMonitoring: false,
-          },
-          performance: {
-            enableMetricsCollection: true,
-            enableResourceMonitoring: true,
-            enablePerformanceWarnings: true,
-            autoOptimization: true,
-            thresholds: {
-              executionTime: {
-                elementDiscovery: performanceThreshold,
-                pageAnalysis: 1000,
-                resourceMonitoring: 200,
-                parallelAnalysis: 2000,
-              },
-              memory: {
-                maxMemoryUsage: 100 * 1024 * 1024,
-                memoryLeakThreshold: 50 * 1024 * 1024,
-                gcTriggerThreshold: 80 * 1024 * 1024,
-              },
-              performance: {
-                domElementLimit: 10_000,
-                maxDepthLimit: 50,
-                largeSubtreeThreshold: 1000,
-              },
-              dom: {
-                totalElements: 10_000,
-                maxDepth: 50,
-                largeSubtrees: 10,
-                elementsWarning: 1500,
-                elementsDanger: 3000,
-                depthWarning: 15,
-                depthDanger: 20,
-                largeSubtreeThreshold: 500,
-              },
-              interaction: {
-                clickableElements: 100,
-                formElements: 50,
-                clickableHigh: 100,
-              },
-              layout: {
-                fixedElements: 10,
-                highZIndexElements: 5,
-                highZIndexThreshold: 1000,
-                excessiveZIndexThreshold: 9999,
-              },
-            },
-          },
-        };
-
-        unifiedSystem = UnifiedDiagnosticSystem.getInstance(
-          tab.page,
-          configOverrides
-        );
-
-        // Use unified system for element discovery with enhanced error handling
-        operationResult = (await unifiedSystem.findAlternativeElements(
-          searchCriteria
-        )) as OperationResult;
-
-        if (operationResult.success) {
-          alternatives = operationResult.data || [];
-        } else {
-          // Handle enhanced error from unified system
-          const errorInfo = operationResult.error;
-          let errorMessage = `Element discovery failed: ${errorInfo?.message || 'Unknown error'}`;
-
-          if (errorInfo?.suggestions && errorInfo.suggestions.length > 0) {
-            errorMessage += '\n\nSuggestions:';
-            for (const suggestion of errorInfo.suggestions) {
-              errorMessage += `
-- ${suggestion}`;
-            }
-          }
-
-          response.addError(errorMessage);
-          return;
-        }
-
-        // Used unified system for element discovery
-      } else {
-        // Legacy element discovery
-        elementDiscovery = new ElementDiscovery(tab.page);
-        const legacyResults = await elementDiscovery.findAlternativeElements({
-          originalSelector: '', // Not used in this context
-          searchCriteria,
-          maxResults,
-        });
-
-        // Convert legacy results to expected format
-        alternatives = legacyResults.map((result) => ({
-          ref: result.selector,
-          element: result.selector,
-          confidence: result.confidence,
-          textContent: '',
-          attributes: {},
-          selector: result.selector,
-        }));
-
-        // Initialize operation result for legacy discovery
-        operationResult = {
-          success: true,
-          data: alternatives,
-          executionTime: 0,
-        };
-
-        // Used legacy element discovery
-      }
+      const alternatives = await findElements(tab, context);
 
       if (alternatives.length === 0) {
         response.addResult(
@@ -240,145 +108,381 @@ export const browserFindElements = defineTabTool({
         return;
       }
 
-      // Format the results
-      const resultsText = [
-        `Found ${alternatives.length} elements matching the criteria:`,
-        '',
-      ];
+      const resultsText = formatElementResults(alternatives);
+      await addDiagnosticInfoIfRequested(tab, context, resultsText);
+      addPerformanceInfoIfAvailable(context, resultsText);
 
-      for (const [index, alt] of alternatives.entries()) {
-        resultsText.push(`${index + 1}. Selector: ${alt.selector}`);
-        resultsText.push(
-          `   Confidence: ${(alt.confidence * 100).toFixed(0)}%`
-        );
-        resultsText.push(
-          `   Reason: ${(alt as ElementAlternative & { reason?: string }).reason || 'No reason provided'}`
-        );
-        if (index < alternatives.length - 1) {
-          resultsText.push('');
-        }
-      }
-
-      // Add diagnostic information if requested
-      if (includeDiagnosticInfo) {
-        if (unifiedSystem) {
-          // Use unified system for diagnostic information
-          const diagResult = await unifiedSystem.analyzePageStructure();
-          if (diagResult.success) {
-            const diagnosticInfo = (diagResult as DiagnosticResult).data;
-
-            resultsText.push('', '### Enhanced Diagnostic Information');
-            resultsText.push(
-              `- Analysis time: ${(diagResult as DiagnosticResult).executionTime || 0}ms`
-            );
-
-            if (diagnosticInfo?.structureAnalysis) {
-              // Parallel analysis result
-              const structure = diagnosticInfo.structureAnalysis;
-              resultsText.push(
-                `- Page has ${structure.iframes?.count || 0} iframes detected: ${structure.iframes?.detected}`
-              );
-              resultsText.push(
-                `- Total visible elements: ${structure.elements?.totalVisible || 0}`
-              );
-              resultsText.push(
-                `- Total interactable elements: ${structure.elements?.totalInteractable || 0}`
-              );
-
-              if (
-                structure.modalStates?.blockedBy &&
-                structure.modalStates.blockedBy.length > 0
-              ) {
-                resultsText.push(
-                  `- Page blocked by: ${structure.modalStates.blockedBy.join(', ')}`
-                );
-              }
-            } else {
-              // Standard analysis result
-              resultsText.push(
-                `- Page has ${diagnosticInfo?.iframes?.count || 0} iframes detected: ${diagnosticInfo?.iframes?.detected}`
-              );
-              resultsText.push(
-                `- Total visible elements: ${diagnosticInfo?.elements?.totalVisible || 0}`
-              );
-              resultsText.push(
-                `- Total interactable elements: ${diagnosticInfo?.elements?.totalInteractable || 0}`
-              );
-
-              if (
-                diagnosticInfo?.modalStates?.blockedBy &&
-                diagnosticInfo.modalStates.blockedBy.length > 0
-              ) {
-                resultsText.push(
-                  `- Page blocked by: ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
-                );
-              }
-            }
-          } else {
-            resultsText.push('', '### Diagnostic Information');
-            resultsText.push(
-              `- Error getting diagnostic information: ${diagResult.error?.message || 'Unknown error'}`
-            );
-          }
-        } else {
-          // Legacy diagnostic information
-          const pageAnalyzer = new PageAnalyzer(tab.page);
-          try {
-            const diagnosticInfo = await pageAnalyzer.analyzePageStructure();
-
-            resultsText.push('', '### Diagnostic Information');
-            resultsText.push(
-              `- Page has ${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`
-            );
-            resultsText.push(
-              `- Total visible elements: ${diagnosticInfo.elements.totalVisible}`
-            );
-            resultsText.push(
-              `- Total interactable elements: ${diagnosticInfo.elements.totalInteractable}`
-            );
-
-            if (diagnosticInfo.modalStates.blockedBy.length > 0) {
-              resultsText.push(
-                `- Page blocked by: ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
-              );
-            }
-          } finally {
-            await pageAnalyzer.dispose();
-          }
-        }
-      }
-
-      // Add unified system performance information if available
-      if (useUnifiedSystem && operationResult && enableEnhancedDiscovery) {
-        resultsText.push('');
-        resultsText.push('### Enhanced Discovery Information');
-        resultsText.push(
-          `- Discovery execution time: ${operationResult.executionTime || 0}ms`
-        );
-
-        if (
-          operationResult.executionTime &&
-          operationResult.executionTime > performanceThreshold
-        ) {
-          resultsText.push(
-            `- ⚠️ Discovery exceeded performance threshold (${performanceThreshold}ms)`
-          );
-        } else {
-          resultsText.push('- ✅ Discovery within performance threshold');
-        }
-      }
-
-      // Track performance internally but don't report to agent unless it's critical
       response.addResult(resultsText.join('\n'));
     } catch (error) {
       response.addError(
         `Error finding elements: ${error instanceof Error ? error.message : String(error)}`
       );
     } finally {
-      // Cleanup: unified system manages its own lifecycle, only dispose legacy elementDiscovery
-      if (elementDiscovery) {
-        await elementDiscovery.dispose();
-      }
+      await cleanupResources();
     }
   },
 });
+
+// Type definitions
+interface ElementAlternative {
+  ref: string;
+  element: string;
+  description: string;
+  confidence: number;
+  textContent: string;
+  attributes: Record<string, string>;
+  selector: string;
+}
+
+// Context class to manage state
+class FindElementsContext {
+  unifiedSystem: UnifiedDiagnosticSystem | null = null;
+  elementDiscovery: ElementDiscovery | null = null;
+  operationResult: OperationResult | undefined;
+  readonly params: z.infer<typeof findElementsSchema>;
+
+  constructor(params: z.infer<typeof findElementsSchema>) {
+    this.params = params;
+  }
+
+  get useUnifiedSystem(): boolean {
+    return this.params.useUnifiedSystem ?? true;
+  }
+  get enableEnhancedDiscovery(): boolean {
+    return this.params.enableEnhancedDiscovery ?? true;
+  }
+  get performanceThreshold(): number {
+    return this.params.performanceThreshold ?? 500;
+  }
+  get includeDiagnosticInfo(): boolean {
+    return this.params.includeDiagnosticInfo ?? false;
+  }
+  get searchCriteria(): z.infer<typeof findElementsSchema>['searchCriteria'] {
+    return this.params.searchCriteria;
+  }
+  get maxResults(): number {
+    return this.params.maxResults;
+  }
+}
+
+// Main element finding logic
+async function findElements(
+  tab: Tab,
+  context: FindElementsContext
+): Promise<ElementAlternative[]> {
+  if (context.useUnifiedSystem) {
+    return await findElementsWithUnifiedSystem(tab, context);
+  }
+  return await findElementsWithLegacySystem(tab, context);
+}
+
+async function findElementsWithUnifiedSystem(
+  tab: Tab,
+  context: FindElementsContext
+): Promise<ElementAlternative[]> {
+  const configOverrides = buildUnifiedSystemConfig(context);
+  context.unifiedSystem = UnifiedDiagnosticSystem.getInstance(
+    tab.page,
+    configOverrides
+  );
+
+  const operationResult = (await context.unifiedSystem.findAlternativeElements(
+    context.searchCriteria
+  )) as OperationResult;
+
+  context.operationResult = operationResult;
+
+  if (!operationResult.success) {
+    throw new Error(buildErrorMessage(operationResult.error));
+  }
+
+  return (operationResult.data as ElementAlternative[]) || [];
+}
+
+async function findElementsWithLegacySystem(
+  tab: Tab,
+  context: FindElementsContext
+): Promise<ElementAlternative[]> {
+  context.elementDiscovery = new ElementDiscovery(tab.page);
+
+  const legacyResults = await context.elementDiscovery.findAlternativeElements({
+    originalSelector: '',
+    searchCriteria: context.searchCriteria,
+    maxResults: context.maxResults,
+  });
+
+  const alternatives = legacyResults.map((result) => ({
+    ref: result.selector,
+    element: result.selector,
+    description: `Element with selector ${result.selector}`,
+    confidence: result.confidence,
+    textContent: '',
+    attributes: {},
+    selector: result.selector,
+  }));
+
+  context.operationResult = {
+    success: true,
+    data: alternatives,
+    executionTime: 0,
+  };
+
+  return alternatives;
+}
+
+function buildUnifiedSystemConfig(
+  context: FindElementsContext
+): Partial<SmartConfig> {
+  return {
+    features: {
+      enableParallelAnalysis: true,
+      enableSmartHandleManagement: true,
+      enableAdvancedElementDiscovery: context.enableEnhancedDiscovery,
+      enableResourceLeakDetection: true,
+      enableRealTimeMonitoring: false,
+    },
+    performance: {
+      enableMetricsCollection: true,
+      enableResourceMonitoring: true,
+      enablePerformanceWarnings: true,
+      autoOptimization: true,
+      thresholds: {
+        executionTime: {
+          elementDiscovery: context.performanceThreshold,
+          pageAnalysis: 1000,
+          resourceMonitoring: 200,
+          parallelAnalysis: 2000,
+        },
+        memory: {
+          maxMemoryUsage: 100 * 1024 * 1024,
+          memoryLeakThreshold: 50 * 1024 * 1024,
+          gcTriggerThreshold: 80 * 1024 * 1024,
+        },
+        performance: {
+          domElementLimit: 10_000,
+          maxDepthLimit: 50,
+          largeSubtreeThreshold: 1000,
+        },
+        dom: {
+          totalElements: 10_000,
+          maxDepth: 50,
+          largeSubtrees: 10,
+          elementsWarning: 1500,
+          elementsDanger: 3000,
+          depthWarning: 15,
+          depthDanger: 20,
+          largeSubtreeThreshold: 500,
+        },
+        interaction: {
+          clickableElements: 100,
+          formElements: 50,
+          clickableHigh: 100,
+        },
+        layout: {
+          fixedElements: 10,
+          highZIndexElements: 5,
+          highZIndexThreshold: 1000,
+          excessiveZIndexThreshold: 9999,
+        },
+      },
+    },
+  };
+}
+
+function buildErrorMessage(errorInfo?: OperationError): string {
+  let errorMessage = `Element discovery failed: ${errorInfo?.message || 'Unknown error'}`;
+
+  if (errorInfo?.suggestions && errorInfo.suggestions.length > 0) {
+    errorMessage += '\n\nSuggestions:';
+    for (const suggestion of errorInfo.suggestions) {
+      errorMessage += `\n- ${suggestion}`;
+    }
+  }
+
+  return errorMessage;
+}
+
+function formatElementResults(alternatives: ElementAlternative[]): string[] {
+  const resultsText = [
+    `Found ${alternatives.length} elements matching the criteria:`,
+    '',
+  ];
+
+  for (const [index, alt] of alternatives.entries()) {
+    resultsText.push(`${index + 1}. Selector: ${alt.selector}`);
+    resultsText.push(`   Confidence: ${(alt.confidence * 100).toFixed(0)}%`);
+    resultsText.push(
+      `   Reason: ${(alt as ElementAlternative & { reason?: string }).reason || 'No reason provided'}`
+    );
+    if (index < alternatives.length - 1) {
+      resultsText.push('');
+    }
+  }
+
+  return resultsText;
+}
+
+async function addDiagnosticInfoIfRequested(
+  tab: Tab,
+  context: FindElementsContext,
+  resultsText: string[]
+): Promise<void> {
+  if (!context.includeDiagnosticInfo) {
+    return;
+  }
+
+  if (context.unifiedSystem) {
+    await addUnifiedDiagnosticInfo(context.unifiedSystem, resultsText);
+  } else {
+    await addLegacyDiagnosticInfo(tab, resultsText);
+  }
+}
+
+async function addUnifiedDiagnosticInfo(
+  unifiedSystem: UnifiedDiagnosticSystem,
+  resultsText: string[]
+): Promise<void> {
+  const diagResult = await unifiedSystem.analyzePageStructure();
+
+  if (diagResult.success) {
+    const diagnosticInfo = diagResult.data as DiagnosticInfo;
+    resultsText.push('', '### Enhanced Diagnostic Information');
+    resultsText.push(`- Analysis time: ${diagResult.executionTime || 0}ms`);
+
+    addStructuralDiagnosticInfo(diagnosticInfo, resultsText);
+  } else {
+    resultsText.push('', '### Diagnostic Information');
+    resultsText.push(
+      `- Error getting diagnostic information: ${diagResult.error?.message || 'Unknown error'}`
+    );
+  }
+}
+
+function addStructuralDiagnosticInfo(
+  diagnosticInfo: DiagnosticInfo,
+  resultsText: string[]
+): void {
+  if (diagnosticInfo?.structureAnalysis) {
+    addParallelAnalysisInfo(diagnosticInfo.structureAnalysis, resultsText);
+  } else {
+    addStandardAnalysisInfo(diagnosticInfo, resultsText);
+  }
+}
+
+function addParallelAnalysisInfo(
+  structure: StructureAnalysis,
+  resultsText: string[]
+): void {
+  resultsText.push(
+    `- Page has ${structure.iframes?.count || 0} iframes detected: ${structure.iframes?.detected}`
+  );
+  resultsText.push(
+    `- Total visible elements: ${structure.elements?.totalVisible || 0}`
+  );
+  resultsText.push(
+    `- Total interactable elements: ${structure.elements?.totalInteractable || 0}`
+  );
+
+  if (
+    structure.modalStates?.blockedBy &&
+    structure.modalStates.blockedBy.length > 0
+  ) {
+    resultsText.push(
+      `- Page blocked by: ${structure.modalStates.blockedBy.join(', ')}`
+    );
+  }
+}
+
+function addStandardAnalysisInfo(
+  diagnosticInfo: DiagnosticInfo,
+  resultsText: string[]
+): void {
+  resultsText.push(
+    `- Page has ${diagnosticInfo?.iframes?.count || 0} iframes detected: ${diagnosticInfo?.iframes?.detected}`
+  );
+  resultsText.push(
+    `- Total visible elements: ${diagnosticInfo?.elements?.totalVisible || 0}`
+  );
+  resultsText.push(
+    `- Total interactable elements: ${diagnosticInfo?.elements?.totalInteractable || 0}`
+  );
+
+  if (
+    diagnosticInfo?.modalStates?.blockedBy &&
+    diagnosticInfo.modalStates.blockedBy.length > 0
+  ) {
+    resultsText.push(
+      `- Page blocked by: ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
+    );
+  }
+}
+
+async function addLegacyDiagnosticInfo(
+  tab: Tab,
+  resultsText: string[]
+): Promise<void> {
+  const pageAnalyzer = new PageAnalyzer(tab.page);
+  try {
+    const diagnosticInfo = await pageAnalyzer.analyzePageStructure();
+
+    resultsText.push('', '### Diagnostic Information');
+    resultsText.push(
+      `- Page has ${diagnosticInfo.iframes.count} iframes detected: ${diagnosticInfo.iframes.detected}`
+    );
+    resultsText.push(
+      `- Total visible elements: ${diagnosticInfo.elements.totalVisible}`
+    );
+    resultsText.push(
+      `- Total interactable elements: ${diagnosticInfo.elements.totalInteractable}`
+    );
+
+    if (diagnosticInfo.modalStates.blockedBy.length > 0) {
+      resultsText.push(
+        `- Page blocked by: ${diagnosticInfo.modalStates.blockedBy.join(', ')}`
+      );
+    }
+  } finally {
+    await pageAnalyzer.dispose();
+  }
+}
+
+function addPerformanceInfoIfAvailable(
+  context: FindElementsContext,
+  resultsText: string[]
+): void {
+  if (
+    !(
+      context.useUnifiedSystem &&
+      context.operationResult &&
+      context.enableEnhancedDiscovery
+    )
+  ) {
+    return;
+  }
+
+  resultsText.push('');
+  resultsText.push('### Enhanced Discovery Information');
+  resultsText.push(
+    `- Discovery execution time: ${context.operationResult.executionTime || 0}ms`
+  );
+
+  if (
+    context.operationResult.executionTime &&
+    context.operationResult.executionTime > context.performanceThreshold
+  ) {
+    resultsText.push(
+      `- ⚠️ Discovery exceeded performance threshold (${context.performanceThreshold}ms)`
+    );
+  } else {
+    resultsText.push('- ✅ Discovery within performance threshold');
+  }
+}
+
+let contextInstance: FindElementsContext | null = null;
+
+async function cleanupResources(): Promise<void> {
+  if (contextInstance?.elementDiscovery) {
+    await contextInstance.elementDiscovery.dispose();
+  }
+  contextInstance = null;
+}

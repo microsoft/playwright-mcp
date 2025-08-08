@@ -3,15 +3,15 @@ export class ManualPromise<T = void> extends Promise<T> {
   private _reject!: (e: Error) => void;
   private _isDone: boolean;
   constructor() {
-    let resolve: (t: T) => void;
-    let reject: (e: Error) => void;
-    super((f, r) => {
-      resolve = f;
-      reject = r;
+    let resolve!: (t: T) => void;
+    let reject!: (e: Error) => void;
+    super((res, rej) => {
+      resolve = res;
+      reject = rej;
     });
     this._isDone = false;
-    this._resolve = resolve!;
-    this._reject = reject!;
+    this._resolve = resolve;
+    this._reject = reject;
   }
   isDone() {
     return this._isDone;
@@ -53,19 +53,19 @@ export class LongStandingScope {
   isClosed() {
     return this._isClosed;
   }
-  static async raceMultiple<T>(
+  static raceMultiple<T>(
     scopes: LongStandingScope[],
     promise: Promise<T>
   ): Promise<T> {
     return Promise.race(scopes.map((s) => s.race(promise)));
   }
-  async race<T>(promise: Promise<T> | Promise<T>[]): Promise<T> {
+  race<T>(promise: Promise<T> | Promise<T>[]): Promise<T> {
     return this._race(
       Array.isArray(promise) ? promise : [promise],
       false
     ) as Promise<T>;
   }
-  async safeRace<T>(promise: Promise<T>, defaultValue?: T): Promise<T> {
+  safeRace<T>(promise: Promise<T>, defaultValue?: T): Promise<T> {
     return this._race([promise], true, defaultValue);
   }
   private async _race<T>(
@@ -95,16 +95,15 @@ export class LongStandingScope {
   }
 }
 function cloneError(error: Error, frames: string[]) {
-  const clone = new Error();
+  const clone = new Error(error.message);
   clone.name = error.name;
-  clone.message = error.message;
   clone.stack = [`${error.name}:${error.message}`, ...frames].join('\n');
   return clone;
 }
 function captureRawStack(): string[] {
   const stackTraceLimit = Error.stackTraceLimit;
   Error.stackTraceLimit = 50;
-  const error = new Error();
+  const error = new Error('Stack trace capture');
   const stack = error.stack || '';
   Error.stackTraceLimit = stackTraceLimit;
   return stack.split('\n');

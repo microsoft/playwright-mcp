@@ -81,12 +81,12 @@ export class TestServer {
     this.HELLO_WORLD = `${this.PREFIX}hello-world`;
   }
 
-  setCSP(path: string, csp: string) {
-    this._csp.set(path, csp);
+  setCSP(routePath: string, csp: string) {
+    this._csp.set(routePath, csp);
   }
 
-  setExtraHeaders(path: string, object: Record<string, string>) {
-    this._extraHeaders.set(path, object);
+  setExtraHeaders(routePath: string, object: Record<string, string>) {
+    this._extraHeaders.set(routePath, object);
   }
 
   async stop() {
@@ -95,17 +95,17 @@ export class TestServer {
   }
 
   route(
-    path: string,
+    routePath: string,
     handler: (
       request: http.IncomingMessage,
       response: http.ServerResponse
     ) => any
   ) {
-    this._routes.set(path, handler);
+    this._routes.set(routePath, handler);
   }
 
-  setContent(path: string, content: string, mimeType: string) {
-    this.route(path, (_req, res) => {
+  setContent(routePath: string, content: string, mimeType: string) {
+    this.route(routePath, (_req, res) => {
       res.writeHead(200, { 'Content-Type': mimeType });
       res.end(mimeType === 'text/html' ? `<!DOCTYPE html>${content}` : content);
     });
@@ -113,25 +113,26 @@ export class TestServer {
 
   redirect(from: string, to: string) {
     this.route(from, (req, res) => {
-      const headers = this._extraHeaders.get(req.url!) || {};
+      const headers = this._extraHeaders.get(req.url || '/') || {};
       res.writeHead(302, { ...headers, location: to });
       res.end();
     });
   }
 
-  waitForRequest(path: string): Promise<http.IncomingMessage> {
-    let promise = this._requestSubscribers.get(path);
+  waitForRequest(routePath: string): Promise<http.IncomingMessage> {
+    let promise = this._requestSubscribers.get(routePath);
     if (promise) {
       return promise;
     }
-    let fulfill, reject;
+    let fulfill: (value: http.IncomingMessage) => void;
+    let reject: (reason?: unknown) => void;
     promise = new Promise((f, r) => {
       fulfill = f;
       reject = r;
     });
     promise[fulfillSymbol] = fulfill;
     promise[rejectSymbol] = reject;
-    this._requestSubscribers.set(path, promise);
+    this._requestSubscribers.set(routePath, promise);
     return promise;
   }
 
@@ -175,14 +176,16 @@ export class TestServer {
       });
       request.on('end', () => resolve(Buffer.concat(chunks)));
     });
-    const path = request.url || '/';
-    this.debugServer(`request ${request.method} ${path}`);
+    const requestPath = request.url || '/';
+    this.debugServer(`request ${request.method} ${requestPath}`);
     // Notify request subscriber.
-    if (this._requestSubscribers.has(path)) {
-      this._requestSubscribers.get(path)?.[fulfillSymbol].call(null, request);
-      this._requestSubscribers.delete(path);
+    if (this._requestSubscribers.has(requestPath)) {
+      this._requestSubscribers
+        .get(requestPath)
+        ?.[fulfillSymbol].call(null, request);
+      this._requestSubscribers.delete(requestPath);
     }
-    const handler = this._routes.get(path);
+    const handler = this._routes.get(requestPath);
     if (handler) {
       handler.call(null, request, response);
     } else {

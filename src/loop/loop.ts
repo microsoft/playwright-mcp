@@ -46,8 +46,10 @@ export async function runTask(
   const taskContent = createTaskContent(task, oneShot);
   const conversation = delegate.createConversation(taskContent, tools, oneShot);
 
+  // Conversation iterations must be sequential as each depends on previous results
   for (let iteration = 0; iteration < 5; ++iteration) {
     debug('history')('Making API call for iteration', iteration);
+    // biome-ignore lint/nursery/noAwaitInLoop: Sequential conversation flow - each iteration depends on previous results
     const toolCalls = await delegate.makeApiCall(conversation);
 
     if (toolCalls.length === 0) {
@@ -104,6 +106,7 @@ async function processToolCalls(
       return { toolResults, isDone: true };
     }
 
+    // biome-ignore lint/nursery/noAwaitInLoop: tool calls may have dependencies and must execute sequentially
     const result = await executeToolCall(client, toolCall);
     toolResults.push(result);
 

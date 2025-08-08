@@ -33,7 +33,9 @@ test.describe('Response Filtering', () => {
         downloads: [],
         modalStates: [],
       }),
-      updateTitle: async () => {},
+      updateTitle: () => {
+        /* intentionally empty */
+      },
       isCurrentTab: () => true,
       lastTitle: () => 'Test Page',
       page: {
@@ -213,7 +215,7 @@ test.describe('Response Filtering', () => {
     expect(serialized.content[0].text).toContain('### Ran Playwright code');
   });
 
-  test('should handle console filtering options', async () => {
+  test('should handle console filtering options', () => {
     const mockContext = createMockContext();
     // This test would need a page with console messages to be fully effective
     // For now, we test the expectation is properly stored
@@ -241,7 +243,7 @@ test.describe('Response Filtering', () => {
     expect(response._expectation?.consoleOptions?.maxMessages).toBe(3);
   });
 
-  test('should handle snapshot filtering options', async () => {
+  test('should handle snapshot filtering options', () => {
     const mockContext = createMockContext();
     const expectation: ExpectationOptions = {
       includeSnapshot: true,

@@ -21,35 +21,71 @@ export class DiffFormatter {
     let hasChanges = false;
 
     for (const segment of segments) {
-      if (segment.type === 'add') {
-        hasChanges = true;
-        for (const line of segment.value.split('\n')) {
-          if (line || segment.value.endsWith('\n')) {
-            lines.push(`+ ${line}`);
-          }
-        }
-      } else if (segment.type === 'remove') {
-        hasChanges = true;
-        for (const line of segment.value.split('\n')) {
-          if (line || segment.value.endsWith('\n')) {
-            lines.push(`- ${line}`);
-          }
-        }
-      } else if (segment.type === 'equal' && hasChanges) {
-        // Show context lines after changes
-        const contextLines = segment.value.split('\n');
-        const showLines = Math.min(context, contextLines.length);
-        for (let j = 0; j < showLines && j < contextLines.length - 1; j++) {
-          lines.push(`  ${contextLines[j]}`);
-        }
-        // Stop adding context after showing requested lines
-        if (contextLines.length > showLines) {
-          break;
-        }
+      const processedSegment = this.processUnifiedSegment(
+        segment,
+        lines,
+        hasChanges,
+        context
+      );
+      hasChanges = processedSegment.hasChanges;
+
+      if (processedSegment.shouldBreak) {
+        break;
       }
     }
 
     return hasChanges ? lines.join('\n') : '';
+  }
+
+  private processUnifiedSegment(
+    segment: DiffSegment,
+    lines: string[],
+    hasChanges: boolean,
+    context: number
+  ): { hasChanges: boolean; shouldBreak: boolean } {
+    if (segment.type === 'add') {
+      this.addUnifiedLines(segment, lines, '+ ');
+      return { hasChanges: true, shouldBreak: false };
+    }
+
+    if (segment.type === 'remove') {
+      this.addUnifiedLines(segment, lines, '- ');
+      return { hasChanges: true, shouldBreak: false };
+    }
+
+    if (segment.type === 'equal' && hasChanges) {
+      return this.processEqualSegment(segment, lines, context);
+    }
+
+    return { hasChanges, shouldBreak: false };
+  }
+
+  private addUnifiedLines(
+    segment: DiffSegment,
+    lines: string[],
+    prefix: string
+  ): void {
+    for (const line of segment.value.split('\n')) {
+      if (line || segment.value.endsWith('\n')) {
+        lines.push(`${prefix}${line}`);
+      }
+    }
+  }
+
+  private processEqualSegment(
+    segment: DiffSegment,
+    lines: string[],
+    context: number
+  ): { hasChanges: boolean; shouldBreak: boolean } {
+    const contextLines = segment.value.split('\n');
+    const showLines = Math.min(context, contextLines.length);
+
+    for (let j = 0; j < showLines && j < contextLines.length - 1; j++) {
+      lines.push(`  ${contextLines[j]}`);
+    }
+
+    const shouldBreak = contextLines.length > showLines;
+    return { hasChanges: true, shouldBreak };
   }
 
   /**
@@ -58,42 +94,61 @@ export class DiffFormatter {
    * @returns Formatted diff string
    */
   formatSplit(segments: DiffSegment[]): string {
+    const { removedLines, addedLines } = this.extractSplitLines(segments);
+    return this.buildSplitOutput(removedLines, addedLines);
+  }
+
+  private extractSplitLines(segments: DiffSegment[]): {
+    removedLines: string[];
+    addedLines: string[];
+  } {
     const removedLines: string[] = [];
     const addedLines: string[] = [];
 
     for (const segment of segments) {
       if (segment.type === 'remove') {
-        for (const line of segment.value.split('\n')) {
-          if (line || segment.value.endsWith('\n')) {
-            removedLines.push(line);
-          }
-        }
+        this.addSplitLines(segment, removedLines);
       } else if (segment.type === 'add') {
-        for (const line of segment.value.split('\n')) {
-          if (line || segment.value.endsWith('\n')) {
-            addedLines.push(line);
-          }
-        }
+        this.addSplitLines(segment, addedLines);
       }
     }
 
-    const result: string[] = [];
-    if (removedLines.length > 0) {
-      result.push('--- Removed');
-      for (const line of removedLines) {
-        result.push(line);
+    return { removedLines, addedLines };
+  }
+
+  private addSplitLines(segment: DiffSegment, targetLines: string[]): void {
+    for (const line of segment.value.split('\n')) {
+      if (line || segment.value.endsWith('\n')) {
+        targetLines.push(line);
       }
     }
-    if (addedLines.length > 0) {
-      if (result.length > 0) {
+  }
+
+  private buildSplitOutput(
+    removedLines: string[],
+    addedLines: string[]
+  ): string {
+    const result: string[] = [];
+
+    this.addSplitSection(result, removedLines, '--- Removed');
+    this.addSplitSection(result, addedLines, '+++ Added', result.length > 0);
+
+    return result.join('\n');
+  }
+
+  private addSplitSection(
+    result: string[],
+    lines: string[],
+    header: string,
+    addSeparator = false
+  ): void {
+    if (lines.length > 0) {
+      if (addSeparator) {
         result.push('');
       }
-      result.push('+++ Added');
-      for (const line of addedLines) {
-        result.push(line);
-      }
+      result.push(header);
+      result.push(...lines);
     }
-    return result.join('\n');
   }
 
   /**

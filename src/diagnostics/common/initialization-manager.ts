@@ -85,7 +85,9 @@ export class InitializationManager {
     const completedStages = new Set<string>();
 
     try {
+      // Sequential execution is required due to stage dependencies
       for (const stage of stages) {
+        // biome-ignore lint/nursery/noAwaitInLoop: stages must execute sequentially
         await this.executeStage(stage, completedStages);
         completedStages.add(stage.name);
       }
@@ -120,7 +122,9 @@ export class InitializationManager {
 
     // Execute stage with optional performance tracking
     const executeWithTracking = async () => {
+      // Sequential execution is required for components within a stage
       for (const componentInit of stage.components) {
+        // biome-ignore lint/nursery/noAwaitInLoop: components may have implicit dependencies
         await this.executeWithRetry(
           componentInit,
           stage.retryCount || 1,
@@ -149,9 +153,11 @@ export class InitializationManager {
   ): Promise<void> {
     let lastError: Error | undefined;
 
+    // Retry loop - sequential execution is required for retry logic
     for (let attempt = 1; attempt <= retryCount; attempt++) {
       try {
         if (timeout) {
+          // biome-ignore lint/nursery/noAwaitInLoop: retries must be sequential
           await Promise.race([
             operation(),
             new Promise<never>((_, reject) =>

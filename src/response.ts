@@ -209,53 +209,69 @@ ${this._code.join('\n')}
   }
   private renderFilteredTabSnapshot(tabSnapshot: TabSnapshot): string {
     const lines: string[] = [];
-    const consoleOptions = this._expectation.consoleOptions;
-    // Include console messages based on expectation
+
+    this.addConsoleMessagesToLines(lines, tabSnapshot);
+    this.addDownloadsToLines(lines, tabSnapshot);
+    this.addPageStateToLines(lines, tabSnapshot);
+
+    return lines.join('\n');
+  }
+
+  private addConsoleMessagesToLines(
+    lines: string[],
+    tabSnapshot: TabSnapshot
+  ): void {
     if (
-      this._expectation.includeConsole &&
-      tabSnapshot.consoleMessages.length
+      !(this._expectation.includeConsole && tabSnapshot.consoleMessages.length)
     ) {
-      const filteredMessages = this.filterConsoleMessages(
-        tabSnapshot.consoleMessages,
-        consoleOptions
-      );
-      if (filteredMessages.length) {
-        lines.push('### New console messages');
-        for (const message of filteredMessages) {
-          lines.push(`- ${trim(message.toString(), 100)}`);
-        }
-        lines.push('');
-      }
+      return;
     }
-    // Include downloads based on expectation
-    if (this._expectation.includeDownloads && tabSnapshot.downloads.length) {
-      lines.push('### Downloads');
-      for (const entry of tabSnapshot.downloads) {
-        if (entry.finished) {
-          lines.push(
-            `- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`
-          );
-        } else {
-          lines.push(
-            `- Downloading file ${entry.download.suggestedFilename()} ...`
-          );
-        }
+
+    const filteredMessages = this.filterConsoleMessages(
+      tabSnapshot.consoleMessages,
+      this._expectation.consoleOptions
+    );
+
+    if (filteredMessages.length) {
+      lines.push('### New console messages');
+      for (const message of filteredMessages) {
+        lines.push(`- ${trim(message.toString(), 100)}`);
       }
       lines.push('');
     }
+  }
+
+  private addDownloadsToLines(lines: string[], tabSnapshot: TabSnapshot): void {
+    if (!(this._expectation.includeDownloads && tabSnapshot.downloads.length)) {
+      return;
+    }
+
+    lines.push('### Downloads');
+    for (const entry of tabSnapshot.downloads) {
+      if (entry.finished) {
+        lines.push(
+          `- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`
+        );
+      } else {
+        lines.push(
+          `- Downloading file ${entry.download.suggestedFilename()} ...`
+        );
+      }
+    }
+    lines.push('');
+  }
+
+  private addPageStateToLines(lines: string[], tabSnapshot: TabSnapshot): void {
     lines.push('### Page state');
     lines.push(`- Page URL: ${tabSnapshot.url}`);
     lines.push(`- Page Title: ${tabSnapshot.title}`);
-    // Only include snapshot if expectation allows it
+
     if (this._expectation.includeSnapshot) {
       lines.push('- Page Snapshot:');
       lines.push('```yaml');
-      // Use the snapshot as-is (length restrictions handled in tab.ts)
-      const snapshot = tabSnapshot.ariaSnapshot;
-      lines.push(snapshot);
+      lines.push(tabSnapshot.ariaSnapshot);
       lines.push('```');
     }
-    return lines.join('\n');
   }
   private filterConsoleMessages(
     messages: ConsoleMessage[],
@@ -339,59 +355,88 @@ ${this._code.join('\n')}
    */
   private async _captureSnapshotWithNavigationHandling(): Promise<void> {
     const currentTab = this._context.currentTabOrDie();
-    const options = this._expectation.snapshotOptions;
-    const maxRetries = this._getNavigationRetryConfig().maxRetries;
-    const retryDelay = this._getNavigationRetryConfig().retryDelay;
+    const { maxRetries, retryDelay } = this._getNavigationRetryConfig();
 
+    // Sequential retry attempts are intentional - we need to wait for each attempt
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        // Check if navigation is in progress
-        const isNavigating = await this._isPageNavigating(currentTab);
-
-        if (isNavigating && attempt < maxRetries) {
-          // Wait for navigation to complete before snapshot
-          await this._waitForNavigationStability(currentTab);
-        }
-
-        // Attempt snapshot capture
-        if (options?.selector || options?.maxLength) {
-          this._tabSnapshot = await currentTab.capturePartialSnapshot(
-            options.selector,
-            options.maxLength
-          );
-        } else {
-          this._tabSnapshot = await currentTab.captureSnapshot();
-        }
-
-        // Success - break out of retry loop
-        break;
+        // biome-ignore lint/nursery/noAwaitInLoop: Sequential retry logic is required
+        await this._handleNavigationIfNeeded(currentTab, attempt, maxRetries);
+        await this._attemptSnapshotCapture(currentTab);
+        break; // Success - exit retry loop
       } catch (error: unknown) {
-        const errorMessage = (error as Error)?.message || '';
-        const isContextError =
-          errorMessage.includes('Execution context was destroyed') ||
-          errorMessage.includes('Target closed') ||
-          errorMessage.includes('Session closed');
-
-        if (isContextError && attempt < maxRetries) {
-          // Wait for stability and retry
-          await new Promise((resolve) =>
-            setTimeout(resolve, retryDelay * attempt)
-          );
-          continue;
-        }
-
-        if (attempt === maxRetries) {
-          // Last attempt failed - try to capture basic snapshot or give up gracefully
-          try {
-            this._tabSnapshot = await this._captureBasicSnapshot(currentTab);
-          } catch (_finalError) {
-            // Could not capture snapshot - log error but don't throw
-            // Failed to capture snapshot after navigation
-            // Failed to capture snapshot after navigation
-            this._tabSnapshot = undefined;
-          }
+        const shouldRetry = await this._handleSnapshotError(
+          error,
+          attempt,
+          maxRetries,
+          retryDelay,
+          currentTab
+        );
+        if (!shouldRetry) {
+          break;
         }
       }
+    }
+  }
+
+  private async _handleNavigationIfNeeded(
+    tab: Tab,
+    attempt: number,
+    maxRetries: number
+  ): Promise<void> {
+    const isNavigating = await this._isPageNavigating(tab);
+    if (isNavigating && attempt < maxRetries) {
+      await this._waitForNavigationStability(tab);
+    }
+  }
+
+  private async _attemptSnapshotCapture(tab: Tab): Promise<void> {
+    const options = this._expectation.snapshotOptions;
+    if (options?.selector || options?.maxLength) {
+      this._tabSnapshot = await tab.capturePartialSnapshot(
+        options.selector,
+        options.maxLength
+      );
+    } else {
+      this._tabSnapshot = await tab.captureSnapshot();
+    }
+  }
+
+  private async _handleSnapshotError(
+    error: unknown,
+    attempt: number,
+    maxRetries: number,
+    retryDelay: number,
+    tab: Tab
+  ): Promise<boolean> {
+    const errorMessage = (error as Error)?.message || '';
+    const isContextError = this._isContextDestroyedError(errorMessage);
+
+    if (isContextError && attempt < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, retryDelay * attempt));
+      return true; // Continue retrying
+    }
+
+    if (attempt === maxRetries) {
+      await this._handleFinalAttemptFailure(tab);
+    }
+
+    return false; // Stop retrying
+  }
+
+  private _isContextDestroyedError(errorMessage: string): boolean {
+    return (
+      errorMessage.includes('Execution context was destroyed') ||
+      errorMessage.includes('Target closed') ||
+      errorMessage.includes('Session closed')
+    );
+  }
+
+  private async _handleFinalAttemptFailure(tab: Tab): Promise<void> {
+    try {
+      this._tabSnapshot = await this._captureBasicSnapshot(tab);
+    } catch (_finalError) {
+      this._tabSnapshot = undefined;
     }
   }
 
@@ -463,8 +508,10 @@ ${this._code.join('\n')}
       }
     }
 
+    // Sequential waiting is intentional here - we need to check stability repeatedly
     while (Date.now() - startTime < stabilityTimeout) {
       try {
+        // biome-ignore lint/nursery/noAwaitInLoop: Sequential stability checking is required
         await tab.waitForLoadState('load', { timeout: 1000 });
         await tab
           .waitForLoadState('networkidle', { timeout: 500 })

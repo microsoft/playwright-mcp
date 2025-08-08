@@ -10,6 +10,7 @@ const console = defineTabTool({
     inputSchema: z.object({}),
     type: 'readOnly',
   },
+  // biome-ignore lint/suspicious/useAwait: Async function required by TabTool interface, even without await usage
   handle: async (tab, _params, response) => {
     const messages = tab.consoleMessages();
     if (messages.length === 0) {

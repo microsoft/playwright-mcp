@@ -18,6 +18,10 @@ import fs from 'node:fs';
 
 import { expect, test } from './fixtures.js';
 
+// Regex patterns used in tests
+const PDF_FILENAME_PATTERN = /Saved page as.*page-[^:]+.pdf/;
+const OUTPUT_PDF_PATTERN = /^output.pdf$/;
+
 test('save as pdf unavailable', async ({ startClient, server }) => {
   const { client } = await startClient();
   await client.callTool({
@@ -62,7 +66,7 @@ test('save as pdf', async ({ startClient, mcpBrowser, server }, testInfo) => {
     })
   ).toHaveResponse({
     code: expect.stringContaining('await page.pdf('),
-    result: expect.stringMatching(/Saved page as.*page-[^:]+.pdf/),
+    result: expect.stringMatching(PDF_FILENAME_PATTERN),
   });
 });
 
@@ -108,5 +112,5 @@ test('save as pdf (filename: output.pdf)', async ({
   expect(fs.existsSync(outputDir)).toBeTruthy();
   const pdfFiles = files.filter((f) => f.endsWith('.pdf'));
   expect(pdfFiles).toHaveLength(1);
-  expect(pdfFiles[0]).toMatch(/^output.pdf$/);
+  expect(pdfFiles[0]).toMatch(OUTPUT_PDF_PATTERN);
 });

@@ -17,33 +17,33 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import url from 'node:url';
+import nodeUrl from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Config } from '../config.d.ts';
 import { test as baseTest, expect } from './fixtures.js';
 
-// Top-level regex patterns for performance optimization
-const LISTENING_ON_REGEX = /Listening on (http:\/\/.*)/;
+// Regex constants for performance optimization
 const CREATE_HTTP_SESSION_REGEX = /create http session/;
 const DELETE_HTTP_SESSION_REGEX = /delete http session/;
 const CREATE_CONTEXT_REGEX = /create context/;
 const CLOSE_CONTEXT_REGEX = /close context/;
-const CREATE_BROWSER_CONTEXT_PERSISTENT_REGEX =
-  /create browser context \(persistent\)/;
-const CLOSE_BROWSER_CONTEXT_PERSISTENT_REGEX =
-  /close browser context \(persistent\)/;
 const CREATE_BROWSER_CONTEXT_ISOLATED_REGEX =
   /create browser context \(isolated\)/;
 const CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX =
   /close browser context \(isolated\)/;
+const CREATE_BROWSER_CONTEXT_PERSISTENT_REGEX =
+  /create browser context \(persistent\)/;
+const CLOSE_BROWSER_CONTEXT_PERSISTENT_REGEX =
+  /close browser context \(persistent\)/;
 const OBTAIN_BROWSER_ISOLATED_REGEX = /obtain browser \(isolated\)/;
 const CLOSE_BROWSER_ISOLATED_REGEX = /close browser \(isolated\)/;
 const LOCK_USER_DATA_DIR_REGEX = /lock user data dir/;
 const RELEASE_USER_DATA_DIR_REGEX = /release user data dir/;
+const LISTENING_URL_REGEX = /Listening on (http:\/\/.*)/;
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-const __filename = url.fileURLToPath(import.meta.url);
+const __filename = nodeUrl.fileURLToPath(import.meta.url);
 
 const test = baseTest.extend<{
   serverEndpoint: (options?: {
@@ -82,7 +82,7 @@ const test = baseTest.extend<{
       const serverUrl = await new Promise<string>((resolve) =>
         cp?.stderr?.on('data', (data) => {
           stderr += data.toString();
-          const match = stderr.match(/Listening on (http:\/\/.*)/);
+          const match = stderr.match(LISTENING_URL_REGEX);
           if (match) {
             resolve(match[1]);
           }
@@ -158,31 +158,33 @@ test('http transport browser lifecycle (isolated)', async ({
   expect(() => {
     const lines = stderr().split('\n');
     expect(
-      lines.filter((line) => line.match(/create http session/)).length
+      lines.filter((line) => line.match(CREATE_HTTP_SESSION_REGEX)).length
     ).toBe(2);
     expect(
-      lines.filter((line) => line.match(/delete http session/)).length
+      lines.filter((line) => line.match(DELETE_HTTP_SESSION_REGEX)).length
     ).toBe(2);
 
     expect(
       lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
     ).toBe(2);
-    expect(lines.filter((line) => line.match(/close context/)).length).toBe(2);
+    expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
+      2
+    );
 
     expect(
-      lines.filter((line) => line.match(/create browser context \(isolated\)/))
+      lines.filter((line) => line.match(CREATE_BROWSER_CONTEXT_ISOLATED_REGEX))
         .length
     ).toBe(2);
     expect(
-      lines.filter((line) => line.match(/close browser context \(isolated\)/))
+      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX))
         .length
     ).toBe(2);
 
     expect(
-      lines.filter((line) => line.match(/obtain browser \(isolated\)/)).length
+      lines.filter((line) => line.match(OBTAIN_BROWSER_ISOLATED_REGEX)).length
     ).toBe(2);
     expect(
-      lines.filter((line) => line.match(/close browser \(isolated\)/)).length
+      lines.filter((line) => line.match(CLOSE_BROWSER_ISOLATED_REGEX)).length
     ).toBe(2);
   }).toPass();
 });
@@ -227,29 +229,33 @@ test('http transport browser lifecycle (isolated, multiclient)', async ({
   expect(() => {
     const lines = stderr().split('\n');
     expect(
-      lines.filter((line) => line.match(/create http session/)).length
+      lines.filter((line) => line.match(CREATE_HTTP_SESSION_REGEX)).length
     ).toBe(3);
     expect(
-      lines.filter((line) => line.match(/delete http session/)).length
+      lines.filter((line) => line.match(DELETE_HTTP_SESSION_REGEX)).length
     ).toBe(3);
 
-    expect(lines.filter((line) => line.match(/create context/)).length).toBe(3);
-    expect(lines.filter((line) => line.match(/close context/)).length).toBe(3);
+    expect(
+      lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
+    ).toBe(3);
+    expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
+      3
+    );
 
     expect(
-      lines.filter((line) => line.match(/create browser context \(isolated\)/))
+      lines.filter((line) => line.match(CREATE_BROWSER_CONTEXT_ISOLATED_REGEX))
         .length
     ).toBe(3);
     expect(
-      lines.filter((line) => line.match(/close browser context \(isolated\)/))
+      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX))
         .length
     ).toBe(3);
 
     expect(
-      lines.filter((line) => line.match(/obtain browser \(isolated\)/)).length
+      lines.filter((line) => line.match(OBTAIN_BROWSER_ISOLATED_REGEX)).length
     ).toBe(1);
     expect(
-      lines.filter((line) => line.match(/close browser \(isolated\)/)).length
+      lines.filter((line) => line.match(CLOSE_BROWSER_ISOLATED_REGEX)).length
     ).toBe(1);
   }).toPass();
 });
@@ -283,16 +289,18 @@ test('http transport browser lifecycle (persistent)', async ({
   expect(() => {
     const lines = stderr().split('\n');
     expect(
-      lines.filter((line) => line.match(/create http session/)).length
+      lines.filter((line) => line.match(CREATE_HTTP_SESSION_REGEX)).length
     ).toBe(2);
     expect(
-      lines.filter((line) => line.match(/delete http session/)).length
+      lines.filter((line) => line.match(DELETE_HTTP_SESSION_REGEX)).length
     ).toBe(2);
 
     expect(
       lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
     ).toBe(2);
-    expect(lines.filter((line) => line.match(/close context/)).length).toBe(2);
+    expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
+      2
+    );
 
     expect(
       lines.filter((line) =>
@@ -300,15 +308,15 @@ test('http transport browser lifecycle (persistent)', async ({
       ).length
     ).toBe(2);
     expect(
-      lines.filter((line) => line.match(/close browser context \(persistent\)/))
+      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_PERSISTENT_REGEX))
         .length
     ).toBe(2);
 
     expect(
-      lines.filter((line) => line.match(/lock user data dir/)).length
+      lines.filter((line) => line.match(LOCK_USER_DATA_DIR_REGEX)).length
     ).toBe(2);
     expect(
-      lines.filter((line) => line.match(/release user data dir/)).length
+      lines.filter((line) => line.match(RELEASE_USER_DATA_DIR_REGEX)).length
     ).toBe(2);
   }).toPass();
 });

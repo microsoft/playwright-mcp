@@ -963,7 +963,12 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
               <button data-complexity="${complexity}" onclick="console.log(${index})">Btn ${index}</button>
               <input type="text" id="input-${index}" data-value="${index}" placeholder="Enter ${index}">
               <select name="select-${index}">
-                ${Array.from({ length: complexity + 2 }, (_, optionIndex) => `<option value="${optionIndex}">Option ${optionIndex}</option>`).join('')}
+                ${Array.from(
+                  { length: complexity + 2 },
+                  // biome-ignore lint/nursery/noShadow: Variable name does not actually shadow anything
+                  (_, selectIdx) =>
+                    `<option value="${selectIdx}">Option ${selectIdx}</option>`
+                ).join('')}
               </select>
               <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCI+PC9zdmc+" alt="Image ${index}">
             </div>`;
@@ -975,12 +980,13 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
 
     const pageAnalyzer = new PageAnalyzer(page);
 
-    // Run multiple analysis to test consistency
+    // Run multiple analysis to test consistency and performance timing
     const times: number[] = [];
     const results: unknown[] = [];
 
     for (let i = 0; i < 3; i++) {
       const start = Date.now();
+      // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution required for accurate performance timing measurements
       const result = await pageAnalyzer.runParallelAnalysis();
       const time = Date.now() - start;
 

@@ -6,7 +6,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import debug from 'debug';
 import { httpAddressToString, startHttpServer } from '../httpServer.js';
 import type { ServerBackendFactory } from './server.js';
-import * as mcpServer from './server.js';
+import { connect } from './server.js';
 export async function start(
   serverBackendFactory: ServerBackendFactory,
   options: { host?: string; port?: number }
@@ -19,11 +19,7 @@ export async function start(
   }
 }
 async function startStdioTransport(serverBackendFactory: ServerBackendFactory) {
-  await mcpServer.connect(
-    serverBackendFactory,
-    new StdioServerTransport(),
-    false
-  );
+  await connect(serverBackendFactory, new StdioServerTransport(), false);
 }
 const testDebug = debug('pw:mcp:test');
 async function handleSSE(
@@ -50,7 +46,7 @@ async function handleSSE(
     const transport = new SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
     testDebug(`create SSE session: ${transport.sessionId}`);
-    await mcpServer.connect(serverBackendFactory, transport, false);
+    await connect(serverBackendFactory, transport, false);
     res.on('close', () => {
       testDebug(`delete SSE session: ${transport.sessionId}`);
       sessions.delete(transport.sessionId);
@@ -79,10 +75,12 @@ async function handleStreamable(
   if (req.method === 'POST') {
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
-      onsessioninitialized: async (sessionId) => {
+      onsessioninitialized: async (_httpSessionId) => {
         testDebug(`create http session: ${transport.sessionId}`);
-        await mcpServer.connect(serverBackendFactory, transport, true);
-        sessions.set(sessionId, transport);
+        await connect(serverBackendFactory, transport, true);
+        if (transport.sessionId) {
+          sessions.set(transport.sessionId, transport);
+        }
       },
     });
     transport.onclose = () => {

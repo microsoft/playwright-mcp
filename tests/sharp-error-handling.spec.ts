@@ -18,6 +18,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 
+// Move regex to top-level to avoid performance issues
+const IMAGE_PROCESSING_FAILED_REGEX = /Image processing failed/;
+
 test.describe('Sharp Error Handling Tests', () => {
   test('should throw errors for invalid image data', async () => {
     const { processImage } = await import('../src/utils/imageProcessor.js');
@@ -33,14 +36,14 @@ test.describe('Sharp Error Handling Tests', () => {
       { data: Buffer.from('GIF89a'), description: 'partial GIF header' },
     ];
 
-    for (const testCase of testCases) {
-      // console.log(`Testing with ${testCase.description}:`);
-
-      // Should throw error for invalid image data
-      await expect(
-        processImage(testCase.data, 'image/png', { quality: 80 })
-      ).rejects.toThrow(/Image processing failed/);
-    }
+    // Use Promise.all to avoid await in loop
+    await Promise.all(
+      testCases.map((testCase) =>
+        expect(
+          processImage(testCase.data, 'image/png', { quality: 80 })
+        ).rejects.toThrow(IMAGE_PROCESSING_FAILED_REGEX)
+      )
+    );
   });
 
   test('should handle valid PNG data with Sharp', async () => {
@@ -97,6 +100,6 @@ test.describe('Sharp Error Handling Tests', () => {
     // Invalid data should throw error
     await expect(
       processImage(invalidData, 'image/png', { format: 'jpeg', quality: 80 })
-    ).rejects.toThrow(/Image processing failed/);
+    ).rejects.toThrow(IMAGE_PROCESSING_FAILED_REGEX);
   });
 });

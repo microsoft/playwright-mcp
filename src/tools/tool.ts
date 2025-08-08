@@ -27,12 +27,14 @@ export type Tool<
     response: Response
   ) => Promise<void>;
 };
+
+export type AnyTool = Tool<z.ZodTypeAny>;
 export function defineTool<Input extends z.ZodType>(
   tool: Tool<Input>
 ): Tool<Input> {
   return tool;
 }
-export type TabTool<Input extends z.ZodType = z.ZodType<any, any, any>> = {
+export type TabTool<Input extends z.ZodType = z.ZodType> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
   clearsModalState?: ModalState['type'];
@@ -64,7 +66,7 @@ export function defineTabTool<Input extends z.ZodType>(
             tab.modalStatesMarkdown().join('\n')
         );
       } else {
-        return tool.handle(tab, params, response);
+        return await tool.handle(tab, params, response);
       }
     },
   };

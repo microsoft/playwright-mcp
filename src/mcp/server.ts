@@ -24,7 +24,7 @@ export type ToolResponse = {
   content: (TextContent | ImageContent)[];
   isError?: boolean;
 };
-export type ToolSchema<Input extends z.ZodType = z.ZodType<any, any, any>> = {
+export type ToolSchema<Input extends z.ZodTypeAny = z.ZodTypeAny> = {
   name: string;
   title: string;
   description: string;
@@ -39,9 +39,9 @@ export interface ServerBackend {
   name: string;
   version: string;
   initialize?(server: Server): Promise<void>;
-  tools(): ToolSchema<any>[];
+  tools(): ToolSchema[];
   callTool(
-    schema: ToolSchema<any>,
+    schema: ToolSchema,
     parsedArguments: Record<string, unknown>
   ): Promise<ToolResponse>;
   serverClosed?(): void;
@@ -70,7 +70,7 @@ export function createServer(
     }
   );
   const tools = backend.tools();
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
+  server.setRequestHandler(ListToolsRequestSchema, () => {
     return {
       tools: tools.map((tool) => ({
         name: tool.name,
@@ -96,9 +96,9 @@ export function createServer(
       content: [{ type: 'text', text: `### Result\n${messages.join('\n')}` }],
       isError: true,
     });
-    const tool = tools.find(
-      (tool) => tool.name === request.params.name
-    ) as ToolSchema<any>;
+    const tool = tools.find((t) => t.name === request.params.name) as
+      | ToolSchema
+      | undefined;
     if (!tool) {
       return errorResult(`Error: Tool "${request.params.name}" not found`);
     }

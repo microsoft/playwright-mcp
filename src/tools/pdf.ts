@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import * as javascript from '../javascript.js';
+import { formatObject } from '../javascript.js';
 import { defineTabTool } from './tool.js';
 
 const pdfSchema = z.object({
@@ -23,9 +23,7 @@ const pdf = defineTabTool({
     const fileName = await tab.context.outputFile(
       params.filename ?? `page-${new Date().toISOString()}.pdf`
     );
-    response.addCode(
-      `await page.pdf(${javascript.formatObject({ path: fileName })});`
-    );
+    response.addCode(`await page.pdf(${formatObject({ path: fileName })});`);
     response.addResult(`Saved page as ${fileName}`);
     await tab.page.pdf({ path: fileName });
   },

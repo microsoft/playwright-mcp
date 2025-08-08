@@ -39,11 +39,11 @@ test.describe('Sharp Implementation Performance Tests', () => {
       { maxWidth: 200, maxHeight: 150, quality: 70, format: 'png' as const },
     ];
 
-    const results = [];
-    for (const options of operations) {
-      const result = await processImage(testBuffer, 'image/png', options);
-      results.push(result);
-    }
+    const results = await Promise.all(
+      operations.map((options) =>
+        processImage(testBuffer, 'image/png', options)
+      )
+    );
 
     const endTime = performance.now();
     const endMemory = process.memoryUsage().heapUsed;
@@ -76,8 +76,9 @@ test.describe('Sharp Implementation Performance Tests', () => {
 
     const initialMemory = process.memoryUsage().heapUsed;
 
-    // Perform multiple operations sequentially
+    // Perform multiple operations sequentially to test for memory leaks
     for (let i = 0; i < 10; i++) {
+      // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution required to test for memory leaks between operations
       await processImage(testBuffer, 'image/png', {
         maxWidth: 500,
         maxHeight: 500,

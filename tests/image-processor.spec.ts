@@ -115,9 +115,12 @@ test.describe('Image Processing Utils', () => {
     const testBuffer = createTestImageBuffer();
     const formats = ['jpeg', 'png', 'webp'] as const;
 
-    for (const format of formats) {
-      const result = await processImage(testBuffer, 'image/png', { format });
-      expect(result.contentType).toBe(`image/${format}`);
+    const results = await Promise.all(
+      formats.map((format) => processImage(testBuffer, 'image/png', { format }))
+    );
+
+    for (const [index, result] of results.entries()) {
+      expect(result.contentType).toBe(`image/${formats[index]}`);
       expect(result.data).toBeInstanceOf(Buffer);
     }
   });

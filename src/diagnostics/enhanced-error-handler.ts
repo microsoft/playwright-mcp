@@ -504,7 +504,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
   private addComponentSpecificSuggestions(
     suggestions: string[],
     component: DiagnosticComponent,
-    pageStructure: any,
+    pageStructure: PageStructureAnalysis,
     context?: Record<string, unknown>
   ): void {
     switch (component) {
@@ -532,7 +532,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
 
   private addPageAnalyzerSuggestions(
     suggestions: string[],
-    pageStructure: any
+    pageStructure: PageStructureAnalysis
   ): void {
     if (pageStructure.elements.totalVisible > 10_000) {
       suggestions.push(
@@ -549,7 +549,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
 
   private addElementDiscoverySuggestions(
     suggestions: string[],
-    pageStructure: any,
+    pageStructure: PageStructureAnalysis,
     context?: Record<string, unknown>
   ): void {
     if (context?.selector && pageStructure.elements.missingAria > 0) {
@@ -581,7 +581,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
   private addOperationSpecificSuggestions(
     suggestions: string[],
     operation: string,
-    pageStructure: any
+    pageStructure: PageStructureAnalysis
   ): void {
     if (
       operation.includes('parallel') &&

@@ -22,7 +22,7 @@ export class InProcessTransport implements Transport {
     await this._server.connect(this._serverTransport);
     this._connected = true;
   }
-  async send(
+  send(
     message: JSONRPCMessage,
     _options?: TransportSendOptions
   ): Promise<void> {
@@ -30,13 +30,15 @@ export class InProcessTransport implements Transport {
       throw new Error('Transport not connected');
     }
     this._serverTransport._receiveFromClient(message);
+    return Promise.resolve();
   }
-  async close(): Promise<void> {
+  close(): Promise<void> {
     if (this._connected) {
       this._connected = false;
       this.onclose?.();
       this._serverTransport.onclose?.();
     }
+    return Promise.resolve();
   }
   onclose?: (() => void) | undefined;
   onerror?: ((error: Error) => void) | undefined;
@@ -57,14 +59,16 @@ class InProcessServerTransport implements Transport {
   async start(): Promise<void> {
     // No-op for in-process transport
   }
-  async send(
+  send(
     message: JSONRPCMessage,
     _options?: TransportSendOptions
   ): Promise<void> {
     this._clientTransport._receiveFromServer(message);
+    return Promise.resolve();
   }
-  async close(): Promise<void> {
+  close(): Promise<void> {
     this.onclose?.();
+    return Promise.resolve();
   }
   onclose?: (() => void) | undefined;
   onerror?: ((error: Error) => void) | undefined;

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import * as javascript from '../javascript.js';
+import { formatObject } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import { defineTabTool, defineTool } from './tool.js';
 import { generateLocator } from './utils.js';
@@ -25,12 +25,12 @@ const snapshot = defineTool({
       const tab = context.currentTabOrDie();
       const options = params.expectation.snapshotOptions;
       // Manually capture partial snapshot and store it
-      const snapshot = await tab.capturePartialSnapshot(
+      const tabSnapshot = await tab.capturePartialSnapshot(
         options.selector,
         options.maxLength
       );
       // Store the snapshot in response for later use
-      response.setTabSnapshot(snapshot);
+      response.setTabSnapshot(tabSnapshot);
     }
   },
 });
@@ -165,7 +165,7 @@ const selectOption = defineTabTool({
   handle: async (tab, params, response) => {
     const locator = await tab.refLocator(params);
     response.addCode(
-      `await page.${await generateLocator(locator)}.selectOption(${javascript.formatObject(params.values)});`
+      `await page.${await generateLocator(locator)}.selectOption(${formatObject(params.values)});`
     );
     await tab.waitForCompletion(async () => {
       await locator.selectOption(params.values);

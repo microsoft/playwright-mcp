@@ -15,7 +15,8 @@
           },
           "correctness": {
             "noUnusedVariables": "off",
-            "noUnusedFunctionParameters": "off"
+            "noUnusedFunctionParameters": "off",
+            "noEmptyPattern": "off"
           },
           "complexity": {
             "noExcessiveCognitiveComplexity": "off"

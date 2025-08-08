@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import * as javascript from '../javascript.js';
+import { quote } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import { elementSchema } from './snapshot.js';
 import { defineTabTool } from './tool.js';
@@ -58,12 +58,12 @@ const type = defineTabTool({
     await tab.waitForCompletion(async () => {
       if (params.slowly) {
         response.addCode(
-          `await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`
+          `await page.${await generateLocator(locator)}.pressSequentially(${quote(params.text)});`
         );
         await locator.pressSequentially(params.text);
       } else {
         response.addCode(
-          `await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`
+          `await page.${await generateLocator(locator)}.fill(${quote(params.text)});`
         );
         await locator.fill(params.text);
       }

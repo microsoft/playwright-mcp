@@ -1,6 +1,6 @@
 import type * as playwright from 'playwright';
 import { z } from 'zod';
-import * as javascript from '../javascript.js';
+import { quote } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
@@ -42,12 +42,10 @@ const evaluate = defineTabTool({
         element: params.element,
       });
       response.addCode(
-        `await page.${await generateLocator(locator)}.evaluate(${javascript.quote(params.function)});`
+        `await page.${await generateLocator(locator)}.evaluate(${quote(params.function)});`
       );
     } else {
-      response.addCode(
-        `await page.evaluate(${javascript.quote(params.function)});`
-      );
+      response.addCode(`await page.evaluate(${quote(params.function)});`);
     }
     await tab.waitForCompletion(async () => {
       let result: unknown;

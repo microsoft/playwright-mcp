@@ -24,7 +24,8 @@ for (const mcpHeadless of [false, true]) {
       'Auto-detection wont let this test run on linux'
     );
     test.skip(
-      ({ mcpMode, mcpHeadless }) => mcpMode === 'docker' && !mcpHeadless,
+      ({ mcpMode, mcpHeadless: isHeadless }) =>
+        mcpMode === 'docker' && !isHeadless,
       'Headed mode is not supported in docker'
     );
 

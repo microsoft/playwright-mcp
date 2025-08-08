@@ -16,7 +16,7 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
     // Mock resource with dispose method
     const mockResource = {
       disposed: false,
-      dispose: async () => {
+      dispose: () => {
         mockResource.disposed = true;
       },
     };

@@ -22,10 +22,11 @@ type LogEntry = {
 export class SessionLog {
   private _folder: string;
   private _file: string;
-  private _ordinal = 0;
   private _pendingEntries: LogEntry[] = [];
   private _sessionFileQueue = Promise.resolve();
   private _flushEntriesTimeout: NodeJS.Timeout | undefined;
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: _ordinal is used in _flush method line 111
+  private _ordinal = 0;
   constructor(sessionFolder: string) {
     this._folder = sessionFolder;
     this._file = path.join(this._folder, 'session.md');
@@ -63,12 +64,12 @@ export class SessionLog {
     code: string,
     isUpdate: boolean
   ) {
-    code = code.trim();
+    const trimmedCode = code.trim();
     if (isUpdate) {
       const lastEntry = this._pendingEntries.at(-1);
       if (lastEntry?.userAction?.name === action.name) {
         lastEntry.userAction = action;
-        lastEntry.code = code;
+        lastEntry.code = trimmedCode;
         return;
       }
     }
@@ -82,7 +83,7 @@ export class SessionLog {
     const entry: LogEntry = {
       timestamp: performance.now(),
       userAction: action,
-      code,
+      code: trimmedCode,
       tabSnapshot: {
         url: tab.page.url(),
         title: '',
@@ -101,60 +102,95 @@ export class SessionLog {
     }
     this._flushEntriesTimeout = setTimeout(() => this._flushEntries(), 1000);
   }
-  private async _flushEntries() {
+  private _flushEntries() {
     clearTimeout(this._flushEntriesTimeout);
     const entries = this._pendingEntries;
     this._pendingEntries = [];
     const lines: string[] = [''];
+
     for (const entry of entries) {
       const ordinal = (++this._ordinal).toString().padStart(3, '0');
-      if (entry.toolCall) {
-        lines.push(
-          `### Tool call: ${entry.toolCall.toolName}`,
-          '- Args',
-          '```json',
-          JSON.stringify(entry.toolCall.toolArgs, null, 2),
-          '```'
-        );
-        if (entry.toolCall.result) {
-          lines.push(
-            entry.toolCall.isError ? '- Error' : '- Result',
-            '```',
-            entry.toolCall.result,
-            '```'
-          );
-        }
-      }
-      if (entry.userAction) {
-        const actionData = { ...entry.userAction } as Record<string, unknown>;
-        actionData.ariaSnapshot = undefined;
-        actionData.selector = undefined;
-        actionData.signals = undefined;
-        lines.push(
-          `### User action: ${entry.userAction.name}`,
-          '- Args',
-          '```json',
-          JSON.stringify(actionData, null, 2),
-          '```'
-        );
-      }
-      if (entry.code) {
-        lines.push('- Code', '```js', entry.code, '```');
-      }
-      if (entry.tabSnapshot) {
-        const fileName = `${ordinal}.snapshot.yml`;
-        fs.promises
-          .writeFile(
-            path.join(this._folder, fileName),
-            entry.tabSnapshot.ariaSnapshot
-          )
-          .catch(logUnhandledError);
-        lines.push(`- Snapshot: ${fileName}`);
-      }
-      lines.push('', '');
+      this._processEntry(entry, ordinal, lines);
     }
+
     this._sessionFileQueue = this._sessionFileQueue.then(() =>
       fs.promises.appendFile(this._file, lines.join('\n'))
     );
+  }
+
+  private _processEntry(
+    entry: LogEntry,
+    ordinal: string,
+    lines: string[]
+  ): void {
+    if (entry.toolCall) {
+      this._addToolCallLines(entry.toolCall, lines);
+    }
+
+    if (entry.userAction) {
+      this._addUserActionLines(entry.userAction, lines);
+    }
+
+    if (entry.code) {
+      lines.push('- Code', '```js', entry.code, '```');
+    }
+
+    if (entry.tabSnapshot) {
+      this._addTabSnapshotLines(entry.tabSnapshot, ordinal, lines);
+    }
+
+    lines.push('', '');
+  }
+
+  private _addToolCallLines(
+    toolCall: NonNullable<LogEntry['toolCall']>,
+    lines: string[]
+  ): void {
+    lines.push(
+      `### Tool call: ${toolCall.toolName}`,
+      '- Args',
+      '```json',
+      JSON.stringify(toolCall.toolArgs, null, 2),
+      '```'
+    );
+
+    if (toolCall.result) {
+      lines.push(
+        toolCall.isError ? '- Error' : '- Result',
+        '```',
+        toolCall.result,
+        '```'
+      );
+    }
+  }
+
+  private _addUserActionLines(
+    userAction: actions.Action,
+    lines: string[]
+  ): void {
+    const actionData = { ...userAction } as Record<string, unknown>;
+    actionData.ariaSnapshot = undefined;
+    actionData.selector = undefined;
+    actionData.signals = undefined;
+
+    lines.push(
+      `### User action: ${userAction.name}`,
+      '- Args',
+      '```json',
+      JSON.stringify(actionData, null, 2),
+      '```'
+    );
+  }
+
+  private _addTabSnapshotLines(
+    tabSnapshot: TabSnapshot,
+    ordinal: string,
+    lines: string[]
+  ): void {
+    const fileName = `${ordinal}.snapshot.yml`;
+    fs.promises
+      .writeFile(path.join(this._folder, fileName), tabSnapshot.ariaSnapshot)
+      .catch(logUnhandledError);
+    lines.push(`- Snapshot: ${fileName}`);
   }
 }

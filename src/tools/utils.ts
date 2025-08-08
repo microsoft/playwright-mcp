@@ -31,7 +31,7 @@ export async function waitForCompletion<R>(
     frameNavigated = true;
 
     // Enhanced navigation handling with stability checks
-    void (async () => {
+    (async () => {
       try {
         await tab.waitForLoadState('load');
         await tab
@@ -50,7 +50,9 @@ export async function waitForCompletion<R>(
         navigationCompleted = true;
         waitCallback();
       }
-    })();
+    })().catch(() => {
+      // Intentionally ignore hover errors
+    });
   };
   const onTimeout = () => {
     dispose();
@@ -112,7 +114,7 @@ export async function generateLocator(
 }
 export async function callOnPageNoTrace<T>(
   page: playwright.Page,
-  callback: (page: playwright.Page) => Promise<T>
+  callback: (p: playwright.Page) => Promise<T>
 ): Promise<T> {
   return await (
     page as unknown as {

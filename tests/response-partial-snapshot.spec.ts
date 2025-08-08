@@ -15,6 +15,9 @@
  */
 import { expect, test } from './fixtures.js';
 
+// Move regex to top-level to avoid performance issues
+const NON_EXISTENT_SELECTOR_REGEX = /element \[\.non-existent-selector\]:/;
+
 test.describe('Response partial snapshot implementation', () => {
   test('should use capturePartialSnapshot when selector is provided', async ({
     client,
@@ -116,7 +119,7 @@ test.describe('Response partial snapshot implementation', () => {
 
     // Should fall back to full snapshot
     const content = result.content[0].text;
-    expect(content).not.toMatch(/element \[\.non-existent-selector\]:/);
+    expect(content).not.toMatch(NON_EXISTENT_SELECTOR_REGEX);
     expect(content).toContain('generic'); // Full snapshot contains page structure (div becomes generic in ARIA tree)
   });
 

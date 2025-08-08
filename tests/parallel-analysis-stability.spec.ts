@@ -42,7 +42,9 @@ test.describe('Parallel Analysis Stability', () => {
       error?: unknown;
     }> = [];
 
+    // Test consecutive calls to ensure stability - must be sequential
     for (let i = 0; i < 5; i++) {
+      // biome-ignore lint/nursery/noAwaitInLoop: Testing consecutive call stability requires sequential execution
       const result = await unifiedSystem.analyzePageStructure(true);
       expect(result.success).toBe(true);
       results.push(result);

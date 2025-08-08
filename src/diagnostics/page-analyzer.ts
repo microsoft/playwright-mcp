@@ -98,11 +98,13 @@ export class PageAnalyzer extends DiagnosticBase {
   }
 
   private async processIframes(
-    iframes: any[],
+    iframes: playwright.ElementHandle[],
     accessible: Array<{ src: string; accessible: boolean }>,
     inaccessible: Array<{ src: string; reason: string }>
   ): Promise<void> {
+    // Process iframes sequentially to avoid overwhelming the browser
     for (const iframe of iframes) {
+      // biome-ignore lint/nursery/noAwaitInLoop: sequential processing prevents browser overload
       const src = (await iframe.getAttribute('src')) || 'about:blank';
 
       try {
@@ -121,7 +123,7 @@ export class PageAnalyzer extends DiagnosticBase {
   }
 
   private async processIndividualIframe(
-    iframe: any,
+    iframe: playwright.ElementHandle,
     src: string,
     accessible: Array<{ src: string; accessible: boolean }>,
     inaccessible: Array<{ src: string; reason: string }>
@@ -150,7 +152,9 @@ export class PageAnalyzer extends DiagnosticBase {
     }
   }
 
-  private async verifyFrameAccessibility(frame: any): Promise<void> {
+  private async verifyFrameAccessibility(
+    frame: playwright.Frame
+  ): Promise<void> {
     await Promise.race([
       frame.url(),
       new Promise((_, reject) =>
@@ -159,7 +163,7 @@ export class PageAnalyzer extends DiagnosticBase {
     ]);
   }
 
-  private async updateFrameMetadata(frame: any): Promise<void> {
+  private async updateFrameMetadata(frame: playwright.Frame): Promise<void> {
     try {
       const elementCount = await frame.$$eval(
         '*',
@@ -182,7 +186,9 @@ export class PageAnalyzer extends DiagnosticBase {
     });
   }
 
-  private async disposeIframeElement(iframe: any): Promise<void> {
+  private async disposeIframeElement(
+    iframe: playwright.ElementHandle
+  ): Promise<void> {
     try {
       await iframe.dispose();
     } catch (disposeError) {
@@ -190,7 +196,9 @@ export class PageAnalyzer extends DiagnosticBase {
     }
   }
 
-  private async cleanupIframesOnError(iframes: any[]): Promise<void> {
+  private async cleanupIframesOnError(
+    iframes: playwright.ElementHandle[]
+  ): Promise<void> {
     await Promise.all(
       iframes.map(async (iframe) => {
         try {
@@ -261,32 +269,36 @@ export class PageAnalyzer extends DiagnosticBase {
       let totalInteractable = 0;
       let missingAria = 0;
 
-      for (const element of allElements) {
+      const isElementVisible = (element: Element): boolean => {
         const style = window.getComputedStyle(element);
-        const isVisible =
-          style.display !== 'none' && style.visibility !== 'hidden';
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      };
 
-        if (isVisible) {
+      const isElementInteractable = (element: Element): boolean => {
+        const tagName = element.tagName.toLowerCase();
+        return (
+          ['button', 'input', 'select', 'textarea', 'a'].includes(tagName) ||
+          element.hasAttribute('onclick') ||
+          element.hasAttribute('role')
+        );
+      };
+
+      const hasMissingAriaAttributes = (element: Element): boolean => {
+        return !(
+          element.hasAttribute('aria-label') ||
+          element.hasAttribute('aria-labelledby') ||
+          element.textContent?.trim()
+        );
+      };
+
+      for (const element of allElements) {
+        if (isElementVisible(element)) {
           totalVisible++;
 
-          // Check if element is interactable
-          const tagName = element.tagName.toLowerCase();
-          const isInteractable =
-            ['button', 'input', 'select', 'textarea', 'a'].includes(tagName) ||
-            element.hasAttribute('onclick') ||
-            element.hasAttribute('role');
-
-          if (isInteractable) {
+          if (isElementInteractable(element)) {
             totalInteractable++;
 
-            // Check for missing ARIA attributes
-            if (
-              !(
-                element.hasAttribute('aria-label') ||
-                element.hasAttribute('aria-labelledby') ||
-                element.textContent?.trim()
-              )
-            ) {
+            if (hasMissingAriaAttributes(element)) {
               missingAria++;
             }
           }
@@ -376,7 +388,11 @@ export class PageAnalyzer extends DiagnosticBase {
         const analyzeSubtree = (
           element: Element,
           selector: string,
-          largeSubtrees: any[]
+          subtreeArray: Array<{
+            selector: string;
+            elementCount: number;
+            description: string;
+          }>
         ) => {
           const descendantCount = countDescendants(element);
           if (descendantCount >= 500) {
@@ -384,7 +400,7 @@ export class PageAnalyzer extends DiagnosticBase {
             const fullSelector = buildElementSelector(element);
             const description = getSubtreeDescription(tagName, element);
 
-            largeSubtrees.push({
+            subtreeArray.push({
               selector: fullSelector || selector,
               elementCount: descendantCount,
               description,
@@ -444,12 +460,12 @@ export class PageAnalyzer extends DiagnosticBase {
           );
         };
 
-        const analyzeInteractionElements = (allElements: Element[]) => {
+        const analyzeInteractionElements = (elements: Element[]) => {
           let clickableElements = 0;
           let formElements = 0;
           let disabledElements = 0;
 
-          for (const element of allElements) {
+          for (const element of elements) {
             const tagName = element.tagName.toLowerCase();
             const type = (element as HTMLInputElement).type?.toLowerCase();
 
@@ -466,7 +482,8 @@ export class PageAnalyzer extends DiagnosticBase {
             }
           }
 
-          return { clickableElements, formElements, disabledElements };
+          const iframes = document.querySelectorAll('iframe').length;
+          return { clickableElements, formElements, disabledElements, iframes };
         };
 
         const analyzeResourceMetrics = () => {
@@ -492,6 +509,9 @@ export class PageAnalyzer extends DiagnosticBase {
           ).length;
 
           return {
+            totalRequests: 0, // We don't track actual network requests in DOM analysis
+            totalSize: 0, // We don't have actual size data
+            loadTime: 0, // We don't track load time in DOM analysis
             imageCount,
             estimatedImageSize: sizeDescription,
             scriptTags,
@@ -505,32 +525,54 @@ export class PageAnalyzer extends DiagnosticBase {
           tagName: string,
           element: Element
         ): string => {
-          if (
-            tagName === 'nav' ||
-            element.getAttribute('role') === 'navigation' ||
-            element.className.toLowerCase().includes('nav')
-          ) {
+          const className = element.className.toLowerCase();
+
+          if (isNavigationElement(tagName, element, className)) {
             return 'Fixed navigation element';
           }
-          if (
-            tagName === 'header' ||
-            element.className.toLowerCase().includes('header')
-          ) {
+
+          if (isHeaderElement(tagName, className)) {
             return 'Fixed header element';
           }
-          if (
-            element.className.toLowerCase().includes('modal') ||
-            element.className.toLowerCase().includes('dialog')
-          ) {
+
+          if (isModalElement(className)) {
             return 'Modal or dialog overlay';
           }
-          if (
-            element.className.toLowerCase().includes('toolbar') ||
-            element.className.toLowerCase().includes('controls')
-          ) {
+
+          if (isToolbarElement(className)) {
             return 'Fixed toolbar or controls';
           }
+
           return 'Unknown fixed element';
+        };
+
+        const isNavigationElement = (
+          tagName: string,
+          element: Element,
+          className: string
+        ): boolean => {
+          return (
+            tagName === 'nav' ||
+            element.getAttribute('role') === 'navigation' ||
+            className.includes('nav')
+          );
+        };
+
+        const isHeaderElement = (
+          tagName: string,
+          className: string
+        ): boolean => {
+          return tagName === 'header' || className.includes('header');
+        };
+
+        const isModalElement = (className: string): boolean => {
+          return className.includes('modal') || className.includes('dialog');
+        };
+
+        const isToolbarElement = (className: string): boolean => {
+          return (
+            className.includes('toolbar') || className.includes('controls')
+          );
         };
 
         const getZIndexDescription = (
@@ -549,53 +591,123 @@ export class PageAnalyzer extends DiagnosticBase {
           return 'High z-index element';
         };
 
-        const analyzeLayoutElements = (allElements: Element[]) => {
-          const fixedElements: Array<{
+        const analyzeLayoutElements = (elements: Element[]) => {
+          const results = {
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            scrollHeight: document.documentElement.scrollHeight,
+            fixedElements: [] as Array<{
+              selector: string;
+              purpose: string;
+              zIndex: number;
+            }>,
+            highZIndexElements: [] as Array<{
+              selector: string;
+              zIndex: number;
+              description: string;
+            }>,
+            overflowHiddenElements: 0,
+          };
+
+          for (const [index, element] of elements.entries()) {
+            const style = window.getComputedStyle(element);
+            processElementLayout(element, style, index, results);
+          }
+
+          return results;
+        };
+
+        const processElementLayout = (
+          element: Element,
+          style: CSSStyleDeclaration,
+          index: number,
+          results: {
+            fixedElements: Array<{
+              selector: string;
+              purpose: string;
+              zIndex: number;
+            }>;
+            highZIndexElements: Array<{
+              selector: string;
+              zIndex: number;
+              description: string;
+            }>;
+            overflowHiddenElements: number;
+          }
+        ): void => {
+          const position = style.position;
+          const zIndex = Number.parseInt(style.zIndex || '0', 10);
+          const tagName = element.tagName.toLowerCase();
+
+          if (position === 'fixed') {
+            processFixedElement(
+              element,
+              tagName,
+              zIndex,
+              index,
+              results.fixedElements
+            );
+          }
+
+          if (zIndex >= 1000) {
+            processHighZIndexElement(
+              element,
+              zIndex,
+              index,
+              results.highZIndexElements
+            );
+          }
+
+          if (style.overflow === 'hidden') {
+            results.overflowHiddenElements++;
+          }
+        };
+
+        const processFixedElement = (
+          element: Element,
+          tagName: string,
+          zIndex: number,
+          index: number,
+          fixedElements: Array<{
             selector: string;
             purpose: string;
             zIndex: number;
-          }> = [];
-          const highZIndexElements: Array<{
+          }>
+        ): void => {
+          const purpose = getFixedElementPurpose(tagName, element);
+          const selector = generateElementSelector(element, tagName, index);
+
+          fixedElements.push({ selector, purpose, zIndex });
+        };
+
+        const processHighZIndexElement = (
+          element: Element,
+          zIndex: number,
+          index: number,
+          highZIndexElements: Array<{
             selector: string;
             zIndex: number;
             description: string;
-          }> = [];
-          let overflowHiddenElements = 0;
+          }>
+        ): void => {
+          const description = getZIndexDescription(zIndex, element);
+          const selector = generateElementSelector(
+            element,
+            element.tagName.toLowerCase(),
+            index
+          );
 
-          for (const [index, element] of allElements.entries()) {
-            const style = window.getComputedStyle(element);
-            const position = style.position;
-            const zIndex = Number.parseInt(style.zIndex || '0', 10);
-            const tagName = element.tagName.toLowerCase();
+          highZIndexElements.push({ selector, zIndex, description });
+        };
 
-            if (position === 'fixed') {
-              const purpose = getFixedElementPurpose(tagName, element);
-              fixedElements.push({
-                selector: element.id
-                  ? `#${element.id}`
-                  : `${tagName}:nth-child(${index + 1})`,
-                purpose,
-                zIndex,
-              });
-            }
-
-            if (zIndex >= 1000) {
-              const description = getZIndexDescription(zIndex, element);
-              highZIndexElements.push({
-                selector: element.id
-                  ? `#${element.id}`
-                  : `${element.tagName.toLowerCase()}:nth-child(${index + 1})`,
-                zIndex,
-                description,
-              });
-            }
-
-            if (style.overflow === 'hidden') {
-              overflowHiddenElements++;
-            }
-          }
-
-          return { fixedElements, highZIndexElements, overflowHiddenElements };
+        const generateElementSelector = (
+          element: Element,
+          tagName: string,
+          index: number
+        ): string => {
+          return element.id
+            ? `#${element.id}`
+            : `${tagName}:nth-child(${index + 1})`;
         };
 
         const allElements = getAllElementsWithTreeWalker();
@@ -727,8 +839,12 @@ export class PageAnalyzer extends DiagnosticBase {
           clickableElements: 0,
           formElements: 0,
           disabledElements: 0,
+          iframes: 0,
         },
         resourceMetrics: {
+          totalRequests: 0,
+          totalSize: 0,
+          loadTime: 0,
           imageCount: 0,
           estimatedImageSize: 'Unknown',
           scriptTags: 0,
@@ -737,6 +853,9 @@ export class PageAnalyzer extends DiagnosticBase {
           stylesheetCount: 0,
         },
         layoutMetrics: {
+          viewportWidth: 0,
+          viewportHeight: 0,
+          scrollHeight: 0,
           fixedElements: [],
           highZIndexElements: [],
           overflowHiddenElements: 0,

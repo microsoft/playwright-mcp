@@ -18,7 +18,7 @@ import {
   runWithExtension,
 } from './extension/main.js';
 import { runLoopTools } from './loopTools/main.js';
-import * as mcpTransport from './mcp/transport.js';
+import { start } from './mcp/transport.js';
 import { packageJSON } from './package.js';
 import { logServerStart } from './utils/requestLogger.js';
 
@@ -139,7 +139,7 @@ program
     const serverBackendFactory = () =>
       new BrowserServerBackend(config, factories);
     logServerStart();
-    await mcpTransport.start(serverBackendFactory, config.server);
+    await start(serverBackendFactory, config.server);
     if (config.saveTrace) {
       const server = await startTraceViewerServer();
       const urlPrefix = server.urlPrefix('human-readable');

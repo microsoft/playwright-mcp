@@ -1,6 +1,6 @@
 import type * as playwright from 'playwright';
 import { z } from 'zod';
-import * as javascript from '../javascript.js';
+import { formatObject } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
@@ -77,26 +77,28 @@ const screenshot = defineTabTool({
       ...(params.fullPage !== undefined && { fullPage: params.fullPage }),
     };
     const isElementScreenshot = params.element && params.ref;
-    const screenshotTarget = isElementScreenshot
-      ? params.element
-      : params.fullPage
-        ? 'full page'
-        : 'viewport';
+    let screenshotTarget: string;
+    if (isElementScreenshot && params.element) {
+      screenshotTarget = params.element;
+    } else if (params.fullPage) {
+      screenshotTarget = 'full page';
+    } else {
+      screenshotTarget = 'viewport';
+    }
     response.addCode(
       `// Screenshot ${screenshotTarget} and save it as ${fileName}`
     );
     // Only get snapshot when element screenshot is needed
-    const locator = isElementScreenshot
-      ? await tab.refLocator({ element: params.element!, ref: params.ref! })
-      : null;
+    const locator =
+      isElementScreenshot && params.element && params.ref
+        ? await tab.refLocator({ element: params.element, ref: params.ref })
+        : null;
     if (locator) {
       response.addCode(
-        `await page.${await generateLocator(locator)}.screenshot(${javascript.formatObject(options)});`
+        `await page.${await generateLocator(locator)}.screenshot(${formatObject(options)});`
       );
     } else {
-      response.addCode(
-        `await page.screenshot(${javascript.formatObject(options)});`
-      );
+      response.addCode(`await page.screenshot(${formatObject(options)});`);
     }
     const buffer = locator
       ? await locator.screenshot(options)

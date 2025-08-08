@@ -95,18 +95,19 @@ export class UnifiedDiagnosticSystem {
   async initializeComponents(): Promise<void> {
     const stages = [
       createCoreStage('core-infrastructure', [
-        async () => {
+        () => {
           this.resourceManager = new ResourceManager();
           this.initializationManager.trackPartialInitialization(
             this.resourceManager
           );
+          return Promise.resolve();
         },
       ]),
       createDependentStage(
         'page-dependent',
         ['core-infrastructure'],
         [
-          async () => {
+          () => {
             const componentConfig =
               this.configManager.getComponentConfig('pageAnalyzer');
             this.pageAnalyzer = new PageAnalyzer(this.page);
@@ -123,15 +124,17 @@ export class UnifiedDiagnosticSystem {
             this.initializationManager.trackPartialInitialization(
               this.elementDiscovery
             );
+            return Promise.resolve();
           },
         ]
       ),
       createAdvancedStage('advanced-features', [
-        async () => {
+        () => {
           this.parallelAnalyzer = new ParallelPageAnalyzer(this.page);
           this.initializationManager.trackPartialInitialization(
             this.parallelAnalyzer
           );
+          return Promise.resolve();
         },
       ]),
     ];
@@ -256,7 +259,7 @@ export class UnifiedDiagnosticSystem {
         options?.timeout || componentConfig.executionTimeout || 10_000
       );
       const timeoutPromise = new Promise<never>((_, reject) => {
-        const timeoutId = setTimeout(
+        const _timeoutId = setTimeout(
           () => reject(new Error(`Operation timeout after ${timeout}ms`)),
           timeout
         );

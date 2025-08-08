@@ -81,7 +81,9 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     });
     page.on('dialog', (dialog) => this._dialogShown(dialog));
     page.on('download', (download) => {
-      void this._downloadStarted(download);
+      this._downloadStarted(download).catch(() => {
+        // Intentionally ignore download errors to prevent crashing
+      });
     });
 
     // Navigation state tracking
@@ -540,8 +542,8 @@ export function renderModalStates(
   }
   for (const state of modalStates) {
     const tool = context.tools
-      .filter((tool) => 'clearsModalState' in tool)
-      .find((tool) => tool.clearsModalState === state.type);
+      .filter((t) => 'clearsModalState' in t)
+      .find((t) => t.clearsModalState === state.type);
     result.push(
       `- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`
     );

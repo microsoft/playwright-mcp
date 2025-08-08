@@ -7,7 +7,6 @@ import { packageJSON } from '../package.js';
 import { Context } from './context.js';
 import { perform } from './perform.js';
 import { snapshot } from './snapshot.js';
-import type { Tool } from './tool.js';
 export async function runLoopTools(config: FullConfig) {
   dotenv.config();
   const serverBackendFactory = () => new LoopToolsServerBackend(config);
@@ -18,18 +17,18 @@ class LoopToolsServerBackend implements ServerBackend {
   readonly version = packageJSON.version;
   private _config: FullConfig;
   private _context: Context | undefined;
-  private _tools: Tool<any>[] = [perform, snapshot];
+  private _tools = [perform, snapshot];
   constructor(config: FullConfig) {
     this._config = config;
   }
   async initialize() {
     this._context = await Context.create(this._config);
   }
-  tools(): mcpServer.ToolSchema<any>[] {
-    return this._tools.map((tool) => tool.schema);
+  tools(): mcpServer.ToolSchema[] {
+    return this._tools.map((tool) => tool.schema as mcpServer.ToolSchema);
   }
   async callTool(
-    schema: mcpServer.ToolSchema<any>,
+    schema: mcpServer.ToolSchema,
     parsedArguments: Record<string, unknown>
   ): Promise<mcpServer.ToolResponse> {
     const tool = this._tools.find((t) => t.schema.name === schema.name);
@@ -39,7 +38,9 @@ class LoopToolsServerBackend implements ServerBackend {
     if (!this._context) {
       throw new Error('Context not initialized');
     }
-    return await tool.handle(this._context, parsedArguments);
+    // Since we found the tool by schema name, the parsedArguments should match the tool's input schema
+    // biome-ignore lint/suspicious/noExplicitAny: Union type requires any for proper type handling across different tool schemas
+    return await tool.handle(this._context, parsedArguments as any);
   }
   serverClosed() {
     this._context?.close().catch(() => {

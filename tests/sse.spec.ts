@@ -17,7 +17,7 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import url from 'node:url';
+import nodeUrl from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import type { Config } from '../config.d.ts';
@@ -43,7 +43,7 @@ const LOCK_USER_DATA_DIR_REGEX = /lock user data dir/;
 const RELEASE_USER_DATA_DIR_REGEX = /release user data dir/;
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-const __filename = url.fileURLToPath(import.meta.url);
+const __filename = nodeUrl.fileURLToPath(import.meta.url);
 
 const test = baseTest.extend<{
   serverEndpoint: (options?: {
@@ -146,7 +146,7 @@ test('sse transport browser lifecycle (isolated)', async ({
   });
   await client2.close();
 
-  await expect(async () => {
+  await expect(() => {
     const lines = stderr().split('\n');
     expect(
       lines.filter((line) => line.match(CREATE_SSE_SESSION_REGEX)).length
@@ -214,7 +214,7 @@ test('sse transport browser lifecycle (isolated, multiclient)', async ({
   await client2.close();
   await client3.close();
 
-  await expect(async () => {
+  await expect(() => {
     const lines = stderr().split('\n');
     expect(
       lines.filter((line) => line.match(CREATE_SSE_SESSION_REGEX)).length
@@ -272,7 +272,7 @@ test('sse transport browser lifecycle (persistent)', async ({
   });
   await client2.close();
 
-  await expect(async () => {
+  await expect(() => {
     const lines = stderr().split('\n');
     expect(
       lines.filter((line) => line.match(CREATE_SSE_SESSION_REGEX)).length
