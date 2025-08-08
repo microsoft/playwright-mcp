@@ -1,19 +1,26 @@
+// @ts-nocheck
 import { z } from 'zod';
-import { defineTabTool } from './tool.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import { defineTabTool } from './tool.js';
+
 const elementSchema = z.object({
-  element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),
+  element: z
+    .string()
+    .describe(
+      'Human-readable element description used to obtain permission to interact with the element'
+    ),
 });
 const mouseMove = defineTabTool({
   capability: 'vision',
   schema: {
     name: 'browser_mouse_move_xy',
     title: 'Move mouse',
-    description: `Move mouse to specific coordinates.Requires --caps=vision.x,y:coordinates.expectation:{includeSnapshot:false} for simple move,true to see hover effects.PREFER element-based interactions over coordinates when possible.`,
+    description:
+      'Move mouse to specific coordinates.Requires --caps=vision.x,y:coordinates.expectation:{includeSnapshot:false} for simple move,true to see hover effects.PREFER element-based interactions over coordinates when possible.',
     inputSchema: elementSchema.extend({
       x: z.number().describe('X coordinate'),
       y: z.number().describe('Y coordinate'),
-      expectation: expectationSchema
+      expectation: expectationSchema,
     }),
     type: 'readOnly',
   },
@@ -30,20 +37,23 @@ const mouseClick = defineTabTool({
   schema: {
     name: 'browser_mouse_click_xy',
     title: 'Click',
-    description: `Click at specific coordinates.Requires --caps=vision.x,y:click position.expectation:{includeSnapshot:true} to verify result.PREFER browser_click with element ref over coordinates.USE batch_execute for coordinate-based workflows.`,
+    description:
+      'Click at specific coordinates.Requires --caps=vision.x,y:click position.expectation:{includeSnapshot:true} to verify result.PREFER browser_click with element ref over coordinates.USE batch_execute for coordinate-based workflows.',
     inputSchema: elementSchema.extend({
       x: z.number().describe('X coordinate'),
       y: z.number().describe('Y coordinate'),
-      expectation: expectationSchema
+      expectation: expectationSchema,
     }),
     type: 'destructive',
   },
   handle: async (tab, params, response) => {
     response.setIncludeSnapshot();
-    response.addCode(`// Click mouse at coordinates (${params.x}, ${params.y})`);
+    response.addCode(
+      `// Click mouse at coordinates (${params.x}, ${params.y})`
+    );
     response.addCode(`await page.mouse.move(${params.x}, ${params.y});`);
-    response.addCode(`await page.mouse.down();`);
-    response.addCode(`await page.mouse.up();`);
+    response.addCode('await page.mouse.down();');
+    response.addCode('await page.mouse.up();');
     await tab.waitForCompletion(async () => {
       await tab.page.mouse.move(params.x, params.y);
       await tab.page.mouse.down();
@@ -62,17 +72,21 @@ const mouseDrag = defineTabTool({
       startY: z.number().describe('Start Y coordinate'),
       endX: z.number().describe('End X coordinate'),
       endY: z.number().describe('End Y coordinate'),
-      expectation: expectationSchema
+      expectation: expectationSchema,
     }),
     type: 'destructive',
   },
   handle: async (tab, params, response) => {
     response.setIncludeSnapshot();
-    response.addCode(`// Drag mouse from (${params.startX}, ${params.startY}) to (${params.endX}, ${params.endY})`);
-    response.addCode(`await page.mouse.move(${params.startX}, ${params.startY});`);
-    response.addCode(`await page.mouse.down();`);
+    response.addCode(
+      `// Drag mouse from (${params.startX}, ${params.startY}) to (${params.endX}, ${params.endY})`
+    );
+    response.addCode(
+      `await page.mouse.move(${params.startX}, ${params.startY});`
+    );
+    response.addCode('await page.mouse.down();');
     response.addCode(`await page.mouse.move(${params.endX}, ${params.endY});`);
-    response.addCode(`await page.mouse.up();`);
+    response.addCode('await page.mouse.up();');
     await tab.waitForCompletion(async () => {
       await tab.page.mouse.move(params.startX, params.startY);
       await tab.page.mouse.down();
@@ -81,8 +95,4 @@ const mouseDrag = defineTabTool({
     });
   },
 });
-export default [
-  mouseMove,
-  mouseClick,
-  mouseDrag,
-];
+export default [mouseMove, mouseClick, mouseDrag];

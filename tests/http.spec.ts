@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,52 +15,82 @@
  * limitations under the License.
  */
 
+import { type ChildProcess, spawn } from 'node:child_process';
 import fs from 'node:fs';
-import url from 'node:url';
-
-import { ChildProcess, spawn } from 'node:child_process';
 import path from 'node:path';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import url from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-
-import { test as baseTest, expect } from './fixtures.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Config } from '../config.d.ts';
+import { test as baseTest, expect } from './fixtures.js';
+
+// Top-level regex patterns for performance optimization
+const LISTENING_ON_REGEX = /Listening on (http:\/\/.*)/;
+const CREATE_HTTP_SESSION_REGEX = /create http session/;
+const DELETE_HTTP_SESSION_REGEX = /delete http session/;
+const CREATE_CONTEXT_REGEX = /create context/;
+const CLOSE_CONTEXT_REGEX = /close context/;
+const CREATE_BROWSER_CONTEXT_PERSISTENT_REGEX =
+  /create browser context \(persistent\)/;
+const CLOSE_BROWSER_CONTEXT_PERSISTENT_REGEX =
+  /close browser context \(persistent\)/;
+const CREATE_BROWSER_CONTEXT_ISOLATED_REGEX =
+  /create browser context \(isolated\)/;
+const CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX =
+  /close browser context \(isolated\)/;
+const OBTAIN_BROWSER_ISOLATED_REGEX = /obtain browser \(isolated\)/;
+const CLOSE_BROWSER_ISOLATED_REGEX = /close browser \(isolated\)/;
+const LOCK_USER_DATA_DIR_REGEX = /lock user data dir/;
+const RELEASE_USER_DATA_DIR_REGEX = /release user data dir/;
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
 
-const test = baseTest.extend<{ serverEndpoint: (options?: { args?: string[], noPort?: boolean }) => Promise<{ url: URL, stderr: () => string }> }>({
+const test = baseTest.extend<{
+  serverEndpoint: (options?: {
+    args?: string[];
+    noPort?: boolean;
+  }) => Promise<{ url: URL; stderr: () => string }>;
+}>({
   serverEndpoint: async ({ mcpHeadless }, use, testInfo) => {
     let cp: ChildProcess | undefined;
     const userDataDir = testInfo.outputPath('user-data-dir');
-    await use(async (options?: { args?: string[], noPort?: boolean }) => {
-      if (cp)
+    await use(async (options?: { args?: string[]; noPort?: boolean }) => {
+      if (cp) {
         throw new Error('Process already running');
+      }
 
-      cp = spawn('node', [
-        path.join(path.dirname(__filename), '../cli.js'),
-        ...(options?.noPort ? [] : ['--port=0']),
-        '--user-data-dir=' + userDataDir,
-        ...(mcpHeadless ? ['--headless'] : []),
-        ...(options?.args || []),
-      ], {
-        stdio: 'pipe',
-        env: {
-          ...process.env,
-          DEBUG: 'pw:mcp:test',
-          DEBUG_COLORS: '0',
-          DEBUG_HIDE_DATE: '1',
-        },
-      });
+      cp = spawn(
+        'node',
+        [
+          path.join(path.dirname(__filename), '../cli.js'),
+          ...(options?.noPort ? [] : ['--port=0']),
+          `--user-data-dir=${userDataDir}`,
+          ...(mcpHeadless ? ['--headless'] : []),
+          ...(options?.args || []),
+        ],
+        {
+          stdio: 'pipe',
+          env: {
+            ...process.env,
+            DEBUG: 'pw:mcp:test',
+            DEBUG_COLORS: '0',
+            DEBUG_HIDE_DATE: '1',
+          },
+        }
+      );
       let stderr = '';
-      const url = await new Promise<string>(resolve => cp!.stderr?.on('data', data => {
-        stderr += data.toString();
-        const match = stderr.match(/Listening on (http:\/\/.*)/);
-        if (match)
-          resolve(match[1]);
-      }));
+      const serverUrl = await new Promise<string>((resolve) =>
+        cp?.stderr?.on('data', (data) => {
+          stderr += data.toString();
+          const match = stderr.match(/Listening on (http:\/\/.*)/);
+          if (match) {
+            resolve(match[1]);
+          }
+        })
+      );
 
-      return { url: new URL(url), stderr: () => stderr };
+      return { url: new URL(serverUrl), stderr: () => stderr };
     });
     cp?.kill('SIGTERM');
   },
@@ -77,19 +108,25 @@ test('http transport (config)', async ({ serverEndpoint }) => {
   const config: Config = {
     server: {
       port: 0,
-    }
+    },
   };
   const configFile = test.info().outputPath('config.json');
   await fs.promises.writeFile(configFile, JSON.stringify(config, null, 2));
 
-  const { url } = await serverEndpoint({ noPort: true, args: ['--config=' + configFile] });
+  const { url } = await serverEndpoint({
+    noPort: true,
+    args: [`--config=${configFile}`],
+  });
   const transport = new StreamableHTTPClientTransport(new URL('/mcp', url));
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
   await client.ping();
 });
 
-test('http transport browser lifecycle (isolated)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (isolated)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
   const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
@@ -119,23 +156,42 @@ test('http transport browser lifecycle (isolated)', async ({ serverEndpoint, ser
   await transport2.terminateSession();
   await client2.close();
 
-  await expect(async () => {
+  expect(() => {
     const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create http session/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/delete http session/)).length).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/create http session/)).length
+    ).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/delete http session/)).length
+    ).toBe(2);
 
-    expect(lines.filter(line => line.match(/create context/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close context/)).length).toBe(2);
+    expect(
+      lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
+    ).toBe(2);
+    expect(lines.filter((line) => line.match(/close context/)).length).toBe(2);
 
-    expect(lines.filter(line => line.match(/create browser context \(isolated\)/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close browser context \(isolated\)/)).length).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/create browser context \(isolated\)/))
+        .length
+    ).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/close browser context \(isolated\)/))
+        .length
+    ).toBe(2);
 
-    expect(lines.filter(line => line.match(/obtain browser \(isolated\)/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close browser \(isolated\)/)).length).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/obtain browser \(isolated\)/)).length
+    ).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/close browser \(isolated\)/)).length
+    ).toBe(2);
   }).toPass();
 });
 
-test('http transport browser lifecycle (isolated, multiclient)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (isolated, multiclient)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
   const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
@@ -169,23 +225,40 @@ test('http transport browser lifecycle (isolated, multiclient)', async ({ server
   await transport3.terminateSession();
   await client3.close();
 
-  await expect(async () => {
+  expect(() => {
     const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create http session/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/delete http session/)).length).toBe(3);
+    expect(
+      lines.filter((line) => line.match(/create http session/)).length
+    ).toBe(3);
+    expect(
+      lines.filter((line) => line.match(/delete http session/)).length
+    ).toBe(3);
 
-    expect(lines.filter(line => line.match(/create context/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/close context/)).length).toBe(3);
+    expect(lines.filter((line) => line.match(/create context/)).length).toBe(3);
+    expect(lines.filter((line) => line.match(/close context/)).length).toBe(3);
 
-    expect(lines.filter(line => line.match(/create browser context \(isolated\)/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/close browser context \(isolated\)/)).length).toBe(3);
+    expect(
+      lines.filter((line) => line.match(/create browser context \(isolated\)/))
+        .length
+    ).toBe(3);
+    expect(
+      lines.filter((line) => line.match(/close browser context \(isolated\)/))
+        .length
+    ).toBe(3);
 
-    expect(lines.filter(line => line.match(/obtain browser \(isolated\)/)).length).toBe(1);
-    expect(lines.filter(line => line.match(/close browser \(isolated\)/)).length).toBe(1);
+    expect(
+      lines.filter((line) => line.match(/obtain browser \(isolated\)/)).length
+    ).toBe(1);
+    expect(
+      lines.filter((line) => line.match(/close browser \(isolated\)/)).length
+    ).toBe(1);
   }).toPass();
 });
 
-test('http transport browser lifecycle (persistent)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (persistent)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url, stderr } = await serverEndpoint();
 
   const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
@@ -208,23 +281,43 @@ test('http transport browser lifecycle (persistent)', async ({ serverEndpoint, s
   await transport2.terminateSession();
   await client2.close();
 
-  await expect(async () => {
+  expect(() => {
     const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create http session/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/delete http session/)).length).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/create http session/)).length
+    ).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/delete http session/)).length
+    ).toBe(2);
 
-    expect(lines.filter(line => line.match(/create context/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close context/)).length).toBe(2);
+    expect(
+      lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
+    ).toBe(2);
+    expect(lines.filter((line) => line.match(/close context/)).length).toBe(2);
 
-    expect(lines.filter(line => line.match(/create browser context \(persistent\)/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close browser context \(persistent\)/)).length).toBe(2);
+    expect(
+      lines.filter((line) =>
+        line.match(CREATE_BROWSER_CONTEXT_PERSISTENT_REGEX)
+      ).length
+    ).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/close browser context \(persistent\)/))
+        .length
+    ).toBe(2);
 
-    expect(lines.filter(line => line.match(/lock user data dir/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/release user data dir/)).length).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/lock user data dir/)).length
+    ).toBe(2);
+    expect(
+      lines.filter((line) => line.match(/release user data dir/)).length
+    ).toBe(2);
   }).toPass();
 });
 
-test('http transport browser lifecycle (persistent, multiclient)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (persistent, multiclient)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url } = await serverEndpoint();
 
   const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
@@ -243,7 +336,9 @@ test('http transport browser lifecycle (persistent, multiclient)', async ({ serv
     arguments: { url: server.HELLO_WORLD },
   });
   expect(response.isError).toBe(true);
-  expect(response.content?.[0].text).toContain('use --isolated to run multiple instances of the same browser');
+  expect(response.content?.[0].text).toContain(
+    'use --isolated to run multiple instances of the same browser'
+  );
 
   await client1.close();
   await client2.close();

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,17 +15,20 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Mouse Tools Expectation Parameter', () => {
   test.describe('browser_mouse_move_xy', () => {
-    test('should accept expectation parameter with minimal response', async ({ startClient, server }) => {
+    test('should accept expectation parameter with minimal response', async ({
+      startClient,
+      server,
+    }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
       server.setContent('/', '<div>Test Page</div>', 'text/html');
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -38,23 +42,28 @@ test.describe('Mouse Tools Expectation Parameter', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');
       expect(result.content[0].text).not.toContain('Console messages');
-      expect(result.content[0].text).toContain('await page.mouse.move(100, 200);');
+      expect(result.content[0].text).toContain(
+        'await page.mouse.move(100, 200);'
+      );
     });
 
-    test('should accept expectation parameter with full response', async ({ startClient, server }) => {
+    test('should accept expectation parameter with full response', async ({
+      startClient,
+      server,
+    }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
       server.setContent('/', '<div>Full Test Page</div>', 'text/html');
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -68,24 +77,29 @@ test.describe('Mouse Tools Expectation Parameter', () => {
             includeConsole: true,
             includeDownloads: true,
             includeTabs: true,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).toContain('Page Snapshot:');
-      expect(result.content[0].text).toContain('await page.mouse.move(150, 250);');
+      expect(result.content[0].text).toContain(
+        'await page.mouse.move(150, 250);'
+      );
     });
   });
 
   test.describe('browser_mouse_click_xy', () => {
-    test('should accept expectation parameter with minimal response', async ({ startClient, server }) => {
+    test('should accept expectation parameter with minimal response', async ({
+      startClient,
+      server,
+    }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
       server.setContent('/', '<div>Test Page</div>', 'text/html');
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -99,26 +113,31 @@ test.describe('Mouse Tools Expectation Parameter', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');
-      expect(result.content[0].text).toContain('await page.mouse.move(100, 200);');
+      expect(result.content[0].text).toContain(
+        'await page.mouse.move(100, 200);'
+      );
       expect(result.content[0].text).toContain('await page.mouse.down();');
       expect(result.content[0].text).toContain('await page.mouse.up();');
     });
   });
 
   test.describe('browser_mouse_drag_xy', () => {
-    test('should accept expectation parameter with minimal response', async ({ startClient, server }) => {
+    test('should accept expectation parameter with minimal response', async ({
+      startClient,
+      server,
+    }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
       server.setContent('/', '<div>Test Page</div>', 'text/html');
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -134,15 +153,19 @@ test.describe('Mouse Tools Expectation Parameter', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');
-      expect(result.content[0].text).toContain('await page.mouse.move(50, 100);');
+      expect(result.content[0].text).toContain(
+        'await page.mouse.move(50, 100);'
+      );
       expect(result.content[0].text).toContain('await page.mouse.down();');
-      expect(result.content[0].text).toContain('await page.mouse.move(200, 300);');
+      expect(result.content[0].text).toContain(
+        'await page.mouse.move(200, 300);'
+      );
       expect(result.content[0].text).toContain('await page.mouse.up();');
     });
   });

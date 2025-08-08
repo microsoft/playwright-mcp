@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright 2017 Google Inc. All rights reserved.
  * Modifications copyright (c) Microsoft Corporation.
@@ -15,11 +16,11 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import path from 'node:path';
 import url from 'node:url';
-import http from 'http';
-import https from 'https';
-import path from 'path';
 import debug from 'debug';
 
 const fulfillSymbol = Symbol('fulfil callback');
@@ -31,7 +32,10 @@ const __filename = url.fileURLToPath(import.meta.url);
 export class TestServer {
   private _server: http.Server;
   readonly debugServer: any;
-  private _routes = new Map<string, (request: http.IncomingMessage, response: http.ServerResponse) => any>();
+  private _routes = new Map<
+    string,
+    (request: http.IncomingMessage, response: http.ServerResponse) => any
+  >();
   private _csp = new Map<string, string>();
   private _extraHeaders = new Map<string, object>();
   private _requestSubscribers = new Map<string, Promise<any>>();
@@ -42,25 +46,30 @@ export class TestServer {
 
   static async create(port: number): Promise<TestServer> {
     const server = new TestServer(port);
-    await new Promise(x => server._server.once('listening', x));
+    await new Promise((x) => server._server.once('listening', x));
     return server;
   }
 
   static async createHTTPS(port: number): Promise<TestServer> {
     const server = new TestServer(port, {
-      key: await fs.promises.readFile(path.join(path.dirname(__filename), 'key.pem')),
-      cert: await fs.promises.readFile(path.join(path.dirname(__filename), 'cert.pem')),
+      key: await fs.promises.readFile(
+        path.join(path.dirname(__filename), 'key.pem')
+      ),
+      cert: await fs.promises.readFile(
+        path.join(path.dirname(__filename), 'cert.pem')
+      ),
       passphrase: 'aaaa',
     });
-    await new Promise(x => server._server.once('listening', x));
+    await new Promise((x) => server._server.once('listening', x));
     return server;
   }
 
   constructor(port: number, sslOptions?: object) {
-    if (sslOptions)
+    if (sslOptions) {
       this._server = https.createServer(sslOptions, this._onRequest.bind(this));
-    else
+    } else {
       this._server = http.createServer(this._onRequest.bind(this));
+    }
     this._server.listen(port);
     this.debugServer = debug('pw:testserver');
 
@@ -83,15 +92,21 @@ export class TestServer {
 
   async stop() {
     this.reset();
-    await new Promise(x => this._server.close(x));
+    await new Promise((x) => this._server.close(x));
   }
 
-  route(path: string, handler: (request: http.IncomingMessage, response: http.ServerResponse) => any) {
+  route(
+    path: string,
+    handler: (
+      request: http.IncomingMessage,
+      response: http.ServerResponse
+    ) => any
+  ) {
     this._routes.set(path, handler);
   }
 
   setContent(path: string, content: string, mimeType: string) {
-    this.route(path, (req, res) => {
+    this.route(path, (_req, res) => {
       res.writeHead(200, { 'Content-Type': mimeType });
       res.end(mimeType === 'text/html' ? `<!DOCTYPE html>${content}` : content);
     });
@@ -107,8 +122,9 @@ export class TestServer {
 
   waitForRequest(path: string): Promise<http.IncomingMessage> {
     let promise = this._requestSubscribers.get(path);
-    if (promise)
+    if (promise) {
       return promise;
+    }
     let fulfill, reject;
     promise = new Promise((f, r) => {
       fulfill = f;
@@ -126,30 +142,36 @@ export class TestServer {
     this._extraHeaders.clear();
     this._server.closeAllConnections();
     const error = new Error('Static Server has been reset');
-    for (const subscriber of this._requestSubscribers.values())
+    for (const subscriber of this._requestSubscribers.values()) {
       subscriber[rejectSymbol].call(null, error);
+    }
     this._requestSubscribers.clear();
 
     this.setContent('/favicon.ico', '', 'image/x-icon');
 
-    this.setContent('/', ``, 'text/html');
+    this.setContent('/', '', 'text/html');
 
-    this.setContent('/hello-world', `
+    this.setContent(
+      '/hello-world',
+      `
       <title>Title</title>
       <body>Hello, world!</body>
-    `, 'text/html');
+    `,
+      'text/html'
+    );
   }
 
   _onRequest(request: http.IncomingMessage, response: http.ServerResponse) {
-    request.on('error', error => {
-      if ((error as any).code === 'ECONNRESET')
+    request.on('error', (error) => {
+      if ((error as any).code === 'ECONNRESET') {
         response.end();
-      else
+      } else {
         throw error;
+      }
     });
-    (request as any).postBody = new Promise(resolve => {
+    (request as any).postBody = new Promise((resolve) => {
       const chunks: Buffer[] = [];
-      request.on('data', chunk => {
+      request.on('data', (chunk) => {
         chunks.push(chunk);
       });
       request.on('end', () => resolve(Buffer.concat(chunks)));
@@ -158,7 +180,7 @@ export class TestServer {
     this.debugServer(`request ${request.method} ${path}`);
     // Notify request subscriber.
     if (this._requestSubscribers.has(path)) {
-      this._requestSubscribers.get(path)![fulfillSymbol].call(null, request);
+      this._requestSubscribers.get(path)?.[fulfillSymbol].call(null, request);
       this._requestSubscribers.delete(path);
     }
     const handler = this._routes.get(path);

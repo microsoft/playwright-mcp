@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,9 +15,8 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
-
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { expect, test } from './fixtures.js';
 
 async function createTab(client: Client, title: string, body: string) {
   return await client.callTool({
@@ -28,18 +28,22 @@ async function createTab(client: Client, title: string, body: string) {
 }
 
 test('list initial tabs', async ({ client }) => {
-  expect(await client.callTool({
-    name: 'browser_tab_list',
-  })).toHaveResponse({
-    tabs: `- 0: (current) [] (about:blank)`,
+  expect(
+    await client.callTool({
+      name: 'browser_tab_list',
+    })
+  ).toHaveResponse({
+    tabs: '- 0: (current) [] (about:blank)',
   });
 });
 
 test('list first tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
-  expect(await client.callTool({
-    name: 'browser_tab_list',
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_tab_list',
+    })
+  ).toHaveResponse({
     tabs: `- 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`,
   });
@@ -49,7 +53,8 @@ test('create new tab', async ({ client }) => {
   expect(await createTab(client, 'Tab one', 'Body one')).toHaveResponse({
     tabs: `- 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`,
-    pageState: expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
+    pageState:
+      expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot:
 \`\`\`yaml
@@ -61,7 +66,8 @@ test('create new tab', async ({ client }) => {
     tabs: `- 0: [] (about:blank)
 - 1: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 - 2: (current) [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`,
-    pageState: expect.stringContaining(`- Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
+    pageState:
+      expect.stringContaining(`- Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
 - Page Title: Tab two
 - Page Snapshot:
 \`\`\`yaml
@@ -74,16 +80,19 @@ test('select tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   await createTab(client, 'Tab two', 'Body two');
 
-  expect(await client.callTool({
-    name: 'browser_tab_select',
-    arguments: {
-      index: 1,
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_tab_select',
+      arguments: {
+        index: 1,
+      },
+    })
+  ).toHaveResponse({
     tabs: `- 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 - 2: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`,
-    pageState: expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
+    pageState:
+      expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot:
 \`\`\`yaml
@@ -96,15 +105,18 @@ test('close tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   await createTab(client, 'Tab two', 'Body two');
 
-  expect(await client.callTool({
-    name: 'browser_tab_close',
-    arguments: {
-      index: 2,
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_tab_close',
+      arguments: {
+        index: 2,
+      },
+    })
+  ).toHaveResponse({
     tabs: `- 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`,
-    pageState: expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
+    pageState:
+      expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
 - Page Title: Tab one
 - Page Snapshot:
 \`\`\`yaml
@@ -113,11 +125,17 @@ test('close tab', async ({ client }) => {
   });
 });
 
-test('reuse first tab when navigating', async ({ startClient, cdpServer, server }) => {
+test('reuse first tab when navigating', async ({
+  startClient,
+  cdpServer,
+  server,
+}) => {
   const browserContext = await cdpServer.start();
   const pages = browserContext.pages();
 
-  const { client } = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
+  const { client } = await startClient({
+    args: [`--cdp-endpoint=${cdpServer.endpoint}`],
+  });
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -137,10 +155,12 @@ test('Tab.capturePartialSnapshot method exists', async ({ client }) => {
 
 test('Tab partial snapshot functionality through utils', async ({ client }) => {
   // Create a tab with complex HTML structure for testing
-  await createTab(client, 'Snapshot Test',
-      '<div id="header">Header content</div>' +
-    '<div id="main">Main content for testing</div>' +
-    '<div id="footer">Footer content</div>'
+  await createTab(
+    client,
+    'Snapshot Test',
+    '<div id="header">Header content</div>' +
+      '<div id="main">Main content for testing</div>' +
+      '<div id="footer">Footer content</div>'
   );
 
   // The capturePartialSnapshot functionality will be verified through

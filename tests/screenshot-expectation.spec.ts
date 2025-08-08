@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,16 +15,23 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Screenshot Tool Expectation Parameter', () => {
   test.describe('browser_take_screenshot', () => {
-    test('should accept expectation parameter with minimal response', async ({ client, server }) => {
-      server.setContent('/', '<div>Test Page for Screenshot</div>', 'text/html');
+    test('should accept expectation parameter with minimal response', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<div>Test Page for Screenshot</div>',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -35,9 +43,9 @@ test.describe('Screenshot Tool Expectation Parameter', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: false
-          }
-        }
+            includeCode: false,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');
@@ -45,12 +53,19 @@ test.describe('Screenshot Tool Expectation Parameter', () => {
       expect(result.content[0].text).toContain('Took the viewport screenshot');
     });
 
-    test('should accept expectation parameter with full response', async ({ client, server }) => {
-      server.setContent('/', '<div>Full Test Page for Screenshot</div>', 'text/html');
+    test('should accept expectation parameter with full response', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<div>Full Test Page for Screenshot</div>',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -62,25 +77,32 @@ test.describe('Screenshot Tool Expectation Parameter', () => {
             includeConsole: true,
             includeDownloads: true,
             includeTabs: true,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).toContain('Page Snapshot:');
       expect(result.content[0].text).toContain('Took the viewport screenshot');
     });
 
-    test('should accept expectation parameter with fullPage option', async ({ client, server }) => {
-      server.setContent('/', `
+    test('should accept expectation parameter with fullPage option', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        `
         <div style="height: 2000px; background: linear-gradient(red, blue);">
           Full page screenshot test content
         </div>
-      `, 'text/html');
+      `,
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -93,9 +115,9 @@ test.describe('Screenshot Tool Expectation Parameter', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');

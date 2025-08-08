@@ -1,0 +1,306 @@
+// @ts-nocheck
+/**
+ * Common initialization patterns and dependency management
+ */
+
+import { createDiagnosticLogger } from './diagnostic-base.js';
+import type { PerformanceTracker } from './performance-tracker.js';
+
+export interface InitializationStage {
+  name: string;
+  dependencies?: string[];
+  components: (() => Promise<void>)[];
+  timeout?: number;
+  retryCount?: number;
+}
+
+export interface InitializationContext {
+  componentName: string;
+  config?: Record<string, unknown>;
+  performanceTracker?: PerformanceTracker;
+}
+
+export interface DisposableComponent {
+  dispose(): Promise<void>;
+}
+
+/**
+ * Common initialization manager for diagnostic components
+ */
+export class InitializationManager {
+  private isInitialized = false;
+  private initializationPromise?: Promise<void>;
+  private initializationError?: Error;
+  private readonly logger: ReturnType<typeof createDiagnosticLogger>;
+  private readonly performanceTracker?: PerformanceTracker;
+  private readonly partiallyInitialized: DisposableComponent[] = [];
+  private readonly context: InitializationContext;
+
+  constructor(context: InitializationContext) {
+    this.context = context;
+    this.logger = createDiagnosticLogger(
+      context.componentName,
+      'initialization'
+    );
+    this.performanceTracker = context.performanceTracker;
+  }
+
+  /**
+   * Initialize components with staged dependency resolution
+   */
+  async initialize(stages: InitializationStage[]): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    if (this.initializationError) {
+      throw this.initializationError;
+    }
+
+    this.initializationPromise = this.performInitialization(stages);
+
+    try {
+      await this.initializationPromise;
+      this.isInitialized = true;
+      this.logger.info('Component initialization completed successfully');
+    } catch (error) {
+      this.initializationError =
+        error instanceof Error ? error : new Error(String(error));
+      this.logger.error(
+        'Component initialization failed',
+        this.initializationError
+      );
+      throw this.initializationError;
+    } finally {
+      this.initializationPromise = undefined;
+    }
+  }
+
+  private async performInitialization(
+    stages: InitializationStage[]
+  ): Promise<void> {
+    const completedStages = new Set<string>();
+
+    try {
+      for (const stage of stages) {
+        await this.executeStage(stage, completedStages);
+        completedStages.add(stage.name);
+      }
+    } catch (error) {
+      this.logger.error('Initialization failed during stage execution', error);
+      await this.cleanupPartialInitialization();
+      throw error;
+    }
+  }
+
+  private async executeStage(
+    stage: InitializationStage,
+    completedStages: Set<string>
+  ): Promise<void> {
+    // Validate dependencies
+    if (stage.dependencies) {
+      for (const dependency of stage.dependencies) {
+        if (!completedStages.has(dependency)) {
+          throw new Error(
+            `Dependency '${dependency}' not satisfied for stage '${stage.name}'`
+          );
+        }
+      }
+    }
+
+    const stageLogger = createDiagnosticLogger(
+      this.context.componentName,
+      `init-stage-${stage.name}`
+    );
+
+    stageLogger.info(`Starting initialization stage: ${stage.name}`);
+
+    // Execute stage with optional performance tracking
+    const executeWithTracking = async () => {
+      for (const componentInit of stage.components) {
+        await this.executeWithRetry(
+          componentInit,
+          stage.retryCount || 1,
+          stage.timeout
+        );
+      }
+    };
+
+    if (this.performanceTracker) {
+      await this.performanceTracker.trackOperation(
+        `init-stage-${stage.name}`,
+        this.context.componentName,
+        executeWithTracking
+      );
+    } else {
+      await executeWithTracking();
+    }
+
+    stageLogger.info(`Completed initialization stage: ${stage.name}`);
+  }
+
+  private async executeWithRetry(
+    operation: () => Promise<void>,
+    retryCount: number,
+    timeout?: number
+  ): Promise<void> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 1; attempt <= retryCount; attempt++) {
+      try {
+        if (timeout) {
+          await Promise.race([
+            operation(),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () => reject(new Error(`Operation timeout after ${timeout}ms`)),
+                timeout
+              )
+            ),
+          ]);
+        } else {
+          await operation();
+        }
+        return; // Success
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (attempt < retryCount) {
+          this.logger.warn(
+            `Retry attempt ${attempt} failed, retrying...`,
+            lastError
+          );
+          await this.delay(1000 * attempt); // Exponential backoff
+        }
+      }
+    }
+
+    throw lastError || new Error('Operation failed after all retries');
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Add component to cleanup tracking
+   */
+  trackPartialInitialization(component: DisposableComponent): void {
+    this.partiallyInitialized.push(component);
+  }
+
+  private async cleanupPartialInitialization(): Promise<void> {
+    const cleanupPromises = this.partiallyInitialized.map(async (component) => {
+      try {
+        await component.dispose();
+      } catch (error) {
+        this.logger.warn(
+          'Failed to dispose partially initialized component',
+          error
+        );
+      }
+    });
+
+    await Promise.allSettled(cleanupPromises);
+    this.partiallyInitialized.length = 0;
+  }
+
+  /**
+   * Check if initialization is complete
+   */
+  getIsInitialized(): boolean {
+    return this.isInitialized;
+  }
+
+  /**
+   * Get initialization error if any
+   */
+  getInitializationError(): Error | undefined {
+    return this.initializationError;
+  }
+
+  /**
+   * Reset initialization state (for testing)
+   */
+  reset(): void {
+    this.isInitialized = false;
+    this.initializationPromise = undefined;
+    this.initializationError = undefined;
+    this.partiallyInitialized.length = 0;
+  }
+
+  /**
+   * Dispose initialization manager and cleanup partial components
+   */
+  async dispose(): Promise<void> {
+    if (this.initializationPromise) {
+      try {
+        await this.initializationPromise;
+      } catch {
+        // Ignore errors during disposal
+      }
+    }
+
+    await this.cleanupPartialInitialization();
+    this.reset();
+  }
+}
+
+/**
+ * Factory functions for creating common initialization stages
+ */
+
+/**
+ * Create core infrastructure stage (no dependencies)
+ */
+export function createCoreStage(
+  name: string,
+  components: (() => Promise<void>)[]
+): InitializationStage {
+  return {
+    name,
+    components,
+    timeout: 5000, // 5 second timeout for core components
+  };
+}
+
+/**
+ * Create dependent stage with specified dependencies
+ */
+export function createDependentStage(
+  name: string,
+  dependencies: string[],
+  components: (() => Promise<void>)[]
+): InitializationStage {
+  return {
+    name,
+    dependencies,
+    components,
+    timeout: 10_000, // 10 second timeout for dependent components
+    retryCount: 2,
+  };
+}
+
+/**
+ * Create advanced feature stage (depends on core and page-dependent)
+ */
+export function createAdvancedStage(
+  name: string,
+  components: (() => Promise<void>)[],
+  additionalDependencies: string[] = []
+): InitializationStage {
+  return {
+    name,
+    dependencies: [
+      'core-infrastructure',
+      'page-dependent',
+      ...additionalDependencies,
+    ],
+    components,
+    timeout: 15_000, // 15 second timeout for advanced features
+    retryCount: 1,
+  };
+}

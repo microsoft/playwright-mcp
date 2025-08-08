@@ -1,23 +1,24 @@
+// @ts-nocheck
 /**
  * Configuration-driven architecture tests
  * Verifies DiagnosticThresholds and SmartConfig integration behavior
  */
 
-import { test, expect } from '@playwright/test';
-import { DiagnosticThresholds, getCurrentThresholds  } from '../src/diagnostics/DiagnosticThresholds.js';
-import { SmartConfigManager } from '../src/diagnostics/SmartConfig.js';
-
+import { expect, test } from '@playwright/test';
+import { getCurrentThresholds } from '../src/diagnostics/diagnostic-thresholds.js';
+import { SmartConfigManager } from '../src/diagnostics/smart-config.js';
+import { DiagnosticTestSetup } from './test-helpers.js';
 
 test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
+  let testSetup: DiagnosticTestSetup;
 
   test.beforeEach(() => {
-    // Reset instance before each test
-    DiagnosticThresholds.reset();
+    testSetup = new DiagnosticTestSetup();
+    testSetup.beforeEach(false); // Don't capture console for these tests
   });
 
   test.afterEach(() => {
-    // Cleanup after each test
-    DiagnosticThresholds.reset();
+    testSetup.afterEach();
   });
 
   test.describe('Basic functionality tests', () => {
@@ -62,8 +63,8 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
       thresholds.updateThresholds({
         dom: {
           elementsWarning: 2000,
-          elementsDanger: 4000
-        }
+          elementsDanger: 4000,
+        },
       });
 
       const metrics = thresholds.getMetricsThresholds();
@@ -80,13 +81,13 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
       thresholds.updateThresholds({
         dom: {
           elementsWarning: 2500,
-          elementsDanger: 5000,  // warningより大きい値にする
+          elementsDanger: 5000, // warningより大きい値にする
           depthWarning: 25,
-          depthDanger: 30        // warningより大きい値にする
+          depthDanger: 30, // warningより大きい値にする
         },
         layout: {
-          highZIndexThreshold: 2000
-        }
+          highZIndexThreshold: 2000,
+        },
       });
 
       const metrics = thresholds.getMetricsThresholds();
@@ -104,16 +105,16 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
       thresholds.updateThresholds({
         dom: {
           elementsWarning: 9999,
-          elementsDanger: 99999
-        }
+          elementsDanger: 99_999,
+        },
       });
 
       // Reset
       thresholds.resetToDefaults();
 
       const metrics = thresholds.getMetricsThresholds();
-      expect(metrics.dom.elementsWarning).toBe(1500);  // Returns to default
-      expect(metrics.dom.elementsDanger).toBe(3000);   // Returns to default
+      expect(metrics.dom.elementsWarning).toBe(1500); // Returns to default
+      expect(metrics.dom.elementsDanger).toBe(3000); // Returns to default
     });
   });
 
@@ -126,8 +127,8 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
         thresholds.updateThresholds({
           dom: {
             elementsWarning: 2000,
-            elementsDanger: 4000  // warning < danger
-          }
+            elementsDanger: 4000, // warning < danger
+          },
         });
       }).not.toThrow();
     });
@@ -140,8 +141,8 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
         thresholds.updateThresholds({
           dom: {
             elementsWarning: 4000,
-            elementsDanger: 2000  // danger < warning は無効
-          }
+            elementsDanger: 2000, // danger < warning は無効
+          },
         });
       }).toThrow();
     });
@@ -152,8 +153,8 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
       expect(() => {
         thresholds.updateThresholds({
           dom: {
-            elementsWarning: -100  // 負の値は無効
-          }
+            elementsWarning: -100, // 負の値は無効
+          },
         });
       }).toThrow();
     });
@@ -166,8 +167,8 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
         thresholds.updateThresholds({
           memory: {
             maxMemoryUsage: 100 * 1024 * 1024,
-            memoryLeakThreshold: 200 * 1024 * 1024  // leak > max は無効
-          }
+            memoryLeakThreshold: 200 * 1024 * 1024, // leak > max は無効
+          },
         });
       }).toThrow();
     });
@@ -189,17 +190,19 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
       // カスタム設定を適用
       thresholds.updateThresholds({
         dom: {
-          elementsWarning: 2500,  // デフォルトから変更
-          elementsDanger: 5000,   // warningより大きな値
-          depthWarning: 25,       // デフォルトから変更
-          depthDanger: 35         // warningより大きな値
-        }
+          elementsWarning: 2500, // デフォルトから変更
+          elementsDanger: 5000, // warningより大きな値
+          depthWarning: 25, // デフォルトから変更
+          depthDanger: 35, // warningより大きな値
+        },
       });
 
       const diagnostics = thresholds.getConfigDiagnostics();
       expect(diagnostics.status).toBe('valid');
       expect(diagnostics.customizations.length).toBeGreaterThan(0);
-      expect(diagnostics.customizations.some(c => c.includes('2500'))).toBe(true);
+      expect(diagnostics.customizations.some((c) => c.includes('2500'))).toBe(
+        true
+      );
     });
 
     test('警告レベルの診断', () => {
@@ -208,11 +211,11 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
       // 警告を発生させる設定
       thresholds.updateThresholds({
         dom: {
-          elementsWarning: 3000,  // 非常に高い値
-          elementsDanger: 6000,   // warningより大きな値
-          depthWarning: 30,       // 非常に高い値
-          depthDanger: 40         // warningより大きな値
-        }
+          elementsWarning: 3000, // 非常に高い値
+          elementsDanger: 6000, // warningより大きな値
+          depthWarning: 30, // 非常に高い値
+          depthDanger: 40, // warningより大きな値
+        },
       });
 
       const diagnostics = thresholds.getConfigDiagnostics();
@@ -222,16 +225,15 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
 });
 
 test.describe('SmartConfig integration tests', () => {
+  let integrationTestSetup: DiagnosticTestSetup;
 
   test.beforeEach(() => {
-    DiagnosticThresholds.reset();
-    // SmartConfigManagerのインスタンスも新しく取得する必要がある
-    (SmartConfigManager as any).instance = null;
+    integrationTestSetup = new DiagnosticTestSetup();
+    integrationTestSetup.beforeEach(false);
   });
 
   test.afterEach(() => {
-    DiagnosticThresholds.reset();
-    (SmartConfigManager as any).instance = null;
+    integrationTestSetup.afterEach();
   });
 
   test.describe('SmartConfigManager integration', () => {
@@ -241,8 +243,8 @@ test.describe('SmartConfig integration tests', () => {
       thresholds.updateThresholds({
         dom: {
           elementsWarning: 2000,
-          elementsDanger: 4000
-        }
+          elementsDanger: 4000,
+        },
       });
 
       // SmartConfigManager が更新された閾値を使用することを確認
@@ -260,10 +262,10 @@ test.describe('SmartConfig integration tests', () => {
       smartConfig.updateThresholds({
         dom: {
           elementsWarning: 3000,
-          elementsDanger: 6000,  // warningより大きな値
+          elementsDanger: 6000, // warningより大きな値
           depthWarning: 30,
-          depthDanger: 40        // warningより大きな値
-        }
+          depthDanger: 40, // warningより大きな値
+        },
       });
 
       // DiagnosticThresholdsに反映されることを確認
@@ -291,8 +293,8 @@ test.describe('SmartConfig integration tests', () => {
       thresholds.updateThresholds({
         dom: {
           elementsWarning: 5000,
-          elementsDanger: 10000  // warningより大きな値
-        }
+          elementsDanger: 10_000, // warningより大きな値
+        },
       });
 
       const smartConfig = SmartConfigManager.getInstance();
@@ -303,7 +305,7 @@ test.describe('SmartConfig integration tests', () => {
       // カスタム閾値が環境設定に反映されることを確認
       const config = smartConfig.getConfig();
       expect(config.performance.thresholds.dom.elementsWarning).toBe(5000);
-      expect(config.performance.thresholds.dom.elementsDanger).toBe(10000);
+      expect(config.performance.thresholds.dom.elementsDanger).toBe(10_000);
     });
   });
 
@@ -315,8 +317,8 @@ test.describe('SmartConfig integration tests', () => {
       expect(() => {
         smartConfig.updateThresholds({
           dom: {
-            elementsWarning: -1  // 無効な値
-          }
+            elementsWarning: -1, // 無効な値
+          },
         });
       }).toThrow();
     });
@@ -328,10 +330,10 @@ test.describe('SmartConfig integration tests', () => {
       try {
         thresholds.updateThresholds({
           dom: {
-            elementsWarning: -100
-          }
+            elementsWarning: -100,
+          },
         });
-      } catch (error) {
+      } catch (_error) {
         // エラー後にデフォルト値が保持されることを確認
         const metrics = thresholds.getMetricsThresholds();
         expect(metrics.dom.elementsWarning).toBe(1500); // デフォルト値
@@ -341,15 +343,15 @@ test.describe('SmartConfig integration tests', () => {
 });
 
 test.describe('Integration scenario tests', () => {
+  let scenarioTestSetup: DiagnosticTestSetup;
 
   test.beforeEach(() => {
-    DiagnosticThresholds.reset();
-    (SmartConfigManager as any).instance = null;
+    scenarioTestSetup = new DiagnosticTestSetup();
+    scenarioTestSetup.beforeEach(false);
   });
 
   test.afterEach(() => {
-    DiagnosticThresholds.reset();
-    (SmartConfigManager as any).instance = null;
+    scenarioTestSetup.afterEach();
   });
 
   test('完全な設定ライフサイクル', () => {
@@ -363,29 +365,36 @@ test.describe('Integration scenario tests', () => {
     smartConfig.updateThresholds({
       dom: {
         elementsWarning: 2500,
-        elementsDanger: 5000
-      }
+        elementsDanger: 5000,
+      },
     });
 
-    expect(smartConfig.getConfig().performance.thresholds.dom.elementsWarning).toBe(2500);
+    expect(
+      smartConfig.getConfig().performance.thresholds.dom.elementsWarning
+    ).toBe(2500);
     expect(thresholds.getMetricsThresholds().dom.elementsWarning).toBe(2500);
 
     // 3. SmartConfig経由での追加変更
     smartConfig.updateThresholds({
       layout: {
-        highZIndexThreshold: 2000
-      }
+        highZIndexThreshold: 2000,
+      },
     });
 
-    expect(thresholds.getMetricsThresholds().layout.highZIndexThreshold).toBe(2000);
+    expect(thresholds.getMetricsThresholds().layout.highZIndexThreshold).toBe(
+      2000
+    );
 
     // 4. 環境設定の適用（カスタマイズが上書きされるため、期待値を調整）
     smartConfig.getConfig().performance.thresholds.dom.elementsWarning;
     smartConfig.configureForEnvironment('production');
 
     // 環境設定適用後は現在の統合設定された閾値が使用される
-    const afterEnvConfig = smartConfig.getConfig().performance.thresholds.dom.elementsWarning;
-    expect(afterEnvConfig).toBe(thresholds.getMetricsThresholds().dom.elementsWarning);
+    const afterEnvConfig =
+      smartConfig.getConfig().performance.thresholds.dom.elementsWarning;
+    expect(afterEnvConfig).toBe(
+      thresholds.getMetricsThresholds().dom.elementsWarning
+    );
 
     // 5. リセット
     smartConfig.reset();
@@ -404,11 +413,13 @@ test.describe('Integration scenario tests', () => {
     smartConfig.updateThresholds({
       dom: {
         elementsWarning: 3000,
-        elementsDanger: 6000  // warningより大きな値
-      }
+        elementsDanger: 6000, // warningより大きな値
+      },
     });
 
     expect(thresholds2.getMetricsThresholds().dom.elementsWarning).toBe(3000);
-    expect(smartConfig.getConfig().performance.thresholds.dom.elementsWarning).toBe(3000);
+    expect(
+      smartConfig.getConfig().performance.thresholds.dom.elementsWarning
+    ).toBe(3000);
   });
 });

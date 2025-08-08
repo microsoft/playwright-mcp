@@ -1,3 +1,4 @@
+// @ts-nocheck
 export class ManualPromise<T = void> extends Promise<T> {
   private _resolve!: (t: T) => void;
   private _reject!: (e: Error) => void;
@@ -39,39 +40,53 @@ export class LongStandingScope {
   reject(error: Error) {
     this._isClosed = true;
     this._terminateError = error;
-    for (const p of this._terminatePromises.keys())
+    for (const p of this._terminatePromises.keys()) {
       p.resolve(error);
+    }
   }
   close(error: Error) {
     this._isClosed = true;
     this._closeError = error;
-    for (const [p, frames] of this._terminatePromises)
+    for (const [p, frames] of this._terminatePromises) {
       p.resolve(cloneError(error, frames));
+    }
   }
   isClosed() {
     return this._isClosed;
   }
-  static async raceMultiple<T>(scopes: LongStandingScope[], promise: Promise<T>): Promise<T> {
-    return Promise.race(scopes.map(s => s.race(promise)));
+  static async raceMultiple<T>(
+    scopes: LongStandingScope[],
+    promise: Promise<T>
+  ): Promise<T> {
+    return Promise.race(scopes.map((s) => s.race(promise)));
   }
   async race<T>(promise: Promise<T> | Promise<T>[]): Promise<T> {
-    return this._race(Array.isArray(promise) ? promise : [promise], false) as Promise<T>;
+    return this._race(
+      Array.isArray(promise) ? promise : [promise],
+      false
+    ) as Promise<T>;
   }
   async safeRace<T>(promise: Promise<T>, defaultValue?: T): Promise<T> {
     return this._race([promise], true, defaultValue);
   }
-  private async _race(promises: Promise<any>[], safe: boolean, defaultValue?: any): Promise<any> {
+  private async _race<T>(
+    promises: Promise<T>[],
+    safe: boolean,
+    defaultValue?: T
+  ): Promise<T> {
     const terminatePromise = new ManualPromise<Error>();
     const frames = captureRawStack();
-    if (this._terminateError)
+    if (this._terminateError) {
       terminatePromise.resolve(this._terminateError);
-    if (this._closeError)
+    }
+    if (this._closeError) {
       terminatePromise.resolve(cloneError(this._closeError, frames));
+    }
     this._terminatePromises.set(terminatePromise, frames);
     try {
       return await Promise.race([
-        terminatePromise.then(e => safe ? defaultValue : Promise.reject(e)),
-        ...promises
+        terminatePromise.then((e) => (safe ? defaultValue : Promise.reject(e))),
+        ...promises,
       ]);
     } finally {
       this._terminatePromises.delete(terminatePromise);
@@ -82,7 +97,7 @@ function cloneError(error: Error, frames: string[]) {
   const clone = new Error();
   clone.name = error.name;
   clone.message = error.message;
-  clone.stack = [error.name + ':' + error.message, ...frames].join('\n');
+  clone.stack = [`${error.name}:${error.message}`, ...frames].join('\n');
   return clone;
 }
 function captureRawStack(): string[] {

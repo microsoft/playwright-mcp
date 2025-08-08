@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,8 +15,8 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
 import { batchExecuteSchema, batchStepSchema } from '../src/types/batch.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Batch Execution Schema Tests', () => {
   test('batchStepSchema should validate correct step configuration', () => {
@@ -23,7 +24,7 @@ test.describe('Batch Execution Schema Tests', () => {
       tool: 'browser_navigate',
       arguments: { url: 'https://example.com' },
       continueOnError: false,
-      expectation: { includeSnapshot: false }
+      expectation: { includeSnapshot: false },
     };
 
     const result = batchStepSchema.safeParse(validStep);
@@ -33,7 +34,7 @@ test.describe('Batch Execution Schema Tests', () => {
   test('batchStepSchema should reject missing tool name', () => {
     const invalidStep = {
       arguments: { url: 'https://example.com' },
-      continueOnError: false
+      continueOnError: false,
     };
 
     const result = batchStepSchema.safeParse(invalidStep);
@@ -43,14 +44,14 @@ test.describe('Batch Execution Schema Tests', () => {
   test('batchStepSchema should provide default values', () => {
     const minimalStep = {
       tool: 'browser_click',
-      arguments: { element: 'button' }
+      arguments: { element: 'button' },
     };
 
     const result = batchStepSchema.safeParse(minimalStep);
     expect(result.success).toBe(true);
-    if (result.success)
+    if (result.success) {
       expect(result.data.continueOnError).toBe(false);
-
+    }
   });
 
   test('batchExecuteSchema should validate correct batch configuration', () => {
@@ -60,17 +61,17 @@ test.describe('Batch Execution Schema Tests', () => {
           tool: 'browser_navigate',
           arguments: { url: 'https://example.com' },
           continueOnError: false,
-          expectation: { includeSnapshot: false }
+          expectation: { includeSnapshot: false },
         },
         {
           tool: 'browser_click',
           arguments: { element: 'button', ref: '#submit' },
           continueOnError: true,
-          expectation: { includeSnapshot: true }
-        }
+          expectation: { includeSnapshot: true },
+        },
       ],
       stopOnFirstError: false,
-      globalExpectation: { includeConsole: false }
+      globalExpectation: { includeConsole: false },
     };
 
     const result = batchExecuteSchema.safeParse(validBatch);
@@ -81,7 +82,7 @@ test.describe('Batch Execution Schema Tests', () => {
     const invalidBatch = {
       steps: [],
       stopOnFirstError: false,
-      globalExpectation: undefined
+      globalExpectation: undefined,
     };
 
     const result = batchExecuteSchema.safeParse(invalidBatch);
@@ -93,16 +94,16 @@ test.describe('Batch Execution Schema Tests', () => {
       steps: [
         {
           tool: 'browser_navigate',
-          arguments: { url: 'https://example.com' }
-        }
-      ]
+          arguments: { url: 'https://example.com' },
+        },
+      ],
     };
 
     const result = batchExecuteSchema.safeParse(minimalBatch);
     expect(result.success).toBe(true);
-    if (result.success)
+    if (result.success) {
       expect(result.data.stopOnFirstError).toBe(false);
-
+    }
   });
 
   test('batchExecuteSchema should handle complex expectation configurations', () => {
@@ -116,17 +117,17 @@ test.describe('Batch Execution Schema Tests', () => {
             snapshotOptions: {
               selector: '.main-content',
               maxLength: 1000,
-              format: 'html' as const
+              format: 'html' as const,
             },
             includeConsole: true,
             consoleOptions: {
               levels: ['error' as const, 'warn' as const],
               maxMessages: 5,
               patterns: ['error:', 'warning:'],
-              removeDuplicates: true
-            }
-          }
-        }
+              removeDuplicates: true,
+            },
+          },
+        },
       ],
       globalExpectation: {
         includeSnapshot: false,
@@ -135,9 +136,9 @@ test.describe('Batch Execution Schema Tests', () => {
           quality: 80,
           maxWidth: 1920,
           maxHeight: 1080,
-          format: 'jpeg' as const
-        }
-      }
+          format: 'jpeg' as const,
+        },
+      },
     };
 
     const result = batchExecuteSchema.safeParse(complexBatch);

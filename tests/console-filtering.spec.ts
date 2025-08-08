@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,7 +15,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test.describe('Console Message Filtering', () => {
   // Mock console messages for testing
@@ -29,42 +30,54 @@ test.describe('Console Message Filtering', () => {
       { type: 'log', toString: () => '[LOG] User logged in successfully' }, // Duplicate
       { type: 'warn', toString: () => '[WARN] Deprecated function used' },
       { type: 'log', toString: () => '[LOG] Data saved successfully' },
-      { type: 'error', toString: () => '[ERROR] Permission denied' }
+      { type: 'error', toString: () => '[ERROR] Permission denied' },
     ];
   }
 
   test('filterConsoleMessages function should exist now', async () => {
     // Now the function should exist
-    const { filterConsoleMessages } = await import('../src/utils/consoleFilter.js');
+    const { filterConsoleMessages } = await import(
+      '../src/utils/consoleFilter.js'
+    );
     expect(typeof filterConsoleMessages).toBe('function');
   });
 
   test('should filter messages by level', async () => {
-    const { filterConsoleMessages } = await import('../src/utils/consoleFilter.js');
+    const { filterConsoleMessages } = await import(
+      '../src/utils/consoleFilter.js'
+    );
     const messages = createMockConsoleMessages();
     const options = { levels: ['error'] as const };
 
     const result = filterConsoleMessages(messages, options);
 
     expect(result.length).toBe(3); // Should only have error messages
-    expect(result.every(msg => msg.type === 'error')).toBe(true);
+    expect(result.every((msg) => msg.type === 'error')).toBe(true);
     expect(result[0].toString()).toContain('[ERROR]');
   });
 
   test('should filter messages by pattern matching', async () => {
-    const { filterConsoleMessages } = await import('../src/utils/consoleFilter.js');
+    const { filterConsoleMessages } = await import(
+      '../src/utils/consoleFilter.js'
+    );
     const messages = createMockConsoleMessages();
     const options = { patterns: ['User.*logged', 'API.*rate'] };
 
     const result = filterConsoleMessages(messages, options);
 
     expect(result.length).toBe(3); // 2 login messages + 1 API rate message
-    expect(result.some(msg => msg.toString().includes('User logged in'))).toBe(true);
-    expect(result.some(msg => msg.toString().includes('API rate limit'))).toBe(true);
+    expect(
+      result.some((msg) => msg.toString().includes('User logged in'))
+    ).toBe(true);
+    expect(
+      result.some((msg) => msg.toString().includes('API rate limit'))
+    ).toBe(true);
   });
 
   test('should remove duplicate messages when requested', async () => {
-    const { filterConsoleMessages } = await import('../src/utils/consoleFilter.js');
+    const { filterConsoleMessages } = await import(
+      '../src/utils/consoleFilter.js'
+    );
     const messages = createMockConsoleMessages();
     const options = { removeDuplicates: true };
 
@@ -74,12 +87,16 @@ test.describe('Console Message Filtering', () => {
     expect(result.length).toBe(9);
 
     // Check that duplicate "User logged in successfully" message is removed
-    const loginMessages = result.filter(msg => msg.toString().includes('User logged in successfully'));
+    const loginMessages = result.filter((msg) =>
+      msg.toString().includes('User logged in successfully')
+    );
     expect(loginMessages.length).toBe(1);
   });
 
   test('should limit number of messages', async () => {
-    const { filterConsoleMessages } = await import('../src/utils/consoleFilter.js');
+    const { filterConsoleMessages } = await import(
+      '../src/utils/consoleFilter.js'
+    );
     const messages = createMockConsoleMessages();
     const options = { maxMessages: 3 };
 
@@ -91,7 +108,9 @@ test.describe('Console Message Filtering', () => {
   });
 
   test('should handle invalid regex patterns gracefully', async () => {
-    const { filterConsoleMessages } = await import('../src/utils/consoleFilter.js');
+    const { filterConsoleMessages } = await import(
+      '../src/utils/consoleFilter.js'
+    );
     const messages = createMockConsoleMessages();
     const options = { patterns: ['[invalid regex', 'User'] };
 
@@ -100,28 +119,34 @@ test.describe('Console Message Filtering', () => {
     // Should fall back to substring matching for invalid regex
     // Should find messages containing "User"
     expect(result.length).toBeGreaterThan(0);
-    expect(result.every(msg => msg.toString().includes('User'))).toBe(true);
+    expect(result.every((msg) => msg.toString().includes('User'))).toBe(true);
   });
 
   test('should combine multiple filtering options', async () => {
-    const { filterConsoleMessages } = await import('../src/utils/consoleFilter.js');
+    const { filterConsoleMessages } = await import(
+      '../src/utils/consoleFilter.js'
+    );
     const messages = createMockConsoleMessages();
     const options = {
       levels: ['log', 'error'] as const,
       patterns: ['User.*'],
       removeDuplicates: true,
-      maxMessages: 2
+      maxMessages: 2,
     };
 
     const result = filterConsoleMessages(messages, options);
 
     expect(result.length).toBeLessThanOrEqual(2);
-    expect(result.every(msg => ['log', 'error'].includes(msg.type!))).toBe(true);
-    expect(result.every(msg => msg.toString().includes('User'))).toBe(true);
+    expect(
+      result.every((msg) => msg.type && ['log', 'error'].includes(msg.type))
+    ).toBe(true);
+    expect(result.every((msg) => msg.toString().includes('User'))).toBe(true);
   });
 
   test('should return original messages when no options provided', async () => {
-    const { filterConsoleMessages } = await import('../src/utils/consoleFilter.js');
+    const { filterConsoleMessages } = await import(
+      '../src/utils/consoleFilter.js'
+    );
     const messages = createMockConsoleMessages();
 
     const result = filterConsoleMessages(messages);

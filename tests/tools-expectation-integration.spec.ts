@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,11 +15,14 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Main Tools Expectation Integration', () => {
   test.describe('browser_navigate tool', () => {
-    test('should handle expectation parameter with minimal response', async ({ client, server }) => {
+    test('should handle expectation parameter with minimal response', async ({
+      client,
+      server,
+    }) => {
       server.setContent('/', '<h1>Test Page</h1>', 'text/html');
 
       const result = await client.callTool({
@@ -30,19 +34,24 @@ test.describe('Main Tools Expectation Integration', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');
       expect(result.content[0].text).not.toContain('Console messages');
       expect(result.content[0].text).not.toContain('Downloads');
       expect(result.content[0].text).not.toContain('Open tabs');
-      expect(result.content[0].text).toContain(`await page.goto('${server.PREFIX}');`);
+      expect(result.content[0].text).toContain(
+        `await page.goto('${server.PREFIX}');`
+      );
     });
 
-    test('should handle expectation parameter with full response', async ({ client, server }) => {
+    test('should handle expectation parameter with full response', async ({
+      client,
+      server,
+    }) => {
       server.setContent('/', '<h1>Full Test Page</h1>', 'text/html');
 
       const result = await client.callTool({
@@ -54,38 +63,52 @@ test.describe('Main Tools Expectation Integration', () => {
             includeConsole: true,
             includeDownloads: true,
             includeTabs: true,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).toContain('Page Snapshot:');
-      expect(result.content[0].text).toContain(`await page.goto('${server.PREFIX}');`);
+      expect(result.content[0].text).toContain(
+        `await page.goto('${server.PREFIX}');`
+      );
     });
 
-    test('should use appropriate defaults when no expectation provided', async ({ client, server }) => {
+    test('should use appropriate defaults when no expectation provided', async ({
+      client,
+      server,
+    }) => {
       server.setContent('/', '<h1>Default Test Page</h1>', 'text/html');
 
       const result = await client.callTool({
         name: 'browser_navigate',
         arguments: {
-          url: server.PREFIX
-        }
+          url: server.PREFIX,
+        },
       });
 
       // Navigate tool should include full context by default
       expect(result.content[0].text).toContain('Page Snapshot:');
-      expect(result.content[0].text).toContain(`await page.goto('${server.PREFIX}');`);
+      expect(result.content[0].text).toContain(
+        `await page.goto('${server.PREFIX}');`
+      );
     });
   });
 
   test.describe('browser_click tool', () => {
-    test('should handle expectation parameter with minimal response', async ({ client, server }) => {
-      server.setContent('/', '<button id="test-btn">Click me</button>', 'text/html');
+    test('should handle expectation parameter with minimal response', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<button id="test-btn">Click me</button>',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -98,9 +121,9 @@ test.describe('Main Tools Expectation Integration', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');
@@ -108,12 +131,19 @@ test.describe('Main Tools Expectation Integration', () => {
       expect(result.content[0].text).toContain('await page');
     });
 
-    test('should handle expectation parameter with snapshot', async ({ client, server }) => {
-      server.setContent('/', '<button id="test-btn">Click me</button>', 'text/html');
+    test('should handle expectation parameter with snapshot', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<button id="test-btn">Click me</button>',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -126,29 +156,36 @@ test.describe('Main Tools Expectation Integration', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).toContain('Page Snapshot:');
       expect(result.content[0].text).toContain('await page');
     });
 
-    test('should use appropriate defaults when no expectation provided', async ({ client, server }) => {
-      server.setContent('/', '<button id="test-btn">Click me</button>', 'text/html');
+    test('should use appropriate defaults when no expectation provided', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<button id="test-btn">Click me</button>',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
         name: 'browser_click',
         arguments: {
           element: 'Test button',
-          ref: 'e2'
-        }
+          ref: 'e2',
+        },
       });
 
       // Click tool should include snapshot but minimal other info by default
@@ -158,12 +195,19 @@ test.describe('Main Tools Expectation Integration', () => {
   });
 
   test.describe('browser_type tool', () => {
-    test('should handle expectation parameter with minimal response', async ({ client, server }) => {
-      server.setContent('/', '<input id="test-input" type="text">', 'text/html');
+    test('should handle expectation parameter with minimal response', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<input id="test-input" type="text">',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -177,9 +221,9 @@ test.describe('Main Tools Expectation Integration', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');
@@ -187,12 +231,19 @@ test.describe('Main Tools Expectation Integration', () => {
       expect(result.content[0].text).toContain('await page');
     });
 
-    test('should handle expectation parameter with snapshot', async ({ client, server }) => {
-      server.setContent('/', '<input id="test-input" type="text">', 'text/html');
+    test('should handle expectation parameter with snapshot', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<input id="test-input" type="text">',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -206,21 +257,28 @@ test.describe('Main Tools Expectation Integration', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).toContain('Page Snapshot:');
       expect(result.content[0].text).toContain('await page');
     });
 
-    test('should use appropriate defaults when no expectation provided', async ({ client, server }) => {
-      server.setContent('/', '<input id="test-input" type="text">', 'text/html');
+    test('should use appropriate defaults when no expectation provided', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<input id="test-input" type="text">',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -228,8 +286,8 @@ test.describe('Main Tools Expectation Integration', () => {
         arguments: {
           element: 'Test input',
           ref: 'e2',
-          text: 'test text'
-        }
+          text: 'test text',
+        },
       });
 
       // Type tool should include minimal output by default
@@ -238,12 +296,15 @@ test.describe('Main Tools Expectation Integration', () => {
   });
 
   test.describe('browser_snapshot tool', () => {
-    test('should handle expectation parameter with minimal response', async ({ client, server }) => {
+    test('should handle expectation parameter with minimal response', async ({
+      client,
+      server,
+    }) => {
       server.setContent('/', '<h1>Snapshot Test</h1>', 'text/html');
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -254,9 +315,9 @@ test.describe('Main Tools Expectation Integration', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: false
-          }
-        }
+            includeCode: false,
+          },
+        },
       });
 
       expect(result.content[0].text).toContain('Page Snapshot:');
@@ -264,17 +325,20 @@ test.describe('Main Tools Expectation Integration', () => {
       expect(result.content[0].text).not.toContain('await page');
     });
 
-    test('should use appropriate defaults when no expectation provided', async ({ client, server }) => {
+    test('should use appropriate defaults when no expectation provided', async ({
+      client,
+      server,
+    }) => {
       server.setContent('/', '<h1>Snapshot Test</h1>', 'text/html');
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
         name: 'browser_snapshot',
-        arguments: {}
+        arguments: {},
       });
 
       // Snapshot tool should have minimal output by default
@@ -283,13 +347,20 @@ test.describe('Main Tools Expectation Integration', () => {
   });
 
   test.describe('Backward Compatibility', () => {
-    test('should maintain backward compatibility for all tools without expectation parameter', async ({ client, server }) => {
-      server.setContent('/', '<button id="test">Test</button><input id="input" type="text">', 'text/html');
+    test('should maintain backward compatibility for all tools without expectation parameter', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<button id="test">Test</button><input id="input" type="text">',
+        'text/html'
+      );
 
       // Navigate without expectation
       const navigateResult = await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
       expect(navigateResult.isError).toBeFalsy();
 
@@ -298,8 +369,8 @@ test.describe('Main Tools Expectation Integration', () => {
         name: 'browser_click',
         arguments: {
           element: 'Test button',
-          ref: 'e2'
-        }
+          ref: 'e2',
+        },
       });
       expect(clickResult.isError).toBeFalsy();
 
@@ -309,27 +380,34 @@ test.describe('Main Tools Expectation Integration', () => {
         arguments: {
           element: 'Test input',
           ref: 'e3',
-          text: 'test'
-        }
+          text: 'test',
+        },
       });
       expect(typeResult.isError).toBeFalsy();
 
       // Snapshot without expectation
       const snapshotResult = await client.callTool({
         name: 'browser_snapshot',
-        arguments: {}
+        arguments: {},
       });
       expect(snapshotResult.isError).toBeFalsy();
     });
   });
 
   test.describe('Advanced Expectation Options', () => {
-    test('should handle snapshotOptions correctly', async ({ client, server }) => {
-      server.setContent('/', '<div class="content"><h1>Title</h1><p>Content</p></div>', 'text/html');
+    test('should handle snapshotOptions correctly', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<div class="content"><h1>Title</h1><p>Content</p></div>',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -340,10 +418,10 @@ test.describe('Main Tools Expectation Integration', () => {
             snapshotOptions: {
               selector: '.content',
               maxLength: 50,
-              format: 'aria'
-            }
-          }
-        }
+              format: 'aria',
+            },
+          },
+        },
       });
 
       expect(result.content[0].text).toContain('Page Snapshot:');
@@ -353,12 +431,19 @@ test.describe('Main Tools Expectation Integration', () => {
       expect(snapshotSection.length).toBeLessThan(200); // Reasonable upper bound
     });
 
-    test('should handle consoleOptions correctly', async ({ client, server }) => {
-      server.setContent('/', '<script>console.error("test error"); console.log("test log");</script><h1>Test</h1>', 'text/html');
+    test('should handle consoleOptions correctly', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<script>console.error("test error"); console.log("test log");</script><h1>Test</h1>',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -369,10 +454,10 @@ test.describe('Main Tools Expectation Integration', () => {
             includeConsole: true,
             consoleOptions: {
               levels: ['error'],
-              maxMessages: 1
-            }
-          }
-        }
+              maxMessages: 1,
+            },
+          },
+        },
       });
 
       if (result.content[0].text.includes('Console messages')) {

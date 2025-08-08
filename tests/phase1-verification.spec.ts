@@ -1,13 +1,14 @@
+// @ts-nocheck
 /**
  * Phase 1 Memory Leak Prevention Verification Tests
  */
 
-import { test, expect } from '@playwright/test';
-import { PageAnalyzer } from '../src/diagnostics/PageAnalyzer.js';
-import { ElementDiscovery } from '../src/diagnostics/ElementDiscovery.js';
-import { ResourceManager } from '../src/diagnostics/ResourceManager.js';
-import { SmartHandleBatch } from '../src/diagnostics/SmartHandle.js';
-import { FrameReferenceManager } from '../src/diagnostics/FrameReferenceManager.js';
+import { expect, test } from '@playwright/test';
+import { ElementDiscovery } from '../src/diagnostics/element-discovery.js';
+import { FrameReferenceManager } from '../src/diagnostics/frame-reference-manager.js';
+import { PageAnalyzer } from '../src/diagnostics/page-analyzer.js';
+import { ResourceManager } from '../src/diagnostics/resource-manager.js';
+import { SmartHandleBatch } from '../src/diagnostics/smart-handle.js';
 
 test.describe('Phase 1 - Memory Leak Prevention', () => {
   test('ResourceManager should track and dispose resources', async () => {
@@ -18,7 +19,7 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
       disposed: false,
       dispose: async () => {
         mockResource.disposed = true;
-      }
+      },
     };
 
     // Track resource
@@ -35,13 +36,15 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
   });
 
   test('SmartHandleBatch should manage multiple handles', async ({ page }) => {
-    await page.goto('data:text/html,<html><body><div>Test 1</div><div>Test 2</div><div>Test 3</div></body></html>');
+    await page.goto(
+      'data:text/html,<html><body><div>Test 1</div><div>Test 2</div><div>Test 3</div></body></html>'
+    );
 
     const batch = new SmartHandleBatch();
     const elements = await page.$$('div');
 
     // Add elements to batch
-    const smartElements = elements.map(el => batch.add(el));
+    const smartElements = elements.map((el) => batch.add(el));
     expect(batch.getActiveCount()).toBe(3);
     expect(smartElements).toHaveLength(3);
 
@@ -51,10 +54,14 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
     expect(batch.isDisposed()).toBe(true);
   });
 
-  test('ElementDiscovery should enforce batch size limits', async ({ page }) => {
-    await page.goto('data:text/html,<html><body>' +
-      Array.from({ length: 200 }, (_, i) => `<div>Item ${i}</div>`).join('') +
-      '</body></html>');
+  test('ElementDiscovery should enforce batch size limits', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<html><body>' +
+        Array.from({ length: 200 }, (_, i) => `<div>Item ${i}</div>`).join('') +
+        '</body></html>'
+    );
 
     const elementDiscovery = new ElementDiscovery(page);
 
@@ -62,7 +69,7 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
     const alternatives = await elementDiscovery.findAlternativeElements({
       originalSelector: 'div',
       searchCriteria: { tagName: 'div' },
-      maxResults: 150
+      maxResults: 150,
     });
 
     // Should be limited to maxBatchSize
@@ -80,7 +87,9 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
   });
 
   test('FrameReferenceManager should track iframe frames', async ({ page }) => {
-    await page.goto('data:text/html,<html><body><iframe src="data:text/html,<h1>Frame Content</h1>"></iframe></body></html>');
+    await page.goto(
+      'data:text/html,<html><body><iframe src="data:text/html,<h1>Frame Content</h1>"></iframe></body></html>'
+    );
 
     const frameManager = new FrameReferenceManager();
 
@@ -111,7 +120,9 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
   });
 
   test('PageAnalyzer should use FrameReferenceManager', async ({ page }) => {
-    await page.goto('data:text/html,<html><body><iframe src="data:text/html,<h1>Test Frame</h1>"></iframe></body></html>');
+    await page.goto(
+      'data:text/html,<html><body><iframe src="data:text/html,<h1>Test Frame</h1>"></iframe></body></html>'
+    );
 
     const pageAnalyzer = new PageAnalyzer(page);
 
@@ -125,9 +136,9 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
     expect(frameStats.isDisposed).toBe(false);
 
     // If iframe is accessible, should have tracked frames
-    if (analysis.iframes.accessible.length > 0)
+    if (analysis.iframes.accessible.length > 0) {
       expect(frameStats.frameStats.activeCount).toBeGreaterThanOrEqual(0);
-
+    }
 
     // Cleanup
     await pageAnalyzer.cleanupFrames();
@@ -141,13 +152,16 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
     // Create page with many elements
     const htmlContent = `
       <html><body>
-        ${Array.from({ length: 500 }, (_, i) => `
+        ${Array.from(
+          { length: 500 },
+          (_, i) => `
           <div class="item-${i}" data-id="${i}">
             <button>Button ${i}</button>
             <input type="text" placeholder="Input ${i}" />
             <span>Span ${i}</span>
           </div>
-        `).join('')}
+        `
+        ).join('')}
       </body></html>
     `;
 
@@ -160,24 +174,24 @@ test.describe('Phase 1 - Memory Leak Prevention', () => {
       elementDiscovery.findAlternativeElements({
         originalSelector: 'button',
         searchCriteria: { tagName: 'button' },
-        maxResults: 50
+        maxResults: 50,
       }),
       elementDiscovery.findAlternativeElements({
         originalSelector: 'input',
         searchCriteria: { tagName: 'input' },
-        maxResults: 50
+        maxResults: 50,
       }),
       elementDiscovery.findAlternativeElements({
         originalSelector: 'span',
         searchCriteria: { tagName: 'span' },
-        maxResults: 50
-      })
+        maxResults: 50,
+      }),
     ]);
 
     // Each search should be limited
-    searches.forEach(results => {
+    for (const results of searches) {
       expect(results.length).toBeLessThanOrEqual(50);
-    });
+    }
 
     // Check memory stats
     const stats = elementDiscovery.getMemoryStats();

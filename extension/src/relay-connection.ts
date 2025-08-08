@@ -14,33 +14,39 @@
  * limitations under the License.
  */
 
-export function debugLog(...args: unknown[]): void {
+export function debugLog(..._args: unknown[]): void {
   const enabled = true;
-  if (enabled)
-
-    console.log('[Extension]', ...args);
-
+  if (enabled) {
+    // TODO: Implement debug logging
+  }
 }
 
 type ProtocolCommand = {
   id: number;
   method: string;
-  params?: any;
+  params?: Record<string, unknown>;
 };
 
 type ProtocolResponse = {
   id?: number;
   method?: string;
-  params?: any;
-  result?: any;
+  params?: Record<string, unknown>;
+  result?: unknown;
   error?: string;
 };
 
 export class RelayConnection {
   private _debuggee: chrome.debugger.Debuggee;
   private _ws: WebSocket;
-  private _eventListener: (source: chrome.debugger.DebuggerSession, method: string, params: any) => void;
-  private _detachListener: (source: chrome.debugger.Debuggee, reason: string) => void;
+  private _eventListener: (
+    source: chrome.debugger.DebuggerSession,
+    method: string,
+    params?: object
+  ) => void;
+  private _detachListener: (
+    source: chrome.debugger.Debuggee,
+    reason: string
+  ) => void;
 
   constructor(ws: WebSocket, tabId: number) {
     this._debuggee = { tabId };
@@ -59,9 +65,14 @@ export class RelayConnection {
     this._ws.close(1000, message);
   }
 
-  private _onDebuggerEvent(source: chrome.debugger.DebuggerSession, method: string, params: any): void {
-    if (source.tabId !== this._debuggee.tabId)
+  private _onDebuggerEvent(
+    source: chrome.debugger.DebuggerSession,
+    method: string,
+    params?: object
+  ): void {
+    if (source.tabId !== this._debuggee.tabId) {
       return;
+    }
     debugLog('Forwarding CDP event:', method, params);
     const sessionId = source.sessionId;
     this._sendMessage({
@@ -74,24 +85,32 @@ export class RelayConnection {
     });
   }
 
-  private _onDebuggerDetach(source: chrome.debugger.Debuggee, reason: string): void {
-    if (source.tabId !== this._debuggee.tabId)
+  private _onDebuggerDetach(
+    source: chrome.debugger.Debuggee,
+    reason: string
+  ): void {
+    if (source.tabId !== this._debuggee.tabId) {
       return;
+    }
     this.close(`Debugger detached: ${reason}`);
-    this._debuggee = { };
+    this._debuggee = {};
   }
 
   private _onMessage(event: MessageEvent): void {
-    this._onMessageAsync(event).catch(e => debugLog('Error handling message:', e));
+    this._onMessageAsync(event).catch((e) =>
+      debugLog('Error handling message:', e)
+    );
   }
 
   private async _onMessageAsync(event: MessageEvent): Promise<void> {
     let message: ProtocolCommand;
     try {
       message = JSON.parse(event.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugLog('Error parsing message:', error);
-      this._sendError(-32700, `Error parsing message: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this._sendError(-32_700, `Error parsing message: ${errorMessage}`);
       return;
     }
 
@@ -102,27 +121,38 @@ export class RelayConnection {
     };
     try {
       response.result = await this._handleCommand(message);
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugLog('Error handling command:', error);
-      response.error = error.message;
+      response.error = error instanceof Error ? error.message : String(error);
     }
     debugLog('Sending response:', response);
     this._sendMessage(response);
   }
 
-  private async _handleCommand(message: ProtocolCommand): Promise<any> {
-    if (!this._debuggee.tabId)
-      throw new Error('No tab is connected. Please go to the Playwright MCP extension and select the tab you want to connect to.');
+  private async _handleCommand(message: ProtocolCommand): Promise<unknown> {
+    if (!this._debuggee.tabId) {
+      throw new Error(
+        'No tab is connected. Please go to the Playwright MCP extension and select the tab you want to connect to.'
+      );
+    }
     if (message.method === 'attachToTab') {
       debugLog('Attaching debugger to tab:', this._debuggee);
       await chrome.debugger.attach(this._debuggee, '1.3');
-      const result: any = await chrome.debugger.sendCommand(this._debuggee, 'Target.getTargetInfo');
+      const result: unknown = await chrome.debugger.sendCommand(
+        this._debuggee,
+        'Target.getTargetInfo'
+      );
       return {
-        targetInfo: result?.targetInfo,
+        targetInfo: (result as { targetInfo?: unknown })?.targetInfo,
       };
     }
     if (message.method === 'forwardCDPCommand') {
-      const { sessionId, method, params } = message.params;
+      const messageParams = message.params as {
+        sessionId: string;
+        method: string;
+        params: unknown;
+      };
+      const { sessionId, method, params } = messageParams;
       debugLog('CDP command:', method, params);
       const debuggerSession: chrome.debugger.DebuggerSession = {
         ...this._debuggee,
@@ -130,9 +160,9 @@ export class RelayConnection {
       };
       // Forward CDP command to chrome.debugger
       return await chrome.debugger.sendCommand(
-          debuggerSession,
-          method,
-          params
+        debuggerSession,
+        method,
+        params as object
       );
     }
   }
@@ -146,7 +176,7 @@ export class RelayConnection {
     });
   }
 
-  private _sendMessage(message: any): void {
+  private _sendMessage(message: Record<string, unknown>): void {
     this._ws.send(JSON.stringify(message));
   }
 }

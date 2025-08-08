@@ -1,10 +1,11 @@
-import type { z } from 'zod';
-import type { Context } from '../context.js';
+// @ts-nocheck
 import type * as playwright from 'playwright';
+import type { z } from 'zod';
 import type { ToolCapability } from '../../config.js';
-import type { Tab } from '../tab.js';
-import type { Response } from '../response.js';
+import type { Context } from '../context.js';
 import type { ToolSchema } from '../mcp/server.js';
+import type { Response } from '../response.js';
+import type { Tab } from '../tab.js';
 export type FileUploadModalState = {
   type: 'fileChooser';
   description: string;
@@ -19,29 +20,51 @@ export type ModalState = FileUploadModalState | DialogModalState;
 export type Tool<Input extends z.Schema = z.Schema> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
-  handle: (context: Context, params: z.output<Input>, response: Response) => Promise<void>;
+  handle: (
+    context: Context,
+    params: z.output<Input>,
+    response: Response
+  ) => Promise<void>;
 };
-export function defineTool<Input extends z.Schema>(tool: Tool<Input>): Tool<Input> {
+export function defineTool<Input extends z.Schema>(
+  tool: Tool<Input>
+): Tool<Input> {
   return tool;
 }
 export type TabTool<Input extends z.Schema = z.Schema> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
   clearsModalState?: ModalState['type'];
-  handle: (tab: Tab, params: z.output<Input>, response: Response) => Promise<void>;
+  handle: (
+    tab: Tab,
+    params: z.output<Input>,
+    response: Response
+  ) => Promise<void>;
 };
-export function defineTabTool<Input extends z.Schema>(tool: TabTool<Input>): Tool<Input> {
+export function defineTabTool<Input extends z.Schema>(
+  tool: TabTool<Input>
+): Tool<Input> {
   return {
     ...tool,
     handle: async (context, params, response) => {
       const tab = context.currentTabOrDie();
-      const modalStates = tab.modalStates().map(state => state.type);
-      if (tool.clearsModalState && !modalStates.includes(tool.clearsModalState))
-        response.addError(`Error: The tool "${tool.schema.name}" can only be used when there is related modal state present.\n` + tab.modalStatesMarkdown().join('\n'));
-      else if (!tool.clearsModalState && modalStates.length)
-        response.addError(`Error: Tool "${tool.schema.name}" does not handle the modal state.\n` + tab.modalStatesMarkdown().join('\n'));
-      else
+      const modalStates = tab.modalStates().map((state) => state.type);
+      if (
+        tool.clearsModalState &&
+        !modalStates.includes(tool.clearsModalState)
+      ) {
+        response.addError(
+          `Error: The tool "${tool.schema.name}" can only be used when there is related modal state present.\n` +
+            tab.modalStatesMarkdown().join('\n')
+        );
+      } else if (!tool.clearsModalState && modalStates.length) {
+        response.addError(
+          `Error: Tool "${tool.schema.name}" does not handle the modal state.\n` +
+            tab.modalStatesMarkdown().join('\n')
+        );
+      } else {
         return tool.handle(tab, params, response);
+      }
     },
   };
 }

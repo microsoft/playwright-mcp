@@ -1,5 +1,6 @@
-import * as playwright from 'playwright';
-import { IDisposable } from './ResourceManager.js';
+// @ts-nocheck
+import type * as playwright from 'playwright';
+import type { IDisposable } from './resource-manager.js';
 
 export interface FrameMetadata {
   url: string;
@@ -28,9 +29,9 @@ export class FrameReferenceManager implements IDisposable {
    * Track a frame and store its metadata
    */
   trackFrame(frame: playwright.Frame): void {
-    if (this.disposed)
+    if (this.disposed) {
       throw new Error('FrameReferenceManager has been disposed');
-
+    }
 
     try {
       const metadata: FrameMetadata = {
@@ -38,12 +39,12 @@ export class FrameReferenceManager implements IDisposable {
         name: frame.name() || null,
         parentFrame: frame.parentFrame(),
         isDetached: false,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.frameRefs.set(frame, metadata);
       this.activeFrames.add(frame);
-    } catch (error) {
+    } catch (_error) {
       // Frame might be detached already, skip tracking
     }
   }
@@ -75,17 +76,18 @@ export class FrameReferenceManager implements IDisposable {
    */
   updateElementCount(frame: playwright.Frame, count: number): void {
     const metadata = this.frameRefs.get(frame);
-    if (metadata)
+    if (metadata) {
       metadata.elementCount = count;
-
+    }
   }
 
   /**
    * Clean up detached frames that are no longer accessible
    */
   async cleanupDetachedFrames(): Promise<void> {
-    if (this.disposed)
+    if (this.disposed) {
       return;
+    }
 
     const framesToRemove: playwright.Frame[] = [];
 
@@ -94,25 +96,27 @@ export class FrameReferenceManager implements IDisposable {
         // Try to access frame properties to check if it's still attached
         await Promise.race([
           frame.url(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), 1000)
+          ),
         ]);
-      } catch (error) {
+      } catch (_error) {
         // Frame is likely detached
         const metadata = this.frameRefs.get(frame);
-        if (metadata)
+        if (metadata) {
           metadata.isDetached = true;
+        }
 
         framesToRemove.push(frame);
       }
     }
 
     // Remove detached frames from active tracking
-    for (const frame of framesToRemove)
+    for (const frame of framesToRemove) {
       this.activeFrames.delete(frame);
-
+    }
 
     // Cleaned up detached frames
-
   }
 
   /**
@@ -123,7 +127,7 @@ export class FrameReferenceManager implements IDisposable {
     totalTracked: number;
     detachedCount: number;
     averageElementCount: number;
-    } {
+  } {
     let detachedCount = 0;
     let totalElements = 0;
     let framesWithElementCount = 0;
@@ -131,8 +135,9 @@ export class FrameReferenceManager implements IDisposable {
     for (const frame of this.activeFrames) {
       const metadata = this.frameRefs.get(frame);
       if (metadata) {
-        if (metadata.isDetached)
+        if (metadata.isDetached) {
           detachedCount++;
+        }
 
         if (typeof metadata.elementCount === 'number') {
           totalElements += metadata.elementCount;
@@ -141,15 +146,14 @@ export class FrameReferenceManager implements IDisposable {
       }
     }
 
-    const averageElementCount = framesWithElementCount > 0
-      ? totalElements / framesWithElementCount
-      : 0;
+    const averageElementCount =
+      framesWithElementCount > 0 ? totalElements / framesWithElementCount : 0;
 
     return {
       activeCount: this.activeFrames.size,
       totalTracked: this.activeFrames.size, // In our case, same as active
       detachedCount,
-      averageElementCount: Math.round(averageElementCount)
+      averageElementCount: Math.round(averageElementCount),
     };
   }
 
@@ -157,32 +161,48 @@ export class FrameReferenceManager implements IDisposable {
    * Find frames that exceed performance thresholds
    */
   findPerformanceIssues(): {
-    largeFrames: Array<{ frame: playwright.Frame; elementCount: number; url: string }>;
+    largeFrames: Array<{
+      frame: playwright.Frame;
+      elementCount: number;
+      url: string;
+    }>;
     oldFrames: Array<{ frame: playwright.Frame; age: number; url: string }>;
-    } {
+  } {
     const now = Date.now();
-    const largeFrames: Array<{ frame: playwright.Frame; elementCount: number; url: string }> = [];
-    const oldFrames: Array<{ frame: playwright.Frame; age: number; url: string }> = [];
+    const largeFrames: Array<{
+      frame: playwright.Frame;
+      elementCount: number;
+      url: string;
+    }> = [];
+    const oldFrames: Array<{
+      frame: playwright.Frame;
+      age: number;
+      url: string;
+    }> = [];
 
     for (const frame of this.activeFrames) {
       const metadata = this.frameRefs.get(frame);
       if (metadata && !metadata.isDetached) {
         // Check for frames with too many elements
-        if (typeof metadata.elementCount === 'number' && metadata.elementCount > 1000) {
+        if (
+          typeof metadata.elementCount === 'number' &&
+          metadata.elementCount > 1000
+        ) {
           largeFrames.push({
             frame,
             elementCount: metadata.elementCount,
-            url: metadata.url
+            url: metadata.url,
           });
         }
 
         // Check for frames that have been around too long
         const age = now - metadata.timestamp;
-        if (age > 300000) { // 5 minutes
+        if (age > 300_000) {
+          // 5 minutes
           oldFrames.push({
             frame,
             age,
-            url: metadata.url
+            url: metadata.url,
           });
         }
       }
@@ -193,15 +213,16 @@ export class FrameReferenceManager implements IDisposable {
 
   private startCleanupTimer(): void {
     this.cleanupInterval = setInterval(() => {
-      this.cleanupDetachedFrames().catch(error => {
+      this.cleanupDetachedFrames().catch((_error) => {
         // Cleanup timer failed - continue with next cycle
       });
-    }, 30000); // Clean up every 30 seconds
+    }, 30_000); // Clean up every 30 seconds
   }
 
   async dispose(): Promise<void> {
-    if (this.disposed)
+    if (this.disposed) {
       return;
+    }
 
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);

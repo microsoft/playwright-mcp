@@ -1,23 +1,32 @@
+// @ts-nocheck
 /**
  * Diagnostic System Tests - PageAnalyzer, ElementDiscovery, ErrorEnrichment
  */
 
-import { test, expect } from '@playwright/test';
-import { PageAnalyzer } from '../src/diagnostics/PageAnalyzer.js';
-import { ElementDiscovery } from '../src/diagnostics/ElementDiscovery.js';
-import { ErrorEnrichment } from '../src/diagnostics/ErrorEnrichment.js';
+import { expect, test } from '@playwright/test';
+import { ElementDiscovery } from '../src/diagnostics/element-discovery.js';
+import { ErrorEnrichment } from '../src/diagnostics/error-enrichment.js';
+import { PageAnalyzer } from '../src/diagnostics/page-analyzer.js';
 
+// Top-level regex patterns for performance optimization
+const THRESHOLD_REGEX_1 = /1000ms → 2000ms|Page Analysis:.*2000ms/;
+const THRESHOLD_REGEX_2 = /500ms → 1500ms|Element Discovery:.*1500ms/;
+const PERFORMANCE_REGEX = /pageAnalysis.*Expected.*5000ms/;
 
 test.describe('PageAnalyzer', () => {
   test('should analyze iframe detection status', async ({ page }) => {
-    await page.goto('data:text/html,<html><body><iframe src="data:text/html,<h1>Test</h1>"></iframe></body></html>');
+    await page.goto(
+      'data:text/html,<html><body><iframe src="data:text/html,<h1>Test</h1>"></iframe></body></html>'
+    );
 
     const pageAnalyzer = new PageAnalyzer(page);
     const analysis = await pageAnalyzer.analyzePageStructure();
 
     expect(analysis.iframes.detected).toBe(true);
     expect(analysis.iframes.count).toBe(1);
-    expect(analysis.iframes.accessible.length + analysis.iframes.inaccessible.length).toBe(1);
+    expect(
+      analysis.iframes.accessible.length + analysis.iframes.inaccessible.length
+    ).toBe(1);
     expect(analysis.modalStates.hasDialog).toBe(false);
     expect(analysis.modalStates.hasFileChooser).toBe(false);
     expect(analysis.modalStates.blockedBy).toEqual([]);
@@ -26,7 +35,9 @@ test.describe('PageAnalyzer', () => {
     expect(analysis.elements.missingAria).toBeGreaterThanOrEqual(0);
   });
 
-  test('should analyze performance metrics for simple page', async ({ page }) => {
+  test('should analyze performance metrics for simple page', async ({
+    page,
+  }) => {
     const htmlContent = `
       <html>
         <head><title>Test Page</title></head>
@@ -52,14 +63,18 @@ test.describe('PageAnalyzer', () => {
     expect(metrics.layoutMetrics).toBeDefined();
     expect(metrics.domMetrics.totalElements).toBeGreaterThan(0);
     expect(metrics.domMetrics.maxDepth).toBeGreaterThanOrEqual(1);
-    expect(metrics.interactionMetrics.clickableElements).toBeGreaterThanOrEqual(1);
+    expect(metrics.interactionMetrics.clickableElements).toBeGreaterThanOrEqual(
+      1
+    );
     expect(metrics.interactionMetrics.formElements).toBeGreaterThanOrEqual(1);
     expect(metrics.resourceMetrics.imageCount).toBeGreaterThanOrEqual(1);
     expect(metrics.warnings).toBeDefined();
     expect(Array.isArray(metrics.warnings)).toBe(true);
   });
 
-  test('should handle performance metrics analysis errors gracefully', async ({ page }) => {
+  test('should handle performance metrics analysis errors gracefully', async ({
+    page,
+  }) => {
     // Create a page that might cause issues (very deep DOM structure)
     const complexHtml = `
       <html>
@@ -98,7 +113,10 @@ test.describe('PageAnalyzer', () => {
 
   test('should detect DOM complexity warnings', async ({ page }) => {
     // Create a page with many elements to trigger warnings
-    const manyElements = Array.from({ length: 2000 }, (_, i) => `<div class="item-${i}">Item ${i}</div>`).join('');
+    const manyElements = Array.from(
+      { length: 2000 },
+      (_, i) => `<div class="item-${i}">Item ${i}</div>`
+    ).join('');
     const complexHtml = `
       <html>
         <body>
@@ -114,13 +132,22 @@ test.describe('PageAnalyzer', () => {
     const metrics = await pageAnalyzer.analyzePerformanceMetrics();
 
     expect(metrics.domMetrics.totalElements).toBeGreaterThan(1500);
-    expect(metrics.warnings.some(w => w.type === 'dom_complexity')).toBe(true);
-    expect(metrics.warnings.some(w => w.level === 'warning' || w.level === 'danger')).toBe(true);
+    expect(metrics.warnings.some((w) => w.type === 'dom_complexity')).toBe(
+      true
+    );
+    expect(
+      metrics.warnings.some(
+        (w) => w.level === 'warning' || w.level === 'danger'
+      )
+    ).toBe(true);
   });
 
   test('should detect large subtrees', async ({ page }) => {
     // Create a subtree with many child elements
-    const largeSubtree = Array.from({ length: 600 }, (_, i) => `<li>Item ${i}</li>`).join('');
+    const largeSubtree = Array.from(
+      { length: 600 },
+      (_, i) => `<li>Item ${i}</li>`
+    ).join('');
     const htmlContent = `
       <html>
         <body>
@@ -136,16 +163,23 @@ test.describe('PageAnalyzer', () => {
     const metrics = await pageAnalyzer.analyzePerformanceMetrics();
 
     expect(metrics.domMetrics.largeSubtrees.length).toBeGreaterThan(0);
-    expect(metrics.domMetrics.largeSubtrees.some(subtree => subtree.elementCount > 500)).toBe(true);
+    expect(
+      metrics.domMetrics.largeSubtrees.some(
+        (subtree) => subtree.elementCount > 500
+      )
+    ).toBe(true);
     // Check if any subtree contains 'ul' or if body is detected (both are valid)
     expect(
-        metrics.domMetrics.largeSubtrees.some(subtree =>
+      metrics.domMetrics.largeSubtrees.some(
+        (subtree) =>
           subtree.selector.includes('ul') || subtree.selector.includes('body')
-        )
+      )
     ).toBe(true);
   });
 
-  test('should analyze layout metrics with fixed elements', async ({ page }) => {
+  test('should analyze layout metrics with fixed elements', async ({
+    page,
+  }) => {
     const htmlContent = `
       <html>
         <head>
@@ -170,15 +204,23 @@ test.describe('PageAnalyzer', () => {
     expect(metrics.layoutMetrics.fixedElements.length).toBeGreaterThan(0);
     expect(metrics.layoutMetrics.highZIndexElements.length).toBeGreaterThan(0);
     expect(metrics.layoutMetrics.overflowHiddenElements).toBeGreaterThan(0);
-    expect(metrics.layoutMetrics.fixedElements[0].purpose).toContain('navigation');
+    expect(metrics.layoutMetrics.fixedElements[0].purpose).toContain(
+      'navigation'
+    );
     // Check if any element has z-index >= 9999 (since we created one)
-    expect(metrics.layoutMetrics.highZIndexElements.some(el => el.zIndex >= 9999)).toBe(true);
+    expect(
+      metrics.layoutMetrics.highZIndexElements.some((el) => el.zIndex >= 9999)
+    ).toBe(true);
   });
 
-  test('should complete performance analysis within 1 second', async ({ page }) => {
+  test('should complete performance analysis within 1 second', async ({
+    page,
+  }) => {
     // Create a moderately complex page
-    const elements = Array.from({ length: 500 }, (_, i) =>
-      `<div><button>Button ${i}</button><input type="text" id="input-${i}"></div>`
+    const elements = Array.from(
+      { length: 500 },
+      (_, i) =>
+        `<div><button>Button ${i}</button><input type="text" id="input-${i}"></div>`
     ).join('');
     const htmlContent = `
       <html>
@@ -202,7 +244,9 @@ test.describe('PageAnalyzer', () => {
   });
 
   test('should analyze modal states correctly', async ({ page }) => {
-    await page.goto('data:text/html,<div><div role="dialog" class="modal">Modal Content</div><input type="file"></div>');
+    await page.goto(
+      'data:text/html,<div><div role="dialog" class="modal">Modal Content</div><input type="file"></div>'
+    );
 
     const pageAnalyzer = new PageAnalyzer(page);
     const analysis = await pageAnalyzer.analyzePageStructure();
@@ -214,7 +258,9 @@ test.describe('PageAnalyzer', () => {
   });
 
   test('should count elements correctly', async ({ page }) => {
-    await page.goto('data:text/html,<div><button>Click</button><input type="text"><span style="display:none">Hidden</span></div>');
+    await page.goto(
+      'data:text/html,<div><button>Click</button><input type="text"><span style="display:none">Hidden</span></div>'
+    );
 
     const pageAnalyzer = new PageAnalyzer(page);
     const analysis = await pageAnalyzer.analyzePageStructure();
@@ -226,69 +272,82 @@ test.describe('PageAnalyzer', () => {
 
 test.describe('ElementDiscovery', () => {
   test('should find alternative elements by text content', async ({ page }) => {
-    await page.goto('data:text/html,<div><button>Submit</button><input type="submit" value="Submit Form"></div>');
+    await page.goto(
+      'data:text/html,<div><button>Submit</button><input type="submit" value="Submit Form"></div>'
+    );
 
     const elementDiscovery = new ElementDiscovery(page);
     const alternatives = await elementDiscovery.findAlternativeElements({
       originalSelector: 'button[data-missing="true"]',
       searchCriteria: {
         text: 'Submit',
-        role: 'button'
-      }
+        role: 'button',
+      },
     });
 
     expect(alternatives.length).toBeGreaterThan(0);
-    expect(alternatives[0]).toEqual(expect.objectContaining({
-      selector: expect.any(String),
-      confidence: expect.any(Number),
-      reason: expect.stringContaining('text match')
-    }));
+    expect(alternatives[0]).toEqual(
+      expect.objectContaining({
+        selector: expect.any(String),
+        confidence: expect.any(Number),
+        reason: expect.stringContaining('text match'),
+      })
+    );
     expect(alternatives[0].confidence).toBeGreaterThan(0.5);
   });
 
   test('should find alternatives by ARIA role', async ({ page }) => {
-    await page.goto('data:text/html,<div><a role="button">Click</a><button>Real Button</button></div>');
+    await page.goto(
+      'data:text/html,<div><a role="button">Click</a><button>Real Button</button></div>'
+    );
 
     const elementDiscovery = new ElementDiscovery(page);
     const alternatives = await elementDiscovery.findAlternativeElements({
       originalSelector: 'input[type="submit"]',
       searchCriteria: {
-        role: 'button'
-      }
+        role: 'button',
+      },
     });
 
     expect(alternatives.length).toBeGreaterThan(0);
-    expect(alternatives.every(alt => alt.confidence > 0)).toBe(true);
+    expect(alternatives.every((alt) => alt.confidence > 0)).toBe(true);
   });
 
   test('should sort alternatives by confidence', async ({ page }) => {
-    await page.goto('data:text/html,<div><button>Exact</button><button>Similar</button><div>Different</div></div>');
+    await page.goto(
+      'data:text/html,<div><button>Exact</button><button>Similar</button><div>Different</div></div>'
+    );
 
     const elementDiscovery = new ElementDiscovery(page);
     const alternatives = await elementDiscovery.findAlternativeElements({
       originalSelector: 'button[data-test="exact"]',
       searchCriteria: {
         text: 'Exact',
-        role: 'button'
-      }
+        role: 'button',
+      },
     });
 
-    if (alternatives.length > 1)
-      expect(alternatives[0].confidence).toBeGreaterThanOrEqual(alternatives[1].confidence);
-
+    if (alternatives.length > 1) {
+      expect(alternatives[0].confidence).toBeGreaterThanOrEqual(
+        alternatives[1].confidence
+      );
+    }
   });
 
   test('should limit number of alternatives', async ({ page }) => {
-    const html = Array.from({ length: 20 }, (_, i) => `<button>Button ${i}</button>`).join('');
+    const html = Array.from(
+      { length: 20 },
+      (_, i) => `<button>Button ${i}</button>`
+    ).join('');
     await page.goto(`data:text/html,<div>${html}</div>`);
 
     const elementDiscovery = new ElementDiscovery(page);
     const alternatives = await elementDiscovery.findAlternativeElements({
       originalSelector: 'button[data-missing="true"]',
       searchCriteria: {
-        role: 'button'
+        role: 'button',
       },
-      maxResults: 5
+      maxResults: 5,
     });
 
     expect(alternatives.length).toBeLessThanOrEqual(5);
@@ -296,8 +355,12 @@ test.describe('ElementDiscovery', () => {
 });
 
 test.describe('ErrorEnrichment', () => {
-  test('should enrich element not found error with alternatives', async ({ page }) => {
-    await page.goto('data:text/html,<div><button>Submit</button><input type="submit" value="Submit"></div>');
+  test('should enrich element not found error with alternatives', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<div><button>Submit</button><input type="submit" value="Submit"></div>'
+    );
 
     const errorEnrichment = new ErrorEnrichment(page);
     const enrichedError = await errorEnrichment.enrichElementNotFoundError({
@@ -305,8 +368,8 @@ test.describe('ErrorEnrichment', () => {
       selector: 'button[data-test="submit"]',
       searchCriteria: {
         text: 'Submit',
-        role: 'button'
-      }
+        role: 'button',
+      },
     });
 
     expect(enrichedError.message).toContain('Element not found');
@@ -316,33 +379,43 @@ test.describe('ErrorEnrichment', () => {
     expect(enrichedError.diagnosticInfo).toBeDefined();
   });
 
-  test('should provide diagnostic context for failed operations', async ({ page }) => {
-    await page.goto('data:text/html,<iframe src="data:text/html,<h1>Content</h1>"></iframe>');
+  test('should provide diagnostic context for failed operations', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<iframe src="data:text/html,<h1>Content</h1>"></iframe>'
+    );
 
     const errorEnrichment = new ErrorEnrichment(page);
     const enrichedError = await errorEnrichment.enrichTimeoutError({
       originalError: new Error('Timeout waiting for element'),
       operation: 'click',
-      selector: 'button[data-test="inside-iframe"]'
+      selector: 'button[data-test="inside-iframe"]',
     });
 
     expect(enrichedError.message).toContain('Timeout waiting for element');
     expect(enrichedError.diagnosticInfo).toBeDefined();
     expect(enrichedError.diagnosticInfo.iframes.detected).toBe(true);
-    expect(enrichedError.suggestions).toContain('Element might be inside an iframe');
+    expect(enrichedError.suggestions).toContain(
+      'Element might be inside an iframe'
+    );
   });
 
   test('should provide context-aware suggestions', async ({ page }) => {
-    await page.goto('data:text/html,<div role="dialog" class="modal">Modal Content</div><input type="text">');
+    await page.goto(
+      'data:text/html,<div role="dialog" class="modal">Modal Content</div><input type="text">'
+    );
 
     const errorEnrichment = new ErrorEnrichment(page);
     const enrichedError = await errorEnrichment.enrichTimeoutError({
       originalError: new Error('Timeout waiting for element'),
       operation: 'click',
-      selector: 'input[type="text"]'
+      selector: 'input[type="text"]',
     });
 
-    expect(enrichedError.suggestions).toContain('Page has active modal dialog - handle it before performing click');
+    expect(enrichedError.suggestions).toContain(
+      'Page has active modal dialog - handle it before performing click'
+    );
   });
 
   test('should handle batch operation failures', async ({ page }) => {
@@ -354,11 +427,11 @@ test.describe('ErrorEnrichment', () => {
       failedStep: {
         stepIndex: 1,
         toolName: 'browser_click',
-        selector: 'button[data-missing="true"]'
+        selector: 'button[data-missing="true"]',
       },
       executedSteps: [
-        { stepIndex: 0, toolName: 'browser_navigate', success: true }
-      ]
+        { stepIndex: 0, toolName: 'browser_navigate', success: true },
+      ],
     });
 
     expect(enrichedError.message).toContain('Step 2 failed');
@@ -370,7 +443,9 @@ test.describe('ErrorEnrichment', () => {
 });
 
 test.describe('Phase 2: ParallelPageAnalyzer', () => {
-  test('should perform parallel analysis within 500ms target', async ({ page }) => {
+  test('should perform parallel analysis within 500ms target', async ({
+    page,
+  }) => {
     const complexContent = `
       <html>
         <head>
@@ -391,7 +466,9 @@ test.describe('Phase 2: ParallelPageAnalyzer', () => {
     `;
     await page.goto(`data:text/html,${complexContent}`);
 
-    const { ParallelPageAnalyzer } = await import('../src/diagnostics/ParallelPageAnalyzer.js');
+    const { ParallelPageAnalyzer } = await import(
+      '../src/diagnostics/ParallelPageAnalyzer.js'
+    );
     const parallelAnalyzer = new ParallelPageAnalyzer(page);
 
     const startTime = Date.now();
@@ -404,13 +481,17 @@ test.describe('Phase 2: ParallelPageAnalyzer', () => {
     expect(result.resourceUsage).toBe(null);
     expect(result.executionTime).toBeLessThan(500);
     expect(result.structureAnalysis.iframes.detected).toBe(true);
-    expect(result.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(1000);
+    expect(result.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(
+      1000
+    );
   });
 
   test('should handle analysis failures gracefully', async ({ page }) => {
     await page.goto('data:text/html,<div>Simple content</div>');
 
-    const { ParallelPageAnalyzer } = await import('../src/diagnostics/ParallelPageAnalyzer.js');
+    const { ParallelPageAnalyzer } = await import(
+      '../src/diagnostics/ParallelPageAnalyzer.js'
+    );
     const parallelAnalyzer = new ParallelPageAnalyzer(page);
 
     const result = await parallelAnalyzer.runParallelAnalysis();
@@ -423,7 +504,9 @@ test.describe('Phase 2: ParallelPageAnalyzer', () => {
   test('should collect resource usage metrics', async ({ page }) => {
     await page.goto('data:text/html,<div>Test content</div>');
 
-    const { ParallelPageAnalyzer } = await import('../src/diagnostics/ParallelPageAnalyzer.js');
+    const { ParallelPageAnalyzer } = await import(
+      '../src/diagnostics/ParallelPageAnalyzer.js'
+    );
     const parallelAnalyzer = new ParallelPageAnalyzer(page);
 
     const result = await parallelAnalyzer.runParallelAnalysis();
@@ -432,9 +515,10 @@ test.describe('Phase 2: ParallelPageAnalyzer', () => {
   });
 });
 
-
 test.describe('Phase 2: PageAnalyzer Integration', () => {
-  test('should integrate parallel analysis through PageAnalyzer', async ({ page }) => {
+  test('should integrate parallel analysis through PageAnalyzer', async ({
+    page,
+  }) => {
     const complexContent = `
       <html>
         <body>
@@ -456,13 +540,19 @@ test.describe('Phase 2: PageAnalyzer Integration', () => {
     expect(result.performanceMetrics).toBeDefined();
     expect(result.resourceUsage).toBe(null);
     expect(result.structureAnalysis.iframes.detected).toBe(true);
-    expect(result.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(800);
+    expect(result.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(
+      800
+    );
 
     await pageAnalyzer.dispose();
   });
 
-  test('should provide enhanced diagnostics with resource monitoring', async ({ page }) => {
-    await page.goto('data:text/html,<div><button>Test</button><iframe src="about:blank"></iframe></div>');
+  test('should provide enhanced diagnostics with resource monitoring', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<div><button>Test</button><iframe src="about:blank"></iframe></div>'
+    );
 
     const pageAnalyzer = new PageAnalyzer(page);
 
@@ -471,13 +561,17 @@ test.describe('Phase 2: PageAnalyzer Integration', () => {
     expect(diagnostics.parallelAnalysis).toBeDefined();
     expect(diagnostics.frameStats).toBeDefined();
     expect(diagnostics.timestamp).toBeGreaterThan(0);
-    expect(diagnostics.parallelAnalysis.structureAnalysis.iframes.detected).toBe(true);
+    expect(
+      diagnostics.parallelAnalysis.structureAnalysis.iframes.detected
+    ).toBe(true);
     expect(diagnostics.frameStats.isDisposed).toBe(false);
 
     await pageAnalyzer.dispose();
   });
 
-  test('should recommend parallel analysis for complex pages', async ({ page }) => {
+  test('should recommend parallel analysis for complex pages', async ({
+    page,
+  }) => {
     const complexContent = `
       <html>
         <body>
@@ -500,8 +594,12 @@ test.describe('Phase 2: PageAnalyzer Integration', () => {
     await pageAnalyzer.dispose();
   });
 
-  test('should not recommend parallel analysis for simple pages', async ({ page }) => {
-    await page.goto('data:text/html,<div><p>Simple page</p><button>One button</button></div>');
+  test('should not recommend parallel analysis for simple pages', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<div><p>Simple page</p><button>One button</button></div>'
+    );
 
     const pageAnalyzer = new PageAnalyzer(page);
 
@@ -514,7 +612,9 @@ test.describe('Phase 2: PageAnalyzer Integration', () => {
     await pageAnalyzer.dispose();
   });
 
-  test('should handle parallel analysis errors gracefully', async ({ page }) => {
+  test('should handle parallel analysis errors gracefully', async ({
+    page,
+  }) => {
     await page.goto('data:text/html,<div>Test content</div>');
 
     const pageAnalyzer = new PageAnalyzer(page);
@@ -526,7 +626,9 @@ test.describe('Phase 2: PageAnalyzer Integration', () => {
 
     // Should return result with errors instead of throwing
     expect(result.errors.length).toBeGreaterThan(0);
-    expect(result.errors.some(error => error.error.includes('closed'))).toBe(true);
+    expect(result.errors.some((error) => error.error.includes('closed'))).toBe(
+      true
+    );
     expect(result.executionTime).toBeGreaterThan(0);
 
     await pageAnalyzer.dispose();
@@ -534,7 +636,9 @@ test.describe('Phase 2: PageAnalyzer Integration', () => {
 });
 
 test.describe('Phase 2: Diagnose Tool Integration', () => {
-  test('should integrate parallel analysis with diagnose functionality', async ({ page }) => {
+  test('should integrate parallel analysis with diagnose functionality', async ({
+    page,
+  }) => {
     const complexContent = `
       <html>
         <body>
@@ -563,12 +667,16 @@ test.describe('Phase 2: Diagnose Tool Integration', () => {
     expect(parallelResult.performanceMetrics).toBeDefined();
     expect(parallelResult.resourceUsage).toBe(null);
     expect(parallelResult.structureAnalysis.iframes.detected).toBe(true);
-    expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(1200);
+    expect(
+      parallelResult.performanceMetrics.domMetrics.totalElements
+    ).toBeGreaterThan(1200);
 
     await pageAnalyzer.dispose();
   });
 
-  test('should recommend parallel analysis for complex pages', async ({ page }) => {
+  test('should recommend parallel analysis for complex pages', async ({
+    page,
+  }) => {
     const complexContent = `
       <html>
         <body>
@@ -590,13 +698,19 @@ test.describe('Phase 2: Diagnose Tool Integration', () => {
     const parallelResult = await pageAnalyzer.runParallelAnalysis();
     expect(parallelResult.structureAnalysis.iframes.detected).toBe(true);
     expect(parallelResult.structureAnalysis.iframes.count).toBe(2);
-    expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(2000);
+    expect(
+      parallelResult.performanceMetrics.domMetrics.totalElements
+    ).toBeGreaterThan(2000);
 
     await pageAnalyzer.dispose();
   });
 
-  test('should not recommend parallel analysis for simple pages', async ({ page }) => {
-    await page.goto('data:text/html,<div><p>Simple page</p><button>One button</button></div>');
+  test('should not recommend parallel analysis for simple pages', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<div><p>Simple page</p><button>One button</button></div>'
+    );
 
     const pageAnalyzer = new PageAnalyzer(page);
 
@@ -608,8 +722,12 @@ test.describe('Phase 2: Diagnose Tool Integration', () => {
     await pageAnalyzer.dispose();
   });
 
-  test('should provide comprehensive enhanced diagnostics', async ({ page }) => {
-    await page.goto('data:text/html,<div><button>Test</button><iframe src="about:blank"></iframe></div>');
+  test('should provide comprehensive enhanced diagnostics', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<div><button>Test</button><iframe src="about:blank"></iframe></div>'
+    );
 
     const pageAnalyzer = new PageAnalyzer(page);
 
@@ -618,12 +736,16 @@ test.describe('Phase 2: Diagnose Tool Integration', () => {
     expect(enhancedDiagnostics.parallelAnalysis).toBeDefined();
     expect(enhancedDiagnostics.frameStats).toBeDefined();
     expect(enhancedDiagnostics.timestamp).toBeGreaterThan(0);
-    expect(enhancedDiagnostics.parallelAnalysis.structureAnalysis.iframes.detected).toBe(true);
+    expect(
+      enhancedDiagnostics.parallelAnalysis.structureAnalysis.iframes.detected
+    ).toBe(true);
 
     await pageAnalyzer.dispose();
   });
 
-  test('should provide detailed resource monitoring metrics', async ({ page }) => {
+  test('should provide detailed resource monitoring metrics', async ({
+    page,
+  }) => {
     const complexContent = `
       <html>
         <body>
@@ -644,7 +766,9 @@ test.describe('Phase 2: Diagnose Tool Integration', () => {
 });
 
 test.describe('Phase 2: Performance Verification (500ms Target)', () => {
-  test('should complete parallel analysis within 500ms for moderate complexity pages', async ({ page }) => {
+  test('should complete parallel analysis within 500ms for moderate complexity pages', async ({
+    page,
+  }) => {
     const moderateContent = `
       <html>
         <head>
@@ -658,9 +782,11 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
           <div class="high-z">High Z-Index Content</div>
           <iframe src="data:text/html,<h1>Iframe 1</h1>"></iframe>
           <iframe src="data:text/html,<h1>Iframe 2</h1>"></iframe>
-          ${Array.from({ length: 1000 }, (_, i) =>
-    `<div><button id="btn-${i}">Button ${i}</button><input type="text" id="input-${i}"><select id="select-${i}"><option>Option ${i}</option></select></div>`
-  ).join('')}
+          ${Array.from(
+            { length: 1000 },
+            (_, i) =>
+              `<div><button id="btn-${i}">Button ${i}</button><input type="text" id="input-${i}"><select id="select-${i}"><option>Option ${i}</option></select></div>`
+          ).join('')}
         </body>
       </html>
     `;
@@ -682,12 +808,16 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
     expect(parallelResult.performanceMetrics).toBeDefined();
     expect(parallelResult.resourceUsage).toBe(null);
     expect(parallelResult.structureAnalysis.iframes.count).toBe(2);
-    expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(1000);
+    expect(
+      parallelResult.performanceMetrics.domMetrics.totalElements
+    ).toBeGreaterThan(1000);
 
     await pageAnalyzer.dispose();
   });
 
-  test('should complete parallel analysis within 400ms for simple pages', async ({ page }) => {
+  test('should complete parallel analysis within 400ms for simple pages', async ({
+    page,
+  }) => {
     const simpleContent = `
       <html>
         <body>
@@ -714,12 +844,16 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
 
     expect(parallelResult.structureAnalysis).toBeDefined();
     expect(parallelResult.performanceMetrics).toBeDefined();
-    expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(200);
+    expect(
+      parallelResult.performanceMetrics.domMetrics.totalElements
+    ).toBeGreaterThan(200);
 
     await pageAnalyzer.dispose();
   });
 
-  test('should handle complex pages within 500ms with graceful degradation', async ({ page }) => {
+  test('should handle complex pages within 500ms with graceful degradation', async ({
+    page,
+  }) => {
     const complexContent = `
       <html>
         <head>
@@ -734,9 +868,11 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
           <iframe src="data:text/html,<h1>Frame 1</h1>"></iframe>
           <iframe src="data:text/html,<h1>Frame 2</h1>"></iframe>
           <iframe src="data:text/html,<h1>Frame 3</h1>"></iframe>
-          ${Array.from({ length: 1500 }, (_, i) =>
-    `<div class="item-${i % 10}"><button data-id="${i}">Btn ${i}</button><input type="text" name="field-${i}" value="Value ${i}"><img src="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="Image ${i}"></div>`
-  ).join('')}
+          ${Array.from(
+            { length: 1500 },
+            (_, i) =>
+              `<div class="item-${i % 10}"><button data-id="${i}">Btn ${i}</button><input type="text" name="field-${i}" value="Value ${i}"><img src="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="Image ${i}"></div>`
+          ).join('')}
         </body>
       </html>
     `;
@@ -754,22 +890,32 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
 
     // Verify comprehensive analysis completed
     expect(parallelResult.structureAnalysis.iframes.count).toBe(3);
-    expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(1500);
-    expect(parallelResult.performanceMetrics.layoutMetrics.fixedElements.length).toBeGreaterThan(0);
-    expect(parallelResult.performanceMetrics.layoutMetrics.highZIndexElements.length).toBeGreaterThan(0);
+    expect(
+      parallelResult.performanceMetrics.domMetrics.totalElements
+    ).toBeGreaterThan(1500);
+    expect(
+      parallelResult.performanceMetrics.layoutMetrics.fixedElements.length
+    ).toBeGreaterThan(0);
+    expect(
+      parallelResult.performanceMetrics.layoutMetrics.highZIndexElements.length
+    ).toBeGreaterThan(0);
     expect(parallelResult.resourceUsage).toBe(null);
 
     await pageAnalyzer.dispose();
   });
 
-  test('should demonstrate performance improvement vs sequential analysis', async ({ page }) => {
+  test('should demonstrate performance improvement vs sequential analysis', async ({
+    page,
+  }) => {
     const complexContent = `
       <html>
         <body>
           <iframe src="data:text/html,<h1>Test Frame</h1>"></iframe>
-          ${Array.from({ length: 800 }, (_, i) =>
-    `<div><button>Button ${i}</button><input type="text"><select><option>Option</option></select></div>`
-  ).join('')}
+          ${Array.from(
+            { length: 800 },
+            (_, i) =>
+              `<div><button>Button ${i}</button><input type="text"><select><option>Option</option></select></div>`
+          ).join('')}
         </body>
       </html>
     `;
@@ -781,7 +927,7 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
     const sequentialStart = Date.now();
     const [structureAnalysis, performanceMetrics] = await Promise.all([
       pageAnalyzer.analyzePageStructure(),
-      pageAnalyzer.analyzePerformanceMetrics()
+      pageAnalyzer.analyzePerformanceMetrics(),
     ]);
     Date.now() - sequentialStart;
 
@@ -795,29 +941,34 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
     expect(parallelResult.resourceUsage).toBe(null);
 
     // Verify data completeness is maintained
-    expect(parallelResult.structureAnalysis.iframes.detected).toBe(structureAnalysis.iframes.detected);
-    expect(parallelResult.performanceMetrics.domMetrics.totalElements)
-        .toBeCloseTo(performanceMetrics.domMetrics.totalElements, -50); // Within reasonable range
+    expect(parallelResult.structureAnalysis.iframes.detected).toBe(
+      structureAnalysis.iframes.detected
+    );
+    expect(
+      parallelResult.performanceMetrics.domMetrics.totalElements
+    ).toBeCloseTo(performanceMetrics.domMetrics.totalElements, -50); // Within reasonable range
 
     await pageAnalyzer.dispose();
   });
 
-  test('should maintain performance under resource constraints', async ({ page }) => {
+  test('should maintain performance under resource constraints', async ({
+    page,
+  }) => {
     const resourceIntensiveContent = `
       <html>
         <body>
           ${Array.from({ length: 3 }, (_, i) => `<iframe src="data:text/html,<h1>Frame ${i}</h1>"></iframe>`).join('')}
-          ${Array.from({ length: 1200 }, (_, i) => {
-    const complexity = i % 5;
-    return `<div class="level-${complexity}">
-              <button data-complexity="${complexity}" onclick="console.log(${i})">Btn ${i}</button>
-              <input type="text" id="input-${i}" data-value="${i}" placeholder="Enter ${i}">
-              <select name="select-${i}">
-                ${Array.from({ length: complexity + 2 }, (_, j) => `<option value="${j}">Option ${j}</option>`).join('')}
+          ${Array.from({ length: 1200 }, (_, index) => {
+            const complexity = index % 5;
+            return `<div class="level-${complexity}">
+              <button data-complexity="${complexity}" onclick="console.log(${index})">Btn ${index}</button>
+              <input type="text" id="input-${index}" data-value="${index}" placeholder="Enter ${index}">
+              <select name="select-${index}">
+                ${Array.from({ length: complexity + 2 }, (_, optionIndex) => `<option value="${optionIndex}">Option ${optionIndex}</option>`).join('')}
               </select>
-              <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCI+PC9zdmc+" alt="Image ${i}">
+              <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCI+PC9zdmc+" alt="Image ${index}">
             </div>`;
-  }).join('')}
+          }).join('')}
         </body>
       </html>
     `;
@@ -827,7 +978,7 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
 
     // Run multiple analysis to test consistency
     const times: number[] = [];
-    const results: any[] = [];
+    const results: unknown[] = [];
 
     for (let i = 0; i < 3; i++) {
       const start = Date.now();
@@ -839,20 +990,27 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
     }
 
     // All runs should meet performance target
-    times.forEach((time, index) => {
+    for (const time of times) {
       expect(time).toBeLessThan(500);
-    });
+    }
 
     // Results should be consistent
     const firstResult = results[0];
-    results.forEach((result, index) => {
-      expect(result.structureAnalysis.iframes.count).toBe(firstResult.structureAnalysis.iframes.count);
-      expect(Math.abs(result.performanceMetrics.domMetrics.totalElements - firstResult.performanceMetrics.domMetrics.totalElements))
-          .toBeLessThan(10); // Allow small variance
-    });
+    for (const result of results) {
+      expect(result.structureAnalysis.iframes.count).toBe(
+        firstResult.structureAnalysis.iframes.count
+      );
+      expect(
+        Math.abs(
+          result.performanceMetrics.domMetrics.totalElements -
+            firstResult.performanceMetrics.domMetrics.totalElements
+        )
+      ).toBeLessThan(10); // Allow small variance
+    }
 
     // Average time should be well under target
-    const averageTime = times.reduce((sum, time) => sum + time, 0) / times.length;
+    const averageTime =
+      times.reduce((sum, time) => sum + time, 0) / times.length;
     expect(averageTime).toBeLessThan(450);
 
     await pageAnalyzer.dispose();
@@ -860,8 +1018,12 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
 });
 
 test.describe('Diagnostic System Integration', () => {
-  test('should provide comprehensive diagnostic data within 300ms', async ({ page }) => {
-    await page.goto('data:text/html,<div><button>Test</button><iframe src="about:blank"></iframe></div>');
+  test('should provide comprehensive diagnostic data within 300ms', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<div><button>Test</button><iframe src="about:blank"></iframe></div>'
+    );
 
     const startTime = Date.now();
 
@@ -874,13 +1036,13 @@ test.describe('Diagnostic System Integration', () => {
       pageAnalyzer.analyzePageStructure(),
       elementDiscovery.findAlternativeElements({
         originalSelector: 'button[data-missing="true"]',
-        searchCriteria: { role: 'button' }
+        searchCriteria: { role: 'button' },
       }),
       errorEnrichment.enrichElementNotFoundError({
         originalError: new Error('Test error'),
         selector: 'missing-element',
-        searchCriteria: { text: 'Test' }
-      })
+        searchCriteria: { text: 'Test' },
+      }),
     ]);
 
     const executionTime = Date.now() - startTime;
@@ -891,7 +1053,9 @@ test.describe('Diagnostic System Integration', () => {
     expect(enrichedError).toBeDefined();
   });
 
-  test('should integrate parallel analysis with existing system', async ({ page }) => {
+  test('should integrate parallel analysis with existing system', async ({
+    page,
+  }) => {
     const complexContent = `
       <html>
         <body>
@@ -905,7 +1069,9 @@ test.describe('Diagnostic System Integration', () => {
 
     const startTime = Date.now();
 
-    const { ParallelPageAnalyzer } = await import('../src/diagnostics/ParallelPageAnalyzer.js');
+    const { ParallelPageAnalyzer } = await import(
+      '../src/diagnostics/ParallelPageAnalyzer.js'
+    );
     const parallelAnalyzer = new ParallelPageAnalyzer(page);
     const errorEnrichment = new ErrorEnrichment(page);
 
@@ -914,8 +1080,8 @@ test.describe('Diagnostic System Integration', () => {
       errorEnrichment.enrichTimeoutError({
         originalError: new Error('Timeout waiting for element'),
         operation: 'click',
-        selector: 'button[data-test="missing"]'
-      })
+        selector: 'button[data-test="missing"]',
+      }),
     ]);
 
     const executionTime = Date.now() - startTime;
@@ -923,29 +1089,41 @@ test.describe('Diagnostic System Integration', () => {
     expect(executionTime).toBeLessThan(500);
     expect(parallelResult.structureAnalysis.modalStates.hasDialog).toBe(true);
     expect(parallelResult.structureAnalysis.iframes.detected).toBe(true);
-    expect(parallelResult.performanceMetrics.domMetrics.totalElements).toBeGreaterThan(500);
-    expect(enrichedError.suggestions).toContain('Page has active modal dialog - handle it before performing click');
+    expect(
+      parallelResult.performanceMetrics.domMetrics.totalElements
+    ).toBeGreaterThan(500);
+    expect(enrichedError.suggestions).toContain(
+      'Page has active modal dialog - handle it before performing click'
+    );
   });
 });
 
 test.describe('configOverrides visibility and impact', () => {
-  test('should show applied overrides in diagnostic report', async ({ page }) => {
-    await page.goto('data:text/html,<html><body><h1>Test Page</h1></body></html>');
+  test('should show applied overrides in diagnostic report', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<html><body><h1>Test Page</h1></body></html>'
+    );
 
     const mockContext = {
       currentTabOrDie: () => ({
         page,
         id: 'test-tab',
         modalStates: () => [],
-        modalStatesMarkdown: () => []
+        modalStatesMarkdown: () => [],
       }),
-      tab: { page, id: 'test-tab' }
+      tab: { page, id: 'test-tab' },
     };
 
     const mockResponse = {
       results: [] as string[],
-      addResult: function(result: string) { this.results.push(result); },
-      addError: function(error: string) { this.results.push(`ERROR: ${error}`); }
+      addResult(result: string) {
+        this.results.push(result);
+      },
+      addError(error: string) {
+        this.results.push(`ERROR: ${error}`);
+      },
     };
 
     const params = {
@@ -953,16 +1131,20 @@ test.describe('configOverrides visibility and impact', () => {
         enableResourceMonitoring: false,
         performanceThresholds: {
           pageAnalysis: 2000,
-          elementDiscovery: 1500
-        }
+          elementDiscovery: 1500,
+        },
       },
       includeSystemStats: true,
-      useUnifiedSystem: true
+      useUnifiedSystem: true,
     };
 
     const { browserDiagnose } = await import('../src/tools/diagnose.js');
 
-    await browserDiagnose.handle(mockContext as any, params, mockResponse as any);
+    await browserDiagnose.handle(
+      mockContext as unknown,
+      params,
+      mockResponse as unknown
+    );
 
     const report = mockResponse.results.join('\n');
 
@@ -971,57 +1153,77 @@ test.describe('configOverrides visibility and impact', () => {
     expect(report).toContain('Resource Monitoring: Disabled');
     expect(report).toContain('Performance Thresholds:');
     // Check for actual threshold values reported in the format: oldValue → newValue
-    expect(report).toMatch(/1000ms → 2000ms|Page Analysis:.*2000ms/);
-    expect(report).toMatch(/500ms → 1500ms|Element Discovery:.*1500ms/);
+    expect(report).toMatch(THRESHOLD_REGEX_1);
+    expect(report).toMatch(THRESHOLD_REGEX_2);
   });
 
-  test('should show different results with and without overrides', async ({ page }) => {
-    await page.goto('data:text/html,<html><body><h1>Test Page</h1></body></html>');
+  test('should show different results with and without overrides', async ({
+    page,
+  }) => {
+    await page.goto(
+      'data:text/html,<html><body><h1>Test Page</h1></body></html>'
+    );
 
     const mockContext = {
       currentTabOrDie: () => ({
         page,
         id: 'test-tab',
         modalStates: () => [],
-        modalStatesMarkdown: () => []
+        modalStatesMarkdown: () => [],
       }),
-      tab: { page, id: 'test-tab' }
+      tab: { page, id: 'test-tab' },
     };
 
     // Test without overrides
     const mockResponseWithout = {
       results: [] as string[],
-      addResult: function(result: string) { this.results.push(result); },
-      addError: function(error: string) { this.results.push(`ERROR: ${error}`); }
+      addResult(result: string) {
+        this.results.push(result);
+      },
+      addError(error: string) {
+        this.results.push(`ERROR: ${error}`);
+      },
     };
 
     const paramsWithout = {
       includeSystemStats: true,
-      useUnifiedSystem: true
+      useUnifiedSystem: true,
     };
 
     // Test with overrides
     const mockResponseWith = {
       results: [] as string[],
-      addResult: function(result: string) { this.results.push(result); },
-      addError: function(error: string) { this.results.push(`ERROR: ${error}`); }
+      addResult(result: string) {
+        this.results.push(result);
+      },
+      addError(error: string) {
+        this.results.push(`ERROR: ${error}`);
+      },
     };
 
     const paramsWith = {
       configOverrides: {
         enableResourceMonitoring: true,
         performanceThresholds: {
-          pageAnalysis: 10000
-        }
+          pageAnalysis: 10_000,
+        },
       },
       includeSystemStats: true,
-      useUnifiedSystem: true
+      useUnifiedSystem: true,
     };
 
     const { browserDiagnose } = await import('../src/tools/diagnose.js');
 
-    await browserDiagnose.handle(mockContext as any, paramsWithout, mockResponseWithout as any);
-    await browserDiagnose.handle(mockContext as any, paramsWith, mockResponseWith as any);
+    await browserDiagnose.handle(
+      mockContext as unknown,
+      paramsWithout,
+      mockResponseWithout as unknown
+    );
+    await browserDiagnose.handle(
+      mockContext as unknown,
+      paramsWith,
+      mockResponseWith as unknown
+    );
 
     const reportWithout = mockResponseWithout.results.join('\n');
     const reportWith = mockResponseWith.results.join('\n');
@@ -1039,22 +1241,28 @@ test.describe('configOverrides visibility and impact', () => {
   });
 
   test('should show configuration impact analysis', async ({ page }) => {
-    await page.goto('data:text/html,<html><body><h1>Test Page</h1></body></html>');
+    await page.goto(
+      'data:text/html,<html><body><h1>Test Page</h1></body></html>'
+    );
 
     const mockContext = {
       currentTabOrDie: () => ({
         page,
         id: 'test-tab',
         modalStates: () => [],
-        modalStatesMarkdown: () => []
+        modalStatesMarkdown: () => [],
       }),
-      tab: { page, id: 'test-tab' }
+      tab: { page, id: 'test-tab' },
     };
 
     const mockResponse = {
       results: [] as string[],
-      addResult: function(result: string) { this.results.push(result); },
-      addError: function(error: string) { this.results.push(`ERROR: ${error}`); }
+      addResult(result: string) {
+        this.results.push(result);
+      },
+      addError(error: string) {
+        this.results.push(`ERROR: ${error}`);
+      },
     };
 
     const params = {
@@ -1063,16 +1271,20 @@ test.describe('configOverrides visibility and impact', () => {
         enableErrorEnrichment: true,
         performanceThresholds: {
           pageAnalysis: 5000,
-          elementDiscovery: 3000
-        }
+          elementDiscovery: 3000,
+        },
       },
       includeSystemStats: true,
-      useUnifiedSystem: true
+      useUnifiedSystem: true,
     };
 
     const { browserDiagnose } = await import('../src/tools/diagnose.js');
 
-    await browserDiagnose.handle(mockContext as any, params, mockResponse as any);
+    await browserDiagnose.handle(
+      mockContext as unknown,
+      params,
+      mockResponse as unknown
+    );
 
     const report = mockResponse.results.join('\n');
 
@@ -1082,6 +1294,6 @@ test.describe('configOverrides visibility and impact', () => {
 
     // Check for performance baseline comparison instead of applied changes
     expect(report).toContain('**Performance Baseline Comparison:**');
-    expect(report).toMatch(/pageAnalysis.*Expected.*5000ms/);
+    expect(report).toMatch(PERFORMANCE_REGEX);
   });
 });

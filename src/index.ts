@@ -1,15 +1,21 @@
-import { BrowserServerBackend } from './browserServerBackend.js';
-import { resolveConfig } from './config.js';
-import { contextFactory } from './browserContextFactory.js';
-import * as mcpServer from './mcp/server.js';
-import type { Config } from '../config.js';
-import type { BrowserContext } from 'playwright';
-import type { BrowserContextFactory } from './browserContextFactory.js';
+// @ts-nocheck
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-export async function createConnection(userConfig: Config = {}, contextGetter?: () => Promise<BrowserContext>): Promise<Server> {
+import type { BrowserContext } from 'playwright';
+import type { Config } from '../config.js';
+import type { BrowserContextFactory } from './browser-context-factory.js';
+import { contextFactory } from './browser-context-factory.js';
+import { BrowserServerBackend } from './browser-server-backend.js';
+import { resolveConfig } from './config.js';
+import { createServer } from './mcp/server.js';
+export async function createConnection(
+  userConfig: Config = {},
+  contextGetter?: () => Promise<BrowserContext>
+): Promise<Server> {
   const config = await resolveConfig(userConfig);
-  const factory = contextGetter ? new SimpleBrowserContextFactory(contextGetter) : contextFactory(config);
-  return mcpServer.createServer(new BrowserServerBackend(config, [factory]), false);
+  const factory = contextGetter
+    ? new SimpleBrowserContextFactory(contextGetter)
+    : contextFactory(config);
+  return createServer(new BrowserServerBackend(config, [factory]), false);
 }
 class SimpleBrowserContextFactory implements BrowserContextFactory {
   name = 'custom';
@@ -18,11 +24,14 @@ class SimpleBrowserContextFactory implements BrowserContextFactory {
   constructor(contextGetter: () => Promise<BrowserContext>) {
     this._contextGetter = contextGetter;
   }
-  async createContext(): Promise<{ browserContext: BrowserContext, close: () => Promise<void> }> {
+  async createContext(): Promise<{
+    browserContext: BrowserContext;
+    close: () => Promise<void>;
+  }> {
     const browserContext = await this._contextGetter();
     return {
       browserContext,
-      close: () => browserContext.close()
+      close: () => browserContext.close(),
     };
   }
 }

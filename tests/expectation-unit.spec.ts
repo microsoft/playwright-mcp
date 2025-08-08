@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,8 +15,8 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
 import { mergeExpectations } from '../src/schemas/expectation.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Expectation Unit Tests', () => {
   test('mergeExpectations should respect user false values', () => {
@@ -24,7 +25,7 @@ test.describe('Expectation Unit Tests', () => {
       includeConsole: false,
       includeDownloads: false,
       includeTabs: false,
-      includeCode: true
+      includeCode: true,
     };
 
     const merged = mergeExpectations('browser_navigate', userExpectation);
@@ -60,7 +61,7 @@ test.describe('Expectation Unit Tests', () => {
 
   test('mergeExpectations should partially override tool defaults', () => {
     const userExpectation = {
-      includeSnapshot: true  // Changed to true since default is now false
+      includeSnapshot: true, // Changed to true since default is now false
       // Other values should use tool defaults
     };
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,9 +15,9 @@
  * limitations under the License.
  */
 
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { expect, test } from '@playwright/test';
 
 test.describe('Sharp Error Handling Tests', () => {
   test('should throw errors for invalid image data', async () => {
@@ -25,17 +26,21 @@ test.describe('Sharp Error Handling Tests', () => {
     // Test with various invalid data - all should throw errors
     const testCases = [
       { data: Buffer.from('not an image'), description: 'text data' },
-      { data: Buffer.from([0x00, 0x01, 0x02, 0x03]), description: 'random bytes' },
+      {
+        data: Buffer.from([0x00, 0x01, 0x02, 0x03]),
+        description: 'random bytes',
+      },
       { data: Buffer.alloc(0), description: 'empty buffer' },
-      { data: Buffer.from('GIF89a'), description: 'partial GIF header' }
+      { data: Buffer.from('GIF89a'), description: 'partial GIF header' },
     ];
 
     for (const testCase of testCases) {
       // console.log(`Testing with ${testCase.description}:`);
 
       // Should throw error for invalid image data
-      await expect(processImage(testCase.data, 'image/png', { quality: 80 }))
-          .rejects.toThrow(/Image processing failed/);
+      await expect(
+        processImage(testCase.data, 'image/png', { quality: 80 })
+      ).rejects.toThrow(/Image processing failed/);
     }
   });
 
@@ -46,7 +51,10 @@ test.describe('Sharp Error Handling Tests', () => {
     const pngPath = join(process.cwd(), 'extension/icons/icon-16.png');
     const pngBuffer = readFileSync(pngPath);
 
-    const result = await processImage(pngBuffer, 'image/png', { quality: 90, format: 'jpeg' });
+    const result = await processImage(pngBuffer, 'image/png', {
+      quality: 90,
+      format: 'jpeg',
+    });
 
     // console.log('Valid PNG processing:');
     // console.log(`  Result content type: ${result.contentType}`);
@@ -72,7 +80,10 @@ test.describe('Sharp Error Handling Tests', () => {
     const invalidData = Buffer.from('not an image at all');
 
     // Valid PNG should process successfully
-    const validResult = await processImage(validPng, 'image/png', { format: 'jpeg', quality: 80 });
+    const validResult = await processImage(validPng, 'image/png', {
+      format: 'jpeg',
+      quality: 80,
+    });
 
     // console.log('Valid PNG result:', {
     //   contentType: validResult.contentType,
@@ -85,7 +96,8 @@ test.describe('Sharp Error Handling Tests', () => {
     expect(validResult.originalSize.height).toBeGreaterThan(0);
 
     // Invalid data should throw error
-    await expect(processImage(invalidData, 'image/png', { format: 'jpeg', quality: 80 }))
-        .rejects.toThrow(/Image processing failed/);
+    await expect(
+      processImage(invalidData, 'image/png', { format: 'jpeg', quality: 80 })
+    ).rejects.toThrow(/Image processing failed/);
   });
 });

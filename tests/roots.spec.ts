@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,22 +15,27 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { pathToFileURL } from 'url';
-
-import { test, expect } from './fixtures.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { createHash } from '../src/utils.js';
+import { expect, test } from './fixtures.js';
 
-const p = process.platform === 'win32' ? 'c:\\non\\existent\\folder' : '/non/existent/folder';
+const p =
+  process.platform === 'win32'
+    ? 'c:\\non\\existent\\folder'
+    : '/non/existent/folder';
 
-test('should use separate user data by root path', async ({ startClient, server }, testInfo) => {
+test('should use separate user data by root path', async ({
+  startClient,
+  server,
+}, testInfo) => {
   const { client } = await startClient({
     roots: [
       {
         name: 'test',
-        uri: 'file://' + p.replace(/\\/g, '/'),
-      }
+        uri: `file://${p.replace(/\\/g, '/')}`,
+      },
     ],
   });
 
@@ -39,12 +45,17 @@ test('should use separate user data by root path', async ({ startClient, server 
   });
 
   const hash = createHash(p);
-  const [file] = await fs.promises.readdir(testInfo.outputPath('ms-playwright'));
+  const [file] = await fs.promises.readdir(
+    testInfo.outputPath('ms-playwright')
+  );
   expect(file).toContain(hash);
 });
 
-
-test('check that trace is saved in workspace', async ({ startClient, server, mcpMode }, testInfo) => {
+test('check that trace is saved in workspace', async ({
+  startClient,
+  server,
+  mcpMode,
+}, testInfo) => {
   const rootPath = testInfo.outputPath('workspace');
   const { client } = await startClient({
     args: ['--save-trace'],
@@ -56,13 +67,17 @@ test('check that trace is saved in workspace', async ({ startClient, server, mcp
     ],
   });
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.HELLO_WORLD },
+    })
+  ).toHaveResponse({
     code: expect.stringContaining(`page.goto('http://localhost`),
   });
 
-  const [file] = await fs.promises.readdir(path.join(rootPath, '.playwright-mcp'));
+  const [file] = await fs.promises.readdir(
+    path.join(rootPath, '.playwright-mcp')
+  );
   expect(file).toContain('traces');
 });

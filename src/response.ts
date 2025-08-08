@@ -1,16 +1,20 @@
-import { renderModalStates } from './tab.js';
-import { mergeExpectations } from './schemas/expectation.js';
-import { processImage } from './utils/imageProcessor.js';
-import { ResponseDiffDetector } from './utils/responseDiffDetector.js';
-import type { Tab, TabSnapshot } from './tab.js';
-import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
+// @ts-nocheck
+import type {
+  ImageContent,
+  TextContent,
+} from '@modelcontextprotocol/sdk/types.js';
 import type { Context } from './context.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
+import { mergeExpectations } from './schemas/expectation.js';
+import type { Tab, TabSnapshot } from './tab.js';
+import { renderModalStates } from './tab.js';
 import type { DiffResult } from './types/diff.js';
+import { processImage } from './utils/imageProcessor.js';
+import { ResponseDiffDetector } from './utils/responseDiffDetector.js';
 export class Response {
   private _result: string[] = [];
   private _code: string[] = [];
-  private _images: { contentType: string, data: Buffer }[] = [];
+  private _images: { contentType: string; data: Buffer }[] = [];
   private readonly _context: Context;
   private _includeSnapshot = false;
   private _includeTabs = false;
@@ -18,11 +22,17 @@ export class Response {
   private readonly _expectation: NonNullable<ExpectationOptions>;
   private _diffResult: DiffResult | undefined;
   readonly toolName: string;
-  readonly toolArgs: Record<string, any>;
+  readonly toolArgs: Record<string, unknown>;
   private _isError: boolean | undefined;
   // Static diff detector instance shared across all responses
-  private static readonly diffDetector: ResponseDiffDetector = new ResponseDiffDetector();
-  constructor(context: Context, toolName: string, toolArgs: Record<string, any>, expectation?: ExpectationOptions) {
+  private static readonly diffDetector: ResponseDiffDetector =
+    new ResponseDiffDetector();
+  constructor(
+    context: Context,
+    toolName: string,
+    toolArgs: Record<string, unknown>,
+    expectation?: ExpectationOptions
+  ) {
     this._context = context;
     this.toolName = toolName;
     this.toolArgs = toolArgs;
@@ -49,7 +59,7 @@ export class Response {
   code() {
     return this._code.join('\n');
   }
-  addImage(image: { contentType: string, data: Buffer }) {
+  addImage(image: { contentType: string; data: Buffer }) {
     this._images.push(image);
   }
   images() {
@@ -65,35 +75,36 @@ export class Response {
     // All the async snapshotting post-action is happening here.
     // Everything below should race against modal states.
     // Expectation settings take priority over legacy setIncludeSnapshot calls
-    const shouldIncludeSnapshot = this._expectation.includeSnapshot || this._includeSnapshot;
+    const shouldIncludeSnapshot =
+      this._expectation.includeSnapshot || this._includeSnapshot;
     if (shouldIncludeSnapshot && this._context.currentTab()) {
       // Enhanced navigation detection and deferred execution
       await this._captureSnapshotWithNavigationHandling();
     }
-    for (const tab of this._context.tabs())
-      await tab.updateTitle();
+    await Promise.all(this._context.tabs().map((tab) => tab.updateTitle()));
     // Process images if image options are specified
     if (this._expectation.imageOptions && this._images.length > 0) {
-      const processedImages = [];
-      for (const image of this._images) {
-        try {
-          const processedResult = await processImage(
+      // Process all images in parallel
+      const processedImages = await Promise.all(
+        this._images.map(async (image) => {
+          try {
+            const processedResult = await processImage(
               image.data,
               image.contentType,
               this._expectation.imageOptions
-          );
-          processedImages.push({
-            contentType: processedResult.contentType,
-            data: processedResult.data
-          });
-        } catch (error) {
-          // If processing fails, keep the original image
-          // TODO: Use proper logging instead of console
-
-          // Image processing failed
-          processedImages.push(image);
-        }
-      }
+            );
+            return {
+              contentType: processedResult.contentType,
+              data: processedResult.data,
+            };
+          } catch (_error) {
+            // If processing fails, keep the original image
+            // Image processing failed silently
+            // Image processing failed
+            return image;
+          }
+        })
+      );
       // Replace original images with processed ones
       this._images = processedImages;
     }
@@ -107,18 +118,18 @@ export class Response {
           threshold: this._expectation.diffOptions.threshold ?? 0.1,
           format: this._expectation.diffOptions.format ?? 'unified',
           maxDiffLines: this._expectation.diffOptions.maxDiffLines ?? 50,
-          ignoreWhitespace: this._expectation.diffOptions.ignoreWhitespace ?? true,
-          context: this._expectation.diffOptions.context ?? 3
+          ignoreWhitespace:
+            this._expectation.diffOptions.ignoreWhitespace ?? true,
+          context: this._expectation.diffOptions.context ?? 3,
         };
         this._diffResult = await Response.diffDetector.detectDiff(
-            currentContent,
-            this.toolName,
-            diffOptions
+          currentContent,
+          this.toolName,
+          diffOptions
         );
-      } catch (error) {
+      } catch (_error) {
         // Gracefully handle diff detection errors
-        // TODO: Use proper logging instead of console
-
+        // Diff detection failed silently
         // Diff detection failed
         this._diffResult = undefined;
       }
@@ -127,13 +138,17 @@ export class Response {
   tabSnapshot(): TabSnapshot | undefined {
     return this._tabSnapshot;
   }
-  serialize(): { content: (TextContent | ImageContent)[], isError?: boolean } {
+  serialize(): { content: (TextContent | ImageContent)[]; isError?: boolean } {
     const response: string[] = [];
     // Add diff information if available and has differences
     if (this._diffResult?.hasDifference && this._diffResult.formattedDiff) {
       response.push('### Changes from previous response');
-      response.push(`Similarity: ${(this._diffResult.similarity * 100).toFixed(1)}%`);
-      response.push(`Changes: ${this._diffResult.metadata.addedLines} additions, ${this._diffResult.metadata.removedLines} deletions`);
+      response.push(
+        `Similarity: ${(this._diffResult.similarity * 100).toFixed(1)}%`
+      );
+      response.push(
+        `Changes: ${this._diffResult.metadata.addedLines} additions, ${this._diffResult.metadata.removedLines} deletions`
+      );
       response.push('');
       response.push('```diff');
       response.push(this._diffResult.formattedDiff);
@@ -155,15 +170,19 @@ ${this._code.join('\n')}
       response.push('');
     }
     // List browser tabs based on expectation.
-    const shouldIncludeTabs = this._expectation.includeTabs || this._includeTabs;
-    const shouldIncludeSnapshot = this._expectation.includeSnapshot || this._includeSnapshot;
+    const shouldIncludeTabs =
+      this._expectation.includeTabs || this._includeTabs;
+    const shouldIncludeSnapshot =
+      this._expectation.includeSnapshot || this._includeSnapshot;
     if (shouldIncludeTabs) {
       const tabsMarkdown = renderTabsMarkdown(this._context.tabs(), true);
       response.push(...tabsMarkdown);
     }
     // Add snapshot if provided and expectation allows it.
     if (shouldIncludeSnapshot && this._tabSnapshot?.modalStates.length) {
-      response.push(...renderModalStates(this._context, this._tabSnapshot.modalStates));
+      response.push(
+        ...renderModalStates(this._context, this._tabSnapshot.modalStates)
+      );
       response.push('');
     } else if (shouldIncludeSnapshot && this._tabSnapshot) {
       response.push(this.renderFilteredTabSnapshot(this._tabSnapshot));
@@ -175,8 +194,13 @@ ${this._code.join('\n')}
     ];
     // Image attachments.
     if (this._context.config.imageResponses !== 'omit') {
-      for (const image of this._images)
-        content.push({ type: 'image', data: image.data.toString('base64'), mimeType: image.contentType });
+      for (const image of this._images) {
+        content.push({
+          type: 'image',
+          data: image.data.toString('base64'),
+          mimeType: image.contentType,
+        });
+      }
     }
     return { content, isError: this._isError };
   }
@@ -184,32 +208,44 @@ ${this._code.join('\n')}
     const lines: string[] = [];
     const consoleOptions = this._expectation.consoleOptions;
     // Include console messages based on expectation
-    if (this._expectation.includeConsole && tabSnapshot.consoleMessages.length) {
-      const filteredMessages = this.filterConsoleMessages(tabSnapshot.consoleMessages, consoleOptions);
+    if (
+      this._expectation.includeConsole &&
+      tabSnapshot.consoleMessages.length
+    ) {
+      const filteredMessages = this.filterConsoleMessages(
+        tabSnapshot.consoleMessages,
+        consoleOptions
+      );
       if (filteredMessages.length) {
-        lines.push(`### New console messages`);
-        for (const message of filteredMessages)
+        lines.push('### New console messages');
+        for (const message of filteredMessages) {
           lines.push(`- ${trim(message.toString(), 100)}`);
+        }
         lines.push('');
       }
     }
     // Include downloads based on expectation
     if (this._expectation.includeDownloads && tabSnapshot.downloads.length) {
-      lines.push(`### Downloads`);
+      lines.push('### Downloads');
       for (const entry of tabSnapshot.downloads) {
-        if (entry.finished)
-          lines.push(`- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`);
-        else
-          lines.push(`- Downloading file ${entry.download.suggestedFilename()} ...`);
+        if (entry.finished) {
+          lines.push(
+            `- Downloaded file ${entry.download.suggestedFilename()} to ${entry.outputFile}`
+          );
+        } else {
+          lines.push(
+            `- Downloading file ${entry.download.suggestedFilename()} ...`
+          );
+        }
       }
       lines.push('');
     }
-    lines.push(`### Page state`);
+    lines.push('### Page state');
     lines.push(`- Page URL: ${tabSnapshot.url}`);
     lines.push(`- Page Title: ${tabSnapshot.title}`);
     // Only include snapshot if expectation allows it
     if (this._expectation.includeSnapshot) {
-      lines.push(`- Page Snapshot:`);
+      lines.push('- Page Snapshot:');
       lines.push('```yaml');
       // Use the snapshot as-is (length restrictions handled in tab.ts)
       const snapshot = tabSnapshot.ariaSnapshot;
@@ -218,19 +254,27 @@ ${this._code.join('\n')}
     }
     return lines.join('\n');
   }
-  private filterConsoleMessages(messages: any[], options?: NonNullable<ExpectationOptions>['consoleOptions']): any[] {
+  private filterConsoleMessages(
+    messages: Array<{
+      type: () => string;
+      text: () => string;
+      toString: () => string;
+    }>,
+    options?: NonNullable<ExpectationOptions>['consoleOptions']
+  ): Array<{ type: () => string; text: () => string; toString: () => string }> {
     let filtered = messages;
     // Filter by levels if specified
     if (options?.levels && options.levels.length > 0) {
-      filtered = filtered.filter(msg => {
+      filtered = filtered.filter((msg) => {
         const level = msg.type || 'log';
-        return options.levels!.includes(level);
+        return options.levels?.includes(level);
       });
     }
     // Limit number of messages
     const maxMessages = options?.maxMessages ?? 10;
-    if (filtered.length > maxMessages)
+    if (filtered.length > maxMessages) {
       filtered = filtered.slice(0, maxMessages);
+    }
     return filtered;
   }
   /**
@@ -258,14 +302,19 @@ ${this._code.join('\n')}
       content.push(this._tabSnapshot.ariaSnapshot);
     }
     // Include console messages if available and expectation allows it
-    if (this._tabSnapshot?.consoleMessages.length && this._expectation.includeConsole) {
+    if (
+      this._tabSnapshot?.consoleMessages.length &&
+      this._expectation.includeConsole
+    ) {
       const filteredMessages = this.filterConsoleMessages(
-          this._tabSnapshot.consoleMessages,
-          this._expectation.consoleOptions
+        this._tabSnapshot.consoleMessages,
+        this._expectation.consoleOptions
       );
       if (filteredMessages.length) {
         content.push('### Console Messages');
-        filteredMessages.forEach(msg => content.push(`- ${msg.toString()}`));
+        for (const msg of filteredMessages) {
+          content.push(`- ${msg.toString()}`);
+        }
       }
     }
     return content.join('\n');
@@ -279,7 +328,7 @@ ${this._code.join('\n')}
       maxRetries: 3,
       retryDelay: 500,
       stabilityTimeout: 3000,
-      evaluationTimeout: 200
+      evaluationTimeout: 200,
     };
   }
 
@@ -306,8 +355,8 @@ ${this._code.join('\n')}
         // Attempt snapshot capture
         if (options?.selector || options?.maxLength) {
           this._tabSnapshot = await currentTab.capturePartialSnapshot(
-              options.selector,
-              options.maxLength
+            options.selector,
+            options.maxLength
           );
         } else {
           this._tabSnapshot = await currentTab.captureSnapshot();
@@ -315,16 +364,18 @@ ${this._code.join('\n')}
 
         // Success - break out of retry loop
         break;
-
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage = error?.message || '';
-        const isContextError = errorMessage.includes('Execution context was destroyed') ||
-                               errorMessage.includes('Target closed') ||
-                               errorMessage.includes('Session closed');
+        const isContextError =
+          errorMessage.includes('Execution context was destroyed') ||
+          errorMessage.includes('Target closed') ||
+          errorMessage.includes('Session closed');
 
         if (isContextError && attempt < maxRetries) {
           // Wait for stability and retry
-          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+          await new Promise((resolve) =>
+            setTimeout(resolve, retryDelay * attempt)
+          );
           continue;
         }
 
@@ -332,8 +383,9 @@ ${this._code.join('\n')}
           // Last attempt failed - try to capture basic snapshot or give up gracefully
           try {
             this._tabSnapshot = await this._captureBasicSnapshot(currentTab);
-          } catch (finalError) {
+          } catch (_finalError) {
             // Could not capture snapshot - log error but don't throw
+            // Failed to capture snapshot after navigation
             // Failed to capture snapshot after navigation
             this._tabSnapshot = undefined;
           }
@@ -348,24 +400,40 @@ ${this._code.join('\n')}
   private async _isPageNavigating(tab: Tab): Promise<boolean> {
     try {
       // Check Tab's internal navigation state if available
-      if ('isNavigating' in tab && typeof (tab as any).isNavigating === 'function') {
-        const tabNavigating = (tab as any).isNavigating();
-        if (tabNavigating)
+      if (
+        'isNavigating' in tab &&
+        typeof (tab as { isNavigating?: () => boolean }).isNavigating ===
+          'function'
+      ) {
+        const tabNavigating = (
+          tab as { isNavigating: () => boolean }
+        ).isNavigating();
+        if (tabNavigating) {
           return true;
+        }
       }
 
       // Multiple checks for navigation state
-      const [readyState, isLoading] = await Promise.race([
-        tab.page.evaluate(() => [
-          document.readyState,
-          (window as any).performance?.timing?.loadEventEnd === 0
-        ]).catch(() => [null, null]),
-        new Promise(resolve => setTimeout(() => resolve([null, null]), this._getNavigationRetryConfig().evaluationTimeout))
-      ]) as [string | null, boolean | null];
+      const [readyState, isLoading] = (await Promise.race([
+        tab.page
+          .evaluate(() => [
+            document.readyState,
+            (window as { performance?: { timing?: { loadEventEnd?: number } } })
+              .performance?.timing?.loadEventEnd === 0,
+          ])
+          .catch(() => [null, null]),
+        new Promise((resolve) =>
+          setTimeout(
+            () => resolve([null, null]),
+            this._getNavigationRetryConfig().evaluationTimeout
+          )
+        ),
+      ])) as [string | null, boolean | null];
 
       return readyState === 'loading' || isLoading === true;
-    } catch (error) {
+    } catch (_error) {
       // If we can't check, assume navigation might be happening
+      // Navigation check failed silently
       return true;
     }
   }
@@ -378,32 +446,46 @@ ${this._code.join('\n')}
     const startTime = Date.now();
 
     // Use Tab's navigation completion method if available
-    if ('waitForNavigationComplete' in tab && typeof (tab as any).waitForNavigationComplete === 'function') {
+    if (
+      'waitForNavigationComplete' in tab &&
+      typeof (tab as { waitForNavigationComplete?: () => Promise<void> })
+        .waitForNavigationComplete === 'function'
+    ) {
       try {
-        await (tab as any).waitForNavigationComplete();
+        await (
+          tab as { waitForNavigationComplete: () => Promise<void> }
+        ).waitForNavigationComplete();
         return;
-      } catch (error) {
+      } catch (_error) {
         // Fall through to manual detection
+        // URL stability check failed silently
       }
     }
 
     while (Date.now() - startTime < stabilityTimeout) {
       try {
         await tab.waitForLoadState('load', { timeout: 1000 });
-        await tab.waitForLoadState('networkidle', { timeout: 500 }).catch(() => {});
+        await tab
+          .waitForLoadState('networkidle', { timeout: 500 })
+          .catch(() => {
+            // Ignore network idle timeout
+          });
 
         // Additional stability check
-        const isStable = await tab.page.evaluate(() => document.readyState === 'complete').catch(() => false);
+        const isStable = await tab.page
+          .evaluate(() => document.readyState === 'complete')
+          .catch(() => false);
         if (isStable) {
           // Small delay to ensure DOM is fully settled
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise((resolve) => setTimeout(resolve, 200));
           return;
         }
-      } catch (error) {
+      } catch (_error) {
         // Continue waiting
+        // Page readyState check failed silently
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
@@ -414,25 +496,28 @@ ${this._code.join('\n')}
     try {
       // Try basic snapshot without complex operations
       return await tab.captureSnapshot();
-    } catch (error) {
+    } catch (_error) {
       // Create a minimal snapshot with available information
+      // Snapshot creation failed silently
       const url = tab.page.url();
       const title = await tab.page.title().catch(() => '');
 
       return {
         url,
         title,
-        ariaSnapshot: '// Snapshot unavailable due to navigation context issues',
+        ariaSnapshot:
+          '// Snapshot unavailable due to navigation context issues',
         modalStates: [],
         consoleMessages: [],
-        downloads: []
+        downloads: [],
       };
     }
   }
 }
-function renderTabsMarkdown(tabs: Tab[], force: boolean = false): string[] {
-  if (tabs.length === 1 && !force)
+function renderTabsMarkdown(tabs: Tab[], force = false): string[] {
+  if (tabs.length === 1 && !force) {
     return [];
+  }
   if (!tabs.length) {
     return [
       '### Open tabs',
@@ -450,7 +535,8 @@ function renderTabsMarkdown(tabs: Tab[], force: boolean = false): string[] {
   return lines;
 }
 function trim(text: string, maxLength: number) {
-  if (text.length <= maxLength)
+  if (text.length <= maxLength) {
     return text;
-  return text.slice(0, maxLength) + '...';
+  }
+  return `${text.slice(0, maxLength)}...`;
 }

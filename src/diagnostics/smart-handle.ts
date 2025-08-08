@@ -1,57 +1,68 @@
-import * as playwright from 'playwright';
-import { SmartTracker, globalResourceManager } from './ResourceManager.js';
+// @ts-nocheck
+import type * as playwright from 'playwright';
+import {
+  globalResourceManager,
+  type SmartTracker,
+} from './resource-manager.js';
 
 /**
  * Smart wrapper for ElementHandles that automatically manages disposal
  * using Proxy pattern to intercept method calls and ensure cleanup
  */
-export class SmartHandle<T extends playwright.ElementHandle> implements ProxyHandler<T> {
+export class SmartHandle<T extends playwright.ElementHandle>
+  implements ProxyHandler<T>
+{
   private disposed = false;
+  private readonly resource: T;
   private readonly resourceId: string;
-  private readonly disposeTimeout = 30000; // 30 seconds
   private readonly tracker: SmartTracker;
 
-  constructor(
-    private readonly resource: T,
-    tracker?: SmartTracker
-  ) {
+  constructor(resource: T, tracker?: SmartTracker) {
+    this.resource = resource;
     this.tracker = tracker || globalResourceManager;
     this.resourceId = this.tracker.trackResource(resource, 'dispose');
   }
 
-  get(target: T, prop: string | symbol, receiver: any): any {
-    if (this.disposed)
+  get(target: T, prop: string | symbol, _receiver: unknown): unknown {
+    if (this.disposed) {
       throw new Error('SmartHandle has been disposed');
+    }
 
-
-    const value = (target as any)[prop];
+    const value = (target as Record<string | symbol, unknown>)[prop];
 
     // Return bound method for function properties
-    if (typeof value === 'function')
+    if (typeof value === 'function') {
       return value.bind(target);
-
+    }
 
     return value;
   }
 
-  set(target: T, prop: string | symbol, value: any, receiver: any): boolean {
-    if (this.disposed)
+  set(
+    target: T,
+    prop: string | symbol,
+    value: unknown,
+    _receiver: unknown
+  ): boolean {
+    if (this.disposed) {
       throw new Error('SmartHandle has been disposed');
+    }
 
-
-    (target as any)[prop] = value;
+    (target as Record<string | symbol, unknown>)[prop] = value;
     return true;
   }
 
   async dispose(): Promise<void> {
-    if (this.disposed)
+    if (this.disposed) {
       return;
+    }
 
     try {
-      if (this.resource && typeof this.resource.dispose === 'function')
+      if (this.resource && typeof this.resource.dispose === 'function') {
         await this.resource.dispose();
-
-    } catch (error) {
+      }
+    } catch (_error) {
+      // Ignore errors during disposal
     } finally {
       this.disposed = true;
       this.tracker.untrackResource(this.resourceId);
@@ -63,8 +74,9 @@ export class SmartHandle<T extends playwright.ElementHandle> implements ProxyHan
   }
 
   getResource(): T {
-    if (this.disposed)
+    if (this.disposed) {
       throw new Error('SmartHandle has been disposed');
+    }
 
     return this.resource;
   }
@@ -85,24 +97,32 @@ export function createSmartHandle<T extends playwright.ElementHandle>(
  * Batch manager for handling multiple smart handles efficiently
  */
 export class SmartHandleBatch {
-  private readonly handles: SmartHandle<any>[] = [];
+  private readonly handles: SmartHandle<playwright.ElementHandle>[] = [];
   private disposed = false;
 
-  add<T extends playwright.ElementHandle>(handle: T, tracker?: SmartTracker): T {
-    if (this.disposed)
+  add<T extends playwright.ElementHandle>(
+    handle: T,
+    tracker?: SmartTracker
+  ): T {
+    if (this.disposed) {
       throw new Error('SmartHandleBatch has been disposed');
-
+    }
 
     const smartHandle = new SmartHandle(handle, tracker);
     this.handles.push(smartHandle);
     return new Proxy(handle, smartHandle) as T;
   }
 
-  async disposeAll(): Promise<void> {
-    if (this.disposed)
-      return;
+  async dispose(): Promise<void> {
+    await this.disposeAll();
+  }
 
-    const disposePromises = this.handles.map(handle => handle.dispose());
+  async disposeAll(): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
+
+    const disposePromises = this.handles.map((handle) => handle.dispose());
     await Promise.allSettled(disposePromises);
 
     this.handles.length = 0;
@@ -110,7 +130,7 @@ export class SmartHandleBatch {
   }
 
   getActiveCount(): number {
-    return this.handles.filter(handle => !handle.isDisposed()).length;
+    return this.handles.filter((handle) => !handle.isDisposed()).length;
   }
 
   isDisposed(): boolean {

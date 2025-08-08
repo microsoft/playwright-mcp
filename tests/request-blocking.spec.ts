@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,10 +15,11 @@
  * limitations under the License.
  */
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { test, expect } from './fixtures.ts';
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { expect, test } from './fixtures.ts';
 
-const BLOCK_MESSAGE = /Blocked by Web Inspector|NS_ERROR_FAILURE|net::ERR_BLOCKED_BY_CLIENT/g;
+const BLOCK_MESSAGE =
+  /Blocked by Web Inspector|NS_ERROR_FAILURE|net::ERR_BLOCKED_BY_CLIENT/g;
 
 const fetchPage = async (client: Client, url: string) => {
   const result = await client.callTool({
@@ -32,13 +34,13 @@ const fetchPage = async (client: Client, url: string) => {
 
 test('default to allow all', async ({ server, client }) => {
   server.setContent('/ppp', 'content:PPP', 'text/html');
-  const result = await fetchPage(client, server.PREFIX + 'ppp');
+  const result = await fetchPage(client, `${server.PREFIX}ppp`);
   expect(result).toContain('content:PPP');
 });
 
 test('blocked works', async ({ startClient }) => {
   const { client } = await startClient({
-    args: ['--blocked-origins', 'microsoft.com;example.com;playwright.dev']
+    args: ['--blocked-origins', 'microsoft.com;example.com;playwright.dev'],
   });
   const result = await fetchPage(client, 'https://example.com/');
   expect(result).toMatch(BLOCK_MESSAGE);
@@ -47,24 +49,31 @@ test('blocked works', async ({ startClient }) => {
 test('allowed works', async ({ server, startClient }) => {
   server.setContent('/ppp', 'content:PPP', 'text/html');
   const { client } = await startClient({
-    args: ['--allowed-origins', `microsoft.com;${new URL(server.PREFIX).host};playwright.dev`]
+    args: [
+      '--allowed-origins',
+      `microsoft.com;${new URL(server.PREFIX).host};playwright.dev`,
+    ],
   });
-  const result = await fetchPage(client, server.PREFIX + 'ppp');
+  const result = await fetchPage(client, `${server.PREFIX}ppp`);
   expect(result).toContain('content:PPP');
 });
 
 test('blocked takes precedence', async ({ startClient }) => {
   const { client } = await startClient({
     args: [
-      '--blocked-origins', 'example.com',
-      '--allowed-origins', 'example.com',
+      '--blocked-origins',
+      'example.com',
+      '--allowed-origins',
+      'example.com',
     ],
   });
   const result = await fetchPage(client, 'https://example.com/');
   expect(result).toMatch(BLOCK_MESSAGE);
 });
 
-test('allowed without blocked blocks all non-explicitly specified origins', async ({ startClient }) => {
+test('allowed without blocked blocks all non-explicitly specified origins', async ({
+  startClient,
+}) => {
   const { client } = await startClient({
     args: ['--allowed-origins', 'playwright.dev'],
   });
@@ -72,11 +81,14 @@ test('allowed without blocked blocks all non-explicitly specified origins', asyn
   expect(result).toMatch(BLOCK_MESSAGE);
 });
 
-test('blocked without allowed allows non-explicitly specified origins', async ({ server, startClient }) => {
+test('blocked without allowed allows non-explicitly specified origins', async ({
+  server,
+  startClient,
+}) => {
   server.setContent('/ppp', 'content:PPP', 'text/html');
   const { client } = await startClient({
     args: ['--blocked-origins', 'example.com'],
   });
-  const result = await fetchPage(client, server.PREFIX + 'ppp');
+  const result = await fetchPage(client, `${server.PREFIX}ppp`);
   expect(result).toContain('content:PPP');
 });

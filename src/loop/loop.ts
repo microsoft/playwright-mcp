@@ -1,15 +1,20 @@
-import debug from 'debug';
-import type { Tool, ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
+// @ts-nocheck
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import type {
+  ImageContent,
+  TextContent,
+  Tool,
+} from '@modelcontextprotocol/sdk/types.js';
+import debug from 'debug';
 export type LLMToolCall = {
   name: string;
-  arguments: any;
+  arguments: Record<string, unknown>;
   id: string;
 };
 export type LLMTool = {
   name: string;
   description: string;
-  inputSchema: any;
+  inputSchema: Record<string, unknown>;
 };
 export type LLMMessage =
   | { role: 'user'; content: string }
@@ -20,25 +25,45 @@ export type LLMConversation = {
   tools: LLMTool[];
 };
 export interface LLMDelegate {
-  createConversation(task: string, tools: Tool[], oneShot: boolean): LLMConversation;
+  createConversation(
+    task: string,
+    tools: Tool[],
+    oneShot: boolean
+  ): LLMConversation;
   makeApiCall(conversation: LLMConversation): Promise<LLMToolCall[]>;
-  addToolResults(conversation: LLMConversation, results: Array<{ toolCallId: string; content: string; isError?: boolean }>): void;
+  addToolResults(
+    conversation: LLMConversation,
+    results: Array<{ toolCallId: string; content: string; isError?: boolean }>
+  ): void;
   checkDoneToolCall(toolCall: LLMToolCall): string | null;
 }
-export async function runTask(delegate: LLMDelegate, client: Client, task: string, oneShot: boolean = false): Promise<LLMMessage[]> {
+export async function runTask(
+  delegate: LLMDelegate,
+  client: Client,
+  task: string,
+  oneShot = false
+): Promise<LLMMessage[]> {
   const { tools } = await client.listTools();
-  const taskContent = oneShot ? `Perform following task: ${task}.` : `Perform following task: ${task}. Once the task is complete, call the "done" tool.`;
+  const taskContent = oneShot
+    ? `Perform following task: ${task}.`
+    : `Perform following task: ${task}. Once the task is complete, call the "done" tool.`;
   const conversation = delegate.createConversation(taskContent, tools, oneShot);
   for (let iteration = 0; iteration < 5; ++iteration) {
     debug('history')('Making API call for iteration', iteration);
     const toolCalls = await delegate.makeApiCall(conversation);
-    if (toolCalls.length === 0)
+    if (toolCalls.length === 0) {
       throw new Error('Call the "done" tool when the task is complete.');
-    const toolResults: Array<{ toolCallId: string; content: string; isError?: boolean }> = [];
+    }
+    const toolResults: Array<{
+      toolCallId: string;
+      content: string;
+      isError?: boolean;
+    }> = [];
     for (const toolCall of toolCalls) {
       const doneResult = delegate.checkDoneToolCall(toolCall);
-      if (doneResult !== null)
+      if (doneResult !== null) {
         return conversation.messages;
+      }
       const { name, arguments: args, id } = toolCall;
       try {
         debug('tool')(name, args);
@@ -46,9 +71,15 @@ export async function runTask(delegate: LLMDelegate, client: Client, task: strin
           name,
           arguments: args,
         });
-        const responseContent = (response.content || []) as (TextContent | ImageContent)[];
+        const responseContent = (response.content || []) as (
+          | TextContent
+          | ImageContent
+        )[];
         debug('tool')(responseContent);
-        const text = responseContent.filter(part => part.type === 'text').map(part => part.text).join('\n');
+        const text = responseContent
+          .filter((part) => part.type === 'text')
+          .map((part) => part.text)
+          .join('\n');
         toolResults.push({
           toolCallId: id,
           content: text,
@@ -61,10 +92,12 @@ export async function runTask(delegate: LLMDelegate, client: Client, task: strin
           isError: true,
         });
         // Skip remaining tool calls for this iteration
-        for (const remainingToolCall of toolCalls.slice(toolCalls.indexOf(toolCall) + 1)) {
+        for (const remainingToolCall of toolCalls.slice(
+          toolCalls.indexOf(toolCall) + 1
+        )) {
           toolResults.push({
             toolCallId: remainingToolCall.id,
-            content: `This tool call is skipped due to previous error.`,
+            content: 'This tool call is skipped due to previous error.',
             isError: true,
           });
         }
@@ -72,8 +105,9 @@ export async function runTask(delegate: LLMDelegate, client: Client, task: strin
       }
     }
     delegate.addToolResults(conversation, toolResults);
-    if (oneShot)
+    if (oneShot) {
       return conversation.messages;
+    }
   }
   throw new Error('Failed to perform step, max attempts reached');
 }

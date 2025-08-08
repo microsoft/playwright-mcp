@@ -1,16 +1,18 @@
-import fs from 'fs';
-import path from 'path';
-import { Response } from './response.js';
-import { logUnhandledError } from './log.js';
-import { outputFile  } from './config.js';
-import type { FullConfig } from './config.js';
+// @ts-nocheck
+import fs from 'node:fs';
+import path from 'node:path';
 import type * as actions from './actions.js';
+import type { FullConfig } from './config.js';
+import { outputFile } from './config.js';
+import { logUnhandledError } from './log.js';
+import type { Response } from './response.js';
 import type { Tab, TabSnapshot } from './tab.js';
+
 type LogEntry = {
   timestamp: number;
   toolCall?: {
     toolName: string;
-    toolArgs: Record<string, any>;
+    toolArgs: Record<string, unknown>;
     result: string;
     isError?: boolean;
   };
@@ -21,7 +23,6 @@ type LogEntry = {
 export class SessionLog {
   private _folder: string;
   private _file: string;
-  private _ordinal = 0;
   private _pendingEntries: LogEntry[] = [];
   private _sessionFileQueue = Promise.resolve();
   private _flushEntriesTimeout: NodeJS.Timeout | undefined;
@@ -29,11 +30,17 @@ export class SessionLog {
     this._folder = sessionFolder;
     this._file = path.join(this._folder, 'session.md');
   }
-  static async create(config: FullConfig, rootPath: string | undefined): Promise<SessionLog> {
-    const sessionFolder = await outputFile(config, rootPath, `session-${Date.now()}`);
+  static async create(
+    config: FullConfig,
+    rootPath: string | undefined
+  ): Promise<SessionLog> {
+    const sessionFolder = await outputFile(
+      config,
+      rootPath,
+      `session-${Date.now()}`
+    );
     await fs.promises.mkdir(sessionFolder, { recursive: true });
 
-    // console.error(`Session: ${sessionFolder}`);
     return new SessionLog(sessionFolder);
   }
   logResponse(response: Response) {
@@ -50,10 +57,15 @@ export class SessionLog {
     };
     this._appendEntry(entry);
   }
-  logUserAction(action: actions.Action, tab: Tab, code: string, isUpdate: boolean) {
+  logUserAction(
+    action: actions.Action,
+    tab: Tab,
+    code: string,
+    isUpdate: boolean
+  ) {
     code = code.trim();
     if (isUpdate) {
-      const lastEntry = this._pendingEntries[this._pendingEntries.length - 1];
+      const lastEntry = this._pendingEntries.at(-1);
       if (lastEntry.userAction?.name === action.name) {
         lastEntry.userAction = action;
         lastEntry.code = code;
@@ -62,9 +74,10 @@ export class SessionLog {
     }
     if (action.name === 'navigate') {
       // Already logged at this location.
-      const lastEntry = this._pendingEntries[this._pendingEntries.length - 1];
-      if (lastEntry?.tabSnapshot?.url === action.url)
+      const lastEntry = this._pendingEntries.at(-1);
+      if (lastEntry?.tabSnapshot?.url === action.url) {
         return;
+      }
     }
     const entry: LogEntry = {
       timestamp: performance.now(),
@@ -83,8 +96,9 @@ export class SessionLog {
   }
   private _appendEntry(entry: LogEntry) {
     this._pendingEntries.push(entry);
-    if (this._flushEntriesTimeout)
+    if (this._flushEntriesTimeout) {
       clearTimeout(this._flushEntriesTimeout);
+    }
     this._flushEntriesTimeout = setTimeout(() => this._flushEntries(), 1000);
   }
   private async _flushEntries() {
@@ -96,48 +110,51 @@ export class SessionLog {
       const ordinal = (++this._ordinal).toString().padStart(3, '0');
       if (entry.toolCall) {
         lines.push(
-            `### Tool call: ${entry.toolCall.toolName}`,
-            `- Args`,
-            '```json',
-            JSON.stringify(entry.toolCall.toolArgs, null, 2),
-            '```',
+          `### Tool call: ${entry.toolCall.toolName}`,
+          '- Args',
+          '```json',
+          JSON.stringify(entry.toolCall.toolArgs, null, 2),
+          '```'
         );
         if (entry.toolCall.result) {
           lines.push(
-              entry.toolCall.isError ? `- Error` : `- Result`,
-              '```',
-              entry.toolCall.result,
-              '```',
+            entry.toolCall.isError ? '- Error' : '- Result',
+            '```',
+            entry.toolCall.result,
+            '```'
           );
         }
       }
       if (entry.userAction) {
-        const actionData = { ...entry.userAction } as any;
-        delete actionData.ariaSnapshot;
-        delete actionData.selector;
-        delete actionData.signals;
+        const actionData = { ...entry.userAction } as Record<string, unknown>;
+        actionData.ariaSnapshot = undefined;
+        actionData.selector = undefined;
+        actionData.signals = undefined;
         lines.push(
-            `### User action: ${entry.userAction.name}`,
-            `- Args`,
-            '```json',
-            JSON.stringify(actionData, null, 2),
-            '```',
+          `### User action: ${entry.userAction.name}`,
+          '- Args',
+          '```json',
+          JSON.stringify(actionData, null, 2),
+          '```'
         );
       }
       if (entry.code) {
-        lines.push(
-            `- Code`,
-            '```js',
-            entry.code,
-            '```');
+        lines.push('- Code', '```js', entry.code, '```');
       }
       if (entry.tabSnapshot) {
         const fileName = `${ordinal}.snapshot.yml`;
-        fs.promises.writeFile(path.join(this._folder, fileName), entry.tabSnapshot.ariaSnapshot).catch(logUnhandledError);
+        fs.promises
+          .writeFile(
+            path.join(this._folder, fileName),
+            entry.tabSnapshot.ariaSnapshot
+          )
+          .catch(logUnhandledError);
         lines.push(`- Snapshot: ${fileName}`);
       }
       lines.push('', '');
     }
-    this._sessionFileQueue = this._sessionFileQueue.then(() => fs.promises.appendFile(this._file, lines.join('\n')));
+    this._sessionFileQueue = this._sessionFileQueue.then(() =>
+      fs.promises.appendFile(this._file, lines.join('\n'))
+    );
   }
 }

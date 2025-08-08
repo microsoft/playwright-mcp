@@ -39,11 +39,16 @@ export const DEFAULT_CONFIG: BenchmarkConfig = {
   servers: {
     original: {
       command: 'npx',
-      args: ['-y', '@tontoko/fast-playwright-mcp@latest', '--isolated', '--headless'],
+      args: [
+        '-y',
+        '@tontoko/fast-playwright-mcp@latest',
+        '--isolated',
+        '--headless',
+      ],
       env: {
         PWMCP_HEADLESS: 'true',
         PWMCP_DISABLE_WEB_SECURITY: 'true',
-        PWMCP_NO_SANDBOX: 'true'
+        PWMCP_NO_SANDBOX: 'true',
       },
     },
     fast: {
@@ -52,14 +57,14 @@ export const DEFAULT_CONFIG: BenchmarkConfig = {
       env: {
         PWMCP_HEADLESS: 'true',
         PWMCP_DISABLE_WEB_SECURITY: 'true',
-        PWMCP_NO_SANDBOX: 'true'
+        PWMCP_NO_SANDBOX: 'true',
       },
     },
   },
   timeouts: {
     initialization: 3000,
-    toolCall: 15000,
-    screenshotCall: 20000,
+    toolCall: 15_000,
+    screenshotCall: 20_000,
     serverSwitch: 2000,
     processCleanup: 1000,
   },

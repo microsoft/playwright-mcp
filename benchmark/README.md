@@ -228,10 +228,10 @@ benchmark/
 ├── types.ts               # Type definitions
 ├── scenarios.ts           # Predefined scenarios
 ├── utils.ts               # Utility functions
-├── MCPServerManager.ts    # Server lifecycle management
-├── BenchmarkEngine.ts     # Benchmark execution engine
-├── Reporter.ts            # Results reporting and analysis
-├── MCPBenchmark.ts        # Main orchestrator class
+├── mcp-server-manager.ts    # Server lifecycle management
+├── benchmark-engine.ts     # Benchmark execution engine
+├── reporter.ts            # Results reporting and analysis
+├── mcp-benchmark.ts        # Main orchestrator class
 ├── index.ts               # CLI entry point
 ├── tsconfig.json          # TypeScript configuration
 └── README.md              # This file

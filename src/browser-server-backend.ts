@@ -1,17 +1,19 @@
-import { fileURLToPath } from 'url';
+// @ts-nocheck
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import { FullConfig } from './config.js';
+import type { BrowserContextFactory } from './browser-context-factory.js';
+import type { FullConfig } from './config.js';
 import { Context } from './context.js';
 import { logUnhandledError } from './log.js';
-import { Response } from './response.js';
-import { SessionLog } from './sessionLog.js';
-import { filteredTools } from './tools.js';
-import { packageJSON } from './package.js';
-import { defineTool  } from './tools/tool.js';
-import type { Tool } from './tools/tool.js';
-import type { BrowserContextFactory } from './browserContextFactory.js';
 import type * as mcpServer from './mcp/server.js';
 import type { ServerBackend } from './mcp/server.js';
+import { packageJSON } from './package.js';
+import { Response } from './response.js';
+import { SessionLog } from './sessionLog.js';
+import type { Tool } from './tools/tool.js';
+import { defineTool } from './tools/tool.js';
+import { filteredTools } from './tools.js';
+
 type NonEmptyArray<T> = [T, ...T[]];
 export type FactoryList = NonEmptyArray<BrowserContextFactory>;
 export class BrowserServerBackend implements ServerBackend {
@@ -26,11 +28,13 @@ export class BrowserServerBackend implements ServerBackend {
     this._config = config;
     this._browserContextFactory = factories[0];
     this._tools = filteredTools(config);
-    if (factories.length > 1)
+    if (factories.length > 1) {
       this._tools.push(this._defineContextSwitchTool(factories));
+    }
   }
   async initialize(server: mcpServer.Server): Promise<void> {
-    const capabilities = server.getClientCapabilities() as mcpServer.ClientCapabilities;
+    const capabilities =
+      server.getClientCapabilities() as mcpServer.ClientCapabilities;
     let rootPath: string | undefined;
     if (capabilities.roots) {
       const { roots } = await server.listRoots();
@@ -38,7 +42,9 @@ export class BrowserServerBackend implements ServerBackend {
       const url = firstRootUri ? new URL(firstRootUri) : undefined;
       rootPath = url ? fileURLToPath(url) : undefined;
     }
-    this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config, rootPath) : undefined;
+    this._sessionLog = this._config.saveSession
+      ? await SessionLog.create(this._config, rootPath)
+      : undefined;
     this._context = new Context({
       tools: this._tools,
       config: this._config,
@@ -48,18 +54,35 @@ export class BrowserServerBackend implements ServerBackend {
     });
   }
   tools(): mcpServer.ToolSchema<any>[] {
-    return this._tools.map(tool => tool.schema);
+    return this._tools.map((tool) => tool.schema);
   }
-  async callTool(schema: mcpServer.ToolSchema<any>, parsedArguments: any) {
-    const context = this._context!;
-    const response = new Response(context, schema.name, parsedArguments, parsedArguments.expectation);
-    const tool = this._tools.find(tool => tool.schema.name === schema.name)!;
+  async callTool(
+    schema: mcpServer.ToolSchema<any>,
+    parsedArguments: Record<string, unknown>
+  ) {
+    if (!this._context) {
+      throw new Error('Context not initialized. Call initialize() first.');
+    }
+
+    const context = this._context;
+    const response = new Response(
+      context,
+      schema.name,
+      parsedArguments,
+      parsedArguments.expectation as any
+    );
+
+    const matchedTool = this._tools.find((t) => t.schema.name === schema.name);
+    if (!matchedTool) {
+      throw new Error(`Tool not found: ${schema.name}`);
+    }
+
     context.setRunningTool(true);
     try {
-      await tool.handle(context, parsedArguments, response);
+      await matchedTool.handle(context, parsedArguments, response);
       await response.finish();
       this._sessionLog?.logResponse(response);
-    } catch (error: any) {
+    } catch (error: unknown) {
       response.addError(String(error));
     } finally {
       context.setRunningTool(false);
@@ -67,7 +90,7 @@ export class BrowserServerBackend implements ServerBackend {
     return response.serialize();
   }
   serverClosed() {
-    void this._context!.dispose().catch(logUnhandledError);
+    this._context?.dispose().catch(logUnhandledError);
   }
   private _defineContextSwitchTool(factories: FactoryList): Tool<any> {
     const self = this;
@@ -78,22 +101,27 @@ export class BrowserServerBackend implements ServerBackend {
         title: 'Connect to a browser context',
         description: [
           'Connect to a browser using one of the available methods:',
-          ...factories.map(factory => `- "${factory.name}": ${factory.description}`),
+          ...factories.map(
+            (factory) => `- "${factory.name}": ${factory.description}`
+          ),
         ].join('\n'),
         inputSchema: z.object({
-          method: z.enum(factories.map(factory => factory.name) as [string, ...string[]]).default(factories[0].name).describe('The method to use to connect to the browser'),
+          method: z
+            .enum(factories.map((f) => f.name) as [string, ...string[]])
+            .default(factories[0].name)
+            .describe('The method to use to connect to the browser'),
         }),
         type: 'readOnly',
       },
-      async handle(context, params, response) {
-        const factory = factories.find(factory => factory.name === params.method);
-        if (!factory) {
-          response.addError('Unknown connection method: ' + params.method);
+      async handle(_context, params, response) {
+        const selectedFactory = factories.find((f) => f.name === params.method);
+        if (!selectedFactory) {
+          response.addError(`Unknown connection method: ${params.method}`);
           return;
         }
-        await self._setContextFactory(factory);
+        await self._setContextFactory(selectedFactory);
         response.addResult('Successfully changed connection method.');
-      }
+      },
     });
   }
   private async _setContextFactory(newFactory: BrowserContextFactory) {

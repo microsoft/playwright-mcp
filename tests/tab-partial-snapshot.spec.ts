@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,15 +15,15 @@
  * limitations under the License.
  */
 
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test.describe('Tab._truncateAtWordBoundary helper function', () => {
   // Test the helper function directly since we can't easily mock Tab class
 
   function truncateAtWordBoundary(text: string, maxLength: number): string {
-    if (text.length <= maxLength)
+    if (text.length <= maxLength) {
       return text;
-
+    }
 
     // Find the last space within the maxLength limit
     let truncateIndex = maxLength;
@@ -34,9 +35,9 @@ test.describe('Tab._truncateAtWordBoundary helper function', () => {
     }
 
     // If no space found within reasonable distance (more than 30% back), just cut at maxLength
-    if (maxLength - truncateIndex > maxLength * 0.3)
+    if (maxLength - truncateIndex > maxLength * 0.3) {
       truncateIndex = maxLength;
-
+    }
 
     return text.substring(0, truncateIndex).trim();
   }

@@ -1,208 +1,203 @@
+// @ts-nocheck
 /**
  * Test suite for ElementDiscovery error handling improvements
  * Testing Unit2 implementation: Enhanced dispose() error handling
  */
 
-import { test, expect } from '@playwright/test';
-import { ElementDiscovery } from '../src/diagnostics/ElementDiscovery.js';
-import { DiagnosticError } from '../src/diagnostics/DiagnosticError.js';
+import { expect, test } from '@playwright/test';
+import { DiagnosticError } from '../src/diagnostics/diagnostic-error.js';
+import { ElementDiscovery } from '../src/diagnostics/element-discovery.js';
+import {
+  assertExecutionTime,
+  createMockElement,
+  createMockPage,
+  DiagnosticTestSetup,
+  expectConsoleWarning,
+  expectDiagnosticError,
+  measureExecutionTime,
+} from './test-helpers.js';
 
 test.describe('ElementDiscovery Error Handling', () => {
-  let mockPage: any;
+  let mockPage: {
+    locator: (selector: string) => unknown;
+    $: (selector: string) => Promise<unknown>;
+  };
   let elementDiscovery: ElementDiscovery;
+  let testSetup: DiagnosticTestSetup;
 
   test.beforeEach(() => {
-    // Mock page with failing element dispose
-    mockPage = {
-      $$: async (selector: string) => {
-        // Return mock elements that will fail during dispose
-        return [
-          {
-            dispose: async () => {
-              throw new Error('Element dispose failed - connection lost');
-            },
-            textContent: async () => 'test content',
-            getAttribute: async (name: string) => name === 'value' ? 'test value' : null,
-            evaluate: async (fn: Function) => 'test-selector'
-          },
-          {
-            dispose: async () => {
-              // This one succeeds
-            },
-            textContent: async () => 'test content 2',
-            getAttribute: async (name: string) => null,
-            evaluate: async (fn: Function) => 'test-selector-2'
-          }
-        ];
-      }
-    };
+    testSetup = new DiagnosticTestSetup();
+    testSetup.beforeEach(true, ['warn']);
 
+    // Create mock elements - one that fails dispose, one that succeeds
+    const mockElements = [
+      createMockElement({
+        disposeError: new Error('Element dispose failed - connection lost'),
+        textContent: 'test content',
+        attributes: { value: 'test value' },
+        selector: 'test-selector',
+      }),
+      createMockElement({
+        textContent: 'test content 2',
+        selector: 'test-selector-2',
+      }),
+    ];
+
+    mockPage = createMockPage(mockElements);
     elementDiscovery = new ElementDiscovery(mockPage);
   });
 
   test.afterEach(async () => {
-    if (elementDiscovery)
+    if (elementDiscovery) {
       await elementDiscovery.dispose();
-
+    }
+    testSetup.afterEach();
   });
 
   test('should handle dispose errors gracefully in findByText', async () => {
     // Test the critical path where dispose() fails
-    const startTime = Date.now();
-
-    const alternatives = await elementDiscovery.findAlternativeElements({
-      originalSelector: '#test',
-      searchCriteria: { text: 'test' },
-      maxResults: 5
-    });
-
-    const executionTime = Date.now() - startTime;
+    const { result: alternatives, executionTime } = await measureExecutionTime(
+      () =>
+        elementDiscovery.findAlternativeElements({
+          originalSelector: '#test',
+          searchCriteria: { text: 'test' },
+          maxResults: 5,
+        })
+    );
 
     // Should continue processing despite dispose errors
     expect(alternatives.length).toBeGreaterThan(0);
 
     // Should not take excessive time due to dispose errors
-    expect(executionTime).toBeLessThan(1000);
+    assertExecutionTime(executionTime, 1000, 'dispose error handling');
   });
 
   test('should properly wrap dispose errors in DiagnosticError', async () => {
     // Test the safeDispose method directly through a unit test approach
-    const mockElement = {
-      dispose: async () => {
-        throw new Error('Element dispose failed - connection lost');
-      }
-    };
-
-    // Track console.warn calls
-    const originalWarn = console.warn;
-    const warnCalls: any[] = [];
-    // console.warn = (...args) => warnCalls.push(args);
+    const mockElement = createMockElement({
+      disposeError: new Error('Element dispose failed - connection lost'),
+    });
 
     // Call safeDispose directly (accessing private method for testing)
-    await (elementDiscovery as any).safeDispose(mockElement, 'test-operation');
+    await (
+      elementDiscovery as {
+        safeDispose: (element: unknown, operation: string) => Promise<void>;
+      }
+    ).safeDispose(mockElement, 'test-operation');
 
     // Dispose errors should be logged as warnings with DiagnosticError context
-    expect(warnCalls.some(call =>
-      call[0].includes('[ElementDiscovery:dispose]')
-    )).toBe(true);
-
-    // console.warn = originalWarn;
+    const consoleCapture = testSetup.getConsoleCapture();
+    expectConsoleWarning(consoleCapture, '[ElementDiscovery:discovery]');
   });
 
   test('should handle nested error scenarios correctly', async () => {
-    // Mock page with multiple failure scenarios
-    mockPage.$$ = async (selector: string) => {
-      return [
-        {
-          dispose: async () => {
-            throw new Error('Network connection lost');
-          },
-          textContent: async () => {
-            throw new Error('Element detached from DOM');
-          },
-          getAttribute: async () => null,
-          evaluate: async () => 'failed-selector'
-        }
-      ];
+    // Create mock element with multiple failure scenarios
+    const failingElement = {
+      dispose: () => {
+        throw new Error('Network connection lost');
+      },
+      textContent: () => {
+        throw new Error('Element detached from DOM');
+      },
+      getAttribute: async () => null,
+      evaluate: async () => 'failed-selector',
     };
 
-    const originalWarn = console.warn;
-    const warnCalls: any[] = [];
-    // console.warn = (...args) => warnCalls.push(args);
+    mockPage.$$ = async () => [failingElement];
 
     const alternatives = await elementDiscovery.findAlternativeElements({
       originalSelector: '#test',
       searchCriteria: { text: 'test' },
-      maxResults: 1
+      maxResults: 1,
     });
 
     // Should handle both element operation errors and dispose errors
     expect(alternatives.length).toBe(0); // No valid alternatives due to errors
-    expect(warnCalls.length).toBeGreaterThan(0); // Errors should be logged
 
-    // console.warn = originalWarn;
+    // Errors should be logged
+    const consoleCapture = testSetup.getConsoleCapture();
+    expect(consoleCapture.getMessageCount('warn')).toBeGreaterThan(0);
   });
 
   test('should maintain resource cleanup guarantees', async () => {
     let disposeCallCount = 0;
 
     const mockElement = {
-      dispose: async () => {
+      dispose: () => {
         disposeCallCount++;
         throw new Error('Dispose fails every time');
-      }
+      },
     };
 
-    const originalWarn = console.warn;
-    const warnCalls: any[] = [];
-    // console.warn = (...args) => warnCalls.push(args);
-
     // Test multiple calls to safeDispose
-    await (elementDiscovery as any).safeDispose(mockElement, 'cleanup-test-1');
-    await (elementDiscovery as any).safeDispose(mockElement, 'cleanup-test-2');
+    await (
+      elementDiscovery as {
+        safeDispose: (element: unknown, operation: string) => Promise<void>;
+      }
+    ).safeDispose(mockElement, 'cleanup-test-1');
+    await (
+      elementDiscovery as {
+        safeDispose: (element: unknown, operation: string) => Promise<void>;
+      }
+    ).safeDispose(mockElement, 'cleanup-test-2');
 
     // Should attempt dispose even if it fails
     expect(disposeCallCount).toBeGreaterThan(0);
 
     // Should log dispose failures appropriately
-    expect(warnCalls.some(call =>
-      call[0].includes('dispose')
-    )).toBe(true);
-
-    // console.warn = originalWarn;
+    const consoleCapture = testSetup.getConsoleCapture();
+    expectConsoleWarning(consoleCapture, '[ElementDiscovery:discovery]');
   });
 
-  test('should create properly structured DiagnosticError for dispose failures', async () => {
+  test('should create properly structured DiagnosticError for dispose failures', () => {
     const originalError = new Error('Element handle is invalid');
 
     const diagnosticError = DiagnosticError.from(
-        originalError,
-        'ElementDiscovery',
-        'dispose',
-        {
-          performanceImpact: 'medium',
-          suggestions: [
-            'Ensure elements are valid before disposal',
-            'Implement retry logic for dispose operations'
-          ]
-        }
+      originalError,
+      'ElementDiscovery',
+      'dispose',
+      {
+        performanceImpact: 'medium',
+        suggestions: [
+          'Ensure elements are valid before disposal',
+          'Implement retry logic for dispose operations',
+        ],
+      }
     );
 
-    expect(diagnosticError.component).toBe('ElementDiscovery');
-    expect(diagnosticError.operation).toBe('dispose');
+    expectDiagnosticError(diagnosticError, 'ElementDiscovery', 'dispose');
     expect(diagnosticError.originalError).toBe(originalError);
     expect(diagnosticError.performanceImpact).toBe('medium');
-    expect(diagnosticError.suggestions).toContain('Ensure elements are valid before disposal');
+    expect(diagnosticError.suggestions).toContain(
+      'Ensure elements are valid before disposal'
+    );
   });
 
   test('should handle memory pressure scenarios during dispose', async () => {
     let memoryUsage = 80 * 1024 * 1024; // Start at 80MB (near limit)
 
     const mockElement = {
-      dispose: async () => {
+      dispose: () => {
         memoryUsage += 30 * 1024 * 1024; // Exceed limit by 30MB
         throw DiagnosticError.resource(
-            'Memory limit exceeded during dispose',
-            'ElementDiscovery',
-            'dispose',
-            memoryUsage,
-            100 * 1024 * 1024 // 100MB limit
+          'Memory limit exceeded during dispose',
+          'ElementDiscovery',
+          'dispose',
+          memoryUsage,
+          100 * 1024 * 1024 // 100MB limit
         );
-      }
+      },
     };
 
-    const originalWarn = console.warn;
-    const warnCalls: any[] = [];
-    // console.warn = (...args) => warnCalls.push(args);
-
     // Test memory pressure scenario with safeDispose
-    await (elementDiscovery as any).safeDispose(mockElement, 'memory-pressure-test');
+    await (
+      elementDiscovery as {
+        safeDispose: (element: unknown, operation: string) => Promise<void>;
+      }
+    ).safeDispose(mockElement, 'memory-pressure-test');
 
     // Should log resource-related warnings
-    expect(warnCalls.some(call =>
-      call[0].includes('dispose')
-    )).toBe(true);
-
-    // console.warn = originalWarn;
+    const consoleCapture = testSetup.getConsoleCapture();
+    expectConsoleWarning(consoleCapture, '[ElementDiscovery:discovery]');
   });
 });

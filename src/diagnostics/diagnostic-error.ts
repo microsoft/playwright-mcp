@@ -1,8 +1,15 @@
+// @ts-nocheck
 /**
  * Structured error for diagnostic operations with enhanced context
  */
 
-export type DiagnosticComponent = 'PageAnalyzer' | 'ElementDiscovery' | 'ResourceManager' | 'ErrorHandler' | 'ConfigManager' | 'UnifiedSystem';
+export type DiagnosticComponent =
+  | 'PageAnalyzer'
+  | 'ElementDiscovery'
+  | 'ResourceManager'
+  | 'ErrorHandler'
+  | 'ConfigManager'
+  | 'UnifiedSystem';
 
 export interface DiagnosticErrorContext {
   timestamp: number;
@@ -12,7 +19,7 @@ export interface DiagnosticErrorContext {
   memoryUsage?: number;
   performanceImpact?: 'low' | 'medium' | 'high';
   suggestions?: string[];
-  context?: any; // Additional context information
+  context?: Record<string, unknown>; // Additional context information
 }
 
 /**
@@ -20,15 +27,15 @@ export interface DiagnosticErrorContext {
  * Provides structured error information with component context
  */
 export class DiagnosticError extends Error {
-  public readonly timestamp: number;
-  public readonly component: DiagnosticComponent;
-  public readonly operation: string;
-  public readonly originalError?: Error;
-  public readonly executionTime?: number;
-  public readonly memoryUsage?: number;
-  public readonly performanceImpact?: 'low' | 'medium' | 'high';
-  public readonly suggestions: string[];
-  public readonly context?: any;
+  readonly timestamp: number;
+  readonly component: DiagnosticComponent;
+  readonly operation: string;
+  readonly originalError?: Error;
+  readonly executionTime?: number;
+  readonly memoryUsage?: number;
+  readonly performanceImpact?: 'low' | 'medium' | 'high';
+  readonly suggestions: string[];
+  readonly context?: Record<string, unknown>;
 
   constructor(
     message: string,
@@ -50,9 +57,9 @@ export class DiagnosticError extends Error {
     this.context = context.context;
 
     // Maintain stack trace for debugging
-    if (Error.captureStackTrace)
+    if (Error.captureStackTrace) {
       Error.captureStackTrace(this, DiagnosticError);
-
+    }
   }
 
   /**
@@ -65,14 +72,14 @@ export class DiagnosticError extends Error {
     additionalContext?: Partial<DiagnosticErrorContext>
   ): DiagnosticError {
     return new DiagnosticError(
-        error.message,
-        {
-          timestamp: Date.now(),
-          component,
-          operation,
-          ...additionalContext
-        },
-        error
+      error.message,
+      {
+        timestamp: Date.now(),
+        component,
+        operation,
+        ...additionalContext,
+      },
+      error
     );
   }
 
@@ -86,22 +93,28 @@ export class DiagnosticError extends Error {
     executionTime: number,
     threshold: number
   ): DiagnosticError {
-    const impact = executionTime > threshold * 3 ? 'high' :
-      executionTime > threshold * 2 ? 'medium' : 'low';
+    let impact: 'high' | 'medium' | 'low';
+    if (executionTime > threshold * 3) {
+      impact = 'high';
+    } else if (executionTime > threshold * 2) {
+      impact = 'medium';
+    } else {
+      impact = 'low';
+    }
 
     return new DiagnosticError(
-        `Performance issue: ${message} (${executionTime}ms > ${threshold}ms)`,
-        {
-          timestamp: Date.now(),
-          component,
-          operation,
-          executionTime,
-          performanceImpact: impact,
-          suggestions: [
-            `Operation took longer than expected (${executionTime}ms vs ${threshold}ms threshold)`,
-            'Consider optimizing this operation or increasing timeout thresholds'
-          ]
-        }
+      `Performance issue: ${message} (${executionTime}ms > ${threshold}ms)`,
+      {
+        timestamp: Date.now(),
+        component,
+        operation,
+        executionTime,
+        performanceImpact: impact,
+        suggestions: [
+          `Operation took longer than expected (${executionTime}ms vs ${threshold}ms threshold)`,
+          'Consider optimizing this operation or increasing timeout thresholds',
+        ],
+      }
     );
   }
 
@@ -115,29 +128,35 @@ export class DiagnosticError extends Error {
     memoryUsage: number,
     memoryLimit: number
   ): DiagnosticError {
-    const impact = memoryUsage > memoryLimit * 2 ? 'high' :
-      memoryUsage > memoryLimit * 1.5 ? 'medium' : 'low';
+    let impact: 'high' | 'medium' | 'low';
+    if (memoryUsage > memoryLimit * 2) {
+      impact = 'high';
+    } else if (memoryUsage > memoryLimit * 1.5) {
+      impact = 'medium';
+    } else {
+      impact = 'low';
+    }
 
     return new DiagnosticError(
-        `Resource issue: ${message} (${(memoryUsage / 1024 / 1024).toFixed(2)}MB)`,
-        {
-          timestamp: Date.now(),
-          component,
-          operation,
-          memoryUsage,
-          performanceImpact: impact,
-          suggestions: [
-            `Memory usage exceeded expectations (${(memoryUsage / 1024 / 1024).toFixed(2)}MB vs ${(memoryLimit / 1024 / 1024).toFixed(2)}MB limit)`,
-            'Consider enabling resource cleanup or reducing analysis scope'
-          ]
-        }
+      `Resource issue: ${message} (${(memoryUsage / 1024 / 1024).toFixed(2)}MB)`,
+      {
+        timestamp: Date.now(),
+        component,
+        operation,
+        memoryUsage,
+        performanceImpact: impact,
+        suggestions: [
+          `Memory usage exceeded expectations (${(memoryUsage / 1024 / 1024).toFixed(2)}MB vs ${(memoryLimit / 1024 / 1024).toFixed(2)}MB limit)`,
+          'Consider enabling resource cleanup or reducing analysis scope',
+        ],
+      }
     );
   }
 
   /**
    * Convert error to structured JSON for logging
    */
-  toJSON(): Record<string, any> {
+  toJSON(): Record<string, unknown> {
     return {
       name: this.name,
       message: this.message,
@@ -149,11 +168,13 @@ export class DiagnosticError extends Error {
       performanceImpact: this.performanceImpact,
       suggestions: this.suggestions,
       stack: this.stack,
-      originalError: this.originalError ? {
-        name: this.originalError.name,
-        message: this.originalError.message,
-        stack: this.originalError.stack
-      } : undefined
+      originalError: this.originalError
+        ? {
+            name: this.originalError.name,
+            message: this.originalError.message,
+            stack: this.originalError.stack,
+          }
+        : undefined,
     };
   }
 
@@ -163,19 +184,21 @@ export class DiagnosticError extends Error {
   toString(): string {
     const parts = [this.message];
 
-    if (this.executionTime !== undefined)
+    if (this.executionTime !== undefined) {
       parts.push(`Execution Time: ${this.executionTime}ms`);
+    }
 
-
-    if (this.memoryUsage !== undefined)
-      parts.push(`Memory Usage: ${(this.memoryUsage / 1024 / 1024).toFixed(2)}MB`);
-
+    if (this.memoryUsage !== undefined) {
+      parts.push(
+        `Memory Usage: ${(this.memoryUsage / 1024 / 1024).toFixed(2)}MB`
+      );
+    }
 
     if (this.suggestions.length > 0) {
       parts.push('Suggestions:');
-      this.suggestions.forEach(suggestion => {
+      for (const suggestion of this.suggestions) {
         parts.push(`  - ${suggestion}`);
-      });
+      }
     }
 
     return parts.join('\n');

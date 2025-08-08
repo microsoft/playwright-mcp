@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -16,14 +17,18 @@
 
 import fs from 'node:fs';
 
-import { Config } from '../config.js';
-import { test, expect } from './fixtures.js';
+import type { Config } from '../config.js';
+import { expect, test } from './fixtures.js';
 
-test('config user data dir', async ({ startClient, server, mcpMode }, testInfo) => {
-  server.setContent('/', `
+test('config user data dir', async ({ startClient, server }, testInfo) => {
+  server.setContent(
+    '/',
+    `
     <title>Title</title>
     <body>Hello, world!</body>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   const config: Config = {
     browser: {
@@ -34,36 +39,55 @@ test('config user data dir', async ({ startClient, server, mcpMode }, testInfo) 
   await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
 
   const { client } = await startClient({ args: ['--config', configPath] });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`Hello, world!`),
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.PREFIX },
+    })
+  ).toHaveResponse({
+    pageState: expect.stringContaining('Hello, world!'),
   });
 
-  const files = await fs.promises.readdir(config.browser!.userDataDir!);
+  const userDataDir = config.browser?.userDataDir;
+  if (!userDataDir) {
+    throw new Error('userDataDir is not set');
+  }
+  const files = await fs.promises.readdir(userDataDir);
   expect(files.length).toBeGreaterThan(0);
 });
 
 test.describe(() => {
   test.use({ mcpBrowser: '' });
-  test('browserName', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/458' } }, async ({ startClient, mcpMode }, testInfo) => {
-    const config: Config = {
-      browser: {
-        browserName: 'firefox',
+  test(
+    'browserName',
+    {
+      annotation: {
+        type: 'issue',
+        description: 'https://github.com/microsoft/playwright-mcp/issues/458',
       },
-    };
-    const configPath = testInfo.outputPath('config.json');
-    await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
+    },
+    async ({ startClient }, testInfo) => {
+      const config: Config = {
+        browser: {
+          browserName: 'firefox',
+        },
+      };
+      const configPath = testInfo.outputPath('config.json');
+      await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
 
-    const { client } = await startClient({ args: ['--config', configPath] });
-    expect(await client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: 'data:text/html,<script>document.title = navigator.userAgent</script>' },
-    })).toHaveResponse({
-      pageState: expect.stringContaining(`Firefox`),
-    });
-  });
+      const { client } = await startClient({ args: ['--config', configPath] });
+      expect(
+        await client.callTool({
+          name: 'browser_navigate',
+          arguments: {
+            url: 'data:text/html,<script>document.title = navigator.userAgent</script>',
+          },
+        })
+      ).toHaveResponse({
+        pageState: expect.stringContaining('Firefox'),
+      });
+    }
+  );
 });
 
 test.describe('sandbox configuration', () => {

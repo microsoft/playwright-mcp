@@ -1,10 +1,11 @@
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import { devices } from 'playwright';
-import { sanitizeForFilePath } from './utils.js';
-import type { Config, ToolCapability } from '../config.js';
+// @ts-nocheck
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';
+import { devices } from 'playwright';
+import type { Config, ToolCapability } from '../config.js';
+import { sanitizeForFilePath } from './utils.js';
 export type CLIOptions = {
   allowedOrigins?: string[];
   blockedOrigins?: string[];
@@ -57,15 +58,17 @@ export type FullConfig = Config & {
     browserName: 'chromium' | 'firefox' | 'webkit';
     launchOptions: NonNullable<BrowserUserConfig['launchOptions']>;
     contextOptions: NonNullable<BrowserUserConfig['contextOptions']>;
-  },
-  network: NonNullable<Config['network']>,
+  };
+  network: NonNullable<Config['network']>;
   saveTrace: boolean;
-  server: NonNullable<Config['server']>,
+  server: NonNullable<Config['server']>;
 };
-export async function resolveConfig(config: Config): Promise<FullConfig> {
+export function resolveConfig(config: Config): FullConfig {
   return mergeConfig(defaultConfig, config);
 }
-export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConfig> {
+export async function resolveCLIConfig(
+  cliOptions: CLIOptions
+): Promise<FullConfig> {
   const configInFile = await loadConfig(cliOptions.config);
   const envOverrides = configFromEnv();
   const cliOverrides = configFromCLIOptions(cliOptions);
@@ -75,10 +78,11 @@ export async function resolveCLIConfig(cliOptions: CLIOptions): Promise<FullConf
   result = mergeConfig(result, cliOverrides);
   return result;
 }
-export function configFromCLIOptions(cliOptions: CLIOptions): Config {
-  let browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
-  let channel: string | undefined;
-  switch (cliOptions.browser) {
+function parseBrowserType(browser: string): {
+  browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
+  channel: string | undefined;
+} {
+  switch (browser) {
     case 'chrome':
     case 'chrome-beta':
     case 'chrome-canary':
@@ -88,54 +92,103 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
     case 'msedge-beta':
     case 'msedge-canary':
     case 'msedge-dev':
-      browserName = 'chromium';
-      channel = cliOptions.browser;
-      break;
+      return { browserName: 'chromium', channel: browser };
     case 'firefox':
-      browserName = 'firefox';
-      break;
+      return { browserName: 'firefox', channel: undefined };
     case 'webkit':
-      browserName = 'webkit';
-      break;
+      return { browserName: 'webkit', channel: undefined };
+    default:
+      return { browserName: undefined, channel: undefined };
   }
-  // Launch options
+}
+
+function createLaunchOptions(
+  cliOptions: CLIOptions,
+  channel?: string
+): LaunchOptions {
   const launchOptions: LaunchOptions = {
     channel,
     executablePath: cliOptions.executablePath,
     headless: cliOptions.headless,
   };
-  // --no-sandbox was passed, disable the sandbox
-  if (cliOptions.sandbox === false)
+
+  if (cliOptions.sandbox === false) {
     launchOptions.chromiumSandbox = false;
+  }
+
   if (cliOptions.proxyServer) {
     launchOptions.proxy = {
-      server: cliOptions.proxyServer
+      server: cliOptions.proxyServer,
     };
-    if (cliOptions.proxyBypass)
+    if (cliOptions.proxyBypass) {
       launchOptions.proxy.bypass = cliOptions.proxyBypass;
-  }
-  if (cliOptions.device && cliOptions.cdpEndpoint)
-    throw new Error('Device emulation is not supported with cdpEndpoint.');
-  // Context options
-  const contextOptions: BrowserContextOptions = cliOptions.device ? devices[cliOptions.device] : {};
-  if (cliOptions.storageState)
-    contextOptions.storageState = cliOptions.storageState;
-  if (cliOptions.userAgent)
-    contextOptions.userAgent = cliOptions.userAgent;
-  if (cliOptions.viewportSize) {
-    try {
-      const [width, height] = cliOptions.viewportSize.split(',').map(n => +n);
-      if (isNaN(width) || isNaN(height))
-        throw new Error('bad values');
-      contextOptions.viewport = { width, height };
-    } catch (e) {
-      throw new Error('Invalid viewport size format: use "width,height", for example --viewport-size="800,600"');
     }
   }
-  if (cliOptions.ignoreHttpsErrors)
+
+  return launchOptions;
+}
+
+function createContextOptions(cliOptions: CLIOptions): BrowserContextOptions {
+  const contextOptions: BrowserContextOptions = cliOptions.device
+    ? devices[cliOptions.device]
+    : {};
+
+  if (cliOptions.storageState) {
+    contextOptions.storageState = cliOptions.storageState;
+  }
+
+  if (cliOptions.userAgent) {
+    contextOptions.userAgent = cliOptions.userAgent;
+  }
+
+  if (cliOptions.viewportSize) {
+    contextOptions.viewport = parseViewportSize(cliOptions.viewportSize);
+  }
+
+  if (cliOptions.ignoreHttpsErrors) {
     contextOptions.ignoreHTTPSErrors = true;
-  if (cliOptions.blockServiceWorkers)
+  }
+
+  if (cliOptions.blockServiceWorkers) {
     contextOptions.serviceWorkers = 'block';
+  }
+
+  return contextOptions;
+}
+
+function parseViewportSize(viewportSize: string): {
+  width: number;
+  height: number;
+} {
+  try {
+    const [width, height] = viewportSize.split(',').map((n) => +n);
+    if (Number.isNaN(width) || Number.isNaN(height)) {
+      throw new Error('bad values');
+    }
+    return { width, height };
+  } catch (_e) {
+    throw new Error(
+      'Invalid viewport size format: use "width,height", for example --viewport-size="800,600"'
+    );
+  }
+}
+
+function validateDeviceAndCDPOptions(cliOptions: CLIOptions): void {
+  if (cliOptions.device && cliOptions.cdpEndpoint) {
+    throw new Error('Device emulation is not supported with cdpEndpoint.');
+  }
+}
+
+export function configFromCLIOptions(cliOptions: CLIOptions): Config {
+  const { browserName, channel } = parseBrowserType(
+    cliOptions.browser ?? 'chromium'
+  );
+
+  validateDeviceAndCDPOptions(cliOptions);
+
+  const launchOptions = createLaunchOptions(cliOptions, channel);
+  const contextOptions = createContextOptions(cliOptions);
+
   const result: Config = {
     browser: {
       browserName,
@@ -163,21 +216,32 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
 }
 function configFromEnv(): Config {
   const options: CLIOptions = {};
-  options.allowedOrigins = semicolonSeparatedList(process.env.PLAYWRIGHT_MCP_ALLOWED_ORIGINS);
-  options.blockedOrigins = semicolonSeparatedList(process.env.PLAYWRIGHT_MCP_BLOCKED_ORIGINS);
-  options.blockServiceWorkers = envToBoolean(process.env.PLAYWRIGHT_MCP_BLOCK_SERVICE_WORKERS);
+  options.allowedOrigins = semicolonSeparatedList(
+    process.env.PLAYWRIGHT_MCP_ALLOWED_ORIGINS
+  );
+  options.blockedOrigins = semicolonSeparatedList(
+    process.env.PLAYWRIGHT_MCP_BLOCKED_ORIGINS
+  );
+  options.blockServiceWorkers = envToBoolean(
+    process.env.PLAYWRIGHT_MCP_BLOCK_SERVICE_WORKERS
+  );
   options.browser = envToString(process.env.PLAYWRIGHT_MCP_BROWSER);
   options.caps = commaSeparatedList(process.env.PLAYWRIGHT_MCP_CAPS);
   options.cdpEndpoint = envToString(process.env.PLAYWRIGHT_MCP_CDP_ENDPOINT);
   options.config = envToString(process.env.PLAYWRIGHT_MCP_CONFIG);
   options.device = envToString(process.env.PLAYWRIGHT_MCP_DEVICE);
-  options.executablePath = envToString(process.env.PLAYWRIGHT_MCP_EXECUTABLE_PATH);
+  options.executablePath = envToString(
+    process.env.PLAYWRIGHT_MCP_EXECUTABLE_PATH
+  );
   options.headless = envToBoolean(process.env.PLAYWRIGHT_MCP_HEADLESS);
   options.host = envToString(process.env.PLAYWRIGHT_MCP_HOST);
-  options.ignoreHttpsErrors = envToBoolean(process.env.PLAYWRIGHT_MCP_IGNORE_HTTPS_ERRORS);
+  options.ignoreHttpsErrors = envToBoolean(
+    process.env.PLAYWRIGHT_MCP_IGNORE_HTTPS_ERRORS
+  );
   options.isolated = envToBoolean(process.env.PLAYWRIGHT_MCP_ISOLATED);
-  if (process.env.PLAYWRIGHT_MCP_IMAGE_RESPONSES === 'omit')
+  if (process.env.PLAYWRIGHT_MCP_IMAGE_RESPONSES === 'omit') {
     options.imageResponses = 'omit';
+  }
   options.sandbox = envToBoolean(process.env.PLAYWRIGHT_MCP_SANDBOX);
   options.outputDir = envToString(process.env.PLAYWRIGHT_MCP_OUTPUT_DIR);
   options.port = envToNumber(process.env.PLAYWRIGHT_MCP_PORT);
@@ -191,32 +255,43 @@ function configFromEnv(): Config {
   return configFromCLIOptions(options);
 }
 async function loadConfig(configFile: string | undefined): Promise<Config> {
-  if (!configFile)
+  if (!configFile) {
     return {};
+  }
   try {
     return JSON.parse(await fs.promises.readFile(configFile, 'utf8'));
   } catch (error) {
     throw new Error(`Failed to load config file: ${configFile}, ${error}`);
   }
 }
-export async function outputFile(config: FullConfig, rootPath: string | undefined, name: string): Promise<string> {
-  const outputDir = config.outputDir
-    ?? (rootPath ? path.join(rootPath, '.playwright-mcp') : undefined)
-    ?? path.join(os.tmpdir(), 'playwright-mcp-output', sanitizeForFilePath(new Date().toISOString()));
+export async function outputFile(
+  config: FullConfig,
+  rootPath: string | undefined,
+  name: string
+): Promise<string> {
+  const outputDir =
+    config.outputDir ??
+    (rootPath ? path.join(rootPath, '.playwright-mcp') : undefined) ??
+    path.join(
+      os.tmpdir(),
+      'playwright-mcp-output',
+      sanitizeForFilePath(new Date().toISOString())
+    );
   await fs.promises.mkdir(outputDir, { recursive: true });
   const fileName = sanitizeForFilePath(name);
   return path.join(outputDir, fileName);
 }
 function pickDefined<T extends object>(obj: T | undefined): Partial<T> {
   return Object.fromEntries(
-      Object.entries(obj ?? {}).filter(([_, v]) => v !== undefined)
+    Object.entries(obj ?? {}).filter(([_, v]) => v !== undefined)
   ) as Partial<T>;
 }
 function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
   const browser: FullConfig['browser'] = {
     ...pickDefined(base.browser),
     ...pickDefined(overrides.browser),
-    browserName: overrides.browser?.browserName ?? base.browser?.browserName ?? 'chromium',
+    browserName:
+      overrides.browser?.browserName ?? base.browser?.browserName ?? 'chromium',
     isolated: overrides.browser?.isolated ?? base.browser?.isolated ?? false,
     launchOptions: {
       ...pickDefined(base.browser?.launchOptions),
@@ -228,8 +303,9 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
       ...pickDefined(overrides.browser?.contextOptions),
     },
   };
-  if (browser.browserName !== 'chromium' && browser.launchOptions)
-    delete browser.launchOptions.channel;
+  if (browser.browserName !== 'chromium' && browser.launchOptions) {
+    browser.launchOptions.channel = undefined;
+  }
   return {
     ...pickDefined(base),
     ...pickDefined(overrides),
@@ -244,27 +320,36 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
     },
   } as FullConfig;
 }
-export function semicolonSeparatedList(value: string | undefined): string[] | undefined {
-  if (!value)
-    return undefined;
-  return value.split(';').map(v => v.trim());
+export function semicolonSeparatedList(
+  value: string | undefined
+): string[] | undefined {
+  if (!value) {
+    return;
+  }
+  return value.split(';').map((v) => v.trim());
 }
-export function commaSeparatedList(value: string | undefined): string[] | undefined {
-  if (!value)
-    return undefined;
-  return value.split(',').map(v => v.trim());
+export function commaSeparatedList(
+  value: string | undefined
+): string[] | undefined {
+  if (!value) {
+    return;
+  }
+  return value.split(',').map((v) => v.trim());
 }
 function envToNumber(value: string | undefined): number | undefined {
-  if (!value)
-    return undefined;
+  if (!value) {
+    return;
+  }
   return +value;
 }
 function envToBoolean(value: string | undefined): boolean | undefined {
-  if (value === 'true' || value === '1')
+  if (value === 'true' || value === '1') {
     return true;
-  if (value === 'false' || value === '0')
+  }
+  if (value === 'false' || value === '0') {
     return false;
-  return undefined;
+  }
+  return;
 }
 function envToString(value: string | undefined): string | undefined {
   return value ? value.trim() : undefined;

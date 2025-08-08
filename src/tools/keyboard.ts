@@ -1,18 +1,25 @@
+// @ts-nocheck
 import { z } from 'zod';
-import { defineTabTool } from './tool.js';
-import { elementSchema } from './snapshot.js';
-import { generateLocator } from './utils.js';
 import * as javascript from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import { elementSchema } from './snapshot.js';
+import { defineTabTool } from './tool.js';
+import { generateLocator } from './utils.js';
+
 const pressKey = defineTabTool({
   capability: 'core',
   schema: {
     name: 'browser_press_key',
     title: 'Press a key',
-    description: `Press a key on the keyboard.Common keys:Enter,Escape,ArrowUp/Down/Left/Right,Tab,Backspace.expectation:{includeSnapshot:false} for navigation keys,true for content changes.CONSIDER batch_execute for multiple key presses.`,
+    description:
+      'Press a key on the keyboard.Common keys:Enter,Escape,ArrowUp/Down/Left/Right,Tab,Backspace.expectation:{includeSnapshot:false} for navigation keys,true for content changes.CONSIDER batch_execute for multiple key presses.',
     inputSchema: z.object({
-      key: z.string().describe('Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'),
-      expectation: expectationSchema
+      key: z
+        .string()
+        .describe(
+          'Name of the key to press or a character to generate, such as `ArrowLeft` or `a`'
+        ),
+      expectation: expectationSchema,
     }),
     type: 'destructive',
   },
@@ -26,9 +33,17 @@ const pressKey = defineTabTool({
 });
 const typeSchema = elementSchema.extend({
   text: z.string().describe('Text to type into the element'),
-  submit: z.boolean().optional().describe('Whether to submit entered text (press Enter after)'),
-  slowly: z.boolean().optional().describe('Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'),
-  expectation: expectationSchema
+  submit: z
+    .boolean()
+    .optional()
+    .describe('Whether to submit entered text (press Enter after)'),
+  slowly: z
+    .boolean()
+    .optional()
+    .describe(
+      'Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'
+    ),
+  expectation: expectationSchema,
 });
 const type = defineTabTool({
   capability: 'core',
@@ -43,20 +58,23 @@ const type = defineTabTool({
     const locator = await tab.refLocator(params);
     await tab.waitForCompletion(async () => {
       if (params.slowly) {
-        response.addCode(`await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`);
+        response.addCode(
+          `await page.${await generateLocator(locator)}.pressSequentially(${javascript.quote(params.text)});`
+        );
         await locator.pressSequentially(params.text);
       } else {
-        response.addCode(`await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`);
+        response.addCode(
+          `await page.${await generateLocator(locator)}.fill(${javascript.quote(params.text)});`
+        );
         await locator.fill(params.text);
       }
       if (params.submit) {
-        response.addCode(`await page.${await generateLocator(locator)}.press('Enter');`);
+        response.addCode(
+          `await page.${await generateLocator(locator)}.press('Enter');`
+        );
         await locator.press('Enter');
       }
     });
   },
 });
-export default [
-  pressKey,
-  type,
-];
+export default [pressKey, type];

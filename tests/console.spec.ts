@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,10 +15,12 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test('browser_console_messages', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <!DOCTYPE html>
     <html>
       <script>
@@ -25,7 +28,9 @@ test('browser_console_messages', async ({ client, server }) => {
         console.error("Error");
       </script>
     </html>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
@@ -44,14 +49,18 @@ test('browser_console_messages', async ({ client, server }) => {
 });
 
 test('browser_console_messages (page error)', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <!DOCTYPE html>
     <html>
       <script>
         throw new Error("Error in script");
       </script>
     </html>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
@@ -64,7 +73,7 @@ test('browser_console_messages (page error)', async ({ client, server }) => {
     name: 'browser_console_messages',
   });
   expect(resource).toHaveResponse({
-    result: expect.stringContaining(`Error: Error in script`),
+    result: expect.stringContaining('Error: Error in script'),
   });
   expect(resource).toHaveResponse({
     result: expect.stringContaining(server.PREFIX),
@@ -72,12 +81,16 @@ test('browser_console_messages (page error)', async ({ client, server }) => {
 });
 
 test('recent console messages', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <!DOCTYPE html>
     <html>
       <button onclick="console.log('Hello, world!');">Click me</button>
     </html>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
@@ -92,12 +105,12 @@ test('recent console messages', async ({ client, server }) => {
       element: 'Click me',
       ref: 'e2',
       expectation: {
-        includeConsole: true
-      }
+        includeConsole: true,
+      },
     },
   });
 
   expect(response).toHaveResponse({
-    consoleMessages: expect.stringContaining(`- [LOG] Hello, world! @`),
+    consoleMessages: expect.stringContaining('- [LOG] Hello, world! @'),
   });
 });

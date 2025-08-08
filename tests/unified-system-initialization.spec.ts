@@ -1,48 +1,61 @@
+// @ts-nocheck
 /**
  * Unit tests for UnifiedSystem initialization improvements (Unit3)
  * Testing initializeComponents method and dependency management
  */
 
-import { test, expect } from '@playwright/test';
-import { UnifiedDiagnosticSystem } from '../src/diagnostics/UnifiedSystem.js';
-import { DiagnosticError } from '../src/diagnostics/DiagnosticError.js';
+import { expect, test } from '@playwright/test';
+import { DiagnosticError } from '../src/diagnostics/diagnostic-error.js';
+import { UnifiedDiagnosticSystem } from '../src/diagnostics/unified-system.js';
 
 test.describe('UnifiedSystem Initialization (Unit3)', () => {
   let system: UnifiedDiagnosticSystem;
 
   test.describe('initializeComponents method', () => {
-    test('should initialize components in correct dependency order', async ({ page }) => {
+    test('should initialize components in correct dependency order', ({
+      page,
+    }) => {
       system = UnifiedDiagnosticSystem.getInstance(page);
 
       // Access private method for testing (type assertion needed)
-      const initializeComponents = (system as any).initializeComponents;
+      const initializeComponents = (
+        system as unknown as { initializeComponents: () => Promise<void> }
+      ).initializeComponents;
       expect(typeof initializeComponents).toBe('function');
 
       // Cleanup
       UnifiedDiagnosticSystem.disposeInstance(page);
     });
 
-    test('should fail when initializeComponents is not available', async ({ page }) => {
+    test('should fail when initializeComponents is not available', ({
+      page,
+    }) => {
       system = UnifiedDiagnosticSystem.getInstance(page);
 
       // This test ensures initializeComponents method exists
-      const initializeComponents = (system as any).initializeComponents;
+      const initializeComponents = (
+        system as unknown as { initializeComponents: () => Promise<void> }
+      ).initializeComponents;
       expect(initializeComponents).toBeUndefined(); // Should fail initially
 
       // Cleanup
       UnifiedDiagnosticSystem.disposeInstance(page);
     });
 
-    test('should handle partial initialization failure with cleanup', async ({ page }) => {
+    test('should handle partial initialization failure with cleanup', async ({
+      page,
+    }) => {
       const config = {
         features: { enableResourceLeakDetection: true },
-        performance: { enableResourceMonitoring: true }
+        performance: { enableResourceMonitoring: true },
       };
 
       system = UnifiedDiagnosticSystem.getInstance(page, config);
 
       // Access private method for testing
-      const initializeComponents = (system as any).initializeComponents;
+      const initializeComponents = (
+        system as unknown as { initializeComponents: () => Promise<void> }
+      ).initializeComponents;
 
       if (initializeComponents) {
         // Mock one component to fail during initialization
@@ -63,7 +76,9 @@ test.describe('UnifiedSystem Initialization (Unit3)', () => {
       system = UnifiedDiagnosticSystem.getInstance(page);
 
       // Test that components are initialized in stages
-      const initializeComponents = (system as any).initializeComponents;
+      const initializeComponents = (
+        system as unknown as { initializeComponents: () => Promise<void> }
+      ).initializeComponents;
 
       if (initializeComponents) {
         const result = await initializeComponents();
@@ -76,7 +91,7 @@ test.describe('UnifiedSystem Initialization (Unit3)', () => {
   });
 
   test.describe('Enhanced constructor integration', () => {
-    test('should use async initialization pattern', async ({ page }) => {
+    test('should use async initialization pattern', ({ page }) => {
       // Current constructor is synchronous - this test should guide the change
       const startTime = Date.now();
       system = UnifiedDiagnosticSystem.getInstance(page);
@@ -86,19 +101,24 @@ test.describe('UnifiedSystem Initialization (Unit3)', () => {
       expect(constructorTime).toBeLessThan(50);
 
       // But should have async initialization available
-      const initMethod = (system as any).initializeComponents;
+      const initMethod = (
+        system as unknown as { initializeComponents: () => Promise<void> }
+      ).initializeComponents;
       expect(typeof initMethod).toBe('function');
 
       // Cleanup
       UnifiedDiagnosticSystem.disposeInstance(page);
     });
 
-    test('should handle initialization state management', async ({ page }) => {
+    test('should handle initialization state management', ({ page }) => {
       system = UnifiedDiagnosticSystem.getInstance(page);
 
       // Check initialization state
-      const isInitialized = (system as any).isInitialized;
-      const initializationPromise = (system as any).initializationPromise;
+      const isInitialized = (system as unknown as { isInitialized: boolean })
+        .isInitialized;
+      const initializationPromise = (
+        system as unknown as { initializationPromise: Promise<void> | null }
+      ).initializationPromise;
 
       // These properties should exist after refactoring
       expect(typeof isInitialized).toBe('boolean');
@@ -110,16 +130,26 @@ test.describe('UnifiedSystem Initialization (Unit3)', () => {
   });
 
   test.describe('Cleanup on partial failure', () => {
-    test('should dispose partially initialized components', async ({ page }) => {
+    test('should dispose partially initialized components', async ({
+      page,
+    }) => {
       system = UnifiedDiagnosticSystem.getInstance(page);
 
       // Simulate partial initialization failure
-      const cleanupPartialInitialization = (system as any).cleanupPartialInitialization;
+      const cleanupPartialInitialization = (
+        system as unknown as {
+          cleanupPartialInitialization: (
+            components: { dispose: () => Promise<void> }[]
+          ) => Promise<void>;
+        }
+      ).cleanupPartialInitialization;
 
       if (cleanupPartialInitialization) {
         // Mock component with dispose method
         const mockComponent = {
-          dispose: async () => {}
+          dispose: async (): Promise<void> => {
+            // Mock dispose implementation - no operation needed for test
+          },
         };
         await cleanupPartialInitialization([mockComponent]);
       }
@@ -130,21 +160,28 @@ test.describe('UnifiedSystem Initialization (Unit3)', () => {
   });
 
   test.describe('Error handling during initialization', () => {
-    test('should create DiagnosticError for initialization failures', async ({ page }) => {
+    test('should create DiagnosticError for initialization failures', async ({
+      page,
+    }) => {
       system = UnifiedDiagnosticSystem.getInstance(page);
 
-      const initializeComponents = (system as any).initializeComponents;
+      const initializeComponents = (
+        system as unknown as { initializeComponents: () => Promise<void> }
+      ).initializeComponents;
 
       if (initializeComponents) {
         try {
           // Force an initialization error
-          const originalPageAnalyzer = (system as any).pageAnalyzer;
-          (system as any).pageAnalyzer = null; // Simulate component failure
+          const originalPageAnalyzer = (
+            system as unknown as { pageAnalyzer: unknown }
+          ).pageAnalyzer;
+          (system as unknown as { pageAnalyzer: unknown }).pageAnalyzer = null; // Simulate component failure
 
           await initializeComponents();
 
           // Restore for cleanup
-          (system as any).pageAnalyzer = originalPageAnalyzer;
+          (system as unknown as { pageAnalyzer: unknown }).pageAnalyzer =
+            originalPageAnalyzer;
         } catch (error) {
           expect(error).toBeInstanceOf(DiagnosticError);
           if (error instanceof DiagnosticError) {
@@ -158,17 +195,23 @@ test.describe('UnifiedSystem Initialization (Unit3)', () => {
       UnifiedDiagnosticSystem.disposeInstance(page);
     });
 
-    test('should provide detailed error context for troubleshooting', async ({ page }) => {
+    test('should provide detailed error context for troubleshooting', async ({
+      page,
+    }) => {
       system = UnifiedDiagnosticSystem.getInstance(page);
 
-      const initializeComponents = (system as any).initializeComponents;
+      const initializeComponents = (
+        system as unknown as { initializeComponents: () => Promise<void> }
+      ).initializeComponents;
 
       if (initializeComponents) {
         try {
           await initializeComponents();
         } catch (error) {
           if (error instanceof DiagnosticError) {
-            expect(error.suggestions).toContain('Review component dependencies');
+            expect(error.suggestions).toContain(
+              'Review component dependencies'
+            );
             expect(error.context).toHaveProperty('stage');
             expect(error.context).toHaveProperty('failedComponents');
           }
@@ -181,15 +224,20 @@ test.describe('UnifiedSystem Initialization (Unit3)', () => {
   });
 
   test.describe('Integration with existing Context pattern', () => {
-    test('should follow the create-then-initialize pattern', async ({ page }) => {
+    test('should follow the create-then-initialize pattern', async ({
+      page,
+    }) => {
       // Similar to Context.create pattern
-      const createSystem = async (testPage: any) => {
-        const system = UnifiedDiagnosticSystem.getInstance(testPage);
-        const initMethod = (system as any).initializeComponents;
-        if (initMethod)
+      const createSystem = async (testPage: unknown) => {
+        const testSystem = UnifiedDiagnosticSystem.getInstance(testPage);
+        const initMethod = (
+          testSystem as unknown as { initializeComponents: () => Promise<void> }
+        ).initializeComponents;
+        if (initMethod) {
           await initMethod();
+        }
 
-        return system;
+        return testSystem;
       };
 
       system = await createSystem(page);

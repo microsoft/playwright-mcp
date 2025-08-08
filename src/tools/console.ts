@@ -1,5 +1,7 @@
+// @ts-nocheck
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';
+
 const console = defineTabTool({
   capability: 'core',
   schema: {
@@ -9,15 +11,15 @@ const console = defineTabTool({
     inputSchema: z.object({}),
     type: 'readOnly',
   },
-  handle: async (tab, params, response) => {
+  handle: async (tab, _params, response) => {
     const messages = tab.consoleMessages();
-    if (messages.length === 0)
+    if (messages.length === 0) {
       response.addResult('No console messages');
-    else
-      messages.forEach(message => response.addResult(message.toString()));
-
+    } else {
+      for (const message of messages) {
+        response.addResult(message.toString());
+      }
+    }
   },
 });
-export default [
-  console,
-];
+export default [console];

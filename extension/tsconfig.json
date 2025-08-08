@@ -8,13 +8,10 @@
     "rootDir": "src",
     "outDir": "./lib",
     "resolveJsonModule": true,
+    "types": ["chrome"],
     "jsx": "react-jsx",
     "jsxImportSource": "react"
   },
-  "include": [
-    "src",
-  ],
-  "exclude": [
-    "src/ui",
-  ]
+  "include": ["src"],
+  "exclude": ["src/ui"]
 }

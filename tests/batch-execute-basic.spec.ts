@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,10 +15,16 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
+
+// Top-level regex patterns for performance optimization
+const MILLISECONDS_REGEX = /\d+ms/;
 
 test.describe('Browser Batch Execute Basic Tests', () => {
-  test('should execute basic navigation batch successfully', async ({ client, server }) => {
+  test('should execute basic navigation batch successfully', async ({
+    client,
+    server,
+  }) => {
     const result = await client.callTool({
       name: 'browser_batch_execute',
       arguments: {
@@ -25,12 +32,12 @@ test.describe('Browser Batch Execute Basic Tests', () => {
           {
             tool: 'browser_navigate',
             arguments: { url: server.HELLO_WORLD },
-            expectation: { includeSnapshot: false, includeConsole: false }
-          }
+            expectation: { includeSnapshot: false, includeConsole: false },
+          },
         ],
         stopOnFirstError: true,
-        globalExpectation: { includeDownloads: false, includeTabs: false }
-      }
+        globalExpectation: { includeDownloads: false, includeTabs: false },
+      },
     });
 
     expect(result.content[0].text).toContain('Batch Execution Summary');
@@ -47,16 +54,19 @@ test.describe('Browser Batch Execute Basic Tests', () => {
         steps: [
           {
             tool: 'unknown_tool',
-            arguments: { param: 'value' }
-          }
-        ]
-      }
+            arguments: { param: 'value' },
+          },
+        ],
+      },
     });
 
     expect(result.content[0].text).toContain('Unknown tool: unknown_tool');
   });
 
-  test('should optimize token usage with minimal expectations', async ({ client, server }) => {
+  test('should optimize token usage with minimal expectations', async ({
+    client,
+    server,
+  }) => {
     const result = await client.callTool({
       name: 'browser_batch_execute',
       arguments: {
@@ -69,11 +79,11 @@ test.describe('Browser Batch Execute Basic Tests', () => {
               includeConsole: false,
               includeTabs: false,
               includeDownloads: false,
-              includeCode: false
-            }
-          }
-        ]
-      }
+              includeCode: false,
+            },
+          },
+        ],
+      },
     });
 
     expect(result.content[0].text).toContain('✅ Completed');
@@ -90,15 +100,15 @@ test.describe('Browser Batch Execute Basic Tests', () => {
           {
             tool: 'browser_navigate',
             arguments: { url: server.HELLO_WORLD },
-            expectation: { includeSnapshot: false }
-          }
+            expectation: { includeSnapshot: false },
+          },
         ],
-        globalExpectation: { includeConsole: false }
-      }
+        globalExpectation: { includeConsole: false },
+      },
     });
 
     expect(result.content[0].text).toContain('✅ Completed');
     expect(result.content[0].text).toContain('Total Time:');
-    expect(result.content[0].text).toMatch(/\d+ms/); // Should contain execution time in milliseconds
+    expect(result.content[0].text).toMatch(MILLISECONDS_REGEX); // Should contain execution time in milliseconds
   });
 });

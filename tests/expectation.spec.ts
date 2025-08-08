@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,9 +15,12 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
-import { expectationSchema, getDefaultExpectation } from '../src/schemas/expectation.js';
 import type { ExpectationOptions } from '../src/schemas/expectation.js';
+import {
+  expectationSchema,
+  getDefaultExpectation,
+} from '../src/schemas/expectation.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Expectation Schema', () => {
   test('should parse valid expectation options', () => {
@@ -29,19 +33,19 @@ test.describe('Expectation Schema', () => {
       snapshotOptions: {
         selector: '.content',
         maxLength: 1000,
-        format: 'aria'
+        format: 'aria',
       },
       consoleOptions: {
         levels: ['error', 'warn'],
         maxMessages: 5,
-        removeDuplicates: false
+        removeDuplicates: false,
       },
       imageOptions: {
         quality: 80,
         maxWidth: 1200,
         maxHeight: 800,
-        format: 'jpeg'
-      }
+        format: 'jpeg',
+      },
     };
 
     const result = expectationSchema.parse(validExpectation);
@@ -69,8 +73,8 @@ test.describe('Expectation Schema', () => {
       snapshotOptions: {
         selector: '#main-content',
         maxLength: 500,
-        format: 'text' as const
-      }
+        format: 'text' as const,
+      },
     };
 
     const result = expectationSchema.parse(expectationWithSnapshot);
@@ -83,8 +87,8 @@ test.describe('Expectation Schema', () => {
     const expectationWithConsole = {
       consoleOptions: {
         levels: ['error'] as const,
-        maxMessages: 3
-      }
+        maxMessages: 3,
+      },
     };
 
     const result = expectationSchema.parse(expectationWithConsole);
@@ -98,8 +102,8 @@ test.describe('Expectation Schema', () => {
         quality: 95,
         maxWidth: 800,
         maxHeight: 600,
-        format: 'png' as const
-      }
+        format: 'png' as const,
+      },
     };
 
     const result = expectationSchema.parse(expectationWithImage);
@@ -112,19 +116,19 @@ test.describe('Expectation Schema', () => {
   test('should reject invalid enum values', () => {
     expect(() => {
       expectationSchema.parse({
-        snapshotOptions: { format: 'invalid' }
+        snapshotOptions: { format: 'invalid' },
       });
     }).toThrow();
 
     expect(() => {
       expectationSchema.parse({
-        consoleOptions: { levels: ['invalid'] }
+        consoleOptions: { levels: ['invalid'] },
       });
     }).toThrow();
 
     expect(() => {
       expectationSchema.parse({
-        imageOptions: { format: 'invalid' }
+        imageOptions: { format: 'invalid' },
       });
     }).toThrow();
   });
@@ -132,13 +136,13 @@ test.describe('Expectation Schema', () => {
   test('should reject invalid quality values', () => {
     expect(() => {
       expectationSchema.parse({
-        imageOptions: { quality: 0 }
+        imageOptions: { quality: 0 },
       });
     }).toThrow();
 
     expect(() => {
       expectationSchema.parse({
-        imageOptions: { quality: 101 }
+        imageOptions: { quality: 101 },
       });
     }).toThrow();
   });

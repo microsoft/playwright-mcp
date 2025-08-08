@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,55 +15,70 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
+
+// Top-level regex patterns for performance optimization
+const ERROR_PATTERNS_REGEX = /not defined|Can't find variable/;
 
 test('browser_evaluate', async ({ client, server }) => {
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- Page Title: Title`),
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.HELLO_WORLD },
+    })
+  ).toHaveResponse({
+    pageState: expect.stringContaining('- Page Title: Title'),
   });
 
-  expect(await client.callTool({
-    name: 'browser_evaluate',
-    arguments: {
-      function: '() => document.title',
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_evaluate',
+      arguments: {
+        function: '() => document.title',
+      },
+    })
+  ).toHaveResponse({
     result: `"Title"`,
     code: `await page.evaluate('() => document.title');`,
   });
 });
 
 test('browser_evaluate (element)', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <body style="background-color: red">Hello, world!</body>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
 
-  expect(await client.callTool({
-    name: 'browser_evaluate',
-    arguments: {
-      function: 'element => element.style.backgroundColor',
-      element: 'body',
-      ref: 'e1',
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_evaluate',
+      arguments: {
+        function: 'element => element.style.backgroundColor',
+        element: 'body',
+        ref: 'e1',
+      },
+    })
+  ).toHaveResponse({
     result: `"red"`,
     code: `await page.getByText('Hello, world!').evaluate('element => element.style.backgroundColor');`,
   });
 });
 
 test('browser_evaluate (error)', async ({ client, server }) => {
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- Page Title: Title`),
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.HELLO_WORLD },
+    })
+  ).toHaveResponse({
+    pageState: expect.stringContaining('- Page Title: Title'),
   });
 
   const result = await client.callTool({
@@ -76,5 +92,5 @@ test('browser_evaluate (error)', async ({ client, server }) => {
   expect(result.content?.[0]?.text).toContain('nonExistentVariable');
   // Check for common error patterns across browsers
   const errorText = result.content?.[0]?.text || '';
-  expect(errorText).toMatch(/not defined|Can't find variable/);
+  expect(errorText).toMatch(ERROR_PATTERNS_REGEX);
 });

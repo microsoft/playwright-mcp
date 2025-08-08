@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -13,14 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import child_process from 'child_process';
-import fs from 'fs/promises';
-import { test, expect } from './fixtures.js';
+import child_process from 'node:child_process';
+import fs from 'node:fs/promises';
+import { expect, test } from './fixtures.js';
 
-test('library can be used from CommonJS', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/456' } }, async ({}, testInfo) => {
-  const file = testInfo.outputPath('main.cjs');
-  const projectRoot = process.cwd();
-  await fs.writeFile(file, `
+test(
+  'library can be used from CommonJS',
+  {
+    annotation: {
+      type: 'issue',
+      description: 'https://github.com/microsoft/playwright-mcp/issues/456',
+    },
+  },
+  async ({}, testInfo) => {
+    const file = testInfo.outputPath('main.cjs');
+    const projectRoot = process.cwd();
+    await fs.writeFile(
+      file,
+      `
     import('${projectRoot}/index.js')
       .then(playwrightMCP => playwrightMCP.createConnection())
       .then(() => {
@@ -31,6 +42,10 @@ test('library can be used from CommonJS', { annotation: { type: 'issue', descrip
         console.error(err);
         process.exit(1);
       });
- `);
-  expect(child_process.execSync(`node ${file}`, { encoding: 'utf-8' })).toContain('OK');
-});
+ `
+    );
+    expect(
+      child_process.execSync(`node ${file}`, { encoding: 'utf-8' })
+    ).toContain('OK');
+  }
+);

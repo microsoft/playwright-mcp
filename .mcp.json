@@ -3,20 +3,13 @@
     "playwright-original": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "@tontoko/fast-playwright-mcp@latest",
-        "--isolated"
-      ],
+      "args": ["-y", "@tontoko/fast-playwright-mcp@latest", "--isolated"],
       "env": {}
     },
     "fast-playwright": {
       "type": "stdio",
       "command": "node",
-      "args": [
-        "cli.js",
-        "--isolated"
-      ],
+      "args": ["cli.js", "--isolated"],
       "env": {}
     },
     "serena": {

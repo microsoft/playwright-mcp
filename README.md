@@ -604,6 +604,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `width` (number): Width of the browser window
     - `height` (number): Height of the browser window
+    - `expectation` (object, optional): undefined
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->

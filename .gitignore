@@ -2,8 +2,12 @@ lib/
 node_modules/
 test-results/
 playwright-report/
-.vscode/mcp.json
-.idea
+# IDE Settings (should be personal, not shared)
+.vscode/
+.cursor/
+.windsurf/  
+.zed/
+.idea/
 .DS_Store
 .env
 sessions/

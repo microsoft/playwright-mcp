@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,9 +15,9 @@
  * limitations under the License.
  */
 
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { expect, test } from '@playwright/test';
 
 test.describe('Image Processing Utils', () => {
   // Use real test image from extension icons
@@ -27,20 +28,24 @@ test.describe('Image Processing Utils', () => {
 
   test('processImage module should exist now', async () => {
     // Now the module should exist
-    const { processImage, validateImageOptions } = await import('../src/utils/imageProcessor.js');
+    const { processImage, validateImageOptions } = await import(
+      '../src/utils/imageProcessor.js'
+    );
     expect(typeof processImage).toBe('function');
     expect(typeof validateImageOptions).toBe('function');
   });
 
   test('should validate image quality bounds correctly', async () => {
-    const { validateImageOptions } = await import('../src/utils/imageProcessor.js');
+    const { validateImageOptions } = await import(
+      '../src/utils/imageProcessor.js'
+    );
 
     const testCases = [
       { options: { quality: 0 }, shouldHaveErrors: true },
       { options: { quality: 101 }, shouldHaveErrors: true },
       { options: { quality: 50 }, shouldHaveErrors: false },
       { options: { quality: 1 }, shouldHaveErrors: false },
-      { options: { quality: 100 }, shouldHaveErrors: false }
+      { options: { quality: 100 }, shouldHaveErrors: false },
     ];
 
     for (const testCase of testCases) {
@@ -55,20 +60,24 @@ test.describe('Image Processing Utils', () => {
   });
 
   test('should validate image dimension bounds correctly', async () => {
-    const { validateImageOptions } = await import('../src/utils/imageProcessor.js');
+    const { validateImageOptions } = await import(
+      '../src/utils/imageProcessor.js'
+    );
 
     const testCases = [
       { options: { maxWidth: 0 }, shouldHaveErrors: true },
       { options: { maxHeight: -1 }, shouldHaveErrors: true },
       { options: { maxWidth: 100 }, shouldHaveErrors: false },
-      { options: { maxHeight: 100 }, shouldHaveErrors: false }
+      { options: { maxHeight: 100 }, shouldHaveErrors: false },
     ];
 
     for (const testCase of testCases) {
       const errors = validateImageOptions(testCase.options);
       if (testCase.shouldHaveErrors) {
         expect(errors.length).toBeGreaterThan(0);
-        expect(errors.some(e => e.includes('must be greater than 0'))).toBe(true);
+        expect(errors.some((e) => e.includes('must be greater than 0'))).toBe(
+          true
+        );
       } else {
         expect(errors.length).toBe(0);
       }

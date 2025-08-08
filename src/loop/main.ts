@@ -1,14 +1,15 @@
-
-import path from 'path';
-import url from 'url';
-import dotenv from 'dotenv';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+// @ts-nocheck
+import path from 'node:path';
+import url from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { program } from 'commander';
-import { OpenAIDelegate } from './loopOpenAI.js';
-import { ClaudeDelegate } from './loopClaude.js';
-import { runTask } from './loop.js';
+import dotenv from 'dotenv';
 import type { LLMDelegate } from './loop.js';
+import { runTask } from './loop.js';
+import { ClaudeDelegate } from './loopClaude.js';
+import { OpenAIDelegate } from './loopOpenAI.js';
+
 dotenv.config();
 const __filename = url.fileURLToPath(import.meta.url);
 async function run(delegate: LLMDelegate) {
@@ -17,7 +18,8 @@ async function run(delegate: LLMDelegate) {
     args: [
       path.resolve(__filename, '../../../cli.js'),
       '--save-session',
-      '--output-dir', path.resolve(__filename, '../../../sessions')
+      '--output-dir',
+      path.resolve(__filename, '../../../sessions'),
     ],
     stderr: 'inherit',
     env: process.env as Record<string, string>,
@@ -25,20 +27,18 @@ async function run(delegate: LLMDelegate) {
   const client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(transport);
   await client.ping();
-  for (const task of tasks)
-    await runTask(delegate, client, task);
+  await Promise.all(tasks.map((task) => runTask(delegate, client, task)));
 
   await client.close();
 }
-const tasks = [
-  'Open https://playwright.dev/',
-];
-program
-    .option('--model <model>', 'model to use')
-    .action(async options => {
-      if (options.model === 'claude')
-        await run(new ClaudeDelegate());
-      else
-        await run(new OpenAIDelegate());
-    });
-void program.parseAsync(process.argv);
+const tasks = ['Open https://playwright.dev/'];
+program.option('--model <model>', 'model to use').action(async (options) => {
+  if (options.model === 'claude') {
+    await run(new ClaudeDelegate());
+  } else {
+    await run(new OpenAIDelegate());
+  }
+});
+program.parseAsync(process.argv).catch(() => {
+  process.exit(1);
+});

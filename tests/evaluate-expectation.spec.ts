@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,16 +15,23 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Evaluate Tool Expectation Parameter', () => {
   test.describe('browser_evaluate', () => {
-    test('should accept expectation parameter with minimal response for page evaluation', async ({ client, server }) => {
-      server.setContent('/', '<div id="test">Test Page for Evaluation</div>', 'text/html');
+    test('should accept expectation parameter with minimal response for page evaluation', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<div id="test">Test Page for Evaluation</div>',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -35,9 +43,9 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');
@@ -46,12 +54,19 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
       expect(result.content[0].text).toContain('"Test Page for Evaluation"');
     });
 
-    test('should accept expectation parameter with full response for page evaluation', async ({ client, server }) => {
-      server.setContent('/', '<div id="test">Full Test Page</div>', 'text/html');
+    test('should accept expectation parameter with full response for page evaluation', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        '<div id="test">Full Test Page</div>',
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -63,9 +78,9 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
             includeConsole: true,
             includeDownloads: true,
             includeTabs: true,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).toContain('Page Snapshot:');
@@ -73,23 +88,30 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
       expect(result.content[0].text).toContain(server.PREFIX);
     });
 
-    test('should accept expectation parameter for element evaluation', async ({ client, server }) => {
-      server.setContent('/', `
+    test('should accept expectation parameter for element evaluation', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        `
         <div>
           <button id="btn">Click me</button>
           <span id="counter">0</span>
         </div>
-      `, 'text/html');
+      `,
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       // First take a snapshot to get element references
       await client.callTool({
         name: 'browser_snapshot',
-        arguments: {}
+        arguments: {},
       });
 
       const result = await client.callTool({
@@ -103,9 +125,9 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');

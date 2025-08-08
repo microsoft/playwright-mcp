@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -16,55 +17,90 @@
  */
 // @ts-check
 
-import fs from 'node:fs'
-import path from 'node:path'
-import url from 'node:url'
-import zodToJsonSchema from 'zod-to-json-schema'
 import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
+import zodToJsonSchema from 'zod-to-json-schema';
 
 import { allTools } from '../lib/tools.js';
 
 const capabilities = {
-  'core': 'Core automation',
+  core: 'Core automation',
   'core-tabs': 'Tab management',
   'core-install': 'Browser installation',
-  'vision': 'Coordinate-based (opt-in via --caps=vision)',
-  'pdf': 'PDF generation (opt-in via --caps=pdf)',
+  vision: 'Coordinate-based (opt-in via --caps=vision)',
+  pdf: 'PDF generation (opt-in via --caps=pdf)',
 };
 
-const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, allTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
+const toolsByCapability = Object.fromEntries(
+  Object.entries(capabilities).map(([capability, title]) => [
+    title,
+    allTools
+      .filter((tool) => tool.capability === capability)
+      .sort((a, b) => a.schema.name.localeCompare(b.schema.name)),
+  ])
+);
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
 
 /**
- * @param {import('../src/tools/tool.js').ToolSchema<any>} tool 
+ * @param {string} name
+ * @param {any} param
+ * @param {string[]} requiredParams
+ * @returns {string}
+ */
+function formatParameter(name, param, requiredParams) {
+  const optional = !requiredParams.includes(name);
+  const meta = /** @type {string[]} */ ([]);
+  if (param.type) {
+    meta.push(param.type);
+  }
+  if (optional) {
+    meta.push('optional');
+  }
+  return `    - \`${name}\` ${meta.length ? `(${meta.join(', ')})` : ''}: ${param.description}`;
+}
+
+/**
+ * @param {any} inputSchema
+ * @returns {string[]}
+ */
+function formatParameters(inputSchema) {
+  const lines = /** @type {string[]} */ ([]);
+  const requiredParams = inputSchema.required || [];
+
+  if (inputSchema.properties && Object.keys(inputSchema.properties).length) {
+    lines.push('  - Parameters:');
+    for (const [name, param] of Object.entries(inputSchema.properties)) {
+      lines.push(formatParameter(name, param, requiredParams));
+    }
+  } else {
+    lines.push('  - Parameters: None');
+  }
+  return lines;
+}
+
+/**
+ * @param {import('../src/tools/tool.js').ToolSchema<any>} tool
  * @returns {string[]}
  */
 function formatToolForReadme(tool) {
   const lines = /** @type {string[]} */ ([]);
-  lines.push(`<!-- NOTE: This has been generated via ${path.basename(__filename)} -->`);
-  lines.push(``);
+  lines.push(
+    `<!-- NOTE: This has been generated via ${path.basename(__filename)} -->`
+  );
+  lines.push('');
   lines.push(`- **${tool.name}**`);
   lines.push(`  - Title: ${tool.title}`);
   lines.push(`  - Description: ${tool.description}`);
 
-  const inputSchema = /** @type {any} */ (zodToJsonSchema(tool.inputSchema || {}));
-  const requiredParams = inputSchema.required || [];
-  if (inputSchema.properties && Object.keys(inputSchema.properties).length) {
-    lines.push(`  - Parameters:`);
-    Object.entries(inputSchema.properties).forEach(([name, param]) => {
-      const optional = !requiredParams.includes(name);
-      const meta = /** @type {string[]} */ ([]);
-      if (param.type)
-        meta.push(param.type);
-      if (optional)
-        meta.push('optional');
-      lines.push(`    - \`${name}\` ${meta.length ? `(${meta.join(', ')})` : ''}: ${param.description}`);
-    });
-  } else {
-    lines.push(`  - Parameters: None`);
-  }
+  const inputSchema = /** @type {any} */ (
+    zodToJsonSchema(tool.inputSchema || {})
+  );
+
+  lines.push(...formatParameters(inputSchema));
   lines.push(`  - Read-only: **${tool.type === 'readOnly'}**`);
   lines.push('');
   return lines;
@@ -75,13 +111,14 @@ function formatToolForReadme(tool) {
  * @param {string} startMarker
  * @param {string} endMarker
  * @param {string[]} generatedLines
- * @returns {Promise<string>}
+ * @returns {string}
  */
-async function updateSection(content, startMarker, endMarker, generatedLines) {
+function updateSection(content, startMarker, endMarker, generatedLines) {
   const startMarkerIndex = content.indexOf(startMarker);
   const endMarkerIndex = content.indexOf(endMarker);
-  if (startMarkerIndex === -1 || endMarkerIndex === -1)
+  if (startMarkerIndex === -1 || endMarkerIndex === -1) {
     throw new Error('Markers for generated section not found in README');
+  }
 
   return [
     content.slice(0, startMarkerIndex + startMarker.length),
@@ -94,41 +131,38 @@ async function updateSection(content, startMarker, endMarker, generatedLines) {
 
 /**
  * @param {string} content
- * @returns {Promise<string>}
+ * @returns {string}
  */
-async function updateTools(content) {
-  console.log('Loading tool information from compiled modules...');
-
+function updateTools(content) {
   const generatedLines = /** @type {string[]} */ ([]);
   for (const [capability, tools] of Object.entries(toolsByCapability)) {
-    console.log('Updating tools for capability:', capability);
     generatedLines.push(`<details>\n<summary><b>${capability}</b></summary>`);
     generatedLines.push('');
-    for (const tool of tools)
+    for (const tool of tools) {
       generatedLines.push(...formatToolForReadme(tool.schema));
-    generatedLines.push(`</details>`);
+    }
+    generatedLines.push('</details>');
     generatedLines.push('');
   }
 
   const startMarker = `<!--- Tools generated by ${path.basename(__filename)} -->`;
-  const endMarker = `<!--- End of tools generated section -->`;
+  const endMarker = '<!--- End of tools generated section -->';
   return updateSection(content, startMarker, endMarker, generatedLines);
 }
 
 /**
  * @param {string} content
- * @returns {Promise<string>}
+ * @returns {string}
  */
-async function updateOptions(content) {
-  console.log('Listing options...');
+function updateOptions(content) {
   const output = execSync('node cli.js --help');
   const lines = output.toString().split('\n');
-  const firstLine = lines.findIndex(line => line.includes('--version'));
+  const firstLine = lines.findIndex((line) => line.includes('--version'));
   lines.splice(0, firstLine + 1);
-  const lastLine = lines.findIndex(line => line.includes('--help'));
+  const lastLine = lines.findIndex((line) => line.includes('--help'));
   lines.splice(lastLine);
   const startMarker = `<!--- Options generated by ${path.basename(__filename)} -->`;
-  const endMarker = `<!--- End of options generated section -->`;
+  const endMarker = '<!--- End of options generated section -->';
   return updateSection(content, startMarker, endMarker, [
     '```',
     '> npx @tontoko/fast-playwright-mcp@latest --help',
@@ -140,13 +174,11 @@ async function updateOptions(content) {
 async function updateReadme() {
   const readmePath = path.join(path.dirname(__filename), '..', 'README.md');
   const readmeContent = await fs.promises.readFile(readmePath, 'utf-8');
-  const withTools = await updateTools(readmeContent);
-  const withOptions = await updateOptions(withTools);
+  const withTools = updateTools(readmeContent);
+  const withOptions = updateOptions(withTools);
   await fs.promises.writeFile(readmePath, withOptions, 'utf-8');
-  console.log('README updated successfully');
 }
 
-updateReadme().catch(err => {
-  console.error('Error updating README:', err);
+updateReadme().catch((_err) => {
   process.exit(1);
 });

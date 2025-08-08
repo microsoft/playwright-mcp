@@ -1,0 +1,7 @@
+# Generated files and third-party code
+**/*.d.ts
+lib/
+**/node_modules/
+.next/
+dist/
+build/

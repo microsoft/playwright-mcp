@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -13,11 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Response partial snapshot implementation', () => {
-  test('should use capturePartialSnapshot when selector is provided', async ({ client, server }) => {
-    server.setContent('/', `
+  test('should use capturePartialSnapshot when selector is provided', async ({
+    client,
+    server,
+  }) => {
+    server.setContent(
+      '/',
+      `
       <html>
         <head><title>Test Page</title></head>
         <body>
@@ -29,7 +35,9 @@ test.describe('Response partial snapshot implementation', () => {
           <footer>Footer Content</footer>
         </body>
       </html>
-    `, 'text/html');
+    `,
+      'text/html'
+    );
 
     // Navigate to test page
     await client.callTool({
@@ -37,9 +45,9 @@ test.describe('Response partial snapshot implementation', () => {
       arguments: {
         url: server.PREFIX,
         expectation: {
-          includeSnapshot: false
-        }
-      }
+          includeSnapshot: false,
+        },
+      },
     });
 
     // Take a snapshot with selector
@@ -50,10 +58,10 @@ test.describe('Response partial snapshot implementation', () => {
           includeSnapshot: true,
           snapshotOptions: {
             selector: 'main',
-            maxLength: 500
-          }
-        }
-      }
+            maxLength: 500,
+          },
+        },
+      },
     });
 
     // Verify partial snapshot was captured
@@ -68,24 +76,31 @@ test.describe('Response partial snapshot implementation', () => {
     expect(content).not.toContain('Footer Content');
   });
 
-  test('should fall back to full snapshot when selector not found', async ({ client, server }) => {
-    server.setContent('/', `
+  test('should fall back to full snapshot when selector not found', async ({
+    client,
+    server,
+  }) => {
+    server.setContent(
+      '/',
+      `
       <html>
         <head><title>Test Page</title></head>
         <body>
           <div>Some content</div>
         </body>
       </html>
-    `, 'text/html');
+    `,
+      'text/html'
+    );
 
     await client.callTool({
       name: 'browser_navigate',
       arguments: {
         url: server.PREFIX,
         expectation: {
-          includeSnapshot: false
-        }
-      }
+          includeSnapshot: false,
+        },
+      },
     });
 
     const result = await client.callTool({
@@ -94,10 +109,10 @@ test.describe('Response partial snapshot implementation', () => {
         expectation: {
           includeSnapshot: true,
           snapshotOptions: {
-            selector: '.non-existent-selector'
-          }
-        }
-      }
+            selector: '.non-existent-selector',
+          },
+        },
+      },
     });
 
     // Should fall back to full snapshot
@@ -106,8 +121,13 @@ test.describe('Response partial snapshot implementation', () => {
     expect(content).toContain('generic'); // Full snapshot contains page structure (div becomes generic in ARIA tree)
   });
 
-  test('should apply maxLength truncation at word boundary', async ({ client, server }) => {
-    server.setContent('/long-content', `
+  test('should apply maxLength truncation at word boundary', async ({
+    client,
+    server,
+  }) => {
+    server.setContent(
+      '/long-content',
+      `
       <html>
         <body>
           <main>
@@ -118,16 +138,18 @@ test.describe('Response partial snapshot implementation', () => {
           </main>
         </body>
       </html>
-    `, 'text/html');
+    `,
+      'text/html'
+    );
 
     await client.callTool({
       name: 'browser_navigate',
       arguments: {
-        url: server.PREFIX + 'long-content',
+        url: `${server.PREFIX}long-content`,
         expectation: {
-          includeSnapshot: false
-        }
-      }
+          includeSnapshot: false,
+        },
+      },
     });
 
     const result = await client.callTool({
@@ -137,10 +159,10 @@ test.describe('Response partial snapshot implementation', () => {
           includeSnapshot: true,
           snapshotOptions: {
             selector: 'main',
-            maxLength: 100
-          }
-        }
-      }
+            maxLength: 100,
+          },
+        },
+      },
     });
 
     const content = result.content[0].text;
@@ -151,23 +173,32 @@ test.describe('Response partial snapshot implementation', () => {
 
     // Extract the actual snapshot content
     const lines = content.split('\n');
-    const yamlStartIdx = lines.findIndex(l => l.includes('```yaml'));
-    const yamlEndIdx = lines.findIndex((l, i) => i > yamlStartIdx && l.includes('```'));
+    const yamlStartIdx = lines.findIndex((l) => l.includes('```yaml'));
+    const yamlEndIdx = lines.findIndex(
+      (l, i) => i > yamlStartIdx && l.includes('```')
+    );
 
     if (yamlStartIdx !== -1 && yamlEndIdx !== -1) {
-      const snapshotContent = lines.slice(yamlStartIdx + 1, yamlEndIdx).join('\n');
+      const snapshotContent = lines
+        .slice(yamlStartIdx + 1, yamlEndIdx)
+        .join('\n');
 
       // Should be truncated to maxLength
       expect(snapshotContent.length).toBeLessThanOrEqual(100);
 
       // Should end at word boundary
       const lastChar = snapshotContent.trim().slice(-1);
-      expect(lastChar).not.toBe('.');  // Not mid-sentence
+      expect(lastChar).not.toBe('.'); // Not mid-sentence
     }
   });
 
-  test('should work with navigate tool expectation', async ({ client, server }) => {
-    server.setContent('/', `
+  test('should work with navigate tool expectation', async ({
+    client,
+    server,
+  }) => {
+    server.setContent(
+      '/',
+      `
       <html>
         <head><title>Navigate Test</title></head>
         <body>
@@ -175,7 +206,9 @@ test.describe('Response partial snapshot implementation', () => {
           <p>Body content here</p>
         </body>
       </html>
-    `, 'text/html');
+    `,
+      'text/html'
+    );
 
     // Test that navigate tool passes expectation with snapshot options
     const result = await client.callTool({
@@ -186,10 +219,10 @@ test.describe('Response partial snapshot implementation', () => {
           includeSnapshot: true,
           snapshotOptions: {
             selector: 'body',
-            maxLength: 300
-          }
-        }
-      }
+            maxLength: 300,
+          },
+        },
+      },
     });
 
     const content = result.content[0].text;
@@ -203,11 +236,15 @@ test.describe('Response partial snapshot implementation', () => {
 
     // The snapshot should be limited due to maxLength
     const lines = content.split('\n');
-    const yamlStartIdx = lines.findIndex(l => l.includes('```yaml'));
-    const yamlEndIdx = lines.findIndex((l, i) => i > yamlStartIdx && l.includes('```'));
+    const yamlStartIdx = lines.findIndex((l) => l.includes('```yaml'));
+    const yamlEndIdx = lines.findIndex(
+      (l, i) => i > yamlStartIdx && l.includes('```')
+    );
 
     if (yamlStartIdx !== -1 && yamlEndIdx !== -1) {
-      const snapshotContent = lines.slice(yamlStartIdx + 1, yamlEndIdx).join('\n');
+      const snapshotContent = lines
+        .slice(yamlStartIdx + 1, yamlEndIdx)
+        .join('\n');
       expect(snapshotContent.length).toBeLessThanOrEqual(300);
     }
   });

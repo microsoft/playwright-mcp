@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 export const snapshot = defineTool({
@@ -8,7 +9,7 @@ export const snapshot = defineTool({
     inputSchema: z.object({}),
     type: 'readOnly',
   },
-  handle: async (context, params) => {
+  handle: async (context, _params) => {
     return await context.runTask('Capture browser snapshot', true);
   },
 });

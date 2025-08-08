@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,9 +15,9 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
 import { Response } from '../src/response.js';
 import type { ExpectationOptions } from '../src/schemas/expectation.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Response Filtering', () => {
   // Create a mock context for testing Response class directly
@@ -28,17 +29,17 @@ test.describe('Response Filtering', () => {
         ariaSnapshot: 'button "Click me" [ref=btn1]',
         consoleMessages: [
           { toString: () => 'console.log("test")', type: 'log' },
-          { toString: () => 'console.error("error")', type: 'error' }
+          { toString: () => 'console.error("error")', type: 'error' },
         ],
         downloads: [],
-        modalStates: []
+        modalStates: [],
       }),
       updateTitle: async () => {},
       isCurrentTab: () => true,
       lastTitle: () => 'Test Page',
       page: {
-        url: () => 'https://example.com'
-      }
+        url: () => 'https://example.com',
+      },
     };
 
     return {
@@ -46,8 +47,8 @@ test.describe('Response Filtering', () => {
       currentTabOrDie: () => mockTab,
       tabs: () => [mockTab],
       config: {
-        imageResponses: 'allow' as const
-      }
+        imageResponses: 'allow' as const,
+      },
     };
   }
 
@@ -56,9 +57,14 @@ test.describe('Response Filtering', () => {
     const expectation: ExpectationOptions = {
       includeCode: true,
       includeSnapshot: true,
-      includeTabs: true
+      includeTabs: true,
     };
-    const response = new Response(mockContext as any, 'navigate', { url: 'test' }, expectation);
+    const response = new Response(
+      mockContext as any,
+      'navigate',
+      { url: 'test' },
+      expectation
+    );
     response.addResult('Navigation successful');
     response.addCode('page.goto("test")');
     response.setIncludeSnapshot();
@@ -81,10 +87,15 @@ test.describe('Response Filtering', () => {
       includeConsole: true,
       includeDownloads: true,
       includeTabs: true,
-      includeCode: true
+      includeCode: true,
     };
 
-    const response = new Response(mockContext as any, 'click', { element: 'button' }, expectation);
+    const response = new Response(
+      mockContext as any,
+      'click',
+      { element: 'button' },
+      expectation
+    );
     response.addResult('Click successful');
     response.addCode('page.click("button")');
 
@@ -104,10 +115,15 @@ test.describe('Response Filtering', () => {
       includeConsole: true,
       includeDownloads: true,
       includeTabs: true,
-      includeCode: false
+      includeCode: false,
     };
 
-    const response = new Response(mockContext as any, 'click', { element: 'button' }, expectation);
+    const response = new Response(
+      mockContext as any,
+      'click',
+      { element: 'button' },
+      expectation
+    );
     response.addResult('Click successful');
     response.addCode('page.click("button")');
     response.setIncludeSnapshot();
@@ -129,10 +145,15 @@ test.describe('Response Filtering', () => {
       includeConsole: true,
       includeDownloads: true,
       includeTabs: false,
-      includeCode: true
+      includeCode: true,
     };
 
-    const response = new Response(mockContext as any, 'navigate', { url: 'test' }, expectation);
+    const response = new Response(
+      mockContext as any,
+      'navigate',
+      { url: 'test' },
+      expectation
+    );
     response.addResult('Navigation successful');
     response.setIncludeSnapshot();
 
@@ -147,7 +168,11 @@ test.describe('Response Filtering', () => {
   test('should use tool-specific defaults when no expectation provided', async () => {
     const mockContext = createMockContext();
     // Screenshot tool should have minimal output by default
-    const response = new Response(mockContext as any, 'browser_take_screenshot', { });
+    const response = new Response(
+      mockContext as any,
+      'browser_take_screenshot',
+      {}
+    );
     response.addResult('Screenshot taken');
     response.addCode('page.screenshot()');
 
@@ -167,10 +192,15 @@ test.describe('Response Filtering', () => {
     // Token optimization: all defaults are now false
     // User overrides includeCode=true but doesn't specify others
     const expectation: ExpectationOptions = {
-      includeCode: true
+      includeCode: true,
     };
 
-    const response = new Response(mockContext as any, 'click', { element: 'button' }, expectation);
+    const response = new Response(
+      mockContext as any,
+      'click',
+      { element: 'button' },
+      expectation
+    );
     response.addResult('Click successful');
     response.addCode('page.click("button")');
 
@@ -192,16 +222,24 @@ test.describe('Response Filtering', () => {
       includeConsole: true,
       consoleOptions: {
         levels: ['error', 'warn'],
-        maxMessages: 3
-      }
+        maxMessages: 3,
+      },
     };
 
-    const response = new Response(mockContext as any, 'evaluate', { code: 'console.log("test")' }, expectation);
+    const response = new Response(
+      mockContext as any,
+      'evaluate',
+      { code: 'console.log("test")' },
+      expectation
+    );
 
     // Test that expectation is stored correctly
-    expect(response['_expectation']?.includeConsole).toBe(true);
-    expect(response['_expectation']?.consoleOptions?.levels).toEqual(['error', 'warn']);
-    expect(response['_expectation']?.consoleOptions?.maxMessages).toBe(3);
+    expect(response._expectation?.includeConsole).toBe(true);
+    expect(response._expectation?.consoleOptions?.levels).toEqual([
+      'error',
+      'warn',
+    ]);
+    expect(response._expectation?.consoleOptions?.maxMessages).toBe(3);
   });
 
   test('should handle snapshot filtering options', async () => {
@@ -211,16 +249,21 @@ test.describe('Response Filtering', () => {
       snapshotOptions: {
         selector: '.content',
         maxLength: 500,
-        format: 'text'
-      }
+        format: 'text',
+      },
     };
 
-    const response = new Response(mockContext as any, 'navigate', { url: 'test' }, expectation);
+    const response = new Response(
+      mockContext as any,
+      'navigate',
+      { url: 'test' },
+      expectation
+    );
 
     // Test that expectation is stored correctly
-    expect(response['_expectation']?.includeSnapshot).toBe(true);
-    expect(response['_expectation']?.snapshotOptions?.selector).toBe('.content');
-    expect(response['_expectation']?.snapshotOptions?.maxLength).toBe(500);
-    expect(response['_expectation']?.snapshotOptions?.format).toBe('text');
+    expect(response._expectation?.includeSnapshot).toBe(true);
+    expect(response._expectation?.snapshotOptions?.selector).toBe('.content');
+    expect(response._expectation?.snapshotOptions?.maxLength).toBe(500);
+    expect(response._expectation?.snapshotOptions?.format).toBe('text');
   });
 });

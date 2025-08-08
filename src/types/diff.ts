@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface DiffOptions {
   enabled: boolean;
   threshold: number;

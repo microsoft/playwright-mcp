@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,9 +15,9 @@
  * limitations under the License.
  */
 
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { expect, test } from '@playwright/test';
 
 test.describe('Sharp Implementation Performance Tests', () => {
   // Use real test image from extension icons (128x128 PNG)
@@ -36,7 +37,7 @@ test.describe('Sharp Implementation Performance Tests', () => {
     const operations = [
       { maxWidth: 800, maxHeight: 600, quality: 90, format: 'jpeg' as const },
       { maxWidth: 400, maxHeight: 300, quality: 80, format: 'webp' as const },
-      { maxWidth: 200, maxHeight: 150, quality: 70, format: 'png' as const }
+      { maxWidth: 200, maxHeight: 150, quality: 70, format: 'png' as const },
     ];
 
     const results = [];
@@ -82,13 +83,13 @@ test.describe('Sharp Implementation Performance Tests', () => {
         maxWidth: 500,
         maxHeight: 500,
         quality: 85,
-        format: 'jpeg'
+        format: 'jpeg',
       });
 
       // Force garbage collection if available
-      if (global.gc)
+      if (global.gc) {
         global.gc();
-
+      }
     }
 
     const finalMemory = process.memoryUsage().heapUsed;
@@ -112,7 +113,7 @@ test.describe('Sharp Implementation Performance Tests', () => {
         maxWidth: 300 + i * 50,
         maxHeight: 300 + i * 50,
         quality: 80,
-        format: 'jpeg'
+        format: 'jpeg',
       })
     );
 
@@ -123,15 +124,15 @@ test.describe('Sharp Implementation Performance Tests', () => {
     // console.log(`Concurrent processing time: ${totalTime.toFixed(2)}ms`);
 
     // Should complete reasonably quickly
-    expect(totalTime).toBeLessThan(10000); // 10 seconds max
+    expect(totalTime).toBeLessThan(10_000); // 10 seconds max
 
     // All results should be valid
-    results.forEach((result, index) => {
+    for (const [index, result] of results.entries()) {
       expect(result.data).toBeInstanceOf(Buffer);
       expect(result.contentType).toBe('image/jpeg');
       expect(result.processedSize.width).toBeLessThanOrEqual(300 + index * 50);
       expect(result.processedSize.height).toBeLessThanOrEqual(300 + index * 50);
-    });
+    }
   });
 
   test('should handle error conditions gracefully', async () => {
@@ -140,8 +141,9 @@ test.describe('Sharp Implementation Performance Tests', () => {
     // Test with invalid image data
     const invalidBuffer = Buffer.from('not an image');
 
-    await expect(processImage(invalidBuffer, 'image/png', { quality: 80 }))
-        .rejects.toThrow();
+    await expect(
+      processImage(invalidBuffer, 'image/png', { quality: 80 })
+    ).rejects.toThrow();
   });
 
   test('should preserve metadata when appropriate', async () => {

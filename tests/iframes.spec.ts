@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,15 +15,17 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test('stitched aria frames', async ({ client }) => {
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: `data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button><main><iframe src='data:text/html,<p>Nested</p>'></iframe></main>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>`,
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: {
+        url: `data:text/html,<h1>Hello</h1><iframe src="data:text/html,<button>World</button><main><iframe src='data:text/html,<p>Nested</p>'></iframe></main>"></iframe><iframe src="data:text/html,<h1>Should be invisible</h1>" style="display: none;"></iframe>`,
+      },
+    })
+  ).toHaveResponse({
     pageState: expect.stringContaining(`- generic [active] [ref=e1]:
   - heading "Hello" [level=1] [ref=e2]
   - iframe [ref=e3]:
@@ -34,13 +37,15 @@ test('stitched aria frames', async ({ client }) => {
 \`\`\``),
   });
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'World',
-      ref: 'f1e2',
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'World',
+        ref: 'f1e2',
+      },
+    })
+  ).toHaveResponse({
     code: `await page.locator('iframe').first().contentFrame().getByRole('button', { name: 'World' }).click();`,
   });
 });

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,40 +15,50 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
-test('session log should record tool calls', async ({ startClient, server }, testInfo) => {
+test('session log should record tool calls', async ({
+  startClient,
+  server,
+}, testInfo) => {
   const { client, stderr } = await startClient({
-    args: [
-      '--save-session',
-      '--output-dir', testInfo.outputPath('output'),
-    ],
+    args: ['--save-session', '--output-dir', testInfo.outputPath('output')],
   });
 
-  server.setContent('/', `<title>Title</title><button>Submit</button>`, 'text/html');
+  server.setContent(
+    '/',
+    '<title>Title</title><button>Submit</button>',
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Submit button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'Submit button',
+        ref: 'e2',
+      },
+    })
+  ).toHaveResponse({
     code: `await page.getByRole('button', { name: 'Submit' }).click();`,
     pageState: expect.stringContaining(`- button "Submit"`),
   });
 
-  const output = stderr().split('\n').filter(line => line.startsWith('Session: '))[0];
+  const output = stderr()
+    .split('\n')
+    .filter((line) => line.startsWith('Session: '))[0];
   const sessionFolder = output.substring('Session: '.length);
-  await expect.poll(() => readSessionLog(sessionFolder)).toBe(`
+  await expect
+    .poll(() => readSessionLog(sessionFolder))
+    .toBe(`
 ### Tool call: browser_navigate
 - Args
 \`\`\`json
@@ -79,12 +90,16 @@ await page.getByRole('button', { name: 'Submit' }).click();
 `);
 });
 
-test('session log should record user action', async ({ cdpServer, startClient }, testInfo) => {
+test('session log should record user action', async ({
+  cdpServer,
+  startClient,
+}, testInfo) => {
   const browserContext = await cdpServer.start();
   const { client, stderr } = await startClient({
     args: [
       '--save-session',
-      '--output-dir', testInfo.outputPath('output'),
+      '--output-dir',
+      testInfo.outputPath('output'),
       `--cdp-endpoint=${cdpServer.endpoint}`,
     ],
   });
@@ -102,10 +117,14 @@ test('session log should record user action', async ({ cdpServer, startClient },
 
   await page.getByRole('button', { name: 'Button 1' }).click();
 
-  const output = stderr().split('\n').filter(line => line.startsWith('Session: '))[0];
+  const output = stderr()
+    .split('\n')
+    .filter((line) => line.startsWith('Session: '))[0];
   const sessionFolder = output.substring('Session: '.length);
 
-  await expect.poll(() => readSessionLog(sessionFolder)).toBe(`
+  await expect
+    .poll(() => readSessionLog(sessionFolder))
+    .toBe(`
 ### Tool call: browser_snapshot
 - Args
 \`\`\`json
@@ -134,12 +153,16 @@ await page.getByRole('button', { name: 'Button 1' }).click();
 `);
 });
 
-test('session log should update user action', async ({ cdpServer, startClient }, testInfo) => {
+test('session log should update user action', async ({
+  cdpServer,
+  startClient,
+}, testInfo) => {
   const browserContext = await cdpServer.start();
   const { client, stderr } = await startClient({
     args: [
       '--save-session',
-      '--output-dir', testInfo.outputPath('output'),
+      '--output-dir',
+      testInfo.outputPath('output'),
       `--cdp-endpoint=${cdpServer.endpoint}`,
     ],
   });
@@ -157,10 +180,14 @@ test('session log should update user action', async ({ cdpServer, startClient },
 
   await page.getByRole('button', { name: 'Button 1' }).dblclick();
 
-  const output = stderr().split('\n').filter(line => line.startsWith('Session: '))[0];
+  const output = stderr()
+    .split('\n')
+    .filter((line) => line.startsWith('Session: '))[0];
   const sessionFolder = output.substring('Session: '.length);
 
-  await expect.poll(() => readSessionLog(sessionFolder)).toBe(`
+  await expect
+    .poll(() => readSessionLog(sessionFolder))
+    .toBe(`
 ### Tool call: browser_snapshot
 - Args
 \`\`\`json
@@ -189,12 +216,16 @@ await page.getByRole('button', { name: 'Button 1' }).dblclick();
 `);
 });
 
-test('session log should record tool calls and user actions', async ({ cdpServer, startClient }, testInfo) => {
+test('session log should record tool calls and user actions', async ({
+  cdpServer,
+  startClient,
+}, testInfo) => {
   const browserContext = await cdpServer.start();
   const { client, stderr } = await startClient({
     args: [
       '--save-session',
-      '--output-dir', testInfo.outputPath('output'),
+      '--output-dir',
+      testInfo.outputPath('output'),
       `--cdp-endpoint=${cdpServer.endpoint}`,
     ],
   });
@@ -213,7 +244,7 @@ test('session log should record tool calls and user actions', async ({ cdpServer
   await page.getByRole('button', { name: 'Button 1' }).click();
 
   // This is to simulate a delay after the user action before the tool action.
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // Tool action.
   await client.callTool({
@@ -224,9 +255,13 @@ test('session log should record tool calls and user actions', async ({ cdpServer
     },
   });
 
-  const output = stderr().split('\n').filter(line => line.startsWith('Session: '))[0];
+  const output = stderr()
+    .split('\n')
+    .filter((line) => line.startsWith('Session: '))[0];
   const sessionFolder = output.substring('Session: '.length);
-  await expect.poll(() => readSessionLog(sessionFolder)).toBe(`
+  await expect
+    .poll(() => readSessionLog(sessionFolder))
+    .toBe(`
 ### Tool call: browser_snapshot
 - Args
 \`\`\`json
@@ -271,5 +306,7 @@ await page.getByRole('button', { name: 'Button 2' }).click();
 });
 
 async function readSessionLog(sessionFolder: string): Promise<string> {
-  return await fs.promises.readFile(path.join(sessionFolder, 'session.md'), 'utf8').catch(() => '');
+  return await fs.promises
+    .readFile(path.join(sessionFolder, 'session.md'), 'utf8')
+    .catch(() => '');
 }

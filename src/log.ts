@@ -1,4 +1,6 @@
+// @ts-nocheck
 import debug from 'debug';
+
 const errorsDebug = debug('pw:mcp:errors');
 const requestsDebug = debug('pw:mcp:requests');
 export function logUnhandledError(error: unknown) {

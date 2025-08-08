@@ -11,14 +11,14 @@ export interface BenchmarkScenario {
 
 export interface BenchmarkStep {
   tool: string;
-  args: Record<string, any>;
-  fastArgs?: Record<string, any>;
+  args: Record<string, unknown>;
+  fastArgs?: Record<string, unknown>;
 }
 
 export interface StepResult {
   size: number;
   tokens: number;
-  response?: any;
+  response?: unknown;
   error?: string;
 }
 
@@ -54,17 +54,17 @@ export interface MCPRequest {
   jsonrpc: '2.0';
   id?: string | number;
   method: string;
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
 }
 
 export interface MCPResponse {
   jsonrpc: '2.0';
   id: string | number;
-  result?: any;
+  result?: unknown;
   error?: {
     code: number;
     message: string;
-    data?: any;
+    data?: unknown;
   };
 }
 

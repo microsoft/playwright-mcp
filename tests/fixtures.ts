@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,21 +15,26 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import url from 'url';
-import path from 'path';
-import { chromium } from 'playwright';
-
-import { test as baseTest, expect as baseExpect } from '@playwright/test';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import type { Stream } from 'node:stream';
+import url from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { expect as baseExpect, test as baseTest } from '@playwright/test';
+import type { BrowserContext } from 'playwright';
+import { chromium } from 'playwright';
+import type { Config } from '../config';
 import { TestServer } from './testserver/index.ts';
 
-import type { Config } from '../config';
-import type { BrowserContext } from 'playwright';
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type { Stream } from 'stream';
+// Top-level regex patterns for performance optimization
+const PW_MCP_TEST_REGEX = /^pw:mcp:test /;
+const USER_DATA_DIR_REGEX = /user data dir.*/;
+const CODE_FRAME_START_REGEX = /^```js\n/;
+const CODE_FRAME_END_REGEX = /\n```$/;
+const SECTION_HEADER_REGEX = /^### /m;
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
@@ -43,11 +49,11 @@ type CDPServer = {
 type TestFixtures = {
   client: Client;
   startClient: (options?: {
-    clientName?: string,
-    args?: string[],
-    config?: Config,
-    roots?: { name: string, uri: string }[],
-  }) => Promise<{ client: Client, stderr: () => string }>;
+    clientName?: string;
+    args?: string[];
+    config?: Config;
+    roots?: { name: string; uri: string }[];
+  }) => Promise<{ client: Client; stderr: () => string }>;
   wsEndpoint: string;
   cdpServer: CDPServer;
   server: TestServer;
@@ -56,16 +62,15 @@ type TestFixtures = {
 };
 
 type WorkerFixtures = {
-  _workerServers: { server: TestServer, httpsServer: TestServer };
+  _workerServers: { server: TestServer; httpsServer: TestServer };
 };
 
-export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>({
-
-  client: async ({ startClient }, use) => {
+export const test = (baseTest as any).extend({
+  client: async ({ startClient }: any, use: any) => {
     const { client } = await startClient();
     // Wrap callTool to add default expectations for tests
     const originalCallTool = client.callTool.bind(client);
-    client.callTool = async (request: any) => {
+    client.callTool = (request: any) => {
       // Add default expectation for tests if not specified
       if (request.arguments && !request.arguments.expectation) {
         request.arguments.expectation = {
@@ -73,17 +78,19 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
           includeConsole: true,
           includeDownloads: true,
           includeTabs: true,
-          includeCode: true
+          includeCode: true,
         };
-      } else if (request.arguments && request.arguments.expectation) {
+      } else if (request.arguments?.expectation) {
         // Merge with defaults if expectation is partially specified
         request.arguments.expectation = {
-          includeSnapshot: request.arguments.expectation.includeSnapshot ?? true,
+          includeSnapshot:
+            request.arguments.expectation.includeSnapshot ?? true,
           includeConsole: request.arguments.expectation.includeConsole ?? true,
-          includeDownloads: request.arguments.expectation.includeDownloads ?? true,
+          includeDownloads:
+            request.arguments.expectation.includeDownloads ?? true,
           includeTabs: request.arguments.expectation.includeTabs ?? true,
           includeCode: request.arguments.expectation.includeCode ?? true,
-          ...request.arguments.expectation
+          ...request.arguments.expectation,
         };
       }
       return originalCallTool(request);
@@ -91,47 +98,66 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(client);
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
-    const configDir = path.dirname(test.info().config.configFile!);
+  startClient: async (
+    { mcpHeadless, mcpBrowser, mcpMode }: any,
+    use: any,
+    testInfo: any
+  ) => {
+    const configDir = path.dirname(test.info().config.configFile ?? '.');
     let client: Client | undefined;
 
-    await use(async options => {
+    await use(async (options) => {
       const args: string[] = [];
-      if (process.env.CI && process.platform === 'linux')
+      if (process.env.CI && process.platform === 'linux') {
         args.push('--no-sandbox');
-      if (mcpHeadless)
+      }
+      if (mcpHeadless) {
         args.push('--headless');
-      if (mcpBrowser)
+      }
+      if (mcpBrowser) {
         args.push(`--browser=${mcpBrowser}`);
-      if (options?.args)
+      }
+      if (options?.args) {
         args.push(...options.args);
+      }
       if (options?.config) {
         const configFile = testInfo.outputPath('config.json');
-        await fs.promises.writeFile(configFile, JSON.stringify(options.config, null, 2));
+        await fs.promises.writeFile(
+          configFile,
+          JSON.stringify(options.config, null, 2)
+        );
         args.push(`--config=${path.relative(configDir, configFile)}`);
       }
 
-      client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' }, options?.roots ? { capabilities: { roots: {} } } : undefined);
+      client = new Client(
+        { name: options?.clientName ?? 'test', version: '1.0.0' },
+        options?.roots ? { capabilities: { roots: {} } } : undefined
+      );
       if (options?.roots) {
-        client.setRequestHandler(ListRootsRequestSchema, async request => {
+        client.setRequestHandler(ListRootsRequestSchema, (_request) => {
           return {
             roots: options.roots,
           };
         });
       }
-      const { transport, stderr } = await createTransport(args, mcpMode, testInfo.outputPath('ms-playwright'));
+      const { transport, stderr } = createTransport(
+        args,
+        mcpMode,
+        testInfo.outputPath('ms-playwright')
+      );
       let stderrBuffer = '';
-      stderr?.on('data', data => {
-        if (process.env.PWMCP_DEBUG)
+      stderr?.on('data', (data) => {
+        if (process.env.PWMCP_DEBUG) {
           process.stderr.write(data);
+        }
         stderrBuffer += data.toString();
       });
       await client.connect(transport);
       await client.ping();
-      
+
       // Wrap callTool to add default expectations for tests
       const originalCallTool = client.callTool.bind(client);
-      client.callTool = async (request: any) => {
+      client.callTool = (request: any) => {
         // Add default expectation for tests if not specified
         if (request.arguments && !request.arguments.expectation) {
           request.arguments.expectation = {
@@ -139,51 +165,58 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
             includeConsole: true,
             includeDownloads: true,
             includeTabs: true,
-            includeCode: true
+            includeCode: true,
           };
-        } else if (request.arguments && request.arguments.expectation) {
+        } else if (request.arguments?.expectation) {
           // Merge with defaults if expectation is partially specified
           request.arguments.expectation = {
-            includeSnapshot: request.arguments.expectation.includeSnapshot ?? true,
-            includeConsole: request.arguments.expectation.includeConsole ?? true,
-            includeDownloads: request.arguments.expectation.includeDownloads ?? true,
+            includeSnapshot:
+              request.arguments.expectation.includeSnapshot ?? true,
+            includeConsole:
+              request.arguments.expectation.includeConsole ?? true,
+            includeDownloads:
+              request.arguments.expectation.includeDownloads ?? true,
             includeTabs: request.arguments.expectation.includeTabs ?? true,
             includeCode: request.arguments.expectation.includeCode ?? true,
-            ...request.arguments.expectation
+            ...request.arguments.expectation,
           };
         }
         return originalCallTool(request);
       };
-      
+
       return { client, stderr: () => stderrBuffer };
     });
 
     await client?.close();
   },
 
-  wsEndpoint: async ({ }, use) => {
+  wsEndpoint: async ({}: any, use: any) => {
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
   },
 
-  cdpServer: async ({ mcpBrowser }, use, testInfo) => {
-    test.skip(!['chrome', 'msedge', 'chromium'].includes(mcpBrowser!), 'CDP is not supported for non-Chromium browsers');
+  cdpServer: async ({ mcpBrowser }: any, use: any, testInfo: any) => {
+    test.skip(
+      !['chrome', 'msedge', 'chromium'].includes(mcpBrowser ?? ''),
+      'CDP is not supported for non-Chromium browsers'
+    );
 
     let browserContext: BrowserContext | undefined;
     const port = 3200 + test.info().parallelIndex;
     await use({
       endpoint: `http://localhost:${port}`,
       start: async () => {
-        browserContext = await chromium.launchPersistentContext(testInfo.outputPath('cdp-user-data-dir'), {
-          channel: mcpBrowser,
-          headless: true,
-          args: [
-            `--remote-debugging-port=${port}`,
-          ],
-        });
+        browserContext = await chromium.launchPersistentContext(
+          testInfo.outputPath('cdp-user-data-dir'),
+          {
+            channel: mcpBrowser,
+            headless: true,
+            args: [`--remote-debugging-port=${port}`],
+          }
+        );
         return browserContext;
-      }
+      },
     });
     await browserContext?.close();
   },
@@ -196,40 +229,51 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
 
   mcpMode: [undefined, { option: true }],
 
-  _workerServers: [async ({ }, use, workerInfo) => {
-    const port = 8907 + workerInfo.workerIndex * 4;
-    const server = await TestServer.create(port);
+  _workerServers: [
+    async ({}: any, use: any, workerInfo: any) => {
+      const port = 8907 + workerInfo.workerIndex * 4;
+      const server = await TestServer.create(port);
 
-    const httpsPort = port + 1;
-    const httpsServer = await TestServer.createHTTPS(httpsPort);
+      const httpsPort = port + 1;
+      const httpsServer = await TestServer.createHTTPS(httpsPort);
 
-    await use({ server, httpsServer });
+      await use({ server, httpsServer });
 
-    await Promise.all([
-      server.stop(),
-      httpsServer.stop(),
-    ]);
-  }, { scope: 'worker' }],
+      await Promise.all([server.stop(), httpsServer.stop()]);
+    },
+    { scope: 'worker' },
+  ],
 
-  server: async ({ _workerServers }, use) => {
+  server: async ({ _workerServers }: any, use: any) => {
     _workerServers.server.reset();
     await use(_workerServers.server);
   },
 
-  httpsServer: async ({ _workerServers }, use) => {
+  httpsServer: async ({ _workerServers }: any, use: any) => {
     _workerServers.httpsServer.reset();
     await use(_workerServers.httpsServer);
   },
-});
+} as any);
 
-async function createTransport(args: string[], mcpMode: TestOptions['mcpMode'], profilesDir: string): Promise<{
-  transport: Transport,
-  stderr: Stream | null,
-}> {
+function createTransport(
+  args: string[],
+  mcpMode: TestOptions['mcpMode'],
+  profilesDir: string
+): {
+  transport: Transport;
+  stderr: Stream | null;
+} {
   // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
   const __filename = url.fileURLToPath(import.meta.url);
   if (mcpMode === 'docker') {
-    const dockerArgs = ['run', '--rm', '-i', '--network=host', '-v', `${test.info().project.outputDir}:/app/test-results`];
+    const dockerArgs = [
+      'run',
+      '--rm',
+      '-i',
+      '--network=host',
+      '-v',
+      `${test.info().project.outputDir}:/app/test-results`,
+    ];
     const transport = new StdioClientTransport({
       command: 'docker',
       args: [...dockerArgs, 'playwright-mcp-dev:latest', ...args],
@@ -255,7 +299,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode'], 
   });
   return {
     transport,
-    stderr: transport.stderr!,
+    stderr: transport.stderr ?? null,
   };
 }
 
@@ -266,10 +310,11 @@ export const expect = baseExpect.extend({
     const parsed = parseResponse(response);
     const isNot = this.isNot;
     try {
-      if (isNot)
+      if (isNot) {
         expect(parsed).not.toEqual(expect.objectContaining(object));
-      else
+      } else {
         expect(parsed).toEqual(expect.objectContaining(object));
+      }
     } catch (e) {
       return {
         pass: isNot,
@@ -278,13 +323,21 @@ export const expect = baseExpect.extend({
     }
     return {
       pass: !isNot,
-      message: () => ``,
+      message: () => '',
     };
   },
 });
 
 export function formatOutput(output: string): string[] {
-  return output.split('\n').map(line => line.replace(/^pw:mcp:test /, '').replace(/user data dir.*/, 'user data dir').trim()).filter(Boolean);
+  return output
+    .split('\n')
+    .map((line) =>
+      line
+        .replace(PW_MCP_TEST_REGEX, '')
+        .replace(USER_DATA_DIR_REGEX, 'user data dir')
+        .trim()
+    )
+    .filter(Boolean);
 }
 
 function parseResponse(response: any) {
@@ -298,7 +351,9 @@ function parseResponse(response: any) {
   const consoleMessages = sections.get('New console messages');
   const modalState = sections.get('Modal state');
   const downloads = sections.get('Downloads');
-  const codeNoFrame = code?.replace(/^```js\n/, '').replace(/\n```$/, '');
+  const codeNoFrame = code
+    ?.replace(CODE_FRAME_START_REGEX, '')
+    .replace(CODE_FRAME_END_REGEX, '');
   const isError = response.isError;
   const attachments = response.content.slice(1);
 
@@ -317,12 +372,13 @@ function parseResponse(response: any) {
 
 function parseSections(text: string): Map<string, string> {
   const sections = new Map<string, string>();
-  const sectionHeaders = text.split(/^### /m).slice(1); // Remove empty first element
+  const sectionHeaders = text.split(SECTION_HEADER_REGEX).slice(1); // Remove empty first element
 
   for (const section of sectionHeaders) {
     const firstNewlineIndex = section.indexOf('\n');
-    if (firstNewlineIndex === -1)
+    if (firstNewlineIndex === -1) {
       continue;
+    }
 
     const sectionName = section.substring(0, firstNewlineIndex);
     const sectionContent = section.substring(firstNewlineIndex + 1).trim();

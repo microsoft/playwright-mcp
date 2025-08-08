@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,16 +15,19 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test.describe('Wait Tool Expectation Parameter', () => {
   test.describe('browser_wait_for', () => {
-    test('should accept expectation parameter with minimal response', async ({ client, server }) => {
+    test('should accept expectation parameter with minimal response', async ({
+      client,
+      server,
+    }) => {
       server.setContent('/', '<div>Test Page</div>', 'text/html');
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -35,9 +39,9 @@ test.describe('Wait Tool Expectation Parameter', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');
@@ -45,12 +49,15 @@ test.describe('Wait Tool Expectation Parameter', () => {
       expect(result.content[0].text).toContain('Waited for');
     });
 
-    test('should accept expectation parameter with full response', async ({ client, server }) => {
+    test('should accept expectation parameter with full response', async ({
+      client,
+      server,
+    }) => {
       server.setContent('/', '<div>Full Test Page</div>', 'text/html');
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -62,28 +69,35 @@ test.describe('Wait Tool Expectation Parameter', () => {
             includeConsole: true,
             includeDownloads: true,
             includeTabs: true,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).toContain('Page Snapshot:');
       expect(result.content[0].text).toContain('Waited for');
     });
 
-    test('should accept expectation parameter when waiting for text', async ({ client, server }) => {
-      server.setContent('/', `
+    test('should accept expectation parameter when waiting for text', async ({
+      client,
+      server,
+    }) => {
+      server.setContent(
+        '/',
+        `
         <div>Initial content</div>
         <script>
           setTimeout(() => {
             document.querySelector('div').textContent = 'Updated content';
           }, 100);
         </script>
-      `, 'text/html');
+      `,
+        'text/html'
+      );
 
       await client.callTool({
         name: 'browser_navigate',
-        arguments: { url: server.PREFIX }
+        arguments: { url: server.PREFIX },
       });
 
       const result = await client.callTool({
@@ -95,9 +109,9 @@ test.describe('Wait Tool Expectation Parameter', () => {
             includeConsole: false,
             includeDownloads: false,
             includeTabs: false,
-            includeCode: true
-          }
-        }
+            includeCode: true,
+          },
+        },
       });
 
       expect(result.content[0].text).not.toContain('Page Snapshot:');

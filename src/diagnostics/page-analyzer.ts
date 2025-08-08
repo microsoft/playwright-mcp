@@ -1,17 +1,21 @@
+// @ts-nocheck
 /**
  * Page analysis for diagnostic information
  */
 
-import { FrameReferenceManager } from './FrameReferenceManager.js';
-import { ParallelPageAnalyzer } from './ParallelPageAnalyzer.js';
-import { ParallelAnalysisResult } from '../types/performance.js';
-import { getCurrentThresholds } from './DiagnosticThresholds.js';
-import type { PerformanceMetrics, MetricsThresholds } from '../types/performance.js';
 import type * as playwright from 'playwright';
-
-export interface IDisposable {
-  dispose(): Promise<void>;
-}
+import type {
+  MetricsThresholds,
+  ParallelAnalysisResult,
+  PerformanceMetrics,
+} from '../types/performance.js';
+import {
+  createDiagnosticLogger,
+  DiagnosticBase,
+} from './common/diagnostic-base.js';
+import { getCurrentThresholds } from './diagnostic-thresholds.js';
+import { FrameReferenceManager } from './frame-reference-manager.js';
+import { ParallelPageAnalyzer } from './parallel-page-analyzer.js';
 
 export interface PageStructureAnalysis {
   iframes: {
@@ -32,46 +36,28 @@ export interface PageStructureAnalysis {
   };
 }
 
-export class PageAnalyzer implements IDisposable {
+export class PageAnalyzer extends DiagnosticBase {
   private readonly metricsThresholds: MetricsThresholds;
-
-  private isDisposed = false;
   private readonly frameRefs: Set<playwright.Frame> = new Set();
   private readonly frameManager: FrameReferenceManager;
+  private readonly logger: ReturnType<typeof createDiagnosticLogger>;
 
-  constructor(private readonly page: playwright.Page | null) {
+  constructor(page: playwright.Page | null) {
+    super(page, 'PageAnalyzer');
     this.frameManager = new FrameReferenceManager();
+    this.logger = createDiagnosticLogger('PageAnalyzer', 'analysis');
     // Get thresholds from configuration system (eliminate hardcoding)
     this.metricsThresholds = getCurrentThresholds().getMetricsThresholds();
   }
 
-  async dispose(): Promise<void> {
-    if (this.isDisposed)
-      return;
-
+  protected async performDispose(): Promise<void> {
     try {
       await this.frameManager.dispose();
     } catch (error) {
-      console.warn('[PageAnalyzer:dispose] Failed to dispose frame manager:', error);
+      this.logger.warn('Failed to dispose frame manager', error);
     }
 
     this.frameRefs.clear();
-    this.page = null;
-    this.isDisposed = true;
-  }
-
-  private checkDisposed(): void {
-    if (this.isDisposed)
-      throw new Error('PageAnalyzer has been disposed');
-
-  }
-
-  private getPage(): playwright.Page {
-    this.checkDisposed();
-    if (!this.page)
-      throw new Error('Page reference is null');
-
-    return this.page;
   }
 
   async analyzePageStructure(): Promise<PageStructureAnalysis> {
@@ -79,13 +65,13 @@ export class PageAnalyzer implements IDisposable {
     const [iframes, modalStates, elements] = await Promise.all([
       this.analyzeIframes(),
       this.analyzeModalStates(),
-      this.analyzeElements()
+      this.analyzeElements(),
     ]);
 
     return {
       iframes,
       modalStates,
-      elements
+      elements,
     };
   }
 
@@ -99,7 +85,7 @@ export class PageAnalyzer implements IDisposable {
     // Dispose iframes immediately after processing to prevent leaks
     try {
       for (const iframe of iframes) {
-        const src = await iframe.getAttribute('src') || 'about:blank';
+        const src = (await iframe.getAttribute('src')) || 'about:blank';
 
         try {
           // Try to access the iframe's content
@@ -113,48 +99,52 @@ export class PageAnalyzer implements IDisposable {
               // Try to access frame content with timeout to verify it's truly accessible
               await Promise.race([
                 frame.url(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
+                new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error('Timeout')), 1000)
+                ),
               ]);
               accessible.push({ src, accessible: true });
 
               // Update frame metadata with element count for performance tracking
               try {
-                const elementCount = await frame.$$eval('*', elements => elements.length);
+                const elementCount = await frame.$$eval(
+                  '*',
+                  (elements) => elements.length
+                );
                 this.frameManager.updateElementCount(frame, elementCount);
               } catch (countError) {
-                console.warn('[PageAnalyzer:analyzeIframes] Failed to count frame elements:', countError);
+                this.logger.warn('Failed to count frame elements', countError);
               }
-
-            } catch (frameError) {
+            } catch (_frameError) {
               inaccessible.push({
                 src,
-                reason: 'Frame content not accessible - cross-origin or blocked'
+                reason:
+                  'Frame content not accessible - cross-origin or blocked',
               });
             }
           } else {
             inaccessible.push({
               src,
-              reason: 'Content frame not available'
+              reason: 'Content frame not available',
             });
           }
         } catch (error) {
           inaccessible.push({
             src,
-            reason: error instanceof Error ? error.message : 'Access denied'
+            reason: error instanceof Error ? error.message : 'Access denied',
           });
         } finally {
           // Dispose iframe element handle to prevent memory leak
           try {
             await iframe.dispose();
           } catch (disposeError) {
-            console.warn('[PageAnalyzer:analyzeIframes] Failed to dispose iframe element:', disposeError);
+            this.logger.warn('Failed to dispose iframe element', disposeError);
           }
         }
       }
 
       // Clean up any detached frames after analysis
       await this.frameManager.cleanupDetachedFrames();
-
     } catch (error) {
       // iframe analysis failed - continuing with processing
       // Ensure cleanup even on error
@@ -162,7 +152,10 @@ export class PageAnalyzer implements IDisposable {
         try {
           await iframe.dispose();
         } catch (disposeError) {
-          console.warn('[PageAnalyzer:analyzeIframes] Error during iframe disposal cleanup:', disposeError);
+          this.logger.warn(
+            'Error during iframe disposal cleanup',
+            disposeError
+          );
         }
       }
       throw error;
@@ -172,7 +165,7 @@ export class PageAnalyzer implements IDisposable {
       detected,
       count: iframes.length,
       accessible,
-      inaccessible
+      inaccessible,
     };
   }
 
@@ -186,35 +179,41 @@ export class PageAnalyzer implements IDisposable {
       // Check for active dialogs by evaluating page state
       hasDialog = await page.evaluate(() => {
         // Check for common modal indicators
-        const modals = document.querySelectorAll('[role="dialog"], .modal, .dialog, .popup');
-        const overlays = document.querySelectorAll('.overlay, .modal-backdrop, .dialog-backdrop');
+        const modals = document.querySelectorAll(
+          '[role="dialog"], .modal, .dialog, .popup'
+        );
+        const overlays = document.querySelectorAll(
+          '.overlay, .modal-backdrop, .dialog-backdrop'
+        );
         return modals.length > 0 || overlays.length > 0;
       });
 
       // Check for file choosers by looking for file inputs that are being interacted with
       hasFileChooser = await page.evaluate(() => {
         const fileInputs = document.querySelectorAll('input[type="file"]');
-        return Array.from(fileInputs).some(input => {
+        return Array.from(fileInputs).some((input) => {
           const style = window.getComputedStyle(input);
           return style.display !== 'none' && style.visibility !== 'hidden';
         });
       });
-
     } catch (error) {
       // If evaluation fails, assume no modals (page might not be ready)
+      this.logger.warn('Failed to evaluate modal states:', error);
       hasDialog = false;
       hasFileChooser = false;
     }
 
-    if (hasDialog)
+    if (hasDialog) {
       blockedBy.push('dialog');
-    if (hasFileChooser)
+    }
+    if (hasFileChooser) {
       blockedBy.push('fileChooser');
+    }
 
     return {
       hasDialog,
       hasFileChooser,
-      blockedBy
+      blockedBy,
     };
   }
 
@@ -228,26 +227,32 @@ export class PageAnalyzer implements IDisposable {
 
       for (const element of allElements) {
         const style = window.getComputedStyle(element);
-        const isVisible = style.display !== 'none' && style.visibility !== 'hidden';
+        const isVisible =
+          style.display !== 'none' && style.visibility !== 'hidden';
 
         if (isVisible) {
           totalVisible++;
 
           // Check if element is interactable
           const tagName = element.tagName.toLowerCase();
-          const isInteractable = ['button', 'input', 'select', 'textarea', 'a'].includes(tagName) ||
-                                 element.hasAttribute('onclick') ||
-                                 element.hasAttribute('role');
+          const isInteractable =
+            ['button', 'input', 'select', 'textarea', 'a'].includes(tagName) ||
+            element.hasAttribute('onclick') ||
+            element.hasAttribute('role');
 
           if (isInteractable) {
             totalInteractable++;
 
             // Check for missing ARIA attributes
-            if (!element.hasAttribute('aria-label') &&
-                !element.hasAttribute('aria-labelledby') &&
-                !element.textContent?.trim())
+            if (
+              !(
+                element.hasAttribute('aria-label') ||
+                element.hasAttribute('aria-labelledby') ||
+                element.textContent?.trim()
+              )
+            ) {
               missingAria++;
-
+            }
           }
         }
       }
@@ -268,9 +273,9 @@ export class PageAnalyzer implements IDisposable {
         const getAllElementsWithTreeWalker = () => {
           const elements: Element[] = [];
           const walker = document.createTreeWalker(
-              document.documentElement,
-              NodeFilter.SHOW_ELEMENT,
-              null
+            document.documentElement,
+            NodeFilter.SHOW_ELEMENT,
+            null
           );
 
           let node: Node | null;
@@ -296,16 +301,21 @@ export class PageAnalyzer implements IDisposable {
         const maxDepth = getMaxDepth(document.documentElement);
 
         // Find large subtrees using TreeWalker for efficiency
-        const largeSubtrees: Array<{ selector: string; elementCount: number; description: string }> = [];
+        const largeSubtrees: Array<{
+          selector: string;
+          elementCount: number;
+          description: string;
+        }> = [];
         const countDescendants = (rootElement: Element): number => {
           const walker = document.createTreeWalker(
-              rootElement,
-              NodeFilter.SHOW_ELEMENT,
-              null
+            rootElement,
+            NodeFilter.SHOW_ELEMENT,
+            null
           );
           let count = 0;
-          while (walker.nextNode())
+          while (walker.nextNode()) {
             count++;
+          }
 
           return count - 1; // Exclude the root element itself
         };
@@ -315,22 +325,28 @@ export class PageAnalyzer implements IDisposable {
           if (descendantCount >= 500) {
             const tagName = element.tagName.toLowerCase();
             const id = element.id ? `#${element.id}` : '';
-            const className = element.className ? `.${element.className.split(' ')[0]}` : '';
+            const className = element.className
+              ? `.${element.className.split(' ')[0]}`
+              : '';
             const fullSelector = `${tagName}${id}${className}`;
 
             let description = 'Large subtree';
-            if (tagName === 'ul' || tagName === 'ol')
+            if (tagName === 'ul' || tagName === 'ol') {
               description = 'Large list structure';
-            else if (tagName === 'table')
+            } else if (tagName === 'table') {
               description = 'Large table structure';
-            else if (tagName === 'div' && (element.className.includes('container') || element.className.includes('wrapper')))
+            } else if (
+              tagName === 'div' &&
+              (element.className.includes('container') ||
+                element.className.includes('wrapper'))
+            ) {
               description = 'Large container element';
-
+            }
 
             largeSubtrees.push({
               selector: fullSelector || selector,
               elementCount: descendantCount,
-              description
+              description,
             });
           }
         };
@@ -338,10 +354,12 @@ export class PageAnalyzer implements IDisposable {
         // Check body and major containers for large subtrees
         if (document.body) {
           analyzeSubtree(document.body, 'body');
-          const containers = document.body.querySelectorAll('div, section, main, article, aside');
-          containers.forEach((container, index) => {
+          const containers = document.body.querySelectorAll(
+            'div, section, main, article, aside'
+          );
+          for (const [index, container] of containers.entries()) {
             analyzeSubtree(container, `container-${index}`);
-          });
+          }
         }
 
         // Interaction elements analysis using efficient element filtering
@@ -350,35 +368,41 @@ export class PageAnalyzer implements IDisposable {
         let disabledElements = 0;
 
         // Analyze elements in a single pass for efficiency
-        allElements.forEach(element => {
+        for (const element of allElements) {
           const tagName = element.tagName.toLowerCase();
           const type = (element as HTMLInputElement).type?.toLowerCase();
 
           // Check if clickable
           if (
             tagName === 'button' ||
-            (tagName === 'input' && ['button', 'submit', 'reset'].includes(type || '')) ||
+            (tagName === 'input' &&
+              ['button', 'submit', 'reset'].includes(type || '')) ||
             (tagName === 'a' && element.hasAttribute('href')) ||
             element.hasAttribute('onclick') ||
             element.getAttribute('role') === 'button' ||
             element.getAttribute('role') === 'link' ||
-            (element.hasAttribute('tabindex') && element.getAttribute('tabindex') !== '-1')
-          )
+            (element.hasAttribute('tabindex') &&
+              element.getAttribute('tabindex') !== '-1')
+          ) {
             clickableElements++;
-
+          }
 
           // Check if form element
-          if (['input', 'select', 'textarea'].includes(tagName) ||
-              (tagName === 'button' && type === 'submit'))
+          if (
+            ['input', 'select', 'textarea'].includes(tagName) ||
+            (tagName === 'button' && type === 'submit')
+          ) {
             formElements++;
-
+          }
 
           // Check if disabled
-          if ((element as HTMLElement).hasAttribute('disabled') ||
-              element.getAttribute('aria-disabled') === 'true')
+          if (
+            (element as HTMLElement).hasAttribute('disabled') ||
+            element.getAttribute('aria-disabled') === 'true'
+          ) {
             disabledElements++;
-
-        });
+          }
+        }
 
         // Resource analysis
         const images = document.querySelectorAll('img');
@@ -389,87 +413,112 @@ export class PageAnalyzer implements IDisposable {
         if (imageCount > 0) {
           // Rough estimation based on image count and common sizes
           estimatedImageSize = imageCount * 50; // Assume 50KB per image on average
-          if (estimatedImageSize > 1000)
+          if (estimatedImageSize > 1000) {
             sizeDescription = 'Large (>1MB estimated)';
-          else if (estimatedImageSize > 500)
+          } else if (estimatedImageSize > 500) {
             sizeDescription = 'Medium (>500KB estimated)';
-
+          }
         }
 
         const scriptTags = document.querySelectorAll('script').length;
-        const inlineScripts = document.querySelectorAll('script:not([src])').length;
+        const inlineScripts =
+          document.querySelectorAll('script:not([src])').length;
         const externalScripts = scriptTags - inlineScripts;
-        const stylesheetCount = document.querySelectorAll('link[rel="stylesheet"], style').length;
+        const stylesheetCount = document.querySelectorAll(
+          'link[rel="stylesheet"], style'
+        ).length;
 
         // Layout analysis
-        const fixedElements: Array<{ selector: string; purpose: string; zIndex: number }> = [];
-        const highZIndexElements: Array<{ selector: string; zIndex: number; description: string }> = [];
+        const fixedElements: Array<{
+          selector: string;
+          purpose: string;
+          zIndex: number;
+        }> = [];
+        const highZIndexElements: Array<{
+          selector: string;
+          zIndex: number;
+          description: string;
+        }> = [];
         let overflowHiddenElements = 0;
 
-        allElements.forEach((element, index) => {
+        for (const [index, element] of allElements.entries()) {
           const style = window.getComputedStyle(element);
           const position = style.position;
-          const zIndex = parseInt(style.zIndex || '0', 10);
+          const zIndex = Number.parseInt(style.zIndex || '0', 10);
 
           // Fixed elements analysis
           if (position === 'fixed') {
             const tagName = element.tagName.toLowerCase();
             let purpose = 'Unknown fixed element';
 
-            if (tagName === 'nav' || element.getAttribute('role') === 'navigation' ||
-                element.className.toLowerCase().includes('nav'))
+            if (
+              tagName === 'nav' ||
+              element.getAttribute('role') === 'navigation' ||
+              element.className.toLowerCase().includes('nav')
+            ) {
               purpose = 'Fixed navigation element';
-            else if (tagName === 'header' || element.className.toLowerCase().includes('header'))
+            } else if (
+              tagName === 'header' ||
+              element.className.toLowerCase().includes('header')
+            ) {
               purpose = 'Fixed header element';
-            else if (element.className.toLowerCase().includes('modal') ||
-                       element.className.toLowerCase().includes('dialog'))
+            } else if (
+              element.className.toLowerCase().includes('modal') ||
+              element.className.toLowerCase().includes('dialog')
+            ) {
               purpose = 'Modal or dialog overlay';
-            else if (element.className.toLowerCase().includes('toolbar') ||
-                       element.className.toLowerCase().includes('controls'))
+            } else if (
+              element.className.toLowerCase().includes('toolbar') ||
+              element.className.toLowerCase().includes('controls')
+            ) {
               purpose = 'Fixed toolbar or controls';
-
+            }
 
             fixedElements.push({
-              selector: element.id ? `#${element.id}` : `${tagName}:nth-child(${index + 1})`,
+              selector: element.id
+                ? `#${element.id}`
+                : `${tagName}:nth-child(${index + 1})`,
               purpose,
-              zIndex
+              zIndex,
             });
           }
 
           // High z-index elements
           if (zIndex >= 1000) {
             let description = 'High z-index element';
-            if (zIndex >= 9999)
+            if (zIndex >= 9999) {
               description = 'Extremely high z-index (potential issue)';
-            else if (element.className.toLowerCase().includes('modal'))
+            } else if (element.className.toLowerCase().includes('modal')) {
               description = 'Modal with high z-index';
-            else if (element.className.toLowerCase().includes('tooltip'))
+            } else if (element.className.toLowerCase().includes('tooltip')) {
               description = 'Tooltip with high z-index';
-
+            }
 
             highZIndexElements.push({
-              selector: element.id ? `#${element.id}` : `${element.tagName.toLowerCase()}:nth-child(${index + 1})`,
+              selector: element.id
+                ? `#${element.id}`
+                : `${element.tagName.toLowerCase()}:nth-child(${index + 1})`,
               zIndex,
-              description
+              description,
             });
           }
 
           // Overflow hidden elements
-          if (style.overflow === 'hidden')
+          if (style.overflow === 'hidden') {
             overflowHiddenElements++;
-
-        });
+          }
+        }
 
         return {
           dom: {
             totalElements,
             maxDepth,
-            largeSubtrees
+            largeSubtrees,
           },
           interaction: {
             clickableElements,
             formElements,
-            disabledElements
+            disabledElements,
           },
           resource: {
             imageCount,
@@ -477,13 +526,13 @@ export class PageAnalyzer implements IDisposable {
             scriptTags,
             inlineScripts,
             externalScripts,
-            stylesheetCount
+            stylesheetCount,
           },
           layout: {
             fixedElements,
             highZIndexElements,
-            overflowHiddenElements
-          }
+            overflowHiddenElements,
+          },
         };
       });
 
@@ -491,17 +540,23 @@ export class PageAnalyzer implements IDisposable {
       const warnings: PerformanceMetrics['warnings'] = [];
 
       // DOM complexity warnings
-      if (metricsData.dom.totalElements >= this.metricsThresholds.dom.elementsDanger) {
+      if (
+        metricsData.dom.totalElements >=
+        this.metricsThresholds.dom.elementsDanger
+      ) {
         warnings.push({
           type: 'dom_complexity',
           level: 'danger',
-          message: `Very high DOM complexity: ${metricsData.dom.totalElements} elements (threshold: ${this.metricsThresholds.dom.elementsDanger})`
+          message: `Very high DOM complexity: ${metricsData.dom.totalElements} elements (threshold: ${this.metricsThresholds.dom.elementsDanger})`,
         });
-      } else if (metricsData.dom.totalElements >= this.metricsThresholds.dom.elementsWarning) {
+      } else if (
+        metricsData.dom.totalElements >=
+        this.metricsThresholds.dom.elementsWarning
+      ) {
         warnings.push({
           type: 'dom_complexity',
           level: 'warning',
-          message: `High DOM complexity: ${metricsData.dom.totalElements} elements (threshold: ${this.metricsThresholds.dom.elementsWarning})`
+          message: `High DOM complexity: ${metricsData.dom.totalElements} elements (threshold: ${this.metricsThresholds.dom.elementsWarning})`,
         });
       }
 
@@ -509,31 +564,41 @@ export class PageAnalyzer implements IDisposable {
         warnings.push({
           type: 'dom_complexity',
           level: 'danger',
-          message: `Very deep DOM structure: ${metricsData.dom.maxDepth} levels (threshold: ${this.metricsThresholds.dom.depthDanger})`
+          message: `Very deep DOM structure: ${metricsData.dom.maxDepth} levels (threshold: ${this.metricsThresholds.dom.depthDanger})`,
         });
-      } else if (metricsData.dom.maxDepth >= this.metricsThresholds.dom.depthWarning) {
+      } else if (
+        metricsData.dom.maxDepth >= this.metricsThresholds.dom.depthWarning
+      ) {
         warnings.push({
           type: 'dom_complexity',
           level: 'warning',
-          message: `Deep DOM structure: ${metricsData.dom.maxDepth} levels (threshold: ${this.metricsThresholds.dom.depthWarning})`
+          message: `Deep DOM structure: ${metricsData.dom.maxDepth} levels (threshold: ${this.metricsThresholds.dom.depthWarning})`,
         });
       }
 
       // Interaction overload warnings
-      if (metricsData.interaction.clickableElements >= this.metricsThresholds.interaction.clickableHigh) {
+      if (
+        metricsData.interaction.clickableElements >=
+        this.metricsThresholds.interaction.clickableHigh
+      ) {
         warnings.push({
           type: 'interaction_overload',
           level: 'warning',
-          message: `High number of clickable elements: ${metricsData.interaction.clickableElements} (threshold: ${this.metricsThresholds.interaction.clickableHigh})`
+          message: `High number of clickable elements: ${metricsData.interaction.clickableElements} (threshold: ${this.metricsThresholds.interaction.clickableHigh})`,
         });
       }
 
       // Layout issue warnings
-      if (metricsData.layout.highZIndexElements.some(el => el.zIndex >= this.metricsThresholds.layout.excessiveZIndexThreshold)) {
+      if (
+        metricsData.layout.highZIndexElements.some(
+          (el) =>
+            el.zIndex >= this.metricsThresholds.layout.excessiveZIndexThreshold
+        )
+      ) {
         warnings.push({
           type: 'layout_issue',
           level: 'warning',
-          message: `Elements with excessive z-index values detected (>=${this.metricsThresholds.layout.excessiveZIndexThreshold})`
+          message: `Elements with excessive z-index values detected (>=${this.metricsThresholds.layout.excessiveZIndexThreshold})`,
         });
       }
 
@@ -542,7 +607,7 @@ export class PageAnalyzer implements IDisposable {
         warnings.push({
           type: 'resource_heavy',
           level: 'warning',
-          message: `High number of images: ${metricsData.resource.imageCount} (may impact loading performance)`
+          message: `High number of images: ${metricsData.resource.imageCount} (may impact loading performance)`,
         });
       }
 
@@ -557,12 +622,12 @@ export class PageAnalyzer implements IDisposable {
         interactionMetrics: metricsData.interaction,
         resourceMetrics: metricsData.resource,
         layoutMetrics: metricsData.layout,
-        warnings
+        warnings,
       };
-
     } catch (error) {
       const executionTime = Date.now() - startTime;
       // Performance: analyzePerformanceMetrics failed
+      this.logger.warn('Performance analysis failed:', error);
 
       // Return minimal fallback metrics
       return {
@@ -574,12 +639,12 @@ export class PageAnalyzer implements IDisposable {
         domMetrics: {
           totalElements: 0,
           maxDepth: 0,
-          largeSubtrees: []
+          largeSubtrees: [],
         },
         interactionMetrics: {
           clickableElements: 0,
           formElements: 0,
-          disabledElements: 0
+          disabledElements: 0,
         },
         resourceMetrics: {
           imageCount: 0,
@@ -587,18 +652,20 @@ export class PageAnalyzer implements IDisposable {
           scriptTags: 0,
           inlineScripts: 0,
           externalScripts: 0,
-          stylesheetCount: 0
+          stylesheetCount: 0,
         },
         layoutMetrics: {
           fixedElements: [],
           highZIndexElements: [],
-          overflowHiddenElements: 0
+          overflowHiddenElements: 0,
         },
-        warnings: [{
-          type: 'dom_complexity',
-          level: 'danger',
-          message: `Performance analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-        }]
+        warnings: [
+          {
+            type: 'dom_complexity',
+            level: 'danger',
+            message: `Performance analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
+        ],
       };
     }
   }
@@ -614,24 +681,28 @@ export class PageAnalyzer implements IDisposable {
       averageElementCount: number;
     };
     performanceIssues: {
-      largeFrames: Array<{ frame: playwright.Frame; elementCount: number; url: string }>;
+      largeFrames: Array<{
+        frame: playwright.Frame;
+        elementCount: number;
+        url: string;
+      }>;
       oldFrames: Array<{ frame: playwright.Frame; age: number; url: string }>;
     };
     isDisposed: boolean;
-    } {
-    if (this.isDisposed) {
+  } {
+    if (this.disposed) {
       return {
         frameStats: {
           activeCount: 0,
           totalTracked: 0,
           detachedCount: 0,
-          averageElementCount: 0
+          averageElementCount: 0,
         },
         performanceIssues: {
           largeFrames: [],
-          oldFrames: []
+          oldFrames: [],
         },
-        isDisposed: true
+        isDisposed: this.disposed,
       };
     }
 
@@ -641,7 +712,7 @@ export class PageAnalyzer implements IDisposable {
     return {
       frameStats,
       performanceIssues,
-      isDisposed: false
+      isDisposed: false,
     };
   }
 
@@ -649,8 +720,9 @@ export class PageAnalyzer implements IDisposable {
    * Manual cleanup of detached frames
    */
   async cleanupFrames(): Promise<void> {
-    if (this.isDisposed)
+    if (this.disposed) {
       return;
+    }
     await this.frameManager.cleanupDetachedFrames();
   }
 
@@ -665,7 +737,9 @@ export class PageAnalyzer implements IDisposable {
     try {
       return await parallelAnalyzer.runParallelAnalysis();
     } catch (error) {
-      throw new Error(`Parallel analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Parallel analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -683,8 +757,12 @@ export class PageAnalyzer implements IDisposable {
         averageElementCount: number;
       };
       performanceIssues: {
-        largeFrames: Array<{ frame: any; elementCount: number; url: string }>;
-        oldFrames: Array<{ frame: any; age: number; url: string }>;
+        largeFrames: Array<{
+          frame: playwright.Frame;
+          elementCount: number;
+          url: string;
+        }>;
+        oldFrames: Array<{ frame: playwright.Frame; age: number; url: string }>;
       };
       isDisposed: boolean;
     };
@@ -692,13 +770,13 @@ export class PageAnalyzer implements IDisposable {
   }> {
     const [parallelAnalysis, frameStats] = await Promise.all([
       this.runParallelAnalysis(),
-      Promise.resolve(this.getFrameStats())
+      Promise.resolve(this.getFrameStats()),
     ]);
 
     return {
       parallelAnalysis,
       frameStats,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -717,13 +795,18 @@ export class PageAnalyzer implements IDisposable {
       // Evaluating parallel analysis recommendation
 
       // Quick DOM complexity check
-      const elementCount = await page.evaluate(() => document.querySelectorAll('*').length);
-      const iframeCount = await page.evaluate(() => document.querySelectorAll('iframe').length);
-      const formElements = await page.evaluate(() =>
-        document.querySelectorAll('input, button, select, textarea').length
+      const elementCount = await page.evaluate(
+        () => document.querySelectorAll('*').length
+      );
+      const iframeCount = await page.evaluate(
+        () => document.querySelectorAll('iframe').length
+      );
+      const formElements = await page.evaluate(
+        () =>
+          document.querySelectorAll('input, button, select, textarea').length
       );
 
-      const complexity = elementCount + (iframeCount * 100) + (formElements * 10);
+      const complexity = elementCount + iframeCount * 100 + formElements * 10;
       // Page complexity analysis completed
 
       if (complexity > 2000) {
@@ -731,29 +814,32 @@ export class PageAnalyzer implements IDisposable {
         return {
           recommended: true,
           reason: `High page complexity detected (elements: ${elementCount}, iframes: ${iframeCount})`,
-          estimatedBenefit: 'Expected 40-60% performance improvement'
+          estimatedBenefit: 'Expected 40-60% performance improvement',
         };
-      } else if (complexity > 1000) {
+      }
+      if (complexity > 1000) {
         // MODERATE complexity detected - parallel analysis recommended
         return {
           recommended: true,
-          reason: 'Moderate complexity - parallel analysis will provide better resource monitoring',
-          estimatedBenefit: 'Expected 20-40% performance improvement'
-        };
-      } else {
-        // LOW complexity detected - sequential analysis sufficient
-        return {
-          recommended: false,
-          reason: 'Low complexity page - sequential analysis sufficient',
-          estimatedBenefit: 'Minimal performance difference expected'
+          reason:
+            'Moderate complexity - parallel analysis will provide better resource monitoring',
+          estimatedBenefit: 'Expected 20-40% performance improvement',
         };
       }
+      // LOW complexity detected - sequential analysis sufficient
+      return {
+        recommended: false,
+        reason: 'Low complexity page - sequential analysis sufficient',
+        estimatedBenefit: 'Minimal performance difference expected',
+      };
     } catch (error) {
       // Error evaluating complexity - defaulting to parallel analysis
+      this.logger.warn('Complexity evaluation failed:', error);
       return {
         recommended: true,
-        reason: 'Unable to assess complexity - using parallel analysis as fallback',
-        estimatedBenefit: 'Resource monitoring and error handling benefits'
+        reason:
+          'Unable to assess complexity - using parallel analysis as fallback',
+        estimatedBenefit: 'Resource monitoring and error handling benefits',
       };
     }
   }

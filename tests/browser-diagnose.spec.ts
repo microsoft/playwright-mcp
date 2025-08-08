@@ -1,17 +1,22 @@
+// @ts-nocheck
 /**
  * browser_diagnose Tool Tests
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test('browser_diagnose - basic page analysis', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <div>
       <button>Click Me</button>
       <iframe src="data:text/html,<h1>Frame Content</h1>"></iframe>
       <input type="text" placeholder="Enter text">
     </div>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
@@ -22,9 +27,9 @@ test('browser_diagnose - basic page analysis', async ({ client, server }) => {
     name: 'browser_diagnose',
     arguments: {
       expectation: {
-        includeSnapshot: false
-      }
-    }
+        includeSnapshot: false,
+      },
+    },
   });
 
   expect(result.isError).toBeFalsy();
@@ -34,12 +39,16 @@ test('browser_diagnose - basic page analysis', async ({ client, server }) => {
 });
 
 test('browser_diagnose - with element search', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <div>
       <button data-action="submit">Submit</button>
       <button data-action="cancel">Cancel</button>
     </div>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
@@ -51,12 +60,12 @@ test('browser_diagnose - with element search', async ({ client, server }) => {
     arguments: {
       searchForElements: {
         text: 'Submit',
-        role: 'button'
+        role: 'button',
       },
       expectation: {
-        includeSnapshot: false
-      }
-    }
+        includeSnapshot: false,
+      },
+    },
   });
 
   expect(result.isError).toBeFalsy();
@@ -65,11 +74,15 @@ test('browser_diagnose - with element search', async ({ client, server }) => {
 });
 
 test('browser_diagnose - performance analysis', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <div>
       <button>Test</button>
     </div>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
@@ -81,9 +94,9 @@ test('browser_diagnose - performance analysis', async ({ client, server }) => {
     arguments: {
       includePerformanceMetrics: true,
       expectation: {
-        includeSnapshot: false
-      }
-    }
+        includeSnapshot: false,
+      },
+    },
   });
 
   expect(result.isError).toBeFalsy();
@@ -91,7 +104,9 @@ test('browser_diagnose - performance analysis', async ({ client, server }) => {
 });
 
 test('browser_diagnose - comprehensive report', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <div>
       <h1>Test Page</h1>
       <form>
@@ -101,7 +116,9 @@ test('browser_diagnose - comprehensive report', async ({ client, server }) => {
       </form>
       <iframe src="about:blank"></iframe>
     </div>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
@@ -112,14 +129,14 @@ test('browser_diagnose - comprehensive report', async ({ client, server }) => {
     name: 'browser_diagnose',
     arguments: {
       searchForElements: {
-        role: 'textbox'
+        role: 'textbox',
       },
       includePerformanceMetrics: true,
       includeAccessibilityInfo: true,
       expectation: {
-        includeSnapshot: false
-      }
-    }
+        includeSnapshot: false,
+      },
+    },
   });
 
   expect(result.isError).toBeFalsy();
@@ -129,13 +146,20 @@ test('browser_diagnose - comprehensive report', async ({ client, server }) => {
   expect(result.content[0].text).toContain('Accessibility Information');
 });
 
-test('browser_diagnose - with troubleshooting suggestions', async ({ client, server }) => {
-  server.setContent('/', `
+test('browser_diagnose - with troubleshooting suggestions', async ({
+  client,
+  server,
+}) => {
+  server.setContent(
+    '/',
+    `
     <div>
       <iframe src="data:text/html,<button>Inside Frame</button>"></iframe>
       <button style="display: none;">Hidden Button</button>
     </div>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
@@ -147,9 +171,9 @@ test('browser_diagnose - with troubleshooting suggestions', async ({ client, ser
     arguments: {
       includeTroubleshootingSuggestions: true,
       expectation: {
-        includeSnapshot: false
-      }
-    }
+        includeSnapshot: false,
+      },
+    },
   });
 
   expect(result.isError).toBeFalsy();

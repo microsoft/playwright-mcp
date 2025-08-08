@@ -2,7 +2,7 @@
  * Predefined benchmark scenarios
  */
 
-import { BenchmarkScenario } from './types.js';
+import type { BenchmarkScenario } from './types.js';
 
 export const BENCHMARK_SCENARIOS: BenchmarkScenario[] = [
   {
@@ -10,8 +10,8 @@ export const BENCHMARK_SCENARIOS: BenchmarkScenario[] = [
     description: 'Default behavior without optimization',
     steps: [
       { tool: 'browser_navigate', args: { url: 'https://example.com' } },
-      { tool: 'browser_snapshot', args: {} }
-    ]
+      { tool: 'browser_snapshot', args: {} },
+    ],
   },
 
   {
@@ -23,10 +23,10 @@ export const BENCHMARK_SCENARIOS: BenchmarkScenario[] = [
         args: { url: 'https://example.com' },
         fastArgs: {
           url: 'https://example.com',
-          expectation: { includeCode: false }
-        }
-      }
-    ]
+          expectation: { includeCode: false },
+        },
+      },
+    ],
   },
 
   {
@@ -42,11 +42,11 @@ export const BENCHMARK_SCENARIOS: BenchmarkScenario[] = [
             includeCode: false,
             includeSnapshot: false,
             includeConsole: false,
-            includeTabs: false
-          }
-        }
-      }
-    ]
+            includeTabs: false,
+          },
+        },
+      },
+    ],
   },
 
   {
@@ -61,12 +61,12 @@ export const BENCHMARK_SCENARIOS: BenchmarkScenario[] = [
           expectation: {
             includeConsole: false,
             snapshotOptions: {
-              maxLength: 100
-            }
-          }
-        }
-      }
-    ]
+              maxLength: 100,
+            },
+          },
+        },
+      },
+    ],
   },
 
   {
@@ -84,11 +84,11 @@ export const BENCHMARK_SCENARIOS: BenchmarkScenario[] = [
             imageOptions: {
               format: 'jpeg',
               quality: 50,
-              maxWidth: 300
-            }
-          }
-        }
-      }
-    ]
-  }
+              maxWidth: 300,
+            },
+          },
+        },
+      },
+    ],
+  },
 ];

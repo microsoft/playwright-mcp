@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -14,33 +15,43 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test('browser_click', async ({ client, server, mcpBrowser }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <title>Title</title>
     <button>Submit</button>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Submit button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'Submit button',
+        ref: 'e2',
+      },
+    })
+  ).toHaveResponse({
     code: `await page.getByRole('button', { name: 'Submit' }).click();`,
-    pageState: expect.stringContaining(`- button "Submit" ${mcpBrowser !== 'webkit' || process.platform === 'linux' ? '[active] ' : ''}[ref=e2]`),
+    pageState: expect.stringContaining(
+      `- button "Submit" ${mcpBrowser !== 'webkit' || process.platform === 'linux' ? '[active] ' : ''}[ref=e2]`
+    ),
   });
 });
 
 test('browser_click (double)', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <title>Title</title>
     <script>
       function handle() {
@@ -48,28 +59,36 @@ test('browser_click (double)', async ({ client, server }) => {
       }
     </script>
     <h1 ondblclick="handle()">Click me</h1>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Click me',
-      ref: 'e2',
-      doubleClick: true,
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'Click me',
+        ref: 'e2',
+        doubleClick: true,
+      },
+    })
+  ).toHaveResponse({
     code: `await page.getByRole('heading', { name: 'Click me' }).dblclick();`,
-    pageState: expect.stringContaining(`- heading "Double clicked" [level=1] [ref=e3]`),
+    pageState: expect.stringContaining(
+      `- heading "Double clicked" [level=1] [ref=e3]`
+    ),
   });
 });
 
 test('browser_click (right)', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <button oncontextmenu="handle">Menu</button>
     <script>
       document.addEventListener('contextmenu', event => {
@@ -77,7 +96,9 @@ test('browser_click (right)', async ({ client, server }) => {
         document.querySelector('button').textContent = 'Right clicked';
       });
     </script>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',

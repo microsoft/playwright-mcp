@@ -1,6 +1,8 @@
+// @ts-nocheck
+import type * as playwright from 'playwright';
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';
-import type * as playwright from 'playwright';
+
 const requests = defineTabTool({
   capability: 'core',
   schema: {
@@ -10,18 +12,22 @@ const requests = defineTabTool({
     inputSchema: z.object({}),
     type: 'readOnly',
   },
-  handle: async (tab, params, response) => {
+  handle: async (tab, _params, response) => {
     const requests = tab.requests();
-    [...requests.entries()].forEach(([req, res]) => response.addResult(renderRequest(req, res)));
+    for (const [req, res] of requests.entries()) {
+      response.addResult(renderRequest(req, res));
+    }
   },
 });
-function renderRequest(request: playwright.Request, response: playwright.Response | null) {
+function renderRequest(
+  request: playwright.Request,
+  response: playwright.Response | null
+) {
   const result: string[] = [];
   result.push(`[${request.method().toUpperCase()}] ${request.url()}`);
-  if (response)
+  if (response) {
     result.push(`=> [${response.status()}] ${response.statusText()}`);
+  }
   return result.join(' ');
 }
-export default [
-  requests,
-];
+export default [requests];

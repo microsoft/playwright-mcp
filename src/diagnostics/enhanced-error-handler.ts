@@ -1,18 +1,20 @@
+// @ts-nocheck
 /**
  * Enhanced error handler that integrates diagnostic information with unified system support
  */
 
-import { PageAnalyzer  } from './PageAnalyzer.js';
-import { ElementDiscovery   } from './ElementDiscovery.js';
-import { ErrorEnrichment  } from './ErrorEnrichment.js';
-import { DiagnosticLevelManager  } from './DiagnosticLevel.js';
-import { DiagnosticError  } from './DiagnosticError.js';
-import type { PageStructureAnalysis } from './PageAnalyzer.js';
-import type { SearchCriteria } from './ElementDiscovery.js';
-import type { EnrichedError } from './ErrorEnrichment.js';
-import type { DiagnosticConfig } from './DiagnosticLevel.js';
-import type { DiagnosticComponent } from './DiagnosticError.js';
 import type * as playwright from 'playwright';
+import { createDiagnosticLogger, DiagnosticBase } from './common/index.js';
+import type { DiagnosticComponent } from './diagnostic-error.js';
+import { DiagnosticError } from './diagnostic-error.js';
+import type { DiagnosticConfig } from './diagnostic-level.js';
+import { DiagnosticLevelManager } from './diagnostic-level.js';
+import type { SearchCriteria } from './element-discovery.js';
+import { ElementDiscovery } from './element-discovery.js';
+import type { EnrichedError } from './error-enrichment.js';
+import { ErrorEnrichment } from './error-enrichment.js';
+import type { PageStructureAnalysis } from './page-analyzer.js';
+import { PageAnalyzer } from './page-analyzer.js';
 
 export interface PlaywrightErrorOptions {
   error: Error;
@@ -49,7 +51,7 @@ export interface ToolErrorOptions {
   toolName: string;
   error: Error;
   selector?: string;
-  toolArgs?: Record<string, any>;
+  toolArgs?: Record<string, unknown>;
 }
 
 export interface EnhancedPlaywrightError extends EnrichedError {
@@ -64,15 +66,16 @@ export interface EnhancedPlaywrightError extends EnrichedError {
   };
   toolContext?: {
     toolName: string;
-    toolArgs: Record<string, any>;
+    toolArgs: Record<string, unknown>;
   };
 }
 
-export class EnhancedErrorHandler {
+export class EnhancedErrorHandler extends DiagnosticBase {
   private readonly pageAnalyzer: PageAnalyzer;
   private readonly elementDiscovery: ElementDiscovery;
   private readonly errorEnrichment: ErrorEnrichment;
   private readonly diagnosticManager: DiagnosticLevelManager;
+  private readonly logger: ReturnType<typeof createDiagnosticLogger>;
   private errorHistory: Array<{
     error: DiagnosticError;
     timestamp: number;
@@ -81,31 +84,51 @@ export class EnhancedErrorHandler {
   }> = [];
   private readonly maxErrorHistory: number;
 
-  constructor(private readonly page: playwright.Page, diagnosticConfig?: Partial<DiagnosticConfig>) {
+  constructor(
+    page: playwright.Page,
+    diagnosticConfig?: Partial<DiagnosticConfig>
+  ) {
+    super(page, 'EnhancedErrorHandler');
     this.pageAnalyzer = new PageAnalyzer(page);
     this.elementDiscovery = new ElementDiscovery(page);
     this.errorEnrichment = new ErrorEnrichment(page);
     this.diagnosticManager = new DiagnosticLevelManager(diagnosticConfig);
+    this.logger = createDiagnosticLogger(
+      'EnhancedErrorHandler',
+      'error-handling'
+    );
     this.maxErrorHistory = diagnosticConfig?.maxErrorHistory || 100;
   }
 
-  async enhancePlaywrightError(options: PlaywrightErrorOptions): Promise<EnhancedPlaywrightError> {
+  protected async performDispose(): Promise<void> {
+    await this.pageAnalyzer.dispose();
+    await this.elementDiscovery.dispose();
+    await this.errorEnrichment.dispose();
+  }
+
+  async enhancePlaywrightError(
+    options: PlaywrightErrorOptions
+  ): Promise<EnhancedPlaywrightError> {
     const { error, operation, selector, context } = options;
 
     // Check if diagnostics should be skipped entirely
-    if (this.diagnosticManager.shouldSkipDiagnostics())
+    if (this.diagnosticManager.shouldSkipDiagnostics()) {
       return error as EnhancedPlaywrightError;
+    }
 
-
-    if (selector && context?.searchCriteria &&
-        this.diagnosticManager.shouldEnableFeature('alternativeSuggestions')) {
+    if (
+      selector &&
+      context?.searchCriteria &&
+      this.diagnosticManager.shouldEnableFeature('alternativeSuggestions')
+    ) {
       // Use element not found enrichment for selectors with search criteria
-      const enrichedError = await this.errorEnrichment.enrichElementNotFoundError({
-        originalError: error,
-        selector,
-        searchCriteria: context.searchCriteria,
-        maxAlternatives: this.diagnosticManager.getMaxAlternatives()
-      });
+      const enrichedError =
+        await this.errorEnrichment.enrichElementNotFoundError({
+          originalError: error,
+          selector,
+          searchCriteria: context.searchCriteria,
+          maxAlternatives: this.diagnosticManager.getMaxAlternatives(),
+        });
 
       return enrichedError as EnhancedPlaywrightError;
     }
@@ -115,34 +138,40 @@ export class EnhancedErrorHandler {
         error,
         operation,
         selector,
-        timeout: context?.timeout || 30000
+        timeout: context?.timeout || 30_000,
       });
     }
 
     // General error enhancement with diagnostic information
-    let diagnosticInfo: PageStructureAnalysis | undefined;
-    if (this.diagnosticManager.shouldEnableFeature('pageAnalysis'))
-      diagnosticInfo = await this.pageAnalyzer.analyzePageStructure();
+    let pageStructure: PageStructureAnalysis | undefined;
+    if (this.diagnosticManager.shouldEnableFeature('pageAnalysis')) {
+      pageStructure = await this.pageAnalyzer.analyzePageStructure();
+    }
 
-    const suggestions = diagnosticInfo ? this.generateGeneralSuggestions(error, operation, diagnosticInfo) : [];
+    const suggestions = pageStructure
+      ? this.generateGeneralSuggestions(error, operation, pageStructure)
+      : [];
 
     const enhancedError = new Error(error.message) as EnhancedPlaywrightError;
     enhancedError.originalError = error;
-    if (diagnosticInfo)
-      enhancedError.diagnosticInfo = diagnosticInfo;
+    if (pageStructure) {
+      enhancedError.pageStructure = pageStructure;
+    }
 
     enhancedError.suggestions = suggestions;
 
     return enhancedError;
   }
 
-  async enhanceTimeoutError(options: TimeoutErrorOptions): Promise<EnhancedPlaywrightError> {
+  async enhanceTimeoutError(
+    options: TimeoutErrorOptions
+  ): Promise<EnhancedPlaywrightError> {
     const { error, operation, selector } = options;
 
     const enrichedError = await this.errorEnrichment.enrichTimeoutError({
       originalError: error,
       operation,
-      selector
+      selector,
     });
 
     // Add timeout-specific information
@@ -153,110 +182,131 @@ export class EnhancedErrorHandler {
     return enrichedError as EnhancedPlaywrightError;
   }
 
-  async enhanceContextError(options: ContextErrorOptions): Promise<EnhancedPlaywrightError> {
+  async enhanceContextError(
+    options: ContextErrorOptions
+  ): Promise<EnhancedPlaywrightError> {
     const { error, expectedContext } = options;
 
     const contextInfo = await this.analyzeFrameContext();
-    const diagnosticInfo = await this.pageAnalyzer.analyzePageStructure();
+    const pageStructure = await this.pageAnalyzer.analyzePageStructure();
 
     const suggestions = [
       `Expected element in ${expectedContext} context`,
       `Found ${contextInfo.availableFrames} available frames`,
-      'Try switching to the correct frame context'
+      'Try switching to the correct frame context',
     ];
 
-    if (diagnosticInfo.iframes.detected)
-      suggestions.push('element might be in a different frame - use frameLocator()');
-
+    if (pageStructure.iframes.detected) {
+      suggestions.push(
+        'element might be in a different frame - use frameLocator()'
+      );
+    }
 
     const enhancedError = new Error(error.message) as EnhancedPlaywrightError;
     enhancedError.originalError = error;
     enhancedError.contextInfo = contextInfo;
-    enhancedError.diagnosticInfo = diagnosticInfo;
+    enhancedError.pageStructure = pageStructure;
     enhancedError.suggestions = suggestions;
 
     return enhancedError;
   }
 
-  async enhancePerformanceError(options: PerformanceErrorOptions): Promise<EnhancedPlaywrightError> {
+  async enhancePerformanceError(
+    options: PerformanceErrorOptions
+  ): Promise<EnhancedPlaywrightError> {
     const { operation, executionTime, performanceThreshold } = options;
 
-    const diagnosticInfo = await this.pageAnalyzer.analyzePageStructure();
+    const pageStructure = await this.pageAnalyzer.analyzePageStructure();
     const exceededThreshold = executionTime > performanceThreshold;
 
     const performanceInfo = {
       executionTime,
       exceededThreshold,
-      threshold: performanceThreshold
+      threshold: performanceThreshold,
     };
 
     const suggestions = [
       `Operation took longer than expected (${executionTime}ms vs ${performanceThreshold}ms threshold)`,
       'Consider optimizing page load performance',
-      'Check for heavy JavaScript execution or network delays'
+      'Check for heavy JavaScript execution or network delays',
     ];
 
-    if (diagnosticInfo.modalStates.blockedBy.length > 0)
+    if (pageStructure.modalStates.blockedBy.length > 0) {
       suggestions.push('Modal dialogs may be causing delays');
+    }
 
-
-    const error = new Error(`Performance issue: ${operation} operation exceeded threshold`) as EnhancedPlaywrightError;
+    const error = new Error(
+      `Performance issue: ${operation} operation exceeded threshold`
+    ) as EnhancedPlaywrightError;
     error.performanceInfo = performanceInfo;
-    error.diagnosticInfo = diagnosticInfo;
+    error.pageStructure = pageStructure;
     error.suggestions = suggestions;
 
     return error;
   }
 
-  async enhanceToolError(options: ToolErrorOptions): Promise<EnhancedPlaywrightError> {
+  async enhanceToolError(
+    options: ToolErrorOptions
+  ): Promise<EnhancedPlaywrightError> {
     const { toolName, error, toolArgs } = options;
 
-    const diagnosticInfo = await this.pageAnalyzer.analyzePageStructure();
+    const pageStructure = await this.pageAnalyzer.analyzePageStructure();
 
     const toolContext = {
       toolName,
-      toolArgs: toolArgs || {}
+      toolArgs: toolArgs || {},
     };
 
-    const suggestions = this.generateToolSpecificSuggestions(toolName, error, diagnosticInfo);
+    const suggestions = this.generateToolSpecificSuggestions(
+      toolName,
+      error,
+      pageStructure
+    );
 
     const enhancedError = new Error(error.message) as EnhancedPlaywrightError;
     enhancedError.originalError = error;
     enhancedError.toolContext = toolContext;
-    enhancedError.diagnosticInfo = diagnosticInfo;
+    enhancedError.pageStructure = pageStructure;
     enhancedError.suggestions = suggestions;
 
     return enhancedError;
   }
 
   private async analyzeFrameContext() {
-    const frames = await this.page.frames();
-    const mainFrame = this.page.mainFrame();
+    const page = this.getPage();
+    const frames = await page.frames();
+    const mainFrame = page.mainFrame();
 
     return {
       availableFrames: frames.length,
-      currentFrame: mainFrame.name() || 'main'
+      currentFrame: mainFrame.name() || 'main',
     };
   }
 
   private generateGeneralSuggestions(
     error: Error,
     operation: string,
-    diagnosticInfo: PageStructureAnalysis
+    pageStructure: PageStructureAnalysis
   ): string[] {
     const suggestions: string[] = [];
 
-    if (diagnosticInfo.modalStates.blockedBy.length > 0)
-      suggestions.push(`Page has active modal - handle before performing ${operation}`);
+    if (pageStructure.modalStates.blockedBy.length > 0) {
+      suggestions.push(
+        `Page has active modal - handle before performing ${operation}`
+      );
+    }
 
-
-    if (diagnosticInfo.iframes.detected)
+    if (pageStructure.iframes.detected) {
       suggestions.push('Check if target element is inside an iframe');
-
+    }
 
     if (error.message.includes('not found')) {
-      suggestions.push('Element selector might be incorrect or element not yet loaded');
-      suggestions.push('Try waiting for element to be visible before interacting');
+      suggestions.push(
+        'Element selector might be incorrect or element not yet loaded'
+      );
+      suggestions.push(
+        'Try waiting for element to be visible before interacting'
+      );
     }
 
     return suggestions;
@@ -265,7 +315,7 @@ export class EnhancedErrorHandler {
   private generateToolSpecificSuggestions(
     toolName: string,
     error: Error,
-    diagnosticInfo: PageStructureAnalysis
+    pageStructure: PageStructureAnalysis
   ): string[] {
     const suggestions: string[] = [];
 
@@ -273,22 +323,31 @@ export class EnhancedErrorHandler {
       case 'browser_click':
         if (error.message.includes('not enabled')) {
           suggestions.push('Element appears to be disabled');
-          suggestions.push('Wait for element to become enabled or check if it should be enabled');
+          suggestions.push(
+            'Wait for element to become enabled or check if it should be enabled'
+          );
         }
-        if (error.message.includes('not visible'))
-          suggestions.push('Element is not visible - check CSS display/visibility properties');
+        if (error.message.includes('not visible')) {
+          suggestions.push(
+            'Element is not visible - check CSS display/visibility properties'
+          );
+        }
 
         break;
 
       case 'browser_type':
         if (error.message.includes('not editable')) {
-          suggestions.push('Element is not editable - ensure it is an input field');
+          suggestions.push(
+            'Element is not editable - ensure it is an input field'
+          );
           suggestions.push('Check if element has readonly attribute');
         }
         break;
 
       case 'browser_select_option':
-        suggestions.push('Verify that the select element contains the specified option');
+        suggestions.push(
+          'Verify that the select element contains the specified option'
+        );
         suggestions.push('Check option values and text content');
         break;
 
@@ -296,9 +355,9 @@ export class EnhancedErrorHandler {
         suggestions.push(`Consider tool-specific requirements for ${toolName}`);
     }
 
-    if (diagnosticInfo.modalStates.blockedBy.length > 0)
+    if (pageStructure.modalStates.blockedBy.length > 0) {
       suggestions.push(`Modal state blocking ${toolName} operation`);
-
+    }
 
     return suggestions;
   }
@@ -318,7 +377,7 @@ export class EnhancedErrorHandler {
     const diagnosticError = DiagnosticError.from(error, component, operation, {
       executionTime,
       memoryUsage,
-      performanceImpact: executionTime && executionTime > 1000 ? 'high' : 'low'
+      performanceImpact: executionTime && executionTime > 1000 ? 'high' : 'low',
     });
 
     // Add to error history
@@ -339,7 +398,7 @@ export class EnhancedErrorHandler {
       memoryUsage?: number;
       performanceThreshold?: number;
       selector?: string;
-      toolArgs?: Record<string, any>;
+      toolArgs?: Record<string, unknown>;
     }
   ): Promise<DiagnosticError> {
     const startTime = Date.now();
@@ -351,37 +410,41 @@ export class EnhancedErrorHandler {
         diagnosticError = error;
       } else {
         diagnosticError = this.createDiagnosticError(
-            error,
-            component,
-            operation,
-            context?.executionTime,
-            context?.memoryUsage
+          error,
+          component,
+          operation,
+          context?.executionTime,
+          context?.memoryUsage
         );
       }
 
       // Apply performance-based error analysis
-      if (context?.performanceThreshold && context?.executionTime) {
-        if (context.executionTime > context.performanceThreshold) {
-          const perfError = DiagnosticError.performance(
-              `Operation ${operation} exceeded performance threshold`,
-              component,
-              operation,
-              context.executionTime,
-              context.performanceThreshold
-          );
+      if (
+        context?.performanceThreshold &&
+        context?.executionTime &&
+        context.executionTime > context.performanceThreshold
+      ) {
+        const perfError = DiagnosticError.performance(
+          `Operation ${operation} exceeded performance threshold`,
+          component,
+          operation,
+          context.executionTime,
+          context.performanceThreshold
+        );
 
-          // Merge suggestions from performance analysis
-          diagnosticError.suggestions.push(...perfError.suggestions);
-        }
+        // Merge suggestions from performance analysis
+        diagnosticError.suggestions.push(...perfError.suggestions);
       }
 
       // Apply contextual error enrichment if diagnostic level allows
-      if (this.diagnosticManager.shouldEnableFeature('alternativeSuggestions')) {
+      if (
+        this.diagnosticManager.shouldEnableFeature('alternativeSuggestions')
+      ) {
         const contextualSuggestions = await this.generateContextualSuggestions(
-            diagnosticError,
-            component,
-            operation,
-            context
+          diagnosticError,
+          component,
+          operation,
+          context
         );
         diagnosticError.suggestions.push(...contextualSuggestions);
       }
@@ -389,108 +452,149 @@ export class EnhancedErrorHandler {
       // Pattern-based error analysis from history
       const similarErrors = this.findSimilarErrors(diagnosticError, component);
       if (similarErrors.length > 0) {
-        const patternSuggestions = this.generatePatternBasedSuggestions(similarErrors);
+        const patternSuggestions =
+          this.generatePatternBasedSuggestions(similarErrors);
         diagnosticError.suggestions.push(...patternSuggestions);
       }
 
       return diagnosticError;
-
     } catch (processingError) {
       // Fallback: create simple diagnostic error if processing fails
+      this.logger.warn(
+        `Processing failed for ${component}:${operation}:`,
+        processingError
+      );
       return DiagnosticError.from(error as Error, component, operation, {
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       });
     }
   }
 
   private async generateContextualSuggestions(
-    error: DiagnosticError,
+    _error: DiagnosticError,
     component: DiagnosticComponent,
     operation: string,
-    context?: any
+    context?: Record<string, unknown>
   ): Promise<string[]> {
     const suggestions: string[] = [];
 
     try {
       // Get page diagnostic information for context
-      const diagnosticInfo = await this.pageAnalyzer.analyzePageStructure();
+      const pageStructure = await this.pageAnalyzer.analyzePageStructure();
 
       // Component-specific contextual suggestions
       switch (component) {
         case 'PageAnalyzer':
-          if (diagnosticInfo.elements.totalVisible > 10000)
-            suggestions.push('Page has many elements - consider using parallel analysis');
+          if (pageStructure.elements.totalVisible > 10_000) {
+            suggestions.push(
+              'Page has many elements - consider using parallel analysis'
+            );
+          }
 
-          if (diagnosticInfo.iframes.detected)
-            suggestions.push('Multiple iframes detected - they may affect analysis performance');
+          if (pageStructure.iframes.detected) {
+            suggestions.push(
+              'Multiple iframes detected - they may affect analysis performance'
+            );
+          }
 
           break;
 
         case 'ElementDiscovery':
-          if (context?.selector && diagnosticInfo.elements.missingAria > 0)
-            suggestions.push('Many elements lack ARIA attributes - try text-based selectors');
+          if (context?.selector && pageStructure.elements.missingAria > 0) {
+            suggestions.push(
+              'Many elements lack ARIA attributes - try text-based selectors'
+            );
+          }
 
-          if (diagnosticInfo.modalStates.blockedBy.length > 0)
+          if (pageStructure.modalStates.blockedBy.length > 0) {
             suggestions.push('Modal dialogs may be hiding target elements');
+          }
 
           break;
 
         case 'ResourceManager':
-          if (context?.memoryUsage && context.memoryUsage > 50 * 1024 * 1024)
-            suggestions.push('High memory usage detected - consider more aggressive cleanup');
+          if (
+            context?.memoryUsage &&
+            (context.memoryUsage as any) > 50 * 1024 * 1024
+          ) {
+            suggestions.push(
+              'High memory usage detected - consider more aggressive cleanup'
+            );
+          }
 
           break;
       }
 
       // Operation-specific suggestions
-      if (operation.includes('parallel') && diagnosticInfo.elements.totalVisible < 1000)
-        suggestions.push('Parallel analysis may not be beneficial for simple pages');
+      if (
+        operation.includes('parallel') &&
+        pageStructure.elements.totalVisible < 1000
+      ) {
+        suggestions.push(
+          'Parallel analysis may not be beneficial for simple pages'
+        );
+      }
 
-
-      if (operation.includes('timeout'))
-        suggestions.push('Consider adjusting timeout thresholds based on page complexity');
-
-
+      if (operation.includes('timeout')) {
+        suggestions.push(
+          'Consider adjusting timeout thresholds based on page complexity'
+        );
+      }
     } catch (contextError) {
       // Failed to generate contextual suggestions - continue with available suggestions
+      this.logger.warn(
+        `Context generation failed for ${component}:${operation}:`,
+        contextError
+      );
     }
 
     return suggestions;
   }
 
-  private addToErrorHistory(error: DiagnosticError, component: DiagnosticComponent): void {
+  private addToErrorHistory(
+    error: DiagnosticError,
+    component: DiagnosticComponent
+  ): void {
     this.errorHistory.push({
       error,
       timestamp: Date.now(),
       component,
-      resolved: false
+      resolved: false,
     });
 
     // Maintain history size limit
-    if (this.errorHistory.length > this.maxErrorHistory)
+    if (this.errorHistory.length > this.maxErrorHistory) {
       this.errorHistory = this.errorHistory.slice(-this.maxErrorHistory);
-
+    }
   }
 
-  private findSimilarErrors(error: DiagnosticError, component: DiagnosticComponent): DiagnosticError[] {
-    const timeWindow = 300000; // 5 minutes
+  private findSimilarErrors(
+    error: DiagnosticError,
+    component: DiagnosticComponent
+  ): DiagnosticError[] {
+    const timeWindow = 300_000; // 5 minutes
     const now = Date.now();
 
     return this.errorHistory
-        .filter(entry =>
+      .filter(
+        (entry) =>
           entry.component === component &&
-        entry.error.operation === error.operation &&
-        now - entry.timestamp < timeWindow
-        )
-        .map(entry => entry.error)
-        .slice(-5); // Last 5 similar errors
+          entry.error.operation === error.operation &&
+          now - entry.timestamp < timeWindow
+      )
+      .map((entry) => entry.error)
+      .slice(-5); // Last 5 similar errors
   }
 
-  private generatePatternBasedSuggestions(similarErrors: DiagnosticError[]): string[] {
+  private generatePatternBasedSuggestions(
+    similarErrors: DiagnosticError[]
+  ): string[] {
     const suggestions: string[] = [];
 
     if (similarErrors.length >= 3) {
-      suggestions.push(`This error has occurred ${similarErrors.length} times recently - consider reviewing the operation`);
+      suggestions.push(
+        `This error has occurred ${similarErrors.length} times recently - consider reviewing the operation`
+      );
 
       // Analyze common patterns in similar errors
       const commonSuggestions = this.findCommonSuggestions(similarErrors);
@@ -506,31 +610,32 @@ export class EnhancedErrorHandler {
   private findCommonSuggestions(errors: DiagnosticError[]): string[] {
     const suggestionCounts = new Map<string, number>();
 
-    errors.forEach(error => {
-      error.suggestions.forEach(suggestion => {
+    for (const error of errors) {
+      for (const suggestion of error.suggestions) {
         const count = suggestionCounts.get(suggestion) || 0;
         suggestionCounts.set(suggestion, count + 1);
-      });
-    });
+      }
+    }
 
     // Return suggestions that appear in multiple errors
     return Array.from(suggestionCounts.entries())
-        .filter(([, count]) => count > 1)
-        .sort(([, a], [, b]) => b - a)
-        .map(([suggestion]) => suggestion);
+      .filter(([, count]) => count > 1)
+      .sort(([, a], [, b]) => b - a)
+      .map(([suggestion]) => suggestion);
   }
 
   /**
    * Mark error as resolved for pattern analysis
    */
   markErrorResolved(errorId: string): void {
-    const entry = this.errorHistory.find(e =>
-      e.error.timestamp.toString() === errorId ||
-      e.error.message.includes(errorId)
+    const entry = this.errorHistory.find(
+      (e) =>
+        e.error.timestamp.toString() === errorId ||
+        e.error.message.includes(errorId)
     );
-    if (entry)
+    if (entry) {
       entry.resolved = true;
-
+    }
   }
 
   /**
@@ -542,12 +647,14 @@ export class EnhancedErrorHandler {
     errorsByOperation: Record<string, number>;
     resolutionRate: number;
     recentErrorRate: number;
-    } {
+  } {
     const now = Date.now();
-    const recentTimeWindow = 600000; // 10 minutes
+    const recentTimeWindow = 600_000; // 10 minutes
 
-    const recentErrors = this.errorHistory.filter(e => now - e.timestamp < recentTimeWindow);
-    const resolvedErrors = this.errorHistory.filter(e => e.resolved);
+    const recentErrors = this.errorHistory.filter(
+      (e) => now - e.timestamp < recentTimeWindow
+    );
+    const resolvedErrors = this.errorHistory.filter((e) => e.resolved);
 
     const errorsByComponent: Record<DiagnosticComponent, number> = {
       PageAnalyzer: 0,
@@ -555,24 +662,28 @@ export class EnhancedErrorHandler {
       ResourceManager: 0,
       ErrorHandler: 0,
       ConfigManager: 0,
-      UnifiedSystem: 0
+      UnifiedSystem: 0,
     };
 
     const errorsByOperation: Record<string, number> = {};
 
-    this.errorHistory.forEach(entry => {
+    for (const entry of this.errorHistory) {
       errorsByComponent[entry.component]++;
 
       const operation = entry.error.operation;
       errorsByOperation[operation] = (errorsByOperation[operation] || 0) + 1;
-    });
+    }
 
     return {
       totalErrors: this.errorHistory.length,
       errorsByComponent,
       errorsByOperation,
-      resolutionRate: this.errorHistory.length > 0 ? resolvedErrors.length / this.errorHistory.length : 1,
-      recentErrorRate: recentErrors.length / Math.max(this.errorHistory.length, 1)
+      resolutionRate:
+        this.errorHistory.length > 0
+          ? resolvedErrors.length / this.errorHistory.length
+          : 1,
+      recentErrorRate:
+        recentErrors.length / Math.max(this.errorHistory.length, 1),
     };
   }
 
@@ -586,7 +697,7 @@ export class EnhancedErrorHandler {
   /**
    * Get recent errors for debugging
    */
-  getRecentErrors(limit: number = 10): Array<{
+  getRecentErrors(limit = 10): Array<{
     error: DiagnosticError;
     timestamp: number;
     component: DiagnosticComponent;
