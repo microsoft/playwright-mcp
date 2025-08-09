@@ -72,8 +72,6 @@ class InProcessServerTransport implements Transport {
     _options?: TransportSendOptions
   ): Promise<void> {
     // Send message directly to client transport for in-process communication.
-    // This method intentionally has no async operations as it performs direct
-    // synchronous message forwarding to the client transport.
     this._clientTransport._receiveFromServer(message);
     return Promise.resolve();
   }

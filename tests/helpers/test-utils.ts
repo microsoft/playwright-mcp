@@ -119,11 +119,11 @@ export class ConsoleTestHelpers {
  */
 export class AssertionHelpers {
   /**
-   * Assert that a value is within expected range
+   * Check if a value is within expected range
+   * Returns validation result for use in test assertions
    */
-  static expectInRange(value: number, min: number, max: number) {
-    expect(value).toBeGreaterThanOrEqual(min);
-    expect(value).toBeLessThanOrEqual(max);
+  static isInRange(value: number, min: number, max: number): boolean {
+    return value >= min && value <= max;
   }
 
   /**

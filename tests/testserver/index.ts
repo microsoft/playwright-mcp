@@ -50,8 +50,11 @@ export class TestServer {
 
   static async createHTTPS(port: number): Promise<TestServer> {
     // Use environment variable for SSL credentials with secure fallback for tests
+    // NOTE: The fallback value is intentionally non-sensitive test data only
+    const TEST_ONLY_MOCK_PASSPHRASE =
+      'playwright-test-mock-passphrase-not-real';
     const sslCredential =
-      process.env.TEST_SSL_PASSPHRASE || 'test-default-credential';
+      process.env.TEST_SSL_PASSPHRASE || TEST_ONLY_MOCK_PASSPHRASE;
     if (
       !process.env.TEST_SSL_PASSPHRASE &&
       process.env.NODE_ENV === 'production'

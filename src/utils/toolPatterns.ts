@@ -17,7 +17,10 @@ export const resolveElementLocator = async (
   tab: Tab,
   params: { element?: string; ref?: string }
 ): Promise<playwright.Locator | undefined> => {
-  class TempHandler extends BaseElementToolHandler<any> {
+  class TempHandler extends BaseElementToolHandler<{
+    element?: string;
+    ref?: string;
+  }> {
     constructor() {
       super('temp');
     }
@@ -41,7 +44,10 @@ export const validateElementParams = (params: {
   element?: string;
   ref?: string;
 }): void => {
-  class TempHandler extends BaseElementToolHandler<any> {
+  class TempHandler extends BaseElementToolHandler<{
+    element?: string;
+    ref?: string;
+  }> {
     constructor() {
       super('temp');
     }
@@ -210,7 +216,7 @@ export async function validateAndResolveElement(
   // Validate parameters synchronously first
   validateElementParams(params);
   // Then resolve element asynchronously
-  return resolveElementLocator(tab, params);
+  return await resolveElementLocator(tab, params);
 }
 
 /**

@@ -89,10 +89,11 @@ const ConnectApp: React.FC = () => {
         type: 'connecting',
         message: `MCP client "${info}" is trying to connect. Do you want to continue?`,
       });
-    } catch (_error) {
-      // Error logging is intentionally suppressed to comply with linting rules
-      // Error handling continues through status update
-      setStatus({ type: 'error', message: 'Failed to parse client version.' });
+    } catch (parseError) {
+      setStatus({
+        type: 'error',
+        message: `Failed to parse client information: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+      });
       return;
     }
 
@@ -227,29 +228,16 @@ const TabItem: React.FC<{
     onSelect();
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onSelect();
-    }
-  };
-
   return (
-    <div
-      aria-checked={isSelected}
-      className={className}
-      onClick={onSelect}
-      onKeyDown={handleKeyDown}
-      role="radio"
-      tabIndex={0}
-    >
+    <label className={className} htmlFor={`tab-${tab.id}`}>
       <input
         checked={isSelected}
         className="tab-radio"
+        id={`tab-${tab.id}`}
         name="selected-tab"
         onChange={handleChange}
-        tabIndex={-1}
         type="radio"
+        value={tab.id.toString()}
       />
       {/* biome-ignore lint/performance/noImgElement: Using img is appropriate for simple favicon display in Chrome extension */}
       <img
@@ -264,7 +252,7 @@ const TabItem: React.FC<{
         <div className="tab-title">{tab.title || 'Untitled'}</div>
         <div className="tab-url">{tab.url}</div>
       </div>
-    </div>
+    </label>
   );
 };
 

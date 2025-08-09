@@ -35,8 +35,8 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
   npm ci --ignore-scripts
 
 # Copy the rest of the app
-COPY *.json *.js *.ts .
-COPY src src/
+COPY --chmod=644 *.json *.js *.ts .
+COPY --chmod=644 src src/
 
 # Build the app
 RUN npm run build

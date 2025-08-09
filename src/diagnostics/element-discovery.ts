@@ -59,12 +59,7 @@ export class ElementDiscovery extends DiagnosticBase {
     element: playwright.ElementHandle,
     operation: string
   ): Promise<void> {
-    await safeDispose(
-      element as { dispose: () => Promise<void> },
-      'ElementHandle',
-      operation,
-      this.logger
-    );
+    await safeDispose(element, 'ElementHandle', operation, this.logger);
   }
 
   async findAlternativeElements(
@@ -708,7 +703,7 @@ export class ElementDiscovery extends DiagnosticBase {
       const parent = el.parentElement;
       if (parent) {
         const siblings = Array.from(parent.children);
-        const index = siblings.indexOf(el as Element) + 1;
+        const index = siblings.indexOf(el) + 1;
         return `${parent.tagName.toLowerCase()} > ${tag}:nth-child(${index})`;
       }
 

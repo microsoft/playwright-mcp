@@ -224,13 +224,13 @@ export class ClaudeDelegate implements LLMDelegate {
   }
 
   private createToolResultBlock(
-    message: LLMMessage
+    message: LLMMessage & { role: 'tool' }
   ): Anthropic.Messages.ToolResultBlockParam {
     return {
       type: 'tool_result',
-      tool_use_id: (message as LLMMessage & { role: 'tool' }).toolCallId,
+      tool_use_id: message.toolCallId,
       content: message.content,
-      is_error: (message as LLMMessage & { role: 'tool' }).isError,
+      is_error: message.isError,
     };
   }
 
@@ -248,7 +248,7 @@ export class ClaudeDelegate implements LLMDelegate {
     toolResult: Anthropic.Messages.ToolResultBlockParam
   ): void {
     if (this.canAddToExistingToolResults(lastMessage)) {
-      this.addToExistingMessage(lastMessage!, toolResult);
+      this.addToExistingMessage(lastMessage, toolResult);
     } else {
       this.createNewToolResultMessage(claudeMessages, toolResult);
     }
@@ -275,7 +275,7 @@ export class ClaudeDelegate implements LLMDelegate {
 
   private canAddToExistingToolResults(
     lastMessage: Anthropic.Messages.MessageParam | undefined
-  ): boolean {
+  ): lastMessage is Anthropic.Messages.MessageParam {
     return !!(
       lastMessage &&
       lastMessage.role === 'user' &&

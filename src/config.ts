@@ -154,18 +154,9 @@ function applyProxySettings(
 }
 
 function createContextOptions(cliOptions: CLIOptions): BrowserContextOptions {
-  let contextOptions: BrowserContextOptions = {};
-
-  try {
-    contextOptions = cliOptions.device ? devices[cliOptions.device] || {} : {};
-  } catch (error) {
-    console.warn(
-      `Failed to get device configuration for '${cliOptions.device}':`,
-      error
-    );
-    contextOptions = {};
-    throw new Error(`Invalid device configuration: ${cliOptions.device}`);
-  }
+  const contextOptions: BrowserContextOptions = cliOptions.device
+    ? devices[cliOptions.device] || {}
+    : {};
 
   applyStorageOptions(contextOptions, cliOptions);
   applyViewportOptions(contextOptions, cliOptions);

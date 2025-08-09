@@ -110,7 +110,7 @@ export const browserDiagnose = defineTabTool({
       const startTime = Date.now();
       await executeDiagnoseProcess(tab, config, response, startTime);
     } catch (error) {
-      await handleDiagnoseError(error, response);
+      handleDiagnoseError(error, response);
     }
   },
 });

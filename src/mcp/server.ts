@@ -122,27 +122,30 @@ export function createServer(
   return server;
 }
 const startHeartbeat = (server: Server) => {
-  const beat = () => {
-    void Promise.race([
-      server.ping(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('ping timeout')), 5000)
-      ),
-    ])
-      .then(() => {
-        setTimeout(beat, 3000);
-      })
-      .catch((error) => {
-        console.warn('Heartbeat ping failed:', error);
-        server.close().catch((closeError) => {
-          console.warn(
-            'Failed to close server after heartbeat failure:',
-            closeError
-          );
-        });
-      });
+  const beat = async () => {
+    try {
+      await Promise.race([
+        server.ping(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ping timeout')), 5000)
+        ),
+      ]);
+      setTimeout(beat, 3000);
+    } catch (error) {
+      console.warn('Heartbeat ping failed:', error);
+      try {
+        await server.close();
+      } catch (closeError) {
+        console.warn(
+          'Failed to close server after heartbeat failure:',
+          closeError
+        );
+      }
+    }
   };
-  beat();
+  beat().catch((error) => {
+    console.warn('Heartbeat initialization failed:', error);
+  });
 };
 function addServerListener(
   server: Server,

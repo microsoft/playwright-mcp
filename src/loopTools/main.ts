@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import type { FullConfig } from '../config.js';
-import type * as mcpServer from '../mcp/server.js';
-import type { ServerBackend } from '../mcp/server.js';
+import type { ServerBackend, ToolResponse, ToolSchema } from '../mcp/server.js';
 import { start } from '../mcp/transport.js';
 import { packageJSON } from '../package.js';
 import { Context } from './context.js';
@@ -24,13 +23,13 @@ class LoopToolsServerBackend implements ServerBackend {
   async initialize() {
     this._context = await Context.create(this._config);
   }
-  tools(): mcpServer.ToolSchema[] {
-    return this._tools.map((tool) => tool.schema as mcpServer.ToolSchema);
+  tools(): ToolSchema[] {
+    return this._tools.map((tool) => tool.schema as ToolSchema);
   }
   async callTool(
-    schema: mcpServer.ToolSchema,
+    schema: ToolSchema,
     parsedArguments: Record<string, unknown>
-  ): Promise<mcpServer.ToolResponse> {
+  ): Promise<ToolResponse> {
     const tool = this._tools.find((t) => t.schema.name === schema.name);
     if (!tool) {
       throw new Error(`Tool not found: ${schema.name}`);

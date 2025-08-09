@@ -94,9 +94,9 @@ export class SmartHandle<T extends playwright.ElementHandle>
 export function createSmartHandle<T extends playwright.ElementHandle>(
   elementHandle: T,
   tracker?: SmartTracker
-): T {
+) {
   const smartHandle = new SmartHandle(elementHandle, tracker);
-  return new Proxy(elementHandle, smartHandle) as T;
+  return new Proxy(elementHandle, smartHandle);
 }
 
 /**
@@ -106,17 +106,14 @@ export class SmartHandleBatch {
   private readonly handles: SmartHandle<playwright.ElementHandle>[] = [];
   private disposed = false;
 
-  add<T extends playwright.ElementHandle>(
-    handle: T,
-    tracker?: SmartTracker
-  ): T {
+  add<T extends playwright.ElementHandle>(handle: T, tracker?: SmartTracker) {
     if (this.disposed) {
       throw new Error('SmartHandleBatch has been disposed');
     }
 
     const smartHandle = new SmartHandle(handle, tracker);
     this.handles.push(smartHandle);
-    return new Proxy(handle, smartHandle) as T;
+    return new Proxy(handle, smartHandle);
   }
 
   async dispose(): Promise<void> {

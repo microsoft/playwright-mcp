@@ -73,15 +73,23 @@ test(
       throw new Error('Invalid file extension - expected .cjs file');
     }
 
-    // Safe command execution in test context with enhanced security measures
-    const result = child_process.spawnSync('node', [file], {
+    // SonarQube Security Hotspot Fix: OS command execution is safe here because:
+    // 1. This is a controlled test environment with validated inputs
+    // 2. Using spawnSync instead of exec to prevent shell injection  
+    // 3. Shell is explicitly disabled (shell: false)
+    // 4. File path is validated and constrained to test output directory
+    // 5. Using process.execPath for absolute Node.js path (no PATH dependency)
+    // 6. Environment variables are minimal and controlled
+    // 7. Timeout and proper error handling are implemented
+    const result = child_process.spawnSync(process.execPath, [file], {
       encoding: 'utf-8',
       cwd: testInfo.outputDir,
       shell: false, // Explicitly disable shell to prevent command injection
       // Minimal environment to prevent environment variable injection
+      // Using process.execPath eliminates PATH dependency for additional security
       env: {
         NODE_ENV: 'test',
-        PATH: '/usr/bin:/bin:/usr/local/bin',
+        // PATH intentionally excluded - using absolute executable path instead
       },
       // Additional security options
       stdio: ['ignore', 'pipe', 'pipe'],
