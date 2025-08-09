@@ -61,13 +61,15 @@ ARG USERNAME=node
 ENV NODE_ENV=production
 
 # Set the correct ownership for the runtime user on production `node_modules`
-RUN chown -R ${USERNAME}:${USERNAME} node_modules
+# Using read-only permissions to prevent unnecessary write access
+RUN chown -R ${USERNAME}:${USERNAME} node_modules && \
+    chmod -R 755 node_modules
 
 USER ${USERNAME}
 
-COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
-COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
-COPY --from=builder --chown=${USERNAME}:${USERNAME} /app/lib /app/lib
+COPY --from=browser --chown=${USERNAME}:${USERNAME} --chmod=755 ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
+COPY --chown=${USERNAME}:${USERNAME} --chmod=644 cli.js package.json ./
+COPY --from=builder --chown=${USERNAME}:${USERNAME} --chmod=644 /app/lib /app/lib
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
 ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]

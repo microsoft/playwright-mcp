@@ -39,32 +39,48 @@ export function formatExecutionTime(ms: number): string {
 }
 
 /**
- * Get performance indicator icon based on deviation
+ * Get performance indicator icon based on deviation or value/thresholds
  */
-export function getPerformanceIcon(deviation: {
-  significance: 'significant' | 'notable' | 'minimal' | 'normal';
-}): string {
-  switch (deviation.significance) {
-    case 'significant':
-      return '🔴';
-    case 'notable':
-      return '🟡';
-    default:
-      return '🟢';
+export function getPerformanceIcon(
+  input:
+    | { significance: 'significant' | 'notable' | 'minimal' | 'normal' }
+    | { value: number; thresholds: { good: number; warning: number } }
+): string {
+  if ('significance' in input) {
+    switch (input.significance) {
+      case 'significant':
+        return '🔴';
+      case 'notable':
+        return '🟡';
+      default:
+        return '🟢';
+    }
   }
+  const { value, thresholds } = input;
+  if (value <= thresholds.good) {
+    return '🟢';
+  }
+  if (value <= thresholds.warning) {
+    return '🟡';
+  }
+  return '🔴';
 }
 
 /**
- * Get impact icon for configurations
+ * Get impact icon for configurations (supports both string and typed versions)
  */
-export function getImpactIcon(impact: string): string {
+export function getImpactIcon(
+  impact: string | 'low' | 'medium' | 'high'
+): string {
   switch (impact) {
     case 'high':
       return '🔴';
     case 'medium':
       return '🟡';
-    default:
+    case 'low':
       return '🟢';
+    default:
+      return impact === 'low' ? '🟢' : '🟢'; // default to green for unknown values
   }
 }
 
@@ -99,15 +115,27 @@ export function formatDiagnosticPair(
 }
 
 /**
- * Build section with header and content (common pattern)
+ * Build section with header and content (supports both formats)
  */
 export function buildSection(
   title: string,
   content: string[],
-  level = 2
+  level = 2,
+  options: { emptyLineAfter?: boolean; emptyLineBefore?: boolean } = {}
 ): string[] {
+  const { emptyLineAfter = false, emptyLineBefore = true } = options;
   const prefix = '#'.repeat(level);
-  return ['', `${prefix} ${title}`, ...content];
+  const result: string[] = [];
+
+  if (emptyLineBefore) {
+    result.push('');
+  }
+  result.push(`${prefix} ${title}`, ...content);
+  if (emptyLineAfter) {
+    result.push('');
+  }
+
+  return result;
 }
 
 /**

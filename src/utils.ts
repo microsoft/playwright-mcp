@@ -11,7 +11,7 @@ function removeControlCharacters(str: string): string {
   let result = '';
   for (let i = 0; i < str.length; i++) {
     const charCode = str.charCodeAt(i);
-    if (charCode >= 0 && charCode <= 31) {
+    if (charCode <= 31) {
       result += '-';
     } else {
       result += str[i];

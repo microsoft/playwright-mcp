@@ -287,11 +287,10 @@ export class UnifiedDiagnosticSystem {
         options?.timeout ?? componentConfig.executionTimeout ?? 10_000
       );
       const timeoutPromise = new Promise<never>((_, reject) => {
-        const _timeoutId = setTimeout(
+        setTimeout(
           () => reject(new Error(`Operation timeout after ${timeout}ms`)),
           timeout
         );
-        // Store timeout ID for potential cleanup (though not used in this simple case)
         // timeoutId is available for cleanup if needed
       });
 

@@ -26,7 +26,7 @@ test(
       description: 'https://github.com/microsoft/playwright-mcp/issues/456',
     },
   },
-  async ({}, testInfo) => {
+  async ({ page }, testInfo) => {
     const file = testInfo.outputPath('main.cjs');
     const projectRoot = process.cwd();
     await fs.writeFile(
@@ -47,7 +47,14 @@ test(
     // Safe command execution in test context - using specific file path
     // and controlled environment for security
     expect(
-      child_process.execSync(`node ${file}`, { encoding: 'utf-8' })
+      child_process.execSync(`node ${file}`, {
+        encoding: 'utf-8',
+        cwd: testInfo.outputDir,
+        env: {
+          ...process.env,
+          PATH: '/usr/bin:/bin:/usr/local/bin',
+        },
+      })
     ).toContain('OK');
   }
 );

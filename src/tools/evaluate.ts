@@ -57,9 +57,7 @@ const evaluate = defineTabTool({
         result = await tab.page.evaluate(params.function);
       }
       const stringifiedResult = JSON.stringify(result, null, 2);
-      response.addResult(
-        stringifiedResult === undefined ? 'undefined' : stringifiedResult
-      );
+      response.addResult(stringifiedResult ?? 'undefined');
     });
   },
 });

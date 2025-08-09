@@ -1,36 +1,10 @@
 /**
  * Utilities to reduce common code duplication patterns
  */
+import { formatDiagnosticPair } from './commonFormatters.js';
 
-/**
- * Format performance metrics with icons and thresholds
- */
-export function formatPerformanceMetric(
-  name: string,
-  value: number,
-  unit: string,
-  threshold?: number
-): string {
-  const icon = threshold && value > threshold ? '⚠️' : '✅';
-  const thresholdText = threshold ? ` (threshold: ${threshold}${unit})` : '';
-  return `${icon} **${name}**: ${value}${unit}${thresholdText}`;
-}
-
-/**
- * Format diagnostic key-value pairs
- */
-export function formatDiagnosticKeyValue(
-  key: string,
-  value: string | number | boolean
-): string {
-  let formattedValue: string;
-  if (typeof value === 'boolean') {
-    formattedValue = value ? 'Yes' : 'No';
-  } else {
-    formattedValue = value.toString();
-  }
-  return `- **${key}:** ${formattedValue}`;
-}
+// Re-export with alias to maintain backward compatibility
+export const formatDiagnosticKeyValue = formatDiagnosticPair;
 
 /**
  * Format element counts with consistent styling
@@ -43,34 +17,20 @@ export function formatElementCounts(counts: {
 }): string[] {
   const results: string[] = [];
   if (counts.total !== undefined) {
-    results.push(formatDiagnosticKeyValue('Total elements', counts.total));
+    results.push(formatDiagnosticPair('Total elements', counts.total));
   }
   if (counts.visible !== undefined) {
-    results.push(formatDiagnosticKeyValue('Visible elements', counts.visible));
+    results.push(formatDiagnosticPair('Visible elements', counts.visible));
   }
   if (counts.interactable !== undefined) {
     results.push(
-      formatDiagnosticKeyValue('Interactable elements', counts.interactable)
+      formatDiagnosticPair('Interactable elements', counts.interactable)
     );
   }
   if (counts.disabled !== undefined) {
-    results.push(
-      formatDiagnosticKeyValue('Disabled elements', counts.disabled)
-    );
+    results.push(formatDiagnosticPair('Disabled elements', counts.disabled));
   }
   return results;
-}
-
-/**
- * Create a section with header and content
- */
-export function buildSection(
-  title: string,
-  content: string[],
-  level = 2
-): string[] {
-  const prefix = '#'.repeat(level);
-  return [`${prefix} ${title}`, ...content, ''];
 }
 
 /**
@@ -231,34 +191,4 @@ export function getStatusIcon(
   }
 }
 
-/**
- * Get performance icon based on value and thresholds
- */
-export function getPerformanceIcon(
-  value: number,
-  thresholds: { good: number; warning: number }
-): string {
-  if (value <= thresholds.good) {
-    return '🟢';
-  }
-  if (value <= thresholds.warning) {
-    return '🟡';
-  }
-  return '🔴';
-}
-
-/**
- * Get impact icon based on impact level
- */
-export function getImpactIcon(impact: 'low' | 'medium' | 'high'): string {
-  switch (impact) {
-    case 'low':
-      return '🟢';
-    case 'medium':
-      return '🟡';
-    case 'high':
-      return '🔴';
-    default:
-      return '⚪';
-  }
-}
+// getPerformanceIcon and getImpactIcon re-exported from commonFormatters.js

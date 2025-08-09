@@ -178,4 +178,5 @@ class TabShareExtension {
 // Initialize the extension to set up event listeners
 const tabShareExtension = new TabShareExtension();
 // Keep a reference to prevent garbage collection
-(globalThis as { tabShareExtension?: TabShareExtension }).tabShareExtension = tabShareExtension;
+(globalThis as { tabShareExtension?: TabShareExtension }).tabShareExtension =
+  tabShareExtension;

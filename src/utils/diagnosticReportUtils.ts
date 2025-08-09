@@ -293,25 +293,4 @@ function formatValue(value: KeyValueConfigValue): string {
   return String(value);
 }
 
-/**
- * Builder class for creating array of items with conditional additions
- */
-export class ArrayBuilder<T> {
-  private readonly items: T[] = [];
-
-  addIf(condition: boolean, item: T): this {
-    if (condition) {
-      this.items.push(item);
-    }
-    return this;
-  }
-
-  add(item: T): this {
-    this.items.push(item);
-    return this;
-  }
-
-  build(): T[] {
-    return this.items;
-  }
-}
+// ArrayBuilder moved to codeDeduplicationUtils.ts to avoid duplication

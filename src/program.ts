@@ -143,11 +143,12 @@ program
     if (config.saveTrace) {
       const server = await startTraceViewerServer();
       const urlPrefix = server.urlPrefix('human-readable');
-      const _url =
+      const url =
         urlPrefix +
         '/trace/index.html?trace=' +
         config.browser.launchOptions.tracesDir +
         '/trace.json';
+      console.log(`Trace viewer available at: ${url}`);
     }
   });
 function setupExitWatchdog() {

@@ -923,7 +923,6 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
     const pageAnalyzer = new PageAnalyzer(page);
 
     // Test sequential analysis timing
-    const sequentialStart = Date.now();
     const [structureAnalysis, performanceMetrics] = await Promise.all([
       pageAnalyzer.analyzePageStructure(),
       pageAnalyzer.analyzePerformanceMetrics(),

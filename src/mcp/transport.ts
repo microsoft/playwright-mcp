@@ -116,7 +116,7 @@ function startHttpTransport(
     }
   });
   const url = httpAddressToString(httpServer.address());
-  const _message = [
+  const message = [
     `Listening on ${url}`,
     'Put this in your client config:',
     JSON.stringify(
@@ -132,4 +132,5 @@ function startHttpTransport(
     ),
     'For legacy SSE transport support, you can use the /sse endpoint instead.',
   ].join('\n');
+  console.log(message);
 }

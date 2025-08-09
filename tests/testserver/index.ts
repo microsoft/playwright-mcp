@@ -49,6 +49,8 @@ export class TestServer {
   }
 
   static async createHTTPS(port: number): Promise<TestServer> {
+    // Use environment variable for SSL passphrase, with safe fallback for test environment only
+    // This is acceptable as it's a test-only server and the fallback is only for testing
     const passphrase =
       process.env.TEST_SSL_PASSPHRASE || 'test-default-passphrase';
 

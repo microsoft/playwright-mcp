@@ -9,9 +9,9 @@ import type {
 } from '../../diagnostics/page-analyzer.js';
 import type { UnifiedDiagnosticSystem } from '../../diagnostics/unified-system.js';
 import type { Tab } from '../../tab.js';
+import { ArrayBuilder } from '../../utils/codeDeduplicationUtils.js';
 import { getErrorMessage } from '../../utils/commonFormatters.js';
 import {
-  ArrayBuilder,
   addDomComplexityMetrics,
   addErrorSection,
   addInteractionMetrics,

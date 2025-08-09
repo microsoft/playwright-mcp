@@ -146,7 +146,9 @@ export class SessionLog {
   }
 
   private _clearFlushTimeout(): void {
-    clearTimeout(this._flushEntriesTimeout);
+    if (this._flushEntriesTimeout) {
+      clearTimeout(this._flushEntriesTimeout);
+    }
   }
 
   private _prepareFlushData(): { entries: LogEntry[]; lines: string[] } {

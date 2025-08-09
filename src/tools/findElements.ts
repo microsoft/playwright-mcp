@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { ElementDiscovery } from '../diagnostics/element-discovery.js';
 import { PageAnalyzer } from '../diagnostics/page-analyzer.js';
 import type { SmartConfig } from '../diagnostics/smart-config.js';
-import { ArrayBuilder } from '../utils/diagnosticReportUtils.js';
+import { ArrayBuilder } from '../utils/codeDeduplicationUtils.js';
 
 // Type definitions for diagnostic info structures
 type DiagnosticInfo = {

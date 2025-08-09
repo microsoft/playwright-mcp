@@ -124,6 +124,7 @@ async function processToolCalls(
   const toolResults = createEmptyToolResults();
 
   for (const toolCall of toolCalls) {
+    // biome-ignore lint/nursery/noAwaitInLoop: Sequential processing is intentional for tool calls
     const processingResult = await processSingleToolCall(
       delegate,
       client,

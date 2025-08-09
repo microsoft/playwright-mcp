@@ -262,7 +262,9 @@ export class OpenAIDelegate implements LLMDelegate {
     conversation: LLMConversation,
     results: Array<{ toolCallId: string; content: string; isError?: boolean }>
   ): void {
-    results.forEach((result) => this.addSingleToolResult(conversation, result));
+    for (const result of results) {
+      this.addSingleToolResult(conversation, result);
+    }
   }
 
   private addSingleToolResult(
