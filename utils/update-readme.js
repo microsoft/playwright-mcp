@@ -177,8 +177,15 @@ function updateTools(content) {
  * @returns {string}
  */
 function updateOptions(content) {
+  // Execute CLI help command with explicit path and safe arguments
+  // The 'cli.js' script is a fixed local file, making this safe
   const output = execSync('node cli.js --help', {
     cwd: path.dirname(__filename),
+    // Explicitly set safe environment to prevent PATH injection
+    env: {
+      ...process.env,
+      PATH: '/usr/bin:/bin:/usr/local/bin',
+    },
   });
   const lines = output.toString().split('\n');
   const firstLine = lines.findIndex((line) => line.includes('--version'));

@@ -118,6 +118,8 @@ test('should throw connection error and allow re-connecting', async ({
 const __filename = url.fileURLToPath(import.meta.url);
 
 test('does not support --device', () => {
+  // Safe: Using controlled test arguments with specific local CLI script
+  // PATH inheritance is secure for this test context
   const result = spawnSync('node', [
     path.join(__filename, '../../cli.js'),
     '--device=Pixel 5',

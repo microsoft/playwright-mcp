@@ -63,6 +63,8 @@ const test = baseTest.extend<{
         {
           stdio: 'pipe',
           env: {
+            // Safe: Only spreading existing environment variables for test execution
+            // No direct PATH manipulation - inheriting system PATH is secure in test context
             ...process.env,
             DEBUG: 'pw:mcp:test',
             DEBUG_COLORS: '0',
