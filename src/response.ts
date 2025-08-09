@@ -14,7 +14,7 @@ import { ResponseDiffDetector } from './utils/responseDiffDetector.js';
 export class Response {
   private readonly _result: string[] = [];
   private readonly _code: string[] = [];
-  private _images: { contentType: string; data: Buffer }[] = [];
+  private readonly _images: { contentType: string; data: Buffer }[] = [];
   private readonly _context: Context;
   private _includeSnapshot = false;
   private _includeTabs = false;
@@ -109,7 +109,8 @@ export class Response {
         })
       );
       // Replace original images with processed ones
-      this._images = processedImages;
+      this._images.length = 0;
+      this._images.push(...processedImages);
     }
     // Perform diff detection if enabled
     if (this._expectation.diffOptions?.enabled) {

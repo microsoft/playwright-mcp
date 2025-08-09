@@ -77,10 +77,12 @@ export async function resolveCLIConfig(
   result = mergeConfig(result, cliOverrides);
   return result;
 }
-function parseBrowserType(browser: string): {
+type BrowserParseResult = {
   browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
   channel: string | undefined;
-} {
+};
+
+function parseBrowserType(browser: string): BrowserParseResult {
   if (isChromiumVariant(browser)) {
     return { browserName: 'chromium', channel: browser };
   }
@@ -122,20 +124,33 @@ function createLaunchOptions(
     headless: cliOptions.headless,
   };
 
+  applySandboxSettings(launchOptions, cliOptions);
+  applyProxySettings(launchOptions, cliOptions);
+
+  return launchOptions;
+}
+
+function applySandboxSettings(
+  launchOptions: LaunchOptions,
+  cliOptions: CLIOptions
+): void {
   if (cliOptions.sandbox === false) {
     launchOptions.chromiumSandbox = false;
   }
+}
 
-  if (cliOptions.proxyServer) {
-    launchOptions.proxy = {
-      server: cliOptions.proxyServer,
-    };
-    if (cliOptions.proxyBypass) {
-      launchOptions.proxy.bypass = cliOptions.proxyBypass;
-    }
+function applyProxySettings(
+  launchOptions: LaunchOptions,
+  cliOptions: CLIOptions
+): void {
+  if (!cliOptions.proxyServer) {
+    return;
   }
 
-  return launchOptions;
+  launchOptions.proxy = {
+    server: cliOptions.proxyServer,
+    ...(cliOptions.proxyBypass && { bypass: cliOptions.proxyBypass }),
+  };
 }
 
 function createContextOptions(cliOptions: CLIOptions): BrowserContextOptions {
@@ -143,10 +158,26 @@ function createContextOptions(cliOptions: CLIOptions): BrowserContextOptions {
     ? devices[cliOptions.device]
     : {};
 
+  applyStorageOptions(contextOptions, cliOptions);
+  applyViewportOptions(contextOptions, cliOptions);
+  applySecurityOptions(contextOptions, cliOptions);
+
+  return contextOptions;
+}
+
+function applyStorageOptions(
+  contextOptions: BrowserContextOptions,
+  cliOptions: CLIOptions
+): void {
   if (cliOptions.storageState) {
     contextOptions.storageState = cliOptions.storageState;
   }
+}
 
+function applyViewportOptions(
+  contextOptions: BrowserContextOptions,
+  cliOptions: CLIOptions
+): void {
   if (cliOptions.userAgent) {
     contextOptions.userAgent = cliOptions.userAgent;
   }
@@ -154,7 +185,12 @@ function createContextOptions(cliOptions: CLIOptions): BrowserContextOptions {
   if (cliOptions.viewportSize) {
     contextOptions.viewport = parseViewportSize(cliOptions.viewportSize);
   }
+}
 
+function applySecurityOptions(
+  contextOptions: BrowserContextOptions,
+  cliOptions: CLIOptions
+): void {
   if (cliOptions.ignoreHttpsErrors) {
     contextOptions.ignoreHTTPSErrors = true;
   }
@@ -162,8 +198,6 @@ function createContextOptions(cliOptions: CLIOptions): BrowserContextOptions {
   if (cliOptions.blockServiceWorkers) {
     contextOptions.serviceWorkers = 'block';
   }
-
-  return contextOptions;
 }
 
 function parseViewportSize(viewportSize: string): {
@@ -199,10 +233,7 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
 
 function buildFinalConfig(
   cliOptions: CLIOptions,
-  browserInfo: {
-    browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
-    channel: string | undefined;
-  }
+  browserInfo: BrowserParseResult
 ): Config {
   const browserConfig = createBrowserConfig(
     cliOptions,
@@ -221,10 +252,7 @@ function buildFinalConfig(
   };
 }
 
-function getBrowserInfo(cliOptions: CLIOptions): {
-  browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
-  channel: string | undefined;
-} {
+function getBrowserInfo(cliOptions: CLIOptions): BrowserParseResult {
   return cliOptions.browser
     ? parseBrowserType(cliOptions.browser)
     : { browserName: undefined, channel: undefined };
@@ -496,6 +524,7 @@ function envToBoolean(value: string | undefined): boolean | undefined {
   if (value === 'false' || value === '0') {
     return false;
   }
+  return undefined;
 }
 function envToString(value: string | undefined): string | undefined {
   return value ? value.trim() : undefined;

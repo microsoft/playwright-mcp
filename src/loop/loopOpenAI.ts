@@ -62,16 +62,24 @@ export class OpenAIDelegate implements LLMDelegate {
     conversation: LLMConversation,
     response: OpenAI.Chat.Completions.ChatCompletion
   ): LLMToolCall[] {
-    const message = response.choices[0].message;
-    const genericToolCalls = this.extractToolCallsFromResponse(message);
+    const message = this.extractMessageFromResponse(response);
+    const toolCalls = this.extractToolCallsFromResponse(message);
+    this.updateConversationWithResponse(conversation, message, toolCalls);
+    return toolCalls;
+  }
 
-    this.addAssistantMessageToConversation(
-      conversation,
-      message,
-      genericToolCalls
-    );
+  private extractMessageFromResponse(
+    response: OpenAI.Chat.Completions.ChatCompletion
+  ): OpenAI.Chat.Completions.ChatCompletionMessage {
+    return response.choices[0].message;
+  }
 
-    return genericToolCalls;
+  private updateConversationWithResponse(
+    conversation: LLMConversation,
+    message: OpenAI.Chat.Completions.ChatCompletionMessage,
+    toolCalls: LLMToolCall[]
+  ): void {
+    this.addAssistantMessageToConversation(conversation, message, toolCalls);
   }
 
   private formatConversationForOpenAI(conversation: LLMConversation): {
@@ -113,19 +121,22 @@ export class OpenAIDelegate implements LLMDelegate {
   private convertSingleMessageToOpenAI(
     message: LLMMessage
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam | null {
-    const converters = this.createMessageConverters(message);
-    const converter = converters[message.role];
-    return converter ? converter() : null;
+    return this.getMessageConverter(message);
   }
 
-  private createMessageConverters(
+  private getMessageConverter(
     message: LLMMessage
-  ): Record<string, () => OpenAI.Chat.Completions.ChatCompletionMessageParam> {
-    return {
-      user: () => this.createUserMessage(message),
-      assistant: () => this.convertAssistantMessage(message),
-      tool: () => this.createToolMessage(message),
-    };
+  ): OpenAI.Chat.Completions.ChatCompletionMessageParam | null {
+    switch (message.role) {
+      case 'user':
+        return this.createUserMessage(message);
+      case 'assistant':
+        return this.convertAssistantMessage(message);
+      case 'tool':
+        return this.createToolMessage(message);
+      default:
+        return null;
+    }
   }
 
   private createUserMessage(
@@ -216,15 +227,24 @@ export class OpenAIDelegate implements LLMDelegate {
   private extractToolCallsFromResponse(
     message: OpenAI.Chat.Completions.ChatCompletionMessage
   ): LLMToolCall[] {
-    const toolCalls = message.tool_calls ?? [];
-    return toolCalls.map((toolCall) => {
-      const functionCall = toolCall.function;
-      return {
-        name: functionCall.name,
-        arguments: JSON.parse(functionCall.arguments),
-        id: toolCall.id,
-      };
-    });
+    const toolCalls = this.getToolCallsFromMessage(message);
+    return toolCalls.map((toolCall) => this.convertSingleToolCall(toolCall));
+  }
+
+  private getToolCallsFromMessage(
+    message: OpenAI.Chat.Completions.ChatCompletionMessage
+  ): OpenAI.Chat.Completions.ChatCompletionMessageToolCall[] {
+    return message.tool_calls ?? [];
+  }
+
+  private convertSingleToolCall(
+    toolCall: OpenAI.Chat.Completions.ChatCompletionMessageToolCall
+  ): LLMToolCall {
+    return {
+      name: toolCall.function.name,
+      arguments: JSON.parse(toolCall.function.arguments),
+      id: toolCall.id,
+    };
   }
 
   private addAssistantMessageToConversation(
@@ -242,19 +262,32 @@ export class OpenAIDelegate implements LLMDelegate {
     conversation: LLMConversation,
     results: Array<{ toolCallId: string; content: string; isError?: boolean }>
   ): void {
-    for (const result of results) {
-      conversation.messages.push({
-        role: 'tool',
-        toolCallId: result.toolCallId,
-        content: result.content,
-        isError: result.isError,
-      });
-    }
+    results.forEach((result) => this.addSingleToolResult(conversation, result));
+  }
+
+  private addSingleToolResult(
+    conversation: LLMConversation,
+    result: { toolCallId: string; content: string; isError?: boolean }
+  ): void {
+    conversation.messages.push({
+      role: 'tool',
+      toolCallId: result.toolCallId,
+      content: result.content,
+      isError: result.isError,
+    });
   }
   checkDoneToolCall(toolCall: LLMToolCall): string | null {
-    if (toolCall.name === 'done') {
-      return (toolCall.arguments as { result?: string }).result ?? '';
+    if (!this.isDoneToolCall(toolCall)) {
+      return null;
     }
-    return null;
+    return this.extractDoneToolResult(toolCall);
+  }
+
+  private isDoneToolCall(toolCall: LLMToolCall): boolean {
+    return toolCall.name === 'done';
+  }
+
+  private extractDoneToolResult(toolCall: LLMToolCall): string {
+    return (toolCall.arguments as { result?: string }).result ?? '';
   }
 }

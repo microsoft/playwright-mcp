@@ -37,7 +37,7 @@ type ProtocolResponse = {
 };
 
 export class RelayConnection {
-  private _debuggee: chrome.debugger.Debuggee;
+  private readonly _debuggee: chrome.debugger.Debuggee;
   private readonly _ws: WebSocket;
   private readonly _eventListener: (
     source: chrome.debugger.DebuggerSession,

@@ -139,13 +139,21 @@ export class SessionLog {
     this._flushEntriesTimeout = setTimeout(() => this._flushEntries(), 1000);
   }
   private _flushEntries() {
+    this._clearFlushTimeout();
+    const { entries, lines } = this._prepareFlushData();
+    this._processEntries(entries, lines);
+    this._writeToFile(lines);
+  }
+
+  private _clearFlushTimeout(): void {
     clearTimeout(this._flushEntriesTimeout);
+  }
+
+  private _prepareFlushData(): { entries: LogEntry[]; lines: string[] } {
     const entries = this._pendingEntries;
     this._pendingEntries = [];
     const lines: string[] = [''];
-
-    this._processEntries(entries, lines);
-    this._writeToFile(lines);
+    return { entries, lines };
   }
 
   private _processEntries(entries: LogEntry[], lines: string[]): void {
