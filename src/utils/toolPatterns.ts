@@ -8,39 +8,55 @@
 import type * as playwright from 'playwright';
 import type { Response } from '../response.js';
 import type { Tab } from '../tab.js';
+// Import BaseElementToolHandler properly
+import { BaseElementToolHandler } from '../tools/baseToolHandler.js';
 import { getErrorMessage } from './commonFormatters.js';
 
-// Re-export from BaseToolHandler to reduce duplication
-export { BaseElementToolHandler } from '../tools/baseToolHandler.js';
-
 // These functions are deprecated - use BaseElementToolHandler methods instead
-export const resolveElementLocator = (
+export const resolveElementLocator = async (
   tab: Tab,
   params: { element?: string; ref?: string }
-) =>
-  new (class extends import('../tools/baseToolHandler.js')
-    .BaseElementToolHandler<any> {
+): Promise<playwright.Locator | undefined> => {
+  class TempHandler extends BaseElementToolHandler<any> {
     constructor() {
       super('temp');
     }
     protected executeToolLogic(): Promise<void> {
       return Promise.resolve();
     }
-  })().resolveElementLocator(tab, params);
+
+    // Public wrapper to access protected method
+    async resolveLocator(
+      tab: Tab,
+      params: { element?: string; ref?: string }
+    ): Promise<playwright.Locator | undefined> {
+      return this.resolveElementLocator(tab, params);
+    }
+  }
+
+  return new TempHandler().resolveLocator(tab, params);
+};
 
 export const validateElementParams = (params: {
   element?: string;
   ref?: string;
-}) =>
-  new (class extends import('../tools/baseToolHandler.js')
-    .BaseElementToolHandler<any> {
+}): void => {
+  class TempHandler extends BaseElementToolHandler<any> {
     constructor() {
       super('temp');
     }
     protected executeToolLogic(): Promise<void> {
       return Promise.resolve();
     }
-  })().validateElementParams(params);
+
+    // Public wrapper to access protected method
+    validateParams(params: { element?: string; ref?: string }): void {
+      this.validateElementParams(params);
+    }
+  }
+
+  new TempHandler().validateParams(params);
+};
 
 /**
  * Enhanced error context for tool operations
@@ -191,7 +207,7 @@ export async function validateAndResolveElement(
     ref?: string;
   }
 ): Promise<playwright.Locator | undefined> {
-  validateElementParams(params);
+  await validateElementParams(params);
   return await resolveElementLocator(tab, params);
 }
 

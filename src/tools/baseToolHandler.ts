@@ -165,7 +165,7 @@ export abstract class BaseElementToolHandler<
   /**
    * Resolve element locator from params
    */
-  protected async resolveElementLocator(
+  async resolveElementLocator(
     tab: Tab,
     params: TParams
   ): Promise<import('playwright').Locator | undefined> {
@@ -180,7 +180,7 @@ export abstract class BaseElementToolHandler<
   /**
    * Validate element parameters
    */
-  protected validateElementParams(params: TParams): void {
+  validateElementParams(params: TParams): void {
     if (params.ref && !params.element) {
       throw new Error('Element description is required when ref is provided');
     }

@@ -31,7 +31,7 @@ test(
     const projectRoot = process.cwd();
 
     // Validate project root path for security
-    if (!(projectRoot && projectRoot.startsWith('/'))) {
+    if (!projectRoot?.startsWith('/')) {
       throw new Error('Invalid project root path');
     }
 
