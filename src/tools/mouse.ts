@@ -5,15 +5,13 @@ import {
   generateMouseDragCode,
   generateMouseMoveCode,
 } from '../utils/commonFormatters.js';
+import { baseElementSchema } from './baseToolHandler.js';
 import { defineTabTool } from './tool.js';
 
-const elementSchema = z.object({
-  element: z
-    .string()
-    .describe(
-      'Human-readable element description used to obtain permission to interact with the element'
-    ),
-});
+// Simplified element schema for mouse operations (no ref required)
+const elementSchema = baseElementSchema
+  .pick({ element: true })
+  .required({ element: true });
 const mouseMove = defineTabTool({
   capability: 'vision',
   schema: {

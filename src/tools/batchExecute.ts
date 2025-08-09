@@ -28,8 +28,9 @@ export const batchExecuteTool = defineTool({
 
       processExecutionResult(result, response);
     } catch (error) {
-      const errorMessage = getErrorMessage(error);
-      response.addError(`Batch execution failed: ${errorMessage}`);
+      const errorHandler = createBatchErrorHandler('BatchExecute');
+      const enrichedError = errorHandler(error as Error);
+      response.addError(enrichedError.message);
     }
   },
 });

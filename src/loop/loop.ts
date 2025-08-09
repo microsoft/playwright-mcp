@@ -123,8 +123,8 @@ async function processToolCalls(
 }> {
   const toolResults = createEmptyToolResults();
 
-  // Sequential processing required - tool calls may have dependencies
-  // biome-ignore lint/nursery/noAwaitInLoop: Tool calls must execute sequentially
+  // Process tool calls sequentially to maintain correct execution order
+  // biome-ignore lint/nursery/noAwaitInLoop: Sequential tool execution is required for correct ordering
   for (const toolCall of toolCalls) {
     const processingResult = await processSingleToolCall(
       delegate,

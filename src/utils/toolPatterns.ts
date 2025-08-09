@@ -10,43 +10,37 @@ import type { Response } from '../response.js';
 import type { Tab } from '../tab.js';
 import { getErrorMessage } from './commonFormatters.js';
 
-/**
- * Common element locator resolution pattern
- * Used across multiple tools that work with elements
- */
-export async function resolveElementLocator(
-  tab: Tab,
-  params: {
-    element?: string;
-    ref?: string;
-  }
-): Promise<playwright.Locator | undefined> {
-  if (params.ref && params.element) {
-    return await tab.refLocator({
-      ref: params.ref,
-      element: params.element,
-    });
-  }
-}
+// Re-export from BaseToolHandler to reduce duplication
+export { BaseElementToolHandler } from '../tools/baseToolHandler.js';
 
-/**
- * Common element parameter validation
- * Ensures element and ref are provided together
- */
-export function validateElementParams(params: {
+// These functions are deprecated - use BaseElementToolHandler methods instead
+export const resolveElementLocator = (
+  tab: Tab,
+  params: { element?: string; ref?: string }
+) =>
+  new (class extends import('../tools/baseToolHandler.js')
+    .BaseElementToolHandler<any> {
+    constructor() {
+      super('temp');
+    }
+    protected executeToolLogic(): Promise<void> {
+      return Promise.resolve();
+    }
+  })().resolveElementLocator(tab, params);
+
+export const validateElementParams = (params: {
   element?: string;
   ref?: string;
-}): void {
-  if (params.ref && !params.element) {
-    throw new Error('Element description is required when ref is provided');
-  }
-
-  if (params.element && !params.ref) {
-    throw new Error(
-      'Element ref is required when element description is provided'
-    );
-  }
-}
+}) =>
+  new (class extends import('../tools/baseToolHandler.js')
+    .BaseElementToolHandler<any> {
+    constructor() {
+      super('temp');
+    }
+    protected executeToolLogic(): Promise<void> {
+      return Promise.resolve();
+    }
+  })().validateElementParams(params);
 
 /**
  * Enhanced error context for tool operations

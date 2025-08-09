@@ -15,42 +15,22 @@
  */
 
 import { expect, test } from '@playwright/test';
+import {
+  ConsoleTestHelpers,
+  createMockConsoleMessages,
+} from './helpers/testUtils.js';
 
 test.describe('Console Message Filtering', () => {
-  // Mock console messages for testing
-  function createMockConsoleMessages() {
-    return [
-      { type: 'log', toString: () => '[LOG] User logged in successfully' },
-      { type: 'warn', toString: () => '[WARN] API rate limit approaching' },
-      { type: 'error', toString: () => '[ERROR] Failed to load resource' },
-      { type: 'info', toString: () => '[INFO] Application started' },
-      { type: 'log', toString: () => '[LOG] User clicked button' },
-      { type: 'error', toString: () => '[ERROR] Network timeout' },
-      { type: 'log', toString: () => '[LOG] User logged in successfully' }, // Duplicate
-      { type: 'warn', toString: () => '[WARN] Deprecated function used' },
-      { type: 'log', toString: () => '[LOG] Data saved successfully' },
-      { type: 'error', toString: () => '[ERROR] Permission denied' },
-    ];
-  }
+  // Using shared test utilities to reduce duplication
 
   test('filterConsoleMessages function should exist now', async () => {
-    // Now the function should exist
-    const { filterConsoleMessages } = await import(
-      '../src/utils/consoleFilter.js'
-    );
+    const filterConsoleMessages = await ConsoleTestHelpers.getFilterFunction();
     expect(typeof filterConsoleMessages).toBe('function');
   });
 
   test('should filter messages by level', async () => {
-    const { filterConsoleMessages } = await import(
-      '../src/utils/consoleFilter.js'
-    );
-    const messages = createMockConsoleMessages();
-    const options = { levels: ['error'] as const };
-
-    const result = filterConsoleMessages(messages, options);
-
-    expect(result.length).toBe(3); // Should only have error messages
+    const result = await ConsoleTestHelpers.testLevelFiltering(['error'], 3);
+    expect(result.length).toBe(3);
     expect(result.every((msg) => msg.type === 'error')).toBe(true);
     expect(result[0].toString()).toContain('[ERROR]');
   });
@@ -74,16 +54,12 @@ test.describe('Console Message Filtering', () => {
   });
 
   test('should remove duplicate messages when requested', async () => {
-    const { filterConsoleMessages } = await import(
-      '../src/utils/consoleFilter.js'
-    );
-    const messages = createMockConsoleMessages();
-    const options = { removeDuplicates: true };
+    const result = await ConsoleTestHelpers.testDuplicateRemoval(9);
 
-    const result = filterConsoleMessages(messages, options);
-
-    // Original has 10 messages, with 1 duplicate, so should be 9 unique
     expect(result.length).toBe(9);
+    // Verify no duplicate messages exist
+    const textSet = new Set(result.map((msg) => msg.text));
+    expect(textSet.size).toBe(result.length);
 
     // Check that duplicate "User logged in successfully" message is removed
     const loginMessages = result.filter((msg) =>
@@ -93,15 +69,9 @@ test.describe('Console Message Filtering', () => {
   });
 
   test('should limit number of messages', async () => {
-    const { filterConsoleMessages } = await import(
-      '../src/utils/consoleFilter.js'
-    );
+    const result = await ConsoleTestHelpers.testMessageLimit(3);
     const messages = createMockConsoleMessages();
-    const options = { maxMessages: 3 };
-
-    const result = filterConsoleMessages(messages, options);
-
-    expect(result.length).toBe(3);
+    expect(result.length).toBe(Math.min(3, messages.length));
     // Should keep the last 3 messages
     expect(result[2].toString()).toContain('[ERROR] Permission denied');
   });
@@ -140,6 +110,12 @@ test.describe('Console Message Filtering', () => {
       result.every((msg) => msg.type && ['log', 'error'].includes(msg.type))
     ).toBe(true);
     expect(result.every((msg) => msg.toString().includes('User'))).toBe(true);
+
+    // If removeDuplicates is true, verify no duplicates
+    if (options.removeDuplicates) {
+      const textSet = new Set(result.map((msg) => msg.text));
+      expect(textSet.size).toBe(result.length);
+    }
   });
 
   test('should return original messages when no options provided', async () => {

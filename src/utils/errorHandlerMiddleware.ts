@@ -20,18 +20,18 @@ export async function withErrorHandling<T>(
     return result;
   } catch (error) {
     const message = getErrorMessage(error);
-    const contextInfo = context ? 
-      `[${context.component || 'Unknown'}:${context.operationName || 'operation'}]` : 
-      '[Unknown:operation]';
-    
+    const contextInfo = context
+      ? `[${context.component || 'Unknown'}:${context.operationName || 'operation'}]`
+      : '[Unknown:operation]';
+
     const enrichedError = new Error(`${contextInfo} ${message}`);
     enrichedError.cause = error;
-    
+
     // Optional custom error handler
     if (context?.onError) {
       context.onError(enrichedError);
     }
-    
+
     throw enrichedError;
   }
 }
@@ -51,18 +51,18 @@ export function withErrorHandlingSync<T>(
     return operation();
   } catch (error) {
     const message = getErrorMessage(error);
-    const contextInfo = context ? 
-      `[${context.component || 'Unknown'}:${context.operationName || 'operation'}]` : 
-      '[Unknown:operation]';
-    
+    const contextInfo = context
+      ? `[${context.component || 'Unknown'}:${context.operationName || 'operation'}]`
+      : '[Unknown:operation]';
+
     const enrichedError = new Error(`${contextInfo} ${message}`);
     enrichedError.cause = error;
-    
+
     // Optional custom error handler
     if (context?.onError) {
       context.onError(enrichedError);
     }
-    
+
     throw enrichedError;
   }
 }
@@ -74,7 +74,9 @@ export function createBatchErrorHandler(componentName: string) {
   return (error: Error, stepName?: string) => {
     const message = getErrorMessage(error);
     const step = stepName ? ` (step: ${stepName})` : '';
-    return new Error(`[${componentName}] Batch operation failed${step}: ${message}`);
+    return new Error(
+      `[${componentName}] Batch operation failed${step}: ${message}`
+    );
   };
 }
 
@@ -87,10 +89,10 @@ export function createErrorReporter(component: string) {
       const message = getErrorMessage(error);
       throw new Error(`[${component}:${operation}] ${message}`);
     },
-    
+
     reportWarning(error: unknown, operation: string): void {
       const message = getErrorMessage(error);
       console.warn(`[${component}:${operation}] Warning: ${message}`);
-    }
+    },
   };
 }

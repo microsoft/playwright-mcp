@@ -18,8 +18,13 @@ export {
 // Code deduplication utilities
 export {
   ArrayBuilder,
-  joinWithNewlines,
-  SectionBuilder,
+  formatDiagnosticKeyValue,
+  formatElementCounts,
+  formatError,
+  formatListItems,
+  getStatusIcon,
+  joinLines,
+  truncateAtWordBoundary,
 } from './codeDeduplicationUtils.js';
 // Error handling and formatting utilities
 export {
@@ -35,6 +40,16 @@ export { createDisposableManager } from './disposableManager.js';
 
 // Tool patterns
 export {
-  applyCommonExpectation,
-  handleToolOperation,
+  addMouseOperationComment,
+  addNavigationComment,
+  addOperationComment,
+  addToolErrorContext,
+  applyCommonExpectations,
+  executeToolOperation,
+  resolveElementLocator,
+  setupToolResponse,
+  ToolPatterns,
+  validateAndResolveElement,
+  validateElementParams,
+  waitForToolCompletion,
 } from './toolPatterns.js';

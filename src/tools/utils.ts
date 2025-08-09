@@ -2,6 +2,7 @@ import type * as playwright from 'playwright';
 
 // @ts-expect-error - playwright-core internal module without proper types
 import { asLocator } from 'playwright-core/lib/utils';
+import { TIMEOUTS } from '../config/constants.js';
 import type { Tab } from '../tab.js';
 export async function waitForCompletion<R>(
   tab: Tab,
@@ -136,9 +137,9 @@ export async function callOnPageNoTrace<T>(
 
 function getNavigationConfig() {
   return {
-    networkIdleTimeout: 2000,
+    networkIdleTimeout: TIMEOUTS.NETWORK_IDLE_TIMEOUT,
     completionTimeout: 15_000,
-    stabilityWait: 1500,
-    defaultWait: 1000,
+    stabilityWait: TIMEOUTS.STABILITY_WAIT,
+    defaultWait: TIMEOUTS.WAIT_FOR_COMPLETION,
   };
 }

@@ -2,6 +2,7 @@ import type {
   ImageContent,
   TextContent,
 } from '@modelcontextprotocol/sdk/types.js';
+import { TIMEOUTS } from './config/constants.js';
 import type { Context } from './context.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
 import { mergeExpectations } from './schemas/expectation.js';
@@ -403,8 +404,8 @@ export class Response {
   private _getNavigationRetryConfig() {
     return {
       maxRetries: 3,
-      retryDelay: 500,
-      stabilityTimeout: 3000,
+      retryDelay: TIMEOUTS.RETRY_DELAY,
+      stabilityTimeout: TIMEOUTS.STABILITY_TIMEOUT,
       evaluationTimeout: 200,
     } as const;
   }
@@ -613,9 +614,11 @@ export class Response {
 
   private async _checkPageStability(tab: Tab): Promise<boolean> {
     try {
-      await tab.page.waitForLoadState('load', { timeout: 1000 });
+      await tab.page.waitForLoadState('load', {
+        timeout: TIMEOUTS.MEDIUM_DELAY,
+      });
       await tab.page
-        .waitForLoadState('networkidle', { timeout: 500 })
+        .waitForLoadState('networkidle', { timeout: TIMEOUTS.SHORT_DELAY })
         .catch(() => {
           // Ignore networkidle timeout as it's not critical for stability check
         });

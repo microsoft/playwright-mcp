@@ -63,8 +63,10 @@ const test = baseTest.extend<{
         {
           stdio: 'pipe',
           env: {
-            // Safe: Only spreading existing environment variables for test execution
-            // No direct PATH manipulation - inheriting system PATH is secure in test context
+            // Security: Using 'node' from PATH is safe in test environment because:
+            // 1. Test environment is controlled and PATH directories are trusted
+            // 2. Using fixed local CLI script with validated path construction
+            // 3. Environment variables are only spread from controlled test process
             ...process.env,
             DEBUG: 'pw:mcp:test',
             DEBUG_COLORS: '0',

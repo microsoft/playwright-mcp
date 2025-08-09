@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { quote } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import { generateKeyPressCode } from '../utils/commonFormatters.js';
-import { elementSchema } from './snapshot.js';
+import { baseElementSchema as elementSchema } from './baseToolHandler.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
 
@@ -32,6 +32,14 @@ const pressKey = defineTabTool({
   },
 });
 const typeSchema = elementSchema.extend({
+  element: z
+    .string()
+    .describe(
+      'Human-readable element description used to obtain permission to interact with the element'
+    ),
+  ref: z
+    .string()
+    .describe('Exact target element reference from the page snapshot'),
   text: z.string().describe('Text to type into the element'),
   submit: z
     .boolean()
@@ -41,7 +49,7 @@ const typeSchema = elementSchema.extend({
     .boolean()
     .optional()
     .describe(
-      'Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'
+      'Whether type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.'
     ),
   expectation: expectationSchema,
 });

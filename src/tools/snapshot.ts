@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { formatObject } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import { baseElementSchema } from './baseToolHandler.js';
 import { defineTabTool, defineTool } from './tool.js';
 import { generateLocator } from './utils.js';
 
@@ -34,6 +35,8 @@ const snapshot = defineTool({
     }
   },
 });
+
+// Element schema for tools that require element interaction
 export const elementSchema = z.object({
   element: z
     .string()
@@ -44,6 +47,7 @@ export const elementSchema = z.object({
     .string()
     .describe('Exact target element reference from the page snapshot'),
 });
+
 const clickSchema = elementSchema.extend({
   doubleClick: z
     .boolean()

@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { expectationSchema } from '../schemas/expectation.js';
-import { getErrorMessage } from '../utils/commonFormatters.js';
+import { createErrorReporter } from '../utils/errorHandlerMiddleware.js';
 import { DiagnoseAnalysisRunner } from './diagnose/DiagnoseAnalysisRunner.js';
 import type { ConfigOverrides } from './diagnose/DiagnoseConfigHandler.js';
 import { DiagnoseConfigHandler } from './diagnose/DiagnoseConfigHandler.js';
@@ -180,9 +180,16 @@ export const browserDiagnose = defineTabTool({
         }
       }
     } catch (error) {
-      response.addError(
-        `Error generating diagnostic report: ${getErrorMessage(error)}`
-      );
+      const errorReporter = createErrorReporter('Diagnose');
+      try {
+        errorReporter.reportAndThrow(error, 'generateDiagnosticReport');
+      } catch (enrichedError) {
+        response.addError(
+          enrichedError instanceof Error
+            ? enrichedError.message
+            : String(enrichedError)
+        );
+      }
     }
   },
 });

@@ -90,12 +90,15 @@ export interface ResolvedDiagnosticThresholdsConfig {
  * Default threshold settings
  * Consolidates all hardcoded values here
  */
+
+import { THRESHOLDS, TIMEOUTS } from '../config/constants.js';
+
 const DEFAULT_THRESHOLDS: ResolvedDiagnosticThresholdsConfig = {
   executionTime: {
-    pageAnalysis: 1000,
-    elementDiscovery: 500,
+    pageAnalysis: TIMEOUTS.PAGE_ANALYSIS_TIMEOUT,
+    elementDiscovery: TIMEOUTS.ELEMENT_DISCOVERY_TIMEOUT,
     resourceMonitoring: 200,
-    parallelAnalysis: 2000,
+    parallelAnalysis: TIMEOUTS.PARALLEL_ANALYSIS_TIMEOUT,
   },
   memory: {
     maxMemoryUsage: 100 * 1024 * 1024,
@@ -105,17 +108,17 @@ const DEFAULT_THRESHOLDS: ResolvedDiagnosticThresholdsConfig = {
   performance: {
     domElementLimit: 10_000,
     maxDepthLimit: 50,
-    largeSubtreeThreshold: 1000,
+    largeSubtreeThreshold: THRESHOLDS.LARGE_SUBTREE_ELEMENTS,
   },
   dom: {
     totalElements: 10_000,
     maxDepth: 50,
     largeSubtrees: 10,
-    elementsWarning: 1500,
-    elementsDanger: 3000,
+    elementsWarning: THRESHOLDS.ELEMENTS_WARNING,
+    elementsDanger: THRESHOLDS.ELEMENTS_DANGER,
     depthWarning: 15,
     depthDanger: 20,
-    largeSubtreeThreshold: 500,
+    largeSubtreeThreshold: THRESHOLDS.SMALL_SUBTREE_ELEMENTS,
   },
   interaction: {
     clickableElements: 100,
@@ -125,7 +128,7 @@ const DEFAULT_THRESHOLDS: ResolvedDiagnosticThresholdsConfig = {
   layout: {
     fixedElements: 10,
     highZIndexElements: 5,
-    highZIndexThreshold: 1000,
+    highZIndexThreshold: THRESHOLDS.HIGH_Z_INDEX,
     excessiveZIndexThreshold: 9999,
   },
 };

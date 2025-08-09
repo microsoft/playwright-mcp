@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import debug from 'debug';
 import type * as playwright from 'playwright';
+import { TIMEOUTS } from './config/constants.js';
 import type { Context } from './context.js';
 import { logUnhandledError } from './log.js';
 import { ManualPromise } from './manualPromise.js';
@@ -104,7 +105,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     });
 
     page.setDefaultNavigationTimeout(60_000);
-    page.setDefaultTimeout(5000);
+    page.setDefaultTimeout(TIMEOUTS.DEFAULT_PAGE_TIMEOUT);
     (page as { [tabSymbol]?: Tab })[tabSymbol] = this;
   }
   static forPage(page: playwright.Page): Tab | undefined {
@@ -259,17 +260,19 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       // on chromium, the download event is fired *after* page.goto rejects, so we wait a lil bit
       const download = await Promise.race([
         downloadEvent,
-        new Promise((resolve) => setTimeout(resolve, 3000)),
+        new Promise((resolve) => setTimeout(resolve, TIMEOUTS.LONG_DELAY)),
       ]);
       if (!download) {
         throw e;
       }
       // Make sure other "download" listeners are notified first.
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, TIMEOUTS.SHORT_DELAY));
       return;
     }
     // Cap load event to 5 seconds, the page is operational at this point.
-    await this.waitForLoadState('load', { timeout: 5000 });
+    await this.waitForLoadState('load', {
+      timeout: TIMEOUTS.LOAD_STATE_TIMEOUT,
+    });
   }
   consoleMessages(): ConsoleMessage[] {
     return this._consoleMessages;
@@ -503,7 +506,9 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       return;
     }
     await callOnPageNoTrace(this.page, (page) => {
-      return page.evaluate(() => new Promise((f) => setTimeout(f, 1000)));
+      return page.evaluate(
+        () => new Promise((f) => setTimeout(f, TIMEOUTS.MEDIUM_DELAY))
+      );
     });
   }
 }
@@ -551,7 +556,7 @@ const tabSymbol = Symbol('tabSymbol');
 
 function getNavigationTimeouts() {
   return {
-    navigationTimeout: 5000,
+    navigationTimeout: TIMEOUTS.DEFAULT_PAGE_TIMEOUT,
     checkInterval: 100,
     staleTimeout: 10_000,
   };
