@@ -82,7 +82,7 @@ export abstract class DiagnosticBase implements IDisposable {
         this.componentName,
         'dispose',
         'Failed to dispose component',
-        error
+        error instanceof Error ? error : String(error)
       );
     } finally {
       this.markDisposed();
@@ -97,7 +97,7 @@ export function diagnosticWarn(
   _component: string,
   _operation: string,
   _message: string,
-  _error?: unknown
+  _error?: Error | string
 ): void {
   // Diagnostic warnings are handled silently
 }
@@ -109,7 +109,7 @@ export function diagnosticError(
   _component: string,
   _operation: string,
   _message: string,
-  _error?: unknown
+  _error?: Error | string
 ): void {
   // Diagnostic errors are handled silently
 }
@@ -121,7 +121,7 @@ export function diagnosticInfo(
   _component: string,
   _operation: string,
   _message: string,
-  _data?: unknown
+  _data?: Record<string, unknown> | string | number
 ): void {
   // Diagnostic info messages are handled silently
 }
@@ -133,7 +133,7 @@ export function diagnosticDebug(
   _component: string,
   _operation: string,
   _message: string,
-  _data?: unknown
+  _data?: Record<string, unknown> | string | number
 ): void {
   // Diagnostic debug messages are handled silently
 }
@@ -144,12 +144,36 @@ export function diagnosticDebug(
 export function createDiagnosticLogger(component: string, operation: string) {
   return {
     warn: (message: string, error?: unknown) =>
-      diagnosticWarn(component, operation, message, error),
+      diagnosticWarn(
+        component,
+        operation,
+        message,
+        error instanceof Error ? error : String(error)
+      ),
     error: (message: string, error?: unknown) =>
-      diagnosticError(component, operation, message, error),
+      diagnosticError(
+        component,
+        operation,
+        message,
+        error instanceof Error ? error : String(error)
+      ),
     info: (message: string, data?: unknown) =>
-      diagnosticInfo(component, operation, message, data),
+      diagnosticInfo(
+        component,
+        operation,
+        message,
+        typeof data === 'object' && data !== null
+          ? (data as Record<string, unknown>)
+          : (data as string | number | undefined)
+      ),
     debug: (message: string, data?: unknown) =>
-      diagnosticDebug(component, operation, message, data),
+      diagnosticDebug(
+        component,
+        operation,
+        message,
+        typeof data === 'object' && data !== null
+          ? (data as Record<string, unknown>)
+          : (data as string | number | undefined)
+      ),
   };
 }

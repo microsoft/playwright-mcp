@@ -442,7 +442,7 @@ export class PageAnalyzer extends DiagnosticBase {
           return (
             tagName === 'button' ||
             (tagName === 'input' &&
-              ['button', 'submit', 'reset'].includes(type || '')) ||
+              ['button', 'submit', 'reset'].includes(type ?? '')) ||
             (tagName === 'a' && element.hasAttribute('href')) ||
             element.hasAttribute('onclick') ||
             element.getAttribute('role') === 'button' ||

@@ -155,7 +155,12 @@ export async function safeDispose<T extends { dispose(): Promise<void> }>(
     if (logger) {
       logger.warn(message, error);
     } else {
-      diagnosticWarn('ErrorEnrichmentUtils', operation, message, error);
+      diagnosticWarn(
+        'ErrorEnrichmentUtils',
+        operation,
+        message,
+        error instanceof Error ? error : String(error)
+      );
     }
   }
 }

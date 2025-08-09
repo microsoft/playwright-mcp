@@ -197,8 +197,9 @@ export class DiagnoseReportBuilder {
 
     this.reportBuilder.addEmptyLine().addLine(`**${title}:**`);
 
-    for (const [index, element] of elements.slice(0, maxItems).entries()) {
-      this.reportBuilder.addLine(formatter(element, index));
+    const limitedElements = elements.slice(0, maxItems);
+    for (let index = 0; index < limitedElements.length; index++) {
+      this.reportBuilder.addLine(formatter(limitedElements[index], index));
     }
   }
 
@@ -229,7 +230,7 @@ export class DiagnoseReportBuilder {
     };
 
     const iconMap = iconMaps[type];
-    return iconMap[level] || iconMap.default;
+    return (iconMap as Record<string, string>)[level] ?? iconMap.default;
   }
 
   private getPercentageSign(percent: number): string {
@@ -571,7 +572,8 @@ export class DiagnoseReportBuilder {
       this.reportBuilder.addLine(
         `Found ${foundElements.length} matching elements:`
       );
-      for (const [index, element] of foundElements.entries()) {
+      for (let index = 0; index < foundElements.length; index++) {
+        const element = foundElements[index];
         this.reportBuilder.addLine(
           `${index + 1}. **${element.selector}** (${(element.confidence * 100).toFixed(0)}% confidence)`
         );
@@ -647,7 +649,7 @@ export class DiagnoseReportBuilder {
     if (unifiedSystem) {
       const perfResult = await unifiedSystem.analyzePerformanceMetrics();
       if (perfResult.success) {
-        return perfResult.data;
+        return perfResult.data as PageMetrics;
       }
       throw new Error(
         `Performance metrics analysis failed: ${getErrorMessage(perfResult.error)}`
@@ -713,9 +715,16 @@ export class DiagnoseReportBuilder {
 
         return {
           domContentLoaded:
-            navigation?.domContentLoadedEventEnd -
-            navigation?.domContentLoadedEventStart,
-          loadComplete: navigation?.loadEventEnd - navigation?.loadEventStart,
+            navigation?.domContentLoadedEventEnd != null &&
+            navigation?.domContentLoadedEventStart != null
+              ? navigation.domContentLoadedEventEnd -
+                navigation.domContentLoadedEventStart
+              : undefined,
+          loadComplete:
+            navigation?.loadEventEnd != null &&
+            navigation?.loadEventStart != null
+              ? navigation.loadEventEnd - navigation.loadEventStart
+              : undefined,
           firstPaint: paint.find((p) => p.name === 'first-paint')?.startTime,
           firstContentfulPaint: paint.find(
             (p) => p.name === 'first-contentful-paint'

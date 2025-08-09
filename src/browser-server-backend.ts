@@ -89,6 +89,7 @@ export class BrowserServerBackend implements ServerBackend {
       await response.finish();
       this._sessionLog?.logResponse(response);
     } catch (error: unknown) {
+      console.error(`Error executing tool ${schema.name}:`, error);
       response.addError(String(error));
     } finally {
       context.setRunningTool(false);

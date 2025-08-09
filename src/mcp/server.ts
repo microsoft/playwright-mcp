@@ -132,9 +132,13 @@ const startHeartbeat = (server: Server) => {
       .then(() => {
         setTimeout(beat, 3000);
       })
-      .catch(() => {
-        server.close().catch(() => {
-          // Ignore errors during server close
+      .catch((error) => {
+        console.warn('Heartbeat ping failed:', error);
+        server.close().catch((closeError) => {
+          console.warn(
+            'Failed to close server after heartbeat failure:',
+            closeError
+          );
         });
       });
   };

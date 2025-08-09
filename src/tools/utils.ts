@@ -51,8 +51,8 @@ export async function waitForCompletion<R>(
         navigationCompleted = true;
         waitCallback();
       }
-    })().catch(() => {
-      // Intentionally ignore hover errors
+    })().catch((error) => {
+      console.debug('Hover operation failed during navigation:', error);
     });
   };
   const onTimeout = () => {
