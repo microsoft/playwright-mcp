@@ -75,7 +75,7 @@ test(
 
     // SonarQube Security Hotspot Fix: OS command execution is safe here because:
     // 1. This is a controlled test environment with validated inputs
-    // 2. Using spawnSync instead of exec to prevent shell injection  
+    // 2. Using spawnSync instead of exec to prevent shell injection
     // 3. Shell is explicitly disabled (shell: false)
     // 4. File path is validated and constrained to test output directory
     // 5. Using process.execPath for absolute Node.js path (no PATH dependency)

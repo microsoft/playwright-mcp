@@ -309,14 +309,11 @@ function createBrowserConfig(
   browserName: 'chromium' | 'firefox' | 'webkit' | undefined,
   channel?: string
 ): Pick<Config, 'browser'> {
-  const launchOptions = createLaunchOptions(cliOptions, channel);
-  const contextOptions = createContextOptions(cliOptions);
-
   const browser: Config['browser'] = {
     isolated: cliOptions.isolated,
     userDataDir: cliOptions.userDataDir,
-    launchOptions,
-    contextOptions,
+    launchOptions: createLaunchOptions(cliOptions, channel),
+    contextOptions: createContextOptions(cliOptions),
     cdpEndpoint: cliOptions.cdpEndpoint,
   };
 

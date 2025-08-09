@@ -23,157 +23,150 @@ export function createMockConsoleMessages(): ConsoleMessage[] {
 }
 
 /**
- * Common expectation helpers for console filtering tests
+ * Get console filtering function for testing
  */
-export class ConsoleTestHelpers {
-  /**
-   * Get console filtering function for testing
-   */
-  static async getFilterFunction() {
-    const { filterConsoleMessages } = await import(
-      '../../src/utils/consoleFilter.js'
-    );
-    return filterConsoleMessages;
-  }
-
-  /**
-   * Test filtering by message levels
-   */
-  static async testLevelFiltering(
-    levels: readonly string[],
-    expectedCount: number
-  ) {
-    const filterConsoleMessages = await ConsoleTestHelpers.getFilterFunction();
-    const messages = createMockConsoleMessages();
-    const options = { levels: levels as any };
-
-    const result = filterConsoleMessages(messages, options);
-    // Note: Assertion moved to test file to satisfy BiomeJS linting rules
-    return result;
-  }
-
-  /**
-   * Test filtering by patterns
-   */
-  static async testPatternFiltering(patterns: string[], expectedCount: number) {
-    const filterConsoleMessages = await ConsoleTestHelpers.getFilterFunction();
-    const messages = createMockConsoleMessages();
-    const options = { patterns };
-
-    const result = filterConsoleMessages(messages, options);
-    // Note: Assertion moved to test file to satisfy BiomeJS linting rules
-    return result;
-  }
-
-  /**
-   * Test duplicate removal
-   */
-  static async testDuplicateRemoval(expectedUniqueCount: number) {
-    const filterConsoleMessages = await ConsoleTestHelpers.getFilterFunction();
-    const messages = createMockConsoleMessages();
-    const options = { removeDuplicates: true };
-
-    const result = filterConsoleMessages(messages, options);
-    // Note: Assertions moved to test file to satisfy BiomeJS linting rules
-
-    return result;
-  }
-
-  /**
-   * Test message limit
-   */
-  static async testMessageLimit(limit: number) {
-    const filterConsoleMessages = await ConsoleTestHelpers.getFilterFunction();
-    const messages = createMockConsoleMessages();
-    const options = { maxMessages: limit };
-
-    const result = filterConsoleMessages(messages, options);
-    // Note: Assertion moved to test file to satisfy BiomeJS linting rules
-    return result;
-  }
-
-  /**
-   * Test combined filtering options
-   */
-  static async testCombinedFiltering(
-    options: {
-      levels?: readonly string[];
-      patterns?: string[];
-      removeDuplicates?: boolean;
-      maxMessages?: number;
-    },
-    maxExpectedCount: number
-  ) {
-    const filterConsoleMessages = await ConsoleTestHelpers.getFilterFunction();
-    const messages = createMockConsoleMessages();
-
-    const result = filterConsoleMessages(messages, options);
-    // Note: Assertions moved to test file to satisfy BiomeJS linting rules
-
-    return result;
-  }
+export async function getFilterFunction() {
+  const { filterConsoleMessages } = await import(
+    '../../src/utils/consoleFilter.js'
+  );
+  return filterConsoleMessages;
 }
 
 /**
- * Common assertion helpers
+ * Test filtering by message levels
  */
-export class AssertionHelpers {
-  /**
-   * Check if a value is within expected range
-   * Returns validation result for use in test assertions
-   */
-  static isInRange(value: number, min: number, max: number): boolean {
-    return value >= min && value <= max;
-  }
+export async function testLevelFiltering(
+  levels: readonly string[],
+  expectedCount: number
+) {
+  const filterConsoleMessages = await getFilterFunction();
+  const messages = createMockConsoleMessages();
+  const options = { levels: levels as any };
 
-  /**
-   * Check if array contains unique items
-   * Returns validation result for use in test assertions
-   */
-  static validateUniqueItems<T>(
-    array: T[],
-    keySelector?: (item: T) => any
-  ): {
-    isUnique: boolean;
-    duplicates: T[];
-    totalItems: number;
-    uniqueItems: number;
-  } {
-    const selector = keySelector || ((item: T) => item);
-    const keys = array.map(selector);
-    const uniqueKeys = new Set(keys);
-    const duplicates = array.filter(
-      (item, index) => keys.indexOf(selector(item)) !== index
-    );
+  const result = filterConsoleMessages(messages, options);
+  // Note: Assertion moved to test file to satisfy BiomeJS linting rules
+  return result;
+}
 
-    return {
-      isUnique: uniqueKeys.size === array.length,
-      duplicates,
-      totalItems: array.length,
-      uniqueItems: uniqueKeys.size,
-    };
-  }
+/**
+ * Test filtering by patterns
+ */
+export async function testPatternFiltering(
+  patterns: string[],
+  expectedCount: number
+) {
+  const filterConsoleMessages = await getFilterFunction();
+  const messages = createMockConsoleMessages();
+  const options = { patterns };
 
-  /**
-   * Validate error message contains expected text
-   * Returns validation result for use in test assertions
-   */
-  static validateErrorMessage(
-    error: unknown,
-    expectedText: string
-  ): {
-    isError: boolean;
-    messageContains: boolean;
-    actualMessage?: string;
-  } {
-    const isError = error instanceof Error;
-    const actualMessage = isError ? (error as Error).message : String(error);
-    const messageContains = actualMessage.includes(expectedText);
+  const result = filterConsoleMessages(messages, options);
+  // Note: Assertion moved to test file to satisfy BiomeJS linting rules
+  return result;
+}
 
-    return {
-      isError,
-      messageContains,
-      actualMessage: isError ? actualMessage : undefined,
-    };
-  }
+/**
+ * Test duplicate removal
+ */
+export async function testDuplicateRemoval(expectedUniqueCount: number) {
+  const filterConsoleMessages = await getFilterFunction();
+  const messages = createMockConsoleMessages();
+  const options = { removeDuplicates: true };
+
+  const result = filterConsoleMessages(messages, options);
+  // Note: Assertions moved to test file to satisfy BiomeJS linting rules
+
+  return result;
+}
+
+/**
+ * Test message limit
+ */
+export async function testMessageLimit(limit: number) {
+  const filterConsoleMessages = await getFilterFunction();
+  const messages = createMockConsoleMessages();
+  const options = { maxMessages: limit };
+
+  const result = filterConsoleMessages(messages, options);
+  // Note: Assertion moved to test file to satisfy BiomeJS linting rules
+  return result;
+}
+
+/**
+ * Test combined filtering options
+ */
+export async function testCombinedFiltering(
+  options: {
+    levels?: readonly string[];
+    patterns?: string[];
+    removeDuplicates?: boolean;
+    maxMessages?: number;
+  },
+  maxExpectedCount: number
+) {
+  const filterConsoleMessages = await getFilterFunction();
+  const messages = createMockConsoleMessages();
+
+  const result = filterConsoleMessages(messages, options);
+  // Note: Assertions moved to test file to satisfy BiomeJS linting rules
+
+  return result;
+}
+
+/**
+ * Check if a value is within expected range
+ * Returns validation result for use in test assertions
+ */
+export function isInRange(value: number, min: number, max: number): boolean {
+  return value >= min && value <= max;
+}
+
+/**
+ * Check if array contains unique items
+ * Returns validation result for use in test assertions
+ */
+export function validateUniqueItems<T>(
+  array: T[],
+  keySelector?: (item: T) => any
+): {
+  isUnique: boolean;
+  duplicates: T[];
+  totalItems: number;
+  uniqueItems: number;
+} {
+  const selector = keySelector || ((item: T) => item);
+  const keys = array.map(selector);
+  const uniqueKeys = new Set(keys);
+  const duplicates = array.filter(
+    (item, index) => keys.indexOf(selector(item)) !== index
+  );
+
+  return {
+    isUnique: uniqueKeys.size === array.length,
+    duplicates,
+    totalItems: array.length,
+    uniqueItems: uniqueKeys.size,
+  };
+}
+
+/**
+ * Validate error message contains expected text
+ * Returns validation result for use in test assertions
+ */
+export function validateErrorMessage(
+  error: unknown,
+  expectedText: string
+): {
+  isError: boolean;
+  messageContains: boolean;
+  actualMessage?: string;
+} {
+  const isError = error instanceof Error;
+  const actualMessage = isError ? (error as Error).message : String(error);
+  const messageContains = actualMessage.includes(expectedText);
+
+  return {
+    isError,
+    messageContains,
+    actualMessage: isError ? actualMessage : undefined,
+  };
 }

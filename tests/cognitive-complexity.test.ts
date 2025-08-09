@@ -22,17 +22,17 @@ describe('Cognitive Complexity Fixes', () => {
       ];
       const nonChromium = ['firefox', 'webkit', 'safari', 'opera'];
 
-      chromeVariants.forEach((variant) => {
+      for (const variant of chromeVariants) {
         expect(isChromiumVariant(variant)).toBe(true);
-      });
+      }
 
-      edgeVariants.forEach((variant) => {
+      for (const variant of edgeVariants) {
         expect(isChromiumVariant(variant)).toBe(true);
-      });
+      }
 
-      nonChromium.forEach((browser) => {
+      for (const browser of nonChromium) {
         expect(isChromiumVariant(browser)).toBe(false);
-      });
+      }
     });
 
     it('should handle edge cases', () => {

@@ -30,10 +30,10 @@ export const resolveElementLocator = async (
 
     // Public wrapper to access protected method
     resolveLocator(
-      tab: Tab,
-      params: { element?: string; ref?: string }
+      tabInstance: Tab,
+      locatorParams: { element?: string; ref?: string }
     ): Promise<playwright.Locator | undefined> {
-      return this.resolveElementLocator(tab, params);
+      return this.resolveElementLocator(tabInstance, locatorParams);
     }
   }
 
@@ -56,8 +56,8 @@ export const validateElementParams = (params: {
     }
 
     // Public wrapper to access protected method
-    validateParams(params: { element?: string; ref?: string }): void {
-      this.validateElementParams(params);
+    validateParams(validationParams: { element?: string; ref?: string }): void {
+      this.validateElementParams(validationParams);
     }
   }
 

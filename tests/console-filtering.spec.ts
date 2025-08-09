@@ -16,20 +16,23 @@
 
 import { expect, test } from '@playwright/test';
 import {
-  ConsoleTestHelpers,
   createMockConsoleMessages,
+  getFilterFunction,
+  testDuplicateRemoval,
+  testLevelFiltering,
+  testMessageLimit,
 } from './helpers/test-utils';
 
 test.describe('Console Message Filtering', () => {
   // Using shared test utilities to reduce duplication
 
   test('filterConsoleMessages function should exist now', async () => {
-    const filterConsoleMessages = await ConsoleTestHelpers.getFilterFunction();
+    const filterConsoleMessages = await getFilterFunction();
     expect(typeof filterConsoleMessages).toBe('function');
   });
 
   test('should filter messages by level', async () => {
-    const result = await ConsoleTestHelpers.testLevelFiltering(['error'], 3);
+    const result = await testLevelFiltering(['error'], 3);
     expect(result.length).toBe(3);
     expect(result.every((msg) => msg.type === 'error')).toBe(true);
     expect(result[0].toString()).toContain('[ERROR]');
@@ -54,7 +57,7 @@ test.describe('Console Message Filtering', () => {
   });
 
   test('should remove duplicate messages when requested', async () => {
-    const result = await ConsoleTestHelpers.testDuplicateRemoval(9);
+    const result = await testDuplicateRemoval(9);
 
     expect(result.length).toBe(9);
     // Verify no duplicate messages exist
@@ -69,7 +72,7 @@ test.describe('Console Message Filtering', () => {
   });
 
   test('should limit number of messages', async () => {
-    const result = await ConsoleTestHelpers.testMessageLimit(3);
+    const result = await testMessageLimit(3);
     const messages = createMockConsoleMessages();
     expect(result.length).toBe(Math.min(3, messages.length));
     // Should keep the last 3 messages
