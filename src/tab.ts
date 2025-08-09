@@ -44,7 +44,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     finished: boolean;
     outputFile: string;
   }[] = [];
-  private _navigationState: {
+  private readonly _navigationState: {
     isNavigating: boolean;
     lastNavigationStart: number;
     navigationPromise?: Promise<void>;

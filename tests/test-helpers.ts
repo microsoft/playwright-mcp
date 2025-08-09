@@ -329,6 +329,174 @@ export async function navigateToUrl(client: Client, url: string): Promise<any> {
 }
 
 /**
+ * Create a mock context object commonly used in navigation tests
+ */
+export function createMockContext(tab: any): any {
+  return {
+    currentTab: () => tab,
+    currentTabOrDie: () => tab,
+    tabs: () => [tab],
+    config: { imageResponses: 'include' },
+  } as any;
+}
+
+/**
+ * Create a Tab with mock context - reduces boilerplate in navigation tests
+ */
+export function createTabWithMockContext(
+  page: any,
+  callback: () => void = () => {
+    // Default empty callback for Tab constructor
+  }
+): { tab: any; mockContext: any } {
+  const tab = new (require('../src/tab.js').Tab)(null as any, page, callback);
+  const mockContext = createMockContext(tab);
+  (tab as any).context = mockContext;
+  return { tab, mockContext };
+}
+
+/**
+ * Helper function to set basic HTML content on test server
+ */
+export function setServerContent(
+  server: any,
+  path: string,
+  htmlContent: string
+): void {
+  server.setContent(path, htmlContent, 'text/html');
+}
+
+/**
+ * Common client tool call wrapper with default expectation handling
+ */
+export async function callTool(
+  client: Client,
+  name: string,
+  args: any
+): Promise<any> {
+  return await client.callTool({
+    name,
+    arguments: args,
+  });
+}
+
+/**
+ * Helper for common browser_navigate + assertion pattern
+ */
+export async function navigateAndExpectTitle(
+  client: Client,
+  url: string,
+  expectedTitle = 'Title'
+): Promise<any> {
+  const result = await navigateToUrl(client, url);
+  expect(result).toEqual(
+    expect.objectContaining({
+      pageState: expect.stringContaining(`Page Title: ${expectedTitle}`),
+    })
+  );
+  return result;
+}
+
+/**
+ * Common expectation helpers to reduce toHaveResponse duplication
+ */
+export function expectPageTitle(expectedTitle = 'Title') {
+  return expect.objectContaining({
+    pageState: expect.stringContaining(`Page Title: ${expectedTitle}`),
+  });
+}
+
+export function expectPlaywrightCode(expectedCode: string) {
+  return expect.objectContaining({
+    code: expectedCode,
+  });
+}
+
+export function expectPageStateContaining(text: string) {
+  return expect.objectContaining({
+    pageState: expect.stringContaining(text),
+  });
+}
+
+export function expectCodeAndPageState(
+  expectedCode: string,
+  pageStateText: string
+) {
+  return expect.objectContaining({
+    code: expectedCode,
+    pageState: expect.stringContaining(pageStateText),
+  });
+}
+
+export function expectCodeAndResult(
+  expectedCode: string,
+  expectedResult: string
+) {
+  return expect.objectContaining({
+    code: expectedCode,
+    result: expectedResult,
+  });
+}
+
+/**
+ * Common HTML templates to reduce duplication across test files
+ */
+export const HTML_TEMPLATES = {
+  BASIC_BUTTON: `
+    <title>Title</title>
+    <button>Submit</button>
+  `,
+  BASIC_TITLE_ONLY: '<title>Title</title>',
+  HELLO_WORLD_HEADING: '<h1>Hello, world!</h1>',
+  SIMPLE_INPUT_FORM: `
+    <title>Title</title>
+    <input type="text" placeholder="Enter text" />
+  `,
+  CLICKABLE_HEADING: (text = 'Click me') => `
+    <title>Title</title>
+    <h1>${text}</h1>
+  `,
+  BUTTON_WITH_SCRIPT: (buttonText: string, scriptContent: string) => `
+    <title>Title</title>
+    <button>${buttonText}</button>
+    <script>${scriptContent}</script>
+  `,
+  CLICKABLE_HEADING_WITH_SCRIPT: (
+    headingText: string,
+    scriptContent: string,
+    eventType = 'ondblclick'
+  ) => `
+    <title>Title</title>
+    <script>${scriptContent}</script>
+    <h1 ${eventType}="handle()">${headingText}</h1>
+  `,
+  CONTEXT_MENU_BUTTON: (buttonText = 'Menu') => `
+    <title>Title</title>
+    <button oncontextmenu="handle">${buttonText}</button>
+    <script>
+      document.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        document.querySelector('button').textContent = 'Right clicked';
+      });
+    </script>
+  `,
+} as const;
+
+/**
+ * Common data URLs for quick inline HTML
+ */
+export const DATA_URLS = {
+  SIMPLE_PAGE: (heading: string) =>
+    `data:text/html,<html><body><h1>${heading}</h1></body></html>`,
+  WITH_SCRIPT: (heading: string, script: string) =>
+    `data:text/html,<html><body><h1>${heading}</h1><script>${script}</script></body></html>`,
+  FORM_PAGE: (inputId = 'search', inputValue = 'test') =>
+    `data:text/html,<html><body><input id="${inputId}" type="text" value="${inputValue}"><h1>Before Navigation</h1></body></html>`,
+  SEARCH_RESULTS_PAGE: (searchTerm: string) =>
+    `data:text/html,<html><body><h1>Search Results</h1><p>Results for: ${searchTerm}</p></body></html>`,
+} as const;
+
+/**
  * Browser lifecycle assertion patterns for HTTP tests
  */
 export interface BrowserLifecycleExpectations {

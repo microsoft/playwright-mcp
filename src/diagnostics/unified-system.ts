@@ -69,7 +69,7 @@ export class UnifiedDiagnosticSystem {
   private resourceManager?: ResourceManager;
   private errorHandler?: EnhancedErrorHandler;
 
-  private stats: SystemStats;
+  private readonly stats: SystemStats;
   private operationHistory: Array<{
     operation: string;
     component: DiagnosticComponent;

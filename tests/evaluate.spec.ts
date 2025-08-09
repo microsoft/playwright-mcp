@@ -15,6 +15,11 @@
  */
 
 import { expect, test } from './fixtures.js';
+import {
+  expectCodeAndResult,
+  expectPageTitle,
+  setServerContent,
+} from './test-helpers.js';
 
 // Top-level regex patterns for performance optimization
 const ERROR_PATTERNS_REGEX = /not defined|Can't find variable/;
@@ -25,9 +30,7 @@ test('browser_evaluate', async ({ client, server }) => {
       name: 'browser_navigate',
       arguments: { url: server.HELLO_WORLD },
     })
-  ).toHaveResponse({
-    pageState: expect.stringContaining('- Page Title: Title'),
-  });
+  ).toHaveResponse(expectPageTitle());
 
   expect(
     await client.callTool({
@@ -36,19 +39,21 @@ test('browser_evaluate', async ({ client, server }) => {
         function: '() => document.title',
       },
     })
-  ).toHaveResponse({
-    result: `"Title"`,
-    code: `await page.evaluate('() => document.title');`,
-  });
+  ).toHaveResponse(
+    expectCodeAndResult(
+      `await page.evaluate('() => document.title');`,
+      `"Title"`
+    )
+  );
 });
 
 test('browser_evaluate (element)', async ({ client, server }) => {
-  server.setContent(
+  setServerContent(
+    server,
     '/',
     `
     <body style="background-color: red">Hello, world!</body>
-  `,
-    'text/html'
+  `
   );
   await client.callTool({
     name: 'browser_navigate',
@@ -64,10 +69,12 @@ test('browser_evaluate (element)', async ({ client, server }) => {
         ref: 'e1',
       },
     })
-  ).toHaveResponse({
-    result: `"red"`,
-    code: `await page.getByText('Hello, world!').evaluate('element => element.style.backgroundColor');`,
-  });
+  ).toHaveResponse(
+    expectCodeAndResult(
+      `await page.getByText('Hello, world!').evaluate('element => element.style.backgroundColor');`,
+      `"red"`
+    )
+  );
 });
 
 test('browser_evaluate (error)', async ({ client, server }) => {
@@ -76,9 +83,7 @@ test('browser_evaluate (error)', async ({ client, server }) => {
       name: 'browser_navigate',
       arguments: { url: server.HELLO_WORLD },
     })
-  ).toHaveResponse({
-    pageState: expect.stringContaining('- Page Title: Title'),
-  });
+  ).toHaveResponse(expectPageTitle());
 
   const result = await client.callTool({
     name: 'browser_evaluate',

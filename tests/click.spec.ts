@@ -15,16 +15,10 @@
  */
 
 import { expect, test } from './fixtures.js';
+import { HTML_TEMPLATES, setServerContent } from './test-helpers.js';
 
 test('browser_click', async ({ client, server, mcpBrowser }) => {
-  server.setContent(
-    '/',
-    `
-    <title>Title</title>
-    <button>Submit</button>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.BASIC_BUTTON);
 
   await client.callTool({
     name: 'browser_navigate',
@@ -48,18 +42,17 @@ test('browser_click', async ({ client, server, mcpBrowser }) => {
 });
 
 test('browser_click (double)', async ({ client, server }) => {
-  server.setContent(
+  setServerContent(
+    server,
     '/',
-    `
-    <title>Title</title>
-    <script>
+    HTML_TEMPLATES.CLICKABLE_HEADING_WITH_SCRIPT(
+      'Click me',
+      `
       function handle() {
         document.querySelector('h1').textContent = 'Double clicked';
       }
-    </script>
-    <h1 ondblclick="handle()">Click me</h1>
-  `,
-    'text/html'
+    `
+    )
   );
 
   await client.callTool({
@@ -85,19 +78,7 @@ test('browser_click (double)', async ({ client, server }) => {
 });
 
 test('browser_click (right)', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <button oncontextmenu="handle">Menu</button>
-    <script>
-      document.addEventListener('contextmenu', event => {
-        event.preventDefault();
-        document.querySelector('button').textContent = 'Right clicked';
-      });
-    </script>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.CONTEXT_MENU_BUTTON('Menu'));
 
   await client.callTool({
     name: 'browser_navigate',

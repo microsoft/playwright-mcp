@@ -234,6 +234,10 @@ export class DiagnoseReportBuilder {
     );
   }
 
+  private getPercentageSign(percent: number): string {
+    return percent > 0 ? '+' : '';
+  }
+
   private formatMetricName(key: string): string {
     const nameMap: Record<string, string> = {
       domContentLoaded: 'DOM Content Loaded',
@@ -396,7 +400,7 @@ export class DiagnoseReportBuilder {
           'performance'
         );
         const deviationText = deviation
-          ? ` (${deviation.percent > 0 ? '+' : ''}${deviation.percent}% ${deviation.significance})`
+          ? ` (${this.getPercentageSign(deviation.percent)}${deviation.percent}% ${deviation.significance})`
           : '';
 
         this.reportBuilder.addLine(

@@ -235,16 +235,10 @@ test('http transport browser lifecycle (persistent, multiclient)', async ({
 }) => {
   const { url } = await serverEndpoint();
 
-  const { client: client1, transport: transport1 } = await createHttpClient(
-    url,
-    'test1'
-  );
+  const { client: client1 } = await createHttpClient(url, 'test1');
   await navigateToUrl(client1, server.HELLO_WORLD);
 
-  const { client: client2, transport: transport2 } = await createHttpClient(
-    url,
-    'test2'
-  );
+  const { client: client2 } = await createHttpClient(url, 'test2');
   const response = await navigateToUrl(client2, server.HELLO_WORLD);
 
   expect(response.isError).toBe(true);

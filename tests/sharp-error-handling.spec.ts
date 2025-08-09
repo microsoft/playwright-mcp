@@ -58,12 +58,6 @@ test.describe('Sharp Error Handling Tests', () => {
       format: 'jpeg',
     });
 
-    // console.log('Valid PNG processing:');
-    // console.log(`  Result content type: ${result.contentType}`);
-    // console.log(`  Original size: ${result.originalSize.width}x${result.originalSize.height}`);
-    // console.log(`  Processed size: ${result.processedSize.width}x${result.processedSize.height}`);
-    // console.log(`  Compression ratio: ${result.compressionRatio.toFixed(3)}`);
-
     // This should work with actual Sharp processing
     expect(result.contentType).toBe('image/jpeg');
     expect(result.data).toBeInstanceOf(Buffer);
@@ -86,12 +80,6 @@ test.describe('Sharp Error Handling Tests', () => {
       format: 'jpeg',
       quality: 80,
     });
-
-    // console.log('Valid PNG result:', {
-    //   contentType: validResult.contentType,
-    //   size: `${validResult.originalSize.width}x${validResult.originalSize.height}`,
-    //   dataLength: validResult.data.length
-    // });
 
     expect(validResult.contentType).toBe('image/jpeg');
     expect(validResult.originalSize.width).toBeGreaterThan(0);

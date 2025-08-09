@@ -158,7 +158,7 @@ export class BatchExecutor {
     stepExpectation?: ExpectationOptions
   ): ExpectationOptions {
     // Start with tool defaults
-    let merged = mergeExpectations(toolName, undefined);
+    let merged = mergeExpectations(toolName);
     // Apply global expectation if provided
     if (globalExpectation) {
       merged = mergeExpectations(toolName, {

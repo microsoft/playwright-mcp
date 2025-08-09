@@ -1,7 +1,7 @@
 import { Response } from '../src/response.js';
-import { Tab } from '../src/tab.js';
 import { waitForCompletion } from '../src/tools/utils.js';
 import { expect, test } from './fixtures.js';
+import { createTabWithMockContext, DATA_URLS } from './test-helpers.js';
 
 test.describe('Navigation Context Handling', () => {
   const performRequestAndNavigation = async (page: any) => {
@@ -22,28 +22,14 @@ test.describe('Navigation Context Handling', () => {
     test('should handle navigation completion with stable context', async ({
       page,
     }) => {
-      // Create a mock context for testing
-      const mockContext = {
-        currentTab: () => tab,
-        currentTabOrDie: () => tab,
-        tabs: () => [tab],
-        config: { imageResponses: 'include' },
-      } as any;
-
-      const tab = new Tab(mockContext, page, () => {
-        // No-op callback for test
-      });
+      const { tab, mockContext } = createTabWithMockContext(page);
 
       // Navigate to a page that will trigger context changes
-      await page.goto(
-        'data:text/html,<html><body><h1>Initial Page</h1></body></html>'
-      );
+      await page.goto(DATA_URLS.SIMPLE_PAGE('Initial Page'));
 
       const result = await waitForCompletion(tab, async () => {
         // Trigger navigation within the callback using proper Playwright navigation
-        await page.goto(
-          'data:text/html,<html><body><h1>New Page</h1></body></html>'
-        );
+        await page.goto(DATA_URLS.SIMPLE_PAGE('New Page'));
         return 'navigation-triggered';
       });
 
@@ -54,18 +40,9 @@ test.describe('Navigation Context Handling', () => {
     test('should wait for network requests after navigation', async ({
       page,
     }) => {
-      const mockContext = {
-        currentTab: () => tab,
-        currentTabOrDie: () => tab,
-        tabs: () => [tab],
-        config: { imageResponses: 'include' },
-      } as any;
+      const { tab, mockContext } = createTabWithMockContext(page);
 
-      const tab = new Tab(mockContext, page, () => {
-        // No-op callback for test
-      });
-
-      await page.goto('data:text/html,<html><body><h1>Test</h1></body></html>');
+      await page.goto(DATA_URLS.SIMPLE_PAGE('Test'));
 
       const result = await waitForCompletion(tab, () =>
         performRequestAndNavigation(page)
@@ -77,25 +54,14 @@ test.describe('Navigation Context Handling', () => {
     test('should handle timeout gracefully during navigation', async ({
       page,
     }) => {
-      const mockContext = {
-        currentTab: () => tab,
-        currentTabOrDie: () => tab,
-        tabs: () => [tab],
-        config: { imageResponses: 'include' },
-      } as any;
+      const { tab, mockContext } = createTabWithMockContext(page);
 
-      const tab = new Tab(mockContext, page, () => {
-        // No-op callback for test
-      });
-
-      await page.goto('data:text/html,<html><body><h1>Test</h1></body></html>');
+      await page.goto(DATA_URLS.SIMPLE_PAGE('Test'));
 
       // This should complete within the timeout period
       const result = await waitForCompletion(tab, async () => {
         // Trigger a quick navigation
-        await page.goto(
-          'data:text/html,<html><body><h1>Quick Nav</h1></body></html>'
-        );
+        await page.goto(DATA_URLS.SIMPLE_PAGE('Quick Nav'));
         return 'timeout-test';
       });
 
@@ -107,20 +73,9 @@ test.describe('Navigation Context Handling', () => {
     test('should detect navigation and defer snapshot capture', async ({
       page,
     }) => {
-      const mockContext = {
-        currentTab: () => tab,
-        currentTabOrDie: () => tab,
-        tabs: () => [tab],
-        config: { imageResponses: 'include' },
-      } as any;
+      const { tab, mockContext } = createTabWithMockContext(page);
 
-      const tab = new Tab(mockContext, page, () => {
-        // No-op callback for test
-      });
-
-      await page.goto(
-        'data:text/html,<html><body><h1>Initial</h1></body></html>'
-      );
+      await page.goto(DATA_URLS.SIMPLE_PAGE('Initial'));
 
       const response = new Response(
         mockContext,
@@ -132,7 +87,7 @@ test.describe('Navigation Context Handling', () => {
 
       // Simulate navigation before finish()
       const navigationPromise = page.goto(
-        'data:text/html,<html><body><h1>After Navigation</h1></body></html>'
+        DATA_URLS.SIMPLE_PAGE('After Navigation')
       );
 
       // Call finish() while navigation is in progress
@@ -146,18 +101,9 @@ test.describe('Navigation Context Handling', () => {
     test('should handle execution context destruction gracefully', async ({
       page,
     }) => {
-      const mockContext = {
-        currentTab: () => tab,
-        currentTabOrDie: () => tab,
-        tabs: () => [tab],
-        config: { imageResponses: 'include' },
-      } as any;
+      const { tab, mockContext } = createTabWithMockContext(page);
 
-      const tab = new Tab(mockContext, page, () => {
-        // No-op callback for test
-      });
-
-      await page.goto('data:text/html,<html><body><h1>Test</h1></body></html>');
+      await page.goto(DATA_URLS.SIMPLE_PAGE('Test'));
 
       const response = new Response(
         mockContext,
@@ -168,9 +114,7 @@ test.describe('Navigation Context Handling', () => {
       response.addResult('Context destruction test');
 
       // Simulate rapid navigation that could destroy context
-      await page.goto(
-        'data:text/html,<html><body><h1>New Context</h1></body></html>'
-      );
+      await page.goto(DATA_URLS.SIMPLE_PAGE('New Context'));
 
       // Should not throw "Execution context was destroyed" error
       await expect(response.finish()).resolves.not.toThrow();
@@ -182,20 +126,9 @@ test.describe('Navigation Context Handling', () => {
     test('should retry snapshot capture on context destruction', async ({
       page,
     }) => {
-      const mockContext = {
-        currentTab: () => tab,
-        currentTabOrDie: () => tab,
-        tabs: () => [tab],
-        config: { imageResponses: 'include' },
-      } as any;
+      const { tab, mockContext } = createTabWithMockContext(page);
 
-      const tab = new Tab(mockContext, page, () => {
-        // No-op callback for test
-      });
-
-      await page.goto(
-        'data:text/html,<html><body><h1>Original</h1></body></html>'
-      );
+      await page.goto(DATA_URLS.SIMPLE_PAGE('Original'));
 
       const response = new Response(
         mockContext,
@@ -209,9 +142,7 @@ test.describe('Navigation Context Handling', () => {
       const finishPromise = response.finish();
 
       // Navigate immediately to potentially cause context destruction
-      await page.goto(
-        'data:text/html,<html><body><h1>Navigated</h1></body></html>'
-      );
+      await page.goto(DATA_URLS.SIMPLE_PAGE('Navigated'));
 
       await finishPromise;
 
@@ -225,26 +156,10 @@ test.describe('Navigation Context Handling', () => {
     test('should handle press_key -> navigation -> snapshot sequence', async ({
       page,
     }) => {
-      const mockContext = {
-        currentTab: () => tab,
-        currentTabOrDie: () => tab,
-        tabs: () => [tab],
-        config: { imageResponses: 'include' },
-      } as any;
-
-      const tab = new Tab(mockContext, page, () => {
-        // No-op callback for test
-      });
+      const { tab, mockContext } = createTabWithMockContext(page);
 
       // Create a page that responds to Enter key with navigation
-      await page.goto(`data:text/html,
-        <html>
-          <body>
-            <input id="search" type="text" value="test">
-            <h1>Before Navigation</h1>
-          </body>
-        </html>
-      `);
+      await page.goto(DATA_URLS.FORM_PAGE('search', 'test'));
 
       const response = new Response(
         mockContext,
@@ -257,9 +172,7 @@ test.describe('Navigation Context Handling', () => {
       await waitForCompletion(tab, async () => {
         await page.locator('#search').press('Enter');
         // Simulate the navigation that would typically happen on Enter
-        await page.goto(
-          'data:text/html,<html><body><h1>Search Results</h1><p>Results for: test</p></body></html>'
-        );
+        await page.goto(DATA_URLS.SEARCH_RESULTS_PAGE('test'));
         return 'key-pressed';
       });
 
@@ -274,20 +187,9 @@ test.describe('Navigation Context Handling', () => {
     test('should maintain response quality during navigation', async ({
       page,
     }) => {
-      const mockContext = {
-        currentTab: () => tab,
-        currentTabOrDie: () => tab,
-        tabs: () => [tab],
-        config: { imageResponses: 'include' },
-      } as any;
+      const { tab, mockContext } = createTabWithMockContext(page);
 
-      const tab = new Tab(mockContext, page, () => {
-        // No-op callback for test
-      });
-
-      await page.goto(
-        'data:text/html,<html><body><h1>Initial</h1></body></html>'
-      );
+      await page.goto(DATA_URLS.SIMPLE_PAGE('Initial'));
 
       const response = new Response(
         mockContext,
@@ -304,10 +206,10 @@ test.describe('Navigation Context Handling', () => {
 
       // Trigger navigation with console messages
       await page.evaluate(() => {
-        // console.log('Before navigation');
+        // Empty evaluation for navigation context test
       });
       await page.goto(
-        'data:text/html,<html><body><h1>After Nav</h1><script>console.log("After navigation");</script></body></html>'
+        DATA_URLS.WITH_SCRIPT('After Nav', 'console.log("After navigation");')
       );
 
       await response.finish();

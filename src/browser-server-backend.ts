@@ -19,10 +19,10 @@ export type FactoryList = NonEmptyArray<BrowserContextFactory>;
 export class BrowserServerBackend implements ServerBackend {
   name = 'Playwright';
   version = packageJSON.version;
-  private _tools: Tool[];
+  private readonly _tools: Tool[];
   private _context: Context | undefined;
   private _sessionLog: SessionLog | undefined;
-  private _config: FullConfig;
+  private readonly _config: FullConfig;
   private _browserContextFactory: BrowserContextFactory;
   constructor(config: FullConfig, factories: FactoryList) {
     this._config = config;

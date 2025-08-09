@@ -54,7 +54,6 @@ test.describe('Parallel Analysis Stability', () => {
     for (const result of results) {
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      // console.log(`Test ${index + 1}: Success=${result.success}, ExecutionTime=${result.executionTime}ms`);
     }
 
     await unifiedSystem.dispose();
@@ -90,12 +89,10 @@ test.describe('Parallel Analysis Stability', () => {
 
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
-    // console.log(`Complex page analysis: Success=${result.success}, ExecutionTime=${result.executionTime}ms`);
 
     // Check if parallel analysis was used by looking for structureAnalysis property
     const _hasParallelStructure =
       result.data && 'structureAnalysis' in result.data;
-    // console.log(`Parallel analysis detected: ${hasParallelStructure}`);
 
     await unifiedSystem.dispose();
   });
@@ -128,12 +125,10 @@ test.describe('Parallel Analysis Stability', () => {
 
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
-    // console.log(`Simple page analysis: Success=${result.success}, ExecutionTime=${result.executionTime}ms`);
 
     // Check if standard analysis was used (no structureAnalysis property)
     const _hasParallelStructure =
       result.data && 'structureAnalysis' in result.data;
-    // console.log(`Parallel analysis detected: ${hasParallelStructure}`);
 
     await unifiedSystem.dispose();
   });
@@ -157,14 +152,12 @@ test.describe('Parallel Analysis Stability', () => {
 
     expect(forcedResult.success).toBe(true);
     expect(forcedResult.data).toBeDefined();
-    // console.log(`Forced parallel analysis: Success=${forcedResult.success}, ExecutionTime=${forcedResult.executionTime}ms`);
 
     // Normal analysis without force
     const normalResult = await unifiedSystem.analyzePageStructure();
 
     expect(normalResult.success).toBe(true);
     expect(normalResult.data).toBeDefined();
-    // console.log(`Normal analysis: Success=${normalResult.success}, ExecutionTime=${normalResult.executionTime}ms`);
 
     await unifiedSystem.dispose();
   });

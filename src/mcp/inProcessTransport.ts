@@ -40,13 +40,11 @@ export class InProcessTransport implements Transport {
     }
     return Promise.resolve();
   }
-  onclose?: (() => void) | undefined;
-  onerror?: ((error: Error) => void) | undefined;
-  onmessage?:
-    | ((message: JSONRPCMessage, extra?: MessageExtraInfo) => void)
-    | undefined;
-  sessionId?: string | undefined;
-  setProtocolVersion?: ((version: string) => void) | undefined;
+  onclose?: () => void;
+  onerror?: (error: Error) => void;
+  onmessage?: (message: JSONRPCMessage, extra?: MessageExtraInfo) => void;
+  sessionId?: string;
+  setProtocolVersion?: (version: string) => void;
   _receiveFromServer(message: JSONRPCMessage, extra?: MessageExtraInfo): void {
     this.onmessage?.(message, extra);
   }
@@ -70,13 +68,11 @@ class InProcessServerTransport implements Transport {
     this.onclose?.();
     return Promise.resolve();
   }
-  onclose?: (() => void) | undefined;
-  onerror?: ((error: Error) => void) | undefined;
-  onmessage?:
-    | ((message: JSONRPCMessage, extra?: MessageExtraInfo) => void)
-    | undefined;
-  sessionId?: string | undefined;
-  setProtocolVersion?: ((version: string) => void) | undefined;
+  onclose?: () => void;
+  onerror?: (error: Error) => void;
+  onmessage?: (message: JSONRPCMessage, extra?: MessageExtraInfo) => void;
+  sessionId?: string;
+  setProtocolVersion?: (version: string) => void;
   _receiveFromClient(message: JSONRPCMessage): void {
     this.onmessage?.(message);
   }
