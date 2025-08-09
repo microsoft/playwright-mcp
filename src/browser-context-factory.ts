@@ -77,7 +77,8 @@ class BaseContextFactory implements BrowserContextFactory {
           this._browserPromise = undefined;
         });
       })
-      .catch(() => {
+      .catch((error) => {
+        console.warn('Browser connection failed:', error);
         this._browserPromise = undefined;
       });
     return this._browserPromise;
@@ -262,8 +263,8 @@ class PersistentContextFactory implements BrowserContextFactory {
   ) {
     testDebug('close browser context (persistent)');
     testDebug('release user data dir', userDataDir);
-    await browserContext.close().catch(() => {
-      // Ignore errors during close
+    await browserContext.close().catch((error) => {
+      console.warn('Failed to close browser context:', error);
     });
     this._userDataDirs.delete(userDataDir);
     testDebug('close browser context complete (persistent)');

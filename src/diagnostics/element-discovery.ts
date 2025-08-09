@@ -160,7 +160,7 @@ export class ElementDiscovery extends DiagnosticBase {
 
     for (const selector of strategies) {
       if (totalFound >= maxResults) {
-        break;
+        return;
       }
 
       // biome-ignore lint/nursery/noAwaitInLoop: Sequential element processing required for accurate result ordering
