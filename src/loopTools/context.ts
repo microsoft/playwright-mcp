@@ -11,8 +11,8 @@ import { InProcessTransport } from '../mcp/inProcessTransport.js';
 import { createServer } from '../mcp/server.js';
 export class Context {
   readonly config: FullConfig;
-  private _client: Client;
-  private _delegate: LLMDelegate;
+  private readonly _client: Client;
+  private readonly _delegate: LLMDelegate;
   constructor(config: FullConfig, client: Client) {
     this.config = config;
     this._client = client;

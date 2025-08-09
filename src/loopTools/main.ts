@@ -15,7 +15,7 @@ export async function runLoopTools(config: FullConfig) {
 class LoopToolsServerBackend implements ServerBackend {
   readonly name = 'Playwright';
   readonly version = packageJSON.version;
-  private _config: FullConfig;
+  private readonly _config: FullConfig;
   private _context: Context | undefined;
   private readonly _tools = [perform, snapshot];
   constructor(config: FullConfig) {

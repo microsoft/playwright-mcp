@@ -34,7 +34,7 @@ export class ManualPromise<T = void> extends Promise<T> {
 export class LongStandingScope {
   private _terminateError: Error | undefined;
   private _closeError: Error | undefined;
-  private _terminatePromises = new Map<ManualPromise<Error>, string[]>();
+  private readonly _terminatePromises = new Map<ManualPromise<Error>, string[]>();
   private _isClosed = false;
   reject(error: Error) {
     this._isClosed = true;

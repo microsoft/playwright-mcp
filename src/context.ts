@@ -35,12 +35,12 @@ export class Context {
   private _browserContextFactory: BrowserContextFactory;
   private _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
-  private _clientInfo: ClientInfo;
+  private readonly _clientInfo: ClientInfo;
   private _batchExecutor: BatchExecutor | undefined;
   private static _allContexts: Set<Context> = new Set();
   private _closeBrowserContextPromise: Promise<void> | undefined;
   private _isRunningTool = false;
-  private _abortController = new AbortController();
+  private readonly _abortController = new AbortController();
   constructor(options: ContextOptions) {
     this.tools = options.tools;
     this.config = options.config;
