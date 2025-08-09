@@ -229,7 +229,7 @@ export class DiagnoseReportBuilder {
     };
 
     const iconMap = iconMaps[type];
-    return iconMap[level as keyof typeof iconMap] || iconMap.default;
+    return iconMap[level] || iconMap.default;
   }
 
   private getPercentageSign(percent: number): string {
@@ -390,7 +390,7 @@ export class DiagnoseReportBuilder {
       const deviation = deviations[component];
 
       if (actual > 0) {
-        const significance = deviation?.significance || 'normal';
+        const significance = deviation?.significance ?? 'normal';
         const indicator = this.getStatusIcon(significance, 'performance');
 
         let deviationText = '';
@@ -647,7 +647,7 @@ export class DiagnoseReportBuilder {
     if (unifiedSystem) {
       const perfResult = await unifiedSystem.analyzePerformanceMetrics();
       if (perfResult.success) {
-        return perfResult.data as PageMetrics;
+        return perfResult.data;
       }
       throw new Error(
         `Performance metrics analysis failed: ${getErrorMessage(perfResult.error)}`
@@ -705,9 +705,10 @@ export class DiagnoseReportBuilder {
   private async addBrowserPerformanceMetrics(): Promise<void> {
     try {
       const browserMetrics = await this.tab.page.evaluate(() => {
-        const navigation = performance.getEntriesByType(
-          'navigation'
-        )[0] as PerformanceNavigationTiming;
+        const navigationEntries = performance.getEntriesByType('navigation');
+        const navigation = navigationEntries[0] as
+          | PerformanceNavigationTiming
+          | undefined;
         const paint = performance.getEntriesByType('paint');
 
         return {
@@ -723,7 +724,7 @@ export class DiagnoseReportBuilder {
       });
 
       const metricsWithValues = Object.entries(browserMetrics)
-        .filter(([_, value]) => value)
+        .filter(([_, value]) => typeof value === 'number' && value > 0)
         .map(
           ([key, value]) =>
             [

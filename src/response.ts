@@ -472,7 +472,7 @@ export class Response {
     retryDelay: number,
     tab: Tab
   ): Promise<boolean> {
-    const errorMessage = (error as Error)?.message || '';
+    const errorMessage = (error as Error)?.message ?? '';
 
     if (this._isRecoverableError(errorMessage) && attempt < maxRetries) {
       await this._delayRetry(retryDelay, attempt);

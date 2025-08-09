@@ -364,7 +364,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       article: 'article',
     };
     // Get expected role from selector
-    const expectedRole = selectorToRole[selector] || selector;
+    const expectedRole = selectorToRole[selector] ?? selector;
     // Find the section in the ARIA tree
     let capturing = false;
     let captureIndent = -1;
@@ -516,20 +516,11 @@ function messageToConsoleMessage(
       `[${message.type().toUpperCase()}] ${message.text()} @ ${message.location().url}:${message.location().lineNumber}`,
   };
 }
-function pageErrorToConsoleMessage(
-  errorOrValue: Error | unknown
-): ConsoleMessage {
-  if (errorOrValue instanceof Error) {
-    return {
-      type: undefined,
-      text: errorOrValue.message,
-      toString: () => errorOrValue.stack || errorOrValue.message,
-    };
-  }
+function pageErrorToConsoleMessage(error: Error): ConsoleMessage {
   return {
     type: undefined,
-    text: String(errorOrValue),
-    toString: () => String(errorOrValue),
+    text: error.message,
+    toString: () => error.stack ?? error.message,
   };
 }
 export function renderModalStates(

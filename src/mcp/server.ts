@@ -102,11 +102,11 @@ export function createServer(
     }
     try {
       // Log the request
-      logRequest(request.params.name, request.params.arguments || {});
+      logRequest(request.params.name, request.params.arguments ?? {});
 
       return await backend.callTool(
         tool,
-        tool.inputSchema.parse(request.params.arguments || {})
+        tool.inputSchema.parse(request.params.arguments ?? {})
       );
     } catch (error) {
       return errorResult(String(error));

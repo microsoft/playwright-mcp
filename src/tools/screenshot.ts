@@ -65,7 +65,7 @@ const screenshot = defineTabTool({
     type: 'readOnly',
   },
   handle: async (tab, params, response) => {
-    const fileType = params.type || 'png';
+    const fileType = params.type ?? 'png';
     const fileName = await tab.context.outputFile(
       params.filename ?? `page-${new Date().toISOString()}.${fileType}`
     );

@@ -141,8 +141,8 @@ export const browserDiagnose = defineTabTool({
         // Run analysis
         const analysisRunner = new DiagnoseAnalysisRunner();
         const analysisResult = await analysisRunner.runAnalysis(
-          systemConfig.unifiedSystem || null,
-          systemConfig.pageAnalyzer || null,
+          systemConfig.unifiedSystem ?? null,
+          systemConfig.pageAnalyzer ?? null,
           useParallelAnalysis,
           includeSystemStats
         );
@@ -167,8 +167,8 @@ export const browserDiagnose = defineTabTool({
 
         const report = await reportBuilder.buildReport(
           analysisResult,
-          systemConfig.unifiedSystem || null,
-          systemConfig.pageAnalyzer || null,
+          systemConfig.unifiedSystem ?? null,
+          systemConfig.pageAnalyzer ?? null,
           reportOptions
         );
 

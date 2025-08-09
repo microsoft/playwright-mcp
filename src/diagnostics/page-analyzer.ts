@@ -642,7 +642,7 @@ export class PageAnalyzer extends DiagnosticBase {
           }
         ): void => {
           const position = style.position;
-          const zIndex = Number.parseInt(style.zIndex || '0', 10);
+          const zIndex = Number.parseInt(style.zIndex ?? '0', 10);
           const tagName = element.tagName.toLowerCase();
 
           if (position === 'fixed') {

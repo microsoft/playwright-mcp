@@ -25,7 +25,7 @@ export class OpenAIDelegate implements LLMDelegate {
   ): LLMConversation {
     const genericTools: LLMTool[] = tools.map((tool) => ({
       name: tool.name,
-      description: tool.description || '',
+      description: tool.description ?? '',
       inputSchema: tool.inputSchema,
     }));
     if (!oneShot) {
@@ -188,7 +188,7 @@ export class OpenAIDelegate implements LLMDelegate {
   private extractToolCallsFromResponse(
     message: OpenAI.Chat.Completions.ChatCompletionMessage
   ): LLMToolCall[] {
-    const toolCalls = message.tool_calls || [];
+    const toolCalls = message.tool_calls ?? [];
     return toolCalls.map((toolCall) => {
       const functionCall = toolCall.function;
       return {
@@ -206,7 +206,7 @@ export class OpenAIDelegate implements LLMDelegate {
   ): void {
     conversation.messages.push({
       role: 'assistant',
-      content: message.content || '',
+      content: message.content ?? '',
       toolCalls: genericToolCalls.length > 0 ? genericToolCalls : undefined,
     });
   }

@@ -96,7 +96,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
       'EnhancedErrorHandler',
       'error-handling'
     );
-    this.maxErrorHistory = diagnosticConfig?.maxErrorHistory || 100;
+    this.maxErrorHistory = diagnosticConfig?.maxErrorHistory ?? 100;
   }
 
   protected async performDispose(): Promise<void> {
@@ -137,7 +137,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
         error,
         operation,
         selector,
-        timeout: context?.timeout || 30_000,
+        timeout: context?.timeout ?? 30_000,
       });
     }
 
@@ -253,7 +253,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
 
     const toolContext = {
       toolName,
-      toolArgs: toolArgs || {},
+      toolArgs: toolArgs ?? {},
     };
 
     const suggestions = this.generateToolSpecificSuggestions(
@@ -278,7 +278,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
 
     return {
       availableFrames: frames.length,
-      currentFrame: mainFrame.name() || 'main',
+      currentFrame: mainFrame.name() ?? 'main',
     };
   }
 
@@ -660,7 +660,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
 
     for (const error of errors) {
       for (const suggestion of error.suggestions) {
-        const count = suggestionCounts.get(suggestion) || 0;
+        const count = suggestionCounts.get(suggestion) ?? 0;
         suggestionCounts.set(suggestion, count + 1);
       }
     }
@@ -719,7 +719,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
       errorsByComponent[entry.component]++;
 
       const operation = entry.error.operation;
-      errorsByOperation[operation] = (errorsByOperation[operation] || 0) + 1;
+      errorsByOperation[operation] = (errorsByOperation[operation] ?? 0) + 1;
     }
 
     return {

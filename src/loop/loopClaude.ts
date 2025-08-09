@@ -25,7 +25,7 @@ export class ClaudeDelegate implements LLMDelegate {
   ): LLMConversation {
     const llmTools: LLMTool[] = tools.map((tool) => ({
       name: tool.name,
-      description: tool.description || '',
+      description: tool.description ?? '',
       inputSchema: tool.inputSchema,
     }));
     if (!oneShot) {
@@ -221,8 +221,9 @@ export class ClaudeDelegate implements LLMDelegate {
     response: Anthropic.Messages.Message
   ): LLMToolCall[] {
     const toolCalls = response.content.filter(
-      (block) => block.type === 'tool_use'
-    ) as Anthropic.Messages.ToolUseBlock[];
+      (block): block is Anthropic.Messages.ToolUseBlock =>
+        block.type === 'tool_use'
+    );
 
     return toolCalls.map((toolCall) => ({
       name: toolCall.name,

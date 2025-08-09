@@ -118,9 +118,7 @@ export class Context {
       this._onPageClosed(closedTab)
     );
     this._tabs.push(newTab);
-    if (!this._currentTab) {
-      this._currentTab = newTab;
-    }
+    this._currentTab ??= newTab;
   }
   private _onPageClosed(tab: Tab) {
     const index = this._tabs.indexOf(tab);

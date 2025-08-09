@@ -9,11 +9,12 @@ import { getErrorMessage } from './commonFormatters.js';
 import type { TextReportBuilder } from './reportBuilder.js';
 
 type KeyValueConfigValue = string | number | boolean | null | undefined;
+type KeyValueConfigFormatter = (value: KeyValueConfigValue) => string;
 
 export interface KeyValueConfig {
   key: string;
   value: KeyValueConfigValue;
-  formatter?: (value: KeyValueConfigValue) => string;
+  formatter?: KeyValueConfigFormatter;
 }
 
 export interface SystemStatsConfig {
@@ -168,10 +169,10 @@ export function addDomComplexityMetrics(
   builder.addEmptyLine().addHeader('DOM Complexity', 3);
 
   addKeyValuePairs(builder, [
-    { key: 'Total DOM elements', value: domMetrics.totalElements || 0 },
+    { key: 'Total DOM elements', value: domMetrics.totalElements ?? 0 },
     {
       key: 'Max DOM depth',
-      value: domMetrics.maxDepth || 0,
+      value: domMetrics.maxDepth ?? 0,
       formatter: (value) => `${value} levels`,
     },
   ]);
@@ -208,15 +209,15 @@ export function addInteractionMetrics(
   addKeyValuePairs(builder, [
     {
       key: 'Clickable elements',
-      value: metrics.interactionMetrics.clickableElements || 0,
+      value: metrics.interactionMetrics.clickableElements ?? 0,
     },
     {
       key: 'Form elements',
-      value: metrics.interactionMetrics.formElements || 0,
+      value: metrics.interactionMetrics.formElements ?? 0,
     },
     {
       key: 'Disabled elements',
-      value: metrics.interactionMetrics.disabledElements || 0,
+      value: metrics.interactionMetrics.disabledElements ?? 0,
     },
   ]);
 }
@@ -239,13 +240,13 @@ export function addResourceMetrics(
   addKeyValuePairs(builder, [
     {
       key: 'Images',
-      value: `${resourceMetrics.imageCount || 0} (${resourceMetrics.estimatedImageSize || 'Unknown'})`,
+      value: `${resourceMetrics.imageCount ?? 0} (${resourceMetrics.estimatedImageSize ?? 'Unknown'}))`,
     },
     {
       key: 'Script tags',
-      value: `${resourceMetrics.scriptTags || 0} (${resourceMetrics.externalScripts || 0} external, ${resourceMetrics.inlineScripts || 0} inline)`,
+      value: `${resourceMetrics.scriptTags ?? 0} (${resourceMetrics.externalScripts ?? 0} external, ${resourceMetrics.inlineScripts ?? 0} inline)`,
     },
-    { key: 'Stylesheets', value: resourceMetrics.stylesheetCount || 0 },
+    { key: 'Stylesheets', value: resourceMetrics.stylesheetCount ?? 0 },
   ]);
 }
 

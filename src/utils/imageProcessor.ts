@@ -66,8 +66,8 @@ async function processImageWithoutOptions(
 ): Promise<ImageProcessingResult> {
   const metadata = await sharp(imageData).metadata();
   const originalSize = {
-    width: metadata.width || 0,
-    height: metadata.height || 0,
+    width: metadata.width ?? 0,
+    height: metadata.height ?? 0,
   };
 
   return {
@@ -88,8 +88,8 @@ async function processImageWithOptions(
   const processor = sharp(imageData);
   const metadata = await processor.metadata();
   const originalSize = {
-    width: metadata.width || 0,
-    height: metadata.height || 0,
+    width: metadata.width ?? 0,
+    height: metadata.height ?? 0,
   };
 
   const { processor: resizedProcessor, processedSize } = applyResizeOptions(

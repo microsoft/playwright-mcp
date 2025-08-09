@@ -57,7 +57,7 @@ export class ParallelPageAnalyzer {
             performanceMetrics = result.value as any;
           }
         } else {
-          const errorMsg = result.reason?.message || 'Unknown error';
+          const errorMsg = result.reason?.message ?? 'Unknown error';
           errors.push({
             step: stepName,
             error: errorMsg,
@@ -87,7 +87,7 @@ export class ParallelPageAnalyzer {
         resourceMetrics: (structureAnalysis as any)?.resourceMetrics,
       },
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for fallback empty performance metrics
-      performanceMetrics: performanceMetrics || ({} as any),
+      performanceMetrics: performanceMetrics ?? ({} as any),
       resourceUsage: null,
       executionTime,
       errors,

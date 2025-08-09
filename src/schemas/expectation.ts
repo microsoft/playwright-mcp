@@ -151,7 +151,7 @@ const GENERAL_DEFAULT: RequiredExpectationBase = {
 export function getDefaultExpectation(
   toolName: string
 ): RequiredExpectationBase {
-  return TOOL_DEFAULTS[toolName] || GENERAL_DEFAULT;
+  return TOOL_DEFAULTS[toolName] ?? GENERAL_DEFAULT;
 }
 /**
  * Merge user-provided expectation with tool-specific defaults

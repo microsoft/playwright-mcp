@@ -139,7 +139,7 @@ export class DiagnosticThresholds {
   private currentThresholds: ResolvedDiagnosticThresholdsConfig;
 
   private constructor(initialConfig?: DiagnosticThresholdsConfig) {
-    this.currentThresholds = this.mergeWithDefaults(initialConfig || {});
+    this.currentThresholds = this.mergeWithDefaults(initialConfig ?? {});
     this.validateThresholds(this.currentThresholds);
   }
 

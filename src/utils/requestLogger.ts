@@ -80,7 +80,7 @@ export function logServerStart(): void {
         `[${timestamp}] === MCP Server Started ===`,
         `Process ID: ${process.pid}`,
         `Node Version: ${process.version}`,
-        `Log Mode: ${process.env.PLAYWRIGHT_MCP_LOG_REQUESTS || 'debug only'}`,
+        `Log Mode: ${process.env.PLAYWRIGHT_MCP_LOG_REQUESTS ?? 'debug only'}`,
         '---',
       ].join('\n');
 

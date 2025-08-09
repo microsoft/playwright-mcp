@@ -40,7 +40,8 @@ export function formatObject(value: unknown, indent = '  '): string {
     for (const key of keys) {
       tokens.push(`${key}: ${formatObject(obj[key])}`);
     }
-    return `{\n${indent}${tokens.join(`,\n${indent}`)}\n}`;
+    const separator = `,\n${indent}`;
+    return `{\n${indent}${tokens.join(separator)}\n}`;
   }
   return String(value);
 }

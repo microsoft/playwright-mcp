@@ -118,7 +118,7 @@ export class SessionLog {
       tabSnapshot: {
         url: tab.page.url(),
         title: '',
-        ariaSnapshot: action.ariaSnapshot || '',
+        ariaSnapshot: action.ariaSnapshot ?? '',
         modalStates: [],
         consoleMessages: [],
         downloads: [],

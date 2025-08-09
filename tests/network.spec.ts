@@ -53,7 +53,7 @@ test('browser_network_requests', async ({ client, server }) => {
       })
     )
     .toHaveResponse({
-      result: expect.stringContaining(`[GET] ${`${server.PREFIX}`} => [200] OK
-[GET] ${`${server.PREFIX}json`} => [200] OK`),
+      result: expect.stringContaining(`[GET] ${server.PREFIX} => [200] OK
+[GET] ${server.PREFIX}json => [200] OK`),
     });
 });

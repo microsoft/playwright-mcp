@@ -10,7 +10,7 @@ export type DiagnosticComponent =
   | 'ConfigManager'
   | 'UnifiedSystem';
 
-type PerformanceImpactLevel = 'low' | 'medium' | 'high';
+export type PerformanceImpactLevel = 'low' | 'medium' | 'high';
 
 export interface DiagnosticErrorContext {
   timestamp: number;

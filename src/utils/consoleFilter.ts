@@ -20,7 +20,7 @@ export function filterConsoleMessages(
   // Level-based filtering (existing functionality)
   if (options.levels && options.levels.length > 0) {
     filtered = filtered.filter((msg) => {
-      const level = msg.type || 'log';
+      const level = msg.type ?? 'log';
       return options.levels?.includes(
         level as 'log' | 'warn' | 'error' | 'info'
       );
@@ -45,7 +45,7 @@ export function filterConsoleMessages(
   if (options.removeDuplicates) {
     const seen = new Set<string>();
     filtered = filtered.filter((msg) => {
-      const key = `${msg.type || 'log'}:${msg.toString()}`;
+      const key = `${msg.type ?? 'log'}:${msg.toString()}`;
       if (seen.has(key)) {
         return false;
       }

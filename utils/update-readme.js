@@ -60,7 +60,8 @@ function formatParameter(name, param, requiredParams) {
   if (optional) {
     meta.push('optional');
   }
-  return `    - \`${name}\` ${meta.length ? `(${meta.join(', ')})` : ''}: ${param.description}`;
+  const metaInfo = meta.length ? `(${meta.join(', ')})` : '';
+  return `    - \`${name}\` ${metaInfo}: ${param.description}`;
 }
 
 /**

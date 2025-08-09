@@ -26,6 +26,7 @@ import { SmartConfigManager } from './smart-config.js';
 export type SignificanceLevel = 'normal' | 'notable' | 'significant';
 export type PriorityLevel = 'low' | 'medium' | 'high';
 export type RecommendationType = 'optimization' | 'warning' | 'info';
+export type HealthStatus = 'healthy' | 'warning' | 'critical';
 
 // Configuration report type aliases
 type ConfigurationStatus = 'default' | 'customized' | 'heavily-customized';
@@ -379,11 +380,11 @@ export class UnifiedDiagnosticSystem {
   ): void {
     // Update operation count
     this.stats.operationCount[operation] =
-      (this.stats.operationCount[operation] || 0) + 1;
+      (this.stats.operationCount[operation] ?? 0) + 1;
 
     // Update performance metrics
     const currentAvg =
-      this.stats.performanceMetrics.averageExecutionTime[operation] || 0;
+      this.stats.performanceMetrics.averageExecutionTime[operation] ?? 0;
     const currentCount = this.stats.operationCount[operation];
     this.stats.performanceMetrics.averageExecutionTime[operation] =
       (currentAvg * (currentCount - 1) + executionTime) / currentCount;
@@ -493,7 +494,7 @@ export class UnifiedDiagnosticSystem {
           performanceImpact: error.performanceImpact,
           suggestions: [
             ...error.suggestions,
-            ...(enrichedPlaywrightError.suggestions || []),
+            ...(enrichedPlaywrightError.suggestions ?? []),
           ],
         },
         error.originalError
@@ -529,7 +530,7 @@ export class UnifiedDiagnosticSystem {
           const recommendation =
             await this.pageAnalyzer?.shouldUseParallelAnalysis();
 
-          if (recommendation?.recommended || forceParallel) {
+          if (recommendation?.recommended ?? forceParallel) {
             return await this.parallelAnalyzer?.runParallelAnalysis();
           }
           return await this.pageAnalyzer?.analyzePageStructure();
@@ -611,7 +612,7 @@ export class UnifiedDiagnosticSystem {
         ...this.stats.resourceUsage,
         currentHandles: currentResourceUsage.activeCount,
         peakHandles: Math.max(
-          this.stats.resourceUsage.peakHandles || 0,
+          this.stats.resourceUsage.peakHandles ?? 0,
           currentResourceUsage.activeCount
         ),
       },
@@ -749,12 +750,12 @@ export class UnifiedDiagnosticSystem {
     const actualAverages = {
       pageAnalysis:
         this.stats.performanceMetrics.averageExecutionTime
-          .analyzePageStructure || 0,
+          .analyzePageStructure ?? 0,
       elementDiscovery:
         this.stats.performanceMetrics.averageExecutionTime
-          .findAlternativeElements || 0,
+          .findAlternativeElements ?? 0,
       resourceMonitoring:
-        this.stats.performanceMetrics.averageExecutionTime.resourceMonitoring ||
+        this.stats.performanceMetrics.averageExecutionTime.resourceMonitoring ??
         0,
     };
 
@@ -925,7 +926,7 @@ export class UnifiedDiagnosticSystem {
 
   // Health check functionality
   performHealthCheck(): {
-    status: 'healthy' | 'warning' | 'critical';
+    status: HealthStatus;
     issues: string[];
     recommendations: string[];
   } {
@@ -989,7 +990,7 @@ export class UnifiedDiagnosticSystem {
       );
     }
 
-    let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+    let status: HealthStatus = 'healthy';
     if (issues.length > 2) {
       status = 'critical';
     } else if (issues.length > 0) {

@@ -264,10 +264,10 @@ export class ElementDiscovery extends DiagnosticBase {
     element: playwright.ElementHandle
   ): Promise<string> {
     const [textContent, value, placeholder, ariaLabel] = await Promise.all([
-      element.textContent().then((content) => content || ''),
-      element.getAttribute('value').then((attr) => attr || ''),
-      element.getAttribute('placeholder').then((attr) => attr || ''),
-      element.getAttribute('aria-label').then((attr) => attr || ''),
+      element.textContent().then((content) => content ?? ''),
+      element.getAttribute('value').then((attr) => attr ?? ''),
+      element.getAttribute('placeholder').then((attr) => attr ?? ''),
+      element.getAttribute('aria-label').then((attr) => attr ?? ''),
     ]);
 
     return [textContent, value, placeholder, ariaLabel].join(' ').trim();
@@ -554,7 +554,7 @@ export class ElementDiscovery extends DiagnosticBase {
       radio: ['input[type="radio"]'],
     };
 
-    const tags = roleTagMapping[role] || [];
+    const tags = roleTagMapping[role] ?? [];
     const alternatives: AlternativeElement[] = [];
 
     await this.processImplicitRoleTags(tags, role, alternatives, maxResults);

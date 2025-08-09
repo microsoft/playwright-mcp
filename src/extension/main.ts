@@ -4,7 +4,7 @@ import { start } from '../mcp/transport.js';
 import { ExtensionContextFactory } from './extensionContextFactory.js';
 export async function runWithExtension(config: FullConfig) {
   const contextFactory = new ExtensionContextFactory(
-    config.browser.launchOptions.channel || 'chrome'
+    config.browser.launchOptions.channel ?? 'chrome'
   );
   const serverBackendFactory = () =>
     new BrowserServerBackend(config, [contextFactory]);
@@ -12,6 +12,6 @@ export async function runWithExtension(config: FullConfig) {
 }
 export function createExtensionContextFactory(config: FullConfig) {
   return new ExtensionContextFactory(
-    config.browser.launchOptions.channel || 'chrome'
+    config.browser.launchOptions.channel ?? 'chrome'
   );
 }

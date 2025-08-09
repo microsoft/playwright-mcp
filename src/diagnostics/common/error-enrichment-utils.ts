@@ -270,7 +270,7 @@ function buildFrequentPatterns(
     .map(([pattern, count]) => ({
       pattern,
       count,
-      suggestions: Array.from(patternSuggestions.get(pattern) || []),
+      suggestions: Array.from(patternSuggestions.get(pattern) ?? []),
     }));
 }
 
@@ -299,7 +299,7 @@ function analyzeComponentErrors(
   const componentAnalysis: Record<string, number> = {};
   for (const { context } of errors) {
     componentAnalysis[context.component] =
-      (componentAnalysis[context.component] || 0) + 1;
+      (componentAnalysis[context.component] ?? 0) + 1;
   }
   return componentAnalysis;
 }

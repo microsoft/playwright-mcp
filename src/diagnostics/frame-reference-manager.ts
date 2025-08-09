@@ -34,8 +34,8 @@ export class FrameReferenceManager implements IDisposable {
 
     try {
       const metadata: FrameMetadata = {
-        url: frame.url() || 'about:blank',
-        name: frame.name() || null,
+        url: frame.url() ?? 'about:blank',
+        name: frame.name() ?? null,
         parentFrame: frame.parentFrame(),
         isDetached: false,
         timestamp: Date.now(),
@@ -110,8 +110,9 @@ export class FrameReferenceManager implements IDisposable {
           let frameUrl = 'unknown';
           try {
             frameUrl = await frame.url();
-          } catch {
+          } catch (urlError) {
             // Frame is detached, can't get URL
+            console.debug('Could not retrieve frame URL:', urlError);
           }
           console.debug(
             'Frame accessibility check failed (frame likely detached):',

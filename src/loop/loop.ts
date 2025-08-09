@@ -155,7 +155,7 @@ async function executeToolCall(
   try {
     debug('tool')(name, args);
     const response = await client.callTool({ name, arguments: args });
-    const responseContent = (response.content || []) as (
+    const responseContent = (response.content ?? []) as (
       | TextContent
       | ImageContent
     )[];

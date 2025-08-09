@@ -409,7 +409,7 @@ class ExtensionConnection {
     } else if (object.id) {
       debugLogger('← Extension: unexpected response', object);
     } else if (object.method) {
-      this.onmessage?.(object.method, object.params || {});
+      this.onmessage?.(object.method, object.params ?? {});
     }
   }
   private _onClose(event: websocket.CloseEvent) {

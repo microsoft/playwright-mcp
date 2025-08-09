@@ -104,7 +104,7 @@ function captureRawStack(): string[] {
   const stackTraceLimit = Error.stackTraceLimit;
   Error.stackTraceLimit = 50;
   const error = new Error('Stack trace capture');
-  const stack = error.stack || '';
+  const stack = error.stack ?? '';
   Error.stackTraceLimit = stackTraceLimit;
   return stack.split('\n');
 }
