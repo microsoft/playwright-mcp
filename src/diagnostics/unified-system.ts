@@ -142,8 +142,7 @@ export class UnifiedDiagnosticSystem {
             this.elementDiscovery = new ElementDiscovery(this.page);
             this.errorHandler = new EnhancedErrorHandler(
               this.page,
-              // biome-ignore lint/suspicious/noExplicitAny: Component config requires dynamic type handling
-              componentConfig.diagnostic as any
+              componentConfig.diagnostic as Record<string, unknown>
             );
 
             this.initializationManager.trackPartialInitialization(

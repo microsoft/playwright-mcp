@@ -74,8 +74,11 @@ test.describe('Sharp Implementation Performance Tests', () => {
     const initialMemory = process.memoryUsage().heapUsed;
 
     // Perform multiple operations sequentially to test for memory leaks
-    for (let i = 0; i < 10; i++) {
-      // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution required to test for memory leaks between operations
+    const processSequentially = async (iteration: number): Promise<void> => {
+      if (iteration >= 10) {
+        return;
+      }
+
       await processImage(testBuffer, 'image/png', {
         maxWidth: 500,
         maxHeight: 500,
@@ -87,7 +90,11 @@ test.describe('Sharp Implementation Performance Tests', () => {
       if (global.gc) {
         global.gc();
       }
-    }
+
+      await processSequentially(iteration + 1);
+    };
+
+    await processSequentially(0);
 
     const finalMemory = process.memoryUsage().heapUsed;
     const memoryIncrease = finalMemory - initialMemory;

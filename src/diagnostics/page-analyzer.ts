@@ -103,23 +103,36 @@ export class PageAnalyzer extends DiagnosticBase {
     inaccessible: Array<{ src: string; reason: string }>
   ): Promise<void> {
     // Process iframes sequentially to avoid overwhelming the browser
-    for (const iframe of iframes) {
-      // biome-ignore lint/nursery/noAwaitInLoop: sequential processing prevents browser overload
-      const src = (await iframe.getAttribute('src')) ?? 'about:blank';
+    await this.processIframesRecursive(iframes, 0, accessible, inaccessible);
+  }
 
-      try {
-        await this.processIndividualIframe(
-          iframe,
-          src,
-          accessible,
-          inaccessible
-        );
-      } catch (error) {
-        this.addInaccessibleIframe(inaccessible, src, error);
-      } finally {
-        await this.disposeIframeElement(iframe);
-      }
+  private async processIframesRecursive(
+    iframes: playwright.ElementHandle[],
+    index: number,
+    accessible: Array<{ src: string; accessible: boolean }>,
+    inaccessible: Array<{ src: string; reason: string }>
+  ): Promise<void> {
+    if (index >= iframes.length) {
+      return;
     }
+
+    const iframe = iframes[index];
+    const src = (await iframe.getAttribute('src')) ?? 'about:blank';
+
+    try {
+      await this.processIndividualIframe(iframe, src, accessible, inaccessible);
+    } catch (error) {
+      this.addInaccessibleIframe(inaccessible, src, error);
+    } finally {
+      await this.disposeIframeElement(iframe);
+    }
+
+    await this.processIframesRecursive(
+      iframes,
+      index + 1,
+      accessible,
+      inaccessible
+    );
   }
 
   private async processIndividualIframe(

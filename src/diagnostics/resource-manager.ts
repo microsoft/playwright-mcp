@@ -33,7 +33,6 @@ interface TrackedResource {
 
 export class ResourceManager implements SmartTracker {
   private readonly resources = new Map<string, TrackedResource>();
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: nextId is used in trackResource method
   private nextId = 0;
   private disposeTimeout = 30_000; // 30 seconds default
   private cleanupInterval: NodeJS.Timeout | null = null;
@@ -46,7 +45,8 @@ export class ResourceManager implements SmartTracker {
     resource: T,
     disposeMethod: keyof T
   ): string {
-    const id = `resource_${this.nextId++}`;
+    const id = `resource_${this.nextId}`;
+    this.nextId++;
     this.resources.set(id, {
       resource,
       disposeMethod: disposeMethod as string,
@@ -141,7 +141,13 @@ export class ResourceManager implements SmartTracker {
       }
     }
 
-    for (const id of expiredIds) {
+    // Process each expired resource disposal sequentially to avoid resource conflicts
+    const disposeSequentially = async (index: number): Promise<void> => {
+      if (index >= expiredIds.length) {
+        return;
+      }
+
+      const id = expiredIds[index];
       const entry = this.resources.get(id);
       if (entry) {
         try {
@@ -152,7 +158,6 @@ export class ResourceManager implements SmartTracker {
             const disposeFn = entry.resource[
               entry.disposeMethod
             ] as () => Promise<void>;
-            // biome-ignore lint/nursery/noAwaitInLoop: Sequential resource disposal is necessary to prevent memory leaks
             await disposeFn();
           }
         } catch (error) {
@@ -161,7 +166,11 @@ export class ResourceManager implements SmartTracker {
         }
         this.untrackResource(id);
       }
-    }
+
+      await disposeSequentially(index + 1);
+    };
+
+    await disposeSequentially(0);
   }
 
   async dispose(): Promise<void> {

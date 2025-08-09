@@ -68,10 +68,12 @@ export class DiagnoseAnalysisRunner {
 
     if ('structureAnalysis' in diagnosticInfo) {
       // Parallel analysis result
-      // biome-ignore lint/suspicious/noExplicitAny: Complex diagnostic info structure requires type assertion
-      performanceMetrics = (diagnosticInfo as any).performanceMetrics;
-      // biome-ignore lint/suspicious/noExplicitAny: Complex diagnostic info structure requires type assertion
-      diagnosticInfo = (diagnosticInfo as any).structureAnalysis;
+      const parallelResult = diagnosticInfo as PageStructureAnalysis & {
+        performanceMetrics: PerformanceMetrics;
+        structureAnalysis: PageStructureAnalysis;
+      };
+      performanceMetrics = parallelResult.performanceMetrics;
+      diagnosticInfo = parallelResult.structureAnalysis;
 
       analysisType = `Enhanced Parallel Analysis (${structureResult.executionTime}ms)`;
       analysisStatus = 'Successfully executed with resource monitoring';

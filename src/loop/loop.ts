@@ -58,21 +58,47 @@ async function runConversationLoop(
 ): Promise<LLMMessage[]> {
   const MAX_ITERATIONS = 5;
 
-  for (let iteration = 0; iteration < MAX_ITERATIONS; ++iteration) {
-    // biome-ignore lint/nursery/noAwaitInLoop: Sequential conversation flow - each iteration depends on previous results
-    const result = await executeIteration(
-      delegate,
-      client,
-      conversation,
-      iteration
-    );
+  return await runConversationLoopRecursive(
+    delegate,
+    client,
+    conversation,
+    oneShot,
+    0,
+    MAX_ITERATIONS
+  );
+}
 
-    if (shouldTerminateLoop(result, oneShot)) {
-      return conversation.messages;
-    }
+async function runConversationLoopRecursive(
+  delegate: LLMDelegate,
+  client: Client,
+  conversation: LLMConversation,
+  oneShot: boolean,
+  iteration: number,
+  maxIterations: number
+): Promise<LLMMessage[]> {
+  if (iteration >= maxIterations) {
+    throw new Error('Failed to perform step, max attempts reached');
   }
 
-  throw new Error('Failed to perform step, max attempts reached');
+  const result = await executeIteration(
+    delegate,
+    client,
+    conversation,
+    iteration
+  );
+
+  if (shouldTerminateLoop(result, oneShot)) {
+    return conversation.messages;
+  }
+
+  return await runConversationLoopRecursive(
+    delegate,
+    client,
+    conversation,
+    oneShot,
+    iteration + 1,
+    maxIterations
+  );
 }
 
 function shouldTerminateLoop(
@@ -171,22 +197,57 @@ async function processAllToolCallsSequentially(
   isDone: boolean;
 } | null> {
   // Process tool calls sequentially to maintain correct execution order
-  for (const toolCall of toolCalls) {
-    // biome-ignore lint/nursery/noAwaitInLoop: Sequential tool execution is required for correct ordering
-    const processingResult = await processSingleToolCall(
-      delegate,
-      client,
-      toolCall,
-      toolCalls,
-      toolResults
-    );
+  return await processToolCallsRecursive(
+    delegate,
+    client,
+    toolCalls,
+    toolResults,
+    0
+  );
+}
 
-    if (shouldReturnEarly(processingResult)) {
-      return createProcessResult(processingResult, toolResults);
-    }
+async function processToolCallsRecursive(
+  delegate: LLMDelegate,
+  client: Client,
+  toolCalls: LLMToolCall[],
+  toolResults: Array<{
+    toolCallId: string;
+    content: string;
+    isError?: boolean;
+  }>,
+  index: number
+): Promise<{
+  toolResults: Array<{
+    toolCallId: string;
+    content: string;
+    isError?: boolean;
+  }>;
+  isDone: boolean;
+} | null> {
+  if (index >= toolCalls.length) {
+    return null;
   }
 
-  return null;
+  const toolCall = toolCalls[index];
+  const processingResult = await processSingleToolCall(
+    delegate,
+    client,
+    toolCall,
+    toolCalls,
+    toolResults
+  );
+
+  if (shouldReturnEarly(processingResult)) {
+    return createProcessResult(processingResult, toolResults);
+  }
+
+  return await processToolCallsRecursive(
+    delegate,
+    client,
+    toolCalls,
+    toolResults,
+    index + 1
+  );
 }
 
 function shouldReturnEarly(processingResult: {

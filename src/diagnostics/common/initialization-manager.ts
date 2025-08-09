@@ -86,11 +86,21 @@ export class InitializationManager {
 
     try {
       // Sequential execution is required due to stage dependencies
-      for (const stage of stages) {
-        // biome-ignore lint/nursery/noAwaitInLoop: stages must execute sequentially
+      const executeStagesSequentially = async (
+        index: number
+      ): Promise<void> => {
+        if (index >= stages.length) {
+          return;
+        }
+
+        const stage = stages[index];
         await this.executeStage(stage, completedStages);
         completedStages.add(stage.name);
-      }
+
+        await executeStagesSequentially(index + 1);
+      };
+
+      await executeStagesSequentially(0);
     } catch (error) {
       this.logger.error('Initialization failed during stage execution', error);
       await this.cleanupPartialInitialization();
@@ -123,14 +133,24 @@ export class InitializationManager {
     // Execute stage with optional performance tracking
     const executeWithTracking = async () => {
       // Sequential execution is required for components within a stage
-      for (const componentInit of stage.components) {
-        // biome-ignore lint/nursery/noAwaitInLoop: components may have implicit dependencies
+      const executeComponentsSequentially = async (
+        index: number
+      ): Promise<void> => {
+        if (index >= stage.components.length) {
+          return;
+        }
+
+        const componentInit = stage.components[index];
         await this.executeWithRetry(
           componentInit,
           stage.retryCount ?? 1,
           stage.timeout
         );
-      }
+
+        await executeComponentsSequentially(index + 1);
+      };
+
+      await executeComponentsSequentially(0);
     };
 
     if (this.performanceTracker) {
@@ -151,13 +171,10 @@ export class InitializationManager {
     retryCount: number,
     timeout?: number
   ): Promise<void> {
-    let lastError: Error | undefined;
-
-    // Retry loop - sequential execution is required for retry logic
-    for (let attempt = 1; attempt <= retryCount; attempt++) {
+    // Retry logic using recursive approach
+    const attemptOperation = async (attempt: number): Promise<void> => {
       try {
         if (timeout) {
-          // biome-ignore lint/nursery/noAwaitInLoop: retries must be sequential
           await Promise.race([
             operation(),
             new Promise<never>((_, reject) =>
@@ -172,18 +189,21 @@ export class InitializationManager {
         }
         return; // Success
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
+        const lastError =
+          error instanceof Error ? error : new Error(String(error));
         if (attempt < retryCount) {
           this.logger.warn(
             `Retry attempt ${attempt} failed, retrying...`,
             lastError
           );
           await this.delay(1000 * attempt); // Exponential backoff
+          return attemptOperation(attempt + 1);
         }
+        throw lastError;
       }
-    }
+    };
 
-    throw lastError || new Error('Operation failed after all retries');
+    await attemptOperation(1);
   }
 
   private delay(ms: number): Promise<void> {

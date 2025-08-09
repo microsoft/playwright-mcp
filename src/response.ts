@@ -428,23 +428,34 @@ export class Response {
     operation: () => Promise<void>,
     maxRetries: number
   ): Promise<void> {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        // biome-ignore lint/nursery/noAwaitInLoop: Sequential retry logic is required
-        await operation();
+    await this._executeWithRetryRecursive(operation, 1, maxRetries);
+  }
+
+  private async _executeWithRetryRecursive(
+    operation: () => Promise<void>,
+    attempt: number,
+    maxRetries: number
+  ): Promise<void> {
+    if (attempt > maxRetries) {
+      return;
+    }
+
+    try {
+      await operation();
+      return;
+    } catch (error: unknown) {
+      const shouldRetry = await this._handleSnapshotError(
+        error,
+        attempt,
+        maxRetries,
+        this._getNavigationRetryConfig().retryDelay,
+        this._context.currentTabOrDie()
+      );
+      if (!shouldRetry) {
         return;
-      } catch (error: unknown) {
-        const shouldRetry = await this._handleSnapshotError(
-          error,
-          attempt,
-          maxRetries,
-          this._getNavigationRetryConfig().retryDelay,
-          this._context.currentTabOrDie()
-        );
-        if (!shouldRetry) {
-          break;
-        }
       }
+
+      await this._executeWithRetryRecursive(operation, attempt + 1, maxRetries);
     }
   }
 
@@ -606,14 +617,33 @@ export class Response {
     const { stabilityTimeout } = this._getNavigationRetryConfig();
     const startTime = Date.now();
 
-    while (Date.now() - startTime < stabilityTimeout) {
-      // biome-ignore lint/nursery/noAwaitInLoop: Sequential stability checking is required
-      if (await this._checkPageStability(tab)) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        return;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 100));
+    await this._performStabilityCheckRecursive(
+      tab,
+      startTime,
+      stabilityTimeout
+    );
+  }
+
+  private async _performStabilityCheckRecursive(
+    tab: Tab,
+    startTime: number,
+    stabilityTimeout: number
+  ): Promise<void> {
+    if (Date.now() - startTime >= stabilityTimeout) {
+      return;
     }
+
+    if (await this._checkPageStability(tab)) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await this._performStabilityCheckRecursive(
+      tab,
+      startTime,
+      stabilityTimeout
+    );
   }
 
   private async _checkPageStability(tab: Tab): Promise<boolean> {

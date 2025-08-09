@@ -10,7 +10,7 @@ import { packageJSON } from './package.js';
 import { Response } from './response.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
 import { SessionLog } from './session-log.js';
-import type { Tool } from './tools/tool.js';
+import type { AnyTool } from './tools/tool.js';
 import { defineTool } from './tools/tool.js';
 import { filteredTools } from './tools.js';
 
@@ -21,7 +21,7 @@ export type FactoryList = NonEmptyArray<BrowserContextFactory>;
 export class BrowserServerBackend implements mcpServer.ServerBackend {
   name = 'Playwright';
   version = packageJSON.version;
-  private readonly _tools: Tool[];
+  private readonly _tools: AnyTool[];
   private _context: Context | undefined;
   private _sessionLog: SessionLog | undefined;
   private readonly _config: FullConfig;
@@ -59,13 +59,11 @@ export class BrowserServerBackend implements mcpServer.ServerBackend {
       clientInfo: { ...server.getClientVersion(), rootPath },
     });
   }
-  // biome-ignore lint/suspicious/noExplicitAny: MCP server schema requires any for generic tool arguments
-  tools(): mcpServer.ToolSchema<any>[] {
+  tools(): mcpServer.ToolSchema[] {
     return this._tools.map((tool) => tool.schema);
   }
   async callTool(
-    // biome-ignore lint/suspicious/noExplicitAny: MCP server schema requires any for generic tool arguments
-    schema: mcpServer.ToolSchema<any>,
+    schema: mcpServer.ToolSchema,
     parsedArguments: Record<string, unknown>
   ) {
     if (!this._context) {
@@ -101,8 +99,7 @@ export class BrowserServerBackend implements mcpServer.ServerBackend {
   serverClosed() {
     this._context?.dispose().catch(logUnhandledError);
   }
-  // biome-ignore lint/suspicious/noExplicitAny: Tool type requires any for generic tool arguments
-  private _defineContextSwitchTool(factories: FactoryList): Tool<any> {
+  private _defineContextSwitchTool(factories: FactoryList): AnyTool {
     const self = this;
     return defineTool({
       capability: 'core',

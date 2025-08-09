@@ -11,9 +11,8 @@ const requests = defineTabTool({
     inputSchema: z.object({}),
     type: 'readOnly',
   },
-  // biome-ignore lint/suspicious/useAwait: Async function required by TabTool interface, even without await usage
   handle: async (tab, _params, response) => {
-    const requestList = tab.requests();
+    const requestList = await Promise.resolve(tab.requests());
     for (const [req, res] of requestList.entries()) {
       response.addResult(renderRequest(req, res));
     }

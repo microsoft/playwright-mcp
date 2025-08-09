@@ -63,11 +63,17 @@ export class BatchExecutor {
     let stopReason: BatchResult['stopReason'] = 'completed';
     // Pre-validation phase
     this.validateAllSteps(options.steps);
-    // Execution phase
-    for (const [index, step] of options.steps.entries()) {
+
+    // Execution phase using recursive approach to avoid await in loop
+    const executeSequentially = async (index: number): Promise<void> => {
+      if (index >= options.steps.length) {
+        return;
+      }
+
+      const step = options.steps[index];
       const stepStartTime = Date.now();
+
       try {
-        // biome-ignore lint/nursery/noAwaitInLoop: Batch steps must be executed sequentially in order
         const result = await this.executeStep(step, options.globalExpectation);
         const stepEndTime = Date.now();
         results.push({
@@ -77,6 +83,9 @@ export class BatchExecutor {
           result,
           executionTimeMs: stepEndTime - stepStartTime,
         });
+
+        // Continue with next step
+        await executeSequentially(index + 1);
       } catch (error) {
         const stepEndTime = Date.now();
         const errorMessage = getErrorMessage(error);
@@ -87,13 +96,20 @@ export class BatchExecutor {
           error: errorMessage,
           executionTimeMs: stepEndTime - stepStartTime,
         });
+
         // Determine if we should continue or stop
         if (options.stopOnFirstError && !step.continueOnError) {
           stopReason = 'error';
-          break;
+          return;
         }
+
+        // Continue with next step
+        await executeSequentially(index + 1);
       }
-    }
+    };
+
+    await executeSequentially(0);
+
     const totalExecutionTime = Date.now() - startTime;
     const successfulSteps = results.filter((r) => r.success).length;
     const failedSteps = results.filter((r) => !r.success).length;

@@ -5,9 +5,12 @@
  */
 
 import type { Page } from 'playwright';
-import type { ParallelAnalysisResult } from '../types/performance.js';
+import type {
+  ParallelAnalysisResult,
+  PerformanceMetrics,
+} from '../types/performance.js';
 import { createDisposableManager } from '../utils/disposable-manager.js';
-import { PageAnalyzer } from './page-analyzer.js';
+import { PageAnalyzer, type PageStructureAnalysis } from './page-analyzer.js';
 
 export class ParallelPageAnalyzer {
   private readonly pageAnalyzer: PageAnalyzer;
@@ -103,8 +106,7 @@ export class ParallelPageAnalyzer {
 
     return {
       structureAnalysis: convertedStructureAnalysis,
-      // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for fallback empty performance metrics
-      performanceMetrics: performanceMetrics ?? ({} as any),
+      performanceMetrics: performanceMetrics ?? ({} as PerformanceMetrics),
       resourceUsage: null,
       executionTime,
       errors,
@@ -145,11 +147,9 @@ export class ParallelPageAnalyzer {
 
       if (result.status === 'fulfilled') {
         if (stepName === 'structure-analysis') {
-          // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for dynamic analysis result
-          structureAnalysis = result.value as any;
+          structureAnalysis = result.value as PageStructureAnalysis;
         } else {
-          // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for dynamic analysis result
-          performanceMetrics = result.value as any;
+          performanceMetrics = result.value as PerformanceMetrics;
         }
       } else {
         const errorMsg = result.reason?.message ?? 'Unknown error';

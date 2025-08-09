@@ -156,12 +156,14 @@ export class ElementDiscovery extends DiagnosticBase {
   ): Promise<void> {
     let totalFound = 0;
 
-    for (const selector of strategies) {
-      if (totalFound >= maxResults) {
+    const processStrategiesSequentially = async (
+      index: number
+    ): Promise<void> => {
+      if (index >= strategies.length || totalFound >= maxResults) {
         return;
       }
 
-      // biome-ignore lint/nursery/noAwaitInLoop: Sequential element processing required for accurate result ordering
+      const selector = strategies[index];
       totalFound = await this.processTextStrategy(
         page,
         selector,
@@ -170,7 +172,11 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    }
+
+      await processStrategiesSequentially(index + 1);
+    };
+
+    await processStrategiesSequentially(0);
   }
 
   private getTextSearchStrategies(text: string): string[] {
@@ -438,12 +444,12 @@ export class ElementDiscovery extends DiagnosticBase {
   ): Promise<void> {
     let totalFound = 0;
 
-    for (const [attrName, attrValue] of attributeEntries) {
-      if (totalFound >= maxResults) {
-        break;
+    const processEntriesSequentially = async (index: number): Promise<void> => {
+      if (index >= attributeEntries.length || totalFound >= maxResults) {
+        return;
       }
 
-      // biome-ignore lint/nursery/noAwaitInLoop: Sequential attribute processing required for accurate result ordering
+      const [attrName, attrValue] = attributeEntries[index];
       totalFound = await this.processAttributeEntry(
         attrName,
         attrValue,
@@ -451,7 +457,11 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    }
+
+      await processEntriesSequentially(index + 1);
+    };
+
+    await processEntriesSequentially(0);
   }
 
   private async processAttributeEntry(
@@ -492,14 +502,20 @@ export class ElementDiscovery extends DiagnosticBase {
   ): Promise<number> {
     let currentFound = totalFound;
 
-    for (const element of elements) {
+    const processElementsSequentially = async (
+      index: number
+    ): Promise<void> => {
+      if (index >= elements.length) {
+        return;
+      }
+
+      const element = elements[index];
       if (currentFound >= maxResults) {
-        // biome-ignore lint/nursery/noAwaitInLoop: Element disposal must be sequential to prevent resource leaks
         await this.safeDispose(
           element,
           `findByAttributes-excess-${currentFound}`
         );
-        continue;
+        return processElementsSequentially(index + 1);
       }
 
       const processResult = await this.processAttributeElement(
@@ -513,8 +529,11 @@ export class ElementDiscovery extends DiagnosticBase {
       if (processResult) {
         currentFound++;
       }
-    }
 
+      await processElementsSequentially(index + 1);
+    };
+
+    await processElementsSequentially(0);
     return currentFound;
   }
 
@@ -577,12 +596,12 @@ export class ElementDiscovery extends DiagnosticBase {
   ): Promise<void> {
     let totalFound = 0;
 
-    for (const tagSelector of tags) {
-      if (totalFound >= maxResults) {
-        break;
+    const processTagsSequentially = async (index: number): Promise<void> => {
+      if (index >= tags.length || totalFound >= maxResults) {
+        return;
       }
 
-      // biome-ignore lint/nursery/noAwaitInLoop: Sequential role tag processing required for accurate result ordering
+      const tagSelector = tags[index];
       totalFound = await this.processImplicitRoleTag(
         tagSelector,
         role,
@@ -590,7 +609,11 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    }
+
+      await processTagsSequentially(index + 1);
+    };
+
+    await processTagsSequentially(0);
   }
 
   private async processImplicitRoleTag(
@@ -631,14 +654,20 @@ export class ElementDiscovery extends DiagnosticBase {
   ): Promise<number> {
     let currentFound = totalFound;
 
-    for (const element of elements) {
+    const processElementsSequentially = async (
+      index: number
+    ): Promise<void> => {
+      if (index >= elements.length) {
+        return;
+      }
+
+      const element = elements[index];
       if (currentFound >= maxResults) {
-        // biome-ignore lint/nursery/noAwaitInLoop: Element disposal must be sequential to prevent resource leaks
         await this.safeDispose(
           element,
           `findImplicitRole-excess-${currentFound}`
         );
-        continue;
+        return processElementsSequentially(index + 1);
       }
 
       const processResult = await this.processImplicitRoleElement(
@@ -652,8 +681,11 @@ export class ElementDiscovery extends DiagnosticBase {
       if (processResult) {
         currentFound++;
       }
-    }
 
+      await processElementsSequentially(index + 1);
+    };
+
+    await processElementsSequentially(0);
     return currentFound;
   }
 

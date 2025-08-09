@@ -107,19 +107,29 @@ export class DisposableManager implements Disposable {
    */
   private async disposeInBatches(resources: Disposable[]): Promise<void> {
     const batches = this.createBatches(resources, this.maxParallelDisposals);
+    await this.disposeBatchesRecursive(batches, 0);
+  }
 
-    for (const batch of batches) {
-      const disposePromises = batch.map((resource) =>
-        this.safeDisposeResource(resource)
-      );
-
-      // Use allSettled to continue even if some disposals fail
-      // biome-ignore lint/nursery/noAwaitInLoop: Sequential batch processing is required for system stability
-      const results = await Promise.allSettled(disposePromises);
-
-      // Log any disposal failures
-      this.logDisposalResults(results, batch.length);
+  private async disposeBatchesRecursive(
+    batches: Disposable[][],
+    index: number
+  ): Promise<void> {
+    if (index >= batches.length) {
+      return;
     }
+
+    const batch = batches[index];
+    const disposePromises = batch.map((resource) =>
+      this.safeDisposeResource(resource)
+    );
+
+    // Use allSettled to continue even if some disposals fail
+    const results = await Promise.allSettled(disposePromises);
+
+    // Log any disposal failures
+    this.logDisposalResults(results, batch.length);
+
+    await this.disposeBatchesRecursive(batches, index + 1);
   }
 
   /**

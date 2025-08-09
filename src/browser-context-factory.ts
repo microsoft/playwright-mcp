@@ -219,9 +219,21 @@ class PersistentContextFactory implements BrowserContextFactory {
     this._userDataDirs.add(userDataDir);
     testDebug('lock user data dir', userDataDir);
     const browserType = getBrowserType(this.config.browser.browserName);
-    for (let i = 0; i < 5; i++) {
+
+    // Launch browser with retry logic using recursive approach
+    const launchWithRetry = async (
+      attempt: number
+    ): Promise<{
+      browserContext: BrowserContext;
+      close: () => Promise<void>;
+    }> => {
+      if (attempt >= 5) {
+        throw new Error(
+          `Browser is already in use for ${userDataDir}, use --isolated to run multiple instances of the same browser`
+        );
+      }
+
       try {
-        // biome-ignore lint/nursery/noAwaitInLoop: Sequential retry loop required for browser launch
         const browserContext = await browserType.launchPersistentContext(
           userDataDir,
           {
@@ -249,16 +261,15 @@ class PersistentContextFactory implements BrowserContextFactory {
           (error.message.includes('ProcessSingleton') ||
             error.message.includes('Invalid URL'))
         ) {
-          // User data directory is already in use, try again.
+          // User data directory is already in use, retry after delay
           await new Promise((resolve) => setTimeout(resolve, 1000));
-          continue;
+          return launchWithRetry(attempt + 1);
         }
         throw error;
       }
-    }
-    throw new Error(
-      `Browser is already in use for ${userDataDir}, use --isolated to run multiple instances of the same browser`
-    );
+    };
+
+    return launchWithRetry(0);
   }
   private async _closeBrowserContext(
     browserContext: BrowserContext,

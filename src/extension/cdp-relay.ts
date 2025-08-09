@@ -59,8 +59,6 @@ export class CDPRelayServer {
   private readonly _wss: WebSocketServer;
   private _playwrightConnection: WebSocket | null = null;
   private _extensionConnection: ExtensionConnection | null = null;
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Used in line 274 for session ID generation
-  private _nextSessionId = 0;
   private _connectedTabInfo:
     | {
         targetInfo: Record<string, unknown>;
@@ -495,8 +493,6 @@ type ExtensionResponse = {
 };
 class ExtensionConnection {
   private readonly _ws: WebSocket;
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Used in line 356 for message ID generation
-  private _lastId = 0;
   private readonly _callbacks = new Map<
     number,
     { resolve: (o: unknown) => void; reject: (e: Error) => void; error: Error }

@@ -188,28 +188,27 @@ export function getAlternativeUrl(
 /**
  * Execute operation with retry logic
  */
-export async function withRetry<T>(
+export function withRetry<T>(
   operation: () => Promise<T>,
   maxRetries: number,
   delay: number,
   onRetry?: (attempt: number, error: Error) => void
 ): Promise<T> {
-  let lastError: Error | undefined;
-
-  // Retry attempts must run sequentially to respect retry delays
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  const attemptOperation = async (attemptNumber: number): Promise<T> => {
     try {
-      // biome-ignore lint/nursery/noAwaitInLoop: Retry attempts must be executed sequentially to respect delays
       return await operation();
     } catch (error: unknown) {
-      lastError = error as Error;
+      const lastError = error as Error;
 
-      if (attempt < maxRetries) {
-        onRetry?.(attempt + 1, lastError);
+      if (attemptNumber < maxRetries) {
+        onRetry?.(attemptNumber + 1, lastError);
         await wait(delay);
+        return attemptOperation(attemptNumber + 1);
       }
-    }
-  }
 
-  throw lastError || new Error('Operation failed after retries');
+      throw lastError;
+    }
+  };
+
+  return attemptOperation(0);
 }

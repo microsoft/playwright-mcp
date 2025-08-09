@@ -43,12 +43,7 @@ test.describe('Parallel Analysis Stability', () => {
     }> = [];
 
     // Test consecutive calls to ensure stability - must be sequential
-    for (let i = 0; i < 5; i++) {
-      // biome-ignore lint/nursery/noAwaitInLoop: Testing consecutive call stability requires sequential execution
-      const result = await unifiedSystem.analyzePageStructure(true);
-      expect(result.success).toBe(true);
-      results.push(result);
-    }
+    await runSequentialAnalysis(unifiedSystem, results, 0, 5);
 
     // Verify all results are consistent
     for (const result of results) {
@@ -186,3 +181,22 @@ test.describe('Parallel Analysis Stability', () => {
     await unifiedSystem.dispose();
   });
 });
+
+async function runSequentialAnalysis(
+  unifiedSystem: {
+    analyzePageStructure: (param: boolean) => Promise<{ success: boolean }>;
+  },
+  results: Array<{ success: boolean }>,
+  index: number,
+  max: number
+): Promise<void> {
+  if (index >= max) {
+    return;
+  }
+
+  const result = await unifiedSystem.analyzePageStructure(true);
+  expect(result.success).toBe(true);
+  results.push(result);
+
+  await runSequentialAnalysis(unifiedSystem, results, index + 1, max);
+}

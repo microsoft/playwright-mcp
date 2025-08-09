@@ -174,11 +174,12 @@ export class SmartConfigManager {
           targetValue !== null &&
           !Array.isArray(targetValue)
         ) {
-          // biome-ignore lint/suspicious/noExplicitAny: Deep merge requires flexible typing
-          (result as any)[key] = { ...targetValue, ...sourceValue };
+          (result as Record<string, unknown>)[key] = {
+            ...targetValue,
+            ...sourceValue,
+          };
         } else {
-          // biome-ignore lint/suspicious/noExplicitAny: Deep merge requires flexible typing
-          (result as any)[key] = sourceValue;
+          (result as Record<string, unknown>)[key] = sourceValue;
         }
       }
     }

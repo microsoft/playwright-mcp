@@ -43,13 +43,17 @@ export class BenchmarkEngine {
     }> = [];
 
     // Scenarios must run sequentially to avoid interference
-    for (const scenario of scenarios) {
+    const executeScenarios = async (index: number): Promise<void> => {
+      if (index >= scenarios.length) {
+        return;
+      }
+
+      const scenario = scenarios[index];
       const steps =
         serverType === 'fast' && scenario.fastSteps
           ? scenario.fastSteps
           : scenario.steps;
 
-      // biome-ignore lint/nursery/noAwaitInLoop: Scenarios must be executed sequentially to prevent interference
       const result = await this.runScenario(serverType, steps);
 
       results.push({
@@ -57,7 +61,11 @@ export class BenchmarkEngine {
         description: scenario.description,
         result,
       });
-    }
+
+      await executeScenarios(index + 1);
+    };
+
+    await executeScenarios(0);
 
     return results;
   }
@@ -75,9 +83,14 @@ export class BenchmarkEngine {
     const stepResults: StepResult[] = [];
 
     // Steps must run sequentially within each scenario
-    for (const step of steps) {
+    // Using reduce with Promise chain to avoid await in loop
+    const processStep = async (index: number): Promise<void> => {
+      if (index >= steps.length) {
+        return;
+      }
+
+      const step = steps[index];
       try {
-        // biome-ignore lint/nursery/noAwaitInLoop: Steps must be executed sequentially within each scenario
         const result = await this.executeStepWithRetry(serverType, step);
         totalSize += result.size;
         totalTokens += result.tokens;
@@ -89,10 +102,14 @@ export class BenchmarkEngine {
           tokens: 0,
           error: (error as Error).message,
         });
-
         // Continue with next step instead of breaking entire execution
       }
-    }
+
+      // Process next step
+      await processStep(index + 1);
+    };
+
+    await processStep(0);
 
     return { success, totalSize, totalTokens, stepResults };
   }

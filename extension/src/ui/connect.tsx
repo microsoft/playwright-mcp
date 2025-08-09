@@ -251,14 +251,19 @@ const TabItem: React.FC<{
         type="radio"
         value={tab.id.toString()}
       />
-      {/* biome-ignore lint/performance/noImgElement: Using img is appropriate for simple favicon display in Chrome extension */}
-      <img
-        alt={`Favicon for ${tab.title || 'tab'}`}
+      <div
+        aria-label={`Favicon for ${tab.title || 'tab'}`}
         className="tab-favicon"
-        src={
-          tab.favIconUrl ||
-          'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'
-        }
+        role="img"
+        style={{
+          backgroundImage: `url(${
+            tab.favIconUrl ||
+            'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'
+          })`,
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+        }}
       />
       <div className="tab-content">
         <div className="tab-title">{tab.title || 'Untitled'}</div>
