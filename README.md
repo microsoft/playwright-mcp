@@ -169,6 +169,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --no-sandbox                 disable the sandbox for all process types that
                                are normally sandboxed.
   --output-dir <path>          path to the directory for output files.
+  --permissions <permissions>  comma-separated list of permissions to grant, for
+                               example "clipboard-read,clipboard-write"
   --port <port>                port to listen on for SSE transport.
   --proxy-bypass <bypass>      comma-separated domains to bypass proxy, for
                                example ".com,chromium.org,.domain.com"

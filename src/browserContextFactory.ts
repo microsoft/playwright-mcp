@@ -138,7 +138,7 @@ class CdpContextFactory extends BaseContextFactory {
   }
 
   protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
-    return this.config.browser.isolated ? await browser.newContext() : browser.contexts()[0];
+    return this.config.browser.isolated ? await browser.newContext(this.config.browser.contextOptions) : browser.contexts()[0];
   }
 }
 
@@ -156,7 +156,7 @@ class RemoteContextFactory extends BaseContextFactory {
   }
 
   protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
-    return browser.newContext();
+    return browser.newContext(this.config.browser.contextOptions);
   }
 }
 
