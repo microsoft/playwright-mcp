@@ -223,7 +223,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    async (_, use, workerInfo) => {
+    async ({}, use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 

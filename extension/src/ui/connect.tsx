@@ -210,8 +210,20 @@ const Button: React.FC<{
   onClick: () => void;
   children: React.ReactNode;
 }> = ({ variant, onClick, children }) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
+    }
+  };
+
   return (
-    <button className={`button ${variant}`} onClick={onClick} type="button">
+    <button
+      className={`button ${variant}`}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      type="button"
+    >
       {children}
     </button>
   );
