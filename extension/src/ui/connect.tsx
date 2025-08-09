@@ -80,6 +80,8 @@ const ConnectApp: React.FC = () => {
         message: `MCP client "${info}" is trying to connect. Do you want to continue?`,
       });
     } catch (_error) {
+      // Error logging is intentionally suppressed to comply with linting rules
+      // Error handling continues through status update
       setStatus({ type: 'error', message: 'Failed to parse client version.' });
       return;
     }
@@ -212,9 +214,9 @@ const TabItem: React.FC<{
         onChange={handleChange}
         type="radio"
       />
-      {/* biome-ignore lint/a11y/useAltText: This is a simple favicon image in a Chrome extension UI */}
       {/* biome-ignore lint/performance/noImgElement: Using img is appropriate for simple favicon display in Chrome extension */}
       <img
+        alt={`Favicon for ${tab.title || 'tab'}`}
         className="tab-favicon"
         src={
           tab.favIconUrl ||

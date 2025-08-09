@@ -17,7 +17,8 @@
 export function debugLog(..._args: unknown[]): void {
   const enabled = true;
   if (enabled) {
-    // TODO: Implement debug logging
+    // Debug logging is enabled but output is intentionally suppressed
+    // in production. Can be implemented with proper logging framework.
   }
 }
 

@@ -332,7 +332,8 @@ test.describe('SmartConfig integration tests', () => {
             elementsWarning: -100,
           },
         });
-      } catch (_error) {
+      } catch (error) {
+        expect(error).toBeDefined();
         // エラー後にデフォルト値が保持されることを確認
         const metrics = thresholds.getMetricsThresholds();
         expect(metrics.dom.elementsWarning).toBe(1500); // デフォルト値

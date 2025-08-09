@@ -67,50 +67,44 @@ test('browser_file_upload', async ({ client, server }, testInfo) => {
   const filePath = testInfo.outputPath('test.txt');
   await fs.writeFile(filePath, 'Hello, world!');
 
-  {
-    const response = await client.callTool({
-      name: 'browser_file_upload',
-      arguments: {
-        paths: [filePath],
-      },
-    });
+  const response = await client.callTool({
+    name: 'browser_file_upload',
+    arguments: {
+      paths: [filePath],
+    },
+  });
 
-    expect(response).toHaveResponse({
-      code: expect.stringContaining('await fileChooser.setFiles('),
-      modalState: undefined,
-    });
-  }
+  expect(response).toHaveResponse({
+    code: expect.stringContaining('await fileChooser.setFiles('),
+    modalState: undefined,
+  });
 
-  {
-    const response = await client.callTool({
-      name: 'browser_click',
-      arguments: {
-        element: 'Textbox',
-        ref: 'e2',
-      },
-    });
+  const response2 = await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Textbox',
+      ref: 'e2',
+    },
+  });
 
-    expect(response).toHaveResponse({
-      modalState: `- [File chooser]: can be handled by the "browser_file_upload" tool`,
-    });
-  }
+  expect(response2).toHaveResponse({
+    modalState: `- [File chooser]: can be handled by the "browser_file_upload" tool`,
+  });
 
-  {
-    const response = await client.callTool({
-      name: 'browser_click',
-      arguments: {
-        element: 'Button',
-        ref: 'e3',
-      },
-    });
+  const response3 = await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Button',
+      ref: 'e3',
+    },
+  });
 
-    expect(response).toHaveResponse({
-      result: `Error: Tool "browser_click" does not handle the modal state.`,
-      modalState: expect.stringContaining(
-        `- [File chooser]: can be handled by the "browser_file_upload" tool`
-      ),
-    });
-  }
+  expect(response3).toHaveResponse({
+    result: `Error: Tool "browser_click" does not handle the modal state.`,
+    modalState: expect.stringContaining(
+      `- [File chooser]: can be handled by the "browser_file_upload" tool`
+    ),
+  });
 });
 
 test('clicking on download link emits download', async ({

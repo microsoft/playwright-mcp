@@ -101,7 +101,10 @@ class TabShareExtension {
         }
       };
       socket.onclose = () => connectionClosed('WebSocket closed');
-      socket.onerror = (error) => connectionClosed(`WebSocket error: ${error}`);
+      socket.onerror = (error) =>
+        connectionClosed(
+          `WebSocket error: ${error.message || 'Unknown error'}`
+        );
       this._activeConnection = connection;
 
       await Promise.all([

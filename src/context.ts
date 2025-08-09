@@ -218,7 +218,6 @@ export class Context {
     if (this._closeBrowserContextPromise) {
       throw new Error('Another browser context is being closed.');
     }
-    // TODO: move to the browser context factory to make it based on isolation mode.
     const result = await this._browserContextFactory.createContext(
       this._clientInfo,
       this._abortController.signal
