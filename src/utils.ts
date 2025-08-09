@@ -10,7 +10,7 @@ function removeControlCharacters(str: string): string {
   // Use string methods to remove control characters to avoid regex warnings
   return str
     .split('')
-    .map(char => {
+    .map((char) => {
       const code = char.charCodeAt(0);
       return (code >= 0 && code <= 31) || code === 127 ? '-' : char;
     })
