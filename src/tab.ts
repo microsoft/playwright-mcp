@@ -281,35 +281,15 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     return this._requests;
   }
   async captureSnapshot(): Promise<TabSnapshot> {
-    let tabSnapshot: TabSnapshot | undefined;
-    const modalStates = await this._raceAgainstModalStates(async () => {
-      const snapshot = await (this.page as PageEx)._snapshotForAI();
-      tabSnapshot = {
-        url: this.page.url(),
-        title: await this.page.title(),
-        ariaSnapshot: snapshot,
-        modalStates: [],
-        consoleMessages: [],
-        downloads: this._downloads,
-      };
-    });
-    if (tabSnapshot) {
-      // Assign console message late so that we did not lose any to modal state.
-      tabSnapshot.consoleMessages = this._recentConsoleMessages;
-      this._recentConsoleMessages = [];
-    }
-    return (
-      tabSnapshot ?? {
-        url: this.page.url(),
-        title: '',
-        ariaSnapshot: '',
-        modalStates,
-        consoleMessages: [],
-        downloads: [],
-      }
-    );
+    return await this._captureSnapshotInternal();
   }
   async capturePartialSnapshot(
+    selector?: string,
+    maxLength?: number
+  ): Promise<TabSnapshot> {
+    return await this._captureSnapshotInternal(selector, maxLength);
+  }
+  private async _captureSnapshotInternal(
     selector?: string,
     maxLength?: number
   ): Promise<TabSnapshot> {
@@ -354,6 +334,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       }
     );
   }
+
   private _extractPartialSnapshot(
     fullSnapshot: string,
     selector: string
