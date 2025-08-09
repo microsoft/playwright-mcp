@@ -310,7 +310,7 @@ test('browser_take_screenshot (fullPage with element should error)', async ({
 
 test('browser_take_screenshot (viewport without snapshot)', async ({
   startClient,
-  server,
+  _server,
 }, testInfo) => {
   const { clientConfig } = createScreenshotTestSetup(testInfo);
   const { client } = await startClient({ config: clientConfig });

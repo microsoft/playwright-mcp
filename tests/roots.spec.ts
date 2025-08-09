@@ -54,7 +54,7 @@ test('should use separate user data by root path', async ({
 test('check that trace is saved in workspace', async ({
   startClient,
   server,
-  mcpMode,
+  _mcpMode,
 }, testInfo) => {
   const rootPath = testInfo.outputPath('workspace');
   const { client } = await startClient({

@@ -20,10 +20,10 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import type { TestInfo } from '@playwright/test';
 import { expect } from '@playwright/test';
-import type { ElementHandle, Page } from 'playwright';
+import type { Page } from 'playwright';
 import { DiagnosticThresholds } from '../src/diagnostics/diagnostic-thresholds.js';
+import type { SearchCriteria } from '../src/diagnostics/element-discovery.js';
 import { SmartConfigManager } from '../src/diagnostics/smart-config.js';
 import { Tab } from '../src/tab.js';
 import type { TestServer } from './testserver/index.js';
@@ -141,7 +141,7 @@ export class DiagnosticTestSetup {
     DiagnosticThresholds.reset();
 
     // Reset SmartConfigManager
-    (SmartConfigManager as any).instance = null;
+    (SmartConfigManager as { instance: null }).instance = null;
 
     // Start console capture if requested
     if (captureConsole) {
@@ -160,7 +160,7 @@ export class DiagnosticTestSetup {
 
     // Reset instances
     DiagnosticThresholds.reset();
-    (SmartConfigManager as any).instance = null;
+    (SmartConfigManager as { instance: null }).instance = null;
   }
 
   /**
@@ -181,7 +181,7 @@ export function createMockElement(
     attributes?: Record<string, string>;
     selector?: string;
   } = {}
-): any {
+): MockElement {
   return {
     dispose: () => {
       if (options.disposeError) {
@@ -211,7 +211,7 @@ export function createMockPage(elements: MockElement[] = []): MockPage {
 export function createMockElements(
   count: number,
   errorIndices: number[] = []
-): any[] {
+): MockElement[] {
   return Array.from({ length: count }, (_, i) => {
     const shouldError = errorIndices.includes(i);
     return createMockElement({
@@ -347,7 +347,10 @@ export async function withHttpClient<T>(
 /**
  * Execute a browser navigation call for testing
  */
-export async function navigateToUrl(client: Client, url: string): Promise<any> {
+export async function navigateToUrl(
+  client: Client,
+  url: string
+): Promise<CallToolResponse> {
   return await client.callTool({
     name: 'browser_navigate',
     arguments: { url },
@@ -363,7 +366,7 @@ export function createMockContext(tab: Tab): MockContext {
     currentTabOrDie: () => tab,
     tabs: () => [tab],
     config: { imageResponses: 'include' },
-  } as any;
+  } as MockContext;
 }
 
 /**
@@ -374,7 +377,7 @@ export function createTabWithMockContext(
   callback: () => void = () => {
     // Default empty callback for Tab constructor
   }
-): { tab: any; mockContext: any } {
+): { tab: Tab; mockContext: MockContext } {
   const mockContext = createMockContext(null);
   const tab = new Tab(mockContext, page, callback);
   // Fix circular reference
@@ -402,7 +405,7 @@ export async function callTool(
   client: Client,
   name: string,
   args: Record<string, unknown>
-): Promise<any> {
+): Promise<CallToolResponse> {
   return await client.callTool({
     name,
     arguments: args,
@@ -416,7 +419,7 @@ export async function navigateAndExpectTitle(
   client: Client,
   url: string,
   expectedTitle = 'Title'
-): Promise<any> {
+): Promise<CallToolResponse> {
   const result = await navigateToUrl(client, url);
   expect(result).toEqual(
     expect.objectContaining({
@@ -706,8 +709,8 @@ export async function setupDiagnoseWithElementSearch(
   client: Client,
   server: TestServer,
   htmlContent: string,
-  searchCriteria: any
-): Promise<any> {
+  searchCriteria: SearchCriteria
+): Promise<CallToolResponse> {
   return await setupDiagnoseTest(client, server, htmlContent, {
     searchForElements: searchCriteria,
   });
@@ -811,7 +814,7 @@ export async function setupBasicNavigation(
   server: TestServer,
   path = '/',
   content = HTML_TEMPLATES.BASIC_TITLE_ONLY
-): Promise<any> {
+): Promise<CallToolResponse> {
   setServerContent(server, path, content);
   return await navigateToUrl(client, server.PREFIX);
 }
@@ -1039,7 +1042,7 @@ export async function clickButtonAndExpectModal(
     ref: 'e2',
   });
 
-  const expectedResponse: any = {
+  const expectedResponse: Record<string, unknown> = {
     modalState: expectedModalState,
   };
 
@@ -1068,7 +1071,7 @@ export async function handleDialogAndExpectState(
 
   const result = await callTool(client, 'browser_handle_dialog', args);
 
-  const expectedResponse: any = {};
+  const expectedResponse: Record<string, unknown> = {};
   if (expectedModalState !== undefined) {
     expectedResponse.modalState = expectedModalState;
   }
@@ -1110,7 +1113,7 @@ export async function executeDialogTest(
   await setupDialogTest(client, server, htmlContent, buttonText);
 
   // Click button and expect modal
-  let modalExpectation: any;
+  let modalExpectation: Record<string, unknown>;
   if (dialogType === 'alert') {
     modalExpectation = DIALOG_EXPECTATIONS.ALERT_MODAL(message);
   } else if (dialogType === 'confirm') {
@@ -1204,7 +1207,7 @@ export async function setupScreenshotTest(
   htmlContent: string,
   screenshotArgs: Record<string, unknown>,
   path = '/'
-): Promise<any> {
+): Promise<CallToolResponse> {
   setServerContent(server, path, htmlContent);
   await navigateToUrl(client, server.PREFIX);
 
@@ -1219,7 +1222,7 @@ export async function executeMinimalScreenshotTest(
   server: TestServer,
   htmlContent: string = SCREENSHOT_HTML_TEMPLATES.MINIMAL_TEST,
   imageType: 'png' | 'jpeg' = 'png'
-): Promise<any> {
+): Promise<CallToolResponse> {
   return await setupScreenshotTest(client, server, htmlContent, {
     type: imageType,
     expectation: SCREENSHOT_EXPECTATIONS.MINIMAL_RESPONSE,
@@ -1234,7 +1237,7 @@ export async function executeFullScreenshotTest(
   server: TestServer,
   htmlContent: string = SCREENSHOT_HTML_TEMPLATES.FULL_TEST,
   imageType: 'png' | 'jpeg' = 'jpeg'
-): Promise<any> {
+): Promise<CallToolResponse> {
   return await setupScreenshotTest(client, server, htmlContent, {
     type: imageType,
     expectation: SCREENSHOT_EXPECTATIONS.FULL_RESPONSE,
@@ -1249,7 +1252,7 @@ export async function executeFullPageScreenshotTest(
   server: TestServer,
   htmlContent: string = SCREENSHOT_HTML_TEMPLATES.FULL_PAGE_GRADIENT,
   imageType: 'png' | 'jpeg' = 'png'
-): Promise<any> {
+): Promise<CallToolResponse> {
   return await setupScreenshotTest(client, server, htmlContent, {
     type: imageType,
     fullPage: true,
@@ -1358,7 +1361,7 @@ export async function setupMouseTest(
   args: Record<string, unknown>,
   htmlContent: string = MOUSE_HTML_TEMPLATES.BASIC_TEST,
   path = '/'
-): Promise<any> {
+): Promise<CallToolResponse> {
   setServerContent(server, path, htmlContent);
   await navigateToUrl(client, server.PREFIX);
 
@@ -1374,7 +1377,7 @@ export async function executeMouseMoveTest(
   x: number,
   y: number,
   htmlContent?: string
-): Promise<any> {
+): Promise<CallToolResponse> {
   return await setupMouseTest(
     client,
     server,
@@ -1398,7 +1401,7 @@ export async function executeMouseClickTest(
   x: number,
   y: number,
   htmlContent?: string
-): Promise<any> {
+): Promise<CallToolResponse> {
   return await setupMouseTest(
     client,
     server,
@@ -1424,7 +1427,7 @@ export async function executeMouseDragTest(
   endX: number,
   endY: number,
   htmlContent?: string
-): Promise<any> {
+): Promise<CallToolResponse> {
   return await setupMouseTest(
     client,
     server,
@@ -1550,7 +1553,7 @@ export const COMMON_EXPECTATIONS = {
  */
 export function testDefaultExpectation(
   toolName: string,
-  expectedDefaults: any
+  expectedDefaults: Record<string, unknown>
 ): void {
   const result = getDefaultExpectation(toolName);
   for (const [key, value] of Object.entries(expectedDefaults)) {
@@ -1563,7 +1566,7 @@ export function testDefaultExpectation(
  */
 export function createExpectationTest(
   expectationData: Record<string, unknown>,
-  expectedResult: any
+  expectedResult: Record<string, unknown>
 ): void {
   const result = expectationSchema.parse(expectationData);
   expect(result).toEqual(expectedResult);
@@ -1606,10 +1609,13 @@ export function expectBatchExecutionSummary(
  * Helper function for creating batch execution test arguments
  */
 export function createBatchExecutionArgs(
-  steps: any[],
-  globalExpectation: any = COMMON_EXPECTATIONS.MINIMAL_RESPONSE,
+  steps: Record<string, unknown>[],
+  globalExpectation: Record<
+    string,
+    unknown
+  > = COMMON_EXPECTATIONS.MINIMAL_RESPONSE,
   stopOnFirstError = true
-): any {
+): Record<string, unknown> {
   return {
     steps,
     stopOnFirstError,
@@ -1622,8 +1628,8 @@ export function createBatchExecutionArgs(
  */
 export function createNavigationStep(
   url: string,
-  expectation: any = COMMON_EXPECTATIONS.MINIMAL_RESPONSE
-): any {
+  expectation: Record<string, unknown> = COMMON_EXPECTATIONS.MINIMAL_RESPONSE
+): Record<string, unknown> {
   return {
     tool: 'browser_navigate',
     arguments: { url },

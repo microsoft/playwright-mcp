@@ -14,39 +14,63 @@
  * limitations under the License.
  */
 
+import type { Context } from '../src/context.js';
 import { Response } from '../src/response.js';
 import type { ExpectationOptions } from '../src/schemas/expectation.js';
+import type { ConsoleMessage, Tab, TabSnapshot } from '../src/tab.js';
 import { expect, test } from './fixtures.js';
+
+// Mock interfaces for testing
+interface MockTab extends Partial<Tab> {
+  captureSnapshot: () => Promise<TabSnapshot>;
+  updateTitle: () => void;
+  isCurrentTab: () => boolean;
+  lastTitle: () => string;
+  page: {
+    url: () => string;
+  };
+}
+
+interface MockContext extends Partial<Context> {
+  currentTab: () => MockTab | undefined;
+  currentTabOrDie: () => MockTab;
+  tabs: () => MockTab[];
+  config: {
+    imageResponses: 'allow';
+  };
+}
 
 test.describe('Response Filtering', () => {
   // Create a mock context for testing Response class directly
-  function createMockContext() {
-    const mockTab = {
-      captureSnapshot: async () => ({
+  function createMockContext(): MockContext {
+    const mockConsoleMessages: ConsoleMessage[] = [
+      { toString: () => 'console.log("test")', type: 'log' },
+      { toString: () => 'console.error("error")', type: 'error' },
+    ];
+
+    const mockTab: MockTab = {
+      captureSnapshot: async (): Promise<TabSnapshot> => ({
         url: 'https://example.com',
         title: 'Test Page',
         ariaSnapshot: 'button "Click me" [ref=btn1]',
-        consoleMessages: [
-          { toString: () => 'console.log("test")', type: 'log' },
-          { toString: () => 'console.error("error")', type: 'error' },
-        ],
+        consoleMessages: mockConsoleMessages,
         downloads: [],
         modalStates: [],
       }),
-      updateTitle: () => {
+      updateTitle: (): void => {
         /* intentionally empty */
       },
-      isCurrentTab: () => true,
-      lastTitle: () => 'Test Page',
+      isCurrentTab: (): boolean => true,
+      lastTitle: (): string => 'Test Page',
       page: {
-        url: () => 'https://example.com',
+        url: (): string => 'https://example.com',
       },
     };
 
     return {
-      currentTab: () => mockTab,
-      currentTabOrDie: () => mockTab,
-      tabs: () => [mockTab],
+      currentTab: (): MockTab => mockTab,
+      currentTabOrDie: (): MockTab => mockTab,
+      tabs: (): MockTab[] => [mockTab],
       config: {
         imageResponses: 'allow' as const,
       },
@@ -61,7 +85,7 @@ test.describe('Response Filtering', () => {
       includeTabs: true,
     };
     const response = new Response(
-      mockContext as any,
+      mockContext as Context,
       'navigate',
       { url: 'test' },
       expectation
@@ -92,7 +116,7 @@ test.describe('Response Filtering', () => {
     };
 
     const response = new Response(
-      mockContext as any,
+      mockContext as Context,
       'click',
       { element: 'button' },
       expectation
@@ -120,7 +144,7 @@ test.describe('Response Filtering', () => {
     };
 
     const response = new Response(
-      mockContext as any,
+      mockContext as Context,
       'click',
       { element: 'button' },
       expectation
@@ -150,7 +174,7 @@ test.describe('Response Filtering', () => {
     };
 
     const response = new Response(
-      mockContext as any,
+      mockContext as Context,
       'navigate',
       { url: 'test' },
       expectation
@@ -170,7 +194,7 @@ test.describe('Response Filtering', () => {
     const mockContext = createMockContext();
     // Screenshot tool should have minimal output by default
     const response = new Response(
-      mockContext as any,
+      mockContext as Context,
       'browser_take_screenshot',
       {}
     );
@@ -197,7 +221,7 @@ test.describe('Response Filtering', () => {
     };
 
     const response = new Response(
-      mockContext as any,
+      mockContext as Context,
       'click',
       { element: 'button' },
       expectation
@@ -228,7 +252,7 @@ test.describe('Response Filtering', () => {
     };
 
     const response = new Response(
-      mockContext as any,
+      mockContext as Context,
       'evaluate',
       { code: 'console.log("test")' },
       expectation
@@ -255,7 +279,7 @@ test.describe('Response Filtering', () => {
     };
 
     const response = new Response(
-      mockContext as any,
+      mockContext as Context,
       'navigate',
       { url: 'test' },
       expectation

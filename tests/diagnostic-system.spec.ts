@@ -84,7 +84,7 @@ const DIAGNOSTIC_HTML_TEMPLATES = {
 } as const;
 
 // Common test expectations
-const DIAGNOSTIC_EXPECTATIONS = {
+const _DIAGNOSTIC_EXPECTATIONS = {
   PAGE_STRUCTURE: {
     hasIframes: (count: number) => ({ detected: true, count }),
     hasModalStates: { hasDialog: false, hasFileChooser: false, blockedBy: [] },

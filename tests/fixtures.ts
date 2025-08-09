@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,6 +22,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import type { TestInfo } from '@playwright/test';
 import { expect as baseExpect, test as baseTest } from '@playwright/test';
 import type { BrowserContext } from 'playwright';
 import { chromium } from 'playwright';
@@ -34,7 +34,7 @@ const PW_MCP_TEST_REGEX = /^pw:mcp:test /;
 const USER_DATA_DIR_REGEX = /user data dir.*/;
 const CODE_FRAME_START_REGEX = /^```js\n/;
 const CODE_FRAME_END_REGEX = /\n```$/;
-const SECTION_HEADER_REGEX = /^## /gm;
+const _SECTION_HEADER_REGEX = /^## /gm;
 
 export type TestOptions = {
   mcpBrowser: string | undefined;
@@ -85,11 +85,11 @@ interface ExpectationConfig {
   [key: string]: unknown;
 }
 
-// Helper function to merge expectations with defaults
-function mergeWithDefaultExpectations(
+// Helper function to create base expectation configuration
+function createBaseExpectation(
   existingExpectation: ExpectationConfig
 ): ExpectationConfig {
-  return {
+  const baseConfig = {
     includeSnapshot:
       existingExpectation?.includeSnapshot ??
       DEFAULT_TEST_EXPECTATIONS.includeSnapshot,
@@ -103,8 +103,15 @@ function mergeWithDefaultExpectations(
       existingExpectation?.includeTabs ?? DEFAULT_TEST_EXPECTATIONS.includeTabs,
     includeCode:
       existingExpectation?.includeCode ?? DEFAULT_TEST_EXPECTATIONS.includeCode,
-    ...existingExpectation,
   };
+  return { ...baseConfig, ...existingExpectation };
+}
+
+// Helper function to merge expectations with defaults
+function mergeWithDefaultExpectations(
+  existingExpectation: ExpectationConfig
+): ExpectationConfig {
+  return createBaseExpectation(existingExpectation);
 }
 
 // Helper function to wrap client.callTool with default expectations for tests
@@ -124,6 +131,76 @@ function wrapClientWithDefaultExpectations(client: Client): void {
   };
 }
 
+// Helper function to prepare client arguments
+function prepareClientArgs(
+  options: { args?: string[]; config?: Config } | undefined,
+  mcpHeadless: boolean,
+  mcpBrowser: string | undefined,
+  configDir: string,
+  testInfo: TestInfo
+): Promise<string[]> | string[] {
+  const args: string[] = [];
+
+  if (process.env.CI && process.platform === 'linux') {
+    args.push('--no-sandbox');
+  }
+  if (mcpHeadless) {
+    args.push('--headless');
+  }
+  if (mcpBrowser) {
+    args.push(`--browser=${mcpBrowser}`);
+  }
+  if (options?.args) {
+    args.push(...options.args);
+  }
+
+  if (options?.config) {
+    return handleConfigFile(options.config, configDir, testInfo).then(
+      (configPath) => {
+        args.push(`--config=${configPath}`);
+        return args;
+      }
+    );
+  }
+
+  return args;
+}
+
+// Helper function to handle config file creation
+async function handleConfigFile(
+  config: Config,
+  configDir: string,
+  testInfo: TestInfo
+): Promise<string> {
+  const configFile = testInfo.outputPath('config.json');
+  await fs.promises.writeFile(configFile, JSON.stringify(config, null, 2));
+  return path.relative(configDir, configFile);
+}
+
+// Helper function to create and configure client
+function createAndConfigureClient(
+  options:
+    | { clientName?: string; roots?: { name: string; uri: string }[] }
+    | undefined
+): Client {
+  const client = new Client(
+    { name: options?.clientName ?? 'test', version: '1.0.0' },
+    options?.roots
+      ? { capabilities: { roots: { listChanged: true } } }
+      : undefined
+  );
+
+  if (options?.roots) {
+    client.setRequestHandler(ListRootsRequestSchema, () => {
+      return {
+        roots: options.roots || [],
+      };
+    });
+  }
+
+  return client;
+}
+
 export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   client: async ({ startClient }, use) => {
     const { client } = await startClient();
@@ -136,41 +213,17 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     let client: Client | undefined;
 
     await use(async (options) => {
-      const args: string[] = [];
-      if (process.env.CI && process.platform === 'linux') {
-        args.push('--no-sandbox');
-      }
-      if (mcpHeadless) {
-        args.push('--headless');
-      }
-      if (mcpBrowser) {
-        args.push(`--browser=${mcpBrowser}`);
-      }
-      if (options?.args) {
-        args.push(...options.args);
-      }
-      if (options?.config) {
-        const configFile = testInfo.outputPath('config.json');
-        await fs.promises.writeFile(
-          configFile,
-          JSON.stringify(options.config, null, 2)
-        );
-        args.push(`--config=${path.relative(configDir, configFile)}`);
-      }
-
-      client = new Client(
-        { name: options?.clientName ?? 'test', version: '1.0.0' },
-        options?.roots
-          ? { capabilities: { roots: { listChanged: true } } }
-          : undefined
+      const argsResult = prepareClientArgs(
+        options,
+        mcpHeadless,
+        mcpBrowser,
+        configDir,
+        testInfo
       );
-      if (options?.roots) {
-        client.setRequestHandler(ListRootsRequestSchema, (_request) => {
-          return {
-            roots: options.roots,
-          };
-        });
-      }
+      const args = Array.isArray(argsResult) ? argsResult : await argsResult;
+
+      client = createAndConfigureClient(options);
+
       const { transport, stderr } = createTransport(
         args,
         mcpMode,
@@ -194,8 +247,10 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await client?.close();
   },
 
-  wsEndpoint: async ({ mcpHeadless, mcpBrowser, mcpMode }, use) => {
-    // Parameters are unused but required for Playwright fixture pattern
+  wsEndpoint: async (
+    { mcpHeadless: _mcpHeadless, mcpBrowser: _mcpBrowser, mcpMode: _mcpMode },
+    use
+  ) => {
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
@@ -235,7 +290,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    async ({}, use, workerInfo) => {
+    async (_fixtures, use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 

@@ -29,14 +29,20 @@ const __filename = url.fileURLToPath(import.meta.url);
 
 export class TestServer {
   private _server: http.Server;
-  readonly debugServer: any;
+  readonly debugServer: debug.Debugger;
   private _routes = new Map<
     string,
-    (request: http.IncomingMessage, response: http.ServerResponse) => any
+    (request: http.IncomingMessage, response: http.ServerResponse) => void
   >();
   private _csp = new Map<string, string>();
   private _extraHeaders = new Map<string, object>();
-  private _requestSubscribers = new Map<string, Promise<any>>();
+  private _requestSubscribers = new Map<
+    string,
+    Promise<http.IncomingMessage> & {
+      [fulfillSymbol]?: (value: http.IncomingMessage) => void;
+      [rejectSymbol]?: (reason?: unknown) => void;
+    }
+  >();
   readonly PORT: number;
   readonly PREFIX: string;
   readonly CROSS_PROCESS_PREFIX: string;
@@ -118,7 +124,7 @@ export class TestServer {
     handler: (
       request: http.IncomingMessage,
       response: http.ServerResponse
-    ) => any
+    ) => void
   ) {
     this._routes.set(routePath, handler);
   }
@@ -182,19 +188,20 @@ export class TestServer {
 
   _onRequest(request: http.IncomingMessage, response: http.ServerResponse) {
     request.on('error', (error) => {
-      if ((error as any).code === 'ECONNRESET') {
+      if ((error as NodeJS.ErrnoException).code === 'ECONNRESET') {
         response.end();
       } else {
         throw error;
       }
     });
-    (request as any).postBody = new Promise((resolve) => {
-      const chunks: Buffer[] = [];
-      request.on('data', (chunk) => {
-        chunks.push(chunk);
+    (request as http.IncomingMessage & { postBody: Promise<Buffer> }).postBody =
+      new Promise((resolve) => {
+        const chunks: Buffer[] = [];
+        request.on('data', (chunk) => {
+          chunks.push(chunk);
+        });
+        request.on('end', () => resolve(Buffer.concat(chunks)));
       });
-      request.on('end', () => resolve(Buffer.concat(chunks)));
-    });
     const requestPath = request.url || '/';
     this.debugServer(`request ${request.method} ${requestPath}`);
     // Notify request subscriber.

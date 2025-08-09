@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import child_process from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -27,7 +26,7 @@ test(
       description: 'https://github.com/microsoft/playwright-mcp/issues/456',
     },
   },
-  async ({ page }, testInfo) => {
+  async ({ page: _page }, testInfo) => {
     const file = testInfo.outputPath('main.cjs');
     const projectRoot = process.cwd();
 

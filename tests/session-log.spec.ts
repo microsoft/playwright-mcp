@@ -50,7 +50,10 @@ async function setupSessionLoggingTest(
 }
 
 async function setupCdpSessionLoggingTest(
-  cdpServer: { endpoint: string; start: () => Promise<any> },
+  cdpServer: {
+    endpoint: string;
+    start: () => Promise<Record<string, unknown>>;
+  },
   startClient: StartClientFunction,
   testInfo: TestInfo
 ) {

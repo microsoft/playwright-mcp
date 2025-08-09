@@ -37,11 +37,11 @@ export async function getFilterFunction() {
  */
 export async function testLevelFiltering(
   levels: readonly string[],
-  expectedCount: number
+  _expectedCount: number
 ) {
   const filterConsoleMessages = await getFilterFunction();
   const messages = createMockConsoleMessages();
-  const options = { levels: levels as any };
+  const options = { levels: levels as string[] };
 
   const result = filterConsoleMessages(messages, options);
   // Note: Assertion moved to test file to satisfy BiomeJS linting rules
@@ -53,7 +53,7 @@ export async function testLevelFiltering(
  */
 export async function testPatternFiltering(
   patterns: string[],
-  expectedCount: number
+  _expectedCount: number
 ) {
   const filterConsoleMessages = await getFilterFunction();
   const messages = createMockConsoleMessages();
@@ -67,7 +67,7 @@ export async function testPatternFiltering(
 /**
  * Test duplicate removal
  */
-export async function testDuplicateRemoval(expectedUniqueCount: number) {
+export async function testDuplicateRemoval(_expectedUniqueCount: number) {
   const filterConsoleMessages = await getFilterFunction();
   const messages = createMockConsoleMessages();
   const options = { removeDuplicates: true };
@@ -101,7 +101,7 @@ export async function testCombinedFiltering(
     removeDuplicates?: boolean;
     maxMessages?: number;
   },
-  maxExpectedCount: number
+  _maxExpectedCount: number
 ) {
   const filterConsoleMessages = await getFilterFunction();
   const messages = createMockConsoleMessages();
@@ -126,14 +126,14 @@ export function isInRange(value: number, min: number, max: number): boolean {
  */
 export function validateUniqueItems<T>(
   array: T[],
-  keySelector?: (item: T) => any
+  keySelector?: (item: T) => string | number
 ): {
   isUnique: boolean;
   duplicates: T[];
   totalItems: number;
   uniqueItems: number;
 } {
-  const selector = keySelector || ((item: T) => item);
+  const selector = keySelector || ((item: T) => String(item));
   const keys = array.map(selector);
   const uniqueKeys = new Set(keys);
   const duplicates = array.filter(
