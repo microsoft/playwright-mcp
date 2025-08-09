@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type * as actions from '../src/actions.js';
 import { isChromiumVariant } from '../src/config.js';
@@ -47,7 +49,10 @@ describe('Cognitive Complexity Fixes', () => {
     let mockAction: actions.Action;
 
     beforeEach(() => {
-      sessionLog = new SessionLog('/tmp/test-session');
+      // Use test-specific temporary directory with restricted permissions instead of /tmp
+      const testTempDir = path.join(process.cwd(), 'tmp', 'test-sessions');
+      fs.mkdirSync(testTempDir, { recursive: true, mode: 0o700 }); // Owner-only access
+      sessionLog = new SessionLog(path.join(testTempDir, 'test-session'));
       mockTab = {
         page: {
           url: () => 'https://example.com',

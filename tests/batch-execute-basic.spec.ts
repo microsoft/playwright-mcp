@@ -17,7 +17,8 @@
 import { expect, test } from './fixtures.js';
 
 // Top-level regex patterns for performance optimization
-const MILLISECONDS_REGEX = /\d+ms/;
+// Safe regex pattern to avoid ReDoS vulnerability - matches digits followed by 'ms'
+const MILLISECONDS_REGEX = /\d{1,10}ms/u;
 
 test.describe('Browser Batch Execute Basic Tests', () => {
   test('should execute basic navigation batch successfully', async ({

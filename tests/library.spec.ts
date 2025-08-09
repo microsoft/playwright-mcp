@@ -91,7 +91,9 @@ test(
       // Using process.execPath eliminates PATH dependency for additional security
       env: {
         NODE_ENV: 'test',
-        // PATH intentionally excluded - using absolute executable path instead
+        // PATH intentionally excluded - using absolute executable path (process.execPath) instead
+        // This prevents PATH injection attacks by avoiding dependency on external PATH
+        // Only essential environment variables are included for security
       },
       // Additional security options
       stdio: ['ignore', 'pipe', 'pipe'],

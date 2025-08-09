@@ -212,7 +212,8 @@ export class SmartConfigManager {
     avgExecutionTime: number,
     successRate: number
   ): void {
-    if (!this.config.runtime.enableAdaptiveThresholds) {
+    // Use centralized configuration check to eliminate duplication
+    if (!this.isAdaptiveThresholdsEnabled()) {
       return;
     }
 
@@ -371,6 +372,30 @@ export class SmartConfigManager {
         ? 'Synchronized with DiagnosticThresholds'
         : 'Out of sync - manual update required',
     };
+  }
+
+  /**
+   * Common method to check if adaptive thresholds are enabled
+   * Eliminates duplication across diagnostic components
+   */
+  isAdaptiveThresholdsEnabled(): boolean {
+    return this.config.runtime.enableAdaptiveThresholds;
+  }
+
+  /**
+   * Common method to check if auto tuning is enabled
+   * Eliminates duplication across diagnostic components
+   */
+  isAutoTuningEnabled(): boolean {
+    return this.config.runtime.enableAutoTuning;
+  }
+
+  /**
+   * Common method to check if stats collection is enabled
+   * Eliminates duplication across diagnostic components
+   */
+  isStatsCollectionEnabled(): boolean {
+    return this.config.runtime.statsCollectionEnabled;
   }
 
   /**

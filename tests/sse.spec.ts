@@ -59,8 +59,10 @@ const test = baseTest.extend<{
         throw new Error('Process already running');
       }
 
+      // Security: Use absolute Node.js path instead of relying on PATH
+      const nodeExecutable = process.execPath;
       cp = spawn(
-        'node',
+        nodeExecutable,
         [
           path.join(path.dirname(__filename), '../cli.js'),
           ...(options?.noPort ? [] : ['--port=0']),

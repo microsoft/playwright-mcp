@@ -424,7 +424,8 @@ export class UnifiedDiagnosticSystem {
     operation: string,
     component: DiagnosticComponent
   ): void {
-    if (!this.configManager.getConfig().runtime.enableAdaptiveThresholds) {
+    // Use centralized configuration check to eliminate duplication
+    if (!this.configManager.isAdaptiveThresholdsEnabled()) {
       return;
     }
 
