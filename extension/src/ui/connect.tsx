@@ -16,14 +16,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-
-interface TabInfo {
-  id: number;
-  windowId: number;
-  title: string;
-  url: string;
-  favIconUrl?: string;
-}
+import { Button, TabItem  } from './tabItem.js';
+import type { TabInfo } from './tabItem.js';
 
 type StatusType = 'connected' | 'error' | 'connecting';
 
@@ -147,7 +141,11 @@ const ConnectApp: React.FC = () => {
                 <TabItem
                   key={tab.id}
                   tab={tab}
-                  onConnect={() => handleConnectToTab(tab)}
+                  button={
+                    <Button variant='primary' onClick={() => handleConnectToTab(tab)}>
+                      Connect
+                    </Button>
+                  }
                 />
               ))}
             </div>
@@ -161,41 +159,6 @@ const ConnectApp: React.FC = () => {
 const StatusBanner: React.FC<{ type: StatusType; message: string }> = ({ type, message }) => {
   return <div className={`status-banner ${type}`}>{message}</div>;
 };
-
-const Button: React.FC<{ variant: 'primary' | 'default' | 'reject'; onClick: () => void; children: React.ReactNode }> = ({
-  variant,
-  onClick,
-  children
-}) => {
-  return (
-    <button className={`button ${variant}`} onClick={onClick}>
-      {children}
-    </button>
-  );
-};
-
-const TabItem: React.FC<{ tab: TabInfo; onConnect: () => void }> = ({
-  tab,
-  onConnect
-}) => {
-  return (
-    <div className='tab-item'>
-      <img
-        src={tab.favIconUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'}
-        alt=''
-        className='tab-favicon'
-      />
-      <div className='tab-content'>
-        <div className='tab-title'>{tab.title || 'Untitled'}</div>
-        <div className='tab-url'>{tab.url}</div>
-      </div>
-      <Button variant='primary' onClick={onConnect}>
-        Connect
-      </Button>
-    </div>
-  );
-};
-
 
 // Initialize the React app
 const container = document.getElementById('root');

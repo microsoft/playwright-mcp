@@ -100,3 +100,53 @@ test('navigate with extension', async ({ browserWithExtension, startClient, serv
     pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
 });
+
+test('snapshot of an existing page', async ({ browserWithExtension, startClient, server }) => {
+  const browserContext = await browserWithExtension.launch();
+
+  const page = await browserContext.newPage();
+  await page.goto(server.HELLO_WORLD);
+
+  // Another empty page.
+  await browserContext.newPage();
+  expect(browserContext.pages()).toHaveLength(3);
+
+  const { client } = await startClient({
+    args: [`--connect-tool`],
+    config: {
+      browser: {
+        userDataDir: browserWithExtension.userDataDir,
+      }
+    },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_connect',
+    arguments: {
+      method: 'extension'
+    }
+  })).toHaveResponse({
+    result: 'Successfully changed connection method.',
+  });
+  expect(browserContext.pages()).toHaveLength(3);
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
+  });
+
+  const navigateResponse = client.callTool({
+    name: 'browser_snapshot',
+    arguments: { },
+  });
+
+  const selectorPage = await confirmationPagePromise;
+  expect(browserContext.pages()).toHaveLength(4);
+
+  await selectorPage.locator('.tab-item', { hasText: 'Title' }).getByRole('button', { name: 'Connect' }).click();
+
+  expect(await navigateResponse).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
+
+  expect(browserContext.pages()).toHaveLength(4);
+});

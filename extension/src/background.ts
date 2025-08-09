@@ -26,6 +26,10 @@ type PageMessage = {
   tabId: number;
   windowId: number;
   mcpRelayUrl: string;
+} | {
+  type: 'getConnectionStatus';
+} | {
+  type: 'disconnect';
 };
 
 class TabShareExtension {
@@ -38,6 +42,7 @@ class TabShareExtension {
     chrome.tabs.onUpdated.addListener(this._onTabUpdated.bind(this));
     chrome.tabs.onActivated.addListener(this._onTabActivated.bind(this));
     chrome.runtime.onMessage.addListener(this._onMessage.bind(this));
+    chrome.action.onClicked.addListener(this._onActionClicked.bind(this));
   }
 
   // Promise-based message handling is not supported in Chrome: https://issues.chromium.org/issues/40753031
@@ -58,6 +63,16 @@ class TabShareExtension {
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true; // Return true to indicate that the response will be sent asynchronously
+      case 'getConnectionStatus':
+        sendResponse({
+          connectedTabId: this._connectedTabId
+        });
+        return false;
+      case 'disconnect':
+        this._disconnect().then(
+            () => sendResponse({ success: true }),
+            (error: any) => sendResponse({ success: false, error: error.message }));
+        return true;
     }
     return false;
   }
@@ -125,14 +140,15 @@ class TabShareExtension {
     const oldTabId = this._connectedTabId;
     this._connectedTabId = tabId;
     if (oldTabId && oldTabId !== tabId)
-      await this._updateBadge(oldTabId, { text: '', color: null });
+      await this._updateBadge(oldTabId, { text: '' });
     if (tabId)
-      await this._updateBadge(tabId, { text: '●', color: '#4CAF50' });
+      await this._updateBadge(tabId, { text: '✓', color: '#4CAF50', title: 'Connected to MCP client' });
   }
 
-  private async _updateBadge(tabId: number, { text, color }: { text: string; color: string | null }): Promise<void> {
+  private async _updateBadge(tabId: number, { text, color, title }: { text: string; color?: string, title?: string }): Promise<void> {
     try {
       await chrome.action.setBadgeText({ tabId, text });
+      await chrome.action.setTitle({ tabId, title: title || '' });
       if (color)
         await chrome.action.setBadgeBackgroundColor({ tabId, color });
     } catch (error: any) {
@@ -184,6 +200,19 @@ class TabShareExtension {
   private async _getTabs(): Promise<chrome.tabs.Tab[]> {
     const tabs = await chrome.tabs.query({});
     return tabs.filter(tab => tab.url && !['chrome:', 'edge:', 'devtools:'].some(scheme => tab.url!.startsWith(scheme)));
+  }
+
+  private async _onActionClicked(): Promise<void> {
+    await chrome.tabs.create({
+      url: chrome.runtime.getURL('status.html'),
+      active: true
+    });
+  }
+
+  private async _disconnect(): Promise<void> {
+    this._activeConnection?.close('User disconnected');
+    this._activeConnection = undefined;
+    await this._setConnectedTabId(null);
   }
 }
 

@@ -42,10 +42,9 @@ export default defineConfig({
     emptyOutDir: false,
     minify: false,
     rollupOptions: {
-      input: 'src/ui/connect.html',
+      input: ['src/ui/connect.html', 'src/ui/status.html'],
       output: {
         manualChunks: undefined,
-        inlineDynamicImports: true,
         entryFileNames: 'lib/ui/[name].js',
         chunkFileNames: 'lib/ui/[name].js',
         assetFileNames: 'lib/ui/[name].[ext]'
