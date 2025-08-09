@@ -29,10 +29,19 @@ test(
   async ({ page }, testInfo) => {
     const file = testInfo.outputPath('main.cjs');
     const projectRoot = process.cwd();
+
+    // Validate project root path for security
+    if (!(projectRoot && projectRoot.startsWith('/'))) {
+      throw new Error('Invalid project root path');
+    }
+
+    // Sanitize project root path to prevent injection
+    const sanitizedProjectRoot = projectRoot.replace(/['"\\$`]/g, '');
+
     await fs.writeFile(
       file,
       `
-    import('${projectRoot}/index.js')
+    import('${sanitizedProjectRoot}/index.js')
       .then(playwrightMCP => playwrightMCP.createConnection())
       .then(() => {
         console.log('OK');
@@ -44,17 +53,28 @@ test(
       });
  `
     );
-    // Safe command execution in test context - using specific file path
-    // and controlled environment for security
-    expect(
-      child_process.execSync(`node ${file}`, {
-        encoding: 'utf-8',
-        cwd: testInfo.outputDir,
-        env: {
-          ...process.env,
-          PATH: '/usr/bin:/bin:/usr/local/bin',
-        },
-      })
-    ).toContain('OK');
+
+    // Validate file exists before execution for security
+    const fileStats = await fs.stat(file);
+    if (!fileStats.isFile()) {
+      throw new Error('Generated file is not a valid file');
+    }
+
+    // Safe command execution in test context with enhanced security measures
+    const result = child_process.spawnSync('node', [file], {
+      encoding: 'utf-8',
+      cwd: testInfo.outputDir,
+      // Minimal environment to prevent environment variable injection
+      env: {
+        NODE_ENV: 'test',
+        PATH: '/usr/bin:/bin:/usr/local/bin',
+      },
+      // Additional security options
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 30_000, // 30 second timeout to prevent hanging
+      windowsHide: true, // Hide command window on Windows
+    });
+
+    expect(result.stdout).toContain('OK');
   }
 );

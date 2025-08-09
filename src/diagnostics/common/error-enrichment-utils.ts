@@ -2,6 +2,8 @@
  * Common error enrichment utilities and patterns
  */
 
+import { deduplicateAndLimit } from '../../utils/arrayUtils.js';
+
 import {
   type createDiagnosticLogger,
   diagnosticWarn,
@@ -135,8 +137,7 @@ export function generateSuggestions(
   }
 
   // Remove duplicates and limit suggestions
-  const uniqueSuggestions = [...new Set(suggestions)];
-  return uniqueSuggestions.slice(0, 5);
+  return deduplicateAndLimit(suggestions, 5);
 }
 
 /**

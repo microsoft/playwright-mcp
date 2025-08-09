@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import debug from 'debug';
 import type * as playwright from 'playwright';
 import type { Context } from './context.js';
 import { logUnhandledError } from './log.js';
@@ -15,6 +16,8 @@ export const TabEvents = {
 export type TabEventsInterface = {
   [TabEvents.modalState]: [modalState: ModalState];
 };
+
+const snapshotDebug = debug('pw:mcp:snapshot');
 export type TabSnapshot = {
   url: string;
   title: string;
@@ -412,7 +415,10 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       return normalizedLines.join('\n');
     }
     // Log debug information when selector is not found
-    // TODO: Use proper logging instead of console
+    snapshotDebug(
+      'Selector "%s" not found in snapshot, returning full snapshot',
+      selector
+    );
 
     // Return the original full snapshot when selector is not found
     // This ensures that tests expecting complete page structure get what they need

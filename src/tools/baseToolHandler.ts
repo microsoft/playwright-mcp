@@ -175,7 +175,6 @@ export abstract class BaseElementToolHandler<
         element: params.element,
       });
     }
-    return;
   }
 
   /**

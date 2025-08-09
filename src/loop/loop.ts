@@ -123,8 +123,9 @@ async function processToolCalls(
 }> {
   const toolResults = createEmptyToolResults();
 
+  // Sequential processing required - tool calls may have dependencies
+  // biome-ignore lint/nursery/noAwaitInLoop: Tool calls must execute sequentially
   for (const toolCall of toolCalls) {
-    // biome-ignore lint/nursery/noAwaitInLoop: Sequential processing is intentional for tool calls
     const processingResult = await processSingleToolCall(
       delegate,
       client,
@@ -133,14 +134,40 @@ async function processToolCalls(
       toolResults
     );
 
-    if (processingResult.isDone || processingResult.shouldBreak) {
-      return processingResult.isDone
-        ? { toolResults, isDone: true }
-        : { toolResults, isDone: false };
+    const finalResult = handleProcessingResult(processingResult, toolResults);
+    if (finalResult.shouldReturn) {
+      return finalResult.result;
     }
   }
 
   return { toolResults, isDone: false };
+}
+
+function handleProcessingResult(
+  processingResult: { isDone: boolean; shouldBreak: boolean },
+  toolResults: Array<{ toolCallId: string; content: string; isError?: boolean }>
+): {
+  shouldReturn: boolean;
+  result: {
+    toolResults: Array<{
+      toolCallId: string;
+      content: string;
+      isError?: boolean;
+    }>;
+    isDone: boolean;
+  };
+} {
+  if (!(processingResult.isDone || processingResult.shouldBreak)) {
+    return { shouldReturn: false, result: { toolResults, isDone: false } };
+  }
+
+  return {
+    shouldReturn: true,
+    result: {
+      toolResults,
+      isDone: processingResult.isDone,
+    },
+  };
 }
 
 function createEmptyToolResults(): Array<{

@@ -17,7 +17,7 @@
  */
 // @ts-check
 
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
@@ -121,10 +121,16 @@ function updateSection(content, startMarker, endMarker, generatedLines) {
     throw new Error('Markers for generated section not found in README');
   }
 
+  // Sanitize generated content to prevent injection attacks
+  const sanitizedContent = generatedLines
+    .filter((line) => typeof line === 'string')
+    .map((line) => line.replace(/[\r\n]/g, ''))
+    .join('\n');
+
   return [
     content.slice(0, startMarkerIndex + startMarker.length),
     '',
-    generatedLines.join('\n'),
+    sanitizedContent,
     '',
     content.slice(endMarkerIndex),
   ].join('\n');
@@ -178,16 +184,33 @@ function updateTools(content) {
  * @returns {string}
  */
 function updateOptions(content) {
+  const currentDir = path.dirname(__filename);
+  const cliPath = path.resolve(currentDir, '..', 'cli.js');
+
+  // Validate CLI file exists and is in expected location for security
+  if (!fs.existsSync(cliPath)) {
+    throw new Error('CLI file not found at expected location');
+  }
+
   // Execute CLI help command with explicit path and safe arguments
-  // The 'cli.js' script is a fixed local file, making this safe
-  const output = execSync('node cli.js --help', {
-    cwd: path.dirname(__filename),
+  // Using spawnSync with controlled environment to prevent injection attacks
+  const result = spawnSync('node', [cliPath, '--help'], {
+    cwd: currentDir,
     // Explicitly set safe environment to prevent PATH injection
     env: {
-      ...process.env,
+      NODE_ENV: 'production',
       PATH: '/usr/bin:/bin:/usr/local/bin',
     },
+    // Additional security options
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 10_000, // 10 second timeout to prevent hanging
   });
+
+  if (result.error) {
+    throw new Error(`Failed to execute command: ${result.error.message}`);
+  }
+
+  const output = result.stdout;
   const lines = output.toString().split('\n');
   const firstLine = lines.findIndex((line) => line.includes('--version'));
   lines.splice(0, firstLine + 1);

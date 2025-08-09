@@ -184,21 +184,24 @@ export class SessionLog {
   }
 
   private _addToolCallContent(entry: LogEntry, lines: string[]): void {
-    if (entry.toolCall) {
-      this._addToolCallLines(entry.toolCall, lines);
+    if (!entry.toolCall) {
+      return;
     }
+    this._addToolCallLines(entry.toolCall, lines);
   }
 
   private _addUserActionContent(entry: LogEntry, lines: string[]): void {
-    if (entry.userAction) {
-      this._addUserActionLines(entry.userAction, lines);
+    if (!entry.userAction) {
+      return;
     }
+    this._addUserActionLines(entry.userAction, lines);
   }
 
   private _addCodeContent(entry: LogEntry, lines: string[]): void {
-    if (entry.code) {
-      lines.push('- Code', '```js', entry.code, '```');
+    if (!entry.code) {
+      return;
     }
+    lines.push('- Code', '```js', entry.code, '```');
   }
 
   private _addTabSnapshotContent(
@@ -206,12 +209,21 @@ export class SessionLog {
     ordinal: string,
     lines: string[]
   ): void {
-    if (entry.tabSnapshot) {
-      this._addTabSnapshotLines(entry.tabSnapshot, ordinal, lines);
+    if (!entry.tabSnapshot) {
+      return;
     }
+    this._addTabSnapshotLines(entry.tabSnapshot, ordinal, lines);
   }
 
   private _addToolCallLines(
+    toolCall: NonNullable<LogEntry['toolCall']>,
+    lines: string[]
+  ): void {
+    this._addToolCallHeader(toolCall, lines);
+    this._addToolCallResult(toolCall, lines);
+  }
+
+  private _addToolCallHeader(
     toolCall: NonNullable<LogEntry['toolCall']>,
     lines: string[]
   ): void {
@@ -222,15 +234,21 @@ export class SessionLog {
       JSON.stringify(toolCall.toolArgs, null, 2),
       '```'
     );
+  }
 
-    if (toolCall.result) {
-      lines.push(
-        toolCall.isError ? '- Error' : '- Result',
-        '```',
-        toolCall.result,
-        '```'
-      );
+  private _addToolCallResult(
+    toolCall: NonNullable<LogEntry['toolCall']>,
+    lines: string[]
+  ): void {
+    if (!toolCall.result) {
+      return;
     }
+    lines.push(
+      toolCall.isError ? '- Error' : '- Result',
+      '```',
+      toolCall.result,
+      '```'
+    );
   }
 
   private _addUserActionLines(

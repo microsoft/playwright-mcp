@@ -27,7 +27,6 @@ export async function resolveElementLocator(
       element: params.element,
     });
   }
-  return;
 }
 
 /**

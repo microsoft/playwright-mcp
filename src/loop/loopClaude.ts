@@ -54,8 +54,14 @@ export class ClaudeDelegate implements LLMDelegate {
       formattedData.claudeMessages,
       formattedData.claudeTools
     );
-    const llmToolCalls = this.extractToolCallsFromResponse(response);
+    return this.processApiResponse(conversation, response);
+  }
 
+  private processApiResponse(
+    conversation: LLMConversation,
+    response: Anthropic.Messages.Message
+  ): LLMToolCall[] {
+    const llmToolCalls = this.extractToolCallsFromResponse(response);
     this.addAssistantMessageToConversation(
       conversation,
       response,
@@ -88,15 +94,18 @@ export class ClaudeDelegate implements LLMDelegate {
     claudeMessages: Anthropic.Messages.MessageParam[],
     message: LLMMessage
   ): void {
-    const messageHandlers: Record<string, () => void> = {
-      user: () => this.addUserMessage(claudeMessages, message),
-      assistant: () => this.addAssistantMessage(claudeMessages, message),
-      tool: () => this.addToolResultMessage(claudeMessages, message),
-    };
-
-    const handler = messageHandlers[message.role];
-    if (handler) {
-      handler();
+    switch (message.role) {
+      case 'user':
+        this.addUserMessage(claudeMessages, message);
+        break;
+      case 'assistant':
+        this.addAssistantMessage(claudeMessages, message);
+        break;
+      case 'tool':
+        this.addToolResultMessage(claudeMessages, message);
+        break;
+      default:
+        break;
     }
   }
 
@@ -142,22 +151,24 @@ export class ClaudeDelegate implements LLMDelegate {
     content: Anthropic.Messages.ContentBlock[],
     textContent: string | undefined
   ): void {
-    if (textContent) {
-      content.push({
-        type: 'text',
-        text: textContent,
-        citations: [],
-      });
+    if (!textContent) {
+      return;
     }
+    content.push({
+      type: 'text',
+      text: textContent,
+      citations: [],
+    });
   }
 
   private addToolCallsIfPresent(
     content: Anthropic.Messages.ContentBlock[],
     message: LLMMessage
   ): void {
-    if (message.role === 'assistant' && message.toolCalls) {
-      this.addToolCallsToContent(content, message.toolCalls);
+    if (message.role !== 'assistant' || !message.toolCalls) {
+      return;
     }
+    this.addToolCallsToContent(content, message.toolCalls);
   }
 
   private addToolCallsToContent(
@@ -203,16 +214,32 @@ export class ClaudeDelegate implements LLMDelegate {
   ): void {
     const lastMessage = claudeMessages.at(-1);
 
-    if (this.canAddToExistingToolResults(lastMessage) && lastMessage) {
-      (lastMessage.content as Anthropic.Messages.ToolResultBlockParam[]).push(
-        toolResult
-      );
+    if (this.canAddToExistingToolResults(lastMessage)) {
+      if (lastMessage) {
+        this.addToExistingMessage(lastMessage, toolResult);
+      }
     } else {
-      claudeMessages.push({
-        role: 'user',
-        content: [toolResult],
-      });
+      this.createNewToolResultMessage(claudeMessages, toolResult);
     }
+  }
+
+  private addToExistingMessage(
+    lastMessage: Anthropic.Messages.MessageParam,
+    toolResult: Anthropic.Messages.ToolResultBlockParam
+  ): void {
+    (lastMessage.content as Anthropic.Messages.ToolResultBlockParam[]).push(
+      toolResult
+    );
+  }
+
+  private createNewToolResultMessage(
+    claudeMessages: Anthropic.Messages.MessageParam[],
+    toolResult: Anthropic.Messages.ToolResultBlockParam
+  ): void {
+    claudeMessages.push({
+      role: 'user',
+      content: [toolResult],
+    });
   }
 
   private canAddToExistingToolResults(

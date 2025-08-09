@@ -387,35 +387,40 @@ async function loadConfig(configFile: string | undefined): Promise<Config> {
   if (!configFile) {
     return {};
   }
+
   try {
     const configContent = await fsPromises.readFile(configFile, 'utf8');
-
-    // Validate config file size to prevent DoS
-    if (configContent.length > 1024 * 1024) {
-      // 1MB limit
-      throw new Error('Configuration file too large');
-    }
-
-    // Check for dangerous patterns in config content
-    if (
-      configContent.includes('__proto__') ||
-      configContent.includes('constructor')
-    ) {
-      throw new Error(
-        'Configuration file contains potentially dangerous content'
-      );
-    }
-
+    validateConfigContent(configContent);
     const config = JSON.parse(configContent);
-
-    // Sanitize config object to prevent prototype pollution
-    if (config && typeof config === 'object') {
-      sanitizeConfigObject(config);
-    }
-
+    sanitizeConfigIfNeeded(config);
     return config;
   } catch (error) {
     throw new Error(`Failed to load config file: ${configFile}, ${error}`);
+  }
+}
+
+function validateConfigContent(configContent: string): void {
+  // Validate config file size to prevent DoS
+  if (configContent.length > 1024 * 1024) {
+    // 1MB limit
+    throw new Error('Configuration file too large');
+  }
+
+  // Check for dangerous patterns in config content
+  if (
+    configContent.includes('__proto__') ||
+    configContent.includes('constructor')
+  ) {
+    throw new Error(
+      'Configuration file contains potentially dangerous content'
+    );
+  }
+}
+
+function sanitizeConfigIfNeeded(config: unknown): void {
+  // Sanitize config object to prevent prototype pollution
+  if (config && typeof config === 'object') {
+    sanitizeConfigObject(config as Record<string, unknown>);
   }
 }
 
@@ -462,6 +467,26 @@ function pickDefined<T extends object>(obj: T | undefined): Partial<T> {
   ) as Partial<T>;
 }
 function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
+  const browser = createMergedBrowserConfig(base, overrides);
+  return {
+    ...pickDefined(base),
+    ...pickDefined(overrides),
+    browser,
+    network: {
+      ...pickDefined(base.network),
+      ...pickDefined(overrides.network),
+    },
+    server: {
+      ...pickDefined(base.server),
+      ...pickDefined(overrides.server),
+    },
+  } as FullConfig;
+}
+
+function createMergedBrowserConfig(
+  base: FullConfig,
+  overrides: Config
+): FullConfig['browser'] {
   const browser: FullConfig['browser'] = {
     ...pickDefined(base.browser),
     ...pickDefined(overrides.browser),
@@ -478,22 +503,15 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
       ...pickDefined(overrides.browser?.contextOptions),
     },
   };
+
+  handleNonChromiumChannel(browser);
+  return browser;
+}
+
+function handleNonChromiumChannel(browser: FullConfig['browser']): void {
   if (browser.browserName !== 'chromium' && browser.launchOptions) {
     browser.launchOptions.channel = undefined;
   }
-  return {
-    ...pickDefined(base),
-    ...pickDefined(overrides),
-    browser,
-    network: {
-      ...pickDefined(base.network),
-      ...pickDefined(overrides.network),
-    },
-    server: {
-      ...pickDefined(base.server),
-      ...pickDefined(overrides.server),
-    },
-  } as FullConfig;
 }
 export function semicolonSeparatedList(
   value: string | undefined
@@ -524,7 +542,6 @@ function envToBoolean(value: string | undefined): boolean | undefined {
   if (value === 'false' || value === '0') {
     return false;
   }
-  return;
 }
 function envToString(value: string | undefined): string | undefined {
   return value ? value.trim() : undefined;

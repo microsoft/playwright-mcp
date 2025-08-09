@@ -54,7 +54,6 @@ export class OpenAIDelegate implements LLMDelegate {
       formattedData.messages,
       formattedData.tools
     );
-
     return this.processApiResponse(conversation, response);
   }
 
@@ -121,12 +120,6 @@ export class OpenAIDelegate implements LLMDelegate {
   private convertSingleMessageToOpenAI(
     message: LLMMessage
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam | null {
-    return this.getMessageConverter(message);
-  }
-
-  private getMessageConverter(
-    message: LLMMessage
-  ): OpenAI.Chat.Completions.ChatCompletionMessageParam | null {
     switch (message.role) {
       case 'user':
         return this.createUserMessage(message);
@@ -178,24 +171,32 @@ export class OpenAIDelegate implements LLMDelegate {
     assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam,
     message: LLMMessage
   ): void {
-    if (message.content) {
-      assistantMessage.content = message.content;
+    if (!message.content) {
+      return;
     }
+    assistantMessage.content = message.content;
   }
 
   private addToolCallsToAssistantMessage(
     assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam,
     message: LLMMessage
   ): void {
-    if (
-      message.role === 'assistant' &&
-      message.toolCalls &&
-      message.toolCalls.length > 0
-    ) {
+    if (!this.hasValidToolCalls(message)) {
+      return;
+    }
+    if (message.role === 'assistant' && message.toolCalls) {
       assistantMessage.tool_calls = this.convertToolCallsToOpenAI(
         message.toolCalls
       );
     }
+  }
+
+  private hasValidToolCalls(message: LLMMessage): boolean {
+    return (
+      message.role === 'assistant' &&
+      !!message.toolCalls &&
+      message.toolCalls.length > 0
+    );
   }
 
   private convertToolCallsToOpenAI(

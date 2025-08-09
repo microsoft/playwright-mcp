@@ -69,9 +69,7 @@ export function getPerformanceIcon(
 /**
  * Get impact icon for configurations (supports both string and typed versions)
  */
-export function getImpactIcon(
-  impact: string | 'low' | 'medium' | 'high'
-): string {
+export function getImpactIcon(impact: string): string {
   switch (impact) {
     case 'high':
       return '🔴';
@@ -80,7 +78,7 @@ export function getImpactIcon(
     case 'low':
       return '🟢';
     default:
-      return impact === 'low' ? '🟢' : '🟢'; // default to green for unknown values
+      return '⚪'; // neutral icon for unknown values
   }
 }
 

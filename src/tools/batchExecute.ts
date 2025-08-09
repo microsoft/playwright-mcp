@@ -6,7 +6,7 @@ import type {
   StepResult,
 } from '../types/batch.js';
 import { batchExecuteSchema } from '../types/batch.js';
-import { getErrorMessage } from '../utils/commonFormatters.js';
+import { createBatchErrorHandler } from '../utils/errorHandlerMiddleware.js';
 import { defineTool } from './tool.js';
 export const batchExecuteTool = defineTool({
   capability: 'core',

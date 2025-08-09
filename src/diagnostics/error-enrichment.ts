@@ -3,6 +3,7 @@
  */
 
 import type * as playwright from 'playwright';
+import { deduplicate } from '../utils/arrayUtils.js';
 import { createDisposableManager } from '../utils/disposableManager.js';
 import {
   createDiagnosticLogger,
@@ -220,7 +221,7 @@ ${index + 1}. ${alt.selector} (confidence: ${(alt.confidence * 100).toFixed(0)}%
       );
     }
 
-    return [...new Set(suggestions)]; // Remove duplicates
+    return deduplicate(suggestions); // Remove duplicates
   }
 
   private generateTimeoutSuggestions(
@@ -251,7 +252,7 @@ ${index + 1}. ${alt.selector} (confidence: ${(alt.confidence * 100).toFixed(0)}%
       `Wait for page load completion before performing ${operation}`
     );
 
-    return [...new Set(suggestions)]; // Remove duplicates
+    return deduplicate(suggestions); // Remove duplicates
   }
 
   private generateBatchFailureSuggestions(
