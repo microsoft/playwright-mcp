@@ -29,7 +29,7 @@ import type { SessionLog } from './sessionLog.js';
 
 const testDebug = debug('pw:mcp:test');
 
-type ContextOptions = {
+export type ContextOptions = {
   tools: Tool[];
   config: FullConfig;
   browserContextFactory: BrowserContextFactory;
@@ -210,6 +210,10 @@ export class Context {
     for (const page of browserContext.pages())
       this._onPageCreated(page);
     browserContext.on('page', page => this._onPageCreated(page));
+    browserContext.on('close', () => {
+      this._browserContextPromise = undefined;
+      this._closeBrowserContextPromise = undefined;
+    });
     if (this.config.saveTrace) {
       await browserContext.tracing.start({
         name: 'trace',

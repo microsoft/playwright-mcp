@@ -74,7 +74,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     });
     page.on('dialog', dialog => this._dialogShown(dialog));
     page.on('download', download => {
-      void this._downloadStarted(download);
+      void this._downloadStarted(download).catch(logUnhandledError);
     });
     page.setDefaultNavigationTimeout(60000);
     page.setDefaultTimeout(5000);

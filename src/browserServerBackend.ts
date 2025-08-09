@@ -17,7 +17,7 @@
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { FullConfig } from './config.js';
-import { Context } from './context.js';
+import { Context, ContextOptions } from './context.js';
 import { logUnhandledError } from './log.js';
 import { Response } from './response.js';
 import { SessionLog } from './sessionLog.js';
@@ -25,9 +25,9 @@ import { filteredTools } from './tools.js';
 import { packageJSON } from './package.js';
 import { defineTool  } from './tools/tool.js';
 
+import * as mcpServer from './mcp/server.js';
 import type { Tool } from './tools/tool.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
-import type * as mcpServer from './mcp/server.js';
 import type { ServerBackend } from './mcp/server.js';
 
 type NonEmptyArray<T> = [T, ...T[]];
@@ -43,33 +43,28 @@ export class BrowserServerBackend implements ServerBackend {
   private _sessionLog: SessionLog | undefined;
   private _config: FullConfig;
   private _browserContextFactory: BrowserContextFactory;
+  private _browserContextFactories: FactoryList;
+
+  onChangeProxyTarget: ServerBackend['onChangeProxyTarget'];
 
   constructor(config: FullConfig, factories: FactoryList) {
     this._config = config;
     this._browserContextFactory = factories[0];
+    this._browserContextFactories = factories;
     this._tools = filteredTools(config);
-    if (factories.length > 1)
-      this._tools.push(this._defineContextSwitchTool(factories));
   }
 
-  async initialize(server: mcpServer.Server): Promise<void> {
-    const capabilities = server.getClientCapabilities() as mcpServer.ClientCapabilities;
-    let rootPath: string | undefined;
-    if (capabilities.roots && (
-      server.getClientVersion()?.name === 'Visual Studio Code' ||
-      server.getClientVersion()?.name === 'Visual Studio Code - Insiders')) {
-      const { roots } = await server.listRoots();
-      const firstRootUri = roots[0]?.uri;
-      const url = firstRootUri ? new URL(firstRootUri) : undefined;
-      rootPath = url ? fileURLToPath(url) : undefined;
-    }
+  async initialize(info: mcpServer.InitializeInfo): Promise<void> {
+    this._defineContextSwitchTool(mcpServer.isVSCode(info.clientVersion));
+
+    const rootPath = info.roots?.roots[0]?.uri ? fileURLToPath(new URL(info.roots.roots[0].uri)) : undefined;
     this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config, rootPath) : undefined;
     this._context = new Context({
       tools: this._tools,
       config: this._config,
       browserContextFactory: this._browserContextFactory,
       sessionLog: this._sessionLog,
-      clientInfo: { ...server.getClientVersion(), rootPath },
+      clientInfo: { ...info.clientVersion, rootPath },
     });
   }
 
@@ -98,9 +93,35 @@ export class BrowserServerBackend implements ServerBackend {
     void this._context!.dispose().catch(logUnhandledError);
   }
 
-  private _defineContextSwitchTool(factories: FactoryList): Tool<any> {
-    const self = this;
-    return defineTool({
+  private _defineContextSwitchTool(isVSCode: boolean) {
+    const contextSwitchers: { name: string, description?: string, switch(options: any): Promise<void> }[] = [];
+    for (const factory of this._browserContextFactories) {
+      contextSwitchers.push({
+        name: factory.name,
+        description: factory.description,
+        switch: async () => {
+          await this._setContextFactory(factory);
+        }
+      });
+    }
+
+    const askForOptions = isVSCode;
+    if (isVSCode) {
+      contextSwitchers.push({
+        name: 'vscode',
+        switch: async (options: any) => {
+          if (!options.connectionString || !options.lib)
+            this.onChangeProxyTarget?.('', {});
+          else
+            this.onChangeProxyTarget?.('vscode', options);
+        }
+      });
+    }
+
+    if (contextSwitchers.length < 2)
+      return;
+
+    this._tools.push(defineTool<any>({
       capability: 'core',
 
       schema: {
@@ -108,29 +129,31 @@ export class BrowserServerBackend implements ServerBackend {
         title: 'Connect to a browser context',
         description: [
           'Connect to a browser using one of the available methods:',
-          ...factories.map(factory => `- "${factory.name}": ${factory.description}`),
+          ...contextSwitchers.filter(c => c.description).map(c => `- "${c.name}": ${c.description}`),
+          `By default, you're connected to the first method. Only call this tool to change it.`,
         ].join('\n'),
         inputSchema: z.object({
-          method: z.enum(factories.map(factory => factory.name) as [string, ...string[]]).default(factories[0].name).describe('The method to use to connect to the browser'),
+          method: z.enum(contextSwitchers.map(c => c.name) as [string, ...string[]]).describe('The method to use to connect to the browser'),
+          options: askForOptions ? z.any().optional().describe('options for the connection method') : z.void(),
         }),
         type: 'readOnly',
       },
 
       async handle(context, params, response) {
-        const factory = factories.find(factory => factory.name === params.method);
-        if (!factory) {
+        const contextSwitcher = contextSwitchers.find(c => c.name === params.method);
+        if (!contextSwitcher) {
           response.addError('Unknown connection method: ' + params.method);
           return;
         }
-        await self._setContextFactory(factory);
+        await contextSwitcher.switch(params.options);
         response.addResult('Successfully changed connection method.');
       }
-    });
+    }));
   }
 
   private async _setContextFactory(newFactory: BrowserContextFactory) {
     if (this._context) {
-      const options = {
+      const options: ContextOptions = {
         ...this._context.options,
         browserContextFactory: newFactory,
       };

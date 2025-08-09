@@ -26,6 +26,8 @@ import { BrowserServerBackend, FactoryList } from './browserServerBackend.js';
 import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
+import { ServerBackendSwitcher } from './mcp/server.js';
+import { VSCodeServerBackend } from './vscode/vscodeHost.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -82,7 +84,10 @@ program
       const factories: FactoryList = [browserContextFactory];
       if (options.connectTool)
         factories.push(createExtensionContextFactory(config));
-      const serverBackendFactory = () => new BrowserServerBackend(config, factories);
+      const serverBackendFactory = () => new ServerBackendSwitcher({
+        '': () => new BrowserServerBackend(config, factories),
+        'vscode': options => new VSCodeServerBackend(config, options.connectionString, options.lib),
+      });
       await mcpTransport.start(serverBackendFactory, config.server);
 
       if (config.saveTrace) {
