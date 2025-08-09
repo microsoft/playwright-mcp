@@ -7,8 +7,14 @@ const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*]+/g;
 
 // Remove control characters (0x00-0x1F and 0x7F) to avoid regex warnings and ensure filesystem safety
 function removeControlCharacters(str: string): string {
-  // Use regex to remove control characters instead of explicit character code checks
-  return str.replace(/[\x00-\x1F\x7F]/g, '-');
+  // Use string methods to remove control characters to avoid regex warnings
+  return str
+    .split('')
+    .map(char => {
+      const code = char.charCodeAt(0);
+      return (code >= 0 && code <= 31) || code === 127 ? '-' : char;
+    })
+    .join('');
 }
 
 export function sanitizeForFilePath(input: string) {
