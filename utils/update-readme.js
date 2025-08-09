@@ -196,6 +196,7 @@ function updateOptions(content) {
   // Using spawnSync with controlled environment to prevent injection attacks
   const result = spawnSync('node', [cliPath, '--help'], {
     cwd: currentDir,
+    shell: false, // Explicitly disable shell to prevent command injection
     // Explicitly set safe environment to prevent PATH injection
     env: {
       NODE_ENV: 'production',

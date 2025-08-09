@@ -63,15 +63,18 @@ const test = baseTest.extend<{
         {
           stdio: 'pipe',
           env: {
-            // Security: Using 'node' from PATH is safe in test environment because:
-            // 1. Test environment is controlled and PATH directories are trusted
-            // 2. Using fixed local CLI script with validated path construction
-            // 3. Environment variables are only spread from controlled test process
-            ...process.env,
+            // Security: Explicitly set safe environment to prevent PATH injection
+            // Using controlled environment with limited PATH for test safety
+            NODE_ENV: 'test',
+            PATH: '/usr/bin:/bin:/usr/local/bin',
+            HOME: process.env.HOME,
+            USER: process.env.USER,
             DEBUG: 'pw:mcp:test',
             DEBUG_COLORS: '0',
             DEBUG_HIDE_DATE: '1',
           },
+          // Additional security options
+          timeout: 30_000, // 30 second timeout to prevent hanging
         }
       );
       let stderr = '';

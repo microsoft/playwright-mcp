@@ -118,15 +118,26 @@ test('should throw connection error and allow re-connecting', async ({
 const __filename = url.fileURLToPath(import.meta.url);
 
 test('does not support --device', () => {
-  // Security: Using 'node' from PATH is safe in this test context as:
-  // 1. Test environment is controlled and trusted
-  // 2. Using fixed, local CLI script with validated path
-  // 3. No user input affects the command execution
-  const result = spawnSync('node', [
-    path.join(__filename, '../../cli.js'),
-    '--device=Pixel 5',
-    '--cdp-endpoint=http://localhost:1234',
-  ]);
+  // Security: Execute CLI with explicit environment control to prevent PATH injection
+  // Using spawnSync with controlled environment for test safety
+  const result = spawnSync(
+    'node',
+    [
+      path.join(__filename, '../../cli.js'),
+      '--device=Pixel 5',
+      '--cdp-endpoint=http://localhost:1234',
+    ],
+    {
+      // Explicitly set safe environment to prevent PATH injection
+      env: {
+        NODE_ENV: 'test',
+        PATH: '/usr/bin:/bin:/usr/local/bin',
+      },
+      // Additional security options
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 10_000, // 10 second timeout to prevent hanging
+    }
+  );
   expect(result.error).toBeUndefined();
   expect(result.status).toBe(1);
   expect(result.stderr.toString()).toContain(
