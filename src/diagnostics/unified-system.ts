@@ -22,6 +22,11 @@ import { ResourceManager } from './resource-manager.js';
 import type { SmartConfig } from './smart-config.js';
 import { SmartConfigManager } from './smart-config.js';
 
+// Type aliases for reducing duplication
+export type SignificanceLevel = 'normal' | 'notable' | 'significant';
+export type PriorityLevel = 'low' | 'medium' | 'high';
+export type RecommendationType = 'optimization' | 'warning' | 'info';
+
 export interface SystemStats {
   operationCount: Record<string, number>;
   errorCount: Record<DiagnosticComponent, number>;
@@ -593,20 +598,20 @@ export class UnifiedDiagnosticSystem {
     appliedOverrides: {
       category: string;
       changes: string[];
-      impact: 'low' | 'medium' | 'high';
+      impact: PriorityLevel;
     }[];
     performanceBaseline: {
       expectedExecutionTimes: Record<string, number>;
       actualAverages: Record<string, number>;
       deviations: Record<
         string,
-        { percent: number; significance: 'normal' | 'notable' | 'significant' }
+        { percent: number; significance: SignificanceLevel }
       >;
     };
     recommendations: {
-      type: 'optimization' | 'warning' | 'info';
+      type: RecommendationType;
       message: string;
-      priority: 'low' | 'medium' | 'high';
+      priority: PriorityLevel;
     }[];
   } {
     const configData = this.getConfigData();
@@ -747,7 +752,7 @@ export class UnifiedDiagnosticSystem {
   ) {
     const deviations: Record<
       string,
-      { percent: number; significance: 'normal' | 'notable' | 'significant' }
+      { percent: number; significance: SignificanceLevel }
     > = {};
 
     for (const key of Object.keys(expected)) {
@@ -756,7 +761,7 @@ export class UnifiedDiagnosticSystem {
 
       if (actualTime > 0 && expectedTime > 0) {
         const percent = ((actualTime - expectedTime) / expectedTime) * 100;
-        let significance: 'normal' | 'notable' | 'significant' = 'normal';
+        let significance: SignificanceLevel = 'normal';
 
         if (Math.abs(percent) > 50) {
           significance = 'significant';
@@ -783,9 +788,9 @@ export class UnifiedDiagnosticSystem {
     deviations: Record<string, { percent: number; significance: string }>
   ) {
     const recommendations: Array<{
-      type: 'optimization' | 'warning' | 'info';
+      type: RecommendationType;
       message: string;
-      priority: 'low' | 'medium' | 'high';
+      priority: PriorityLevel;
     }> = [];
 
     // Add performance-based recommendations
@@ -802,9 +807,9 @@ export class UnifiedDiagnosticSystem {
 
   private addPerformanceRecommendations(
     recommendations: Array<{
-      type: 'optimization' | 'warning' | 'info';
+      type: RecommendationType;
       message: string;
-      priority: 'low' | 'medium' | 'high';
+      priority: PriorityLevel;
     }>,
     deviations: Record<string, { percent: number; significance: string }>
   ) {
@@ -829,9 +834,9 @@ export class UnifiedDiagnosticSystem {
 
   private addConfigurationRecommendations(
     recommendations: Array<{
-      type: 'optimization' | 'warning' | 'info';
+      type: RecommendationType;
       message: string;
-      priority: 'low' | 'medium' | 'high';
+      priority: PriorityLevel;
     }>,
     impactReport: {
       performanceImpact: {
@@ -864,9 +869,9 @@ export class UnifiedDiagnosticSystem {
 
   private addErrorRateRecommendations(
     recommendations: Array<{
-      type: 'optimization' | 'warning' | 'info';
+      type: RecommendationType;
       message: string;
-      priority: 'low' | 'medium' | 'high';
+      priority: PriorityLevel;
     }>
   ) {
     const totalErrors = Object.values(this.stats.errorCount).reduce(
@@ -887,9 +892,9 @@ export class UnifiedDiagnosticSystem {
 
   private sortRecommendations(
     recommendations: Array<{
-      type: 'optimization' | 'warning' | 'info';
+      type: RecommendationType;
       message: string;
-      priority: 'low' | 'medium' | 'high';
+      priority: PriorityLevel;
     }>
   ) {
     return recommendations.sort((a, b) => {

@@ -67,7 +67,9 @@ test.describe('Navigation Context Handling', () => {
 
       await page.goto('data:text/html,<html><body><h1>Test</h1></body></html>');
 
-      const result = await waitForCompletion(tab, () => performRequestAndNavigation(page));
+      const result = await waitForCompletion(tab, () =>
+        performRequestAndNavigation(page)
+      );
 
       expect(result).toBe('request-with-navigation');
     });

@@ -141,10 +141,18 @@ export class ElementDiscovery extends DiagnosticBase {
     let totalFound = 0;
 
     for (const selector of strategies) {
-      if (totalFound >= maxResults) break;
-      
+      if (totalFound >= maxResults) {
+        break;
+      }
+
+      // biome-ignore lint: Sequential processing needed for early termination based on totalFound
       totalFound = await this.processTextStrategy(
-        page, selector, text, alternatives, totalFound, maxResults
+        page,
+        selector,
+        text,
+        alternatives,
+        totalFound,
+        maxResults
       );
     }
 
@@ -170,9 +178,15 @@ export class ElementDiscovery extends DiagnosticBase {
     maxResults: number
   ): Promise<number> {
     try {
-      // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution needed for early termination based on totalFound
       const elements = await page.$$(selector);
-      return await this.processTextElements(elements, text, alternatives, totalFound, maxResults);
+      // biome-ignore lint: Sequential execution needed for early termination based on totalFound
+      return await this.processTextElements(
+        elements,
+        text,
+        alternatives,
+        totalFound,
+        maxResults
+      );
     } catch (error) {
       this.logger.warn(`Strategy failed for selector '${selector}':`, error);
       return totalFound;
@@ -190,15 +204,20 @@ export class ElementDiscovery extends DiagnosticBase {
 
     for (const element of elements) {
       if (currentFound >= maxResults) {
-        // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
+        // biome-ignore lint: Sequential disposal is necessary for resource cleanup
         await this.safeDispose(element, `findByText-excess-${currentFound}`);
         break;
       }
 
       const elementProcessed = await this.processTextElement(
-        element, text, alternatives, currentFound
+        element,
+        text,
+        alternatives,
+        currentFound
       );
-      if (elementProcessed) currentFound++;
+      if (elementProcessed) {
+        currentFound++;
+      }
     }
 
     return currentFound;
@@ -215,7 +234,11 @@ export class ElementDiscovery extends DiagnosticBase {
       const confidence = this.calculateTextSimilarity(text, elementText);
 
       return await this.handleTextMatchResult(
-        element, elementText, confidence, alternatives, totalFound
+        element,
+        elementText,
+        confidence,
+        alternatives,
+        totalFound
       );
     } catch (_elementError) {
       await this.safeDispose(element, `findByText-element-${totalFound}`);
@@ -223,7 +246,9 @@ export class ElementDiscovery extends DiagnosticBase {
     }
   }
 
-  private async extractElementText(element: playwright.ElementHandle): Promise<string> {
+  private async extractElementText(
+    element: playwright.ElementHandle
+  ): Promise<string> {
     const [textContent, value, placeholder, ariaLabel] = await Promise.all([
       element.textContent().then((content) => content || ''),
       element.getAttribute('value').then((attr) => attr || ''),
@@ -252,7 +277,7 @@ export class ElementDiscovery extends DiagnosticBase {
       });
       return true;
     }
-    
+
     await this.safeDispose(element, `findByText-threshold-${totalFound}`);
     return false;
   }
@@ -270,7 +295,7 @@ export class ElementDiscovery extends DiagnosticBase {
 
       for (const element of elements) {
         if (totalFound >= maxResults) {
-          // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
+          // biome-ignore lint: Sequential disposal is necessary for resource cleanup
           await this.safeDispose(element, `findByRole-excess-${totalFound}`);
           break;
         }
@@ -323,7 +348,7 @@ export class ElementDiscovery extends DiagnosticBase {
 
       for (const element of elements) {
         if (totalFound >= maxResults) {
-          // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
+          // biome-ignore lint: Sequential disposal is necessary for resource cleanup
           await this.safeDispose(element, `findByTagName-excess-${totalFound}`);
           break;
         }
@@ -371,12 +396,12 @@ export class ElementDiscovery extends DiagnosticBase {
       }
 
       try {
-        // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution needed for early termination based on totalFound
+        // biome-ignore lint: Sequential execution needed for early termination based on totalFound
         const elements = await page.$$(`[${attrName}="${attrValue}"]`);
 
         for (const element of elements) {
           if (totalFound >= maxResults) {
-            // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
+            // biome-ignore lint: Sequential disposal is necessary for resource cleanup
             await this.safeDispose(
               element,
               `findByAttributes-excess-${totalFound}`
@@ -438,12 +463,12 @@ export class ElementDiscovery extends DiagnosticBase {
       }
 
       try {
-        // biome-ignore lint/nursery/noAwaitInLoop: Sequential execution needed for early termination based on totalFound
+        // biome-ignore lint: Sequential execution needed for early termination based on totalFound
         const elements = await page.$$(tagSelector);
 
         for (const element of elements) {
           if (totalFound >= maxResults) {
-            // biome-ignore lint/nursery/noAwaitInLoop: Sequential disposal is necessary for resource cleanup
+            // biome-ignore lint: Sequential disposal is necessary for resource cleanup
             await this.safeDispose(
               element,
               `findImplicitRole-excess-${totalFound}`
