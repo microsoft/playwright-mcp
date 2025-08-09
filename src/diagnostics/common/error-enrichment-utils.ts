@@ -2,7 +2,6 @@
  * Common error enrichment utilities and patterns
  */
 
-import { createEmptyStringArray } from '../../utils/arrayUtils.js';
 import {
   type createDiagnosticLogger,
   diagnosticWarn,
@@ -73,7 +72,7 @@ const errorPatterns = new Map<RegExp, string[]>([
  * Generate pattern-based suggestions for error messages
  */
 function getPatternBasedSuggestions(message: string): string[] {
-  const suggestions = createEmptyStringArray();
+  const suggestions: string[] = [];
   for (const [pattern, patternSuggestions] of errorPatterns) {
     if (pattern.test(message)) {
       suggestions.push(...patternSuggestions);
@@ -86,7 +85,7 @@ function getPatternBasedSuggestions(message: string): string[] {
  * Generate context-specific suggestions
  */
 function getContextSpecificSuggestions(context: ErrorContext): string[] {
-  const suggestions = createEmptyStringArray();
+  const suggestions: string[] = [];
 
   if (context.executionTime && context.executionTime > 5000) {
     suggestions.push('Long execution time detected - consider optimization');
@@ -124,7 +123,7 @@ export function generateSuggestions(
   error: Error,
   context?: ErrorContext
 ): string[] {
-  const suggestions = createEmptyStringArray();
+  const suggestions: string[] = [];
   const message = error.message.toLowerCase();
 
   // Pattern-based suggestions
@@ -345,7 +344,7 @@ export function analyzeErrorPatterns(
 export function generateRecoverySuggestions(
   errorAnalysis: ReturnType<typeof analyzeErrorPatterns>
 ): string[] {
-  const suggestions = createEmptyStringArray();
+  const suggestions: string[] = [];
 
   if (errorAnalysis.timeBasedAnalysis.errorRate > 0.5) {
     suggestions.push('High error rate detected - review recent changes');

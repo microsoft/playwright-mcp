@@ -6,13 +6,17 @@
 
 import type { Page } from 'playwright';
 import type { ParallelAnalysisResult } from '../types/performance.js';
+import { createDisposableManager } from '../utils/disposableManager.js';
 import { PageAnalyzer } from './page-analyzer.js';
 
 export class ParallelPageAnalyzer {
   private readonly pageAnalyzer: PageAnalyzer;
+  private readonly disposableManager = createDisposableManager(
+    'ParallelPageAnalyzer'
+  );
 
   constructor(page: Page) {
-    this.pageAnalyzer = new PageAnalyzer(page);
+    this.pageAnalyzer = this.disposableManager.register(new PageAnalyzer(page));
   }
 
   /**
@@ -43,27 +47,9 @@ export class ParallelPageAnalyzer {
       const results = await Promise.allSettled(analysisPromises);
 
       // Process results
-      for (let index = 0; index < results.length; index++) {
-        const result = results[index];
-        const stepName =
-          index === 0 ? 'structure-analysis' : 'performance-metrics';
-
-        if (result.status === 'fulfilled') {
-          if (stepName === 'structure-analysis') {
-            // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for dynamic analysis result
-            structureAnalysis = result.value as any;
-          } else {
-            // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for dynamic analysis result
-            performanceMetrics = result.value as any;
-          }
-        } else {
-          const errorMsg = result.reason?.message ?? 'Unknown error';
-          errors.push({
-            step: stepName,
-            error: errorMsg,
-          });
-        }
-      }
+      const processedResults = this.processAnalysisResults(results, errors);
+      structureAnalysis = processedResults.structureAnalysis;
+      performanceMetrics = processedResults.performanceMetrics;
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : 'Parallel execution failed';
@@ -75,17 +61,48 @@ export class ParallelPageAnalyzer {
 
     const executionTime = Date.now() - startTime;
 
+    // Convert PageStructureAnalysis to ParallelAnalysisResult.structureAnalysis format
+    const convertedStructureAnalysis = structureAnalysis
+      ? {
+          iframes: {
+            detected: structureAnalysis.iframes.detected,
+            count: structureAnalysis.iframes.count,
+            accessible: structureAnalysis.iframes.accessible.map((iframe) => ({
+              id: iframe.src || 'unknown',
+              url: iframe.src || '',
+              title: iframe.src || 'iframe',
+              contentAccessible: iframe.accessible,
+              crossOrigin: false, // PageStructureAnalysis doesn't track this
+            })),
+            inaccessible: structureAnalysis.iframes.inaccessible.map(
+              (iframe, index) => ({
+                id: iframe.reason || `inaccessible-${index}`,
+                reason: iframe.reason || 'Unknown reason',
+                url: iframe.src,
+                title: iframe.src || 'inaccessible iframe',
+              })
+            ),
+          },
+          modalStates: structureAnalysis.modalStates,
+          elements: structureAnalysis.elements,
+        }
+      : {
+          iframes: {
+            detected: false,
+            count: 0,
+            accessible: [],
+            inaccessible: [],
+          },
+          modalStates: {
+            hasDialog: false,
+            hasFileChooser: false,
+            blockedBy: [],
+          },
+          elements: { totalVisible: 0, totalInteractable: 0, missingAria: 0 },
+        };
+
     return {
-      structureAnalysis: {
-        // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for optional analysis result properties
-        domMetrics: (structureAnalysis as any)?.domMetrics,
-        // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for optional analysis result properties
-        interactionMetrics: (structureAnalysis as any)?.interactionMetrics,
-        // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for optional analysis result properties
-        layoutMetrics: (structureAnalysis as any)?.layoutMetrics,
-        // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for optional analysis result properties
-        resourceMetrics: (structureAnalysis as any)?.resourceMetrics,
-      },
+      structureAnalysis: convertedStructureAnalysis,
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for fallback empty performance metrics
       performanceMetrics: performanceMetrics ?? ({} as any),
       resourceUsage: null,
@@ -105,12 +122,51 @@ export class ParallelPageAnalyzer {
   }
 
   /**
+   * Process analysis results
+   */
+  private processAnalysisResults(
+    results: PromiseSettledResult<unknown>[],
+    errors: Array<{ step: string; error: string }>
+  ): {
+    structureAnalysis?: import('./page-analyzer.js').PageStructureAnalysis;
+    performanceMetrics?: import('../types/performance.js').PerformanceMetrics;
+  } {
+    let structureAnalysis:
+      | import('./page-analyzer.js').PageStructureAnalysis
+      | undefined;
+    let performanceMetrics:
+      | import('../types/performance.js').PerformanceMetrics
+      | undefined;
+
+    for (let index = 0; index < results.length; index++) {
+      const result = results[index];
+      const stepName =
+        index === 0 ? 'structure-analysis' : 'performance-metrics';
+
+      if (result.status === 'fulfilled') {
+        if (stepName === 'structure-analysis') {
+          // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for dynamic analysis result
+          structureAnalysis = result.value as any;
+        } else {
+          // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for dynamic analysis result
+          performanceMetrics = result.value as any;
+        }
+      } else {
+        const errorMsg = result.reason?.message ?? 'Unknown error';
+        errors.push({
+          step: stepName,
+          error: errorMsg,
+        });
+      }
+    }
+
+    return { structureAnalysis, performanceMetrics };
+  }
+
+  /**
    * Cleanup resources
    */
   async dispose(): Promise<void> {
-    // Dispose the internal pageAnalyzer
-    if (this.pageAnalyzer) {
-      await this.pageAnalyzer.dispose();
-    }
+    await this.disposableManager.dispose();
   }
 }

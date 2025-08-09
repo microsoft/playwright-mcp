@@ -304,9 +304,9 @@ export const expect = baseExpect.extend({
     const isNot = this.isNot;
     try {
       if (isNot) {
-        expect(parsed).not.toEqual(expect.objectContaining(object));
+        expect(parsed).not.toEqual(object);
       } else {
-        expect(parsed).toEqual(expect.objectContaining(object));
+        expect(parsed).toEqual(object);
       }
     } catch (e) {
       return {

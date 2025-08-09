@@ -24,8 +24,8 @@ test('browser_navigate', async ({ client, server }) => {
     })
   ).toHaveResponse({
     code: `await page.goto('${server.HELLO_WORLD}');`,
-    pageState: `- Page URL: ${server.HELLO_WORLD}
-- Page Title: Title
+    pageState: `- **Page URL:** ${server.HELLO_WORLD}
+- **Page Title:** Title
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Hello, world!
@@ -62,8 +62,8 @@ test('browser_select_option', async ({ client, server }) => {
     })
   ).toHaveResponse({
     code: `await page.getByRole('combobox').selectOption(['bar']);`,
-    pageState: `- Page URL: ${server.PREFIX}
-- Page Title: Title
+    pageState: `- **Page URL:** ${server.PREFIX}
+- **Page Title:** Title
 - Page Snapshot:
 \`\`\`yaml
 - combobox [ref=e2]:

@@ -406,7 +406,7 @@ export async function navigateAndExpectTitle(
  */
 export function expectPageTitle(expectedTitle = 'Title') {
   return expect.objectContaining({
-    pageState: expect.stringContaining(`Page Title: ${expectedTitle}`),
+    pageState: expect.stringContaining(`**Page Title:** ${expectedTitle}`),
   });
 }
 

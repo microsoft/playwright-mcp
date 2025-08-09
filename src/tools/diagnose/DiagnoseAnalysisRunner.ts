@@ -112,7 +112,7 @@ export class DiagnoseAnalysisRunner {
 
       return {
         diagnosticInfo:
-          parallelResult.structureAnalysis as PageStructureAnalysis,
+          parallelResult.structureAnalysis as unknown as PageStructureAnalysis,
         performanceMetrics: parallelResult.performanceMetrics,
         analysisType: 'Enhanced Diagnostic Report (Parallel Analysis)',
         executionTime: parallelResult.executionTime,

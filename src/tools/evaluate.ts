@@ -50,11 +50,16 @@ const evaluate = defineTabTool({
     await tab.waitForCompletion(async () => {
       let result: unknown;
       if (locator) {
+        // Pass the function string directly - Playwright handles it
         result = await locator.evaluate(params.function);
       } else {
+        // Pass the function string directly - Playwright handles it
         result = await tab.page.evaluate(params.function);
       }
-      response.addResult(JSON.stringify(result, null, 2) ?? 'undefined');
+      const stringifiedResult = JSON.stringify(result, null, 2);
+      response.addResult(
+        stringifiedResult === undefined ? 'undefined' : stringifiedResult
+      );
     });
   },
 });

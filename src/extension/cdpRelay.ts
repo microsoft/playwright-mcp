@@ -22,6 +22,17 @@ const debugLogger = debug('pw:mcp:relay');
 
 // Regex constants for performance
 const HTTP_TO_WS_REGEX = /^http/;
+// Regex for Chrome extension ID validation
+const EXTENSION_ID_REGEX = /^[a-p]{32}$/;
+// Regex patterns for path validation to prevent injection attacks
+const DANGEROUS_PATH_PATTERNS = [
+  /[;&|`$()]/, // Shell injection characters
+  /\.\./, // Path traversal
+  /^https?:/, // URLs
+  /^\w+:/, // Other protocols
+];
+// Properties that should be removed for security
+const DANGEROUS_PROPS = ['__proto__', 'constructor', 'prototype'];
 // CDP parameter types - using unknown for better type safety
 type CDPParams = Record<string, unknown> | undefined;
 
@@ -95,12 +106,26 @@ export class CDPRelayServer {
   }
   private _connectBrowser(clientInfo: ClientInfo) {
     const mcpRelayEndpoint = `${this._wsHost}${this._extensionPath}`;
-    // Need to specify "key" in the manifest.json to make the id stable when loading from file.
+
+    // Use environment variable for extension ID to avoid hardcoding
+    const extensionId =
+      process.env.PLAYWRIGHT_MCP_EXTENSION_ID ||
+      'jakfalbnbhgkpmoaakfflhflbfpkailf';
+
+    // Validate extension ID format (Chrome extension IDs are 32 lowercase letters)
+    if (!EXTENSION_ID_REGEX.test(extensionId)) {
+      throw new Error('Invalid Chrome extension ID format');
+    }
+
     const url = new URL(
-      'chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/lib/ui/connect.html'
+      `chrome-extension://${extensionId}/lib/ui/connect.html`
     );
     url.searchParams.set('mcpRelayUrl', mcpRelayEndpoint);
-    url.searchParams.set('client', JSON.stringify(clientInfo));
+
+    // Sanitize client info before serialization
+    const sanitizedClientInfo = this._sanitizeClientInfo(clientInfo);
+    url.searchParams.set('client', JSON.stringify(sanitizedClientInfo));
+
     const href = url.toString();
     const executableInfo = registry.findExecutable(this._browserChannel);
     if (!executableInfo) {
@@ -112,13 +137,124 @@ export class CDPRelayServer {
         `"${this._browserChannel}" executable not found. Make sure it is installed at a standard location.`
       );
     }
+
+    // Enhanced security for spawn: validate executable path and arguments
+    if (!this._isValidExecutablePath(executablePath)) {
+      throw new Error('Invalid executable path detected');
+    }
+
     spawn(executablePath, [href], {
       windowsHide: true,
       detached: true,
-      shell: false,
+      shell: false, // Keep shell disabled for security
       stdio: 'ignore',
     });
   }
+
+  private _sanitizeClientInfo(clientInfo: ClientInfo): ClientInfo {
+    // Remove any potentially dangerous properties and sanitize values
+    const sanitized: ClientInfo = {
+      name:
+        typeof clientInfo.name === 'string'
+          ? clientInfo.name.slice(0, 100)
+          : 'unknown',
+      version:
+        typeof clientInfo.version === 'string'
+          ? clientInfo.version.slice(0, 20)
+          : '1.0.0',
+    };
+
+    // Ensure no script injection in client info
+    for (const key of Object.keys(sanitized)) {
+      const value = sanitized[key as keyof ClientInfo];
+      if (typeof value === 'string') {
+        sanitized[key as keyof ClientInfo] = value.replace(
+          /<script[^>]*>.*?<\/script>/gi,
+          ''
+        );
+      }
+    }
+
+    return sanitized;
+  }
+
+  private _isValidExecutablePath(path: string): boolean {
+    // Basic validation to ensure the path looks like a legitimate executable
+    if (!path || typeof path !== 'string') {
+      return false;
+    }
+
+    return !DANGEROUS_PATH_PATTERNS.some((pattern) => pattern.test(path));
+  }
+
+  private _safeJsonParse<T = unknown>(jsonString: string): T | null {
+    try {
+      // Additional validation: check for suspicious patterns
+      if (
+        jsonString.includes('__proto__') ||
+        jsonString.includes('constructor') ||
+        jsonString.includes('prototype')
+      ) {
+        debugLogger('Potential prototype pollution attempt detected');
+        return null;
+      }
+
+      const result = JSON.parse(jsonString);
+
+      // Basic type validation
+      if (result === null || typeof result !== 'object') {
+        return result as T;
+      }
+
+      // Remove dangerous properties that could lead to prototype pollution
+      this._sanitizeObject(result);
+
+      return result as T;
+    } catch (error) {
+      debugLogger('JSON parsing failed:', error);
+      return null;
+    }
+  }
+
+  private _sanitizeObject(obj: Record<string, unknown>): void {
+    if (!obj || typeof obj !== 'object') {
+      return;
+    }
+
+    // Remove dangerous properties
+    for (const prop of DANGEROUS_PROPS) {
+      if (prop in obj) {
+        delete obj[prop];
+      }
+    }
+
+    // Recursively sanitize nested objects
+    for (const value of Object.values(obj)) {
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        this._sanitizeObject(value as Record<string, unknown>);
+      }
+    }
+  }
+
+  private _isValidCDPCommand(message: unknown): message is CDPCommand {
+    if (!message || typeof message !== 'object') {
+      return false;
+    }
+
+    const cmd = message as Record<string, unknown>;
+    return (
+      typeof cmd.id === 'number' &&
+      typeof cmd.method === 'string' &&
+      (cmd.sessionId === undefined || typeof cmd.sessionId === 'string') &&
+      (cmd.params === undefined ||
+        (typeof cmd.params === 'object' && cmd.params !== null))
+    );
+  }
+
   stop(): void {
     this.closeConnections('Server stopped');
     this._wss.close();
@@ -148,11 +284,25 @@ export class CDPRelayServer {
     this._playwrightConnection = ws;
     ws.on('message', async (data) => {
       try {
-        const message = JSON.parse(data.toString());
+        const messageString = data.toString();
+
+        // Validate message size to prevent DoS attacks
+        if (messageString.length > 1024 * 1024) {
+          // 1MB limit
+          debugLogger('Message too large, rejecting');
+          return;
+        }
+
+        const message = this._safeJsonParse(messageString);
+        if (message === null) {
+          debugLogger('Invalid JSON message received from Playwright');
+          return;
+        }
+
         await this._handlePlaywrightMessage(message);
       } catch (error: unknown) {
         debugLogger(
-          `Error while handling Playwright message\n${String(data)}\n`,
+          `Error while handling Playwright message\n${String(data).slice(0, 500)}...\n`,
           error
         );
       }
@@ -234,7 +384,13 @@ export class CDPRelayServer {
         break;
     }
   }
-  private async _handlePlaywrightMessage(message: CDPCommand): Promise<void> {
+  private async _handlePlaywrightMessage(message: unknown): Promise<void> {
+    // Type guard to ensure message is a valid CDPCommand
+    if (!this._isValidCDPCommand(message)) {
+      debugLogger('Invalid CDP command received from Playwright');
+      return;
+    }
+
     debugLogger('← Playwright:', `${message.method} (id=${message.id})`);
     const { id, sessionId, method, params } = message;
     try {
@@ -371,14 +527,74 @@ class ExtensionConnection {
       this._ws.close(1000, message);
     }
   }
+
+  private _parseJsonSafely<T = unknown>(jsonString: string): T | null {
+    try {
+      // Additional validation: check for suspicious patterns
+      if (
+        jsonString.includes('__proto__') ||
+        jsonString.includes('constructor') ||
+        jsonString.includes('prototype')
+      ) {
+        debugLogger('Potential prototype pollution attempt detected');
+        return null;
+      }
+
+      const result = JSON.parse(jsonString);
+
+      // Basic type validation
+      if (result === null || typeof result !== 'object') {
+        return result as T;
+      }
+
+      // Remove dangerous properties that could lead to prototype pollution
+      this._sanitizeJsonObject(result);
+
+      return result as T;
+    } catch (error) {
+      debugLogger('JSON parsing failed:', error);
+      return null;
+    }
+  }
+
+  private _sanitizeJsonObject(obj: Record<string, unknown>): void {
+    if (!obj || typeof obj !== 'object') {
+      return;
+    }
+
+    // Remove dangerous properties
+    for (const prop of DANGEROUS_PROPS) {
+      if (prop in obj) {
+        delete obj[prop];
+      }
+    }
+
+    // Recursively sanitize nested objects
+    for (const value of Object.values(obj)) {
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        this._sanitizeJsonObject(value as Record<string, unknown>);
+      }
+    }
+  }
   private _onMessage(event: websocket.RawData) {
     const eventData = event.toString();
-    let parsedJson: ExtensionResponse;
-    try {
-      parsedJson = JSON.parse(eventData);
-    } catch (e: unknown) {
+
+    // Validate message size to prevent DoS attacks
+    if (eventData.length > 1024 * 1024) {
+      // 1MB limit
+      debugLogger('<closing ws> Message too large, closing websocket');
+      this._ws.close();
+      return;
+    }
+
+    const parsedJson = this._parseJsonSafely<ExtensionResponse>(eventData);
+    if (parsedJson === null) {
       debugLogger(
-        `<closing ws> Closing websocket due to malformed JSON. eventData=${eventData} e=${(e as Error)?.message}`
+        `<closing ws> Closing websocket due to malformed JSON. eventData=${eventData.slice(0, 200)}...`
       );
       this._ws.close();
       return;

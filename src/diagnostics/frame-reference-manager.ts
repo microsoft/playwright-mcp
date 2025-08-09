@@ -159,7 +159,7 @@ export class FrameReferenceManager implements IDisposable {
     let totalElements = 0;
     let framesWithElementCount = 0;
 
-    for (const frame of this.activeFrames) {
+    for (const frame of Array.from(this.activeFrames)) {
       const metadata = this.frameRefs.get(frame);
       if (metadata) {
         if (metadata.isDetached) {
@@ -207,7 +207,7 @@ export class FrameReferenceManager implements IDisposable {
       url: string;
     }> = [];
 
-    for (const frame of this.activeFrames) {
+    for (const frame of Array.from(this.activeFrames)) {
       const metadata = this.frameRefs.get(frame);
       if (metadata && !metadata.isDetached) {
         // Check for frames with too many elements

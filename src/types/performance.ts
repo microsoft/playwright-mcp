@@ -184,10 +184,33 @@ export interface PerformanceOptimization {
 // Additional exports for existing code compatibility
 export interface ParallelAnalysisResult {
   structureAnalysis: {
-    domMetrics?: PerformanceMetrics['domMetrics'];
-    interactionMetrics?: PerformanceMetrics['interactionMetrics'];
-    layoutMetrics?: PerformanceMetrics['layoutMetrics'];
-    resourceMetrics?: PerformanceMetrics['resourceMetrics'];
+    iframes: {
+      detected: boolean;
+      count: number;
+      accessible: Array<{
+        id: string;
+        url: string;
+        title: string;
+        contentAccessible: boolean;
+        crossOrigin: boolean;
+      }>;
+      inaccessible: Array<{
+        id: string;
+        reason: string;
+        url?: string;
+        title?: string;
+      }>;
+    };
+    modalStates: {
+      hasDialog: boolean;
+      hasFileChooser: boolean;
+      blockedBy: string[];
+    };
+    elements: {
+      totalVisible: number;
+      totalInteractable: number;
+      missingAria: number;
+    };
   };
   performanceMetrics: PerformanceMetrics;
   resourceUsage: null; // Removed resource monitoring

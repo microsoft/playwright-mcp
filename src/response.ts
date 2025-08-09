@@ -612,10 +612,12 @@ export class Response {
 
   private async _checkPageStability(tab: Tab): Promise<boolean> {
     try {
-      await tab.waitForLoadState('load', { timeout: 1000 });
-      await tab.waitForLoadState('networkidle', { timeout: 500 }).catch(() => {
-        // Ignore networkidle timeout as it's not critical for stability check
-      });
+      await tab.page.waitForLoadState('load', { timeout: 1000 });
+      await tab.page
+        .waitForLoadState('networkidle', { timeout: 500 })
+        .catch(() => {
+          // Ignore networkidle timeout as it's not critical for stability check
+        });
 
       return await tab.page
         .evaluate(() => document.readyState === 'complete')

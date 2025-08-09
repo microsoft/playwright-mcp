@@ -191,20 +191,42 @@ function validateDeviceAndCDPOptions(cliOptions: CLIOptions): void {
 }
 
 export function configFromCLIOptions(cliOptions: CLIOptions): Config {
-  const { browserName, channel } = parseBrowserType(
-    cliOptions.browser ?? 'chromium'
-  );
-
+  const browserInfo = getBrowserInfo(cliOptions);
   validateDeviceAndCDPOptions(cliOptions);
 
-  const browserConfig = createBrowserConfig(cliOptions, browserName, channel);
+  const browserConfig = createBrowserConfig(
+    cliOptions,
+    browserInfo.browserName,
+    browserInfo.channel
+  );
   const serverConfig = createServerConfig(cliOptions);
   const networkConfig = createNetworkConfig(cliOptions);
+  const miscConfig = createMiscellaneousConfig(cliOptions);
 
   return {
     ...browserConfig,
     ...serverConfig,
     ...networkConfig,
+    ...miscConfig,
+  };
+}
+
+function getBrowserInfo(cliOptions: CLIOptions): {
+  browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
+  channel: string | undefined;
+} {
+  return cliOptions.browser
+    ? parseBrowserType(cliOptions.browser)
+    : { browserName: undefined, channel: undefined };
+}
+
+function createMiscellaneousConfig(
+  cliOptions: CLIOptions
+): Pick<
+  Config,
+  'capabilities' | 'saveSession' | 'saveTrace' | 'outputDir' | 'imageResponses'
+> {
+  return {
     capabilities: cliOptions.caps as ToolCapability[],
     saveSession: cliOptions.saveSession,
     saveTrace: cliOptions.saveTrace,
@@ -221,16 +243,20 @@ function createBrowserConfig(
   const launchOptions = createLaunchOptions(cliOptions, channel);
   const contextOptions = createContextOptions(cliOptions);
 
-  return {
-    browser: {
-      browserName,
-      isolated: cliOptions.isolated,
-      userDataDir: cliOptions.userDataDir,
-      launchOptions,
-      contextOptions,
-      cdpEndpoint: cliOptions.cdpEndpoint,
-    },
+  const browser: Config['browser'] = {
+    isolated: cliOptions.isolated,
+    userDataDir: cliOptions.userDataDir,
+    launchOptions,
+    contextOptions,
+    cdpEndpoint: cliOptions.cdpEndpoint,
   };
+
+  // Only include browserName if explicitly provided
+  if (browserName !== undefined) {
+    browser.browserName = browserName;
+  }
+
+  return { browser };
 }
 
 function createServerConfig(cliOptions: CLIOptions): Pick<Config, 'server'> {

@@ -270,7 +270,7 @@ export class PageAnalyzer extends DiagnosticBase {
   private async analyzeElements() {
     const page = this.getPage();
     const elementStats = await page.evaluate(() => {
-      const allElements = document.querySelectorAll('*');
+      const allElements = Array.from(document.querySelectorAll('*'));
       let totalVisible = 0;
       let totalInteractable = 0;
       let missingAria = 0;
@@ -423,10 +423,13 @@ export class PageAnalyzer extends DiagnosticBase {
 
           if (document.body) {
             analyzeSubtree(document.body, 'body', largeSubtrees);
-            const containers = document.body.querySelectorAll(
-              'div, section, main, article, aside'
+            const containers = Array.from(
+              document.body.querySelectorAll(
+                'div, section, main, article, aside'
+              )
             );
-            for (const [index, container] of containers.entries()) {
+            for (let index = 0; index < containers.length; index++) {
+              const container = containers[index];
               analyzeSubtree(container, `container-${index}`, largeSubtrees);
             }
           }
@@ -615,7 +618,8 @@ export class PageAnalyzer extends DiagnosticBase {
             overflowHiddenElements: 0,
           };
 
-          for (const [index, element] of elements.entries()) {
+          for (let index = 0; index < elements.length; index++) {
+            const element = elements[index];
             const style = window.getComputedStyle(element);
             processElementLayout(element, style, index, results);
           }

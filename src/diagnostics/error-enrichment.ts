@@ -3,7 +3,7 @@
  */
 
 import type * as playwright from 'playwright';
-import { createEmptyStringArray } from '../utils/arrayUtils.js';
+import { createDisposableManager } from '../utils/disposableManager.js';
 import {
   createDiagnosticLogger,
   DiagnosticBase,
@@ -21,6 +21,7 @@ export interface EnrichedError extends Error {
   originalError: Error;
   alternatives?: AlternativeElement[];
   pageStructure?: PageStructureAnalysis;
+  diagnosticInfo?: PageStructureAnalysis; // Alias for pageStructure for test compatibility
   suggestions?: string[];
   batchContext?: BatchFailureContext;
 }
@@ -61,17 +62,20 @@ export class ErrorEnrichment extends DiagnosticBase {
   private readonly pageAnalyzer: PageAnalyzer;
   private readonly elementDiscovery: ElementDiscovery;
   protected readonly logger: ReturnType<typeof createDiagnosticLogger>;
+  private readonly disposableManager =
+    createDisposableManager('ErrorEnrichment');
 
   constructor(page: playwright.Page) {
     super(page, 'ErrorEnrichment');
-    this.pageAnalyzer = new PageAnalyzer(page);
-    this.elementDiscovery = new ElementDiscovery(page);
+    this.pageAnalyzer = this.disposableManager.register(new PageAnalyzer(page));
+    this.elementDiscovery = this.disposableManager.register(
+      new ElementDiscovery(page)
+    );
     this.logger = createDiagnosticLogger('ErrorEnrichment', 'enrichment');
   }
 
   protected async performDispose(): Promise<void> {
-    await this.pageAnalyzer.dispose();
-    await this.elementDiscovery.dispose();
+    await this.disposableManager.dispose();
   }
 
   async enrichElementNotFoundError(
@@ -102,6 +106,7 @@ export class ErrorEnrichment extends DiagnosticBase {
     enrichedError.originalError = originalError;
     enrichedError.alternatives = alternatives;
     enrichedError.pageStructure = pageStructure;
+    enrichedError.diagnosticInfo = pageStructure; // Set diagnosticInfo for test compatibility
     enrichedError.suggestions = suggestions;
 
     return enrichedError;
@@ -122,6 +127,7 @@ export class ErrorEnrichment extends DiagnosticBase {
     const enrichedError = new Error(originalError.message) as EnrichedError;
     enrichedError.originalError = originalError;
     enrichedError.pageStructure = pageStructure;
+    enrichedError.diagnosticInfo = pageStructure; // Set diagnosticInfo for test compatibility
     enrichedError.suggestions = suggestions;
 
     return enrichedError;
@@ -141,6 +147,7 @@ export class ErrorEnrichment extends DiagnosticBase {
     const enrichedError = new Error(originalError.message) as EnrichedError;
     enrichedError.originalError = originalError;
     enrichedError.pageStructure = pageStructure;
+    enrichedError.diagnosticInfo = pageStructure; // Set diagnosticInfo for test compatibility
     enrichedError.suggestions = suggestions;
     enrichedError.batchContext = {
       failedStep,
@@ -171,7 +178,7 @@ ${index + 1}. ${alt.selector} (confidence: ${(alt.confidence * 100).toFixed(0)}%
     pageStructure: PageStructureAnalysis,
     alternatives: AlternativeElement[]
   ): string[] {
-    const suggestions = createEmptyStringArray();
+    const suggestions: string[] = [];
 
     if (alternatives.length > 0) {
       suggestions.push(
@@ -251,7 +258,7 @@ ${index + 1}. ${alt.selector} (confidence: ${(alt.confidence * 100).toFixed(0)}%
     pageStructure: PageStructureAnalysis,
     failedStep: BatchFailureContext['failedStep']
   ): string[] {
-    const suggestions = createEmptyStringArray();
+    const suggestions: string[] = [];
 
     suggestions.push(
       `Batch execution failed at step ${failedStep.stepIndex} (${failedStep.toolName})`

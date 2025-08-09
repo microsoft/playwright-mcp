@@ -466,7 +466,7 @@ test.describe('Phase 2: ParallelPageAnalyzer', () => {
     await page.goto(`data:text/html,${complexContent}`);
 
     const { ParallelPageAnalyzer } = await import(
-      '../src/diagnostics/ParallelPageAnalyzer.js'
+      '../src/diagnostics/parallel-page-analyzer.js'
     );
     const parallelAnalyzer = new ParallelPageAnalyzer(page);
 
@@ -489,7 +489,7 @@ test.describe('Phase 2: ParallelPageAnalyzer', () => {
     await page.goto('data:text/html,<div>Simple content</div>');
 
     const { ParallelPageAnalyzer } = await import(
-      '../src/diagnostics/ParallelPageAnalyzer.js'
+      '../src/diagnostics/parallel-page-analyzer.js'
     );
     const parallelAnalyzer = new ParallelPageAnalyzer(page);
 
@@ -504,7 +504,7 @@ test.describe('Phase 2: ParallelPageAnalyzer', () => {
     await page.goto('data:text/html,<div>Test content</div>');
 
     const { ParallelPageAnalyzer } = await import(
-      '../src/diagnostics/ParallelPageAnalyzer.js'
+      '../src/diagnostics/parallel-page-analyzer.js'
     );
     const parallelAnalyzer = new ParallelPageAnalyzer(page);
 
@@ -1074,7 +1074,7 @@ test.describe('Diagnostic System Integration', () => {
     const startTime = Date.now();
 
     const { ParallelPageAnalyzer } = await import(
-      '../src/diagnostics/ParallelPageAnalyzer.js'
+      '../src/diagnostics/parallel-page-analyzer.js'
     );
     const parallelAnalyzer = new ParallelPageAnalyzer(page);
     const errorEnrichment = new ErrorEnrichment(page);
