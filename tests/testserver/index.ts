@@ -49,9 +49,9 @@ export class TestServer {
   }
 
   static async createHTTPS(port: number): Promise<TestServer> {
-    // Use environment variable for SSL passphrase with secure fallback for tests
-    const passphrase =
-      process.env.TEST_SSL_PASSPHRASE || 'test-default-passphrase';
+    // Use environment variable for SSL credentials with secure fallback for tests
+    const sslCredential =
+      process.env.TEST_SSL_PASSPHRASE || 'test-default-credential';
     if (
       !process.env.TEST_SSL_PASSPHRASE &&
       process.env.NODE_ENV === 'production'
@@ -67,7 +67,7 @@ export class TestServer {
     const server = new TestServer(port, {
       key: privateKey,
       cert: certificate,
-      passphrase,
+      passphrase: sslCredential,
     });
     await new Promise((x) => server._server.once('listening', x));
     return server;

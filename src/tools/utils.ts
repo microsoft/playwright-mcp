@@ -39,8 +39,8 @@ export async function waitForCompletion<R>(
           .waitForLoadState('networkidle', {
             timeout: getNavigationConfig().networkIdleTimeout,
           })
-          .catch(() => {
-            // Ignore network idle timeout
+          .catch((error) => {
+            console.debug('Network idle timeout reached:', error);
           });
         navigationCompleted = true;
         if (!requests.size) {
@@ -53,7 +53,9 @@ export async function waitForCompletion<R>(
         waitCallback();
       }
     })().catch((error) => {
-      console.debug('Hover operation failed during navigation:', error);
+      console.debug('Navigation handling failed:', error);
+      navigationCompleted = true;
+      waitCallback();
     });
   };
   const onTimeout = () => {

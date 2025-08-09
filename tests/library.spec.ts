@@ -69,8 +69,8 @@ test(
     }
 
     // Validate file extension for additional security
-    if (!file.endsWith('.mjs')) {
-      throw new Error('Invalid file extension - expected .mjs file');
+    if (!file.endsWith('.cjs')) {
+      throw new Error('Invalid file extension - expected .cjs file');
     }
 
     // Safe command execution in test context with enhanced security measures

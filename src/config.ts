@@ -164,6 +164,7 @@ function createContextOptions(cliOptions: CLIOptions): BrowserContextOptions {
       error
     );
     contextOptions = {};
+    throw new Error(`Invalid device configuration: ${cliOptions.device}`);
   }
 
   applyStorageOptions(contextOptions, cliOptions);

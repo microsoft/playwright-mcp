@@ -62,7 +62,8 @@ ENV NODE_ENV=production
 
 # Set read-only permissions for node_modules to prevent unnecessary write access
 # Use 644 for files (read-write for owner, read-only for group/others)
-RUN chmod -R 644 node_modules
+RUN chmod -R 644 node_modules && \
+    find node_modules -type d -exec chmod 755 {} \;
 
 USER ${USERNAME}
 

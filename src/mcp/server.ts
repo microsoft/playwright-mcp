@@ -123,7 +123,7 @@ export function createServer(
 }
 const startHeartbeat = (server: Server) => {
   const beat = () => {
-    Promise.race([
+    void Promise.race([
       server.ping(),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error('ping timeout')), 5000)

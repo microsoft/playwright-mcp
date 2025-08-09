@@ -40,11 +40,13 @@ export class InProcessTransport implements Transport {
     }
     return Promise.resolve();
   }
-  onclose?: () => void;
-  onerror?: (error: Error) => void;
-  onmessage?: (message: JSONRPCMessage, extra?: MessageExtraInfo) => void;
-  sessionId?: string;
-  setProtocolVersion?: (version: string) => void;
+  onclose: (() => void) | undefined;
+  onerror: ((error: Error) => void) | undefined;
+  onmessage:
+    | ((message: JSONRPCMessage, extra?: MessageExtraInfo) => void)
+    | undefined;
+  sessionId: string | undefined;
+  setProtocolVersion: ((version: string) => void) | undefined;
   _receiveFromServer(message: JSONRPCMessage, extra?: MessageExtraInfo): void {
     this.onmessage?.(message, extra);
   }
@@ -69,7 +71,9 @@ class InProcessServerTransport implements Transport {
     message: JSONRPCMessage,
     _options?: TransportSendOptions
   ): Promise<void> {
-    // Send message directly to client transport for in-process communication
+    // Send message directly to client transport for in-process communication.
+    // This method intentionally has no async operations as it performs direct
+    // synchronous message forwarding to the client transport.
     this._clientTransport._receiveFromServer(message);
     return Promise.resolve();
   }
@@ -77,11 +81,13 @@ class InProcessServerTransport implements Transport {
     this.onclose?.();
     return Promise.resolve();
   }
-  onclose?: () => void;
-  onerror?: (error: Error) => void;
-  onmessage?: (message: JSONRPCMessage, extra?: MessageExtraInfo) => void;
-  sessionId?: string;
-  setProtocolVersion?: (version: string) => void;
+  onclose: (() => void) | undefined;
+  onerror: ((error: Error) => void) | undefined;
+  onmessage:
+    | ((message: JSONRPCMessage, extra?: MessageExtraInfo) => void)
+    | undefined;
+  sessionId: string | undefined;
+  setProtocolVersion: ((version: string) => void) | undefined;
   _receiveFromClient(message: JSONRPCMessage, extra?: MessageExtraInfo): void {
     this.onmessage?.(message, extra);
   }
