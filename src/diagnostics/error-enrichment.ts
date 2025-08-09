@@ -3,6 +3,7 @@
  */
 
 import type * as playwright from 'playwright';
+import { createEmptyStringArray } from '../utils/arrayUtils.js';
 import {
   createDiagnosticLogger,
   DiagnosticBase,
@@ -170,7 +171,7 @@ ${index + 1}. ${alt.selector} (confidence: ${(alt.confidence * 100).toFixed(0)}%
     pageStructure: PageStructureAnalysis,
     alternatives: AlternativeElement[]
   ): string[] {
-    const suggestions: string[] = [];
+    const suggestions = createEmptyStringArray();
 
     if (alternatives.length > 0) {
       suggestions.push(
@@ -250,7 +251,7 @@ ${index + 1}. ${alt.selector} (confidence: ${(alt.confidence * 100).toFixed(0)}%
     pageStructure: PageStructureAnalysis,
     failedStep: BatchFailureContext['failedStep']
   ): string[] {
-    const suggestions: string[] = [];
+    const suggestions = createEmptyStringArray();
 
     suggestions.push(
       `Batch execution failed at step ${failedStep.stepIndex} (${failedStep.toolName})`

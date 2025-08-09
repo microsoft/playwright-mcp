@@ -3,6 +3,7 @@
  */
 
 import type * as playwright from 'playwright';
+import { createEmptyStringArray } from '../utils/arrayUtils.js';
 import { createDiagnosticLogger, DiagnosticBase } from './common/index.js';
 import type { DiagnosticComponent } from './diagnostic-error.js';
 import { DiagnosticError } from './diagnostic-error.js';
@@ -287,7 +288,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
     operation: string,
     pageStructure: PageStructureAnalysis
   ): string[] {
-    const suggestions: string[] = [];
+    const suggestions = createEmptyStringArray();
 
     if (pageStructure.modalStates.blockedBy.length > 0) {
       suggestions.push(
@@ -316,7 +317,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
     error: Error,
     pageStructure: PageStructureAnalysis
   ): string[] {
-    const suggestions: string[] = [];
+    const suggestions = createEmptyStringArray();
 
     switch (toolName) {
       case 'browser_click':
@@ -475,7 +476,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
     operation: string,
     context?: Record<string, unknown>
   ): Promise<string[]> {
-    const suggestions: string[] = [];
+    const suggestions = createEmptyStringArray();
 
     try {
       const pageStructure = await this.pageAnalyzer.analyzePageStructure();
@@ -637,7 +638,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
   private generatePatternBasedSuggestions(
     similarErrors: DiagnosticError[]
   ): string[] {
-    const suggestions: string[] = [];
+    const suggestions = createEmptyStringArray();
 
     if (similarErrors.length >= 3) {
       suggestions.push(

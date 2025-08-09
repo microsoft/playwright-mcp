@@ -18,6 +18,10 @@ import fs from 'node:fs';
 
 import { expect, test } from './fixtures.js';
 
+// Regex pattern for screenshot filename validation
+const SCREENSHOT_FILENAME_PATTERN =
+  /page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.(png|jpeg)/;
+
 // Top-level regex patterns for performance optimization
 const PAGE_TIMESTAMP_REGEX =
   /^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png$/;
@@ -154,11 +158,7 @@ for (const type of ['png', 'jpeg']) {
     ).toEqual({
       content: [
         {
-          text: expect.stringMatching(
-            new RegExp(
-              `page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.${type}`
-            )
-          ),
+          text: expect.stringMatching(SCREENSHOT_FILENAME_PATTERN),
           type: 'text',
         },
         {

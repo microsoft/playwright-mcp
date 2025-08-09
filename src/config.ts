@@ -252,52 +252,122 @@ function createNetworkConfig(cliOptions: CLIOptions): Pick<Config, 'network'> {
 }
 function configFromEnv(): Config {
   const options: CLIOptions = {};
+  populateNetworkOptions(options);
+  populateBrowserOptions(options);
+  populateDeviceOptions(options);
+  populateProxyOptions(options);
+  populateOutputOptions(options);
+  populateMiscellaneousOptions(options);
+  return configFromCLIOptions(options);
+}
+
+function populateNetworkOptions(options: CLIOptions): void {
   options.allowedOrigins = semicolonSeparatedList(
     process.env.PLAYWRIGHT_MCP_ALLOWED_ORIGINS
   );
   options.blockedOrigins = semicolonSeparatedList(
     process.env.PLAYWRIGHT_MCP_BLOCKED_ORIGINS
   );
-  options.blockServiceWorkers = envToBoolean(
-    process.env.PLAYWRIGHT_MCP_BLOCK_SERVICE_WORKERS
+  options.ignoreHttpsErrors = envToBoolean(
+    process.env.PLAYWRIGHT_MCP_IGNORE_HTTPS_ERRORS
   );
+  options.host = envToString(process.env.PLAYWRIGHT_MCP_HOST);
+  options.port = envToNumber(process.env.PLAYWRIGHT_MCP_PORT);
+}
+
+function populateBrowserOptions(options: CLIOptions): void {
   options.browser = envToString(process.env.PLAYWRIGHT_MCP_BROWSER);
-  options.caps = commaSeparatedList(process.env.PLAYWRIGHT_MCP_CAPS);
-  options.cdpEndpoint = envToString(process.env.PLAYWRIGHT_MCP_CDP_ENDPOINT);
-  options.config = envToString(process.env.PLAYWRIGHT_MCP_CONFIG);
-  options.device = envToString(process.env.PLAYWRIGHT_MCP_DEVICE);
   options.executablePath = envToString(
     process.env.PLAYWRIGHT_MCP_EXECUTABLE_PATH
   );
   options.headless = envToBoolean(process.env.PLAYWRIGHT_MCP_HEADLESS);
-  options.host = envToString(process.env.PLAYWRIGHT_MCP_HOST);
-  options.ignoreHttpsErrors = envToBoolean(
-    process.env.PLAYWRIGHT_MCP_IGNORE_HTTPS_ERRORS
-  );
+  options.sandbox = envToBoolean(process.env.PLAYWRIGHT_MCP_SANDBOX);
   options.isolated = envToBoolean(process.env.PLAYWRIGHT_MCP_ISOLATED);
+  options.blockServiceWorkers = envToBoolean(
+    process.env.PLAYWRIGHT_MCP_BLOCK_SERVICE_WORKERS
+  );
+}
+
+function populateDeviceOptions(options: CLIOptions): void {
+  options.device = envToString(process.env.PLAYWRIGHT_MCP_DEVICE);
+  options.viewportSize = envToString(process.env.PLAYWRIGHT_MCP_VIEWPORT_SIZE);
+  options.userAgent = envToString(process.env.PLAYWRIGHT_MCP_USER_AGENT);
+  options.userDataDir = envToString(process.env.PLAYWRIGHT_MCP_USER_DATA_DIR);
+  options.storageState = envToString(process.env.PLAYWRIGHT_MCP_STORAGE_STATE);
+}
+
+function populateProxyOptions(options: CLIOptions): void {
+  options.proxyServer = envToString(process.env.PLAYWRIGHT_MCP_PROXY_SERVER);
+  options.proxyBypass = envToString(process.env.PLAYWRIGHT_MCP_PROXY_BYPASS);
+}
+
+function populateOutputOptions(options: CLIOptions): void {
+  options.outputDir = envToString(process.env.PLAYWRIGHT_MCP_OUTPUT_DIR);
+  options.saveTrace = envToBoolean(process.env.PLAYWRIGHT_MCP_SAVE_TRACE);
   if (process.env.PLAYWRIGHT_MCP_IMAGE_RESPONSES === 'omit') {
     options.imageResponses = 'omit';
   }
-  options.sandbox = envToBoolean(process.env.PLAYWRIGHT_MCP_SANDBOX);
-  options.outputDir = envToString(process.env.PLAYWRIGHT_MCP_OUTPUT_DIR);
-  options.port = envToNumber(process.env.PLAYWRIGHT_MCP_PORT);
-  options.proxyBypass = envToString(process.env.PLAYWRIGHT_MCP_PROXY_BYPASS);
-  options.proxyServer = envToString(process.env.PLAYWRIGHT_MCP_PROXY_SERVER);
-  options.saveTrace = envToBoolean(process.env.PLAYWRIGHT_MCP_SAVE_TRACE);
-  options.storageState = envToString(process.env.PLAYWRIGHT_MCP_STORAGE_STATE);
-  options.userAgent = envToString(process.env.PLAYWRIGHT_MCP_USER_AGENT);
-  options.userDataDir = envToString(process.env.PLAYWRIGHT_MCP_USER_DATA_DIR);
-  options.viewportSize = envToString(process.env.PLAYWRIGHT_MCP_VIEWPORT_SIZE);
-  return configFromCLIOptions(options);
+}
+
+function populateMiscellaneousOptions(options: CLIOptions): void {
+  options.caps = commaSeparatedList(process.env.PLAYWRIGHT_MCP_CAPS);
+  options.cdpEndpoint = envToString(process.env.PLAYWRIGHT_MCP_CDP_ENDPOINT);
+  options.config = envToString(process.env.PLAYWRIGHT_MCP_CONFIG);
 }
 async function loadConfig(configFile: string | undefined): Promise<Config> {
   if (!configFile) {
     return {};
   }
   try {
-    return JSON.parse(await fsPromises.readFile(configFile, 'utf8'));
+    const configContent = await fsPromises.readFile(configFile, 'utf8');
+
+    // Validate config file size to prevent DoS
+    if (configContent.length > 1024 * 1024) {
+      // 1MB limit
+      throw new Error('Configuration file too large');
+    }
+
+    // Check for dangerous patterns in config content
+    if (
+      configContent.includes('__proto__') ||
+      configContent.includes('constructor')
+    ) {
+      throw new Error(
+        'Configuration file contains potentially dangerous content'
+      );
+    }
+
+    const config = JSON.parse(configContent);
+
+    // Sanitize config object to prevent prototype pollution
+    if (config && typeof config === 'object') {
+      sanitizeConfigObject(config);
+    }
+
+    return config;
   } catch (error) {
     throw new Error(`Failed to load config file: ${configFile}, ${error}`);
+  }
+}
+
+function sanitizeConfigObject(obj: Record<string, unknown>): void {
+  if (!obj || typeof obj !== 'object') {
+    return;
+  }
+
+  // Remove dangerous properties
+  const dangerousProps = ['__proto__', 'constructor', 'prototype'];
+  for (const prop of dangerousProps) {
+    if (prop in obj) {
+      delete obj[prop];
+    }
+  }
+
+  // Recursively sanitize nested objects
+  for (const value of Object.values(obj)) {
+    if (typeof value === 'object' && value !== null) {
+      sanitizeConfigObject(value as Record<string, unknown>);
+    }
   }
 }
 export async function outputFile(

@@ -138,11 +138,18 @@ export class SessionLog {
     this._pendingEntries = [];
     const lines: string[] = [''];
 
+    this._processEntries(entries, lines);
+    this._writeToFile(lines);
+  }
+
+  private _processEntries(entries: LogEntry[], lines: string[]): void {
     for (const entry of entries) {
       const ordinal = (++this._ordinal).toString().padStart(3, '0');
       this._processEntry(entry, ordinal, lines);
     }
+  }
 
+  private _writeToFile(lines: string[]): void {
     this._sessionFileQueue = this._sessionFileQueue.then(() =>
       fs.promises.appendFile(this._file, lines.join('\n'))
     );
@@ -153,23 +160,39 @@ export class SessionLog {
     ordinal: string,
     lines: string[]
   ): void {
+    this._addToolCallContent(entry, lines);
+    this._addUserActionContent(entry, lines);
+    this._addCodeContent(entry, lines);
+    this._addTabSnapshotContent(entry, ordinal, lines);
+    lines.push('', '');
+  }
+
+  private _addToolCallContent(entry: LogEntry, lines: string[]): void {
     if (entry.toolCall) {
       this._addToolCallLines(entry.toolCall, lines);
     }
+  }
 
+  private _addUserActionContent(entry: LogEntry, lines: string[]): void {
     if (entry.userAction) {
       this._addUserActionLines(entry.userAction, lines);
     }
+  }
 
+  private _addCodeContent(entry: LogEntry, lines: string[]): void {
     if (entry.code) {
       lines.push('- Code', '```js', entry.code, '```');
     }
+  }
 
+  private _addTabSnapshotContent(
+    entry: LogEntry,
+    ordinal: string,
+    lines: string[]
+  ): void {
     if (entry.tabSnapshot) {
       this._addTabSnapshotLines(entry.tabSnapshot, ordinal, lines);
     }
-
-    lines.push('', '');
   }
 
   private _addToolCallLines(

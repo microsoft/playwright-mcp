@@ -128,8 +128,8 @@ async function processToolCalls(
   }> = [];
 
   for (const toolCall of toolCalls) {
-    const doneResult = delegate.checkDoneToolCall(toolCall);
-    if (doneResult !== null) {
+    const doneResult = checkForDoneToolCall(delegate, toolCall);
+    if (doneResult.isDone) {
       return { toolResults, isDone: true };
     }
 
@@ -137,13 +137,33 @@ async function processToolCalls(
     const result = await executeToolCall(client, toolCall);
     toolResults.push(result);
 
-    if (result.isError) {
-      addSkippedToolResults(toolCalls, toolCall, toolResults);
+    if (shouldBreakOnError(result, toolCalls, toolCall, toolResults)) {
       break;
     }
   }
 
   return { toolResults, isDone: false };
+}
+
+function checkForDoneToolCall(
+  delegate: LLMDelegate,
+  toolCall: LLMToolCall
+): { isDone: boolean } {
+  const doneResult = delegate.checkDoneToolCall(toolCall);
+  return { isDone: doneResult !== null };
+}
+
+function shouldBreakOnError(
+  result: { toolCallId: string; content: string; isError?: boolean },
+  toolCalls: LLMToolCall[],
+  currentToolCall: LLMToolCall,
+  toolResults: Array<{ toolCallId: string; content: string; isError?: boolean }>
+): boolean {
+  if (result.isError) {
+    addSkippedToolResults(toolCalls, currentToolCall, toolResults);
+    return true;
+  }
+  return false;
 }
 
 async function executeToolCall(

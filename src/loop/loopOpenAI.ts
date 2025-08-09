@@ -49,14 +49,10 @@ export class OpenAIDelegate implements LLMDelegate {
     };
   }
   async makeApiCall(conversation: LLMConversation): Promise<LLMToolCall[]> {
-    const openaiMessages = this.convertMessagesToOpenAIFormat(
-      conversation.messages
-    );
-    const openaiTools = this.convertToolsToOpenAIFormat(conversation.tools);
-
+    const formattedData = this.formatConversationForOpenAI(conversation);
     const response = await this.executeOpenAIRequest(
-      openaiMessages,
-      openaiTools
+      formattedData.messages,
+      formattedData.tools
     );
     const message = response.choices[0].message;
     const genericToolCalls = this.extractToolCallsFromResponse(message);
@@ -68,6 +64,16 @@ export class OpenAIDelegate implements LLMDelegate {
     );
 
     return genericToolCalls;
+  }
+
+  private formatConversationForOpenAI(conversation: LLMConversation): {
+    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
+    tools: OpenAI.Chat.Completions.ChatCompletionTool[];
+  } {
+    return {
+      messages: this.convertMessagesToOpenAIFormat(conversation.messages),
+      tools: this.convertToolsToOpenAIFormat(conversation.tools),
+    };
   }
 
   private async executeOpenAIRequest(
@@ -99,24 +105,38 @@ export class OpenAIDelegate implements LLMDelegate {
   private convertSingleMessageToOpenAI(
     message: LLMMessage
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam | null {
-    const converters: Record<
-      string,
-      () => OpenAI.Chat.Completions.ChatCompletionMessageParam
-    > = {
-      user: () => ({
-        role: 'user',
-        content: message.content,
-      }),
-      assistant: () => this.convertAssistantMessage(message),
-      tool: () => ({
-        role: 'tool',
-        tool_call_id: (message as { toolCallId: string }).toolCallId,
-        content: message.content,
-      }),
-    };
-
+    const converters = this.createMessageConverters(message);
     const converter = converters[message.role];
     return converter ? converter() : null;
+  }
+
+  private createMessageConverters(
+    message: LLMMessage
+  ): Record<string, () => OpenAI.Chat.Completions.ChatCompletionMessageParam> {
+    return {
+      user: () => this.createUserMessage(message),
+      assistant: () => this.convertAssistantMessage(message),
+      tool: () => this.createToolMessage(message),
+    };
+  }
+
+  private createUserMessage(
+    message: LLMMessage
+  ): OpenAI.Chat.Completions.ChatCompletionUserMessageParam {
+    return {
+      role: 'user',
+      content: message.content,
+    };
+  }
+
+  private createToolMessage(
+    message: LLMMessage
+  ): OpenAI.Chat.Completions.ChatCompletionToolMessageParam {
+    return {
+      role: 'tool',
+      tool_call_id: (message as { toolCallId: string }).toolCallId,
+      content: message.content,
+    };
   }
 
   private convertAssistantMessage(

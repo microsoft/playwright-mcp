@@ -49,12 +49,11 @@ export class ClaudeDelegate implements LLMDelegate {
     };
   }
   async makeApiCall(conversation: LLMConversation): Promise<LLMToolCall[]> {
-    const claudeMessages = this.convertMessagesToClaudeFormat(
-      conversation.messages
+    const formattedData = this.formatConversationData(conversation);
+    const response = await this.callClaudeApi(
+      formattedData.claudeMessages,
+      formattedData.claudeTools
     );
-    const claudeTools = this.convertToolsToClaudeFormat(conversation.tools);
-
-    const response = await this.callClaudeApi(claudeMessages, claudeTools);
     const llmToolCalls = this.extractToolCallsFromResponse(response);
 
     this.addAssistantMessageToConversation(
@@ -63,6 +62,16 @@ export class ClaudeDelegate implements LLMDelegate {
       llmToolCalls
     );
     return llmToolCalls;
+  }
+
+  private formatConversationData(conversation: LLMConversation): {
+    claudeMessages: Anthropic.Messages.MessageParam[];
+    claudeTools: Anthropic.Messages.Tool[];
+  } {
+    return {
+      claudeMessages: this.convertMessagesToClaudeFormat(conversation.messages),
+      claudeTools: this.convertToolsToClaudeFormat(conversation.tools),
+    };
   }
 
   private convertMessagesToClaudeFormat(
@@ -79,19 +88,15 @@ export class ClaudeDelegate implements LLMDelegate {
     claudeMessages: Anthropic.Messages.MessageParam[],
     message: LLMMessage
   ): void {
-    switch (message.role) {
-      case 'user':
-        this.addUserMessage(claudeMessages, message);
-        break;
-      case 'assistant':
-        this.addAssistantMessage(claudeMessages, message);
-        break;
-      case 'tool':
-        this.addToolResultMessage(claudeMessages, message);
-        break;
-      default:
-        // Other message roles are not handled in this context
-        break;
+    const messageHandlers: Record<string, () => void> = {
+      user: () => this.addUserMessage(claudeMessages, message),
+      assistant: () => this.addAssistantMessage(claudeMessages, message),
+      tool: () => this.addToolResultMessage(claudeMessages, message),
+    };
+
+    const handler = messageHandlers[message.role];
+    if (handler) {
+      handler();
     }
   }
 
