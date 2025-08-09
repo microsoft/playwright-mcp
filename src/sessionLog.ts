@@ -111,18 +111,24 @@ export class SessionLog {
     tab: Tab,
     trimmedCode: string
   ): LogEntry {
+    const tabSnapshot = this._createTabSnapshot(action, tab);
+
     return {
       timestamp: performance.now(),
       userAction: action,
       code: trimmedCode,
-      tabSnapshot: {
-        url: tab.page.url(),
-        title: '',
-        ariaSnapshot: action.ariaSnapshot ?? '',
-        modalStates: [],
-        consoleMessages: [],
-        downloads: [],
-      },
+      tabSnapshot,
+    };
+  }
+
+  private _createTabSnapshot(action: actions.Action, tab: Tab): TabSnapshot {
+    return {
+      url: tab.page.url(),
+      title: '',
+      ariaSnapshot: action.ariaSnapshot ?? '',
+      modalStates: [],
+      consoleMessages: [],
+      downloads: [],
     };
   }
   private _appendEntry(entry: LogEntry) {

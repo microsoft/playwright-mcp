@@ -54,6 +54,14 @@ export class OpenAIDelegate implements LLMDelegate {
       formattedData.messages,
       formattedData.tools
     );
+
+    return this.processApiResponse(conversation, response);
+  }
+
+  private processApiResponse(
+    conversation: LLMConversation,
+    response: OpenAI.Chat.Completions.ChatCompletion
+  ): LLMToolCall[] {
     const message = response.choices[0].message;
     const genericToolCalls = this.extractToolCallsFromResponse(message);
 

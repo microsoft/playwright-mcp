@@ -132,19 +132,32 @@ export class ClaudeDelegate implements LLMDelegate {
   ): Anthropic.Messages.ContentBlock[] {
     const content: Anthropic.Messages.ContentBlock[] = [];
 
-    if (message.content) {
+    this.addTextContentIfPresent(content, message.content);
+    this.addToolCallsIfPresent(content, message);
+
+    return content;
+  }
+
+  private addTextContentIfPresent(
+    content: Anthropic.Messages.ContentBlock[],
+    textContent: string | undefined
+  ): void {
+    if (textContent) {
       content.push({
         type: 'text',
-        text: message.content,
+        text: textContent,
         citations: [],
       });
     }
+  }
 
+  private addToolCallsIfPresent(
+    content: Anthropic.Messages.ContentBlock[],
+    message: LLMMessage
+  ): void {
     if (message.role === 'assistant' && message.toolCalls) {
       this.addToolCallsToContent(content, message.toolCalls);
     }
-
-    return content;
   }
 
   private addToolCallsToContent(
@@ -165,25 +178,40 @@ export class ClaudeDelegate implements LLMDelegate {
     claudeMessages: Anthropic.Messages.MessageParam[],
     message: LLMMessage
   ): void {
-    if (message.role === 'tool') {
-      const lastMessage = claudeMessages.at(-1);
-      const toolResult: Anthropic.Messages.ToolResultBlockParam = {
-        type: 'tool_result',
-        tool_use_id: message.toolCallId,
-        content: message.content,
-        is_error: message.isError,
-      };
+    if (message.role !== 'tool') {
+      return;
+    }
 
-      if (this.canAddToExistingToolResults(lastMessage) && lastMessage) {
-        (lastMessage.content as Anthropic.Messages.ToolResultBlockParam[]).push(
-          toolResult
-        );
-      } else {
-        claudeMessages.push({
-          role: 'user',
-          content: [toolResult],
-        });
-      }
+    const toolResult = this.createToolResultBlock(message);
+    this.appendToolResultToMessages(claudeMessages, toolResult);
+  }
+
+  private createToolResultBlock(
+    message: LLMMessage
+  ): Anthropic.Messages.ToolResultBlockParam {
+    return {
+      type: 'tool_result',
+      tool_use_id: (message as LLMMessage & { role: 'tool' }).toolCallId,
+      content: message.content,
+      is_error: (message as LLMMessage & { role: 'tool' }).isError,
+    };
+  }
+
+  private appendToolResultToMessages(
+    claudeMessages: Anthropic.Messages.MessageParam[],
+    toolResult: Anthropic.Messages.ToolResultBlockParam
+  ): void {
+    const lastMessage = claudeMessages.at(-1);
+
+    if (this.canAddToExistingToolResults(lastMessage) && lastMessage) {
+      (lastMessage.content as Anthropic.Messages.ToolResultBlockParam[]).push(
+        toolResult
+      );
+    } else {
+      claudeMessages.push({
+        role: 'user',
+        content: [toolResult],
+      });
     }
   }
 

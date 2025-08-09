@@ -55,8 +55,9 @@ class InProcessServerTransport implements Transport {
     this._clientTransport = clientTransport;
   }
   start(): Promise<void> {
-    // Intentionally empty - in-process server transport doesn't require initialization
-    // as it's directly connected to the client transport without any setup overhead
+    // No-op implementation: InProcessServerTransport requires no initialization.
+    // Unlike network-based transports, this in-process transport is immediately
+    // ready for communication once instantiated.
     return Promise.resolve();
   }
   send(

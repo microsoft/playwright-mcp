@@ -46,6 +46,10 @@ test('browser_network_requests', async ({ client, server }) => {
     },
   });
 
+  const expectedNavigationRequest = `[GET] ${server.PREFIX} => [200] OK`;
+  const expectedJsonRequest = `[GET] ${server.PREFIX}json => [200] OK`;
+  const expectedNetworkRequests = `${expectedNavigationRequest}\n${expectedJsonRequest}`;
+
   await expect
     .poll(() =>
       client.callTool({
@@ -53,8 +57,6 @@ test('browser_network_requests', async ({ client, server }) => {
       })
     )
     .toHaveResponse({
-      result: expect.stringContaining(
-        `[GET] ${server.PREFIX} => [200] OK\n[GET] ${server.PREFIX}json => [200] OK`
-      ),
+      result: expect.stringContaining(expectedNetworkRequests),
     });
 });

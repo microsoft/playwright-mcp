@@ -86,7 +86,9 @@ const ConnectApp: React.FC = () => {
       return;
     }
 
-    loadTabs();
+    loadTabs().catch(() => {
+      // Tab loading errors are handled in the loadTabs function
+    });
   }, [loadTabs]);
 
   const handleContinue = useCallback(async () => {
@@ -179,7 +181,11 @@ const StatusBanner: React.FC<{ type: StatusType; message: string }> = ({
   type,
   message,
 }) => {
-  return <div className={`status-banner ${type}`}>{message}</div>;
+  return (
+    <output aria-live="polite" className={`status-banner ${type}`}>
+      {message}
+    </output>
+  );
 };
 
 const Button: React.FC<{

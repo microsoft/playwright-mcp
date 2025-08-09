@@ -52,11 +52,11 @@ type CDPResponse = {
   error?: { code?: number; message: string };
 };
 export class CDPRelayServer {
-  private _wsHost: string;
-  private _browserChannel: string;
-  private _cdpPath: string;
-  private _extensionPath: string;
-  private _wss: WebSocketServer;
+  private readonly _wsHost: string;
+  private readonly _browserChannel: string;
+  private readonly _cdpPath: string;
+  private readonly _extensionPath: string;
+  private readonly _wss: WebSocketServer;
   private _playwrightConnection: WebSocket | null = null;
   private _extensionConnection: ExtensionConnection | null = null;
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Used in line 274 for session ID generation
@@ -109,7 +109,7 @@ export class CDPRelayServer {
 
     // Use environment variable for extension ID to avoid hardcoding
     const extensionId =
-      process.env.PLAYWRIGHT_MCP_EXTENSION_ID ||
+      process.env.PLAYWRIGHT_MCP_EXTENSION_ID ??
       'jakfalbnbhgkpmoaakfflhflbfpkailf';
 
     // Validate extension ID format (Chrome extension IDs are 32 lowercase letters)

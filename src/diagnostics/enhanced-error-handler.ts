@@ -174,7 +174,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
     });
 
     // Add timeout-specific information
-    const contextInfo = await this.analyzeFrameContext();
+    const contextInfo = this.analyzeFrameContext();
 
     (enrichedError as EnhancedPlaywrightError).contextInfo = contextInfo;
 
@@ -186,7 +186,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
   ): Promise<EnhancedPlaywrightError> {
     const { error, expectedContext } = options;
 
-    const contextInfo = await this.analyzeFrameContext();
+    const contextInfo = this.analyzeFrameContext();
     const pageStructure = await this.pageAnalyzer.analyzePageStructure();
 
     const suggestions = [

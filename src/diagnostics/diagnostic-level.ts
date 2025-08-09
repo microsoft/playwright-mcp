@@ -96,7 +96,7 @@ export class DiagnosticLevelManager {
     }
 
     return {
-      level: partial.level || DiagnosticLevelManager.defaultConfig.level,
+      level: partial.level ?? DiagnosticLevelManager.defaultConfig.level,
       features: partial.features ? { ...partial.features } : undefined,
       thresholds: {
         ...DiagnosticLevelManager.defaultConfig.thresholds,
@@ -230,7 +230,7 @@ export class DiagnosticLevelManager {
    * Get diagnostic time threshold
    */
   getMaxDiagnosticTime(): number {
-    return this.config.thresholds?.maxDiagnosticTime || 300;
+    return this.config.thresholds?.maxDiagnosticTime ?? 300;
   }
 }
 

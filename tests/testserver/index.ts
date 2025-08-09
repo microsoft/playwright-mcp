@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-import fs from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
-import path from 'node:path';
 import url from 'node:url';
 import debug from 'debug';
+import { loadOrGenerateKeys } from '../../src/generateKeys.js';
 
 const fulfillSymbol = Symbol('fulfil callback');
 const rejectSymbol = Symbol('reject callback');
@@ -52,13 +51,13 @@ export class TestServer {
   static async createHTTPS(port: number): Promise<TestServer> {
     const passphrase =
       process.env.TEST_SSL_PASSPHRASE || 'test-default-passphrase';
+
+    // Load keys from environment variables or generate mock keys
+    const { privateKey, certificate } = loadOrGenerateKeys();
+
     const server = new TestServer(port, {
-      key: await fs.promises.readFile(
-        path.join(path.dirname(__filename), 'key.pem')
-      ),
-      cert: await fs.promises.readFile(
-        path.join(path.dirname(__filename), 'cert.pem')
-      ),
+      key: privateKey,
+      cert: certificate,
       passphrase,
     });
     await new Promise((x) => server._server.once('listening', x));

@@ -38,7 +38,13 @@ program.option('--model <model>', 'model to use').action(async (options) => {
     await run(new OpenAIDelegate());
   }
 });
-program.parseAsync(process.argv).catch((error) => {
-  console.error('CLI parsing failed:', error);
-  process.exit(1);
-});
+async function startCLI() {
+  try {
+    await program.parseAsync(process.argv);
+  } catch (error) {
+    console.error('CLI parsing failed:', error);
+    process.exit(1);
+  }
+}
+
+startCLI();

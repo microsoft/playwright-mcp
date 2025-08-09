@@ -121,28 +121,71 @@ async function processToolCalls(
   }>;
   isDone: boolean;
 }> {
-  const toolResults: Array<{
-    toolCallId: string;
-    content: string;
-    isError?: boolean;
-  }> = [];
+  const toolResults = createEmptyToolResults();
 
   for (const toolCall of toolCalls) {
-    const doneResult = checkForDoneToolCall(delegate, toolCall);
-    if (doneResult.isDone) {
-      return { toolResults, isDone: true };
-    }
+    const processingResult = await processSingleToolCall(
+      delegate,
+      client,
+      toolCall,
+      toolCalls,
+      toolResults
+    );
 
-    // biome-ignore lint/nursery/noAwaitInLoop: tool calls may have dependencies and must execute sequentially
-    const result = await executeToolCall(client, toolCall);
-    toolResults.push(result);
-
-    if (shouldBreakOnError(result, toolCalls, toolCall, toolResults)) {
-      break;
+    if (processingResult.isDone || processingResult.shouldBreak) {
+      return processingResult.isDone
+        ? { toolResults, isDone: true }
+        : { toolResults, isDone: false };
     }
   }
 
   return { toolResults, isDone: false };
+}
+
+function createEmptyToolResults(): Array<{
+  toolCallId: string;
+  content: string;
+  isError?: boolean;
+}> {
+  return [];
+}
+
+async function processSingleToolCall(
+  delegate: LLMDelegate,
+  client: Client,
+  toolCall: LLMToolCall,
+  allToolCalls: LLMToolCall[],
+  toolResults: Array<{ toolCallId: string; content: string; isError?: boolean }>
+): Promise<{ isDone: boolean; shouldBreak: boolean }> {
+  const doneCheck = checkForDoneToolCall(delegate, toolCall);
+  if (doneCheck.isDone) {
+    return { isDone: true, shouldBreak: false };
+  }
+
+  const executionResult = await processIndividualToolCall(
+    client,
+    toolCall,
+    allToolCalls,
+    toolResults
+  );
+
+  return { isDone: false, shouldBreak: executionResult.shouldBreak };
+}
+
+async function processIndividualToolCall(
+  client: Client,
+  toolCall: LLMToolCall,
+  allToolCalls: LLMToolCall[],
+  toolResults: Array<{ toolCallId: string; content: string; isError?: boolean }>
+): Promise<{ shouldBreak: boolean }> {
+  const result = await executeToolCall(client, toolCall);
+  toolResults.push(result);
+
+  if (shouldBreakOnError(result, allToolCalls, toolCall, toolResults)) {
+    return { shouldBreak: true };
+  }
+
+  return { shouldBreak: false };
 }
 
 function checkForDoneToolCall(

@@ -190,8 +190,15 @@ export class AutoDisposableWrapper<T extends Disposable> implements Disposable {
   private disposed = false;
   private readonly resource: T;
 
-  constructor(resource: T) {
+  constructor(resource: T, timeoutMs?: number) {
     this.resource = resource;
+    if (timeoutMs !== undefined) {
+      setTimeout(() => {
+        if (!this.disposed) {
+          this.dispose();
+        }
+      }, timeoutMs);
+    }
   }
 
   /**

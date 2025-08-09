@@ -194,6 +194,16 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
   const browserInfo = getBrowserInfo(cliOptions);
   validateDeviceAndCDPOptions(cliOptions);
 
+  return buildFinalConfig(cliOptions, browserInfo);
+}
+
+function buildFinalConfig(
+  cliOptions: CLIOptions,
+  browserInfo: {
+    browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
+    channel: string | undefined;
+  }
+): Config {
   const browserConfig = createBrowserConfig(
     cliOptions,
     browserInfo.browserName,
@@ -277,6 +287,11 @@ function createNetworkConfig(cliOptions: CLIOptions): Pick<Config, 'network'> {
   };
 }
 function configFromEnv(): Config {
+  const options = buildEnvOptions();
+  return configFromCLIOptions(options);
+}
+
+function buildEnvOptions(): CLIOptions {
   const options: CLIOptions = {};
   populateNetworkOptions(options);
   populateBrowserOptions(options);
@@ -284,7 +299,7 @@ function configFromEnv(): Config {
   populateProxyOptions(options);
   populateOutputOptions(options);
   populateMiscellaneousOptions(options);
-  return configFromCLIOptions(options);
+  return options;
 }
 
 function populateNetworkOptions(options: CLIOptions): void {
