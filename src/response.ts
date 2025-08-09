@@ -12,8 +12,8 @@ import { processImage } from './utils/imageProcessor.js';
 import { TextReportBuilder } from './utils/reportBuilder.js';
 import { ResponseDiffDetector } from './utils/responseDiffDetector.js';
 export class Response {
-  private _result: string[] = [];
-  private _code: string[] = [];
+  private readonly _result: string[] = [];
+  private readonly _code: string[] = [];
   private _images: { contentType: string; data: Buffer }[] = [];
   private readonly _context: Context;
   private _includeSnapshot = false;

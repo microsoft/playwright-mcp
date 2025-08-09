@@ -5,12 +5,12 @@ export function cacheDir() {
   let cacheDirectory: string;
   if (process.platform === 'linux') {
     cacheDirectory =
-      process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+      process.env.XDG_CACHE_HOME ?? path.join(os.homedir(), '.cache');
   } else if (process.platform === 'darwin') {
     cacheDirectory = path.join(os.homedir(), 'Library', 'Caches');
   } else if (process.platform === 'win32') {
     cacheDirectory =
-      process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+      process.env.LOCALAPPDATA ?? path.join(os.homedir(), 'AppData', 'Local');
   } else {
     throw new Error(`Unsupported platform: ${process.platform}`);
   }

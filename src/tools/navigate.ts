@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { expectationSchema } from '../schemas/expectation.js';
+import {
+  generateBackCode,
+  generateForwardCode,
+  generateNavigationCode,
+} from '../utils/commonFormatters.js';
 import { defineTabTool, defineTool } from './tool.js';
 
 const navigate = defineTool({
@@ -17,7 +22,7 @@ const navigate = defineTool({
   handle: async (context, params, response) => {
     const tab = await context.ensureTab();
     await tab.navigate(params.url);
-    response.addCode(`await page.goto('${params.url}');`);
+    response.addCode(generateNavigationCode(params.url));
   },
 });
 const goBack = defineTabTool({
@@ -34,7 +39,7 @@ const goBack = defineTabTool({
   },
   handle: async (tab, _params, response) => {
     await tab.page.goBack();
-    response.addCode('await page.goBack();');
+    response.addCode(generateBackCode());
   },
 });
 const goForward = defineTabTool({
@@ -51,7 +56,7 @@ const goForward = defineTabTool({
   },
   handle: async (tab, _params, response) => {
     await tab.page.goForward();
-    response.addCode('await page.goForward();');
+    response.addCode(generateForwardCode());
   },
 });
 export default [navigate, goBack, goForward];

@@ -254,7 +254,8 @@ export class ElementDiscovery extends DiagnosticBase {
         alternatives,
         totalFound
       );
-    } catch (_elementError) {
+    } catch (elementError) {
+      console.debug('Element processing failed:', elementError);
       await this.safeDispose(element, `findByText-element-${totalFound}`);
       return false;
     }
@@ -333,7 +334,8 @@ export class ElementDiscovery extends DiagnosticBase {
               elementId: `role_${currentFound}`,
             });
             return currentFound + 1;
-          } catch (_elementError) {
+          } catch (elementError) {
+            console.debug('Element role processing failed:', elementError);
             await this.safeDispose(
               element,
               `findByRole-element-${currentFound}`
@@ -396,7 +398,8 @@ export class ElementDiscovery extends DiagnosticBase {
             elementId: `tag_${currentFound}`,
           });
           return currentFound + 1;
-        } catch (_elementError) {
+        } catch (elementError) {
+          console.debug('Element tag processing failed:', elementError);
           await this.safeDispose(
             element,
             `findByTagName-element-${currentFound}`
@@ -533,7 +536,8 @@ export class ElementDiscovery extends DiagnosticBase {
       });
 
       return true;
-    } catch (_elementError) {
+    } catch (elementError) {
+      console.debug('Element attribute processing failed:', elementError);
       await this.safeDispose(
         element,
         `findByAttributes-element-${currentFound}`
@@ -668,7 +672,8 @@ export class ElementDiscovery extends DiagnosticBase {
       });
 
       return true;
-    } catch (_elementError) {
+    } catch (elementError) {
+      console.debug('Implicit role element processing failed:', elementError);
       await this.safeDispose(
         element,
         `findImplicitRole-element-${currentFound}`

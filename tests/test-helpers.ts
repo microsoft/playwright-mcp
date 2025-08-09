@@ -484,6 +484,89 @@ export const HTML_TEMPLATES = {
       });
     </script>
   `,
+  // Dialog templates to reduce duplication in dialog tests
+  ALERT_BUTTON: (buttonText = 'Button', alertMessage = 'Alert') => `
+    <title>Title</title>
+    <body>
+      <button onclick="alert('${alertMessage}')">${buttonText}</button>
+    </body>
+  `,
+  DOUBLE_ALERT_BUTTON: (buttonText = 'Button') => `
+    <title>Title</title>
+    <body>
+      <button onclick="alert('Alert 1');alert('Alert 2');">${buttonText}</button>
+    </body>
+  `,
+  CONFIRM_BUTTON: (buttonText = 'Button', confirmMessage = 'Confirm') => `
+    <title>Title</title>
+    <body>
+      <button onclick="document.body.textContent = confirm('${confirmMessage}')">${buttonText}</button>
+    </body>
+  `,
+  PROMPT_BUTTON: (buttonText = 'Button', promptMessage = 'Prompt') => `
+    <title>Title</title>
+    <body>
+      <button onclick="document.body.textContent = prompt('${promptMessage}')">${buttonText}</button>
+    </body>
+  `,
+  DELAYED_ALERT_BUTTON: (
+    buttonText = 'Button',
+    delay = 100,
+    alertMessage = 'Alert'
+  ) => `
+    <button onclick="setTimeout(() => alert('${alertMessage}'), ${delay})">${buttonText}</button>
+  `,
+  // Input form variations
+  KEYPRESS_INPUT: `
+    <!DOCTYPE html>
+    <html>
+      <input type='keypress' onkeypress="console.log('Key pressed:', event.key, ', Text:', event.target.value)"></input>
+    </html>
+  `,
+  KEYDOWN_INPUT: `
+    <input type='text' onkeydown="console.log('Key pressed:', event.key, 'Text:', event.target.value)"></input>
+  `,
+  INPUT_WITH_CONSOLE: `
+    <input type='text' oninput="console.log('New value: ' + event.target.value)"></input>
+  `,
+  // Wait test templates
+  WAIT_FOR_TEXT_UPDATE: `
+    <script>
+      function update() {
+        setTimeout(() => {
+          document.querySelector('div').textContent = 'Text to appear';
+        }, 1000);
+      }
+    </script>
+    <body>
+      <button onclick="update()">Click me</button>
+      <div>Text to disappear</div>
+    </body>
+  `,
+  // Console templates to reduce duplication in console tests
+  CONSOLE_LOG_ERROR: `
+    <!DOCTYPE html>
+    <html>
+      <script>
+        console.log("Hello, world!");
+        console.error("Error");
+      </script>
+    </html>
+  `,
+  CONSOLE_SCRIPT_ERROR: `
+    <!DOCTYPE html>
+    <html>
+      <script>
+        throw new Error("Error in script");
+      </script>
+    </html>
+  `,
+  CONSOLE_CLICK_BUTTON: `
+    <!DOCTYPE html>
+    <html>
+      <button onclick="console.log('Hello, world!');">Click me</button>
+    </html>
+  `,
 } as const;
 
 /**
@@ -510,6 +593,48 @@ export interface BrowserLifecycleExpectations {
   obtainBrowser?: number;
   closeBrowser?: number;
   userDataDir?: number;
+}
+
+/**
+ * Common test setup utilities for standard tests (non-diagnostic)
+ */
+export class StandardTestSetup {
+  private consoleCapture: ConsoleCapture = new ConsoleCapture();
+
+  /**
+   * Setup for each standard test
+   */
+  beforeEach(captureConsole = false): ConsoleCapture {
+    if (captureConsole) {
+      this.consoleCapture.start();
+    }
+    return this.consoleCapture;
+  }
+
+  /**
+   * Cleanup for each standard test
+   */
+  afterEach(): void {
+    this.consoleCapture.stop();
+    this.consoleCapture.clear();
+  }
+
+  getConsoleCapture(): ConsoleCapture {
+    return this.consoleCapture;
+  }
+}
+
+/**
+ * Helper for navigation-based test setups
+ */
+export async function setupBasicNavigation(
+  client: Client,
+  server: any,
+  path = '/',
+  content = HTML_TEMPLATES.BASIC_TITLE_ONLY
+): Promise<any> {
+  setServerContent(server, path, content);
+  return await navigateToUrl(client, server.PREFIX);
 }
 
 // Regex constants for browser lifecycle testing

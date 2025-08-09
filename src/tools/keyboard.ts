@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { quote } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import { generateKeyPressCode } from '../utils/commonFormatters.js';
 import { elementSchema } from './snapshot.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
@@ -24,7 +25,7 @@ const pressKey = defineTabTool({
   },
   handle: async (tab, params, response) => {
     response.addCode(`// Press ${params.key}`);
-    response.addCode(`await page.keyboard.press('${params.key}');`);
+    response.addCode(generateKeyPressCode(params.key));
     await tab.waitForCompletion(async () => {
       await tab.page.keyboard.press(params.key);
     });

@@ -3,6 +3,7 @@
  */
 
 import { type ChildProcess, spawn } from 'node:child_process';
+import { diagnosticWarn } from '../src/diagnostics/common/diagnostic-base.js';
 import type { BenchmarkConfig } from './config.js';
 import type { MCPRequest, MCPResponse, ServerType } from './types.js';
 import {
@@ -278,8 +279,14 @@ export class MCPServerManager {
         server.kill('SIGKILL');
         await wait(500);
       }
-    } catch (_error: unknown) {
-      // Ignore errors during server shutdown
+    } catch (error: unknown) {
+      // Log error but continue with server shutdown
+      diagnosticWarn(
+        'McpServerManager',
+        'stopServer',
+        'Error during server shutdown',
+        error instanceof Error ? error.message : String(error)
+      );
     }
 
     this.servers[serverType] = null;

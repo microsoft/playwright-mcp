@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { expectationSchema } from '../schemas/expectation.js';
+import {
+  generateMouseClickCode,
+  generateMouseDragCode,
+  generateMouseMoveCode,
+} from '../utils/commonFormatters.js';
 import { defineTabTool } from './tool.js';
 
 const elementSchema = z.object({
@@ -25,7 +30,7 @@ const mouseMove = defineTabTool({
   },
   handle: async (tab, params, response) => {
     response.addCode(`// Move mouse to (${params.x}, ${params.y})`);
-    response.addCode(`await page.mouse.move(${params.x}, ${params.y});`);
+    response.addCode(generateMouseMoveCode(params.x, params.y));
     await tab.waitForCompletion(async () => {
       await tab.page.mouse.move(params.x, params.y);
     });
@@ -50,9 +55,10 @@ const mouseClick = defineTabTool({
     response.addCode(
       `// Click mouse at coordinates (${params.x}, ${params.y})`
     );
-    response.addCode(`await page.mouse.move(${params.x}, ${params.y});`);
-    response.addCode('await page.mouse.down();');
-    response.addCode('await page.mouse.up();');
+    response.addCode(generateMouseMoveCode(params.x, params.y));
+    for (const code of generateMouseClickCode()) {
+      response.addCode(code);
+    }
     await tab.waitForCompletion(async () => {
       await tab.page.mouse.move(params.x, params.y);
       await tab.page.mouse.down();
@@ -77,15 +83,14 @@ const mouseDrag = defineTabTool({
   },
   handle: async (tab, params, response) => {
     response.setIncludeSnapshot();
-    response.addCode(
-      `// Drag mouse from (${params.startX}, ${params.startY}) to (${params.endX}, ${params.endY})`
-    );
-    response.addCode(
-      `await page.mouse.move(${params.startX}, ${params.startY});`
-    );
-    response.addCode('await page.mouse.down();');
-    response.addCode(`await page.mouse.move(${params.endX}, ${params.endY});`);
-    response.addCode('await page.mouse.up();');
+    for (const code of generateMouseDragCode(
+      params.startX,
+      params.startY,
+      params.endX,
+      params.endY
+    )) {
+      response.addCode(code);
+    }
     await tab.waitForCompletion(async () => {
       await tab.page.mouse.move(params.startX, params.startY);
       await tab.page.mouse.down();

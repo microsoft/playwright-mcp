@@ -63,8 +63,12 @@ export class SmartHandle<T extends playwright.ElementHandle>
       if (this.resource && typeof this.resource.dispose === 'function') {
         await this.resource.dispose();
       }
-    } catch (_error) {
-      // Ignore errors during disposal
+    } catch (error: unknown) {
+      // Log errors during disposal for debugging
+      console.debug(
+        'Resource disposal failed:',
+        error instanceof Error ? error.message : String(error)
+      );
     } finally {
       this.disposed = true;
       this.tracker.untrackResource(this.resourceId);

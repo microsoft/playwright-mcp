@@ -97,7 +97,7 @@ export function diagnosticWarn(
   _component: string,
   _operation: string,
   _message: string,
-  _error?: Error | string
+  _error?: Error | string | unknown
 ): void {
   // Diagnostic warnings are handled silently
 }
@@ -109,7 +109,7 @@ export function diagnosticError(
   _component: string,
   _operation: string,
   _message: string,
-  _error?: Error | string
+  _error?: Error | string | unknown
 ): void {
   // Diagnostic errors are handled silently
 }
@@ -121,7 +121,7 @@ export function diagnosticInfo(
   _component: string,
   _operation: string,
   _message: string,
-  _data?: Record<string, unknown> | string | number
+  _data?: Record<string, unknown> | string | number | unknown
 ): void {
   // Diagnostic info messages are handled silently
 }
@@ -133,7 +133,7 @@ export function diagnosticDebug(
   _component: string,
   _operation: string,
   _message: string,
-  _data?: Record<string, unknown> | string | number
+  _data?: Record<string, unknown> | string | number | unknown
 ): void {
   // Diagnostic debug messages are handled silently
 }

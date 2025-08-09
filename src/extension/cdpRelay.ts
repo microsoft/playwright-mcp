@@ -152,7 +152,7 @@ export class CDPRelayServer {
         await this._handlePlaywrightMessage(message);
       } catch (error: unknown) {
         debugLogger(
-          `Error while handling Playwright message\n${data.toString()}\n`,
+          `Error while handling Playwright message\n${String(data)}\n`,
           error
         );
       }
@@ -419,7 +419,7 @@ class ExtensionConnection {
   }
   private _onError(event: websocket.ErrorEvent) {
     debugLogger(
-      `<ws error> message=${event.message} type=${event.type} target=${event.target}`
+      `<ws error> message=${event.message} type=${event.type} target=${String(event.target)}`
     );
     this._dispose();
   }

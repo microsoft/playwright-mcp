@@ -31,7 +31,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   readonly context: Context;
   readonly page: playwright.Page;
   private _lastTitle = 'about:blank';
-  private _consoleMessages: ConsoleMessage[] = [];
+  private readonly _consoleMessages: ConsoleMessage[] = [];
   private _recentConsoleMessages: ConsoleMessage[] = [];
   private readonly _requests: Map<
     playwright.Request,

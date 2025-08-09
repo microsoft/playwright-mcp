@@ -109,7 +109,7 @@ export class FrameReferenceManager implements IDisposable {
           // Frame is likely detached - log for debugging
           let frameUrl = 'unknown';
           try {
-            frameUrl = await frame.url();
+            frameUrl = frame.url();
           } catch (urlError) {
             // Frame is detached, can't get URL
             console.debug('Could not retrieve frame URL:', urlError);

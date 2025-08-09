@@ -20,8 +20,8 @@ type LogEntry = {
   tabSnapshot?: TabSnapshot;
 };
 export class SessionLog {
-  private _folder: string;
-  private _file: string;
+  private readonly _folder: string;
+  private readonly _file: string;
   private _pendingEntries: LogEntry[] = [];
   private _sessionFileQueue = Promise.resolve();
   private _flushEntriesTimeout: NodeJS.Timeout | undefined;

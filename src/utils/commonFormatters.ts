@@ -111,16 +111,6 @@ export function buildSection(
 }
 
 /**
- * Safe error message extraction (used in multiple catch blocks)
- */
-export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
-}
-
-/**
  * Add items to array conditionally (reduces if/push pattern)
  */
 export function addConditional<T>(
@@ -135,4 +125,146 @@ export function addConditional<T>(
       array.push(items);
     }
   }
+}
+
+/**
+ * Common code generation patterns for response.addCode()
+ */
+
+/**
+ * Generate mouse movement code (common in mouse tools)
+ */
+export function generateMouseMoveCode(x: number, y: number): string {
+  return `await page.mouse.move(${x}, ${y});`;
+}
+
+/**
+ * Generate mouse click code (common in mouse tools)
+ */
+export function generateMouseClickCode(): string[] {
+  return ['await page.mouse.down();', 'await page.mouse.up();'];
+}
+
+/**
+ * Generate mouse drag code sequence
+ */
+export function generateMouseDragCode(
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number
+): string[] {
+  return [
+    `// Drag mouse from (${startX}, ${startY}) to (${endX}, ${endY})`,
+    generateMouseMoveCode(startX, startY),
+    'await page.mouse.down();',
+    generateMouseMoveCode(endX, endY),
+    'await page.mouse.up();',
+  ];
+}
+
+/**
+ * Generate navigation code (common pattern)
+ */
+export function generateNavigationCode(url: string): string {
+  return `await page.goto('${url}');`;
+}
+
+/**
+ * Generate back/forward navigation code
+ */
+export function generateBackCode(): string {
+  return 'await page.goBack();';
+}
+
+export function generateForwardCode(): string {
+  return 'await page.goForward();';
+}
+
+/**
+ * Generate keyboard press code
+ */
+export function generateKeyPressCode(key: string): string {
+  return `await page.keyboard.press('${key}');`;
+}
+
+/**
+ * Generate evaluation code
+ */
+export function generateEvaluationCode(functionCode: string): string {
+  return `await page.evaluate(${quote(functionCode)});`;
+}
+
+/**
+ * Generate locator-based evaluation code
+ */
+export function generateLocatorEvaluationCode(
+  locator: string,
+  functionCode: string
+): string {
+  return `await page.${locator}.evaluate(${quote(functionCode)});`;
+}
+
+/**
+ * Simple quote utility for code generation
+ */
+function quote(str: string): string {
+  return `'${str.replace(/'/g, "\\'")}'`;
+}
+
+/**
+ * Common diagnostic and error handling utilities
+ */
+
+/**
+ * Safe error message extraction (commonly duplicated pattern)
+ * Unified function to replace various error handling patterns throughout the codebase
+ */
+export function getErrorMessage(
+  error: unknown,
+  fallback = 'Unknown error'
+): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return fallback;
+}
+
+/**
+ * Create diagnostic error object with consistent structure
+ */
+export function createDiagnosticErrorInfo(
+  error: unknown,
+  operation = 'Unknown operation',
+  component = 'Unknown component'
+): { error: string; operation: string; component: string } {
+  return {
+    error: getErrorMessage(error),
+    operation,
+    component,
+  };
+}
+
+/**
+ * Handle resource disposal errors consistently
+ */
+export function handleResourceDisposalError(
+  error: unknown,
+  resourceType: string,
+  logger: (message: string) => void = console.debug
+): void {
+  logger(`${resourceType} disposal failed: ${getErrorMessage(error)}`);
+}
+
+/**
+ * Handle frame access errors consistently (common in frame reference management)
+ */
+export function handleFrameAccessError(
+  error: unknown,
+  frameInfo?: string
+): { reason: string; frameInfo?: string } {
+  return {
+    reason: getErrorMessage(error, 'Access denied'),
+    ...(frameInfo && { frameInfo }),
+  };
 }

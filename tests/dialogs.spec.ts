@@ -15,6 +15,7 @@
  */
 
 import { expect, test } from './fixtures.js';
+import { HTML_TEMPLATES, setServerContent } from './test-helpers.js';
 
 test('alert dialog', async ({ client, server }) => {
   server.setContent(
@@ -71,16 +72,7 @@ test('alert dialog', async ({ client, server }) => {
 });
 
 test('two alert dialogs', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <title>Title</title>
-    <body>
-      <button onclick="alert('Alert 1');alert('Alert 2');">Button</button>
-    </body>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.DOUBLE_ALERT_BUTTON());
 
   expect(
     await client.callTool({
@@ -134,16 +126,7 @@ test('two alert dialogs', async ({ client, server }) => {
 });
 
 test('confirm dialog (true)', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <title>Title</title>
-    <body>
-      <button onclick="document.body.textContent = confirm('Confirm')">Button</button>
-    </body>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.CONFIRM_BUTTON());
 
   expect(
     await client.callTool({
@@ -182,16 +165,7 @@ test('confirm dialog (true)', async ({ client, server }) => {
 });
 
 test('confirm dialog (false)', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <title>Title</title>
-    <body>
-      <button onclick="document.body.textContent = confirm('Confirm')">Button</button>
-    </body>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.CONFIRM_BUTTON());
 
   expect(
     await client.callTool({
@@ -230,16 +204,7 @@ test('confirm dialog (false)', async ({ client, server }) => {
 });
 
 test('prompt dialog', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <title>Title</title>
-    <body>
-      <button onclick="document.body.textContent = prompt('Prompt')">Button</button>
-    </body>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.PROMPT_BUTTON());
 
   expect(
     await client.callTool({
@@ -278,11 +243,7 @@ test('prompt dialog', async ({ client, server }) => {
 });
 
 test('alert dialog w/ race', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `<button onclick="setTimeout(() => alert('Alert'), 100)">Button</button>`,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.DELAYED_ALERT_BUTTON());
   expect(
     await client.callTool({
       name: 'browser_navigate',

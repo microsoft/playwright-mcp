@@ -271,9 +271,9 @@ export class EnhancedErrorHandler extends DiagnosticBase {
     return enhancedError;
   }
 
-  private async analyzeFrameContext() {
+  private analyzeFrameContext() {
     const page = this.getPage();
-    const frames = await page.frames();
+    const frames = page.frames();
     const mainFrame = page.mainFrame();
 
     return {

@@ -15,25 +15,10 @@
  */
 
 import { expect, test } from './fixtures.js';
+import { HTML_TEMPLATES, setServerContent } from './test-helpers.js';
 
 test('browser_wait_for(text)', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <script>
-      function update() {
-        setTimeout(() => {
-          document.querySelector('div').textContent = 'Text to appear';
-        }, 1000);
-      }
-    </script>
-    <body>
-      <button onclick="update()">Click me</button>
-      <div>Text to disappear</div>
-    </body>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.WAIT_FOR_TEXT_UPDATE);
 
   await client.callTool({
     name: 'browser_navigate',
@@ -59,23 +44,7 @@ test('browser_wait_for(text)', async ({ client, server }) => {
 });
 
 test('browser_wait_for(textGone)', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <script>
-      function update() {
-        setTimeout(() => {
-          document.querySelector('div').textContent = 'Text to appear';
-        }, 1000);
-      }
-    </script>
-    <body>
-      <button onclick="update()">Click me</button>
-      <div>Text to disappear</div>
-    </body>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.WAIT_FOR_TEXT_UPDATE);
 
   await client.callTool({
     name: 'browser_navigate',

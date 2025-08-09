@@ -32,12 +32,12 @@ export class Context {
         close: () => Promise<void>;
       }>
     | undefined;
-  private _browserContextFactory: BrowserContextFactory;
-  private _tabs: Tab[] = [];
+  private readonly _browserContextFactory: BrowserContextFactory;
+  private readonly _tabs: Tab[] = [];
   private _currentTab: Tab | undefined;
   private readonly _clientInfo: ClientInfo;
   private _batchExecutor: BatchExecutor | undefined;
-  private static _allContexts: Set<Context> = new Set();
+  private static readonly _allContexts: Set<Context> = new Set();
   private _closeBrowserContextPromise: Promise<void> | undefined;
   private _isRunningTool = false;
   private readonly _abortController = new AbortController();
@@ -136,10 +136,8 @@ export class Context {
     }
   }
   async closeBrowserContext() {
-    if (!this._closeBrowserContextPromise) {
-      this._closeBrowserContextPromise =
-        this._closeBrowserContextImpl().catch(logUnhandledError);
-    }
+    this._closeBrowserContextPromise ??=
+      this._closeBrowserContextImpl().catch(logUnhandledError);
     await this._closeBrowserContextPromise;
     this._closeBrowserContextPromise = undefined;
   }
@@ -243,8 +241,8 @@ export class Context {
   }
 }
 export class InputRecorder {
-  private _context: Context;
-  private _browserContext: playwright.BrowserContext;
+  private readonly _context: Context;
+  private readonly _browserContext: playwright.BrowserContext;
   private constructor(
     context: Context,
     browserContext: playwright.BrowserContext

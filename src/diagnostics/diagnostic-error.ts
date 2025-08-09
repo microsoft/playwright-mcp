@@ -10,7 +10,8 @@ export type DiagnosticComponent =
   | 'ConfigManager'
   | 'UnifiedSystem';
 
-export type PerformanceImpactLevel = 'low' | 'medium' | 'high';
+export const PERFORMANCE_IMPACT_LEVELS = ['low', 'medium', 'high'] as const;
+export type PerformanceImpactLevel = (typeof PERFORMANCE_IMPACT_LEVELS)[number];
 
 export interface DiagnosticErrorContext {
   timestamp: number;

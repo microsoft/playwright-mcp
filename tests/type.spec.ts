@@ -15,18 +15,10 @@
  */
 
 import { expect, test } from './fixtures.js';
+import { HTML_TEMPLATES, setServerContent } from './test-helpers.js';
 
 test('browser_type', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <!DOCTYPE html>
-    <html>
-      <input type='keypress' onkeypress="console.log('Key pressed:', event.key, ', Text:', event.target.value)"></input>
-    </html>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.KEYPRESS_INPUT);
 
   await client.callTool({
     name: 'browser_navigate',
@@ -62,13 +54,7 @@ await page.getByRole('textbox').press('Enter');`,
 });
 
 test('browser_type (slowly)', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <input type='text' onkeydown="console.log('Key pressed:', event.key, 'Text:', event.target.value)"></input>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.KEYDOWN_INPUT);
 
   await client.callTool({
     name: 'browser_navigate',
@@ -107,13 +93,7 @@ test('browser_type (slowly)', async ({ client, server }) => {
 });
 
 test('browser_type (no submit)', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <input type='text' oninput="console.log('New value: ' + event.target.value)"></input>
-  `,
-    'text/html'
-  );
+  setServerContent(server, '/', HTML_TEMPLATES.INPUT_WITH_CONSOLE);
 
   {
     const response = await client.callTool({
