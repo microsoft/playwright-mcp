@@ -78,7 +78,7 @@ test('navigate with extension', async ({ browserWithExtension, startClient, serv
   expect(await client.callTool({
     name: 'browser_connect',
     arguments: {
-      method: 'extension'
+      name: 'extension'
     }
   })).toHaveResponse({
     result: 'Successfully changed connection method.',

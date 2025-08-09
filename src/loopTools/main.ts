@@ -29,8 +29,15 @@ import type { Tool } from './tool.js';
 
 export async function runLoopTools(config: FullConfig) {
   dotenv.config();
-  const serverBackendFactory = () => new LoopToolsServerBackend(config);
-  await mcpTransport.start(serverBackendFactory, config.server);
+  await mcpTransport.start(createLoopToolsServerBackendFactory(config), config.server);
+}
+
+export function createLoopToolsServerBackendFactory(config: FullConfig) {
+  return {
+    name: 'loopTools',
+    description: 'Playwright MCP server backend for loop tools',
+    create: () => new LoopToolsServerBackend(config),
+  };
 }
 
 class LoopToolsServerBackend implements ServerBackend {

@@ -27,7 +27,7 @@ import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 export async function createConnection(userConfig: Config = {}, contextGetter?: () => Promise<BrowserContext>): Promise<Server> {
   const config = await resolveConfig(userConfig);
   const factory = contextGetter ? new SimpleBrowserContextFactory(contextGetter) : contextFactory(config);
-  return mcpServer.createServer(new BrowserServerBackend(config, [factory]), false);
+  return mcpServer.createServer(new BrowserServerBackend(config, factory), false);
 }
 
 class SimpleBrowserContextFactory implements BrowserContextFactory {

@@ -55,10 +55,14 @@ export interface ServerBackend {
   serverClosed?(): void;
 }
 
-export type ServerBackendFactory = () => ServerBackend;
+export type ServerBackendFactory = {
+  name: string;
+  description: string;
+  create(): ServerBackend;
+};
 
 export async function connect(serverBackendFactory: ServerBackendFactory, transport: Transport, runHeartbeat: boolean) {
-  const backend = serverBackendFactory();
+  const backend = serverBackendFactory.create();
   const server = createServer(backend, runHeartbeat);
   await server.connect(transport);
 }
