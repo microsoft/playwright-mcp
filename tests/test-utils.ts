@@ -53,6 +53,63 @@ export function createTestPage(
   };
 }
 
+/**
+ * Creates and connects an SSE client for testing
+ */
+export async function createSSEClient(
+  serverUrl: URL,
+  suffix = 'sse'
+): Promise<{
+  transport: import('@modelcontextprotocol/sdk/client/sse.js').SSEClientTransport;
+  client: import('@modelcontextprotocol/sdk/client/index.js').Client;
+}> {
+  const { SSEClientTransport } = await import(
+    '@modelcontextprotocol/sdk/client/sse.js'
+  );
+  const { Client: MCPClient } = await import(
+    '@modelcontextprotocol/sdk/client/index.js'
+  );
+
+  const transport = new SSEClientTransport(new URL(`/${suffix}`, serverUrl));
+  const client = new MCPClient({ name: 'test', version: '1.0.0' });
+  await client.connect(transport);
+
+  return { transport, client };
+}
+
+/**
+ * Sets up test pages on server for tab-related tests
+ */
+export function setupTabTestPages(
+  server: any,
+  pages: { path: string; page: TestPageContent }[]
+): void {
+  for (const { path: pagePath, page } of pages) {
+    server.setContent(pagePath, page.content, page.contentType);
+  }
+}
+
+/**
+ * Creates a multi-tab test setup with predefined pages
+ */
+export function createMultiTabsSetup(): {
+  tab1Page: TestPageContent;
+  tab2Page: TestPageContent;
+  setupServer: (server: any) => void;
+} {
+  const tab1Page = createTestPage('<div>Tab 1</div>', 'Tab 1');
+  const tab2Page = createTestPage('<div>Tab 2</div>', 'Tab 2');
+
+  const setupServer = (server: any) => {
+    setupTabTestPages(server, [
+      { path: tab1Page.path, page: tab1Page },
+      { path: '/tab2', page: tab2Page },
+    ]);
+  };
+
+  return { tab1Page, tab2Page, setupServer };
+}
+
 export function createButtonPage(buttonText = 'Click Me'): TestPageContent {
   return createTestPage(`<button>${buttonText}</button>`);
 }

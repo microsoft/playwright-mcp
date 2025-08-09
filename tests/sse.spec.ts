@@ -18,12 +18,15 @@ import { type ChildProcess, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import nodeUrl from 'node:url';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+
 import type { Config } from '../config.d.ts';
 import { test as baseTest, expect } from './fixtures.js';
 
-import { COMMON_REGEX_PATTERNS, expectRegexCount } from './test-utils.js';
+import {
+  COMMON_REGEX_PATTERNS,
+  createSSEClient,
+  expectRegexCount,
+} from './test-utils.js';
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = nodeUrl.fileURLToPath(import.meta.url);
@@ -89,9 +92,7 @@ const test = baseTest.extend<{
 
 test('sse transport', async ({ serverEndpoint }) => {
   const { url } = await serverEndpoint();
-  const transport = new SSEClientTransport(new URL('/sse', url));
-  const client = new Client({ name: 'test', version: '1.0.0' });
-  await client.connect(transport);
+  const { client } = await createSSEClient(url);
   await client.ping();
 });
 
@@ -108,9 +109,7 @@ test('sse transport (config)', async ({ serverEndpoint }) => {
     noPort: true,
     args: [`--config=${configFile}`],
   });
-  const transport = new SSEClientTransport(new URL('/sse', url));
-  const client = new Client({ name: 'test', version: '1.0.0' });
-  await client.connect(transport);
+  const { client } = await createSSEClient(url);
   await client.ping();
 });
 
@@ -120,18 +119,14 @@ test('sse transport browser lifecycle (isolated)', async ({
 }) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
+  const { client: client1 } = await createSSEClient(url);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
   await client1.close();
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
+  const { client: client2 } = await createSSEClient(url);
   await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -169,26 +164,20 @@ test('sse transport browser lifecycle (isolated, multiclient)', async ({
 }) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
+  const { client: client1 } = await createSSEClient(url);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
+  const { client: client2 } = await createSSEClient(url);
   await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
   await client1.close();
 
-  const transport3 = new SSEClientTransport(new URL('/sse', url));
-  const client3 = new Client({ name: 'test', version: '1.0.0' });
-  await client3.connect(transport3);
+  const { client: client3 } = await createSSEClient(url);
   await client3.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -228,18 +217,14 @@ test('sse transport browser lifecycle (persistent)', async ({
 }) => {
   const { url, stderr } = await serverEndpoint();
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
+  const { client: client1 } = await createSSEClient(url);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
   await client1.close();
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
+  const { client: client2 } = await createSSEClient(url);
   await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -273,17 +258,13 @@ test('sse transport browser lifecycle (persistent, multiclient)', async ({
 }) => {
   const { url } = await serverEndpoint();
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
+  const { client: client1 } = await createSSEClient(url);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
+  const { client: client2 } = await createSSEClient(url);
   const response = await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },

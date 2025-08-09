@@ -18,8 +18,10 @@ import { expect, test } from './fixtures.js';
 import {
   createFullExpectation,
   createMinimalExpectation,
+  createMultiTabsSetup,
   createTestPage,
   expectToolCallResponse,
+  setupTabTestPages,
 } from './test-utils.js';
 
 test.describe('Tabs Tools Expectation Parameter', () => {
@@ -68,12 +70,10 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         '<div>New Tab Content</div>',
         'New Tab Content'
       );
-      server.setContent(
-        originalPage.path,
-        originalPage.content,
-        originalPage.contentType
-      );
-      server.setContent('/new', newPage.content, newPage.contentType);
+      setupTabTestPages(server, [
+        { path: originalPage.path, page: originalPage },
+        { path: '/new', page: newPage },
+      ]);
 
       await client.callTool({
         name: 'browser_navigate',
@@ -107,12 +107,10 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         '<div>New Tab Content</div>',
         'New Tab Content'
       );
-      server.setContent(
-        originalPage.path,
-        originalPage.content,
-        originalPage.contentType
-      );
-      server.setContent('/new', newPage.content, newPage.contentType);
+      setupTabTestPages(server, [
+        { path: originalPage.path, page: originalPage },
+        { path: '/new', page: newPage },
+      ]);
 
       await client.callTool({
         name: 'browser_navigate',
@@ -139,10 +137,8 @@ test.describe('Tabs Tools Expectation Parameter', () => {
       client,
       server,
     }) => {
-      const tab1Page = createTestPage('<div>Tab 1</div>', 'Tab 1');
-      const tab2Page = createTestPage('<div>Tab 2</div>', 'Tab 2');
-      server.setContent(tab1Page.path, tab1Page.content, tab1Page.contentType);
-      server.setContent('/tab2', tab2Page.content, tab2Page.contentType);
+      const { setupServer } = createMultiTabsSetup();
+      setupServer(server);
 
       await client.callTool({
         name: 'browser_navigate',
@@ -174,10 +170,8 @@ test.describe('Tabs Tools Expectation Parameter', () => {
       client,
       server,
     }) => {
-      const tab1Page = createTestPage('<div>Tab 1</div>', 'Tab 1');
-      const tab2Page = createTestPage('<div>Tab 2</div>', 'Tab 2');
-      server.setContent(tab1Page.path, tab1Page.content, tab1Page.contentType);
-      server.setContent('/tab2', tab2Page.content, tab2Page.contentType);
+      const { setupServer } = createMultiTabsSetup();
+      setupServer(server);
 
       await client.callTool({
         name: 'browser_navigate',
