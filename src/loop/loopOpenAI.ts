@@ -153,9 +153,9 @@ export class OpenAIDelegate implements LLMDelegate {
       message.toolCalls &&
       message.toolCalls.length > 0;
 
-    if (hasToolCalls && message.toolCalls) {
+    if (hasToolCalls) {
       assistantMessage.tool_calls = this.convertToolCallsToOpenAI(
-        message.toolCalls
+        message.toolCalls!
       );
     }
   }
