@@ -43,8 +43,11 @@ export class FrameReferenceManager implements IDisposable {
 
       this.frameRefs.set(frame, metadata);
       this.activeFrames.add(frame);
-    } catch (_error) {
+    } catch (error) {
       // Frame might be detached already, skip tracking
+      console.debug('Frame tracking failed (frame might be detached):', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 
@@ -102,8 +105,21 @@ export class FrameReferenceManager implements IDisposable {
             ),
           ]);
           return { frame, isDetached: false };
-        } catch (_error) {
-          // Frame is likely detached
+        } catch (error) {
+          // Frame is likely detached - log for debugging
+          let frameUrl = 'unknown';
+          try {
+            frameUrl = await frame.url();
+          } catch {
+            // Frame is detached, can't get URL
+          }
+          console.debug(
+            'Frame accessibility check failed (frame likely detached):',
+            {
+              url: frameUrl,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            }
+          );
           return { frame, isDetached: true };
         }
       }
@@ -223,8 +239,12 @@ export class FrameReferenceManager implements IDisposable {
 
   private startCleanupTimer(): void {
     this.cleanupInterval = setInterval(() => {
-      this.cleanupDetachedFrames().catch((_error) => {
-        // Cleanup timer failed - continue with next cycle
+      this.cleanupDetachedFrames().catch((error) => {
+        // Cleanup timer failed - log and continue with next cycle
+        console.warn(
+          'Frame cleanup timer failed:',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
       });
     }, 30_000); // Clean up every 30 seconds
   }

@@ -139,15 +139,32 @@ export class ElementDiscovery extends DiagnosticBase {
     const strategies = this.getTextSearchStrategies(text);
     const alternatives: AlternativeElement[] = [];
 
-    // Use reduce for sequential processing of strategies
-    await strategies.reduce(async (previousPromise, selector) => {
-      const totalFound = await previousPromise;
+    await this.processTextSearchStrategies(
+      page,
+      strategies,
+      text,
+      alternatives,
+      maxResults
+    );
+    return alternatives;
+  }
 
+  private async processTextSearchStrategies(
+    page: playwright.Page,
+    strategies: string[],
+    text: string,
+    alternatives: AlternativeElement[],
+    maxResults: number
+  ): Promise<void> {
+    let totalFound = 0;
+
+    for (const selector of strategies) {
       if (totalFound >= maxResults) {
-        return totalFound;
+        break;
       }
 
-      return await this.processTextStrategy(
+      // biome-ignore lint/nursery/noAwaitInLoop: Sequential element processing required for accurate result ordering
+      totalFound = await this.processTextStrategy(
         page,
         selector,
         text,
@@ -155,9 +172,7 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    }, Promise.resolve(0));
-
-    return alternatives;
+    }
   }
 
   private getTextSearchStrategies(text: string): string[] {
@@ -401,73 +416,136 @@ export class ElementDiscovery extends DiagnosticBase {
     attributes: Record<string, string>,
     maxResults: number
   ): Promise<AlternativeElement[]> {
-    const page = this.getPage();
     const alternatives: AlternativeElement[] = [];
 
-    // Process attributes sequentially using reduce
-    await Object.entries(attributes).reduce(
-      async (previousPromise, [attrName, attrValue]) => {
-        const totalFound = await previousPromise;
-
-        if (totalFound >= maxResults) {
-          return totalFound;
-        }
-
-        try {
-          const elements = await page.$$(`[${attrName}="${attrValue}"]`);
-
-          // Process elements for this attribute using inner reduce
-          return await elements.reduce(async (innerPromise, element) => {
-            const currentFound = await innerPromise;
-
-            if (currentFound >= maxResults) {
-              await this.safeDispose(
-                element,
-                `findByAttributes-excess-${currentFound}`
-              );
-              return currentFound;
-            }
-
-            try {
-              // Wrap element in smart handle
-              const smartElement = this.smartHandleBatch.add(element);
-
-              alternatives.push({
-                selector: await this.generateSelector(element),
-                confidence: 0.9, // High confidence for exact attribute match
-                reason: `attribute match: ${attrName}="${attrValue}"`,
-                element: smartElement,
-                elementId: `attr_${currentFound}`,
-              });
-              return currentFound + 1;
-            } catch (_elementError) {
-              await this.safeDispose(
-                element,
-                `findByAttributes-element-${currentFound}`
-              );
-              return currentFound;
-            }
-          }, Promise.resolve(totalFound));
-        } catch (error) {
-          // Continue with other attributes if one fails
-          this.logger.warn(
-            `Attribute search failed for ${attrName}='${attrValue}':`,
-            error
-          );
-          return totalFound;
-        }
-      },
-      Promise.resolve(0)
+    await this.processAttributeEntries(
+      Object.entries(attributes),
+      alternatives,
+      maxResults
     );
 
     return alternatives;
+  }
+
+  private async processAttributeEntries(
+    attributeEntries: [string, string][],
+    alternatives: AlternativeElement[],
+    maxResults: number
+  ): Promise<void> {
+    let totalFound = 0;
+
+    for (const [attrName, attrValue] of attributeEntries) {
+      if (totalFound >= maxResults) {
+        break;
+      }
+
+      // biome-ignore lint/nursery/noAwaitInLoop: Sequential attribute processing required for accurate result ordering
+      totalFound = await this.processAttributeEntry(
+        attrName,
+        attrValue,
+        alternatives,
+        totalFound,
+        maxResults
+      );
+    }
+  }
+
+  private async processAttributeEntry(
+    attrName: string,
+    attrValue: string,
+    alternatives: AlternativeElement[],
+    totalFound: number,
+    maxResults: number
+  ): Promise<number> {
+    const page = this.getPage();
+
+    try {
+      const elements = await page.$$(`[${attrName}="${attrValue}"]`);
+      return await this.processAttributeElements(
+        elements,
+        attrName,
+        attrValue,
+        alternatives,
+        totalFound,
+        maxResults
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Attribute search failed for ${attrName}='${attrValue}':`,
+        error
+      );
+      return totalFound;
+    }
+  }
+
+  private async processAttributeElements(
+    elements: playwright.ElementHandle[],
+    attrName: string,
+    attrValue: string,
+    alternatives: AlternativeElement[],
+    totalFound: number,
+    maxResults: number
+  ): Promise<number> {
+    let currentFound = totalFound;
+
+    for (const element of elements) {
+      if (currentFound >= maxResults) {
+        // biome-ignore lint/nursery/noAwaitInLoop: Element disposal must be sequential to prevent resource leaks
+        await this.safeDispose(
+          element,
+          `findByAttributes-excess-${currentFound}`
+        );
+        continue;
+      }
+
+      const processResult = await this.processAttributeElement(
+        element,
+        attrName,
+        attrValue,
+        alternatives,
+        currentFound
+      );
+
+      if (processResult) {
+        currentFound++;
+      }
+    }
+
+    return currentFound;
+  }
+
+  private async processAttributeElement(
+    element: playwright.ElementHandle,
+    attrName: string,
+    attrValue: string,
+    alternatives: AlternativeElement[],
+    currentFound: number
+  ): Promise<boolean> {
+    try {
+      const smartElement = this.smartHandleBatch.add(element);
+
+      alternatives.push({
+        selector: await this.generateSelector(element),
+        confidence: 0.9,
+        reason: `attribute match: ${attrName}="${attrValue}"`,
+        element: smartElement,
+        elementId: `attr_${currentFound}`,
+      });
+
+      return true;
+    } catch (_elementError) {
+      await this.safeDispose(
+        element,
+        `findByAttributes-element-${currentFound}`
+      );
+      return false;
+    }
   }
 
   private async findImplicitRoleElements(
     role: string,
     maxResults: number
   ): Promise<AlternativeElement[]> {
-    const page = this.getPage();
     const roleTagMapping: Record<string, string[]> = {
       button: ['button', 'input[type="button"]', 'input[type="submit"]'],
       textbox: ['input[type="text"]', 'input[type="email"]', 'textarea'],
@@ -479,59 +557,124 @@ export class ElementDiscovery extends DiagnosticBase {
     const tags = roleTagMapping[role] || [];
     const alternatives: AlternativeElement[] = [];
 
-    // Process tag selectors sequentially using reduce
-    await tags.reduce(async (previousPromise, tagSelector) => {
-      const totalFound = await previousPromise;
-
-      if (totalFound >= maxResults) {
-        return totalFound;
-      }
-
-      try {
-        const elements = await page.$$(tagSelector);
-
-        // Process elements for this selector using inner reduce
-        return await elements.reduce(async (innerPromise, element) => {
-          const currentFound = await innerPromise;
-
-          if (currentFound >= maxResults) {
-            await this.safeDispose(
-              element,
-              `findImplicitRole-excess-${currentFound}`
-            );
-            return currentFound;
-          }
-
-          try {
-            // Wrap element in smart handle
-            const smartElement = this.smartHandleBatch.add(element);
-
-            alternatives.push({
-              selector: await this.generateSelector(element),
-              confidence: 0.6,
-              reason: `implicit role match: "${role}" via ${tagSelector}`,
-              element: smartElement,
-              elementId: `implicit_${currentFound}`,
-            });
-            return currentFound + 1;
-          } catch (_elementError) {
-            await this.safeDispose(
-              element,
-              `findImplicitRole-element-${currentFound}`
-            );
-            return currentFound;
-          }
-        }, Promise.resolve(totalFound));
-      } catch (error) {
-        this.logger.warn(
-          `Implicit role search failed for '${tagSelector}':`,
-          error
-        );
-        return totalFound;
-      }
-    }, Promise.resolve(0));
-
+    await this.processImplicitRoleTags(tags, role, alternatives, maxResults);
     return alternatives;
+  }
+
+  private async processImplicitRoleTags(
+    tags: string[],
+    role: string,
+    alternatives: AlternativeElement[],
+    maxResults: number
+  ): Promise<void> {
+    let totalFound = 0;
+
+    for (const tagSelector of tags) {
+      if (totalFound >= maxResults) {
+        break;
+      }
+
+      // biome-ignore lint/nursery/noAwaitInLoop: Sequential role tag processing required for accurate result ordering
+      totalFound = await this.processImplicitRoleTag(
+        tagSelector,
+        role,
+        alternatives,
+        totalFound,
+        maxResults
+      );
+    }
+  }
+
+  private async processImplicitRoleTag(
+    tagSelector: string,
+    role: string,
+    alternatives: AlternativeElement[],
+    totalFound: number,
+    maxResults: number
+  ): Promise<number> {
+    const page = this.getPage();
+
+    try {
+      const elements = await page.$$(tagSelector);
+      return await this.processImplicitRoleElements(
+        elements,
+        tagSelector,
+        role,
+        alternatives,
+        totalFound,
+        maxResults
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Implicit role search failed for '${tagSelector}':`,
+        error
+      );
+      return totalFound;
+    }
+  }
+
+  private async processImplicitRoleElements(
+    elements: playwright.ElementHandle[],
+    tagSelector: string,
+    role: string,
+    alternatives: AlternativeElement[],
+    totalFound: number,
+    maxResults: number
+  ): Promise<number> {
+    let currentFound = totalFound;
+
+    for (const element of elements) {
+      if (currentFound >= maxResults) {
+        // biome-ignore lint/nursery/noAwaitInLoop: Element disposal must be sequential to prevent resource leaks
+        await this.safeDispose(
+          element,
+          `findImplicitRole-excess-${currentFound}`
+        );
+        continue;
+      }
+
+      const processResult = await this.processImplicitRoleElement(
+        element,
+        tagSelector,
+        role,
+        alternatives,
+        currentFound
+      );
+
+      if (processResult) {
+        currentFound++;
+      }
+    }
+
+    return currentFound;
+  }
+
+  private async processImplicitRoleElement(
+    element: playwright.ElementHandle,
+    tagSelector: string,
+    role: string,
+    alternatives: AlternativeElement[],
+    currentFound: number
+  ): Promise<boolean> {
+    try {
+      const smartElement = this.smartHandleBatch.add(element);
+
+      alternatives.push({
+        selector: await this.generateSelector(element),
+        confidence: 0.6,
+        reason: `implicit role match: "${role}" via ${tagSelector}`,
+        element: smartElement,
+        elementId: `implicit_${currentFound}`,
+      });
+
+      return true;
+    } catch (_elementError) {
+      await this.safeDispose(
+        element,
+        `findImplicitRole-element-${currentFound}`
+      );
+      return false;
+    }
   }
 
   private async generateSelector(

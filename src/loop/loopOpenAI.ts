@@ -54,14 +54,10 @@ export class OpenAIDelegate implements LLMDelegate {
     );
     const openaiTools = this.convertToolsToOpenAIFormat(conversation.tools);
 
-    const openai = await this.openai();
-    const response = await openai.chat.completions.create({
-      model,
-      messages: openaiMessages,
-      tools: openaiTools,
-      tool_choice: 'auto',
-    });
-
+    const response = await this.executeOpenAIRequest(
+      openaiMessages,
+      openaiTools
+    );
     const message = response.choices[0].message;
     const genericToolCalls = this.extractToolCallsFromResponse(message);
 
@@ -74,45 +70,53 @@ export class OpenAIDelegate implements LLMDelegate {
     return genericToolCalls;
   }
 
+  private async executeOpenAIRequest(
+    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+    tools: OpenAI.Chat.Completions.ChatCompletionTool[]
+  ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
+    const openai = await this.openai();
+    return await openai.chat.completions.create({
+      model,
+      messages,
+      tools,
+      tool_choice: 'auto',
+    });
+  }
+
   private convertMessagesToOpenAIFormat(
     messages: LLMMessage[]
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
-    const openaiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
-      [];
-
-    for (const message of messages) {
-      const convertedMessage = this.convertSingleMessageToOpenAI(message);
-      if (convertedMessage) {
-        openaiMessages.push(convertedMessage);
-      }
-    }
-
-    return openaiMessages;
+    return messages
+      .map((message) => this.convertSingleMessageToOpenAI(message))
+      .filter(
+        (
+          message
+        ): message is OpenAI.Chat.Completions.ChatCompletionMessageParam =>
+          message !== null
+      );
   }
 
   private convertSingleMessageToOpenAI(
     message: LLMMessage
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam | null {
-    if (message.role === 'user') {
-      return {
+    const converters: Record<
+      string,
+      () => OpenAI.Chat.Completions.ChatCompletionMessageParam
+    > = {
+      user: () => ({
         role: 'user',
         content: message.content,
-      };
-    }
-
-    if (message.role === 'assistant') {
-      return this.convertAssistantMessage(message);
-    }
-
-    if (message.role === 'tool') {
-      return {
+      }),
+      assistant: () => this.convertAssistantMessage(message),
+      tool: () => ({
         role: 'tool',
-        tool_call_id: message.toolCallId,
+        tool_call_id: (message as { toolCallId: string }).toolCallId,
         content: message.content,
-      };
-    }
+      }),
+    };
 
-    return null;
+    const converter = converters[message.role];
+    return converter ? converter() : null;
   }
 
   private convertAssistantMessage(
@@ -123,25 +127,37 @@ export class OpenAIDelegate implements LLMDelegate {
     }
 
     const assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam =
-      {
-        role: 'assistant',
-      };
+      { role: 'assistant' };
 
+    this.addContentToAssistantMessage(assistantMessage, message);
+    this.addToolCallsToAssistantMessage(assistantMessage, message);
+
+    return assistantMessage;
+  }
+
+  private addContentToAssistantMessage(
+    assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam,
+    message: LLMMessage
+  ): void {
     if (message.content) {
       assistantMessage.content = message.content;
     }
+  }
 
-    if (
+  private addToolCallsToAssistantMessage(
+    assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam,
+    message: LLMMessage
+  ): void {
+    const hasToolCalls =
       message.role === 'assistant' &&
       message.toolCalls &&
-      message.toolCalls.length > 0
-    ) {
+      message.toolCalls.length > 0;
+
+    if (hasToolCalls && message.toolCalls) {
       assistantMessage.tool_calls = this.convertToolCallsToOpenAI(
         message.toolCalls
       );
     }
-
-    return assistantMessage;
   }
 
   private convertToolCallsToOpenAI(
@@ -210,7 +226,7 @@ export class OpenAIDelegate implements LLMDelegate {
   }
   checkDoneToolCall(toolCall: LLMToolCall): string | null {
     if (toolCall.name === 'done') {
-      return (toolCall.arguments as { result?: string }).result || '';
+      return (toolCall.arguments as { result?: string }).result ?? '';
     }
     return null;
   }

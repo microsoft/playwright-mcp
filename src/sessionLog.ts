@@ -65,22 +65,53 @@ export class SessionLog {
     isUpdate: boolean
   ) {
     const trimmedCode = code.trim();
-    if (isUpdate) {
-      const lastEntry = this._pendingEntries.at(-1);
-      if (lastEntry?.userAction?.name === action.name) {
-        lastEntry.userAction = action;
-        lastEntry.code = trimmedCode;
-        return;
-      }
+
+    if (this._shouldUpdateExistingEntry(action, isUpdate, trimmedCode)) {
+      return;
     }
-    if (action.name === 'navigate') {
-      // Already logged at this location.
-      const lastEntry = this._pendingEntries.at(-1);
-      if (lastEntry?.tabSnapshot?.url === action.url) {
-        return;
-      }
+
+    if (this._shouldSkipDuplicateNavigation(action)) {
+      return;
     }
-    const entry: LogEntry = {
+
+    const entry = this._createUserActionEntry(action, tab, trimmedCode);
+    this._appendEntry(entry);
+  }
+
+  private _shouldUpdateExistingEntry(
+    action: actions.Action,
+    isUpdate: boolean,
+    trimmedCode: string
+  ): boolean {
+    if (!isUpdate) {
+      return false;
+    }
+
+    const lastEntry = this._pendingEntries.at(-1);
+    if (lastEntry?.userAction?.name === action.name) {
+      lastEntry.userAction = action;
+      lastEntry.code = trimmedCode;
+      return true;
+    }
+
+    return false;
+  }
+
+  private _shouldSkipDuplicateNavigation(action: actions.Action): boolean {
+    if (action.name !== 'navigate') {
+      return false;
+    }
+
+    const lastEntry = this._pendingEntries.at(-1);
+    return lastEntry?.tabSnapshot?.url === action.url;
+  }
+
+  private _createUserActionEntry(
+    action: actions.Action,
+    tab: Tab,
+    trimmedCode: string
+  ): LogEntry {
+    return {
       timestamp: performance.now(),
       userAction: action,
       code: trimmedCode,
@@ -93,7 +124,6 @@ export class SessionLog {
         downloads: [],
       },
     };
-    this._appendEntry(entry);
   }
   private _appendEntry(entry: LogEntry) {
     this._pendingEntries.push(entry);

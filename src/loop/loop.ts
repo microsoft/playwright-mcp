@@ -47,34 +47,59 @@ export async function runTask(
   const taskContent = createTaskContent(task, oneShot);
   const conversation = delegate.createConversation(taskContent, tools, oneShot);
 
-  // Conversation iterations must be sequential as each depends on previous results
-  for (let iteration = 0; iteration < 5; ++iteration) {
-    debug('history')('Making API call for iteration', iteration);
+  return await runConversationLoop(delegate, client, conversation, oneShot);
+}
+
+async function runConversationLoop(
+  delegate: LLMDelegate,
+  client: Client,
+  conversation: LLMConversation,
+  oneShot: boolean
+): Promise<LLMMessage[]> {
+  const MAX_ITERATIONS = 5;
+
+  for (let iteration = 0; iteration < MAX_ITERATIONS; ++iteration) {
     // biome-ignore lint/nursery/noAwaitInLoop: Sequential conversation flow - each iteration depends on previous results
-    const toolCalls = await delegate.makeApiCall(conversation);
-
-    if (toolCalls.length === 0) {
-      throw new Error('Call the "done" tool when the task is complete.');
-    }
-
-    const { toolResults, isDone } = await processToolCalls(
+    const result = await executeIteration(
       delegate,
       client,
-      toolCalls
+      conversation,
+      iteration
     );
 
-    if (isDone) {
-      return conversation.messages;
-    }
-
-    delegate.addToolResults(conversation, toolResults);
-
-    if (oneShot) {
+    if (result.isDone || oneShot) {
       return conversation.messages;
     }
   }
 
   throw new Error('Failed to perform step, max attempts reached');
+}
+
+async function executeIteration(
+  delegate: LLMDelegate,
+  client: Client,
+  conversation: LLMConversation,
+  iteration: number
+): Promise<{ isDone: boolean }> {
+  debug('history')('Making API call for iteration', iteration);
+  const toolCalls = await delegate.makeApiCall(conversation);
+
+  if (toolCalls.length === 0) {
+    throw new Error('Call the "done" tool when the task is complete.');
+  }
+
+  const { toolResults, isDone } = await processToolCalls(
+    delegate,
+    client,
+    toolCalls
+  );
+
+  if (isDone) {
+    return { isDone: true };
+  }
+
+  delegate.addToolResults(conversation, toolResults);
+  return { isDone: false };
 }
 
 function createTaskContent(task: string, oneShot: boolean): string {

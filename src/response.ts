@@ -264,7 +264,7 @@ export class Response {
     }
 
     return messages.filter((msg) => {
-      const level = (msg.type || 'log') as 'log' | 'warn' | 'error' | 'info';
+      const level = (msg.type ?? 'log') as 'log' | 'warn' | 'error' | 'info';
       return levels.includes(level);
     });
   }

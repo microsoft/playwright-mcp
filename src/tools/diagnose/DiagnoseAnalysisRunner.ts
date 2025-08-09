@@ -57,7 +57,7 @@ export class DiagnoseAnalysisRunner {
 
     if (!structureResult.success) {
       throw new Error(
-        `Unified system analysis failed: ${structureResult.error?.message || 'Unknown error'}`
+        `Unified system analysis failed: ${structureResult.error?.message ?? 'Unknown error'}`
       );
     }
 

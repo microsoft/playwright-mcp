@@ -127,7 +127,7 @@ export class InitializationManager {
         // biome-ignore lint/nursery/noAwaitInLoop: components may have implicit dependencies
         await this.executeWithRetry(
           componentInit,
-          stage.retryCount || 1,
+          stage.retryCount ?? 1,
           stage.timeout
         );
       }

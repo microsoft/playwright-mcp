@@ -34,7 +34,10 @@ export class ManualPromise<T = void> extends Promise<T> {
 export class LongStandingScope {
   private _terminateError: Error | undefined;
   private _closeError: Error | undefined;
-  private readonly _terminatePromises = new Map<ManualPromise<Error>, string[]>();
+  private readonly _terminatePromises = new Map<
+    ManualPromise<Error>,
+    string[]
+  >();
   private _isClosed = false;
   reject(error: Error) {
     this._isClosed = true;
@@ -60,10 +63,7 @@ export class LongStandingScope {
     return Promise.race(scopes.map((s) => s.race(promise)));
   }
   race<T>(promise: Promise<T> | Promise<T>[]): Promise<T> {
-    return this._race(
-      Array.isArray(promise) ? promise : [promise],
-      false
-    ) as Promise<T>;
+    return this._race(Array.isArray(promise) ? promise : [promise], false);
   }
   safeRace<T>(promise: Promise<T>, defaultValue?: T): Promise<T> {
     return this._race([promise], true, defaultValue);
@@ -83,12 +83,12 @@ export class LongStandingScope {
     }
     this._terminatePromises.set(terminatePromise, frames);
     try {
-      return (await Promise.race([
+      return await Promise.race([
         terminatePromise.then((e) =>
           safe ? (defaultValue as T) : Promise.reject(e)
         ),
         ...promises,
-      ])) as T;
+      ]);
     } finally {
       this._terminatePromises.delete(terminatePromise);
     }

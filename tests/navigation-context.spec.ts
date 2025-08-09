@@ -22,7 +22,7 @@ test.describe('Navigation Context Handling', () => {
     test('should handle navigation completion with stable context', async ({
       page,
     }) => {
-      const { tab, mockContext } = createTabWithMockContext(page);
+      const { tab } = createTabWithMockContext(page);
 
       // Navigate to a page that will trigger context changes
       await page.goto(DATA_URLS.SIMPLE_PAGE('Initial Page'));
@@ -40,7 +40,7 @@ test.describe('Navigation Context Handling', () => {
     test('should wait for network requests after navigation', async ({
       page,
     }) => {
-      const { tab, mockContext } = createTabWithMockContext(page);
+      const { tab } = createTabWithMockContext(page);
 
       await page.goto(DATA_URLS.SIMPLE_PAGE('Test'));
 
@@ -54,7 +54,7 @@ test.describe('Navigation Context Handling', () => {
     test('should handle timeout gracefully during navigation', async ({
       page,
     }) => {
-      const { tab, mockContext } = createTabWithMockContext(page);
+      const { tab } = createTabWithMockContext(page);
 
       await page.goto(DATA_URLS.SIMPLE_PAGE('Test'));
 
@@ -73,7 +73,7 @@ test.describe('Navigation Context Handling', () => {
     test('should detect navigation and defer snapshot capture', async ({
       page,
     }) => {
-      const { tab, mockContext } = createTabWithMockContext(page);
+      const { mockContext } = createTabWithMockContext(page);
 
       await page.goto(DATA_URLS.SIMPLE_PAGE('Initial'));
 
@@ -101,7 +101,7 @@ test.describe('Navigation Context Handling', () => {
     test('should handle execution context destruction gracefully', async ({
       page,
     }) => {
-      const { tab, mockContext } = createTabWithMockContext(page);
+      const { mockContext } = createTabWithMockContext(page);
 
       await page.goto(DATA_URLS.SIMPLE_PAGE('Test'));
 
@@ -126,7 +126,7 @@ test.describe('Navigation Context Handling', () => {
     test('should retry snapshot capture on context destruction', async ({
       page,
     }) => {
-      const { tab, mockContext } = createTabWithMockContext(page);
+      const { mockContext } = createTabWithMockContext(page);
 
       await page.goto(DATA_URLS.SIMPLE_PAGE('Original'));
 
@@ -187,7 +187,7 @@ test.describe('Navigation Context Handling', () => {
     test('should maintain response quality during navigation', async ({
       page,
     }) => {
-      const { tab, mockContext } = createTabWithMockContext(page);
+      const { mockContext } = createTabWithMockContext(page);
 
       await page.goto(DATA_URLS.SIMPLE_PAGE('Initial'));
 

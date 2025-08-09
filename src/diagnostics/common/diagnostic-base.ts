@@ -97,7 +97,7 @@ export function diagnosticWarn(
   _component: string,
   _operation: string,
   _message: string,
-  _error?: Error | unknown
+  _error?: unknown
 ): void {
   // Diagnostic warnings are handled silently
 }
@@ -109,7 +109,7 @@ export function diagnosticError(
   _component: string,
   _operation: string,
   _message: string,
-  _error?: Error | unknown
+  _error?: unknown
 ): void {
   // Diagnostic errors are handled silently
 }
@@ -127,15 +127,29 @@ export function diagnosticInfo(
 }
 
 /**
+ * Log debug message with consistent format
+ */
+export function diagnosticDebug(
+  _component: string,
+  _operation: string,
+  _message: string,
+  _data?: unknown
+): void {
+  // Diagnostic debug messages are handled silently
+}
+
+/**
  * Create operation-specific logger
  */
 export function createDiagnosticLogger(component: string, operation: string) {
   return {
-    warn: (message: string, error?: Error | unknown) =>
+    warn: (message: string, error?: unknown) =>
       diagnosticWarn(component, operation, message, error),
-    error: (message: string, error?: Error | unknown) =>
+    error: (message: string, error?: unknown) =>
       diagnosticError(component, operation, message, error),
     info: (message: string, data?: unknown) =>
       diagnosticInfo(component, operation, message, data),
+    debug: (message: string, data?: unknown) =>
+      diagnosticDebug(component, operation, message, data),
   };
 }

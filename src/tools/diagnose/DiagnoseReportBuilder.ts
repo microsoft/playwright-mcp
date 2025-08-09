@@ -228,10 +228,8 @@ export class DiagnoseReportBuilder {
       },
     };
 
-    return (
-      iconMaps[type][level as keyof (typeof iconMaps)[typeof type]] ||
-      iconMaps[type].default
-    );
+    const iconMap = iconMaps[type];
+    return iconMap[level as keyof typeof iconMap] || iconMap.default;
   }
 
   private getPercentageSign(percent: number): string {
@@ -387,21 +385,19 @@ export class DiagnoseReportBuilder {
       .addLine('**Performance Baseline Comparison:**');
 
     for (const component of Object.keys(expectedExecutionTimes)) {
-      const expected =
-        expectedExecutionTimes[
-          component as keyof typeof expectedExecutionTimes
-        ];
-      const actual = actualAverages[component as keyof typeof actualAverages];
+      const expected = expectedExecutionTimes[component];
+      const actual = actualAverages[component];
       const deviation = deviations[component];
 
       if (actual > 0) {
-        const indicator = this.getStatusIcon(
-          deviation?.significance || 'normal',
-          'performance'
-        );
-        const deviationText = deviation
-          ? ` (${this.getPercentageSign(deviation.percent)}${deviation.percent}% ${deviation.significance})`
-          : '';
+        const significance = deviation?.significance || 'normal';
+        const indicator = this.getStatusIcon(significance, 'performance');
+
+        let deviationText = '';
+        if (deviation) {
+          const sign = this.getPercentageSign(deviation.percent);
+          deviationText = ` (${sign}${deviation.percent}% ${deviation.significance})`;
+        }
 
         this.reportBuilder.addLine(
           `  ${indicator} **${component}**: Expected ${expected}ms, Actual ${actual.toFixed(0)}ms${deviationText}`
@@ -665,15 +661,15 @@ export class DiagnoseReportBuilder {
     const layoutData: [string, number][] = [
       [
         'Fixed position elements',
-        metrics?.layoutMetrics?.fixedElements?.length || 0,
+        metrics?.layoutMetrics?.fixedElements?.length ?? 0,
       ],
       [
         'High z-index elements',
-        metrics?.layoutMetrics?.highZIndexElements?.length || 0,
+        metrics?.layoutMetrics?.highZIndexElements?.length ?? 0,
       ],
       [
         'Overflow hidden elements',
-        metrics?.layoutMetrics?.overflowHiddenElements || 0,
+        metrics?.layoutMetrics?.overflowHiddenElements ?? 0,
       ],
     ];
 

@@ -8,10 +8,12 @@
 import { getErrorMessage } from './commonFormatters.js';
 import type { TextReportBuilder } from './reportBuilder.js';
 
+type KeyValueConfigValue = string | number | boolean | null | undefined;
+
 export interface KeyValueConfig {
   key: string;
-  value: string | number | boolean | null | undefined;
-  formatter?: (value: string | number | boolean | null | undefined) => string;
+  value: KeyValueConfigValue;
+  formatter?: (value: KeyValueConfigValue) => string;
 }
 
 export interface SystemStatsConfig {
@@ -134,7 +136,7 @@ export function addComprehensivePageStructure(
 ): TextReportBuilder {
   return addKeyValuePairs(builder, [
     { key: 'URL', value: config.url },
-    { key: 'Title', value: config.title || 'N/A' },
+    { key: 'Title', value: config.title ?? 'N/A' },
     {
       key: 'IFrames',
       value: `${config.iframes.count} iframes detected: ${config.iframes.detected}`,
@@ -278,9 +280,7 @@ export function addErrorSection(
 /**
  * Format a value consistently for display
  */
-function formatValue(
-  value: string | number | boolean | null | undefined
-): string {
+function formatValue(value: KeyValueConfigValue): string {
   if (value === null || value === undefined) {
     return 'N/A';
   }

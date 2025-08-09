@@ -216,7 +216,7 @@ export class CDPRelayServer {
     switch (method) {
       case 'forwardCDPEvent': {
         const sessionId =
-          (params.sessionId as string | undefined) ||
+          (params.sessionId as string | undefined) ??
           this._connectedTabInfo?.sessionId;
         this._sendToPlaywright({
           sessionId,

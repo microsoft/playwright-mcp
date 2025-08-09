@@ -172,5 +172,5 @@ class TabShareExtension {
   }
 }
 
-const _extension = new TabShareExtension();
-// Extension is instantiated to initialize event listeners
+// Initialize the extension to set up event listeners
+new TabShareExtension();

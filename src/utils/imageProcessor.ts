@@ -206,12 +206,12 @@ function applySpecificFormat(
   switch (format) {
     case 'jpeg':
       return {
-        processor: processor.jpeg({ quality: quality || 85 }),
+        processor: processor.jpeg({ quality: quality ?? 85 }),
         contentType: 'image/jpeg',
       };
     case 'webp':
       return {
-        processor: processor.webp({ quality: quality || 85 }),
+        processor: processor.webp({ quality: quality ?? 85 }),
         contentType: 'image/webp',
       };
     default:

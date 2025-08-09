@@ -105,7 +105,7 @@ export class PageAnalyzer extends DiagnosticBase {
     // Process iframes sequentially to avoid overwhelming the browser
     for (const iframe of iframes) {
       // biome-ignore lint/nursery/noAwaitInLoop: sequential processing prevents browser overload
-      const src = (await iframe.getAttribute('src')) || 'about:blank';
+      const src = (await iframe.getAttribute('src')) ?? 'about:blank';
 
       try {
         await this.processIndividualIframe(
@@ -144,7 +144,13 @@ export class PageAnalyzer extends DiagnosticBase {
       await this.verifyFrameAccessibility(frame);
       accessible.push({ src, accessible: true });
       await this.updateFrameMetadata(frame);
-    } catch (_frameError) {
+    } catch (frameError) {
+      // Log frame access error for debugging
+      this.logger.debug('Frame access failed:', {
+        src,
+        error:
+          frameError instanceof Error ? frameError.message : 'Unknown error',
+      });
       inaccessible.push({
         src,
         reason: 'Frame content not accessible - cross-origin or blocked',

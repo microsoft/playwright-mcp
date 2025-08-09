@@ -200,7 +200,7 @@ async function findElementsWithUnifiedSystem(
     throw new Error(buildErrorMessage(operationResult.error));
   }
 
-  return (operationResult.data as ElementAlternative[]) || [];
+  return (operationResult.data as ElementAlternative[]) ?? [];
 }
 
 async function findElementsWithLegacySystem(
@@ -294,7 +294,7 @@ function buildUnifiedSystemConfig(
 }
 
 function buildErrorMessage(errorInfo?: OperationError): string {
-  let errorMessage = `Element discovery failed: ${errorInfo?.message || 'Unknown error'}`;
+  let errorMessage = `Element discovery failed: ${errorInfo?.message ?? 'Unknown error'}`;
 
   if (errorInfo?.suggestions && errorInfo.suggestions.length > 0) {
     errorMessage += '\n\nSuggestions:';
@@ -320,7 +320,7 @@ function formatElementResults(alternatives: ElementAlternative[]): string[] {
       `   Confidence: ${formatConfidencePercentage(alt.confidence)}`
     );
     builder.addLine(
-      `   Reason: ${(alt as ElementAlternative & { reason?: string }).reason || 'No reason provided'}`
+      `   Reason: ${(alt as ElementAlternative & { reason?: string }).reason ?? 'No reason provided'}`
     );
     if (index < alternatives.length - 1) {
       builder.addEmptyLine();
@@ -356,13 +356,13 @@ async function addUnifiedDiagnosticInfo(
   if (diagResult.success) {
     const diagnosticInfo = diagResult.data as DiagnosticInfo;
     builder.addSection('Enhanced Diagnostic Information', (b) => {
-      b.addKeyValue('Analysis time', `${diagResult.executionTime || 0}ms`);
+      b.addKeyValue('Analysis time', `${diagResult.executionTime ?? 0}ms`);
       addStructuralDiagnosticInfo(diagnosticInfo, b.getSections());
     });
   } else {
     builder.addSection('Diagnostic Information', (b) => {
       b.addListItem(
-        `Error getting diagnostic information: ${diagResult.error?.message || 'Unknown error'}`
+        `Error getting diagnostic information: ${diagResult.error?.message ?? 'Unknown error'}`
       );
     });
   }
@@ -387,18 +387,18 @@ function addParallelAnalysisInfo(
 ): void {
   const analysisInfo = new ArrayBuilder<string>()
     .add(
-      `- Page has ${structure.iframes?.count || 0} iframes detected: ${structure.iframes?.detected}`
+      `- Page has ${structure.iframes?.count ?? 0} iframes detected: ${structure.iframes?.detected}`
     )
-    .add(`- Total visible elements: ${structure.elements?.totalVisible || 0}`)
+    .add(`- Total visible elements: ${structure.elements?.totalVisible ?? 0}`)
     .add(
-      `- Total interactable elements: ${structure.elements?.totalInteractable || 0}`
+      `- Total interactable elements: ${structure.elements?.totalInteractable ?? 0}`
     )
     .addIf(
       !!(
         structure.modalStates?.blockedBy &&
         structure.modalStates.blockedBy.length > 0
       ),
-      `- Page blocked by: ${structure.modalStates?.blockedBy?.join(', ') || ''}`
+      `- Page blocked by: ${structure.modalStates?.blockedBy?.join(', ') ?? ''}`
     )
     .build();
 
@@ -411,20 +411,20 @@ function addStandardAnalysisInfo(
 ): void {
   const analysisInfo = new ArrayBuilder<string>()
     .add(
-      `- Page has ${diagnosticInfo?.iframes?.count || 0} iframes detected: ${diagnosticInfo?.iframes?.detected}`
+      `- Page has ${diagnosticInfo?.iframes?.count ?? 0} iframes detected: ${diagnosticInfo?.iframes?.detected}`
     )
     .add(
-      `- Total visible elements: ${diagnosticInfo?.elements?.totalVisible || 0}`
+      `- Total visible elements: ${diagnosticInfo?.elements?.totalVisible ?? 0}`
     )
     .add(
-      `- Total interactable elements: ${diagnosticInfo?.elements?.totalInteractable || 0}`
+      `- Total interactable elements: ${diagnosticInfo?.elements?.totalInteractable ?? 0}`
     )
     .addIf(
       !!(
         diagnosticInfo?.modalStates?.blockedBy &&
         diagnosticInfo.modalStates.blockedBy.length > 0
       ),
-      `- Page blocked by: ${diagnosticInfo?.modalStates?.blockedBy?.join(', ') || ''}`
+      `- Page blocked by: ${diagnosticInfo?.modalStates?.blockedBy?.join(', ') ?? ''}`
     )
     .build();
 
@@ -478,7 +478,7 @@ function addPerformanceInfoIfAvailable(
   builder.addSection('Enhanced Discovery Information', (b) => {
     b.addKeyValue(
       'Discovery execution time',
-      `${context.operationResult?.executionTime || 0}ms`
+      `${context.operationResult?.executionTime ?? 0}ms`
     );
 
     if (

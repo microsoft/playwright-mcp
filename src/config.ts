@@ -81,24 +81,35 @@ function parseBrowserType(browser: string): {
   browserName: 'chromium' | 'firefox' | 'webkit' | undefined;
   channel: string | undefined;
 } {
-  switch (browser) {
-    case 'chrome':
-    case 'chrome-beta':
-    case 'chrome-canary':
-    case 'chrome-dev':
-    case 'chromium':
-    case 'msedge':
-    case 'msedge-beta':
-    case 'msedge-canary':
-    case 'msedge-dev':
-      return { browserName: 'chromium', channel: browser };
-    case 'firefox':
-      return { browserName: 'firefox', channel: undefined };
-    case 'webkit':
-      return { browserName: 'webkit', channel: undefined };
-    default:
-      return { browserName: undefined, channel: undefined };
+  if (isChromiumVariant(browser)) {
+    return { browserName: 'chromium', channel: browser };
   }
+
+  if (browser === 'firefox') {
+    return { browserName: 'firefox', channel: undefined };
+  }
+
+  if (browser === 'webkit') {
+    return { browserName: 'webkit', channel: undefined };
+  }
+
+  return { browserName: undefined, channel: undefined };
+}
+
+function isChromiumVariant(browser: string): boolean {
+  const chromiumVariants = [
+    'chrome',
+    'chrome-beta',
+    'chrome-canary',
+    'chrome-dev',
+    'chromium',
+    'msedge',
+    'msedge-beta',
+    'msedge-canary',
+    'msedge-dev',
+  ];
+
+  return chromiumVariants.includes(browser);
 }
 
 function createLaunchOptions(
@@ -186,10 +197,31 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
 
   validateDeviceAndCDPOptions(cliOptions);
 
+  const browserConfig = createBrowserConfig(cliOptions, browserName, channel);
+  const serverConfig = createServerConfig(cliOptions);
+  const networkConfig = createNetworkConfig(cliOptions);
+
+  return {
+    ...browserConfig,
+    ...serverConfig,
+    ...networkConfig,
+    capabilities: cliOptions.caps as ToolCapability[],
+    saveSession: cliOptions.saveSession,
+    saveTrace: cliOptions.saveTrace,
+    outputDir: cliOptions.outputDir,
+    imageResponses: cliOptions.imageResponses,
+  };
+}
+
+function createBrowserConfig(
+  cliOptions: CLIOptions,
+  browserName: 'chromium' | 'firefox' | 'webkit' | undefined,
+  channel?: string
+): Pick<Config, 'browser'> {
   const launchOptions = createLaunchOptions(cliOptions, channel);
   const contextOptions = createContextOptions(cliOptions);
 
-  const result: Config = {
+  return {
     browser: {
       browserName,
       isolated: cliOptions.isolated,
@@ -198,21 +230,25 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
       contextOptions,
       cdpEndpoint: cliOptions.cdpEndpoint,
     },
+  };
+}
+
+function createServerConfig(cliOptions: CLIOptions): Pick<Config, 'server'> {
+  return {
     server: {
       port: cliOptions.port,
       host: cliOptions.host,
     },
-    capabilities: cliOptions.caps as ToolCapability[],
+  };
+}
+
+function createNetworkConfig(cliOptions: CLIOptions): Pick<Config, 'network'> {
+  return {
     network: {
       allowedOrigins: cliOptions.allowedOrigins,
       blockedOrigins: cliOptions.blockedOrigins,
     },
-    saveSession: cliOptions.saveSession,
-    saveTrace: cliOptions.saveTrace,
-    outputDir: cliOptions.outputDir,
-    imageResponses: cliOptions.imageResponses,
   };
-  return result;
 }
 function configFromEnv(): Config {
   const options: CLIOptions = {};

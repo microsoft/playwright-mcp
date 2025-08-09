@@ -242,7 +242,7 @@ function analyzePatternFrequency(
     for (const [pattern, suggestions] of errorPatterns) {
       if (pattern.test(message)) {
         const patternStr = pattern.source;
-        patternCounts.set(patternStr, (patternCounts.get(patternStr) || 0) + 1);
+        patternCounts.set(patternStr, (patternCounts.get(patternStr) ?? 0) + 1);
 
         if (!patternSuggestions.has(patternStr)) {
           patternSuggestions.set(patternStr, new Set());

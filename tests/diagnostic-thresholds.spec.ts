@@ -385,8 +385,6 @@ test.describe('Integration scenario tests', () => {
     );
 
     // 4. 環境設定の適用（カスタマイズが上書きされるため、期待値を調整）
-    const beforeEnvConfig =
-      smartConfig.getConfig().performance.thresholds.dom.elementsWarning;
     smartConfig.configureForEnvironment('production');
 
     // 環境設定適用後は現在の統合設定された閾値が使用される

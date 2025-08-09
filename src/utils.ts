@@ -23,7 +23,8 @@ function removeControlCharacters(str: string): string {
 export function sanitizeForFilePath(input: string) {
   const sanitize = (str: string) => {
     // First remove control characters, then unsafe filename characters
-    return removeControlCharacters(str).replace(UNSAFE_FILENAME_CHARS, '-');
+    const cleanStr = removeControlCharacters(str);
+    return cleanStr.replace(UNSAFE_FILENAME_CHARS, '-');
   };
   const separator = input.lastIndexOf('.');
   if (separator === -1) {

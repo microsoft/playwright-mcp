@@ -26,7 +26,7 @@ test(
       description: 'https://github.com/microsoft/playwright-mcp/issues/456',
     },
   },
-  async (_fixtures, testInfo) => {
+  async ({}, testInfo) => {
     const file = testInfo.outputPath('main.cjs');
     const projectRoot = process.cwd();
     await fs.writeFile(

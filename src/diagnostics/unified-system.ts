@@ -27,6 +27,27 @@ export type SignificanceLevel = 'normal' | 'notable' | 'significant';
 export type PriorityLevel = 'low' | 'medium' | 'high';
 export type RecommendationType = 'optimization' | 'warning' | 'info';
 
+// Configuration report type aliases
+type ConfigurationStatus = 'default' | 'customized' | 'heavily-customized';
+type AppliedOverride = {
+  category: string;
+  changes: string[];
+  impact: PriorityLevel;
+};
+type PerformanceBaseline = {
+  expectedExecutionTimes: Record<string, number>;
+  actualAverages: Record<string, number>;
+  deviations: Record<
+    string,
+    { percent: number; significance: SignificanceLevel }
+  >;
+};
+type Recommendation = {
+  type: RecommendationType;
+  message: string;
+  priority: PriorityLevel;
+};
+
 export interface SystemStats {
   operationCount: Record<string, number>;
   errorCount: Record<DiagnosticComponent, number>;
@@ -262,7 +283,7 @@ export class UnifiedDiagnosticSystem {
     try {
       // Apply timeout if specified
       const timeout = Number(
-        options?.timeout || componentConfig.executionTimeout || 10_000
+        options?.timeout ?? componentConfig.executionTimeout ?? 10_000
       );
       const timeoutPromise = new Promise<never>((_, reject) => {
         const _timeoutId = setTimeout(
@@ -298,6 +319,12 @@ export class UnifiedDiagnosticSystem {
       } else {
         const baseError =
           error instanceof Error ? error : new Error(getErrorMessage(error));
+        this.logger.error('Operation failed', {
+          operation,
+          component,
+          executionTime,
+          error: baseError.message,
+        });
         enhancedDiagnosticError = DiagnosticError.from(
           baseError,
           component,
@@ -318,7 +345,11 @@ export class UnifiedDiagnosticSystem {
             operation
           );
         } catch (_enrichmentError) {
-          // Error enrichment failed, continue with original error
+          this.logger.warn('Error enrichment failed', {
+            operation,
+            originalError: enhancedDiagnosticError.message,
+            enrichmentError: getErrorMessage(_enrichmentError),
+          });
         }
       }
 
@@ -470,7 +501,11 @@ export class UnifiedDiagnosticSystem {
 
       return enrichedDiagnosticError;
     } catch (_enrichmentError) {
-      // Return original error if enrichment fails
+      this.logger.warn('Error enrichment process failed', {
+        operation,
+        originalError: error.message,
+        enrichmentError: getErrorMessage(_enrichmentError),
+      });
       return error;
     }
   }
@@ -594,25 +629,10 @@ export class UnifiedDiagnosticSystem {
   }
 
   getConfigurationReport(): {
-    configurationStatus: 'default' | 'customized' | 'heavily-customized';
-    appliedOverrides: {
-      category: string;
-      changes: string[];
-      impact: PriorityLevel;
-    }[];
-    performanceBaseline: {
-      expectedExecutionTimes: Record<string, number>;
-      actualAverages: Record<string, number>;
-      deviations: Record<
-        string,
-        { percent: number; significance: SignificanceLevel }
-      >;
-    };
-    recommendations: {
-      type: RecommendationType;
-      message: string;
-      priority: PriorityLevel;
-    }[];
+    configurationStatus: ConfigurationStatus;
+    appliedOverrides: AppliedOverride[];
+    performanceBaseline: PerformanceBaseline;
+    recommendations: Recommendation[];
   } {
     const configData = this.getConfigData();
     const configurationStatus = this.determineConfigurationStatus(
@@ -646,7 +666,7 @@ export class UnifiedDiagnosticSystem {
 
   private determineConfigurationStatus(configSummary: {
     totalOverrides: number;
-  }): 'default' | 'customized' | 'heavily-customized' {
+  }): ConfigurationStatus {
     if (configSummary.totalOverrides === 0) {
       return 'default';
     }

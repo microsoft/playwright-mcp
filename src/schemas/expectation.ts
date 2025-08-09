@@ -71,15 +71,14 @@ export type ExpectationOptions = z.infer<typeof expectationSchema>;
  * Tool-specific default expectation configurations
  * These optimize token usage based on typical tool usage patterns
  */
-const TOOL_DEFAULTS: Record<
-  string,
-  Required<
-    Omit<
-      NonNullable<ExpectationOptions>,
-      'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'
-    >
+type RequiredExpectationBase = Required<
+  Omit<
+    NonNullable<ExpectationOptions>,
+    'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'
   >
-> = {
+>;
+
+const TOOL_DEFAULTS: Record<string, RequiredExpectationBase> = {
   // All tools default to minimal output for maximum token efficiency
   // Users can enable specific outputs as needed
   browser_navigate: {
@@ -137,12 +136,7 @@ const TOOL_DEFAULTS: Record<
 /**
  * General default configuration for tools without specific settings
  */
-const GENERAL_DEFAULT: Required<
-  Omit<
-    NonNullable<ExpectationOptions>,
-    'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'
-  >
-> = {
+const GENERAL_DEFAULT: RequiredExpectationBase = {
   includeSnapshot: false,
   includeConsole: false,
   includeDownloads: false,
@@ -156,12 +150,7 @@ const GENERAL_DEFAULT: Required<
  */
 export function getDefaultExpectation(
   toolName: string
-): Required<
-  Omit<
-    NonNullable<ExpectationOptions>,
-    'snapshotOptions' | 'consoleOptions' | 'imageOptions' | 'diffOptions'
-  >
-> {
+): RequiredExpectationBase {
   return TOOL_DEFAULTS[toolName] || GENERAL_DEFAULT;
 }
 /**

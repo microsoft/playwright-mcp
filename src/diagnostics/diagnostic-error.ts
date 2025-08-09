@@ -10,13 +10,15 @@ export type DiagnosticComponent =
   | 'ConfigManager'
   | 'UnifiedSystem';
 
+type PerformanceImpactLevel = 'low' | 'medium' | 'high';
+
 export interface DiagnosticErrorContext {
   timestamp: number;
   component: DiagnosticComponent;
   operation: string;
   executionTime?: number;
   memoryUsage?: number;
-  performanceImpact?: 'low' | 'medium' | 'high';
+  performanceImpact?: PerformanceImpactLevel;
   suggestions?: string[];
   context?: Record<string, unknown>; // Additional context information
 }
@@ -32,7 +34,7 @@ export class DiagnosticError extends Error {
   readonly originalError?: Error;
   readonly executionTime?: number;
   readonly memoryUsage?: number;
-  readonly performanceImpact?: 'low' | 'medium' | 'high';
+  readonly performanceImpact?: PerformanceImpactLevel;
   readonly suggestions: string[];
   readonly context?: Record<string, unknown>;
 
@@ -51,8 +53,8 @@ export class DiagnosticError extends Error {
     this.originalError = originalError;
     this.executionTime = context.executionTime;
     this.memoryUsage = context.memoryUsage;
-    this.performanceImpact = context.performanceImpact || 'low';
-    this.suggestions = context.suggestions || [];
+    this.performanceImpact = context.performanceImpact ?? 'low';
+    this.suggestions = context.suggestions ?? [];
     this.context = context.context;
 
     // Maintain stack trace for debugging
@@ -92,7 +94,7 @@ export class DiagnosticError extends Error {
     executionTime: number,
     threshold: number
   ): DiagnosticError {
-    let impact: 'high' | 'medium' | 'low';
+    let impact: PerformanceImpactLevel;
     if (executionTime > threshold * 3) {
       impact = 'high';
     } else if (executionTime > threshold * 2) {
@@ -127,7 +129,7 @@ export class DiagnosticError extends Error {
     memoryUsage: number,
     memoryLimit: number
   ): DiagnosticError {
-    let impact: 'high' | 'medium' | 'low';
+    let impact: PerformanceImpactLevel;
     if (memoryUsage > memoryLimit * 2) {
       impact = 'high';
     } else if (memoryUsage > memoryLimit * 1.5) {

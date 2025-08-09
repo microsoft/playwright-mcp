@@ -150,7 +150,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
       client = new Client(
         { name: options?.clientName ?? 'test', version: '1.0.0' },
         options?.roots
-          ? { capabilities: { roots: Object.create(null) } }
+          ? { capabilities: { roots: { listChanged: true } } }
           : undefined
       );
       if (options?.roots) {

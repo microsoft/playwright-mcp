@@ -96,9 +96,7 @@ export function createServer(
       content: [{ type: 'text', text: `### Result\n${messages.join('\n')}` }],
       isError: true,
     });
-    const tool = tools.find((t) => t.name === request.params.name) as
-      | ToolSchema
-      | undefined;
+    const tool = tools.find((t) => t.name === request.params.name);
     if (!tool) {
       return errorResult(`Error: Tool "${request.params.name}" not found`);
     }

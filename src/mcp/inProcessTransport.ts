@@ -8,8 +8,8 @@ import type {
   MessageExtraInfo,
 } from '@modelcontextprotocol/sdk/types.js';
 export class InProcessTransport implements Transport {
-  private _server: Server;
-  private _serverTransport: InProcessServerTransport;
+  private readonly _server: Server;
+  private readonly _serverTransport: InProcessServerTransport;
   private _connected = false;
   constructor(server: Server) {
     this._server = server;
@@ -50,7 +50,7 @@ export class InProcessTransport implements Transport {
   }
 }
 class InProcessServerTransport implements Transport {
-  private _clientTransport: InProcessTransport;
+  private readonly _clientTransport: InProcessTransport;
   constructor(clientTransport: InProcessTransport) {
     this._clientTransport = clientTransport;
   }

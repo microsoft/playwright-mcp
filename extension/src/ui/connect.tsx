@@ -199,15 +199,8 @@ const TabItem: React.FC<{
 }> = ({ tab, isSelected, onSelect }) => {
   const className = `tab-item ${isSelected ? 'selected' : ''}`.trim();
 
-  const handleClick = () => {
+  const handleChange = () => {
     onSelect();
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onSelect();
-    }
   };
 
   return (
@@ -216,8 +209,7 @@ const TabItem: React.FC<{
         checked={isSelected}
         className="tab-radio"
         name="selected-tab"
-        onChange={handleClick}
-        onKeyDown={handleKeyDown}
+        onChange={handleChange}
         type="radio"
       />
       {/* biome-ignore lint/a11y/useAltText: This is a simple favicon image in a Chrome extension UI */}

@@ -13,6 +13,8 @@ ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
 # Set the working directory
 WORKDIR /app
 
+# Security: Using --ignore-scripts to prevent execution of potentially malicious scripts during npm ci
+# This is safe as the package.json contains no preinstall/postinstall scripts that need to run
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
@@ -25,6 +27,8 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
 # ------------------------------
 FROM base AS builder
 
+# Security: Using --ignore-scripts to prevent execution of potentially malicious scripts during npm ci
+# This is safe as the package.json contains no preinstall/postinstall scripts that need to run
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \

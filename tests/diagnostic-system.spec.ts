@@ -928,7 +928,6 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
       pageAnalyzer.analyzePageStructure(),
       pageAnalyzer.analyzePerformanceMetrics(),
     ]);
-    const sequentialTime = Date.now() - sequentialStart;
 
     // Test parallel analysis timing
     const parallelStart = Date.now();
