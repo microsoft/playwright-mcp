@@ -28,10 +28,14 @@ test('alert dialog', async ({ client, server }) => {
   await executeDialogTest(
     client,
     server,
-    HTML_TEMPLATES.ALERT_BUTTON(),
-    'alert',
-    'Alert',
-    true
+    {
+      dialogType: 'alert',
+      message: 'Alert',
+      accept: true,
+    },
+    {
+      htmlContent: HTML_TEMPLATES.ALERT_BUTTON(),
+    }
   );
 });
 
@@ -45,7 +49,7 @@ test('two alert dialogs', async ({ client, server }) => {
     DIALOG_EXPECTATIONS.BUTTON_CLICKED('Button').code
   );
 
-  const result = await handleDialogAndExpectState(
+  await handleDialogAndExpectState(
     client,
     true,
     undefined,
@@ -68,11 +72,15 @@ test('confirm dialog (true)', async ({ client, server }) => {
   await executeDialogTest(
     client,
     server,
-    HTML_TEMPLATES.CONFIRM_BUTTON(),
-    'confirm',
-    'Confirm',
-    true,
-    'true'
+    {
+      dialogType: 'confirm',
+      message: 'Confirm',
+      accept: true,
+      expectedResult: 'true',
+    },
+    {
+      htmlContent: HTML_TEMPLATES.CONFIRM_BUTTON(),
+    }
   );
 });
 
@@ -80,11 +88,15 @@ test('confirm dialog (false)', async ({ client, server }) => {
   await executeDialogTest(
     client,
     server,
-    HTML_TEMPLATES.CONFIRM_BUTTON(),
-    'confirm',
-    'Confirm',
-    false,
-    'false'
+    {
+      dialogType: 'confirm',
+      message: 'Confirm',
+      accept: false,
+      expectedResult: 'false',
+    },
+    {
+      htmlContent: HTML_TEMPLATES.CONFIRM_BUTTON(),
+    }
   );
 });
 
@@ -97,7 +109,7 @@ test('prompt dialog', async ({ client, server }) => {
     DIALOG_EXPECTATIONS.PROMPT_MODAL('Prompt')
   );
 
-  const result = await handleDialogAndExpectState(
+  await handleDialogAndExpectState(
     client,
     true,
     DIALOG_EXPECTATIONS.RESULT_CONTENT('Answer'),
@@ -116,7 +128,7 @@ test('alert dialog w/ race', async ({ client, server }) => {
     DIALOG_EXPECTATIONS.BUTTON_CLICKED('Button').code
   );
 
-  const result = await handleDialogAndExpectState(
+  await handleDialogAndExpectState(
     client,
     true,
     expect.stringContaining(`- Page URL: ${server.PREFIX}

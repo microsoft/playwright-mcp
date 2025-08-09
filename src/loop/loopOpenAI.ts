@@ -256,11 +256,14 @@ export class OpenAIDelegate implements LLMDelegate {
   private convertSingleToolCall(
     toolCall: OpenAI.Chat.Completions.ChatCompletionMessageToolCall
   ): LLMToolCall {
-    return {
-      name: toolCall.function.name,
-      arguments: JSON.parse(toolCall.function.arguments),
-      id: toolCall.id,
-    };
+    if (toolCall.type === 'function') {
+      return {
+        name: toolCall.function.name,
+        arguments: JSON.parse(toolCall.function.arguments),
+        id: toolCall.id,
+      };
+    }
+    throw new Error(`Unsupported tool call type: ${toolCall.type}`);
   }
 
   private addAssistantMessageToConversation(

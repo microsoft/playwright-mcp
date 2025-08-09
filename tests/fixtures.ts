@@ -224,7 +224,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    async ({}, use, workerInfo) => {
+    async (use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 
@@ -278,18 +278,25 @@ function createTransport(
     };
   }
 
+  // Use secure environment settings consistent with SecureTestProcessManager
+  const secureEnv = {
+    ...process.env,
+    DEBUG: 'pw:mcp:test',
+    DEBUG_COLORS: '0',
+    DEBUG_HIDE_DATE: '1',
+    PWMCP_PROFILES_DIR_FOR_TEST: profilesDir,
+    // Include secure environment variables
+    NODE_ENV: 'test',
+    HOME: process.env.HOME,
+    USER: process.env.USER,
+  };
+
   const transport = new StdioClientTransport({
-    command: 'node',
+    command: process.execPath, // Use secure node executable path
     args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
     cwd: path.join(path.dirname(__filename), '..'),
     stderr: 'pipe',
-    env: {
-      ...process.env,
-      DEBUG: 'pw:mcp:test',
-      DEBUG_COLORS: '0',
-      DEBUG_HIDE_DATE: '1',
-      PWMCP_PROFILES_DIR_FOR_TEST: profilesDir,
-    },
+    env: secureEnv,
   });
   return {
     transport,

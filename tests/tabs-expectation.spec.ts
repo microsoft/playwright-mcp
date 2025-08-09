@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-import { expect, test } from './fixtures.js';
 import {
-  createFullExpectation,
-  createMinimalExpectation,
-  createMultiTabsSetup,
-  createTestPage,
-  expectToolCallResponse,
-  setupTabTestPages,
-} from './test-utils.js';
+  createMultiTabScenario,
+  createTwoTabScenario,
+  executeTabToolTest,
+  setupTabNavigation,
+  TAB_EXPECTATION_TEST_CASES,
+  TabTestScenarioBuilder,
+} from './enhanced-test-utils.js';
+import { expect, test } from './fixtures.js';
+import { createMinimalExpectation } from './test-utils.js';
 
 test.describe('Tabs Tools Expectation Parameter', () => {
   test.describe('browser_tab_list', () => {
@@ -30,106 +31,59 @@ test.describe('Tabs Tools Expectation Parameter', () => {
       client,
       server,
     }) => {
-      const page = createTestPage('<div>Test Page</div>');
-      server.setContent(page.path, page.content, page.contentType);
+      const scenario = new TabTestScenarioBuilder()
+        .withOriginalPage('<div>Test Page</div>')
+        .build();
 
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
-
-      const result = await client.callTool({
-        name: 'browser_tab_list',
-        arguments: {
-          expectation: {
-            ...createMinimalExpectation(),
-            includeTabs: true,
+      await executeTabToolTest(
+        client,
+        server,
+        scenario,
+        {
+          name: 'browser_tab_list',
+          arguments: {
+            expectation: {
+              ...createMinimalExpectation(),
+              includeTabs: true,
+            },
           },
         },
-      });
-
-      expectToolCallResponse(result, {
-        containsSnapshot: false,
-        containsConsole: false,
-        containsTabs: false,
-      });
-      expect(result.content[0].text).toContain('Open tabs');
+        {
+          containsSnapshot: false,
+          containsConsole: false,
+          containsTabs: false,
+        },
+        (result) => {
+          expect(result.content[0].text).toContain('Open tabs');
+        }
+      );
     });
   });
 
   test.describe('browser_tab_new', () => {
-    test('should accept expectation parameter with minimal response', async ({
-      client,
-      server,
-    }) => {
-      const originalPage = createTestPage(
-        '<div>Original Tab</div>',
-        'Original Tab'
-      );
-      const newPage = createTestPage(
-        '<div>New Tab Content</div>',
-        'New Tab Content'
-      );
-      setupTabTestPages(server, [
-        { path: originalPage.path, page: originalPage },
-        { path: '/new', page: newPage },
-      ]);
+    for (const testCase of TAB_EXPECTATION_TEST_CASES) {
+      test(`should accept expectation parameter with ${testCase.name}`, async ({
+        client,
+        server,
+      }) => {
+        const scenario = createTwoTabScenario().build();
 
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
+        await executeTabToolTest(
+          client,
+          server,
+          scenario,
+          {
+            name: 'browser_tab_new',
+            arguments: {
+              url: `${server.PREFIX}/new`,
+              expectation: testCase.expectation,
+            },
+          },
+          testCase.expectedResponse,
+          testCase.additionalAssertions
+        );
       });
-
-      const result = await client.callTool({
-        name: 'browser_tab_new',
-        arguments: {
-          url: `${server.PREFIX}/new`,
-          expectation: createMinimalExpectation(),
-        },
-      });
-
-      expectToolCallResponse(result, {
-        containsSnapshot: false,
-        containsConsole: false,
-        containsTabs: false,
-      });
-    });
-
-    test('should accept expectation parameter with full response', async ({
-      client,
-      server,
-    }) => {
-      const originalPage = createTestPage(
-        '<div>Original Tab</div>',
-        'Original Tab'
-      );
-      const newPage = createTestPage(
-        '<div>New Tab Content</div>',
-        'New Tab Content'
-      );
-      setupTabTestPages(server, [
-        { path: originalPage.path, page: originalPage },
-        { path: '/new', page: newPage },
-      ]);
-
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
-
-      const result = await client.callTool({
-        name: 'browser_tab_new',
-        arguments: {
-          url: `${server.PREFIX}/new`,
-          expectation: createFullExpectation(),
-        },
-      });
-
-      expectToolCallResponse(result, {
-        containsSnapshot: true,
-      });
-      expect(result.content[0].text).toContain('Open tabs');
-    });
+    }
   });
 
   test.describe('browser_tab_select', () => {
@@ -137,18 +91,10 @@ test.describe('Tabs Tools Expectation Parameter', () => {
       client,
       server,
     }) => {
-      const { setupServer } = createMultiTabsSetup();
-      setupServer(server);
+      const scenario = createMultiTabScenario().build();
+      scenario.setupServer(server);
 
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
-
-      await client.callTool({
-        name: 'browser_tab_new',
-        arguments: { url: `${server.PREFIX}/tab2` },
-      });
+      await setupTabNavigation(client, server);
 
       const result = await client.callTool({
         name: 'browser_tab_select',
@@ -158,10 +104,8 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         },
       });
 
-      expectToolCallResponse(result, {
-        containsSnapshot: false,
-        containsConsole: false,
-      });
+      expect(result.content[0].text).not.toContain('Page Snapshot:');
+      expect(result.content[0].text).not.toContain('Console messages');
     });
   });
 
@@ -170,18 +114,10 @@ test.describe('Tabs Tools Expectation Parameter', () => {
       client,
       server,
     }) => {
-      const { setupServer } = createMultiTabsSetup();
-      setupServer(server);
+      const scenario = createMultiTabScenario().build();
+      scenario.setupServer(server);
 
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
-
-      await client.callTool({
-        name: 'browser_tab_new',
-        arguments: { url: `${server.PREFIX}/tab2` },
-      });
+      await setupTabNavigation(client, server);
 
       const result = await client.callTool({
         name: 'browser_tab_close',
@@ -191,10 +127,8 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         },
       });
 
-      expectToolCallResponse(result, {
-        containsSnapshot: false,
-        containsConsole: false,
-      });
+      expect(result.content[0].text).not.toContain('Page Snapshot:');
+      expect(result.content[0].text).not.toContain('Console messages');
     });
   });
 });

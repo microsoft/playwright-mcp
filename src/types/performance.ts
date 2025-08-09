@@ -2,6 +2,8 @@
  * Performance-related type definitions for the unified diagnostic system
  */
 
+import type { BaseMetricsThresholds } from './threshold-base.js';
+
 export interface BaseMemoryUsage {
   used: number;
   heapUsed: number;
@@ -11,56 +13,16 @@ export interface BaseMemoryUsage {
   arrayBuffers: number;
 }
 
-export interface BaseThreshold {
-  warning: number;
-  danger: number;
-}
+// Re-export base threshold types for backward compatibility
+export type {
+  BaseThreshold,
+  ExecutionTimeThresholds,
+  MemoryThresholds,
+  PerformanceThresholds,
+} from './threshold-base.js';
 
-export interface ExecutionTimeThresholds {
-  pageAnalysis: number;
-  elementDiscovery: number;
-  resourceMonitoring: number;
-  parallelAnalysis: number;
-}
-
-export interface MemoryThresholds {
-  maxMemoryUsage: number;
-  memoryLeakThreshold: number;
-  gcTriggerThreshold: number;
-}
-
-export interface PerformanceThresholds {
-  domElementLimit: number;
-  maxDepthLimit: number;
-  largeSubtreeThreshold: number;
-}
-
-export interface MetricsThresholds {
-  executionTime: ExecutionTimeThresholds;
-  memory: MemoryThresholds;
-  performance: PerformanceThresholds;
-  dom: {
-    totalElements: number;
-    maxDepth: number;
-    largeSubtrees: number;
-    elementsWarning: number;
-    elementsDanger: number;
-    depthWarning: number;
-    depthDanger: number;
-    largeSubtreeThreshold: number;
-  };
-  interaction: {
-    clickableElements: number;
-    formElements: number;
-    clickableHigh: number;
-  };
-  layout: {
-    fixedElements: number;
-    highZIndexElements: number;
-    highZIndexThreshold: number;
-    excessiveZIndexThreshold: number;
-  };
-}
+// MetricsThresholds now extends the consolidated base structure
+export interface MetricsThresholds extends BaseMetricsThresholds {}
 
 export interface PerformanceMetrics {
   executionTime: number;

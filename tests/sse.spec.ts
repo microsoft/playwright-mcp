@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import { type ChildProcess, spawn } from 'node:child_process';
 import fs from 'node:fs';
-import path from 'node:path';
-import nodeUrl from 'node:url';
-
 import type { Config } from '../config.d.ts';
 import { test as baseTest, expect } from './fixtures.js';
+import {
+  type SecureProcessOptions,
+  SecureTestProcessManager,
+} from './process-test-manager.js';
 
 import {
   COMMON_REGEX_PATTERNS,
@@ -28,65 +28,31 @@ import {
   expectRegexCount,
 } from './test-utils.js';
 
-// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-const __filename = nodeUrl.fileURLToPath(import.meta.url);
-
 const test = baseTest.extend<{
-  serverEndpoint: (options?: {
-    args?: string[];
-    noPort?: boolean;
-  }) => Promise<{ url: URL; stderr: () => string }>;
+  serverEndpoint: (
+    options?: SecureProcessOptions
+  ) => Promise<{ url: URL; stderr: () => string }>;
 }>({
   serverEndpoint: async ({ mcpHeadless }, use, testInfo) => {
-    let cp: ChildProcess | undefined;
+    const processManager = new SecureTestProcessManager();
     const userDataDir = testInfo.outputPath('user-data-dir');
-    await use(async (options?: { args?: string[]; noPort?: boolean }) => {
-      if (cp) {
-        throw new Error('Process already running');
+
+    await use(async (options: SecureProcessOptions = {}) => {
+      const processOptions: SecureProcessOptions = {
+        ...options,
+        userDataDir,
+        headless: mcpHeadless,
+      };
+
+      const result = await processManager.spawnSecureProcess(processOptions);
+      // Ensure url is always defined for this fixture
+      if (!result.url) {
+        throw new Error('Server URL not available');
       }
-
-      // Security: Use absolute Node.js path instead of relying on PATH
-      const nodeExecutable = process.execPath;
-      cp = spawn(
-        nodeExecutable,
-        [
-          path.join(path.dirname(__filename), '../cli.js'),
-          ...(options?.noPort ? [] : ['--port=0']),
-          `--user-data-dir=${userDataDir}`,
-          ...(mcpHeadless ? ['--headless'] : []),
-          ...(options?.args || []),
-        ],
-        {
-          stdio: 'pipe',
-          env: {
-            // Security: Explicitly set safe environment to prevent PATH injection
-            // Using controlled environment without PATH for enhanced safety
-            NODE_ENV: 'test',
-            // PATH intentionally omitted for security - Node.js will use system default
-            HOME: process.env.HOME,
-            USER: process.env.USER,
-            DEBUG: 'pw:mcp:test',
-            DEBUG_COLORS: '0',
-            DEBUG_HIDE_DATE: '1',
-          },
-          // Additional security options
-          timeout: 30_000, // 30 second timeout to prevent hanging
-        }
-      );
-      let stderr = '';
-      const url = await new Promise<string>((resolve) =>
-        cp?.stderr?.on('data', (data) => {
-          stderr += data.toString();
-          const match = stderr.match(COMMON_REGEX_PATTERNS.LISTENING_ON);
-          if (match) {
-            resolve(match[1]);
-          }
-        })
-      );
-
-      return { url: new URL(url), stderr: () => stderr };
+      return { url: result.url, stderr: result.stderr };
     });
-    cp?.kill('SIGTERM');
+
+    processManager.terminate();
   },
 });
 
@@ -134,7 +100,6 @@ test('sse transport browser lifecycle (isolated)', async ({
   await client2.close();
 
   await expect(() => {
-    const lines = stderr().split('\n');
     expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 2);
     expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 2);
     expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 2);
@@ -187,7 +152,6 @@ test('sse transport browser lifecycle (isolated, multiclient)', async ({
   await client3.close();
 
   await expect(() => {
-    const lines = stderr().split('\n');
     expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 3);
     expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 3);
     expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 3);
@@ -232,7 +196,6 @@ test('sse transport browser lifecycle (persistent)', async ({
   await client2.close();
 
   await expect(() => {
-    const lines = stderr().split('\n');
     expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 2);
     expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 2);
     expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 2);

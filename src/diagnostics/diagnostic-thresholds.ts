@@ -4,87 +4,18 @@
  */
 
 import type { MetricsThresholds } from '../types/performance.js';
+import type {
+  BaseMetricsThresholds,
+  PartialBaseMetricsThresholds,
+} from '../types/threshold-base.js';
 
-export interface DiagnosticThresholdsConfig {
-  executionTime?: {
-    pageAnalysis?: number;
-    elementDiscovery?: number;
-    resourceMonitoring?: number;
-    parallelAnalysis?: number;
-  };
-  memory?: {
-    maxMemoryUsage?: number;
-    memoryLeakThreshold?: number;
-    gcTriggerThreshold?: number;
-  };
-  performance?: {
-    domElementLimit?: number;
-    maxDepthLimit?: number;
-    largeSubtreeThreshold?: number;
-  };
-  dom?: {
-    totalElements?: number;
-    maxDepth?: number;
-    largeSubtrees?: number;
-    elementsWarning?: number;
-    elementsDanger?: number;
-    depthWarning?: number;
-    depthDanger?: number;
-    largeSubtreeThreshold?: number;
-  };
-  interaction?: {
-    clickableElements?: number;
-    formElements?: number;
-    clickableHigh?: number;
-  };
-  layout?: {
-    fixedElements?: number;
-    highZIndexElements?: number;
-    highZIndexThreshold?: number;
-    excessiveZIndexThreshold?: number;
-  };
-}
+// Configuration interface now extends the consolidated base structure
+export interface DiagnosticThresholdsConfig
+  extends PartialBaseMetricsThresholds {}
 
-// Define the fully resolved config type to ensure all properties are required
-export interface ResolvedDiagnosticThresholdsConfig {
-  executionTime: {
-    pageAnalysis: number;
-    elementDiscovery: number;
-    resourceMonitoring: number;
-    parallelAnalysis: number;
-  };
-  memory: {
-    maxMemoryUsage: number;
-    memoryLeakThreshold: number;
-    gcTriggerThreshold: number;
-  };
-  performance: {
-    domElementLimit: number;
-    maxDepthLimit: number;
-    largeSubtreeThreshold: number;
-  };
-  dom: {
-    totalElements: number;
-    maxDepth: number;
-    largeSubtrees: number;
-    elementsWarning: number;
-    elementsDanger: number;
-    depthWarning: number;
-    depthDanger: number;
-    largeSubtreeThreshold: number;
-  };
-  interaction: {
-    clickableElements: number;
-    formElements: number;
-    clickableHigh: number;
-  };
-  layout: {
-    fixedElements: number;
-    highZIndexElements: number;
-    highZIndexThreshold: number;
-    excessiveZIndexThreshold: number;
-  };
-}
+// Fully resolved config type now extends the complete base structure
+export interface ResolvedDiagnosticThresholdsConfig
+  extends BaseMetricsThresholds {}
 
 /**
  * Default threshold settings
@@ -168,25 +99,59 @@ function createComparisonRule<T>(
 }
 
 /**
- * Generic configuration merger for threshold sections
+ * Configuration merger helper functions for type-safe property merging
  */
-function mergeConfigSection<TSection extends keyof DiagnosticThresholdsConfig>(
+function _mergeExecutionTimeConfig(
   result: ResolvedDiagnosticThresholdsConfig,
-  config: DiagnosticThresholdsConfig,
-  sectionKey: TSection,
-  propertyKeys: Array<keyof NonNullable<DiagnosticThresholdsConfig[TSection]>>
+  config: DiagnosticThresholdsConfig
 ): void {
-  const section = config[sectionKey];
-  if (!section) {
-    return;
+  if (config.executionTime) {
+    Object.assign(result.executionTime, config.executionTime);
   }
+}
 
-  for (const property of propertyKeys) {
-    if (section[property] !== undefined) {
-      // Type assertion is safe here as we're merging compatible configuration sections
-      (result[sectionKey] as Record<string, unknown>)[property as string] =
-        section[property];
-    }
+function _mergeMemoryConfig(
+  result: ResolvedDiagnosticThresholdsConfig,
+  config: DiagnosticThresholdsConfig
+): void {
+  if (config.memory) {
+    Object.assign(result.memory, config.memory);
+  }
+}
+
+function _mergePerformanceConfig(
+  result: ResolvedDiagnosticThresholdsConfig,
+  config: DiagnosticThresholdsConfig
+): void {
+  if (config.performance) {
+    Object.assign(result.performance, config.performance);
+  }
+}
+
+function _mergeDomConfig(
+  result: ResolvedDiagnosticThresholdsConfig,
+  config: DiagnosticThresholdsConfig
+): void {
+  if (config.dom) {
+    Object.assign(result.dom, config.dom);
+  }
+}
+
+function _mergeInteractionConfig(
+  result: ResolvedDiagnosticThresholdsConfig,
+  config: DiagnosticThresholdsConfig
+): void {
+  if (config.interaction) {
+    Object.assign(result.interaction, config.interaction);
+  }
+}
+
+function _mergeLayoutConfig(
+  result: ResolvedDiagnosticThresholdsConfig,
+  config: DiagnosticThresholdsConfig
+): void {
+  if (config.layout) {
+    Object.assign(result.layout, config.layout);
   }
 }
 
@@ -318,44 +283,25 @@ export class DiagnosticThresholds {
       JSON.stringify(DEFAULT_THRESHOLDS)
     ) as ResolvedDiagnosticThresholdsConfig;
 
-    // Use generic merger for all configuration sections
-    mergeConfigSection(result, config, 'executionTime', [
-      'pageAnalysis',
-      'elementDiscovery',
-      'resourceMonitoring',
-      'parallelAnalysis',
-    ]);
-    mergeConfigSection(result, config, 'memory', [
-      'maxMemoryUsage',
-      'memoryLeakThreshold',
-      'gcTriggerThreshold',
-    ]);
-    mergeConfigSection(result, config, 'performance', [
-      'domElementLimit',
-      'maxDepthLimit',
-      'largeSubtreeThreshold',
-    ]);
-    mergeConfigSection(result, config, 'dom', [
-      'totalElements',
-      'maxDepth',
-      'largeSubtrees',
-      'elementsWarning',
-      'elementsDanger',
-      'depthWarning',
-      'depthDanger',
-      'largeSubtreeThreshold',
-    ]);
-    mergeConfigSection(result, config, 'interaction', [
-      'clickableElements',
-      'formElements',
-      'clickableHigh',
-    ]);
-    mergeConfigSection(result, config, 'layout', [
-      'fixedElements',
-      'highZIndexElements',
-      'highZIndexThreshold',
-      'excessiveZIndexThreshold',
-    ]);
+    // Use type-safe merger functions for all configuration sections
+    if (config.executionTime) {
+      Object.assign(result.executionTime, config.executionTime);
+    }
+    if (config.memory) {
+      Object.assign(result.memory, config.memory);
+    }
+    if (config.performance) {
+      Object.assign(result.performance, config.performance);
+    }
+    if (config.dom) {
+      Object.assign(result.dom, config.dom);
+    }
+    if (config.interaction) {
+      Object.assign(result.interaction, config.interaction);
+    }
+    if (config.layout) {
+      Object.assign(result.layout, config.layout);
+    }
 
     return result;
   }
@@ -603,7 +549,7 @@ export function getMetricsThresholds(): MetricsThresholds {
  * Provides a more convenient API for configuration construction
  */
 export class ThresholdConfigBuilder {
-  private config: DiagnosticThresholdsConfig = {};
+  private readonly config: DiagnosticThresholdsConfig = {};
 
   /**
    * Configure execution time thresholds

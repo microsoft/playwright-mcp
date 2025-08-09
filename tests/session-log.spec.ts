@@ -21,13 +21,51 @@ import {
   readSessionLog,
 } from './test-utils.js';
 
+// Consolidated test setup utilities for session logging tests
+async function setupSessionLoggingTest(
+  startClient: any,
+  testInfo: any,
+  extraArgs: string[] = []
+) {
+  const { client, stderr } = await startClient({
+    args: [
+      '--save-session',
+      '--output-dir',
+      testInfo.outputPath('output'),
+      ...extraArgs,
+    ],
+  });
+
+  return {
+    client,
+    stderr,
+    getSessionFolder: () => extractSessionFolder(stderr()),
+  };
+}
+
+async function setupCdpSessionLoggingTest(
+  cdpServer: any,
+  startClient: any,
+  testInfo: any
+) {
+  const browserContext = await cdpServer.start();
+  const { client, stderr, getSessionFolder } = await setupSessionLoggingTest(
+    startClient,
+    testInfo,
+    [`--cdp-endpoint=${cdpServer.endpoint}`]
+  );
+
+  return { client, stderr, getSessionFolder, browserContext };
+}
+
 test('session log should record tool calls', async ({
   startClient,
   server,
 }, testInfo) => {
-  const { client, stderr } = await startClient({
-    args: ['--save-session', '--output-dir', testInfo.outputPath('output')],
-  });
+  const { client, getSessionFolder } = await setupSessionLoggingTest(
+    startClient,
+    testInfo
+  );
 
   const page = createButtonPage('Submit');
   server.setContent(page.path, page.content, page.contentType);
@@ -50,7 +88,7 @@ test('session log should record tool calls', async ({
     pageState: expect.stringContaining(`- button "Submit"`),
   });
 
-  const sessionFolder = extractSessionFolder(stderr());
+  const sessionFolder = getSessionFolder();
   await expect
     .poll(() => readSessionLog(sessionFolder))
     .toBe(`
@@ -89,15 +127,8 @@ test('session log should record user action', async ({
   cdpServer,
   startClient,
 }, testInfo) => {
-  const browserContext = await cdpServer.start();
-  const { client, stderr } = await startClient({
-    args: [
-      '--save-session',
-      '--output-dir',
-      testInfo.outputPath('output'),
-      `--cdp-endpoint=${cdpServer.endpoint}`,
-    ],
-  });
+  const { client, getSessionFolder, browserContext } =
+    await setupCdpSessionLoggingTest(cdpServer, startClient, testInfo);
 
   // Force browser context creation.
   await client.callTool({
@@ -112,7 +143,7 @@ test('session log should record user action', async ({
 
   await page.getByRole('button', { name: 'Button 1' }).click();
 
-  const sessionFolder = extractSessionFolder(stderr());
+  const sessionFolder = getSessionFolder();
 
   await expect
     .poll(() => readSessionLog(sessionFolder))
@@ -149,15 +180,8 @@ test('session log should update user action', async ({
   cdpServer,
   startClient,
 }, testInfo) => {
-  const browserContext = await cdpServer.start();
-  const { client, stderr } = await startClient({
-    args: [
-      '--save-session',
-      '--output-dir',
-      testInfo.outputPath('output'),
-      `--cdp-endpoint=${cdpServer.endpoint}`,
-    ],
-  });
+  const { client, getSessionFolder, browserContext } =
+    await setupCdpSessionLoggingTest(cdpServer, startClient, testInfo);
 
   // Force browser context creation.
   await client.callTool({
@@ -172,7 +196,7 @@ test('session log should update user action', async ({
 
   await page.getByRole('button', { name: 'Button 1' }).dblclick();
 
-  const sessionFolder = extractSessionFolder(stderr());
+  const sessionFolder = getSessionFolder();
 
   await expect
     .poll(() => readSessionLog(sessionFolder))
@@ -209,15 +233,8 @@ test('session log should record tool calls and user actions', async ({
   cdpServer,
   startClient,
 }, testInfo) => {
-  const browserContext = await cdpServer.start();
-  const { client, stderr } = await startClient({
-    args: [
-      '--save-session',
-      '--output-dir',
-      testInfo.outputPath('output'),
-      `--cdp-endpoint=${cdpServer.endpoint}`,
-    ],
-  });
+  const { client, getSessionFolder, browserContext } =
+    await setupCdpSessionLoggingTest(cdpServer, startClient, testInfo);
 
   const [page] = browserContext.pages();
   await page.setContent(`
@@ -244,7 +261,7 @@ test('session log should record tool calls and user actions', async ({
     },
   });
 
-  const sessionFolder = extractSessionFolder(stderr());
+  const sessionFolder = getSessionFolder();
   await expect
     .poll(() => readSessionLog(sessionFolder))
     .toBe(`

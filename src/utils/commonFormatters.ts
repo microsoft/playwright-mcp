@@ -331,7 +331,8 @@ export function formatStatusString(
       icon = '⚪';
   }
 
-  return `  ${icon} ${text}${additionalText ? ` ${additionalText}` : ''}`;
+  const formattedText = additionalText ? `${text} ${additionalText}` : text;
+  return `  ${icon} ${formattedText}`;
 }
 
 /**

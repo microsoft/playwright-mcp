@@ -1320,9 +1320,6 @@ test.describe('Diagnostic System Integration', () => {
     `
     );
 
-    const { ParallelPageAnalyzer } = await import(
-      '../src/diagnostics/parallel-page-analyzer.js'
-    );
     const parallelAnalyzer = await setupParallelAnalyzer(page, complexContent);
     const errorEnrichment =
       await DiagnosticSystemTestHelper.setupErrorEnrichment(page);

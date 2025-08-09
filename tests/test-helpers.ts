@@ -1074,17 +1074,29 @@ export async function handleDialogAndExpectState(
 /**
  * Complete dialog test workflow: setup -> click -> handle dialog
  */
+export interface DialogTestConfig {
+  dialogType: 'alert' | 'confirm' | 'prompt';
+  message: string;
+  accept: boolean;
+  expectedResult?: string;
+  promptText?: string;
+}
+
+export interface DialogUIConfig {
+  htmlContent: string;
+  buttonText?: string;
+}
+
 export async function executeDialogTest(
   client: Client,
   server: any,
-  htmlContent: string,
-  dialogType: 'alert' | 'confirm' | 'prompt',
-  message: string,
-  accept: boolean,
-  expectedResult?: string,
-  promptText?: string,
-  buttonText = 'Button'
+  dialogConfig: DialogTestConfig,
+  uiConfig: DialogUIConfig
 ): Promise<void> {
+  const { dialogType, message, accept, expectedResult, promptText } =
+    dialogConfig;
+  const { htmlContent, buttonText = 'Button' } = uiConfig;
+
   // Setup
   await setupDialogTest(client, server, htmlContent, buttonText);
 
