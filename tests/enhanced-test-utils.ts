@@ -114,7 +114,7 @@ export class TabTestScenarioBuilder {
             path: this.scenario.originalPage.path,
             page: this.scenario.originalPage,
           },
-          { path: '/new', page: this.scenario.newPage as TestPage },
+          { path: '/new', page: this.scenario.newPage as TestPageContent },
         ]);
       };
     } else if (!this.scenario.setupServer) {

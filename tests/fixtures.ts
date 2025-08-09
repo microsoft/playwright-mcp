@@ -114,13 +114,15 @@ function wrapClientWithDefaultExpectations(client: Client): void {
 }
 
 export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
-  client: async ({ startClient }, use) => {
+  client: async (fixtures, use) => {
+    const { startClient } = fixtures;
     const { client } = await startClient();
     wrapClientWithDefaultExpectations(client);
     await use(client);
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
+  startClient: async (fixtures, use, testInfo) => {
+    const { mcpHeadless, mcpBrowser, mcpMode } = fixtures;
     const configDir = path.dirname(test.info().config.configFile ?? '.');
     let client: Client | undefined;
 
@@ -183,14 +185,16 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await client?.close();
   },
 
-  wsEndpoint: async ({ mcpHeadless, mcpBrowser, mcpMode }, use) => {
+  wsEndpoint: async (fixtures, use) => {
+    const { mcpHeadless, mcpBrowser, mcpMode } = fixtures;
     // Parameters are unused but required for Playwright fixture pattern
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
   },
 
-  cdpServer: async ({ mcpBrowser }, use, testInfo) => {
+  cdpServer: async (fixtures, use, testInfo) => {
+    const { mcpBrowser } = fixtures;
     test.skip(
       !['chrome', 'msedge', 'chromium'].includes(mcpBrowser ?? ''),
       'CDP is not supported for non-Chromium browsers'
@@ -215,7 +219,8 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await browserContext?.close();
   },
 
-  mcpHeadless: async ({ headless }, use) => {
+  mcpHeadless: async (fixtures, use) => {
+    const { headless } = fixtures;
     await use(headless);
   },
 
@@ -238,12 +243,14 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker' },
   ],
 
-  server: async ({ _workerServers }, use) => {
+  server: async (fixtures, use) => {
+    const { _workerServers } = fixtures;
     _workerServers.server.reset();
     await use(_workerServers.server);
   },
 
-  httpsServer: async ({ _workerServers }, use) => {
+  httpsServer: async (fixtures, use) => {
+    const { _workerServers } = fixtures;
     _workerServers.httpsServer.reset();
     await use(_workerServers.httpsServer);
   },
