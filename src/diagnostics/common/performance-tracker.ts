@@ -22,7 +22,7 @@ export interface PerformanceStats {
 }
 
 export class PerformanceTracker {
-  private metrics: PerformanceMetric[] = [];
+  private readonly metrics: PerformanceMetric[] = [];
   private readonly maxHistorySize: number;
 
   constructor(maxHistorySize = 1000) {
@@ -106,7 +106,8 @@ export class PerformanceTracker {
 
     // Maintain history size limit
     if (this.metrics.length > this.maxHistorySize) {
-      this.metrics = this.metrics.slice(-this.maxHistorySize);
+      const excessCount = this.metrics.length - this.maxHistorySize;
+      this.metrics.splice(0, excessCount);
     }
   }
 

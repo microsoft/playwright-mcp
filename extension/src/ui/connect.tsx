@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type React from 'react';
+import type * as React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -157,10 +157,10 @@ const ConnectApp: React.FC = () => {
 
         {showTabList && (
           <div>
-            <h2 className="tab-section-title">
+            <h2 className="tab-section-title" id="tab-section-title">
               Select page to expose to MCP server:
             </h2>
-            <div>
+            <div aria-labelledby="tab-section-title" role="radiogroup">
               {tabs.map((tab) => (
                 <TabItem
                   isSelected={selectedTab?.id === tab.id}
@@ -181,8 +181,14 @@ const StatusBanner: React.FC<{ type: StatusType; message: string }> = ({
   type,
   message,
 }) => {
+  const ariaLive = type === 'error' ? 'assertive' : 'polite';
+
   return (
-    <output aria-live="polite" className={`status-banner ${type}`}>
+    <output
+      aria-atomic="true"
+      aria-live={ariaLive}
+      className={`status-banner ${type}`}
+    >
       {message}
     </output>
   );
@@ -211,13 +217,28 @@ const TabItem: React.FC<{
     onSelect();
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onSelect();
+    }
+  };
+
   return (
-    <label className={className}>
+    <div
+      aria-checked={isSelected}
+      className={className}
+      onClick={onSelect}
+      onKeyDown={handleKeyDown}
+      role="radio"
+      tabIndex={0}
+    >
       <input
         checked={isSelected}
         className="tab-radio"
         name="selected-tab"
         onChange={handleChange}
+        tabIndex={-1}
         type="radio"
       />
       {/* biome-ignore lint/performance/noImgElement: Using img is appropriate for simple favicon display in Chrome extension */}
@@ -233,7 +254,7 @@ const TabItem: React.FC<{
         <div className="tab-title">{tab.title || 'Untitled'}</div>
         <div className="tab-url">{tab.url}</div>
       </div>
-    </label>
+    </div>
   );
 };
 

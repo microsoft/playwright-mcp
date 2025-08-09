@@ -3,7 +3,9 @@
  */
 
 import { z } from 'zod';
+import type { Response } from '../response.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import type { Tab } from '../tab.js';
 import { createErrorReporter } from '../utils/errorHandlerMiddleware.js';
 import { DiagnoseAnalysisRunner } from './diagnose/DiagnoseAnalysisRunner.js';
 import type { ConfigOverrides } from './diagnose/DiagnoseConfigHandler.js';
@@ -94,102 +96,153 @@ export const browserDiagnose = defineTabTool({
     inputSchema: diagnoseSchema,
   },
   handle: async (tab, params, response) => {
-    const {
-      searchForElements,
-      includePerformanceMetrics = false,
-      includeAccessibilityInfo = false,
-      includeTroubleshootingSuggestions = false,
-      diagnosticLevel = 'standard',
-      useParallelAnalysis = false,
-      useUnifiedSystem = true,
-      configOverrides,
-      includeSystemStats = false,
-    } = params;
+    const config = extractDiagnoseConfig(params);
 
     try {
-      if (diagnosticLevel === 'none') {
+      if (config.diagnosticLevel === 'none') {
         response.addResult('Diagnostics disabled (level: none)');
         return;
       }
 
       const startTime = Date.now();
-      const configHandler = new DiagnoseConfigHandler();
-
-      // Validate configuration
-      const configDiagnostics = configHandler.validateConfiguration();
-      if (diagnosticLevel === 'full' && includeSystemStats) {
-        response.addResult(
-          `## Configuration Status\n- **Thresholds Status**: ${configDiagnostics.status}\n- **Customizations**: ${configDiagnostics.customizations.length} active\n- **Warnings**: ${configDiagnostics.warnings.length} items\n\n`
-        );
-      }
-
-      if (configDiagnostics.status === 'failed') {
-        response.addError(
-          'Configuration system validation failed - using fallback settings'
-        );
-      }
-
-      // Initialize systems
-      const systemConfig = configHandler.initializeSystems(
-        tab,
-        useUnifiedSystem,
-        useParallelAnalysis,
-        configOverrides as ConfigOverrides
-      );
-
-      try {
-        // Run analysis
-        const analysisRunner = new DiagnoseAnalysisRunner();
-        const analysisResult = await analysisRunner.runAnalysis(
-          systemConfig.unifiedSystem ?? null,
-          systemConfig.pageAnalyzer ?? null,
-          useParallelAnalysis,
-          includeSystemStats
-        );
-
-        // Build report
-        const reportBuilder = new DiagnoseReportBuilder(tab);
-        const reportOptions = {
-          diagnosticLevel: diagnosticLevel as
-            | 'none'
-            | 'basic'
-            | 'standard'
-            | 'detailed'
-            | 'full',
-          includePerformanceMetrics,
-          includeAccessibilityInfo,
-          includeTroubleshootingSuggestions,
-          includeSystemStats,
-          searchForElements: searchForElements as SearchCriteria | undefined,
-          appliedOverrides: systemConfig.appliedOverrides,
-          startTime,
-        };
-
-        const report = await reportBuilder.buildReport(
-          analysisResult,
-          systemConfig.unifiedSystem ?? null,
-          systemConfig.pageAnalyzer ?? null,
-          reportOptions
-        );
-
-        response.addResult(report);
-      } finally {
-        // Cleanup: unified system manages its own lifecycle, only dispose legacy pageAnalyzer
-        if (!systemConfig.unifiedSystem && systemConfig.pageAnalyzer) {
-          await systemConfig.pageAnalyzer.dispose();
-        }
-      }
+      await executeDiagnoseProcess(tab, config, response, startTime);
     } catch (error) {
-      const errorReporter = createErrorReporter('Diagnose');
-      try {
-        errorReporter.reportAndThrow(error, 'generateDiagnosticReport');
-      } catch (enrichedError) {
-        response.addError(
-          enrichedError instanceof Error
-            ? enrichedError.message
-            : String(enrichedError)
-        );
-      }
+      await handleDiagnoseError(error, response);
     }
   },
 });
+
+function extractDiagnoseConfig(params: any) {
+  return {
+    searchForElements: params.searchForElements,
+    includePerformanceMetrics: params.includePerformanceMetrics ?? false,
+    includeAccessibilityInfo: params.includeAccessibilityInfo ?? false,
+    includeTroubleshootingSuggestions:
+      params.includeTroubleshootingSuggestions ?? false,
+    diagnosticLevel: params.diagnosticLevel ?? 'standard',
+    useParallelAnalysis: params.useParallelAnalysis ?? false,
+    useUnifiedSystem: params.useUnifiedSystem ?? true,
+    configOverrides: params.configOverrides,
+    includeSystemStats: params.includeSystemStats ?? false,
+  };
+}
+
+async function executeDiagnoseProcess(
+  tab: Tab,
+  config: ReturnType<typeof extractDiagnoseConfig>,
+  response: Response,
+  startTime: number
+) {
+  const configHandler = new DiagnoseConfigHandler();
+
+  // Validate and setup configuration
+  const _configDiagnostics = validateAndSetupConfig(
+    configHandler,
+    config,
+    response
+  );
+
+  // Initialize systems
+  const systemConfig = configHandler.initializeSystems(
+    tab,
+    config.useUnifiedSystem,
+    config.useParallelAnalysis,
+    config.configOverrides as ConfigOverrides
+  );
+
+  try {
+    // Run analysis and build report
+    const report = await runAnalysisAndBuildReport(
+      tab,
+      systemConfig,
+      config,
+      startTime
+    );
+    response.addResult(report);
+  } finally {
+    await cleanupSystems(systemConfig);
+  }
+}
+
+function validateAndSetupConfig(
+  configHandler: DiagnoseConfigHandler,
+  config: ReturnType<typeof extractDiagnoseConfig>,
+  response: Response
+) {
+  const configDiagnostics = configHandler.validateConfiguration();
+
+  if (config.diagnosticLevel === 'full' && config.includeSystemStats) {
+    response.addResult(
+      `## Configuration Status\n- **Thresholds Status**: ${configDiagnostics.status}\n- **Customizations**: ${configDiagnostics.customizations.length} active\n- **Warnings**: ${configDiagnostics.warnings.length} items\n\n`
+    );
+  }
+
+  if (configDiagnostics.status === 'failed') {
+    response.addError(
+      'Configuration system validation failed - using fallback settings'
+    );
+  }
+
+  return configDiagnostics;
+}
+
+async function runAnalysisAndBuildReport(
+  tab: Tab,
+  systemConfig: any,
+  config: ReturnType<typeof extractDiagnoseConfig>,
+  startTime: number
+) {
+  // Run analysis
+  const analysisRunner = new DiagnoseAnalysisRunner();
+  const analysisResult = await analysisRunner.runAnalysis(
+    systemConfig.unifiedSystem ?? null,
+    systemConfig.pageAnalyzer ?? null,
+    config.useParallelAnalysis,
+    config.includeSystemStats
+  );
+
+  // Build report
+  const reportBuilder = new DiagnoseReportBuilder(tab);
+  const reportOptions = {
+    diagnosticLevel: config.diagnosticLevel as
+      | 'none'
+      | 'basic'
+      | 'standard'
+      | 'detailed'
+      | 'full',
+    includePerformanceMetrics: config.includePerformanceMetrics,
+    includeAccessibilityInfo: config.includeAccessibilityInfo,
+    includeTroubleshootingSuggestions: config.includeTroubleshootingSuggestions,
+    includeSystemStats: config.includeSystemStats,
+    searchForElements: config.searchForElements as SearchCriteria | undefined,
+    appliedOverrides: systemConfig.appliedOverrides,
+    startTime,
+  };
+
+  return await reportBuilder.buildReport(
+    analysisResult,
+    systemConfig.unifiedSystem ?? null,
+    systemConfig.pageAnalyzer ?? null,
+    reportOptions
+  );
+}
+
+async function cleanupSystems(systemConfig: any) {
+  // Cleanup: unified system manages its own lifecycle, only dispose legacy pageAnalyzer
+  if (!systemConfig.unifiedSystem && systemConfig.pageAnalyzer) {
+    await systemConfig.pageAnalyzer.dispose();
+  }
+}
+
+function handleDiagnoseError(error: unknown, response: Response) {
+  const errorReporter = createErrorReporter('Diagnose');
+  try {
+    errorReporter.reportAndThrow(error, 'generateDiagnosticReport');
+  } catch (enrichedError) {
+    response.addError(
+      enrichedError instanceof Error
+        ? enrichedError.message
+        : String(enrichedError)
+    );
+  }
+}

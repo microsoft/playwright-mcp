@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,7 +33,7 @@ export function logRequest(
 ): void {
   try {
     const timestamp = new Date().toISOString();
-    const requestId = Math.random().toString(36).substring(7);
+    const requestId = randomBytes(4).toString('hex');
 
     // Debug logging (always available via DEBUG env var)
     requestDebug(

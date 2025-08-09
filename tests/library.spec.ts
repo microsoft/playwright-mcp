@@ -16,6 +16,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import child_process from 'node:child_process';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { expect, test } from './fixtures.js';
 
 test(
@@ -60,10 +61,23 @@ test(
       throw new Error('Generated file is not a valid file');
     }
 
+    // Additional security validation: ensure file is within test output directory
+    const resolvedFilePath = path.resolve(file);
+    const expectedBasePath = path.resolve(testInfo.outputDir);
+    if (!resolvedFilePath.startsWith(expectedBasePath)) {
+      throw new Error('File is outside of expected test directory structure');
+    }
+
+    // Validate file extension for additional security
+    if (!file.endsWith('.mjs')) {
+      throw new Error('Invalid file extension - expected .mjs file');
+    }
+
     // Safe command execution in test context with enhanced security measures
     const result = child_process.spawnSync('node', [file], {
       encoding: 'utf-8',
       cwd: testInfo.outputDir,
+      shell: false, // Explicitly disable shell to prevent command injection
       // Minimal environment to prevent environment variable injection
       env: {
         NODE_ENV: 'test',

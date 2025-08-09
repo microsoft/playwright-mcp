@@ -127,20 +127,53 @@ export class AssertionHelpers {
   }
 
   /**
-   * Assert that an array contains unique items
+   * Check if array contains unique items
+   * Returns validation result for use in test assertions
    */
-  static expectUniqueItems<T>(array: T[], keySelector?: (item: T) => any) {
+  static validateUniqueItems<T>(
+    array: T[],
+    keySelector?: (item: T) => any
+  ): {
+    isUnique: boolean;
+    duplicates: T[];
+    totalItems: number;
+    uniqueItems: number;
+  } {
     const selector = keySelector || ((item: T) => item);
     const keys = array.map(selector);
     const uniqueKeys = new Set(keys);
-    expect(uniqueKeys.size).toBe(array.length);
+    const duplicates = array.filter(
+      (item, index) => keys.indexOf(selector(item)) !== index
+    );
+
+    return {
+      isUnique: uniqueKeys.size === array.length,
+      duplicates,
+      totalItems: array.length,
+      uniqueItems: uniqueKeys.size,
+    };
   }
 
   /**
-   * Assert that error message contains expected text
+   * Validate error message contains expected text
+   * Returns validation result for use in test assertions
    */
-  static expectErrorMessage(error: unknown, expectedText: string) {
-    expect(error).toBeInstanceOf(Error);
-    expect((error as Error).message).toContain(expectedText);
+  static validateErrorMessage(
+    error: unknown,
+    expectedText: string
+  ): {
+    isError: boolean;
+    messageContains: boolean;
+    actualMessage?: string;
+  } {
+    const isError = error instanceof Error;
+    const actualMessage = isError ? (error as Error).message : String(error);
+    const messageContains = actualMessage.includes(expectedText);
+
+    return {
+      isError,
+      messageContains,
+      actualMessage: isError ? actualMessage : undefined,
+    };
   }
 }

@@ -6,7 +6,7 @@
  * Generic report builder for consistent text output generation
  */
 export class TextReportBuilder {
-  private sections: string[] = [];
+  private readonly sections: string[] = [];
 
   constructor() {
     this.sections = [];

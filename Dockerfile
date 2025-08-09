@@ -61,8 +61,8 @@ ARG USERNAME=node
 ENV NODE_ENV=production
 
 # Set read-only permissions for node_modules to prevent unnecessary write access
-# Keep root ownership for security compliance
-RUN chmod -R 555 node_modules
+# Use 644 for files (read-write for owner, read-only for group/others)
+RUN chmod -R 644 node_modules
 
 USER ${USERNAME}
 

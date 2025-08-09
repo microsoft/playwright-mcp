@@ -24,12 +24,14 @@ test.describe('Security Fixes Validation', () => {
   });
 
   test('command injection should be prevented in execSync calls', async () => {
-    // Check library.spec.ts uses array arguments
+    // Check library.spec.ts uses safe spawnSync with array arguments
     const librarySpecPath = path.join(process.cwd(), 'tests/library.spec.ts');
     const libraryContent = await fs.readFile(librarySpecPath, 'utf-8');
 
-    // Should use array form: execSync('node', [file])
-    expect(libraryContent).toContain("execSync('node', [file]");
+    // Should use safe spawnSync with array form and shell: false
+    expect(libraryContent).toContain("spawnSync('node', [file]");
+    expect(libraryContent).toContain('shell: false');
+    // Should not contain dangerous template string injection
     // biome-ignore lint/suspicious/noTemplateCurlyInString: Testing for template string pattern
     expect(libraryContent).not.toContain('execSync(`node ${file}`)');
 
@@ -37,8 +39,10 @@ test.describe('Security Fixes Validation', () => {
     const updateReadmePath = path.join(process.cwd(), 'utils/update-readme.js');
     const updateReadmeContent = await fs.readFile(updateReadmePath, 'utf-8');
 
-    // Should use cwd option for security
-    expect(updateReadmeContent).toContain('{ cwd: path.dirname(__filename) }');
+    // Should use spawnSync with secure options including shell: false and cwd
+    expect(updateReadmeContent).toContain('spawnSync(');
+    expect(updateReadmeContent).toContain('shell: false');
+    expect(updateReadmeContent).toContain('cwd: currentDir');
   });
 
   test('HTML encoding should prevent XSS in generated content', async () => {

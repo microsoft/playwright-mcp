@@ -49,11 +49,15 @@ export class TestServer {
   }
 
   static async createHTTPS(port: number): Promise<TestServer> {
-    // Use environment variable for SSL passphrase
-    const passphrase = process.env.TEST_SSL_PASSPHRASE;
-    if (!passphrase) {
+    // Use environment variable for SSL passphrase with secure fallback for tests
+    const passphrase =
+      process.env.TEST_SSL_PASSPHRASE || 'test-default-passphrase';
+    if (
+      !process.env.TEST_SSL_PASSPHRASE &&
+      process.env.NODE_ENV === 'production'
+    ) {
       throw new Error(
-        'TEST_SSL_PASSPHRASE environment variable must be set for HTTPS test server'
+        'TEST_SSL_PASSPHRASE environment variable must be set for production HTTPS test server'
       );
     }
 

@@ -194,7 +194,7 @@ function updateOptions(content) {
 
   // Execute CLI help command with explicit path and safe arguments
   // Using spawnSync with controlled environment to prevent injection attacks
-  const result = spawnSync('node', [cliPath, '--help'], {
+  const result = spawnSync('node', [resolvedCliPath, argToUse], {
     cwd: currentDir,
     shell: false, // Explicitly disable shell to prevent command injection
     // Explicitly set safe environment to prevent PATH injection

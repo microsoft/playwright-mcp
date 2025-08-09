@@ -26,7 +26,7 @@ export const resolveElementLocator = async (
     }
 
     // Public wrapper to access protected method
-    async resolveLocator(
+    resolveLocator(
       tab: Tab,
       params: { element?: string; ref?: string }
     ): Promise<playwright.Locator | undefined> {
@@ -34,7 +34,7 @@ export const resolveElementLocator = async (
     }
   }
 
-  return new TempHandler().resolveLocator(tab, params);
+  return await new TempHandler().resolveLocator(tab, params);
 };
 
 export const validateElementParams = (params: {
@@ -207,8 +207,10 @@ export async function validateAndResolveElement(
     ref?: string;
   }
 ): Promise<playwright.Locator | undefined> {
-  await validateElementParams(params);
-  return await resolveElementLocator(tab, params);
+  // Validate parameters synchronously first
+  validateElementParams(params);
+  // Then resolve element asynchronously
+  return resolveElementLocator(tab, params);
 }
 
 /**

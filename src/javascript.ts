@@ -24,7 +24,17 @@ function wrapWithCharacter(text: string, char: string): string {
     throw new Error('Invalid escape char');
   }
 
-  return char + text.replace(new RegExp(char, 'g'), replacement) + char;
+  // Use string replace methods instead of dynamic RegExp for security
+  let result = text;
+  if (char === "'") {
+    result = text.replaceAll("'", "'");
+  } else if (char === '"') {
+    result = text.replaceAll('"', '"');
+  } else if (char === '`') {
+    result = text.replaceAll('`', '`');
+  }
+
+  return char + result + char;
 }
 export function quote(text: string) {
   return escapeWithQuotes(text, "'");

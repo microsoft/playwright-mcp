@@ -155,8 +155,7 @@ class TabShareExtension {
 
   private async _onTabUpdated(
     tabId: number,
-    changeInfo: chrome.tabs.TabChangeInfo,
-    _tab: chrome.tabs.Tab
+    changeInfo: chrome.tabs.TabChangeInfo
   ): Promise<void> {
     if (changeInfo.status === 'complete' && this._connectedTabId === tabId) {
       await this._setConnectedTabId(tabId);
