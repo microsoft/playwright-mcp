@@ -7,6 +7,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { expect } from '@playwright/test';
 import { DiagnosticThresholds } from '../src/diagnostics/diagnostic-thresholds.js';
 import { SmartConfigManager } from '../src/diagnostics/smart-config.js';
+import { Tab } from '../src/tab.js';
 
 export type ConsoleMethod = 'log' | 'info' | 'warn' | 'error';
 
@@ -349,9 +350,12 @@ export function createTabWithMockContext(
     // Default empty callback for Tab constructor
   }
 ): { tab: any; mockContext: any } {
-  const tab = new (require('../src/tab.js').Tab)(null as any, page, callback);
-  const mockContext = createMockContext(tab);
-  (tab as any).context = mockContext;
+  const mockContext = createMockContext(null);
+  const tab = new Tab(mockContext, page, callback);
+  // Fix circular reference
+  mockContext.currentTab = () => tab;
+  mockContext.currentTabOrDie = () => tab;
+  mockContext.tabs = () => [tab];
   return { tab, mockContext };
 }
 
