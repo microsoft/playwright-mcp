@@ -17,7 +17,7 @@
 import { expect, test } from './fixtures.js';
 import { SecureTestProcessManager } from './secure-test-process-manager.js';
 
-test('SecureTestProcessManager can spawn and terminate processes', async ({}, testInfo) => {
+test('SecureTestProcessManager can spawn and terminate processes', async (_, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
@@ -47,7 +47,7 @@ test('SecureTestProcessManager can spawn and terminate processes', async ({}, te
   }
 });
 
-test('SecureTestProcessManager handles multiple processes', async ({}, testInfo) => {
+test('SecureTestProcessManager handles multiple processes', async (_, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
@@ -76,7 +76,7 @@ test('SecureTestProcessManager handles multiple processes', async ({}, testInfo)
   }
 });
 
-test('SecureTestProcessManager creates secure environment', async ({}, testInfo) => {
+test('SecureTestProcessManager creates secure environment', async (_, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
@@ -100,7 +100,7 @@ test('SecureTestProcessManager creates secure environment', async ({}, testInfo)
   }
 });
 
-test('SecureTestProcessManager creates fixture-compatible endpoint function', async ({}, testInfo) => {
+test('SecureTestProcessManager creates fixture-compatible endpoint function', async (_, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
