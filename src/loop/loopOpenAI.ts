@@ -148,14 +148,13 @@ export class OpenAIDelegate implements LLMDelegate {
     assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam,
     message: LLMMessage
   ): void {
-    const hasToolCalls =
+    if (
       message.role === 'assistant' &&
       message.toolCalls &&
-      message.toolCalls.length > 0;
-
-    if (hasToolCalls) {
+      message.toolCalls.length > 0
+    ) {
       assistantMessage.tool_calls = this.convertToolCallsToOpenAI(
-        message.toolCalls!
+        message.toolCalls
       );
     }
   }

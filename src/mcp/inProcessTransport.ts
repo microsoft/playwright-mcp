@@ -54,8 +54,9 @@ class InProcessServerTransport implements Transport {
   constructor(clientTransport: InProcessTransport) {
     this._clientTransport = clientTransport;
   }
-  async start(): Promise<void> {
-    // No-op for in-process transport
+  start(): Promise<void> {
+    // No-op for in-process transport - in-process server transport doesn't require initialization
+    return Promise.resolve();
   }
   send(
     message: JSONRPCMessage,
