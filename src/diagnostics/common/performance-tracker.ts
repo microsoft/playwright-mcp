@@ -188,7 +188,7 @@ export class PerformanceTracker {
    * Clear all metrics
    */
   clearMetrics(): void {
-    this.metrics = [];
+    this.metrics.splice(0, this.metrics.length);
   }
 
   /**

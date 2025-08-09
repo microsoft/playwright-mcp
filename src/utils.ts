@@ -11,7 +11,8 @@ function removeControlCharacters(str: string): string {
     .split('')
     .map((char) => {
       const charCode = char.charCodeAt(0);
-      return charCode <= 31 ? '-' : char;
+      // Explicitly handle null character and other control characters
+      return charCode <= 31 || charCode === 127 ? '-' : char;
     })
     .join('');
 }
@@ -20,7 +21,7 @@ export function sanitizeForFilePath(input: string) {
   const sanitize = (str: string) => {
     // First remove control characters, then unsafe filename characters
     const cleanStr = removeControlCharacters(str);
-    return cleanStr.replaceAll(UNSAFE_FILENAME_CHARS, '-');
+    return cleanStr.replace(UNSAFE_FILENAME_CHARS, '-');
   };
   const separator = input.lastIndexOf('.');
   if (separator === -1) {

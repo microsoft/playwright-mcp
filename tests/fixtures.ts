@@ -183,7 +183,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await client?.close();
   },
 
-  wsEndpoint: async (_options, use) => {
+  wsEndpoint: async ({}, use) => {
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
@@ -223,7 +223,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    async (_unusedOptions, use, workerInfo) => {
+    async ({}, use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 

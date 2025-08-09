@@ -5,7 +5,6 @@ import type { FullConfig } from './config.js';
 import { Context } from './context.js';
 import { logUnhandledError } from './log.js';
 import type * as mcpServer from './mcp/server.js';
-import type { ServerBackend } from './mcp/server.js';
 import { packageJSON } from './package.js';
 import { Response } from './response.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
@@ -16,7 +15,7 @@ import { filteredTools } from './tools.js';
 
 type NonEmptyArray<T> = [T, ...T[]];
 export type FactoryList = NonEmptyArray<BrowserContextFactory>;
-export class BrowserServerBackend implements ServerBackend {
+export class BrowserServerBackend implements mcpServer.ServerBackend {
   name = 'Playwright';
   version = packageJSON.version;
   private readonly _tools: Tool[];

@@ -18,7 +18,7 @@ import { expect, test } from '@playwright/test';
 import {
   ConsoleTestHelpers,
   createMockConsoleMessages,
-} from './helpers/testUtils.js';
+} from './helpers/test-utils';
 
 test.describe('Console Message Filtering', () => {
   // Using shared test utilities to reduce duplication

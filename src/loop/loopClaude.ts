@@ -61,6 +61,13 @@ export class ClaudeDelegate implements LLMDelegate {
     conversation: LLMConversation,
     response: Anthropic.Messages.Message
   ): LLMToolCall[] {
+    return this.processResponseAndUpdateConversation(conversation, response);
+  }
+
+  private processResponseAndUpdateConversation(
+    conversation: LLMConversation,
+    response: Anthropic.Messages.Message
+  ): LLMToolCall[] {
     const llmToolCalls = this.extractToolCallsFromResponse(response);
     this.addAssistantMessageToConversation(
       conversation,
@@ -83,6 +90,12 @@ export class ClaudeDelegate implements LLMDelegate {
   private convertMessagesToClaudeFormat(
     messages: LLMConversation['messages']
   ): Anthropic.Messages.MessageParam[] {
+    return this.buildClaudeMessagesFromConversation(messages);
+  }
+
+  private buildClaudeMessagesFromConversation(
+    messages: LLMConversation['messages']
+  ): Anthropic.Messages.MessageParam[] {
     const claudeMessages: Anthropic.Messages.MessageParam[] = [];
     for (const message of messages) {
       this.processMessageByType(claudeMessages, message);
@@ -91,6 +104,13 @@ export class ClaudeDelegate implements LLMDelegate {
   }
 
   private processMessageByType(
+    claudeMessages: Anthropic.Messages.MessageParam[],
+    message: LLMMessage
+  ): void {
+    this.delegateMessageProcessing(claudeMessages, message);
+  }
+
+  private delegateMessageProcessing(
     claudeMessages: Anthropic.Messages.MessageParam[],
     message: LLMMessage
   ): void {
@@ -103,8 +123,6 @@ export class ClaudeDelegate implements LLMDelegate {
         break;
       case 'tool':
         this.addToolResultMessage(claudeMessages, message);
-        break;
-      default:
         break;
     }
   }
@@ -140,11 +158,16 @@ export class ClaudeDelegate implements LLMDelegate {
     message: LLMMessage
   ): Anthropic.Messages.ContentBlock[] {
     const content: Anthropic.Messages.ContentBlock[] = [];
+    this.populateContentBlocks(content, message);
+    return content;
+  }
 
+  private populateContentBlocks(
+    content: Anthropic.Messages.ContentBlock[],
+    message: LLMMessage
+  ): void {
     this.addTextContentIfPresent(content, message.content);
     this.addToolCallsIfPresent(content, message);
-
-    return content;
   }
 
   private addTextContentIfPresent(
@@ -213,15 +236,21 @@ export class ClaudeDelegate implements LLMDelegate {
     toolResult: Anthropic.Messages.ToolResultBlockParam
   ): void {
     const lastMessage = claudeMessages.at(-1);
+    this.handleToolResultAppending(claudeMessages, lastMessage, toolResult);
+  }
 
+  private handleToolResultAppending(
+    claudeMessages: Anthropic.Messages.MessageParam[],
+    lastMessage: Anthropic.Messages.MessageParam | undefined,
+    toolResult: Anthropic.Messages.ToolResultBlockParam
+  ): void {
     if (this.canAddToExistingToolResults(lastMessage)) {
-      if (lastMessage) {
-        this.addToExistingMessage(lastMessage, toolResult);
-      }
+      this.addToExistingMessage(lastMessage!, toolResult);
     } else {
       this.createNewToolResultMessage(claudeMessages, toolResult);
     }
   }
+
 
   private addToExistingMessage(
     lastMessage: Anthropic.Messages.MessageParam,

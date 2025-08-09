@@ -98,7 +98,7 @@ function parseBrowserType(browser: string): BrowserParseResult {
   return { browserName: undefined, channel: undefined };
 }
 
-function isChromiumVariant(browser: string): boolean {
+export function isChromiumVariant(browser: string): boolean {
   const chromiumVariants = [
     'chrome',
     'chrome-beta',
@@ -235,20 +235,51 @@ function buildFinalConfig(
   cliOptions: CLIOptions,
   browserInfo: BrowserParseResult
 ): Config {
-  const browserConfig = createBrowserConfig(
-    cliOptions,
-    browserInfo.browserName,
-    browserInfo.channel
-  );
-  const serverConfig = createServerConfig(cliOptions);
-  const networkConfig = createNetworkConfig(cliOptions);
-  const miscConfig = createMiscellaneousConfig(cliOptions);
+  return assembleConfigFromParts(cliOptions, browserInfo);
+}
 
+function assembleConfigFromParts(
+  cliOptions: CLIOptions,
+  browserInfo: BrowserParseResult
+): Config {
+  const configParts = createAllConfigParts(cliOptions, browserInfo);
+  return mergeAllConfigParts(configParts);
+}
+
+function createAllConfigParts(
+  cliOptions: CLIOptions,
+  browserInfo: BrowserParseResult
+) {
   return {
-    ...browserConfig,
-    ...serverConfig,
-    ...networkConfig,
-    ...miscConfig,
+    browserConfig: createBrowserConfig(
+      cliOptions,
+      browserInfo.browserName,
+      browserInfo.channel
+    ),
+    serverConfig: createServerConfig(cliOptions),
+    networkConfig: createNetworkConfig(cliOptions),
+    miscConfig: createMiscellaneousConfig(cliOptions),
+  };
+}
+
+function mergeAllConfigParts(configParts: {
+  browserConfig: Pick<Config, 'browser'>;
+  serverConfig: Pick<Config, 'server'>;
+  networkConfig: Pick<Config, 'network'>;
+  miscConfig: Pick<
+    Config,
+    | 'capabilities'
+    | 'saveSession'
+    | 'saveTrace'
+    | 'outputDir'
+    | 'imageResponses'
+  >;
+}): Config {
+  return {
+    ...configParts.browserConfig,
+    ...configParts.serverConfig,
+    ...configParts.networkConfig,
+    ...configParts.miscConfig,
   };
 }
 
@@ -321,13 +352,17 @@ function configFromEnv(): Config {
 
 function buildEnvOptions(): CLIOptions {
   const options: CLIOptions = {};
+  populateAllOptions(options);
+  return options;
+}
+
+function populateAllOptions(options: CLIOptions): void {
   populateNetworkOptions(options);
   populateBrowserOptions(options);
   populateDeviceOptions(options);
   populateProxyOptions(options);
   populateOutputOptions(options);
   populateMiscellaneousOptions(options);
-  return options;
 }
 
 function populateNetworkOptions(options: CLIOptions): void {

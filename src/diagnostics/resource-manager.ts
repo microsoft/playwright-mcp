@@ -35,7 +35,7 @@ export class ResourceManager implements SmartTracker {
   private readonly resources = new Map<string, TrackedResource>();
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: nextId is used in trackResource method
   private nextId = 0;
-  private readonly disposeTimeout = 30_000; // 30 seconds default
+  private disposeTimeout = 30_000; // 30 seconds default
   private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor() {

@@ -45,7 +45,7 @@ export function formatListItems(items: string[], level = 0): string[] {
  * Common array operations to reduce push() repetition
  */
 export class ArrayBuilder<T> {
-  private readonly items: T[] = [];
+  private items: T[] = [];
 
   constructor(initial?: T[]) {
     if (initial) {

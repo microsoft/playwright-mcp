@@ -8,7 +8,10 @@ import { expectationSchema } from '../schemas/expectation.js';
 import type { Tab } from '../tab.js';
 import { createErrorReporter } from '../utils/errorHandlerMiddleware.js';
 import { DiagnoseAnalysisRunner } from './diagnose/DiagnoseAnalysisRunner.js';
-import type { ConfigOverrides } from './diagnose/DiagnoseConfigHandler.js';
+import type {
+  ConfigOverrides,
+  DiagnoseSystemConfig,
+} from './diagnose/DiagnoseConfigHandler.js';
 import { DiagnoseConfigHandler } from './diagnose/DiagnoseConfigHandler.js';
 import type { SearchCriteria } from './diagnose/DiagnoseReportBuilder.js';
 import { DiagnoseReportBuilder } from './diagnose/DiagnoseReportBuilder.js';
@@ -112,18 +115,19 @@ export const browserDiagnose = defineTabTool({
   },
 });
 
-function extractDiagnoseConfig(params: any) {
+function extractDiagnoseConfig(params: Record<string, unknown>) {
   return {
     searchForElements: params.searchForElements,
-    includePerformanceMetrics: params.includePerformanceMetrics ?? false,
-    includeAccessibilityInfo: params.includeAccessibilityInfo ?? false,
-    includeTroubleshootingSuggestions:
-      params.includeTroubleshootingSuggestions ?? false,
+    includePerformanceMetrics: Boolean(params.includePerformanceMetrics ?? false),
+    includeAccessibilityInfo: Boolean(params.includeAccessibilityInfo ?? false),
+    includeTroubleshootingSuggestions: Boolean(
+      params.includeTroubleshootingSuggestions ?? false
+    ),
     diagnosticLevel: params.diagnosticLevel ?? 'standard',
-    useParallelAnalysis: params.useParallelAnalysis ?? false,
-    useUnifiedSystem: params.useUnifiedSystem ?? true,
+    useParallelAnalysis: Boolean(params.useParallelAnalysis ?? false),
+    useUnifiedSystem: Boolean(params.useUnifiedSystem ?? true),
     configOverrides: params.configOverrides,
-    includeSystemStats: params.includeSystemStats ?? false,
+    includeSystemStats: Boolean(params.includeSystemStats ?? false),
   };
 }
 
@@ -147,7 +151,7 @@ async function executeDiagnoseProcess(
     tab,
     config.useUnifiedSystem,
     config.useParallelAnalysis,
-    config.configOverrides as ConfigOverrides
+    (config.configOverrides as ConfigOverrides) || {}
   );
 
   try {
@@ -188,7 +192,7 @@ function validateAndSetupConfig(
 
 async function runAnalysisAndBuildReport(
   tab: Tab,
-  systemConfig: any,
+  systemConfig: DiagnoseSystemConfig,
   config: ReturnType<typeof extractDiagnoseConfig>,
   startTime: number
 ) {
@@ -227,7 +231,7 @@ async function runAnalysisAndBuildReport(
   );
 }
 
-async function cleanupSystems(systemConfig: any) {
+async function cleanupSystems(systemConfig: DiagnoseSystemConfig) {
   // Cleanup: unified system manages its own lifecycle, only dispose legacy pageAnalyzer
   if (!systemConfig.unifiedSystem && systemConfig.pageAnalyzer) {
     await systemConfig.pageAnalyzer.dispose();

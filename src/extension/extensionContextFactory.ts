@@ -25,7 +25,9 @@ export class ExtensionContextFactory implements BrowserContextFactory {
     close: () => Promise<void>;
   }> {
     // First call will establish the connection to the extension.
-    this._browserPromise ??= this._obtainBrowser(clientInfo, abortSignal);
+    if (this._browserPromise === undefined) {
+      this._browserPromise = this._obtainBrowser(clientInfo, abortSignal);
+    }
     const browser = await this._browserPromise;
     return {
       browserContext: browser.contexts()[0],
@@ -40,7 +42,9 @@ export class ExtensionContextFactory implements BrowserContextFactory {
     clientInfo: ClientInfo,
     abortSignal: AbortSignal
   ): Promise<Browser> {
-    this._relayPromise ??= this._startRelay(abortSignal);
+    if (this._relayPromise === undefined) {
+      this._relayPromise = this._startRelay(abortSignal);
+    }
     const relay = await this._relayPromise;
     abortSignal.throwIfAborted();
     await relay.ensureExtensionConnectionForMCPContext(clientInfo, abortSignal);

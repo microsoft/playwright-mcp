@@ -67,12 +67,19 @@ async function runConversationLoop(
       iteration
     );
 
-    if (result.isDone || oneShot) {
+    if (shouldTerminateLoop(result, oneShot)) {
       return conversation.messages;
     }
   }
 
   throw new Error('Failed to perform step, max attempts reached');
+}
+
+function shouldTerminateLoop(
+  result: { isDone: boolean },
+  oneShot: boolean
+): boolean {
+  return result.isDone || oneShot;
 }
 
 async function executeIteration(
@@ -84,9 +91,7 @@ async function executeIteration(
   debug('history')('Making API call for iteration', iteration);
   const toolCalls = await delegate.makeApiCall(conversation);
 
-  if (toolCalls.length === 0) {
-    throw new Error('Call the "done" tool when the task is complete.');
-  }
+  validateToolCallsPresent(toolCalls);
 
   const { toolResults, isDone } = await processToolCalls(
     delegate,
@@ -94,6 +99,25 @@ async function executeIteration(
     toolCalls
   );
 
+  return handleIterationResult(delegate, conversation, toolResults, isDone);
+}
+
+function validateToolCallsPresent(toolCalls: LLMToolCall[]): void {
+  if (toolCalls.length === 0) {
+    throw new Error('Call the "done" tool when the task is complete.');
+  }
+}
+
+function handleIterationResult(
+  delegate: LLMDelegate,
+  conversation: LLMConversation,
+  toolResults: Array<{
+    toolCallId: string;
+    content: string;
+    isError?: boolean;
+  }>,
+  isDone: boolean
+): { isDone: boolean } {
   if (isDone) {
     return { isDone: true };
   }
@@ -123,6 +147,29 @@ async function processToolCalls(
 }> {
   const toolResults = createEmptyToolResults();
 
+  const processResult = await processAllToolCallsSequentially(
+    delegate,
+    client,
+    toolCalls,
+    toolResults
+  );
+
+  return processResult || { toolResults, isDone: false };
+}
+
+async function processAllToolCallsSequentially(
+  delegate: LLMDelegate,
+  client: Client,
+  toolCalls: LLMToolCall[],
+  toolResults: Array<{ toolCallId: string; content: string; isError?: boolean }>
+): Promise<{
+  toolResults: Array<{
+    toolCallId: string;
+    content: string;
+    isError?: boolean;
+  }>;
+  isDone: boolean;
+} | null> {
   // Process tool calls sequentially to maintain correct execution order
   for (const toolCall of toolCalls) {
     // biome-ignore lint/nursery/noAwaitInLoop: Sequential tool execution is required for correct ordering
@@ -134,39 +181,34 @@ async function processToolCalls(
       toolResults
     );
 
-    const finalResult = handleProcessingResult(processingResult, toolResults);
-    if (finalResult.shouldReturn) {
-      return finalResult.result;
+    if (shouldReturnEarly(processingResult)) {
+      return createProcessResult(processingResult, toolResults);
     }
   }
 
-  return { toolResults, isDone: false };
+  return null;
 }
 
-function handleProcessingResult(
+function shouldReturnEarly(
+  processingResult: { isDone: boolean; shouldBreak: boolean }
+): boolean {
+  return processingResult.isDone || processingResult.shouldBreak;
+}
+
+function createProcessResult(
   processingResult: { isDone: boolean; shouldBreak: boolean },
   toolResults: Array<{ toolCallId: string; content: string; isError?: boolean }>
 ): {
-  shouldReturn: boolean;
-  result: {
-    toolResults: Array<{
-      toolCallId: string;
-      content: string;
-      isError?: boolean;
-    }>;
-    isDone: boolean;
-  };
+  toolResults: Array<{
+    toolCallId: string;
+    content: string;
+    isError?: boolean;
+  }>;
+  isDone: boolean;
 } {
-  if (!(processingResult.isDone || processingResult.shouldBreak)) {
-    return { shouldReturn: false, result: { toolResults, isDone: false } };
-  }
-
   return {
-    shouldReturn: true,
-    result: {
-      toolResults,
-      isDone: processingResult.isDone,
-    },
+    toolResults,
+    isDone: processingResult.isDone,
   };
 }
 
@@ -185,9 +227,8 @@ async function processSingleToolCall(
   allToolCalls: LLMToolCall[],
   toolResults: Array<{ toolCallId: string; content: string; isError?: boolean }>
 ): Promise<{ isDone: boolean; shouldBreak: boolean }> {
-  const doneCheck = checkForDoneToolCall(delegate, toolCall);
-  if (doneCheck.isDone) {
-    return { isDone: true, shouldBreak: false };
+  if (isToolCallDone(delegate, toolCall)) {
+    return createDoneResult();
   }
 
   const executionResult = await processIndividualToolCall(
@@ -197,7 +238,23 @@ async function processSingleToolCall(
     toolResults
   );
 
-  return { isDone: false, shouldBreak: executionResult.shouldBreak };
+  return createContinueResult(executionResult.shouldBreak);
+}
+
+function isToolCallDone(delegate: LLMDelegate, toolCall: LLMToolCall): boolean {
+  const doneCheck = checkForDoneToolCall(delegate, toolCall);
+  return doneCheck.isDone;
+}
+
+function createDoneResult(): { isDone: boolean; shouldBreak: boolean } {
+  return { isDone: true, shouldBreak: false };
+}
+
+function createContinueResult(shouldBreak: boolean): {
+  isDone: boolean;
+  shouldBreak: boolean;
+} {
+  return { isDone: false, shouldBreak };
 }
 
 async function processIndividualToolCall(

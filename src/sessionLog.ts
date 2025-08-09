@@ -111,17 +111,22 @@ export class SessionLog {
     tab: Tab,
     trimmedCode: string
   ): LogEntry {
-    const tabSnapshot = this._createTabSnapshot(action, tab);
-
     return {
       timestamp: performance.now(),
       userAction: action,
       code: trimmedCode,
-      tabSnapshot,
+      tabSnapshot: this._createTabSnapshot(action, tab),
     };
   }
 
   private _createTabSnapshot(action: actions.Action, tab: Tab): TabSnapshot {
+    return this._buildTabSnapshotObject(action, tab);
+  }
+
+  private _buildTabSnapshotObject(
+    action: actions.Action,
+    tab: Tab
+  ): TabSnapshot {
     return {
       url: tab.page.url(),
       title: '',
@@ -139,6 +144,10 @@ export class SessionLog {
     this._flushEntriesTimeout = setTimeout(() => this._flushEntries(), 1000);
   }
   private _flushEntries() {
+    this._executeFlushProcess();
+  }
+
+  private _executeFlushProcess(): void {
     this._clearFlushTimeout();
     const { entries, lines } = this._prepareFlushData();
     this._processEntries(entries, lines);
@@ -161,7 +170,7 @@ export class SessionLog {
   private _processEntries(entries: LogEntry[], lines: string[]): void {
     for (const entry of entries) {
       const ordinal = (++this._ordinal).toString().padStart(3, '0');
-      this._processEntry(entry, ordinal, lines);
+      this._formatSingleLogEntry(entry, ordinal, lines);
     }
   }
 
@@ -171,7 +180,16 @@ export class SessionLog {
     );
   }
 
-  private _processEntry(
+  private _formatSingleLogEntry(
+    entry: LogEntry,
+    ordinal: string,
+    lines: string[]
+  ): void {
+    this._addAllEntryContent(entry, ordinal, lines);
+    this._addEntryDelimiters(lines);
+  }
+
+  private _addAllEntryContent(
     entry: LogEntry,
     ordinal: string,
     lines: string[]
@@ -180,6 +198,9 @@ export class SessionLog {
     this._addUserActionContent(entry, lines);
     this._addCodeContent(entry, lines);
     this._addTabSnapshotContent(entry, ordinal, lines);
+  }
+
+  private _addEntryDelimiters(lines: string[]): void {
     lines.push('', '');
   }
 

@@ -61,6 +61,13 @@ export class OpenAIDelegate implements LLMDelegate {
     conversation: LLMConversation,
     response: OpenAI.Chat.Completions.ChatCompletion
   ): LLMToolCall[] {
+    return this.handleResponseProcessing(conversation, response);
+  }
+
+  private handleResponseProcessing(
+    conversation: LLMConversation,
+    response: OpenAI.Chat.Completions.ChatCompletion
+  ): LLMToolCall[] {
     const message = this.extractMessageFromResponse(response);
     const toolCalls = this.extractToolCallsFromResponse(message);
     this.updateConversationWithResponse(conversation, message, toolCalls);
@@ -107,17 +114,42 @@ export class OpenAIDelegate implements LLMDelegate {
   private convertMessagesToOpenAIFormat(
     messages: LLMMessage[]
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
-    return messages
-      .map((message) => this.convertSingleMessageToOpenAI(message))
-      .filter(
-        (
-          message
-        ): message is OpenAI.Chat.Completions.ChatCompletionMessageParam =>
-          message !== null
-      );
+    return this.transformMessagesToOpenAIFormat(messages);
+  }
+
+  private transformMessagesToOpenAIFormat(
+    messages: LLMMessage[]
+  ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
+    const convertedMessages = this.mapMessagesToOpenAIFormat(messages);
+    return this.filterValidMessages(convertedMessages);
+  }
+
+  private mapMessagesToOpenAIFormat(
+    messages: LLMMessage[]
+  ): (OpenAI.Chat.Completions.ChatCompletionMessageParam | null)[] {
+    return messages.map((message) =>
+      this.convertSingleMessageToOpenAI(message)
+    );
+  }
+
+  private filterValidMessages(
+    messages: (OpenAI.Chat.Completions.ChatCompletionMessageParam | null)[]
+  ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
+    return messages.filter(
+      (
+        message
+      ): message is OpenAI.Chat.Completions.ChatCompletionMessageParam =>
+        message !== null
+    );
   }
 
   private convertSingleMessageToOpenAI(
+    message: LLMMessage
+  ): OpenAI.Chat.Completions.ChatCompletionMessageParam | null {
+    return this.handleMessageConversion(message);
+  }
+
+  private handleMessageConversion(
     message: LLMMessage
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam | null {
     switch (message.role) {
@@ -161,35 +193,19 @@ export class OpenAIDelegate implements LLMDelegate {
     const assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam =
       { role: 'assistant' };
 
-    this.addContentToAssistantMessage(assistantMessage, message);
-    this.addToolCallsToAssistantMessage(assistantMessage, message);
+    if (message.content) {
+      assistantMessage.content = message.content;
+    }
+
+    if (this.hasValidToolCalls(message)) {
+      assistantMessage.tool_calls = this.convertToolCallsToOpenAI(
+        message.toolCalls!
+      );
+    }
 
     return assistantMessage;
   }
 
-  private addContentToAssistantMessage(
-    assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam,
-    message: LLMMessage
-  ): void {
-    if (!message.content) {
-      return;
-    }
-    assistantMessage.content = message.content;
-  }
-
-  private addToolCallsToAssistantMessage(
-    assistantMessage: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam,
-    message: LLMMessage
-  ): void {
-    if (!this.hasValidToolCalls(message)) {
-      return;
-    }
-    if (message.role === 'assistant' && message.toolCalls) {
-      assistantMessage.tool_calls = this.convertToolCallsToOpenAI(
-        message.toolCalls
-      );
-    }
-  }
 
   private hasValidToolCalls(message: LLMMessage): boolean {
     return (
