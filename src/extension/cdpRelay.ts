@@ -301,8 +301,9 @@ export class CDPRelayServer {
 
         await this._handlePlaywrightMessage(message);
       } catch (error: unknown) {
+        const truncatedData = String(data).slice(0, 500);
         debugLogger(
-          `Error while handling Playwright message\n${String(data).slice(0, 500)}...\n`,
+          `Error while handling Playwright message\n${truncatedData}...\n`,
           error
         );
       }

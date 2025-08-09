@@ -118,9 +118,7 @@ export class Context {
       this._onPageClosed(closedTab)
     );
     this._tabs.push(newTab);
-    if (this._currentTab === undefined) {
-      this._currentTab = newTab;
-    }
+    this._currentTab ??= newTab;
   }
   private _onPageClosed(tab: Tab) {
     const index = this._tabs.indexOf(tab);
@@ -138,10 +136,8 @@ export class Context {
     }
   }
   async closeBrowserContext() {
-    if (this._closeBrowserContextPromise === undefined) {
-      this._closeBrowserContextPromise =
-        this._closeBrowserContextImpl().catch(logUnhandledError);
-    }
+    this._closeBrowserContextPromise ??=
+      this._closeBrowserContextImpl().catch(logUnhandledError);
     await this._closeBrowserContextPromise;
     this._closeBrowserContextPromise = undefined;
   }

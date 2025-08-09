@@ -5,16 +5,10 @@ export function createHash(data: string): string {
 // Regex to match filesystem unsafe characters (excluding control characters)
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*]+/g;
 
-// Remove control characters (0x00-0x1F) to avoid regex warnings and ensure filesystem safety
+// Remove control characters (0x00-0x1F and 0x7F) to avoid regex warnings and ensure filesystem safety
 function removeControlCharacters(str: string): string {
-  return str
-    .split('')
-    .map((char) => {
-      const charCode = char.charCodeAt(0);
-      // Explicitly handle null character and other control characters
-      return charCode <= 31 || charCode === 127 ? '-' : char;
-    })
-    .join('');
+  // Use regex to remove control characters instead of explicit character code checks
+  return str.replace(/[\x00-\x1F\x7F]/g, '-');
 }
 
 export function sanitizeForFilePath(input: string) {

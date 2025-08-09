@@ -87,5 +87,6 @@ function buildObjectString(
 ): string {
   const tokens = keys.map((key) => `${key}: ${formatObject(obj[key])}`);
   const separator = `,\n${indent}`;
-  return `{\n${indent}${tokens.join(separator)}\n}`;
+  const tokensJoined = tokens.join(separator);
+  return `{\n${indent}${tokensJoined}\n}`;
 }

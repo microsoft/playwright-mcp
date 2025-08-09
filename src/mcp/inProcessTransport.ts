@@ -69,6 +69,7 @@ class InProcessServerTransport implements Transport {
     message: JSONRPCMessage,
     _options?: TransportSendOptions
   ): Promise<void> {
+    // Send message directly to client transport for in-process communication
     this._clientTransport._receiveFromServer(message);
     return Promise.resolve();
   }
@@ -81,7 +82,7 @@ class InProcessServerTransport implements Transport {
   onmessage?: (message: JSONRPCMessage, extra?: MessageExtraInfo) => void;
   sessionId?: string;
   setProtocolVersion?: (version: string) => void;
-  _receiveFromClient(message: JSONRPCMessage): void {
-    this.onmessage?.(message);
+  _receiveFromClient(message: JSONRPCMessage, extra?: MessageExtraInfo): void {
+    this.onmessage?.(message, extra);
   }
 }

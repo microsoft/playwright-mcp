@@ -57,19 +57,29 @@ const ConnectApp: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const relayUrl = params.get('mcpRelayUrl');
+    let params: URLSearchParams;
+    try {
+      params = new URLSearchParams(window.location.search);
+      const relayUrl = params.get('mcpRelayUrl');
 
-    if (!relayUrl) {
+      if (!relayUrl) {
+        setShowButtons(false);
+        setStatus({
+          type: 'error',
+          message: 'Missing mcpRelayUrl parameter in URL.',
+        });
+        return;
+      }
+
+      setMcpRelayUrl(relayUrl);
+    } catch (error) {
       setShowButtons(false);
       setStatus({
         type: 'error',
-        message: 'Missing mcpRelayUrl parameter in URL.',
+        message: `Failed to parse URL parameters: ${error}`,
       });
       return;
     }
-
-    setMcpRelayUrl(relayUrl);
 
     try {
       const client = JSON.parse(params.get('client') || '{}');

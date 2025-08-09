@@ -175,11 +175,10 @@ for (const type of ['png', 'jpeg']) {
 
     expect(fs.existsSync(outputDir)).toBeTruthy();
     expect(files).toHaveLength(1);
-    expect(files[0]).toMatch(
-      new RegExp(
-        `^page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z\\.${type}$`
-      )
+    const filePattern = new RegExp(
+      `^page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z\\.${type}$`
     );
+    expect(files[0]).toMatch(filePattern);
   });
 }
 
