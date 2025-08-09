@@ -20,12 +20,8 @@ export async function cleanup(): Promise<void> {
     try {
       const proc = spawn(cmd, args);
       await new Promise<void>((resolve) => proc.on('exit', () => resolve()));
-    } catch (error: unknown) {
+    } catch (_error: unknown) {
       // Ignore errors - process might not exist (this is expected)
-      console.debug(
-        'Process kill failed (expected if process not running):',
-        error
-      );
     }
   });
 

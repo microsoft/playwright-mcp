@@ -3,6 +3,7 @@
  */
 
 import { expect, test } from '@playwright/test';
+import type { Page } from 'playwright';
 import { ElementDiscovery } from '../src/diagnostics/element-discovery.js';
 import { ErrorEnrichment } from '../src/diagnostics/error-enrichment.js';
 import { PageAnalyzer } from '../src/diagnostics/page-analyzer.js';
@@ -18,7 +19,7 @@ const THRESHOLD_REGEX_2 = /500ms → 1500ms|Element Discovery:.*1500ms/;
 const PERFORMANCE_REGEX = /pageAnalysis.*Expected.*5000ms/;
 
 // Utility functions for tests
-async function setupParallelAnalyzer(page: any, htmlContent: string) {
+async function setupParallelAnalyzer(page: Page, htmlContent: string) {
   await page.goto(`data:text/html,${htmlContent}`);
   const { ParallelPageAnalyzer } = await import(
     '../src/diagnostics/parallel-page-analyzer.js'
@@ -27,7 +28,7 @@ async function setupParallelAnalyzer(page: any, htmlContent: string) {
 }
 
 function expectParallelAnalysisResult(
-  result: any,
+  result: Record<string, unknown>,
   expectedElementCount?: number
 ) {
   expect(result.structureAnalysis).toBeDefined();
@@ -115,21 +116,21 @@ const DiagnosticSystemTestHelper = {
     this.diagnosticSetup.afterEach();
   },
 
-  async setupPageAnalyzer(page: any, htmlContent?: string) {
+  async setupPageAnalyzer(page: Page, htmlContent?: string) {
     if (htmlContent) {
       await page.goto(`data:text/html,${htmlContent}`);
     }
     return new PageAnalyzer(page);
   },
 
-  async setupElementDiscovery(page: any, htmlContent?: string) {
+  async setupElementDiscovery(page: Page, htmlContent?: string) {
     if (htmlContent) {
       await page.goto(htmlContent);
     }
     return new ElementDiscovery(page);
   },
 
-  async setupErrorEnrichment(page: any, htmlContent?: string) {
+  async setupErrorEnrichment(page: Page, htmlContent?: string) {
     if (htmlContent) {
       await page.goto(htmlContent);
     }
@@ -146,7 +147,7 @@ const DiagnosticSystemTestHelper = {
     return result;
   },
 
-  expectBasicMetrics(metrics: any) {
+  expectBasicMetrics(metrics: Record<string, unknown>) {
     expect(metrics).toBeDefined();
     expect(metrics.domMetrics).toBeDefined();
     expect(metrics.interactionMetrics).toBeDefined();
@@ -156,7 +157,10 @@ const DiagnosticSystemTestHelper = {
     expect(Array.isArray(metrics.warnings)).toBe(true);
   },
 
-  expectPageStructure(analysis: any, expectations: any) {
+  expectPageStructure(
+    analysis: Record<string, unknown>,
+    expectations: Record<string, unknown>
+  ) {
     if (expectations.iframes) {
       expect(analysis.iframes.detected).toBe(expectations.iframes.detected);
       expect(analysis.iframes.count).toBe(expectations.iframes.count);
@@ -172,7 +176,7 @@ const DiagnosticSystemTestHelper = {
     }
   },
 
-  createMockDiagnoseContext(page: any) {
+  createMockDiagnoseContext(page: Page) {
     return {
       currentTabOrDie: () => ({
         page,
@@ -447,7 +451,7 @@ test.describe('ElementDiscovery', () => {
   };
 
   function expectAlternativeElementStructure(
-    alternative: any,
+    alternative: Record<string, unknown>,
     minConfidence = 0
   ) {
     expect(alternative).toEqual(
@@ -565,7 +569,7 @@ test.describe('ErrorEnrichment', () => {
   };
 
   function expectEnrichedErrorStructure(
-    enrichedError: any,
+    enrichedError: Error,
     hasAlternatives = true
   ) {
     expect(enrichedError.message).toContain('not found');
@@ -745,7 +749,7 @@ test.describe('Phase 2: PageAnalyzer Integration', () => {
   };
 
   async function testPageAnalyzerIntegration(
-    page: any,
+    page: Page,
     htmlContent: string,
     expectedElementCount: number,
     maxExecutionTime = 500
@@ -1061,7 +1065,7 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
   };
 
   async function testPerformanceWithPageAnalyzer(
-    page: any,
+    page: Page,
     htmlContent: string,
     expectedElementCount: number,
     expectedIframeCount: number,
@@ -1214,7 +1218,7 @@ test.describe('Phase 2: Performance Verification (500ms Target)', () => {
 
     // Run multiple analysis to test consistency and performance timing
     const times: number[] = [];
-    const results: any[] = [];
+    const results: Record<string, unknown>[] = [];
 
     // Use Promise.all to avoid await in loop
     const measurements = await Promise.all(
@@ -1351,7 +1355,10 @@ test.describe('Diagnostic System Integration', () => {
 });
 
 test.describe('configOverrides visibility and impact', () => {
-  async function setupDiagnoseTest(page: any, params: any) {
+  async function setupDiagnoseTest(
+    page: Page,
+    params: Record<string, unknown>
+  ) {
     await page.goto(
       'data:text/html,<html><body><h1>Test Page</h1></body></html>'
     );

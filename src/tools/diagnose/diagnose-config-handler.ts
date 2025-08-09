@@ -2,7 +2,11 @@
  * Handles configuration management for the diagnose tool
  */
 
+import debug from 'debug';
 import { getCurrentThresholds } from '../../diagnostics/diagnostic-thresholds.js';
+
+const configDebug = debug('pw:mcp:diagnose-config');
+
 import { PageAnalyzer } from '../../diagnostics/page-analyzer.js';
 import type { SmartConfig } from '../../diagnostics/smart-config.js';
 import { UnifiedDiagnosticSystem } from '../../diagnostics/unified-system.js';
@@ -35,7 +39,7 @@ export class DiagnoseConfigHandler {
       const thresholdsManager = getCurrentThresholds();
       return thresholdsManager.getConfigDiagnostics();
     } catch (error) {
-      console.warn('Configuration validation failed:', error);
+      configDebug('Configuration validation failed:', error);
       return {
         status: 'failed',
         warnings: [

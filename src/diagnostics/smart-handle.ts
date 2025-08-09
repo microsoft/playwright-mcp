@@ -1,8 +1,11 @@
+import debug from 'debug';
 import type * as playwright from 'playwright';
 import {
   globalResourceManager,
   type SmartTracker,
 } from './resource-manager.js';
+
+const smartHandleDebug = debug('pw:mcp:smart-handle');
 
 /**
  * Smart wrapper for ElementHandles that automatically manages disposal
@@ -65,7 +68,7 @@ export class SmartHandle<T extends playwright.ElementHandle>
       }
     } catch (error: unknown) {
       // Log errors during disposal for debugging
-      console.debug(
+      smartHandleDebug(
         'Resource disposal failed:',
         error instanceof Error ? error.message : String(error)
       );

@@ -2,6 +2,10 @@
  * Common formatting functions to reduce code duplication
  */
 
+import debug from 'debug';
+
+const formattersDebug = debug('pw:mcp:formatters');
+
 /**
  * Format performance metrics with consistent styling
  */
@@ -277,7 +281,7 @@ export function createDiagnosticErrorInfo(
 export function handleResourceDisposalError(
   error: unknown,
   resourceType: string,
-  logger: (message: string) => void = console.debug
+  logger: (message: string) => void = formattersDebug
 ): void {
   logger(`${resourceType} disposal failed: ${getErrorMessage(error)}`);
 }

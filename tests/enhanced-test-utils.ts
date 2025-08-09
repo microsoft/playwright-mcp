@@ -16,6 +16,10 @@
 
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { expect, test } from './fixtures.js';
+import type { TestServer } from './testserver/index.js';
+
+type CallToolResponse = Awaited<ReturnType<Client['callTool']>>;
+
 import {
   createFullExpectation,
   createMinimalExpectation,
@@ -29,12 +33,12 @@ import {
 export interface TabTestScenario {
   originalPage: TestPageContent;
   newPage?: TestPageContent;
-  setupServer: (server: any) => void;
+  setupServer: (server: TestServer) => void;
 }
 
 export interface ExpectationTestCase {
   name: string;
-  expectation: any;
+  expectation: Record<string, unknown>;
   expectedResponse: {
     containsSnapshot?: boolean;
     containsConsole?: boolean;
@@ -42,7 +46,7 @@ export interface ExpectationTestCase {
     containsDownloads?: boolean;
     containsTabs?: boolean;
   };
-  additionalAssertions?: (result: any) => void;
+  additionalAssertions?: (result: CallToolResponse) => void;
 }
 
 /**
@@ -101,7 +105,7 @@ export class TabTestScenarioBuilder {
     return this;
   }
 
-  withCustomSetup(setupFn: (server: any) => void): this {
+  withCustomSetup(setupFn: (server: TestServer) => void): this {
     this.scenario.setupServer = setupFn;
     return this;
   }
@@ -136,15 +140,15 @@ export class TabTestScenarioBuilder {
  */
 export async function executeTabToolTest(
   client: Client,
-  server: any,
+  server: TestServer,
   scenario: TabTestScenario,
   toolCall: {
     name: string;
-    arguments: any;
+    arguments: Record<string, unknown>;
   },
   expectedResponse: ExpectationTestCase['expectedResponse'],
-  additionalAssertions?: (result: any) => void
-): Promise<any> {
+  additionalAssertions?: (result: CallToolResponse) => void
+): Promise<CallToolResponse> {
   // Setup server
   scenario.setupServer(server);
 
@@ -173,7 +177,10 @@ export async function executeTabToolTest(
  */
 export function createTabToolExpectationSuite(
   toolName: string,
-  createToolCall: (expectation: any) => { name: string; arguments: any },
+  createToolCall: (expectation: Record<string, unknown>) => {
+    name: string;
+    arguments: Record<string, unknown>;
+  },
   scenarioBuilder: () => TabTestScenarioBuilder
 ): void {
   test.describe(`${toolName}`, () => {
@@ -219,7 +226,7 @@ export function createMultiTabScenario(): TabTestScenarioBuilder {
  */
 export async function setupTabNavigation(
   client: Client,
-  server: any,
+  server: TestServer,
   secondTabUrl = '/tab2'
 ): Promise<void> {
   await client.callTool({

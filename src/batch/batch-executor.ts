@@ -9,7 +9,7 @@ import type {
   BatchStep,
   StepResult,
 } from '../types/batch.js';
-import { getErrorMessage } from '../utils/commonFormatters.js';
+import { getErrorMessage } from '../utils/common-formatters.js';
 
 // Type for serialized response content
 export interface SerializedResponse {

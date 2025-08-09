@@ -12,7 +12,7 @@ import { z } from 'zod';
 import type { Response } from '../response.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import type { Tab } from '../tab.js';
-import { getErrorMessage } from '../utils/commonFormatters.js';
+import { getErrorMessage } from '../utils/common-formatters.js';
 
 // Common schema patterns used across tools
 export const baseElementSchema = z.object({

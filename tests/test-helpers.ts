@@ -20,10 +20,18 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import type { TestInfo } from '@playwright/test';
 import { expect } from '@playwright/test';
+import type { ElementHandle, Page } from 'playwright';
 import { DiagnosticThresholds } from '../src/diagnostics/diagnostic-thresholds.js';
 import { SmartConfigManager } from '../src/diagnostics/smart-config.js';
 import { Tab } from '../src/tab.js';
+import type { TestServer } from './testserver/index.js';
+
+type CallToolResponse = Awaited<ReturnType<Client['callTool']>>;
+type MockElement = { [key: string]: unknown };
+type MockPage = { [key: string]: unknown };
+type MockContext = { [key: string]: unknown };
 
 export type ConsoleMethod = 'log' | 'info' | 'warn' | 'error';
 
@@ -31,9 +39,10 @@ export type ConsoleMethod = 'log' | 'info' | 'warn' | 'error';
  * Console capture utility for testing
  */
 export class ConsoleCapture {
-  private originalMethods: Map<ConsoleMethod, (...args: any[]) => void> =
+  private originalMethods: Map<ConsoleMethod, (...args: unknown[]) => void> =
     new Map();
-  private capturedMessages: Array<{ level: ConsoleMethod; args: any[] }> = [];
+  private capturedMessages: Array<{ level: ConsoleMethod; args: unknown[] }> =
+    [];
 
   /**
    * Start capturing console output for specified methods
@@ -41,7 +50,7 @@ export class ConsoleCapture {
   start(methods: ConsoleMethod[] = ['warn', 'error', 'info']): void {
     for (const method of methods) {
       this.originalMethods.set(method, console[method]);
-      console[method] = (...args: any[]) => {
+      console[method] = (...args: unknown[]) => {
         this.capturedMessages.push({ level: method, args });
         // Optionally call original method for debugging
         // this.originalMethods.get(method)?.(...args);
@@ -62,14 +71,14 @@ export class ConsoleCapture {
   /**
    * Get all captured messages
    */
-  getMessages(): Array<{ level: ConsoleMethod; args: any[] }> {
+  getMessages(): Array<{ level: ConsoleMethod; args: unknown[] }> {
     return [...this.capturedMessages];
   }
 
   /**
    * Get messages for a specific level
    */
-  getMessagesForLevel(level: ConsoleMethod): any[][] {
+  getMessagesForLevel(level: ConsoleMethod): unknown[][] {
     return this.capturedMessages
       .filter((msg) => msg.level === level)
       .map((msg) => msg.args);
@@ -78,7 +87,7 @@ export class ConsoleCapture {
   /**
    * Get warn messages (backward compatibility)
    */
-  getWarnCalls(): any[][] {
+  getWarnCalls(): unknown[][] {
     return this.getMessagesForLevel('warn');
   }
 
@@ -182,7 +191,7 @@ export function createMockElement(
     },
     textContent: async () => options.textContent || 'mock content',
     getAttribute: async (name: string) => options.attributes?.[name] || null,
-    evaluate: async (_fn: (...args: any[]) => any) =>
+    evaluate: async (_fn: (...args: unknown[]) => unknown) =>
       options.selector || 'mock-selector',
   };
 }
@@ -190,7 +199,7 @@ export function createMockElement(
 /**
  * Create a mock page with elements
  */
-export function createMockPage(elements: any[] = []): any {
+export function createMockPage(elements: MockElement[] = []): MockPage {
   return {
     $$: async (_selector: string) => elements,
   };
@@ -274,7 +283,7 @@ export function expectConsoleWarning(
  * Verify diagnostic error structure
  */
 export function expectDiagnosticError(
-  error: any,
+  error: Error | string,
   expectedComponent: string,
   expectedOperation: string
 ): void {
@@ -348,7 +357,7 @@ export async function navigateToUrl(client: Client, url: string): Promise<any> {
 /**
  * Create a mock context object commonly used in navigation tests
  */
-export function createMockContext(tab: any): any {
+export function createMockContext(tab: Tab): MockContext {
   return {
     currentTab: () => tab,
     currentTabOrDie: () => tab,
@@ -361,7 +370,7 @@ export function createMockContext(tab: any): any {
  * Create a Tab with mock context - reduces boilerplate in navigation tests
  */
 export function createTabWithMockContext(
-  page: any,
+  page: Page,
   callback: () => void = () => {
     // Default empty callback for Tab constructor
   }
@@ -379,7 +388,7 @@ export function createTabWithMockContext(
  * Helper function to set basic HTML content on test server
  */
 export function setServerContent(
-  server: any,
+  server: TestServer,
   path: string,
   htmlContent: string
 ): void {
@@ -392,7 +401,7 @@ export function setServerContent(
 export async function callTool(
   client: Client,
   name: string,
-  args: any
+  args: Record<string, unknown>
 ): Promise<any> {
   return await client.callTool({
     name,
@@ -655,11 +664,11 @@ export const DIAGNOSE_EXPECTATIONS = {
  */
 export async function setupDiagnoseTest(
   client: Client,
-  server: any,
+  server: TestServer,
   htmlContent: string,
-  diagnoseArgs: any = {},
+  diagnoseArgs: Record<string, unknown> = {},
   path = '/'
-): Promise<any> {
+): Promise<CallToolResponse> {
   setServerContent(server, path, htmlContent);
   await navigateToUrl(client, server.PREFIX);
 
@@ -672,7 +681,7 @@ export async function setupDiagnoseTest(
 /**
  * Common assertions for diagnose test results
  */
-export function expectDiagnoseSuccess(result: any): void {
+export function expectDiagnoseSuccess(result: CallToolResponse): void {
   expect(result.isError).toBeFalsy();
   expect(result.content[0].text).toContain('Page Diagnostic Report');
 }
@@ -681,7 +690,7 @@ export function expectDiagnoseSuccess(result: any): void {
  * Assert that diagnose result contains specific content
  */
 export function expectDiagnoseContent(
-  result: any,
+  result: CallToolResponse,
   expectedTexts: string[]
 ): void {
   expectDiagnoseSuccess(result);
@@ -695,7 +704,7 @@ export function expectDiagnoseContent(
  */
 export async function setupDiagnoseWithElementSearch(
   client: Client,
-  server: any,
+  server: TestServer,
   htmlContent: string,
   searchCriteria: any
 ): Promise<any> {
@@ -799,7 +808,7 @@ export class StandardTestSetup {
  */
 export async function setupBasicNavigation(
   client: Client,
-  server: any,
+  server: TestServer,
   path = '/',
   content = HTML_TEMPLATES.BASIC_TITLE_ONLY
 ): Promise<any> {
@@ -914,12 +923,12 @@ export const FIND_ELEMENTS_EXPECTATIONS = {
  */
 export async function setupFindElementsTest(
   client: Client,
-  server: any,
+  server: TestServer,
   htmlContent: string,
-  searchCriteria: any,
-  additionalArgs: any = {},
+  searchCriteria: Record<string, unknown>,
+  additionalArgs: Record<string, unknown> = {},
   path = '/'
-): Promise<any> {
+): Promise<CallToolResponse> {
   setServerContent(server, path, htmlContent);
   await navigateToUrl(client, server.PREFIX);
 
@@ -933,7 +942,7 @@ export async function setupFindElementsTest(
 /**
  * Common assertions for find_elements test results
  */
-export function expectFindElementsSuccess(result: any): void {
+export function expectFindElementsSuccess(result: CallToolResponse): void {
   expect(result.isError).toBeFalsy();
   expect(result.content[0].text).toContain('Found');
 }
@@ -941,7 +950,7 @@ export function expectFindElementsSuccess(result: any): void {
 /**
  * Assert that find_elements result contains no matches
  */
-export function expectFindElementsNoMatches(result: any): void {
+export function expectFindElementsNoMatches(result: CallToolResponse): void {
   expect(result.isError).toBeFalsy();
   expect(result.content[0].text).toContain('No elements found');
 }
@@ -951,11 +960,11 @@ export function expectFindElementsNoMatches(result: any): void {
  */
 export async function setupFindElementsWithMultipleCriteria(
   client: Client,
-  server: any,
+  server: TestServer,
   htmlContent: string,
-  searchCriteria: any,
+  searchCriteria: Record<string, unknown>,
   maxResults?: number
-): Promise<any> {
+): Promise<CallToolResponse> {
   const additionalArgs = maxResults ? { maxResults } : {};
   return await setupFindElementsTest(
     client,
@@ -1003,7 +1012,7 @@ export const DIALOG_EXPECTATIONS = {
  */
 export async function setupDialogTest(
   client: Client,
-  server: any,
+  server: TestServer,
   htmlContent: string,
   buttonText = 'Button',
   path = '/'
@@ -1022,9 +1031,9 @@ export async function setupDialogTest(
 export async function clickButtonAndExpectModal(
   client: Client,
   buttonText: string,
-  expectedModalState: any,
+  expectedModalState: Record<string, unknown>,
   expectedCode?: string
-): Promise<any> {
+): Promise<CallToolResponse> {
   const result = await callTool(client, 'browser_click', {
     element: buttonText,
     ref: 'e2',
@@ -1048,11 +1057,11 @@ export async function clickButtonAndExpectModal(
 export async function handleDialogAndExpectState(
   client: Client,
   accept: boolean,
-  expectedPageState?: any,
-  expectedModalState?: any,
+  expectedPageState?: Record<string, unknown>,
+  expectedModalState?: Record<string, unknown>,
   promptText?: string
-): Promise<any> {
-  const args: any = { accept };
+): Promise<CallToolResponse> {
+  const args: Record<string, unknown> = { accept };
   if (promptText !== undefined) {
     args.promptText = promptText;
   }
@@ -1089,7 +1098,7 @@ export interface DialogUIConfig {
 
 export async function executeDialogTest(
   client: Client,
-  server: any,
+  server: TestServer,
   dialogConfig: DialogTestConfig,
   uiConfig: DialogUIConfig
 ): Promise<void> {
@@ -1191,9 +1200,9 @@ export const SCREENSHOT_ASSERTIONS = {
  */
 export async function setupScreenshotTest(
   client: Client,
-  server: any,
+  server: TestServer,
   htmlContent: string,
-  screenshotArgs: any,
+  screenshotArgs: Record<string, unknown>,
   path = '/'
 ): Promise<any> {
   setServerContent(server, path, htmlContent);
@@ -1207,7 +1216,7 @@ export async function setupScreenshotTest(
  */
 export async function executeMinimalScreenshotTest(
   client: Client,
-  server: any,
+  server: TestServer,
   htmlContent: string = SCREENSHOT_HTML_TEMPLATES.MINIMAL_TEST,
   imageType: 'png' | 'jpeg' = 'png'
 ): Promise<any> {
@@ -1222,7 +1231,7 @@ export async function executeMinimalScreenshotTest(
  */
 export async function executeFullScreenshotTest(
   client: Client,
-  server: any,
+  server: TestServer,
   htmlContent: string = SCREENSHOT_HTML_TEMPLATES.FULL_TEST,
   imageType: 'png' | 'jpeg' = 'jpeg'
 ): Promise<any> {
@@ -1237,7 +1246,7 @@ export async function executeFullScreenshotTest(
  */
 export async function executeFullPageScreenshotTest(
   client: Client,
-  server: any,
+  server: TestServer,
   htmlContent: string = SCREENSHOT_HTML_TEMPLATES.FULL_PAGE_GRADIENT,
   imageType: 'png' | 'jpeg' = 'png'
 ): Promise<any> {
@@ -1252,7 +1261,7 @@ export async function executeFullPageScreenshotTest(
  * Common assertions for screenshot test results
  */
 export function expectScreenshotSuccess(
-  result: any,
+  result: CallToolResponse,
   screenshotType: 'viewport' | 'fullPage'
 ): void {
   expect(result.isError).toBeFalsy();
@@ -1266,7 +1275,9 @@ export function expectScreenshotSuccess(
 /**
  * Assert minimal response (no additional content)
  */
-export function expectMinimalScreenshotResponse(result: any): void {
+export function expectMinimalScreenshotResponse(
+  result: CallToolResponse
+): void {
   expectScreenshotSuccess(result, 'viewport');
   expect(result.content[0].text).not.toContain(
     SCREENSHOT_ASSERTIONS.PAGE_SNAPSHOT_PRESENT
@@ -1279,7 +1290,7 @@ export function expectMinimalScreenshotResponse(result: any): void {
 /**
  * Assert full response (with additional content)
  */
-export function expectFullScreenshotResponse(result: any): void {
+export function expectFullScreenshotResponse(result: CallToolResponse): void {
   expectScreenshotSuccess(result, 'viewport');
   expect(result.content[0].text).toContain(
     SCREENSHOT_ASSERTIONS.PAGE_SNAPSHOT_PRESENT
@@ -1289,7 +1300,9 @@ export function expectFullScreenshotResponse(result: any): void {
 /**
  * Assert full page screenshot response
  */
-export function expectFullPageScreenshotResponse(result: any): void {
+export function expectFullPageScreenshotResponse(
+  result: CallToolResponse
+): void {
   expectScreenshotSuccess(result, 'fullPage');
   expect(result.content[0].text).not.toContain(
     SCREENSHOT_ASSERTIONS.PAGE_SNAPSHOT_PRESENT
@@ -1340,9 +1353,9 @@ export const MOUSE_ASSERTIONS = {
  */
 export async function setupMouseTest(
   client: Client,
-  server: any,
+  server: TestServer,
   toolName: string,
-  args: any,
+  args: Record<string, unknown>,
   htmlContent: string = MOUSE_HTML_TEMPLATES.BASIC_TEST,
   path = '/'
 ): Promise<any> {
@@ -1357,7 +1370,7 @@ export async function setupMouseTest(
  */
 export async function executeMouseMoveTest(
   client: Client,
-  server: any,
+  server: TestServer,
   x: number,
   y: number,
   htmlContent?: string
@@ -1381,7 +1394,7 @@ export async function executeMouseMoveTest(
  */
 export async function executeMouseClickTest(
   client: Client,
-  server: any,
+  server: TestServer,
   x: number,
   y: number,
   htmlContent?: string
@@ -1405,7 +1418,7 @@ export async function executeMouseClickTest(
  */
 export async function executeMouseDragTest(
   client: Client,
-  server: any,
+  server: TestServer,
   startX: number,
   startY: number,
   endX: number,
@@ -1431,7 +1444,7 @@ export async function executeMouseDragTest(
 /**
  * Common assertions for mouse operation test results
  */
-export function expectMinimalMouseResponse(result: any): void {
+export function expectMinimalMouseResponse(result: CallToolResponse): void {
   expect(result.content[0].text).not.toContain(
     MOUSE_ASSERTIONS.NO_PAGE_SNAPSHOT
   );
@@ -1443,7 +1456,11 @@ export function expectMinimalMouseResponse(result: any): void {
 /**
  * Assert mouse move operation code
  */
-export function expectMouseMoveCode(result: any, x: number, y: number): void {
+export function expectMouseMoveCode(
+  result: CallToolResponse,
+  x: number,
+  y: number
+): void {
   expectMinimalMouseResponse(result);
   expect(result.content[0].text).toContain(MOUSE_ASSERTIONS.MOUSE_MOVE(x, y));
 }
@@ -1451,7 +1468,11 @@ export function expectMouseMoveCode(result: any, x: number, y: number): void {
 /**
  * Assert mouse click operation code
  */
-export function expectMouseClickCode(result: any, x: number, y: number): void {
+export function expectMouseClickCode(
+  result: CallToolResponse,
+  x: number,
+  y: number
+): void {
   expectMinimalMouseResponse(result);
   expect(result.content[0].text).toContain(MOUSE_ASSERTIONS.MOUSE_MOVE(x, y));
   expect(result.content[0].text).toContain(MOUSE_ASSERTIONS.MOUSE_DOWN);
@@ -1462,7 +1483,7 @@ export function expectMouseClickCode(result: any, x: number, y: number): void {
  * Assert mouse drag operation code
  */
 export function expectMouseDragCode(
-  result: any,
+  result: CallToolResponse,
   startX: number,
   startY: number,
   endX: number,
@@ -1541,7 +1562,7 @@ export function testDefaultExpectation(
  * Helper function to create expectation validation test
  */
 export function createExpectationTest(
-  expectationData: any,
+  expectationData: Record<string, unknown>,
   expectedResult: any
 ): void {
   const result = expectationSchema.parse(expectationData);
@@ -1551,7 +1572,9 @@ export function createExpectationTest(
 /**
  * Helper function to test expectation schema validation with invalid data
  */
-export function expectSchemaValidationError(invalidData: any): void {
+export function expectSchemaValidationError(
+  invalidData: Record<string, unknown>
+): void {
   expect(() => {
     expectationSchema.parse(invalidData);
   }).toThrow();
@@ -1561,7 +1584,7 @@ export function expectSchemaValidationError(invalidData: any): void {
  * Helper function for batch execution summary assertions
  */
 export function expectBatchExecutionSummary(
-  result: any,
+  result: CallToolResponse,
   expectedSummary: {
     totalSteps: number;
     successful: number;
@@ -1612,7 +1635,7 @@ export function createNavigationStep(
  * Helper function for partial snapshot tests
  */
 export function expectPartialSnapshotBehavior(
-  result: any,
+  result: CallToolResponse,
   selectorUsed: string,
   shouldContainSelector = true
 ): void {

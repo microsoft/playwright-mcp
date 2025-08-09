@@ -15,7 +15,7 @@
  */
 
 import fs from 'node:fs';
-
+import type { TestInfo } from '@playwright/test';
 import { expect, test } from './fixtures.js';
 import { callTool, navigateToUrl } from './test-helpers.js';
 
@@ -84,7 +84,7 @@ function verifyScreenshotFiles(
 }
 
 // Common test setup
-function createScreenshotTestSetup(testInfo: any) {
+function createScreenshotTestSetup(testInfo: TestInfo) {
   return {
     outputDir: testInfo.outputPath('output'),
     clientConfig: { outputDir: testInfo.outputPath('output') },

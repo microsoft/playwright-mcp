@@ -2,7 +2,7 @@
  * Common error enrichment utilities and patterns
  */
 
-import { deduplicateAndLimit } from '../../utils/arrayUtils.js';
+import { deduplicateAndLimit } from '../../utils/array-utils.js';
 
 import {
   type createDiagnosticLogger,

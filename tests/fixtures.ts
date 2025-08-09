@@ -76,8 +76,19 @@ const DEFAULT_TEST_EXPECTATIONS = {
   includeCode: true,
 } as const;
 
+interface ExpectationConfig {
+  includeSnapshot?: boolean;
+  includeConsole?: boolean;
+  includeDownloads?: boolean;
+  includeTabs?: boolean;
+  includeCode?: boolean;
+  [key: string]: unknown;
+}
+
 // Helper function to merge expectations with defaults
-function mergeWithDefaultExpectations(existingExpectation: any): any {
+function mergeWithDefaultExpectations(
+  existingExpectation: ExpectationConfig
+): ExpectationConfig {
   return {
     includeSnapshot:
       existingExpectation?.includeSnapshot ??
@@ -99,7 +110,7 @@ function mergeWithDefaultExpectations(existingExpectation: any): any {
 // Helper function to wrap client.callTool with default expectations for tests
 function wrapClientWithDefaultExpectations(client: Client): void {
   const originalCallTool = client.callTool.bind(client);
-  client.callTool = (request: any) => {
+  client.callTool = (request: Parameters<Client['callTool']>[0]) => {
     // Add default expectation for tests if not specified
     if (request.arguments && !request.arguments.expectation) {
       request.arguments.expectation = { ...DEFAULT_TEST_EXPECTATIONS };
@@ -114,15 +125,13 @@ function wrapClientWithDefaultExpectations(client: Client): void {
 }
 
 export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
-  client: async (fixtures, use) => {
-    const { startClient } = fixtures;
+  client: async ({ startClient }, use) => {
     const { client } = await startClient();
     wrapClientWithDefaultExpectations(client);
     await use(client);
   },
 
-  startClient: async (fixtures, use, testInfo) => {
-    const { mcpHeadless, mcpBrowser, mcpMode } = fixtures;
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
     const configDir = path.dirname(test.info().config.configFile ?? '.');
     let client: Client | undefined;
 
@@ -185,16 +194,14 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await client?.close();
   },
 
-  wsEndpoint: async (fixtures, use) => {
-    const { mcpHeadless, mcpBrowser, mcpMode } = fixtures;
+  wsEndpoint: async ({ mcpHeadless, mcpBrowser, mcpMode }, use) => {
     // Parameters are unused but required for Playwright fixture pattern
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
   },
 
-  cdpServer: async (fixtures, use, testInfo) => {
-    const { mcpBrowser } = fixtures;
+  cdpServer: async ({ mcpBrowser }, use, testInfo) => {
     test.skip(
       !['chrome', 'msedge', 'chromium'].includes(mcpBrowser ?? ''),
       'CDP is not supported for non-Chromium browsers'
@@ -219,8 +226,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await browserContext?.close();
   },
 
-  mcpHeadless: async (fixtures, use) => {
-    const { headless } = fixtures;
+  mcpHeadless: async ({ headless }, use) => {
     await use(headless);
   },
 
@@ -229,7 +235,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    async (use, workerInfo) => {
+    async ({}, use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 
@@ -243,14 +249,12 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker' },
   ],
 
-  server: async (fixtures, use) => {
-    const { _workerServers } = fixtures;
+  server: async ({ _workerServers }, use) => {
     _workerServers.server.reset();
     await use(_workerServers.server);
   },
 
-  httpsServer: async (fixtures, use) => {
-    const { _workerServers } = fixtures;
+  httpsServer: async ({ _workerServers }, use) => {
     _workerServers.httpsServer.reset();
     await use(_workerServers.httpsServer);
   },
@@ -314,7 +318,7 @@ function createTransport(
 type Response = Awaited<ReturnType<Client['callTool']>>;
 
 export const expect = baseExpect.extend({
-  toHaveResponse(response: Response, object: any) {
+  toHaveResponse(response: Response, object: Record<string, unknown>) {
     const parsed = parseResponse(response);
     const isNot = this.isNot;
     try {
@@ -348,7 +352,7 @@ export function formatOutput(output: string): string[] {
     .filter(Boolean);
 }
 
-function parseResponse(response: any) {
+function parseResponse(response: Response) {
   const text = response.content[0].text;
   const sections = parseSections(text);
 

@@ -1,5 +1,8 @@
+import debug from 'debug';
 import type * as playwright from 'playwright';
 import type { IDisposable } from './resource-manager.js';
+
+const frameDebug = debug('pw:mcp:frame');
 
 export interface FrameMetadata {
   url: string;
@@ -45,7 +48,7 @@ export class FrameReferenceManager implements IDisposable {
       this.activeFrames.add(frame);
     } catch (error) {
       // Frame might be detached already, skip tracking
-      console.debug('Frame tracking failed (frame might be detached):', {
+      frameDebug('Frame tracking failed (frame might be detached):', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -112,9 +115,9 @@ export class FrameReferenceManager implements IDisposable {
             frameUrl = frame.url();
           } catch (urlError) {
             // Frame is detached, can't get URL
-            console.debug('Could not retrieve frame URL:', urlError);
+            frameDebug('Could not retrieve frame URL:', urlError);
           }
-          console.debug(
+          frameDebug(
             'Frame accessibility check failed (frame likely detached):',
             {
               url: frameUrl,
@@ -242,7 +245,7 @@ export class FrameReferenceManager implements IDisposable {
     this.cleanupInterval = setInterval(() => {
       this.cleanupDetachedFrames().catch((error) => {
         // Cleanup timer failed - log and continue with next cycle
-        console.warn(
+        frameDebug(
           'Frame cleanup timer failed:',
           error instanceof Error ? error.message : 'Unknown error'
         );

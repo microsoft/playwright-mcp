@@ -2,7 +2,10 @@
  * Error handling middleware to reduce duplicate error handling patterns
  */
 
-import { getErrorMessage } from './commonFormatters.js';
+import debug from 'debug';
+import { getErrorMessage } from './common-formatters.js';
+
+const errorHandlerDebug = debug('pw:mcp:error-handler');
 
 /**
  * Common error handling wrapper for async operations
@@ -92,7 +95,7 @@ export function createErrorReporter(component: string) {
 
     reportWarning(error: unknown, operation: string): void {
       const message = getErrorMessage(error);
-      console.warn(`[${component}:${operation}] Warning: ${message}`);
+      errorHandlerDebug(`[${component}:${operation}] Warning: ${message}`);
     },
   };
 }

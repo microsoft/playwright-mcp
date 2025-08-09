@@ -9,8 +9,8 @@ import type * as playwright from 'playwright';
 import type { Response } from '../response.js';
 import type { Tab } from '../tab.js';
 // Import BaseElementToolHandler properly
-import { BaseElementToolHandler } from '../tools/baseToolHandler.js';
-import { getErrorMessage } from './commonFormatters.js';
+import { BaseElementToolHandler } from '../tools/base-tool-handler.js';
+import { getErrorMessage } from './common-formatters.js';
 
 // These functions are deprecated - use BaseElementToolHandler methods instead
 export const resolveElementLocator = async (

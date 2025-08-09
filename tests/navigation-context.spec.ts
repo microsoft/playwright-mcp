@@ -1,10 +1,11 @@
+import type { Page } from 'playwright';
 import { Response } from '../src/response.js';
 import { waitForCompletion } from '../src/tools/utils.js';
 import { expect, test } from './fixtures.js';
 import { createTabWithMockContext, DATA_URLS } from './test-helpers.js';
 
 test.describe('Navigation Context Handling', () => {
-  const performRequestAndNavigation = async (page: any) => {
+  const performRequestAndNavigation = async (page: Page) => {
     // Trigger a request before navigation to simulate the scenario
     await page.evaluate(() => {
       fetch('/api/test').catch(() => {

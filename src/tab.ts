@@ -4,7 +4,7 @@ import type * as playwright from 'playwright';
 import { TIMEOUTS } from './config/constants.js';
 import type { Context } from './context.js';
 import { logUnhandledError } from './log.js';
-import { ManualPromise } from './manualPromise.js';
+import { ManualPromise } from './manual-promise.js';
 import type { ModalState } from './tools/tool.js';
 import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 
@@ -488,7 +488,8 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     }
     await callOnPageNoTrace(this.page, (page) => {
       return page.evaluate(
-        () => new Promise((f) => setTimeout(f, TIMEOUTS.MEDIUM_DELAY))
+        (timeout) => new Promise((f) => setTimeout(f, timeout)),
+        time
       );
     });
   }

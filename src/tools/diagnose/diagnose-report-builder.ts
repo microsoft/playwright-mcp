@@ -9,13 +9,13 @@ import type {
 } from '../../diagnostics/page-analyzer.js';
 import type { UnifiedDiagnosticSystem } from '../../diagnostics/unified-system.js';
 import type { Tab } from '../../tab.js';
-import { ArrayBuilder } from '../../utils/codeDeduplicationUtils.js';
+import { ArrayBuilder } from '../../utils/code-deduplication-utils.js';
 import {
   formatPerformanceComparison,
   formatStatusString,
   getErrorMessage,
   processBrowserMetrics,
-} from '../../utils/commonFormatters.js';
+} from '../../utils/common-formatters.js';
 import {
   addDomComplexityMetrics,
   addElementList as addElementListUtil,
@@ -26,9 +26,9 @@ import {
   addOptionalListSection as addOptionalListSectionUtil,
   addResourceMetrics,
   addSystemHealthSection,
-} from '../../utils/diagnosticReportUtils.js';
-import { DiagnosticReportBuilder } from '../../utils/reportBuilder.js';
-import type { AnalysisResult } from './DiagnoseAnalysisRunner.js';
+} from '../../utils/diagnostic-report-utils.js';
+import { DiagnosticReportBuilder } from '../../utils/report-builder.js';
+import type { AnalysisResult } from './diagnose-analysis-runner.js';
 
 interface PerformanceDeviation {
   percent: number;

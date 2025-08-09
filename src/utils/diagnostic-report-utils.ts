@@ -5,8 +5,8 @@
  * with consistent formatting and structure.
  */
 
-import { getErrorMessage } from './commonFormatters.js';
-import type { TextReportBuilder } from './reportBuilder.js';
+import { getErrorMessage } from './common-formatters.js';
+import type { TextReportBuilder } from './report-builder.js';
 
 type KeyValueConfigValue = string | number | boolean | null | undefined;
 type KeyValueConfigFormatter = (value: KeyValueConfigValue) => string;

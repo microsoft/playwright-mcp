@@ -2,6 +2,7 @@ import type {
   ImageContent,
   TextContent,
 } from '@modelcontextprotocol/sdk/types.js';
+import debug from 'debug';
 import { TIMEOUTS } from './config/constants.js';
 import type { Context } from './context.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
@@ -9,9 +10,12 @@ import { mergeExpectations } from './schemas/expectation.js';
 import type { ConsoleMessage, Tab, TabSnapshot } from './tab.js';
 import { renderModalStates } from './tab.js';
 import type { DiffResult } from './types/diff.js';
-import { processImage } from './utils/imageProcessor.js';
-import { TextReportBuilder } from './utils/reportBuilder.js';
-import { ResponseDiffDetector } from './utils/responseDiffDetector.js';
+import { processImage } from './utils/image-processor.js';
+import { TextReportBuilder } from './utils/report-builder.js';
+import { ResponseDiffDetector } from './utils/response-diff-detector.js';
+
+const responseDebug = debug('pw:mcp:response');
+
 export class Response {
   private readonly _result: string[] = [];
   private readonly _code: string[] = [];
@@ -104,7 +108,7 @@ export class Response {
             };
           } catch (error) {
             // If processing fails, keep the original image
-            console.warn('Image processing failed:', error);
+            responseDebug('Image processing failed:', error);
             return image;
           }
         })
@@ -134,7 +138,7 @@ export class Response {
         );
       } catch (error) {
         // Gracefully handle diff detection errors
-        console.warn('Diff detection failed:', error);
+        responseDebug('Diff detection failed:', error);
         this._diffResult = undefined;
       }
     }
@@ -508,7 +512,7 @@ export class Response {
     try {
       this._tabSnapshot = await this._captureBasicSnapshot(tab);
     } catch (error) {
-      console.warn('Failed to capture basic snapshot:', error);
+      responseDebug('Failed to capture basic snapshot:', error);
       this._tabSnapshot = undefined;
     }
   }
@@ -524,7 +528,7 @@ export class Response {
       const navigationState = await this._evaluateNavigationState(tab);
       return this._isNavigationInProgress(navigationState);
     } catch (error) {
-      console.debug('Navigation check failed (assuming in progress):', error);
+      responseDebug('Navigation check failed (assuming in progress):', error);
       return true;
     }
   }
@@ -585,7 +589,7 @@ export class Response {
       ).waitForNavigationComplete();
       return true;
     } catch (error) {
-      console.debug('Tab navigation completion failed:', error);
+      responseDebug('Tab navigation completion failed:', error);
       return false;
     }
   }
@@ -627,7 +631,7 @@ export class Response {
         .evaluate(() => document.readyState === 'complete')
         .catch(() => false);
     } catch (error) {
-      console.debug('Page stability check failed (retrying):', error);
+      responseDebug('Page stability check failed (retrying):', error);
       return false;
     }
   }
@@ -636,7 +640,7 @@ export class Response {
     try {
       return await tab.captureSnapshot();
     } catch (error) {
-      console.warn(
+      responseDebug(
         'Basic snapshot capture failed, creating minimal snapshot:',
         error
       );

@@ -1,6 +1,7 @@
 import { promises as fsPromises } from 'node:fs';
 import { type AddressInfo, createServer } from 'node:net';
 import { join as pathJoin } from 'node:path';
+import debug from 'debug';
 import {
   type Browser,
   type BrowserContext,
@@ -16,6 +17,8 @@ import type { FullConfig } from './config.js';
 import { outputFile } from './config.js';
 import { logUnhandledError, testDebug } from './log.js';
 import { createHash } from './utils.js';
+
+const browserDebug = debug('pw:mcp:browser');
 
 function getBrowserType(browserName: string): BrowserType {
   switch (browserName) {
@@ -78,7 +81,7 @@ class BaseContextFactory implements BrowserContextFactory {
         });
       })
       .catch((error) => {
-        console.warn('Browser connection failed:', error);
+        browserDebug('Browser connection failed:', error);
         this._browserPromise = undefined;
       });
     return this._browserPromise;
@@ -264,7 +267,7 @@ class PersistentContextFactory implements BrowserContextFactory {
     testDebug('close browser context (persistent)');
     testDebug('release user data dir', userDataDir);
     await browserContext.close().catch((error) => {
-      console.warn('Failed to close browser context:', error);
+      browserDebug('Failed to close browser context:', error);
     });
     this._userDataDirs.delete(userDataDir);
     testDebug('close browser context complete (persistent)');

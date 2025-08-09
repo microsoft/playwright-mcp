@@ -1,7 +1,7 @@
 /**
  * Utilities to reduce common code duplication patterns
  */
-import { formatDiagnosticPair } from './commonFormatters.js';
+import { formatDiagnosticPair } from './common-formatters.js';
 
 // Re-export with alias to maintain backward compatibility
 export const formatDiagnosticKeyValue = formatDiagnosticPair;

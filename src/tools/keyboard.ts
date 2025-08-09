@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { quote } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
-import { generateKeyPressCode } from '../utils/commonFormatters.js';
-import { baseElementSchema as elementSchema } from './baseToolHandler.js';
+import { generateKeyPressCode } from '../utils/common-formatters.js';
+import { baseElementSchema as elementSchema } from './base-tool-handler.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
 

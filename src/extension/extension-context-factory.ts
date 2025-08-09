@@ -4,8 +4,8 @@ import type {
   BrowserContextFactory,
   ClientInfo,
 } from '../browser-context-factory.js';
-import { startHttpServer } from '../httpServer.js';
-import { CDPRelayServer } from './cdpRelay.js';
+import { startHttpServer } from '../http-server.js';
+import { CDPRelayServer } from './cdp-relay.js';
 
 const debugLogger = debug('pw:mcp:relay');
 export class ExtensionContextFactory implements BrowserContextFactory {

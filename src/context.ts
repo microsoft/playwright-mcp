@@ -9,7 +9,7 @@ import type {
 import type { FullConfig } from './config.js';
 import { outputFile } from './config.js';
 import { logUnhandledError } from './log.js';
-import type { SessionLog } from './sessionLog.js';
+import type { SessionLog } from './session-log.js';
 import { Tab } from './tab.js';
 import type { Tool } from './tools/tool.js';
 

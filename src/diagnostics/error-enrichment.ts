@@ -3,8 +3,8 @@
  */
 
 import type * as playwright from 'playwright';
-import { deduplicate } from '../utils/arrayUtils.js';
-import { createDisposableManager } from '../utils/disposableManager.js';
+import { deduplicate } from '../utils/array-utils.js';
+import { createDisposableManager } from '../utils/disposable-manager.js';
 import {
   createDiagnosticLogger,
   DiagnosticBase,

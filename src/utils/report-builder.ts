@@ -268,7 +268,7 @@ export function formatFileSize(bytes: number): string {
 // Use formatExecutionTime from commonFormatters to avoid duplication
 
 // Re-export formatConfidence from commonFormatters to avoid duplication
-export { formatConfidence as formatConfidencePercentage } from './commonFormatters.js';
+export { formatConfidence as formatConfidencePercentage } from './common-formatters.js';
 
 /**
  * Generate performance indicator icons

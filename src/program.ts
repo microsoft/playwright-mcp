@@ -1,4 +1,5 @@
 import { Option, program } from 'commander';
+import debug from 'debug';
 
 // @ts-expect-error - playwright-core internal module without proper types
 import { startTraceViewerServer } from 'playwright-core/lib/server';
@@ -19,8 +20,11 @@ import {
 } from './extension/main.js';
 import { runLoopTools } from './loopTools/main.js';
 import { start } from './mcp/transport.js';
+
+const programDebug = debug('pw:mcp:program');
+
 import { packageJSON } from './package.js';
-import { logServerStart } from './utils/requestLogger.js';
+import { logServerStart } from './utils/request-logger.js';
 
 program
   .version(`Version ${packageJSON.version}`)
@@ -148,7 +152,7 @@ program
         '/trace/index.html?trace=' +
         config.browser.launchOptions.tracesDir +
         '/trace.json';
-      console.log(`Trace viewer available at: ${url}`);
+      programDebug(`Trace viewer available at: ${url}`);
     }
   });
 function setupExitWatchdog() {

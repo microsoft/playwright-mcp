@@ -6,7 +6,7 @@
 
 import type { Page } from 'playwright';
 import type { ParallelAnalysisResult } from '../types/performance.js';
-import { createDisposableManager } from '../utils/disposableManager.js';
+import { createDisposableManager } from '../utils/disposable-manager.js';
 import { PageAnalyzer } from './page-analyzer.js';
 
 export class ParallelPageAnalyzer {

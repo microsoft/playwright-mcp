@@ -7,7 +7,7 @@ import type {
   DiffSegment,
   ResponseStorage,
 } from '../types/diff.js';
-import { DiffFormatter } from './diffFormatter.js';
+import { DiffFormatter } from './diff-formatter.js';
 
 /**
  * ResponseDiffDetector handles diff detection between consecutive responses

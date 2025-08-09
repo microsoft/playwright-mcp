@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { ElementDiscovery } from '../diagnostics/element-discovery.js';
 import { PageAnalyzer } from '../diagnostics/page-analyzer.js';
 import type { SmartConfig } from '../diagnostics/smart-config.js';
-import { ArrayBuilder } from '../utils/codeDeduplicationUtils.js';
+import { ArrayBuilder } from '../utils/code-deduplication-utils.js';
 
 // Type definitions for diagnostic info structures
 type DiagnosticInfo = {
@@ -39,11 +39,11 @@ type OperationError = {
 import { UnifiedDiagnosticSystem } from '../diagnostics/unified-system.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import type { Tab } from '../tab.js';
-import { getErrorMessage } from '../utils/commonFormatters.js';
+import { getErrorMessage } from '../utils/common-formatters.js';
 import {
   DiagnosticReportBuilder,
   formatConfidencePercentage,
-} from '../utils/reportBuilder.js';
+} from '../utils/report-builder.js';
 import { defineTabTool } from './tool.js';
 
 const findElementsSchema = z

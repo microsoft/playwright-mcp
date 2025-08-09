@@ -6,7 +6,7 @@
  */
 
 import { createDiagnosticLogger } from '../diagnostics/common/diagnostic-base.js';
-import { handleResourceDisposalError } from './commonFormatters.js';
+import { handleResourceDisposalError } from './common-formatters.js';
 
 export interface Disposable {
   dispose(): Promise<void>;

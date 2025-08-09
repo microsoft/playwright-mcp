@@ -19,7 +19,7 @@ import http from 'node:http';
 import https from 'node:https';
 import url from 'node:url';
 import debug from 'debug';
-import { loadOrGenerateKeys } from '../../src/generateKeys.js';
+import { loadOrGenerateKeys } from '../../src/generate-keys.js';
 
 const fulfillSymbol = Symbol('fulfil callback');
 const rejectSymbol = Symbol('reject callback');

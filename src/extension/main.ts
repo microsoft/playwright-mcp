@@ -1,7 +1,7 @@
 import { BrowserServerBackend } from '../browser-server-backend.js';
 import type { FullConfig } from '../config.js';
 import { start } from '../mcp/transport.js';
-import { ExtensionContextFactory } from './extensionContextFactory.js';
+import { ExtensionContextFactory } from './extension-context-factory.js';
 export async function runWithExtension(config: FullConfig) {
   const contextFactory = new ExtensionContextFactory(
     config.browser.launchOptions.channel ?? 'chrome'

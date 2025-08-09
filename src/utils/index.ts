@@ -13,7 +13,7 @@ export {
   filterTruthy,
   joinFiltered,
   limitItems,
-} from './arrayUtils.js';
+} from './array-utils.js';
 
 // Code deduplication utilities
 export {
@@ -25,7 +25,7 @@ export {
   getStatusIcon,
   joinLines,
   truncateAtWordBoundary,
-} from './codeDeduplicationUtils.js';
+} from './code-deduplication-utils.js';
 // Error handling and formatting utilities
 export {
   formatConfidence,
@@ -33,10 +33,10 @@ export {
   formatExecutionTime,
   getErrorMessage,
   handleResourceDisposalError,
-} from './commonFormatters.js';
+} from './common-formatters.js';
 
 // Resource management
-export { createDisposableManager } from './disposableManager.js';
+export { createDisposableManager } from './disposable-manager.js';
 
 // Tool patterns
 export {
@@ -52,4 +52,4 @@ export {
   validateAndResolveElement,
   validateElementParams,
   waitForToolCompletion,
-} from './toolPatterns.js';
+} from './tool-patterns.js';

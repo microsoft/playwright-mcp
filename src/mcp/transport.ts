@@ -4,7 +4,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import debug from 'debug';
-import { httpAddressToString, startHttpServer } from '../httpServer.js';
+import { httpAddressToString, startHttpServer } from '../http-server.js';
 import type { ServerBackendFactory } from './server.js';
 import { connect } from './server.js';
 export async function start(
@@ -22,6 +22,7 @@ async function startStdioTransport(serverBackendFactory: ServerBackendFactory) {
   await connect(serverBackendFactory, new StdioServerTransport(), false);
 }
 const testDebug = debug('pw:mcp:test');
+const transportDebug = debug('pw:mcp:transport');
 async function handleSSE(
   serverBackendFactory: ServerBackendFactory,
   req: http.IncomingMessage,
@@ -46,11 +47,29 @@ async function handleSSE(
     const transport = new SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
     testDebug(`create SSE session: ${transport.sessionId}`);
-    await connect(serverBackendFactory, transport, false);
+
+    try {
+      await connect(serverBackendFactory, transport, false);
+    } catch (error) {
+      testDebug(`SSE session connection failed: ${transport.sessionId}`, error);
+      sessions.delete(transport.sessionId);
+      if (!res.headersSent) {
+        res.statusCode = 500;
+        res.end('Connection failed');
+      }
+      return;
+    }
+
     res.on('close', () => {
       testDebug(`delete SSE session: ${transport.sessionId}`);
       sessions.delete(transport.sessionId);
     });
+
+    res.on('error', (error) => {
+      testDebug(`SSE session error: ${transport.sessionId}`, error);
+      sessions.delete(transport.sessionId);
+    });
+
     return;
   }
   res.statusCode = 405;
@@ -77,9 +96,17 @@ async function handleStreamable(
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: async (_httpSessionId) => {
         testDebug(`create http session: ${transport.sessionId}`);
-        await connect(serverBackendFactory, transport, true);
-        if (transport.sessionId) {
-          sessions.set(transport.sessionId, transport);
+        try {
+          await connect(serverBackendFactory, transport, true);
+          if (transport.sessionId) {
+            sessions.set(transport.sessionId, transport);
+          }
+        } catch (error) {
+          testDebug(
+            `HTTP session initialization failed: ${transport.sessionId}`,
+            error
+          );
+          // Session cleanup will be handled by onclose
         }
       },
     });
@@ -90,7 +117,16 @@ async function handleStreamable(
       sessions.delete(transport.sessionId);
       testDebug(`delete http session: ${transport.sessionId}`);
     };
-    await transport.handleRequest(req, res);
+
+    try {
+      await transport.handleRequest(req, res);
+    } catch (error) {
+      testDebug('HTTP transport request handling failed', error);
+      if (!res.headersSent) {
+        res.statusCode = 500;
+        res.end('Request handling failed');
+      }
+    }
     return;
   }
   res.statusCode = 400;
@@ -132,5 +168,5 @@ function startHttpTransport(
     ),
     'For legacy SSE transport support, you can use the /sse endpoint instead.',
   ].join('\n');
-  console.log(message);
+  transportDebug('Server listening:', message);
 }

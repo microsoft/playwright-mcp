@@ -34,7 +34,6 @@ const evaluate = defineTabTool({
     type: 'destructive',
   },
   handle: async (tab, params, response) => {
-    response.setIncludeSnapshot();
     let locator: playwright.Locator | undefined;
     if (params.ref && params.element) {
       locator = await tab.refLocator({
@@ -49,12 +48,21 @@ const evaluate = defineTabTool({
     }
     await tab.waitForCompletion(async () => {
       let result: unknown;
+
+      // Handle function strings that need to be called
+      let evaluationCode = params.function;
+      if (
+        evaluationCode.trim().startsWith('(') &&
+        evaluationCode.includes('=>')
+      ) {
+        // This is likely an arrow function that needs to be invoked
+        evaluationCode = `(${evaluationCode})()`;
+      }
+
       if (locator) {
-        // Pass the function string directly - Playwright handles it
-        result = await locator.evaluate(params.function);
+        result = await locator.evaluate(evaluationCode);
       } else {
-        // Pass the function string directly - Playwright handles it
-        result = await tab.page.evaluate(params.function);
+        result = await tab.page.evaluate(evaluationCode);
       }
       const stringifiedResult = JSON.stringify(result, null, 2);
       response.addResult(stringifiedResult ?? 'undefined');

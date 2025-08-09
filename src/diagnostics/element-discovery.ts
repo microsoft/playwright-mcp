@@ -2,6 +2,7 @@
  * Element discovery for finding alternative elements
  */
 
+import debug from 'debug';
 import type * as playwright from 'playwright';
 import {
   createDiagnosticLogger,
@@ -9,6 +10,8 @@ import {
 } from './common/diagnostic-base.js';
 import { safeDispose } from './common/error-enrichment-utils.js';
 import { SmartHandleBatch } from './smart-handle.js';
+
+const elementDiscoveryDebug = debug('pw:mcp:element-discovery');
 
 export interface SearchCriteria {
   text?: string;
@@ -250,7 +253,7 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound
       );
     } catch (elementError) {
-      console.debug('Element processing failed:', elementError);
+      elementDiscoveryDebug('Element processing failed:', elementError);
       await this.safeDispose(element, `findByText-element-${totalFound}`);
       return false;
     }
@@ -330,7 +333,10 @@ export class ElementDiscovery extends DiagnosticBase {
             });
             return currentFound + 1;
           } catch (elementError) {
-            console.debug('Element role processing failed:', elementError);
+            elementDiscoveryDebug(
+              'Element role processing failed:',
+              elementError
+            );
             await this.safeDispose(
               element,
               `findByRole-element-${currentFound}`
@@ -394,7 +400,7 @@ export class ElementDiscovery extends DiagnosticBase {
           });
           return currentFound + 1;
         } catch (elementError) {
-          console.debug('Element tag processing failed:', elementError);
+          elementDiscoveryDebug('Element tag processing failed:', elementError);
           await this.safeDispose(
             element,
             `findByTagName-element-${currentFound}`
@@ -532,7 +538,10 @@ export class ElementDiscovery extends DiagnosticBase {
 
       return true;
     } catch (elementError) {
-      console.debug('Element attribute processing failed:', elementError);
+      elementDiscoveryDebug(
+        'Element attribute processing failed:',
+        elementError
+      );
       await this.safeDispose(
         element,
         `findByAttributes-element-${currentFound}`
@@ -668,7 +677,10 @@ export class ElementDiscovery extends DiagnosticBase {
 
       return true;
     } catch (elementError) {
-      console.debug('Implicit role element processing failed:', elementError);
+      elementDiscoveryDebug(
+        'Implicit role element processing failed:',
+        elementError
+      );
       await this.safeDispose(
         element,
         `findImplicitRole-element-${currentFound}`

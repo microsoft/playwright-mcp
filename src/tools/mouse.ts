@@ -4,8 +4,8 @@ import {
   generateMouseClickCode,
   generateMouseDragCode,
   generateMouseMoveCode,
-} from '../utils/commonFormatters.js';
-import { baseElementSchema } from './baseToolHandler.js';
+} from '../utils/common-formatters.js';
+import { baseElementSchema } from './base-tool-handler.js';
 import { defineTabTool } from './tool.js';
 
 // Simplified element schema for mouse operations (no ref required)

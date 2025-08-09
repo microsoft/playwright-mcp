@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import type { TestInfo } from '@playwright/test';
 import { expect, test } from './fixtures.js';
 import {
   createButtonPage,
@@ -21,10 +23,14 @@ import {
   readSessionLog,
 } from './test-utils.js';
 
+type StartClientFunction = (options?: {
+  args?: string[];
+}) => Promise<{ client: Client; stderr: () => string }>;
+
 // Consolidated test setup utilities for session logging tests
 async function setupSessionLoggingTest(
-  startClient: any,
-  testInfo: any,
+  startClient: StartClientFunction,
+  testInfo: TestInfo,
   extraArgs: string[] = []
 ) {
   const { client, stderr } = await startClient({
@@ -44,9 +50,9 @@ async function setupSessionLoggingTest(
 }
 
 async function setupCdpSessionLoggingTest(
-  cdpServer: any,
-  startClient: any,
-  testInfo: any
+  cdpServer: { endpoint: string; start: () => Promise<any> },
+  startClient: StartClientFunction,
+  testInfo: TestInfo
 ) {
   const browserContext = await cdpServer.start();
   const { client, stderr, getSessionFolder } = await setupSessionLoggingTest(

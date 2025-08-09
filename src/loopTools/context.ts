@@ -5,9 +5,9 @@ import type { FullConfig } from '../config.js';
 import { Context as BrowserContext } from '../context.js';
 import type { LLMDelegate } from '../loop/loop.js';
 import { runTask } from '../loop/loop.js';
-import { ClaudeDelegate } from '../loop/loopClaude.js';
-import { OpenAIDelegate } from '../loop/loopOpenAI.js';
-import { InProcessTransport } from '../mcp/inProcessTransport.js';
+import { ClaudeDelegate } from '../loop/loop-claude.js';
+import { OpenAIDelegate } from '../loop/loop-open-ai.js';
+import { InProcessTransport } from '../mcp/in-process-transport.js';
 import { createServer } from '../mcp/server.js';
 export class Context {
   readonly config: FullConfig;

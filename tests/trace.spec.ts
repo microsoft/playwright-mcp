@@ -21,7 +21,7 @@ import { expect, test } from './fixtures.js';
 test('check that trace is saved', async ({
   startClient,
   server,
-  mcpMode,
+  mcpMode: _mcpMode,
 }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
 

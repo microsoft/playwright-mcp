@@ -1,9 +1,12 @@
+import debug from 'debug';
 import type * as playwright from 'playwright';
 
 // @ts-expect-error - playwright-core internal module without proper types
 import { asLocator } from 'playwright-core/lib/utils';
 import { TIMEOUTS } from '../config/constants.js';
 import type { Tab } from '../tab.js';
+
+const toolsDebug = debug('pw:mcp:tools');
 export async function waitForCompletion<R>(
   tab: Tab,
   callback: () => Promise<R>
@@ -40,7 +43,7 @@ export async function waitForCompletion<R>(
             timeout: getNavigationConfig().networkIdleTimeout,
           })
           .catch((error) => {
-            console.debug('Network idle timeout reached:', error);
+            toolsDebug('Network idle timeout reached:', error);
           });
         navigationCompleted = true;
         if (!requests.size) {
@@ -48,12 +51,12 @@ export async function waitForCompletion<R>(
         }
       } catch (error) {
         // Fallback if load states fail
-        console.debug('Load state waiting failed, continuing:', error);
+        toolsDebug('Load state waiting failed, continuing:', error);
         navigationCompleted = true;
         waitCallback();
       }
     })().catch((error) => {
-      console.debug('Navigation handling failed:', error);
+      toolsDebug('Navigation handling failed:', error);
       navigationCompleted = true;
       waitCallback();
     });
@@ -91,7 +94,7 @@ export async function waitForCompletion<R>(
         await tab.page.evaluate(() => document.readyState);
       } catch (error) {
         // Context might be destroyed, but we still return the result
-        console.debug(
+        toolsDebug(
           'Page readyState check failed (context may be destroyed):',
           error
         );
@@ -115,7 +118,7 @@ export async function generateLocator(
     )._resolveSelector();
     return asLocator('javascript', resolvedSelector);
   } catch (error) {
-    console.warn('Locator generation failed:', error);
+    toolsDebug('Locator generation failed:', error);
     throw new Error(
       'Ref not found, likely because element was removed. Use browser_snapshot to see what elements are currently on the page.'
     );

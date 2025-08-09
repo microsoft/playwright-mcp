@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { expect, test } from './fixtures.js';
+import type { TestServer } from './testserver/index.js';
 
 // Wait test HTML templates
 const WAIT_HTML_TEMPLATES = {
@@ -50,8 +52,8 @@ const WAIT_EXPECTATIONS = {
 
 // Wait test setup functions
 async function setupWaitPage(
-  client: any,
-  server: any,
+  client: Client,
+  server: TestServer,
   template: keyof typeof WAIT_HTML_TEMPLATES
 ) {
   server.setContent('/', WAIT_HTML_TEMPLATES[template], 'text/html');
@@ -74,13 +76,19 @@ const WAIT_PARAMS = {
 } as const;
 
 // Wait response assertion functions
-function assertMinimalWaitResponse(result: any, expectedMessage: string) {
+function assertMinimalWaitResponse(
+  result: Awaited<ReturnType<Client['callTool']>>,
+  expectedMessage: string
+) {
   expect(result.content[0].text).not.toContain('Page Snapshot:');
   expect(result.content[0].text).not.toContain('Console messages');
   expect(result.content[0].text).toContain(expectedMessage);
 }
 
-function assertFullWaitResponse(result: any, expectedMessage: string) {
+function assertFullWaitResponse(
+  result: Awaited<ReturnType<Client['callTool']>>,
+  expectedMessage: string
+) {
   expect(result.content[0].text).toContain('Page Snapshot:');
   expect(result.content[0].text).toContain(expectedMessage);
 }

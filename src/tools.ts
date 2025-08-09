@@ -1,12 +1,12 @@
 import type { FullConfig } from './config.js';
-import { batchExecuteTool } from './tools/batchExecute.js';
+import { batchExecuteTool } from './tools/batch-execute.js';
 import common from './tools/common.js';
 import console from './tools/console.js';
 import { browserDiagnose } from './tools/diagnose.js';
 import dialogs from './tools/dialogs.js';
 import evaluate from './tools/evaluate.js';
 import files from './tools/files.js';
-import { browserFindElements } from './tools/findElements.js';
+import { browserFindElements } from './tools/find-elements.js';
 import install from './tools/install.js';
 import keyboard from './tools/keyboard.js';
 import mouse from './tools/mouse.js';

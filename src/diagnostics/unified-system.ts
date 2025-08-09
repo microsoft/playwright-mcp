@@ -3,7 +3,7 @@
  */
 
 import type * as playwright from 'playwright';
-import { getErrorMessage } from '../utils/commonFormatters.js';
+import { getErrorMessage } from '../utils/common-formatters.js';
 import { createDiagnosticLogger } from './common/diagnostic-base.js';
 import {
   createAdvancedStage,

@@ -8,11 +8,15 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import debug from 'debug';
 import type { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { logUnhandledError } from '../log.js';
-import { ManualPromise } from '../manualPromise.js';
-import { logRequest } from '../utils/requestLogger.js';
+import { ManualPromise } from '../manual-promise.js';
+
+const serverDebug = debug('pw:mcp:server');
+
+import { logRequest } from '../utils/request-logger.js';
 
 export type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 export type ClientCapabilities = {
@@ -132,11 +136,11 @@ const startHeartbeat = (server: Server) => {
       ]);
       setTimeout(beat, 3000);
     } catch (error) {
-      console.warn('Heartbeat ping failed:', error);
+      serverDebug('Heartbeat ping failed:', error);
       try {
         await server.close();
       } catch (closeError) {
-        console.warn(
+        serverDebug(
           'Failed to close server after heartbeat failure:',
           closeError
         );
@@ -144,7 +148,7 @@ const startHeartbeat = (server: Server) => {
     }
   };
   beat().catch((error) => {
-    console.warn('Heartbeat initialization failed:', error);
+    serverDebug('Heartbeat initialization failed:', error);
   });
 };
 function addServerListener(

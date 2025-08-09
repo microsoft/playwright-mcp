@@ -4,7 +4,7 @@ import {
   generateBackCode,
   generateForwardCode,
   generateNavigationCode,
-} from '../utils/commonFormatters.js';
+} from '../utils/common-formatters.js';
 import { defineTabTool, defineTool } from './tool.js';
 
 const navigate = defineTool({

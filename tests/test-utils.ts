@@ -18,6 +18,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { expect } from './fixtures.js';
+import type { TestServer } from './testserver/index.js';
+
+type CallToolResponse = Awaited<ReturnType<Client['callTool']>>;
 
 export const COMMON_REGEX_PATTERNS = {
   LISTENING_ON: /Listening on (http:\/\/.*)/,
@@ -81,7 +84,7 @@ export async function createSSEClient(
  * Sets up test pages on server for tab-related tests
  */
 export function setupTabTestPages(
-  server: any,
+  server: TestServer,
   pages: { path: string; page: TestPageContent }[]
 ): void {
   for (const { path: pagePath, page } of pages) {
@@ -95,12 +98,12 @@ export function setupTabTestPages(
 export function createMultiTabsSetup(): {
   tab1Page: TestPageContent;
   tab2Page: TestPageContent;
-  setupServer: (server: any) => void;
+  setupServer: (server: TestServer) => void;
 } {
   const tab1Page = createTestPage('<div>Tab 1</div>', 'Tab 1');
   const tab2Page = createTestPage('<div>Tab 2</div>', 'Tab 2');
 
-  const setupServer = (server: any) => {
+  const setupServer = (server: TestServer) => {
     setupTabTestPages(server, [
       { path: tab1Page.path, page: tab1Page },
       { path: '/tab2', page: tab2Page },
@@ -122,7 +125,7 @@ export function createInputPage(inputId = 'input'): TestPageContent {
 }
 
 export function expectBatchExecutionSuccess(
-  result: any,
+  result: CallToolResponse,
   expectedSteps: number
 ) {
   expect(result.content[0].text).toContain('Batch Execution Summary');
@@ -133,7 +136,7 @@ export function expectBatchExecutionSuccess(
 }
 
 export function expectBatchExecutionPartialSuccess(
-  result: any,
+  result: CallToolResponse,
   totalSteps: number,
   successfulSteps: number,
   failedSteps: number
@@ -145,7 +148,7 @@ export function expectBatchExecutionPartialSuccess(
 }
 
 export function expectToolCallResponse(
-  result: any,
+  result: CallToolResponse,
   options: {
     containsSnapshot?: boolean;
     containsConsole?: boolean;
@@ -204,7 +207,7 @@ export function extractSessionFolder(stderr: string): string {
 
 export async function setupNavigateAndClick(
   client: Client,
-  server: any,
+  server: TestServer,
   buttonText = 'Click Me'
 ) {
   const page = createButtonPage(buttonText);

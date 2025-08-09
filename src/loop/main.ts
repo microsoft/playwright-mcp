@@ -6,8 +6,8 @@ import { program } from 'commander';
 import dotenv from 'dotenv';
 import type { LLMDelegate } from './loop.js';
 import { runTask } from './loop.js';
-import { ClaudeDelegate } from './loopClaude.js';
-import { OpenAIDelegate } from './loopOpenAI.js';
+import { ClaudeDelegate } from './loop-claude.js';
+import { OpenAIDelegate } from './loop-open-ai.js';
 
 dotenv.config();
 const __filename = url.fileURLToPath(import.meta.url);
@@ -41,8 +41,8 @@ program.option('--model <model>', 'model to use').action(async (options) => {
 async function startCLI() {
   try {
     await program.parseAsync(process.argv);
-  } catch (error) {
-    console.error('CLI parsing failed:', error);
+  } catch (_error) {
+    // CLI parsing failed - exit with error code
     process.exit(1);
   }
 }

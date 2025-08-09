@@ -5,7 +5,7 @@ import type {
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import debug from 'debug';
-import { getErrorMessage } from '../utils/commonFormatters.js';
+import { getErrorMessage } from '../utils/common-formatters.js';
 export type LLMToolCall = {
   name: string;
   arguments: Record<string, unknown>;

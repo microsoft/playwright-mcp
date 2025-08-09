@@ -6,15 +6,15 @@ import { z } from 'zod';
 import type { Response } from '../response.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import type { Tab } from '../tab.js';
-import { createErrorReporter } from '../utils/errorHandlerMiddleware.js';
-import { DiagnoseAnalysisRunner } from './diagnose/DiagnoseAnalysisRunner.js';
+import { createErrorReporter } from '../utils/error-handler-middleware.js';
+import { DiagnoseAnalysisRunner } from './diagnose/diagnose-analysis-runner.js';
 import type {
   ConfigOverrides,
   DiagnoseSystemConfig,
-} from './diagnose/DiagnoseConfigHandler.js';
-import { DiagnoseConfigHandler } from './diagnose/DiagnoseConfigHandler.js';
-import type { SearchCriteria } from './diagnose/DiagnoseReportBuilder.js';
-import { DiagnoseReportBuilder } from './diagnose/DiagnoseReportBuilder.js';
+} from './diagnose/diagnose-config-handler.js';
+import { DiagnoseConfigHandler } from './diagnose/diagnose-config-handler.js';
+import type { SearchCriteria } from './diagnose/diagnose-report-builder.js';
+import { DiagnoseReportBuilder } from './diagnose/diagnose-report-builder.js';
 import { defineTabTool } from './tool.js';
 
 const diagnoseSchema = z

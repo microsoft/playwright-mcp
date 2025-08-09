@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import debug from 'debug';
 import { z } from 'zod';
 import type { BrowserContextFactory } from './browser-context-factory.js';
 import type { FullConfig } from './config.js';
@@ -8,10 +9,12 @@ import type * as mcpServer from './mcp/server.js';
 import { packageJSON } from './package.js';
 import { Response } from './response.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
-import { SessionLog } from './sessionLog.js';
+import { SessionLog } from './session-log.js';
 import type { Tool } from './tools/tool.js';
 import { defineTool } from './tools/tool.js';
 import { filteredTools } from './tools.js';
+
+const backendDebug = debug('pw:mcp:backend');
 
 type NonEmptyArray<T> = [T, ...T[]];
 export type FactoryList = NonEmptyArray<BrowserContextFactory>;
@@ -88,7 +91,7 @@ export class BrowserServerBackend implements mcpServer.ServerBackend {
       await response.finish();
       this._sessionLog?.logResponse(response);
     } catch (error: unknown) {
-      console.error(`Error executing tool ${schema.name}:`, error);
+      backendDebug(`Error executing tool ${schema.name}:`, error);
       response.addError(String(error));
     } finally {
       context.setRunningTool(false);
