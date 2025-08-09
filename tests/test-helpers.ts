@@ -49,7 +49,9 @@ export class ConsoleCapture {
    */
   start(methods: ConsoleMethod[] = ['warn', 'error', 'info']): void {
     for (const method of methods) {
+      // biome-ignore lint/suspicious/noConsole: Required for console interception
       this.originalMethods.set(method, console[method]);
+      // biome-ignore lint/suspicious/noConsole: Required for console interception
       console[method] = (...args: unknown[]) => {
         this.capturedMessages.push({ level: method, args });
         // Optionally call original method for debugging
@@ -63,6 +65,7 @@ export class ConsoleCapture {
    */
   stop(): void {
     for (const [method, originalMethod] of this.originalMethods) {
+      // biome-ignore lint/suspicious/noConsole: Required for console restoration
       console[method] = originalMethod;
     }
     this.originalMethods.clear();
