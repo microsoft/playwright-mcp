@@ -183,7 +183,8 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await client?.close();
   },
 
-  wsEndpoint: async ({}, use) => {
+  wsEndpoint: async ({ mcpHeadless, mcpBrowser, mcpMode }, use) => {
+    // Parameters are unused but required for Playwright fixture pattern
     const browserServer = await chromium.launchServer();
     await use(browserServer.wsEndpoint());
     await browserServer.close();
@@ -223,7 +224,11 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    async ({}, use, workerInfo) => {
+    async (
+      {/* worker fixtures cannot depend on test fixtures */},
+      use,
+      workerInfo
+    ) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 

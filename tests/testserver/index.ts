@@ -156,7 +156,7 @@ export class TestServer {
     this._server.closeAllConnections();
     const error = new Error('Static Server has been reset');
     for (const subscriber of this._requestSubscribers.values()) {
-      subscriber[rejectSymbol].call(null, error);
+      subscriber[rejectSymbol](error);
     }
     this._requestSubscribers.clear();
 
@@ -193,14 +193,12 @@ export class TestServer {
     this.debugServer(`request ${request.method} ${requestPath}`);
     // Notify request subscriber.
     if (this._requestSubscribers.has(requestPath)) {
-      this._requestSubscribers
-        .get(requestPath)
-        ?.[fulfillSymbol].call(null, request);
+      this._requestSubscribers.get(requestPath)?.[fulfillSymbol](request);
       this._requestSubscribers.delete(requestPath);
     }
     const handler = this._routes.get(requestPath);
     if (handler) {
-      handler.call(null, request, response);
+      handler(request, response);
     } else {
       response.writeHead(404);
       response.end();

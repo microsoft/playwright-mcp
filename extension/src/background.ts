@@ -48,7 +48,7 @@ class TabShareExtension {
         this._connectTab(
           message.tabId,
           message.windowId,
-          message.mcpRelayUrl ?? ''
+          message.mcpRelayUrl
         ).then(
           () => sendResponse({ success: true }),
           (error: unknown) =>
@@ -71,7 +71,10 @@ class TabShareExtension {
         return true;
       default:
         // Explicitly handle unexpected message types
-        sendResponse({ success: false, error: 'Unknown message type' });
+        sendResponse({
+          success: false,
+          error: `Unknown message type: ${typeof message === 'object' && message !== null ? (message as { type?: unknown }).type : 'invalid'}`,
+        });
         return false;
     }
   }

@@ -428,26 +428,28 @@ export class CDPRelayServer {
           break;
         }
         // Simulate auto-attach behavior with real target info
-        const result = (await this._extensionConnection?.send(
-          'attachToTab'
-        )) as { targetInfo: Record<string, unknown> };
-        const targetInfo = result.targetInfo;
-        this._connectedTabInfo = {
-          targetInfo,
-          sessionId: `pw-tab-${this._nextSessionId++}`,
-        };
-        debugLogger('Simulating auto-attach');
-        this._sendToPlaywright({
-          method: 'Target.attachedToTarget',
-          params: {
-            sessionId: this._connectedTabInfo.sessionId,
-            targetInfo: {
-              ...this._connectedTabInfo.targetInfo,
-              attached: true,
+        {
+          const result = (await this._extensionConnection?.send(
+            'attachToTab'
+          )) as { targetInfo: Record<string, unknown> };
+          const targetInfo = result.targetInfo;
+          this._connectedTabInfo = {
+            targetInfo,
+            sessionId: `pw-tab-${this._nextSessionId++}`,
+          };
+          debugLogger('Simulating auto-attach');
+          this._sendToPlaywright({
+            method: 'Target.attachedToTarget',
+            params: {
+              sessionId: this._connectedTabInfo.sessionId,
+              targetInfo: {
+                ...this._connectedTabInfo.targetInfo,
+                attached: true,
+              },
+              waitingForDebugger: false,
             },
-            waitingForDebugger: false,
-          },
-        });
+          });
+        }
         return {};
       }
       case 'Target.getTargetInfo': {
@@ -603,8 +605,9 @@ class ExtensionConnection {
     try {
       this._handleParsedMessage(parsedJson);
     } catch (e: unknown) {
+      const errorMessage = (e as Error)?.message;
       debugLogger(
-        `<closing ws> Closing websocket due to failed onmessage callback. eventData=${eventData} e=${(e as Error)?.message}`
+        `<closing ws> Closing websocket due to failed onmessage callback. eventData=${eventData} e=${errorMessage}`
       );
       this._ws.close();
     }

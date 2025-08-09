@@ -1,7 +1,9 @@
 import type * as playwright from 'playwright';
 import { z } from 'zod';
 import { formatObject } from '../javascript.js';
+import type { Response } from '../response.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import type { Tab } from '../tab.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
 
@@ -55,6 +57,97 @@ const screenshotSchema = z
       path: ['fullPage'],
     }
   );
+
+type ScreenshotParams = z.output<typeof screenshotSchema>;
+
+async function prepareFileName(
+  context: Tab['context'],
+  filename: string | undefined,
+  fileType: string
+): Promise<string> {
+  const defaultName = `page-${new Date().toISOString()}.${fileType}`;
+  return await context.outputFile(filename ?? defaultName);
+}
+
+function createScreenshotOptions(
+  fileType: string,
+  fileName: string,
+  fullPage?: boolean
+): playwright.PageScreenshotOptions {
+  return {
+    type: fileType as 'png' | 'jpeg',
+    quality: fileType === 'png' ? undefined : 90,
+    scale: 'css',
+    path: fileName,
+    ...(fullPage !== undefined && { fullPage }),
+  };
+}
+
+function isElementScreenshotRequest(params: ScreenshotParams): boolean {
+  return !!(params.element && params.ref);
+}
+
+function getScreenshotTarget(
+  params: ScreenshotParams,
+  isElementScreenshot: boolean
+): string {
+  if (isElementScreenshot && params.element) {
+    return params.element;
+  }
+  return params.fullPage ? 'full page' : 'viewport';
+}
+
+async function getScreenshotLocator(
+  tab: Tab,
+  params: ScreenshotParams,
+  isElementScreenshot: boolean
+): Promise<playwright.Locator | null> {
+  if (!(isElementScreenshot && params.element && params.ref)) {
+    return null;
+  }
+  return await tab.refLocator({ element: params.element, ref: params.ref });
+}
+
+async function addScreenshotCode(
+  response: Response,
+  locator: playwright.Locator | null,
+  options: playwright.PageScreenshotOptions
+): Promise<void> {
+  if (locator) {
+    response.addCode(
+      `await page.${await generateLocator(locator)}.screenshot(${formatObject(options)});`
+    );
+  } else {
+    response.addCode(`await page.screenshot(${formatObject(options)});`);
+  }
+}
+
+async function takeScreenshot(
+  tab: Tab,
+  locator: playwright.Locator | null,
+  options: playwright.PageScreenshotOptions
+): Promise<Buffer> {
+  return locator
+    ? await locator.screenshot(options)
+    : await tab.page.screenshot(options);
+}
+
+function addScreenshotResult(
+  response: Response,
+  screenshotTarget: string,
+  fileName: string,
+  fileType: string,
+  buffer: Buffer
+): void {
+  response.addResult(
+    `Took the ${screenshotTarget} screenshot and saved it as ${fileName}`
+  );
+  response.addImage({
+    contentType: fileType === 'png' ? 'image/png' : 'image/jpeg',
+    data: buffer,
+  });
+}
+
 const screenshot = defineTabTool({
   capability: 'core',
   schema: {
@@ -66,50 +159,33 @@ const screenshot = defineTabTool({
   },
   handle: async (tab, params, response) => {
     const fileType = params.type ?? 'png';
-    const fileName = await tab.context.outputFile(
-      params.filename ?? `page-${new Date().toISOString()}.${fileType}`
+    const fileName = await prepareFileName(
+      tab.context,
+      params.filename,
+      fileType
     );
-    const options: playwright.PageScreenshotOptions = {
-      type: fileType,
-      quality: fileType === 'png' ? undefined : 90,
-      scale: 'css',
-      path: fileName,
-      ...(params.fullPage !== undefined && { fullPage: params.fullPage }),
-    };
-    const isElementScreenshot = params.element && params.ref;
-    let screenshotTarget: string;
-    if (isElementScreenshot && params.element) {
-      screenshotTarget = params.element;
-    } else if (params.fullPage) {
-      screenshotTarget = 'full page';
-    } else {
-      screenshotTarget = 'viewport';
-    }
+    const options = createScreenshotOptions(
+      fileType,
+      fileName,
+      params.fullPage
+    );
+
+    const isElementScreenshot = isElementScreenshotRequest(params);
+    const screenshotTarget = getScreenshotTarget(params, isElementScreenshot);
+
     response.addCode(
       `// Screenshot ${screenshotTarget} and save it as ${fileName}`
     );
-    // Only get snapshot when element screenshot is needed
-    const locator =
-      isElementScreenshot && params.element && params.ref
-        ? await tab.refLocator({ element: params.element, ref: params.ref })
-        : null;
-    if (locator) {
-      response.addCode(
-        `await page.${await generateLocator(locator)}.screenshot(${formatObject(options)});`
-      );
-    } else {
-      response.addCode(`await page.screenshot(${formatObject(options)});`);
-    }
-    const buffer = locator
-      ? await locator.screenshot(options)
-      : await tab.page.screenshot(options);
-    response.addResult(
-      `Took the ${screenshotTarget} screenshot and saved it as ${fileName}`
+
+    const locator = await getScreenshotLocator(
+      tab,
+      params,
+      isElementScreenshot
     );
-    response.addImage({
-      contentType: fileType === 'png' ? 'image/png' : 'image/jpeg',
-      data: buffer,
-    });
+    await addScreenshotCode(response, locator, options);
+
+    const buffer = await takeScreenshot(tab, locator, options);
+    addScreenshotResult(response, screenshotTarget, fileName, fileType, buffer);
   },
 });
 export default [screenshot];
