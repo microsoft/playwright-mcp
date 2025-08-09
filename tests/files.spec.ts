@@ -32,11 +32,9 @@ test('browser_file_upload', async ({ client, server }, testInfo) => {
     arguments: { url: server.PREFIX },
   });
   expect(navigateResponse).toHaveResponse({
-    pageState: expect.stringContaining(
-      `- generic [active] [ref=e1]:
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]:
   - button "Choose File" [ref=e2]
-  - button "Button" [ref=e3]`
-    ),
+  - button "Button" [ref=e3]`),
   });
   expect(
     await client.callTool({
