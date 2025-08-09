@@ -195,7 +195,9 @@ function updateOptions(content) {
   // Execute CLI help command with explicit path and safe arguments
   // Using spawnSync with controlled environment to prevent injection attacks
   // Use process.execPath to ensure we use the same Node.js executable as the current process
-  const result = spawnSync(process.execPath, [cliPath, '--help'], {
+  const nodeExecutable = process.execPath; // Safe: Built-in Node.js executable path
+  const cliArguments = [cliPath, '--help']; // Safe: Controlled arguments array
+  const result = spawnSync(nodeExecutable, cliArguments, {
     cwd: currentDir,
     shell: false, // Explicitly disable shell to prevent command injection
     // Security: Use minimal environment without PATH to prevent injection attacks

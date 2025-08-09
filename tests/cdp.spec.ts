@@ -129,9 +129,10 @@ test('does not support --device', () => {
     ],
     {
       // Explicitly set safe environment to prevent PATH injection
+      // Use minimal environment without PATH to enhance security
       env: {
         NODE_ENV: 'test',
-        PATH: '/usr/bin:/bin:/usr/local/bin',
+        // PATH intentionally omitted for security - Node.js will use system default
       },
       // Additional security options
       stdio: ['ignore', 'pipe', 'pipe'],

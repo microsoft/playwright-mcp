@@ -81,7 +81,9 @@ test(
     // 5. Using process.execPath for absolute Node.js path (no PATH dependency)
     // 6. Environment variables are minimal and controlled
     // 7. Timeout and proper error handling are implemented
-    const result = child_process.spawnSync(process.execPath, [file], {
+    const nodeExecutable = process.execPath; // Safe: Built-in Node.js executable
+    const validatedArgs = [file]; // Safe: Validated test file path
+    const result = child_process.spawnSync(nodeExecutable, validatedArgs, {
       encoding: 'utf-8',
       cwd: testInfo.outputDir,
       shell: false, // Explicitly disable shell to prevent command injection

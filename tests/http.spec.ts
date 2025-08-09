@@ -64,9 +64,9 @@ const test = baseTest.extend<{
           stdio: 'pipe',
           env: {
             // Security: Explicitly set safe environment to prevent PATH injection
-            // Using controlled environment with limited PATH for test safety
+            // Using controlled environment without PATH for enhanced safety
             NODE_ENV: 'test',
-            PATH: '/usr/bin:/bin:/usr/local/bin',
+            // PATH intentionally omitted for security - Node.js will use system default
             HOME: process.env.HOME,
             USER: process.env.USER,
             DEBUG: 'pw:mcp:test',

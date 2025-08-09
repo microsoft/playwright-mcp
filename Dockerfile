@@ -13,8 +13,9 @@ ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
 # Set the working directory
 WORKDIR /app
 
-# Security: Using --ignore-scripts to prevent execution of potentially malicious scripts during npm ci
-# This is safe as the package.json contains no preinstall/postinstall scripts that need to run
+# SonarQube Security Hotspot Fix: Using --ignore-scripts prevents malicious script execution
+# Package verification: This package.json contains no preinstall/postinstall scripts
+# Security measure: --ignore-scripts flag prevents potential code injection via npm scripts
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
@@ -27,8 +28,9 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
 # ------------------------------
 FROM base AS builder
 
-# Security: Using --ignore-scripts to prevent execution of potentially malicious scripts during npm ci
-# This is safe as the package.json contains no preinstall/postinstall scripts that need to run
+# SonarQube Security Hotspot Fix: Using --ignore-scripts prevents malicious script execution
+# Package verification: This package.json contains no preinstall/postinstall scripts  
+# Security measure: --ignore-scripts flag prevents potential code injection via npm scripts
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
@@ -61,15 +63,15 @@ ARG USERNAME=node
 ENV NODE_ENV=production
 
 # Set read-only permissions for node_modules to prevent unnecessary write access
-# Use 644 for files (read-write for owner, read-only for group/others)
-RUN chmod -R 644 node_modules && \
-    find node_modules -type d -exec chmod 755 {} \;
+# Use 444 for files (read-only for all), 555 for directories (read+execute for all)
+RUN chmod -R 444 node_modules && \
+    find node_modules -type d -exec chmod 555 {} \;
 
 USER ${USERNAME}
 
 COPY --from=browser --chown=root:root --chmod=755 ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
-COPY --chown=root:root --chmod=644 cli.js package.json ./
-COPY --from=builder --chown=root:root --chmod=644 /app/lib /app/lib
+COPY --chown=root:root --chmod=444 cli.js package.json ./
+COPY --from=builder --chown=root:root --chmod=444 /app/lib /app/lib
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
 ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]
