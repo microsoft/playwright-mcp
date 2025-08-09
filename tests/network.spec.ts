@@ -48,8 +48,7 @@ test('browser_network_requests', async ({ client, server }) => {
 
   const expectedNavigationRequest = `[GET] ${server.PREFIX} => [200] OK`;
   const expectedJsonRequest = `[GET] ${server.PREFIX}json => [200] OK`;
-  const expectedNetworkRequests =
-    expectedNavigationRequest + '\n' + expectedJsonRequest;
+  const expectedNetworkRequests = `${expectedNavigationRequest}\n${expectedJsonRequest}`;
 
   await expect
     .poll(() =>

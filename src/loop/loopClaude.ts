@@ -124,6 +124,9 @@ export class ClaudeDelegate implements LLMDelegate {
       case 'tool':
         this.addToolResultMessage(claudeMessages, message);
         break;
+      default:
+        // Handle unknown message roles gracefully
+        break;
     }
   }
 
@@ -250,7 +253,6 @@ export class ClaudeDelegate implements LLMDelegate {
       this.createNewToolResultMessage(claudeMessages, toolResult);
     }
   }
-
 
   private addToExistingMessage(
     lastMessage: Anthropic.Messages.MessageParam,

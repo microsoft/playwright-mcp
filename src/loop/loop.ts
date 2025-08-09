@@ -189,9 +189,10 @@ async function processAllToolCallsSequentially(
   return null;
 }
 
-function shouldReturnEarly(
-  processingResult: { isDone: boolean; shouldBreak: boolean }
-): boolean {
+function shouldReturnEarly(processingResult: {
+  isDone: boolean;
+  shouldBreak: boolean;
+}): boolean {
   return processingResult.isDone || processingResult.shouldBreak;
 }
 

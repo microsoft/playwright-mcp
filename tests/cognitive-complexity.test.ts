@@ -1,29 +1,36 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Tab, TabSnapshot } from '../src/tab.js';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type * as actions from '../src/actions.js';
-import { SessionLog } from '../src/sessionLog.js';
 import { isChromiumVariant } from '../src/config.js';
+import { SessionLog } from '../src/sessionLog.js';
+import type { Tab } from '../src/tab.js';
 
 describe('Cognitive Complexity Fixes', () => {
   describe('config.ts - isChromiumVariant', () => {
     it('should identify chromium variants correctly', () => {
       const chromeVariants = [
-        'chrome', 'chrome-beta', 'chrome-canary', 'chrome-dev', 'chromium'
+        'chrome',
+        'chrome-beta',
+        'chrome-canary',
+        'chrome-dev',
+        'chromium',
       ];
       const edgeVariants = [
-        'msedge', 'msedge-beta', 'msedge-canary', 'msedge-dev'
+        'msedge',
+        'msedge-beta',
+        'msedge-canary',
+        'msedge-dev',
       ];
       const nonChromium = ['firefox', 'webkit', 'safari', 'opera'];
 
-      chromeVariants.forEach(variant => {
+      chromeVariants.forEach((variant) => {
         expect(isChromiumVariant(variant)).toBe(true);
       });
 
-      edgeVariants.forEach(variant => {
+      edgeVariants.forEach((variant) => {
         expect(isChromiumVariant(variant)).toBe(true);
       });
 
-      nonChromium.forEach(browser => {
+      nonChromium.forEach((browser) => {
         expect(isChromiumVariant(browser)).toBe(false);
       });
     });
@@ -43,13 +50,13 @@ describe('Cognitive Complexity Fixes', () => {
       sessionLog = new SessionLog('/tmp/test-session');
       mockTab = {
         page: {
-          url: () => 'https://example.com'
-        }
+          url: () => 'https://example.com',
+        },
       } as Tab;
       mockAction = {
         name: 'navigate',
         url: 'https://example.com',
-        ariaSnapshot: 'test snapshot'
+        ariaSnapshot: 'test snapshot',
       } as actions.Action;
     });
 
@@ -73,7 +80,7 @@ describe('Cognitive Complexity Fixes', () => {
       const clickAction = {
         name: 'click',
         selector: '#button',
-        ariaSnapshot: 'button snapshot'
+        ariaSnapshot: 'button snapshot',
       } as actions.Action;
 
       const entry = (sessionLog as any)._createUserActionEntry(

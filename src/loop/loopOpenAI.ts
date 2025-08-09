@@ -206,7 +206,6 @@ export class OpenAIDelegate implements LLMDelegate {
     return assistantMessage;
   }
 
-
   private hasValidToolCalls(message: LLMMessage): boolean {
     return (
       message.role === 'assistant' &&

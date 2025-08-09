@@ -118,7 +118,9 @@ export const browserDiagnose = defineTabTool({
 function extractDiagnoseConfig(params: Record<string, unknown>) {
   return {
     searchForElements: params.searchForElements,
-    includePerformanceMetrics: Boolean(params.includePerformanceMetrics ?? false),
+    includePerformanceMetrics: Boolean(
+      params.includePerformanceMetrics ?? false
+    ),
     includeAccessibilityInfo: Boolean(params.includeAccessibilityInfo ?? false),
     includeTroubleshootingSuggestions: Boolean(
       params.includeTroubleshootingSuggestions ?? false
