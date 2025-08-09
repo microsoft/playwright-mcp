@@ -19,7 +19,6 @@ import http from 'node:http';
 import https from 'node:https';
 import url from 'node:url';
 import debug from 'debug';
-import { loadOrGenerateKeys } from '../../src/generate-keys.js';
 
 const fulfillSymbol = Symbol('fulfil callback');
 const rejectSymbol = Symbol('reject callback');
@@ -76,8 +75,17 @@ export class TestServer {
       );
     }
 
-    // Load keys from environment variables or generate mock keys
-    const { privateKey, certificate } = loadOrGenerateKeys();
+    // Read certificate files directly for test server
+    // These are test-only certificates and not used in production
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const dirname = path.dirname(url.fileURLToPath(import.meta.url));
+
+    const privateKey = await fs.readFile(path.join(dirname, 'key.pem'), 'utf8');
+    const certificate = await fs.readFile(
+      path.join(dirname, 'cert.pem'),
+      'utf8'
+    );
 
     const server = new TestServer(port, {
       key: privateKey,

@@ -15,10 +15,9 @@
  */
 
 import { expect, test } from './fixtures.js';
-import { SecureTestProcessManager } from './process-test-manager.js';
+import { SecureTestProcessManager } from './secure-test-process-manager.js';
 
-// biome-ignore lint/style/noDoneCallback: TestInfo parameter is used, not a done callback
-test('SecureTestProcessManager can spawn and terminate processes', async (testInfo) => {
+test('SecureTestProcessManager can spawn and terminate processes', async ({}, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
@@ -48,8 +47,7 @@ test('SecureTestProcessManager can spawn and terminate processes', async (testIn
   }
 });
 
-// biome-ignore lint/style/noDoneCallback: TestInfo parameter is used, not a done callback
-test('SecureTestProcessManager handles multiple processes', async (testInfo) => {
+test('SecureTestProcessManager handles multiple processes', async ({}, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
@@ -78,8 +76,7 @@ test('SecureTestProcessManager handles multiple processes', async (testInfo) => 
   }
 });
 
-// biome-ignore lint/style/noDoneCallback: TestInfo parameter is used, not a done callback
-test('SecureTestProcessManager creates secure environment', async (testInfo) => {
+test('SecureTestProcessManager creates secure environment', async ({}, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
@@ -103,8 +100,7 @@ test('SecureTestProcessManager creates secure environment', async (testInfo) => 
   }
 });
 
-// biome-ignore lint/style/noDoneCallback: TestInfo parameter is used, not a done callback
-test('SecureTestProcessManager creates fixture-compatible endpoint function', async (testInfo) => {
+test('SecureTestProcessManager creates fixture-compatible endpoint function', async ({}, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
