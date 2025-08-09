@@ -294,3 +294,105 @@ export function handleFrameAccessError(
     ...(frameInfo && { frameInfo }),
   };
 }
+
+/**
+ * Format status-based strings with consistent icon and text formatting
+ * Reduces duplication in report builders that format status + text combinations
+ */
+export function formatStatusString(
+  text: string,
+  status: string,
+  iconType: 'performance' | 'impact' | 'recommendation',
+  additionalText?: string
+): string {
+  let icon: string;
+
+  switch (iconType) {
+    case 'performance':
+      if (['significant', 'notable', 'minimal', 'normal'].includes(status)) {
+        icon = getPerformanceIcon({
+          significance: status as
+            | 'significant'
+            | 'notable'
+            | 'minimal'
+            | 'normal',
+        });
+      } else {
+        icon = getPerformanceIcon({ significance: 'normal' });
+      }
+      break;
+    case 'impact':
+      icon = getImpactIcon(status);
+      break;
+    case 'recommendation':
+      icon = getRecommendationIcon(status);
+      break;
+    default:
+      icon = '⚪';
+  }
+
+  return `  ${icon} ${text}${additionalText ? ` ${additionalText}` : ''}`;
+}
+
+/**
+ * Format performance comparison with deviation information
+ * Common pattern for performance metrics reporting
+ */
+export function formatPerformanceComparison(
+  component: string,
+  expected: number,
+  actual: number,
+  deviation?: { percent: number; significance: string }
+): string {
+  const significance = deviation?.significance ?? 'normal';
+  const icon = getPerformanceIcon({
+    significance: significance as
+      | 'significant'
+      | 'notable'
+      | 'minimal'
+      | 'normal',
+  });
+
+  let deviationText = '';
+  if (deviation) {
+    const sign = deviation.percent > 0 ? '+' : '';
+    deviationText = ` (${sign}${deviation.percent}% ${deviation.significance})`;
+  }
+
+  return `  ${icon} **${component}**: Expected ${expected}ms, Actual ${actual.toFixed(0)}ms${deviationText}`;
+}
+
+/**
+ * Format metric name with human-readable labels
+ * Common pattern for converting camelCase metrics to display names
+ */
+export function formatMetricName(
+  key: string,
+  nameMap?: Record<string, string>
+): string {
+  const defaultNameMap: Record<string, string> = {
+    domContentLoaded: 'DOM Content Loaded',
+    loadComplete: 'Load Complete',
+    firstPaint: 'First Paint',
+    firstContentfulPaint: 'First Contentful Paint',
+  };
+
+  const combinedMap = { ...defaultNameMap, ...nameMap };
+  return combinedMap[key] || key;
+}
+
+/**
+ * Process browser metrics and return formatted key-value pairs
+ * Reduces duplication in browser performance metrics collection and formatting
+ */
+export function processBrowserMetrics(
+  browserMetrics: Record<string, number | undefined>,
+  nameMap?: Record<string, string>
+): [string, string][] {
+  return Object.entries(browserMetrics)
+    .filter(([_, value]) => typeof value === 'number' && value > 0)
+    .map(([key, value]) => [
+      formatMetricName(key, nameMap),
+      `${(value as number).toFixed(2)}ms`,
+    ]);
+}

@@ -118,26 +118,19 @@ test('should throw connection error and allow re-connecting', async ({
 const __filename = url.fileURLToPath(import.meta.url);
 
 test('does not support --device', () => {
-  // Security: Execute CLI with explicit environment control to prevent PATH injection
-  // Using spawnSync with controlled environment for test safety
-  // SonarQube Security Hotspot Fix: Use process.execPath to eliminate PATH dependency
+  // Execute CLI using spawnSync for security (no shell injection)
   const result = spawnSync(
-    process.execPath, // Use absolute path to Node.js executable instead of 'node'
+    process.execPath,
     [
       path.join(__filename, '../../cli.js'),
       '--device=Pixel 5',
       '--cdp-endpoint=http://localhost:1234',
     ],
     {
-      // Security: Minimal environment without PATH to prevent injection attacks
-      // Using process.execPath eliminates the need for PATH environment variable
-      env: {
-        NODE_ENV: 'test',
-        // PATH intentionally omitted - using absolute Node.js path eliminates dependency
-      },
-      shell: false, // Explicitly disable shell to prevent command injection
+      env: { NODE_ENV: 'test' },
+      shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: 10_000, // 10 second timeout to prevent hanging
+      timeout: 10_000,
     }
   );
   expect(result.error).toBeUndefined();

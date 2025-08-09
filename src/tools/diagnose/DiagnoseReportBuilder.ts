@@ -10,12 +10,20 @@ import type {
 import type { UnifiedDiagnosticSystem } from '../../diagnostics/unified-system.js';
 import type { Tab } from '../../tab.js';
 import { ArrayBuilder } from '../../utils/codeDeduplicationUtils.js';
-import { getErrorMessage } from '../../utils/commonFormatters.js';
+import {
+  formatPerformanceComparison,
+  formatStatusString,
+  getErrorMessage,
+  processBrowserMetrics,
+} from '../../utils/commonFormatters.js';
 import {
   addDomComplexityMetrics,
+  addElementList as addElementListUtil,
   addErrorSection,
   addInteractionMetrics,
+  addKeyValuePairs as addKeyValuePairsUtil,
   addModalStatesIfPresent,
+  addOptionalListSection as addOptionalListSectionUtil,
   addResourceMetrics,
   addSystemHealthSection,
 } from '../../utils/diagnosticReportUtils.js';
@@ -138,9 +146,11 @@ export class DiagnoseReportBuilder {
       this.reportBuilder.addHeader(subHeaderText, headerLevel);
     }
 
-    for (const [key, value] of pairs) {
-      this.reportBuilder.addKeyValue(key, value);
-    }
+    // Use existing utility from diagnosticReportUtils
+    addKeyValuePairsUtil(
+      this.reportBuilder,
+      pairs.map(([key, value]) => ({ key, value }))
+    );
 
     this.reportBuilder.addEmptyLine();
   }
@@ -151,17 +161,11 @@ export class DiagnoseReportBuilder {
     formatter: (item: T) => string,
     headerLevel = 2
   ): void {
-    if (!items?.length) {
-      return;
-    }
-
-    this.reportBuilder.addSection(
+    addOptionalListSectionUtil(
+      this.reportBuilder,
       title,
-      (builder) => {
-        for (const item of items) {
-          builder.addListItem(formatter(item));
-        }
-      },
+      items,
+      formatter,
       headerLevel
     );
   }
@@ -191,60 +195,13 @@ export class DiagnoseReportBuilder {
     formatter: (element: T, index: number) => string,
     maxItems = 5
   ): void {
-    if (!elements?.length) {
-      return;
-    }
-
-    this.reportBuilder.addEmptyLine().addLine(`**${title}:**`);
-
-    const limitedElements = elements.slice(0, maxItems);
-    for (let index = 0; index < limitedElements.length; index++) {
-      this.reportBuilder.addLine(formatter(limitedElements[index], index));
-    }
-  }
-
-  private getStatusIcon(
-    level: string,
-    type: 'performance' | 'impact' | 'recommendation'
-  ): string {
-    const iconMaps = {
-      performance: {
-        significant: '🔴',
-        notable: '🟡',
-        minimal: '🟢',
-        normal: '🟢',
-        default: '⚪',
-      },
-      impact: {
-        high: '🔴',
-        medium: '🟡',
-        low: '🟢',
-        default: '🟢',
-      },
-      recommendation: {
-        warning: '⚠️',
-        optimization: '⚡',
-        info: 'ℹ️',
-        default: 'ℹ️',
-      },
-    };
-
-    const iconMap = iconMaps[type];
-    return (iconMap as Record<string, string>)[level] ?? iconMap.default;
-  }
-
-  private getPercentageSign(percent: number): string {
-    return percent > 0 ? '+' : '';
-  }
-
-  private formatMetricName(key: string): string {
-    const nameMap: Record<string, string> = {
-      domContentLoaded: 'DOM Content Loaded',
-      loadComplete: 'Load Complete',
-      firstPaint: 'First Paint',
-      firstContentfulPaint: 'First Contentful Paint',
-    };
-    return nameMap[key] || key;
+    addElementListUtil(
+      this.reportBuilder,
+      title,
+      elements,
+      formatter,
+      maxItems
+    );
   }
 
   async buildReport(
@@ -391,17 +348,8 @@ export class DiagnoseReportBuilder {
       const deviation = deviations[component];
 
       if (actual > 0) {
-        const significance = deviation?.significance ?? 'normal';
-        const indicator = this.getStatusIcon(significance, 'performance');
-
-        let deviationText = '';
-        if (deviation) {
-          const sign = this.getPercentageSign(deviation.percent);
-          deviationText = ` (${sign}${deviation.percent}% ${deviation.significance})`;
-        }
-
         this.reportBuilder.addLine(
-          `  ${indicator} **${component}**: Expected ${expected}ms, Actual ${actual.toFixed(0)}ms${deviationText}`
+          formatPerformanceComparison(component, expected, actual, deviation)
         );
       }
     }
@@ -417,9 +365,13 @@ export class DiagnoseReportBuilder {
       .addLine('**Applied Configuration Changes:**');
 
     for (const override of configReport.appliedOverrides) {
-      const impactIcon = this.getStatusIcon(override.impact, 'impact');
       this.reportBuilder.addLine(
-        `  ${impactIcon} **${override.category}** (${override.impact} impact):`
+        formatStatusString(
+          `**${override.category}**`,
+          override.impact,
+          'impact',
+          `(${override.impact} impact):`
+        )
       );
 
       for (const change of override.changes) {
@@ -441,8 +393,9 @@ export class DiagnoseReportBuilder {
       .addLine('**High Priority Recommendations:**');
 
     for (const rec of highPriorityRecs) {
-      const typeIcon = this.getStatusIcon(rec.type, 'recommendation');
-      this.reportBuilder.addLine(`  ${typeIcon} ${rec.message}`);
+      this.reportBuilder.addLine(
+        formatStatusString(rec.message, rec.type, 'recommendation')
+      );
     }
   }
 
@@ -732,15 +685,7 @@ export class DiagnoseReportBuilder {
         };
       });
 
-      const metricsWithValues = Object.entries(browserMetrics)
-        .filter(([_, value]) => typeof value === 'number' && value > 0)
-        .map(
-          ([key, value]) =>
-            [
-              this.formatMetricName(key),
-              `${(value as number).toFixed(2)}ms`,
-            ] as [string, string]
-        );
+      const metricsWithValues = processBrowserMetrics(browserMetrics);
 
       if (metricsWithValues.length > 0) {
         this.addKeyValuePairs(

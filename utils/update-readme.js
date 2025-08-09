@@ -192,31 +192,13 @@ function updateOptions(content) {
     throw new Error('CLI file not found at expected location');
   }
 
-  // Execute CLI help command with explicit path and safe arguments
-  // Using spawnSync with controlled environment to prevent injection attacks
-  // Use process.execPath to ensure we use the same Node.js executable as the current process
-  const nodeExecutable = process.execPath; // Safe: Built-in Node.js executable path
-  const cliArguments = [cliPath, '--help']; // Safe: Controlled arguments array
-  const result = spawnSync(nodeExecutable, cliArguments, {
+  // Execute CLI help command using spawnSync for security (no shell injection)
+  const result = spawnSync(process.execPath, [cliPath, '--help'], {
     cwd: currentDir,
-    shell: false, // Explicitly disable shell to prevent command injection
-    // Security: Use minimal environment without PATH to prevent injection attacks
-    // PATH is completely excluded to eliminate the security hotspot
-    // Node.js can execute without PATH since we use absolute paths
-    // SonarQube Security Hotspot Fix: OS command execution is safe here because:
-    // 1. Using spawnSync instead of exec to prevent shell injection
-    // 2. Shell is explicitly disabled (shell: false)
-    // 3. Arguments are validated and use absolute paths
-    // 4. Environment is minimal with no PATH variable
-    // 5. Timeout and proper error handling are implemented
-    env: {
-      NODE_ENV: 'production',
-      // Only include essential Node.js environment variables
-      // Explicitly exclude PATH to prevent any PATH injection vulnerabilities
-    },
-    // Additional security options
+    shell: false,
+    env: { NODE_ENV: 'production' },
     stdio: ['ignore', 'pipe', 'pipe'],
-    timeout: 10_000, // 10 second timeout to prevent hanging
+    timeout: 10_000,
   });
 
   if (result.error) {

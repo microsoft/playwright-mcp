@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 import { expect, test } from './fixtures.js';
+import {
+  COMMON_EXPECTATIONS,
+  callTool,
+  createTestHtmlContent,
+  setServerContent,
+} from './test-helpers.js';
 
 // Move regex to top-level to avoid performance issues
 const NON_EXISTENT_SELECTOR_REGEX = /element \[\.non-existent-selector\]:/;
@@ -23,45 +29,22 @@ test.describe('Response partial snapshot implementation', () => {
     client,
     server,
   }) => {
-    server.setContent(
-      '/',
-      `
-      <html>
-        <head><title>Test Page</title></head>
-        <body>
-          <header>Header Content</header>
-          <main>
-            <h1>Main Content</h1>
-            <p>This is the main content area that should be captured by the selector.</p>
-          </main>
-          <footer>Footer Content</footer>
-        </body>
-      </html>
-    `,
-      'text/html'
-    );
+    const htmlContent = createTestHtmlContent('complex');
+    setServerContent(server, '/', htmlContent);
 
     // Navigate to test page
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: {
-        url: server.PREFIX,
-        expectation: {
-          includeSnapshot: false,
-        },
-      },
+    await callTool(client, 'browser_navigate', {
+      url: server.PREFIX,
+      expectation: COMMON_EXPECTATIONS.MINIMAL_RESPONSE,
     });
 
     // Take a snapshot with selector
-    const result = await client.callTool({
-      name: 'browser_snapshot',
-      arguments: {
-        expectation: {
-          includeSnapshot: true,
-          snapshotOptions: {
-            selector: 'main',
-            maxLength: 500,
-          },
+    const result = await callTool(client, 'browser_snapshot', {
+      expectation: {
+        includeSnapshot: true,
+        snapshotOptions: {
+          selector: 'main',
+          maxLength: 500,
         },
       },
     });
@@ -82,37 +65,19 @@ test.describe('Response partial snapshot implementation', () => {
     client,
     server,
   }) => {
-    server.setContent(
-      '/',
-      `
-      <html>
-        <head><title>Test Page</title></head>
-        <body>
-          <div>Some content</div>
-        </body>
-      </html>
-    `,
-      'text/html'
-    );
+    const htmlContent = createTestHtmlContent('simple');
+    setServerContent(server, '/', htmlContent);
 
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: {
-        url: server.PREFIX,
-        expectation: {
-          includeSnapshot: false,
-        },
-      },
+    await callTool(client, 'browser_navigate', {
+      url: server.PREFIX,
+      expectation: COMMON_EXPECTATIONS.MINIMAL_RESPONSE,
     });
 
-    const result = await client.callTool({
-      name: 'browser_snapshot',
-      arguments: {
-        expectation: {
-          includeSnapshot: true,
-          snapshotOptions: {
-            selector: '.non-existent-selector',
-          },
+    const result = await callTool(client, 'browser_snapshot', {
+      expectation: {
+        includeSnapshot: true,
+        snapshotOptions: {
+          selector: '.non-existent-selector',
         },
       },
     });
@@ -144,25 +109,17 @@ test.describe('Response partial snapshot implementation', () => {
       'text/html'
     );
 
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: {
-        url: `${server.PREFIX}long-content`,
-        expectation: {
-          includeSnapshot: false,
-        },
-      },
+    await callTool(client, 'browser_navigate', {
+      url: `${server.PREFIX}long-content`,
+      expectation: COMMON_EXPECTATIONS.MINIMAL_RESPONSE,
     });
 
-    const result = await client.callTool({
-      name: 'browser_snapshot',
-      arguments: {
-        expectation: {
-          includeSnapshot: true,
-          snapshotOptions: {
-            selector: 'main',
-            maxLength: 100,
-          },
+    const result = await callTool(client, 'browser_snapshot', {
+      expectation: {
+        includeSnapshot: true,
+        snapshotOptions: {
+          selector: 'main',
+          maxLength: 100,
         },
       },
     });

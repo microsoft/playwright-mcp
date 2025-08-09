@@ -31,18 +31,13 @@ test(
     const file = testInfo.outputPath('main.cjs');
     const projectRoot = process.cwd();
 
-    // Validate project root path for security
-    if (!projectRoot?.startsWith('/')) {
-      throw new Error('Invalid project root path');
-    }
-
-    // Sanitize project root path to prevent injection
-    const sanitizedProjectRoot = projectRoot.replace(/['"\\$`]/g, '');
+    // Normalize project root path for safe usage in import statement
+    const normalizedProjectRoot = path.resolve(projectRoot);
 
     await fs.writeFile(
       file,
       `
-    import('${sanitizedProjectRoot}/index.js')
+    import('${normalizedProjectRoot}/index.js')
       .then(playwrightMCP => playwrightMCP.createConnection())
       .then(() => {
         console.log('OK');
@@ -55,50 +50,18 @@ test(
  `
     );
 
-    // Validate file exists before execution for security
-    const fileStats = await fs.stat(file);
-    if (!fileStats.isFile()) {
-      throw new Error('Generated file is not a valid file');
-    }
+    // Verify generated file exists
+    await fs.access(file);
 
-    // Additional security validation: ensure file is within test output directory
-    const resolvedFilePath = path.resolve(file);
-    const expectedBasePath = path.resolve(testInfo.outputDir);
-    if (!resolvedFilePath.startsWith(expectedBasePath)) {
-      throw new Error('File is outside of expected test directory structure');
-    }
-
-    // Validate file extension for additional security
-    if (!file.endsWith('.cjs')) {
-      throw new Error('Invalid file extension - expected .cjs file');
-    }
-
-    // SonarQube Security Hotspot Fix: OS command execution is safe here because:
-    // 1. This is a controlled test environment with validated inputs
-    // 2. Using spawnSync instead of exec to prevent shell injection
-    // 3. Shell is explicitly disabled (shell: false)
-    // 4. File path is validated and constrained to test output directory
-    // 5. Using process.execPath for absolute Node.js path (no PATH dependency)
-    // 6. Environment variables are minimal and controlled
-    // 7. Timeout and proper error handling are implemented
-    const nodeExecutable = process.execPath; // Safe: Built-in Node.js executable
-    const validatedArgs = [file]; // Safe: Validated test file path
-    const result = child_process.spawnSync(nodeExecutable, validatedArgs, {
+    // Execute test file using spawnSync for security (no shell injection)
+    const result = child_process.spawnSync(process.execPath, [file], {
       encoding: 'utf-8',
       cwd: testInfo.outputDir,
-      shell: false, // Explicitly disable shell to prevent command injection
-      // Minimal environment to prevent environment variable injection
-      // Using process.execPath eliminates PATH dependency for additional security
-      env: {
-        NODE_ENV: 'test',
-        // PATH intentionally excluded - using absolute executable path (process.execPath) instead
-        // This prevents PATH injection attacks by avoiding dependency on external PATH
-        // Only essential environment variables are included for security
-      },
-      // Additional security options
+      shell: false,
+      env: { NODE_ENV: 'test' },
       stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: 30_000, // 30 second timeout to prevent hanging
-      windowsHide: true, // Hide command window on Windows
+      timeout: 30_000,
+      windowsHide: true,
     });
 
     expect(result.stdout).toContain('OK');

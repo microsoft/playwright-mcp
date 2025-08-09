@@ -15,11 +15,14 @@
  */
 
 import type { ExpectationOptions } from '../src/schemas/expectation.js';
-import {
-  expectationSchema,
-  getDefaultExpectation,
-} from '../src/schemas/expectation.js';
+import { expectationSchema } from '../src/schemas/expectation.js';
 import { expect, test } from './fixtures.js';
+import {
+  COMMON_EXPECTATIONS,
+  createExpectationTest,
+  expectSchemaValidationError,
+  testDefaultExpectation,
+} from './test-helpers.js';
 
 test.describe('Expectation Schema', () => {
   test('should parse valid expectation options', () => {
@@ -53,13 +56,10 @@ test.describe('Expectation Schema', () => {
 
   test('should use default values for missing options', () => {
     const minimalExpectation = {};
-    const result = expectationSchema.parse(minimalExpectation);
-
-    expect(result.includeSnapshot).toBe(false);
-    expect(result.includeConsole).toBe(false);
-    expect(result.includeDownloads).toBe(false);
-    expect(result.includeTabs).toBe(false);
-    expect(result.includeCode).toBe(false);
+    createExpectationTest(
+      minimalExpectation,
+      expect.objectContaining(COMMON_EXPECTATIONS.MINIMAL_RESPONSE)
+    );
   });
 
   test('should parse undefined as valid (optional schema)', () => {
@@ -113,83 +113,50 @@ test.describe('Expectation Schema', () => {
   });
 
   test('should reject invalid enum values', () => {
-    expect(() => {
-      expectationSchema.parse({
-        snapshotOptions: { format: 'invalid' },
-      });
-    }).toThrow();
-
-    expect(() => {
-      expectationSchema.parse({
-        consoleOptions: { levels: ['invalid'] },
-      });
-    }).toThrow();
-
-    expect(() => {
-      expectationSchema.parse({
-        imageOptions: { format: 'invalid' },
-      });
-    }).toThrow();
+    expectSchemaValidationError({ snapshotOptions: { format: 'invalid' } });
+    expectSchemaValidationError({ consoleOptions: { levels: ['invalid'] } });
+    expectSchemaValidationError({ imageOptions: { format: 'invalid' } });
   });
 
   test('should reject invalid quality values', () => {
-    expect(() => {
-      expectationSchema.parse({
-        imageOptions: { quality: 0 },
-      });
-    }).toThrow();
-
-    expect(() => {
-      expectationSchema.parse({
-        imageOptions: { quality: 101 },
-      });
-    }).toThrow();
+    expectSchemaValidationError({ imageOptions: { quality: 0 } });
+    expectSchemaValidationError({ imageOptions: { quality: 101 } });
   });
 });
 
 test.describe('Default Expectation Configuration', () => {
   test('should return appropriate defaults for navigate tool', () => {
-    const defaults = getDefaultExpectation('browser_navigate');
-    expect(defaults.includeSnapshot).toBe(false);
-    expect(defaults.includeConsole).toBe(false);
-    expect(defaults.includeDownloads).toBe(false);
-    expect(defaults.includeTabs).toBe(false);
-    expect(defaults.includeCode).toBe(false);
+    testDefaultExpectation(
+      'browser_navigate',
+      COMMON_EXPECTATIONS.MINIMAL_RESPONSE
+    );
   });
 
   test('should return appropriate defaults for click tool', () => {
-    const defaults = getDefaultExpectation('browser_click');
-    expect(defaults.includeSnapshot).toBe(false);
-    expect(defaults.includeConsole).toBe(false);
-    expect(defaults.includeDownloads).toBe(false);
-    expect(defaults.includeTabs).toBe(false);
-    expect(defaults.includeCode).toBe(false);
+    testDefaultExpectation(
+      'browser_click',
+      COMMON_EXPECTATIONS.MINIMAL_RESPONSE
+    );
   });
 
   test('should return appropriate defaults for screenshot tool', () => {
-    const defaults = getDefaultExpectation('browser_take_screenshot');
-    expect(defaults.includeSnapshot).toBe(false);
-    expect(defaults.includeConsole).toBe(false);
-    expect(defaults.includeDownloads).toBe(false);
-    expect(defaults.includeTabs).toBe(false);
-    expect(defaults.includeCode).toBe(false);
+    testDefaultExpectation(
+      'browser_take_screenshot',
+      COMMON_EXPECTATIONS.MINIMAL_RESPONSE
+    );
   });
 
   test('should return appropriate defaults for evaluate tool', () => {
-    const defaults = getDefaultExpectation('browser_evaluate');
-    expect(defaults.includeSnapshot).toBe(false);
-    expect(defaults.includeConsole).toBe(false);
-    expect(defaults.includeDownloads).toBe(false);
-    expect(defaults.includeTabs).toBe(false);
-    expect(defaults.includeCode).toBe(false);
+    testDefaultExpectation(
+      'browser_evaluate',
+      COMMON_EXPECTATIONS.MINIMAL_RESPONSE
+    );
   });
 
   test('should return general defaults for unknown tool', () => {
-    const defaults = getDefaultExpectation('unknown_tool');
-    expect(defaults.includeSnapshot).toBe(false);
-    expect(defaults.includeConsole).toBe(false);
-    expect(defaults.includeDownloads).toBe(false);
-    expect(defaults.includeTabs).toBe(false);
-    expect(defaults.includeCode).toBe(false);
+    testDefaultExpectation(
+      'unknown_tool',
+      COMMON_EXPECTATIONS.MINIMAL_RESPONSE
+    );
   });
 });

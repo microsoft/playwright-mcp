@@ -1,4 +1,20 @@
 /**
+ * Copyright (c) Microsoft Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
  * Common test utilities and helpers to reduce code duplication
  */
 
@@ -568,6 +584,125 @@ export const HTML_TEMPLATES = {
     </html>
   `,
 } as const;
+/**
+ * HTML templates for browser diagnose tests
+ */
+export const DIAGNOSE_HTML_TEMPLATES = {
+  BASIC_WITH_IFRAME: `
+    <div>
+      <button>Click Me</button>
+      <iframe src="data:text/html,<h1>Frame Content</h1>"></iframe>
+      <input type="text" placeholder="Enter text">
+    </div>
+  `,
+  BUTTONS_WITH_DATA_ACTION: `
+    <div>
+      <button data-action="submit">Submit</button>
+      <button data-action="cancel">Cancel</button>
+    </div>
+  `,
+  SIMPLE_BUTTON_DIV: `
+    <div>
+      <button>Test</button>
+    </div>
+  `,
+  COMPREHENSIVE_FORM: `
+    <div>
+      <h1>Test Page</h1>
+      <form>
+        <input type="text" name="username" placeholder="Username">
+        <input type="password" name="password" placeholder="Password">
+        <button type="submit">Login</button>
+      </form>
+      <iframe src="about:blank"></iframe>
+    </div>
+  `,
+  IFRAME_WITH_HIDDEN_BUTTON: `
+    <div>
+      <iframe src="data:text/html,<button>Inside Frame</button>"></iframe>
+      <button style="display: none;">Hidden Button</button>
+    </div>
+  `,
+} as const;
+
+/**
+ * Common expectation objects for diagnose tests
+ */
+export const DIAGNOSE_EXPECTATIONS = {
+  NO_SNAPSHOT: {
+    includeSnapshot: false,
+  },
+  WITH_PERFORMANCE: {
+    includeSnapshot: false,
+    includePerformanceMetrics: true,
+  },
+  COMPREHENSIVE: {
+    includeSnapshot: false,
+    includePerformanceMetrics: true,
+    includeAccessibilityInfo: true,
+  },
+  WITH_TROUBLESHOOTING: {
+    includeSnapshot: false,
+    includeTroubleshootingSuggestions: true,
+  },
+} as const;
+/**
+ * Helper functions for browser_diagnose tests
+ */
+
+/**
+ * Setup and execute a basic diagnose test
+ */
+export async function setupDiagnoseTest(
+  client: Client,
+  server: any,
+  htmlContent: string,
+  diagnoseArgs: any = {},
+  path = '/'
+): Promise<any> {
+  setServerContent(server, path, htmlContent);
+  await navigateToUrl(client, server.PREFIX);
+
+  return await callTool(client, 'browser_diagnose', {
+    expectation: DIAGNOSE_EXPECTATIONS.NO_SNAPSHOT,
+    ...diagnoseArgs,
+  });
+}
+
+/**
+ * Common assertions for diagnose test results
+ */
+export function expectDiagnoseSuccess(result: any): void {
+  expect(result.isError).toBeFalsy();
+  expect(result.content[0].text).toContain('Page Diagnostic Report');
+}
+
+/**
+ * Assert that diagnose result contains specific content
+ */
+export function expectDiagnoseContent(
+  result: any,
+  expectedTexts: string[]
+): void {
+  expectDiagnoseSuccess(result);
+  for (const text of expectedTexts) {
+    expect(result.content[0].text).toContain(text);
+  }
+}
+
+/**
+ * Setup diagnose test with element search
+ */
+export async function setupDiagnoseWithElementSearch(
+  client: Client,
+  server: any,
+  htmlContent: string,
+  searchCriteria: any
+): Promise<any> {
+  return await setupDiagnoseTest(client, server, htmlContent, {
+    searchForElements: searchCriteria,
+  });
+}
 
 /**
  * Common data URLs for quick inline HTML
@@ -581,6 +716,41 @@ export const DATA_URLS = {
     `data:text/html,<html><body><input id="${inputId}" type="text" value="${inputValue}"><h1>Before Navigation</h1></body></html>`,
   SEARCH_RESULTS_PAGE: (searchTerm: string) =>
     `data:text/html,<html><body><h1>Search Results</h1><p>Results for: ${searchTerm}</p></body></html>`,
+} as const;
+
+/**
+ * HTML templates for browser_find_elements tests
+ */
+export const FIND_ELEMENTS_HTML_TEMPLATES = {
+  MULTI_CRITERIA_ELEMENTS: `
+    <div>
+      <button class="btn">Submit</button>
+      <input type="submit" value="Submit">
+      <a role="button">Link Button</a>
+    </div>
+  `,
+  FORM_WITH_INPUTS: `
+    <form>
+      <input type="text" name="username">
+      <input type="email" name="email">
+    </form>
+  `,
+  BUTTONS_WITH_DATA_ACTION: `
+    <div>
+      <button data-action="save">Save</button>
+      <button data-action="cancel">Cancel</button>
+    </div>
+  `,
+  NO_BUTTONS_CONTENT: `
+    <div>
+      <span>No buttons here</span>
+    </div>
+  `,
+  MULTIPLE_BUTTONS: (count: number) =>
+    `<div>${Array.from(
+      { length: count },
+      (_, i) => `<button>Button ${i}</button>`
+    ).join('')}</div>`,
 } as const;
 
 /**
@@ -721,3 +891,772 @@ export function expectBrowserLifecycle(
     }
   }
 }
+
+/**
+ * Common expectation objects for find_elements tests
+ */
+export const FIND_ELEMENTS_EXPECTATIONS = {
+  NO_SNAPSHOT: {
+    includeSnapshot: false,
+  },
+  WITH_MAX_RESULTS: (maxResults: number) => ({
+    includeSnapshot: false,
+    maxResults,
+  }),
+} as const;
+
+/**
+ * Helper functions for browser_find_elements tests
+ */
+
+/**
+ * Setup and execute a basic find_elements test
+ */
+export async function setupFindElementsTest(
+  client: Client,
+  server: any,
+  htmlContent: string,
+  searchCriteria: any,
+  additionalArgs: any = {},
+  path = '/'
+): Promise<any> {
+  setServerContent(server, path, htmlContent);
+  await navigateToUrl(client, server.PREFIX);
+
+  return await callTool(client, 'browser_find_elements', {
+    searchCriteria,
+    expectation: FIND_ELEMENTS_EXPECTATIONS.NO_SNAPSHOT,
+    ...additionalArgs,
+  });
+}
+
+/**
+ * Common assertions for find_elements test results
+ */
+export function expectFindElementsSuccess(result: any): void {
+  expect(result.isError).toBeFalsy();
+  expect(result.content[0].text).toContain('Found');
+}
+
+/**
+ * Assert that find_elements result contains no matches
+ */
+export function expectFindElementsNoMatches(result: any): void {
+  expect(result.isError).toBeFalsy();
+  expect(result.content[0].text).toContain('No elements found');
+}
+
+/**
+ * Setup find_elements test with multiple search criteria
+ */
+export async function setupFindElementsWithMultipleCriteria(
+  client: Client,
+  server: any,
+  htmlContent: string,
+  searchCriteria: any,
+  maxResults?: number
+): Promise<any> {
+  const additionalArgs = maxResults ? { maxResults } : {};
+  return await setupFindElementsTest(
+    client,
+    server,
+    htmlContent,
+    searchCriteria,
+    additionalArgs
+  );
+}
+
+/**
+ * Dialog test helpers to reduce duplication in dialog tests
+ */
+
+/**
+ * Common expectation objects for dialog tests
+ */
+export const DIALOG_EXPECTATIONS = {
+  BUTTON_VISIBLE: (buttonText = 'Button') =>
+    expect.stringContaining(`- button "${buttonText}" [ref=e2]`),
+  BUTTON_CLICKED: (buttonText = 'Button') => ({
+    code: `await page.getByRole('button', { name: '${buttonText}' }).click();`,
+  }),
+  ALERT_MODAL: (message: string) =>
+    expect.stringContaining(
+      `- ["alert" dialog with message "${message}"]: can be handled by the "browser_handle_dialog" tool`
+    ),
+  CONFIRM_MODAL: (message: string) =>
+    expect.stringContaining(
+      `- ["confirm" dialog with message "${message}"]: can be handled by the "browser_handle_dialog" tool`
+    ),
+  PROMPT_MODAL: (message: string) =>
+    expect.stringContaining(
+      `- ["prompt" dialog with message "${message}"]: can be handled by the "browser_handle_dialog" tool`
+    ),
+  NO_MODAL: undefined,
+  RESULT_TEXT: (text: string) =>
+    expect.stringContaining(`- generic [active] [ref=e1]: "${text}"`),
+  RESULT_CONTENT: (content: string) =>
+    expect.stringContaining(`- generic [active] [ref=e1]: ${content}`),
+} as const;
+
+/**
+ * Setup dialog test with navigation and initial button visibility check
+ */
+export async function setupDialogTest(
+  client: Client,
+  server: any,
+  htmlContent: string,
+  buttonText = 'Button',
+  path = '/'
+): Promise<void> {
+  setServerContent(server, path, htmlContent);
+
+  const navigateResult = await navigateToUrl(client, server.PREFIX);
+  expect(navigateResult).toHaveResponse({
+    pageState: DIALOG_EXPECTATIONS.BUTTON_VISIBLE(buttonText),
+  });
+}
+
+/**
+ * Execute button click and verify modal state
+ */
+export async function clickButtonAndExpectModal(
+  client: Client,
+  buttonText: string,
+  expectedModalState: any,
+  expectedCode?: string
+): Promise<any> {
+  const result = await callTool(client, 'browser_click', {
+    element: buttonText,
+    ref: 'e2',
+  });
+
+  const expectedResponse: any = {
+    modalState: expectedModalState,
+  };
+
+  if (expectedCode !== undefined) {
+    expectedResponse.code = expectedCode;
+  }
+
+  expect(result).toHaveResponse(expectedResponse);
+  return result;
+}
+
+/**
+ * Handle dialog and verify final state
+ */
+export async function handleDialogAndExpectState(
+  client: Client,
+  accept: boolean,
+  expectedPageState?: any,
+  expectedModalState?: any,
+  promptText?: string
+): Promise<any> {
+  const args: any = { accept };
+  if (promptText !== undefined) {
+    args.promptText = promptText;
+  }
+
+  const result = await callTool(client, 'browser_handle_dialog', args);
+
+  const expectedResponse: any = {};
+  if (expectedModalState !== undefined) {
+    expectedResponse.modalState = expectedModalState;
+  }
+  if (expectedPageState !== undefined) {
+    expectedResponse.pageState = expectedPageState;
+  }
+
+  expect(result).toHaveResponse(expectedResponse);
+  return result;
+}
+
+/**
+ * Complete dialog test workflow: setup -> click -> handle dialog
+ */
+export async function executeDialogTest(
+  client: Client,
+  server: any,
+  htmlContent: string,
+  dialogType: 'alert' | 'confirm' | 'prompt',
+  message: string,
+  accept: boolean,
+  expectedResult?: string,
+  promptText?: string,
+  buttonText = 'Button'
+): Promise<void> {
+  // Setup
+  await setupDialogTest(client, server, htmlContent, buttonText);
+
+  // Click button and expect modal
+  let modalExpectation: any;
+  if (dialogType === 'alert') {
+    modalExpectation = DIALOG_EXPECTATIONS.ALERT_MODAL(message);
+  } else if (dialogType === 'confirm') {
+    modalExpectation = DIALOG_EXPECTATIONS.CONFIRM_MODAL(message);
+  } else {
+    modalExpectation = DIALOG_EXPECTATIONS.PROMPT_MODAL(message);
+  }
+
+  await clickButtonAndExpectModal(
+    client,
+    buttonText,
+    modalExpectation,
+    DIALOG_EXPECTATIONS.BUTTON_CLICKED(buttonText).code
+  );
+
+  // Handle dialog
+  const expectedPageState =
+    expectedResult !== undefined
+      ? DIALOG_EXPECTATIONS.RESULT_TEXT(expectedResult)
+      : expect.stringContaining(`- button "${buttonText}"`);
+
+  await handleDialogAndExpectState(
+    client,
+    accept,
+    expectedPageState,
+    DIALOG_EXPECTATIONS.NO_MODAL,
+    promptText
+  );
+}
+
+/**
+ * HTML templates for browser screenshot tests
+ */
+export const SCREENSHOT_HTML_TEMPLATES = {
+  MINIMAL_TEST: '<div>Test Page for Screenshot</div>',
+  FULL_TEST: '<div>Full Test Page for Screenshot</div>',
+  FULL_PAGE_GRADIENT: `
+    <div style="height: 2000px; background: linear-gradient(red, blue);">
+      Full page screenshot test content
+    </div>
+  `,
+} as const;
+
+/**
+ * Common expectation objects for screenshot tests
+ */
+export const SCREENSHOT_EXPECTATIONS = {
+  MINIMAL_RESPONSE: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: false,
+  },
+  FULL_RESPONSE: {
+    includeSnapshot: true,
+    includeConsole: true,
+    includeDownloads: true,
+    includeTabs: true,
+    includeCode: true,
+  },
+  FULL_PAGE_RESPONSE: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: true,
+  },
+} as const;
+
+/**
+ * Common screenshot result assertions
+ */
+export const SCREENSHOT_ASSERTIONS = {
+  VIEWPORT_SCREENSHOT: 'Took the viewport screenshot',
+  FULL_PAGE_SCREENSHOT: 'Took the full page screenshot',
+  PAGE_SNAPSHOT_PRESENT: 'Page Snapshot:',
+  CONSOLE_MESSAGES_ABSENT: 'Console messages',
+} as const;
+
+/**
+ * Helper functions for browser screenshot tests
+ */
+
+/**
+ * Setup and execute a basic screenshot test
+ */
+export async function setupScreenshotTest(
+  client: Client,
+  server: any,
+  htmlContent: string,
+  screenshotArgs: any,
+  path = '/'
+): Promise<any> {
+  setServerContent(server, path, htmlContent);
+  await navigateToUrl(client, server.PREFIX);
+
+  return await callTool(client, 'browser_take_screenshot', screenshotArgs);
+}
+
+/**
+ * Execute screenshot test with minimal expectation
+ */
+export async function executeMinimalScreenshotTest(
+  client: Client,
+  server: any,
+  htmlContent: string = SCREENSHOT_HTML_TEMPLATES.MINIMAL_TEST,
+  imageType: 'png' | 'jpeg' = 'png'
+): Promise<any> {
+  return await setupScreenshotTest(client, server, htmlContent, {
+    type: imageType,
+    expectation: SCREENSHOT_EXPECTATIONS.MINIMAL_RESPONSE,
+  });
+}
+
+/**
+ * Execute screenshot test with full expectation
+ */
+export async function executeFullScreenshotTest(
+  client: Client,
+  server: any,
+  htmlContent: string = SCREENSHOT_HTML_TEMPLATES.FULL_TEST,
+  imageType: 'png' | 'jpeg' = 'jpeg'
+): Promise<any> {
+  return await setupScreenshotTest(client, server, htmlContent, {
+    type: imageType,
+    expectation: SCREENSHOT_EXPECTATIONS.FULL_RESPONSE,
+  });
+}
+
+/**
+ * Execute full page screenshot test
+ */
+export async function executeFullPageScreenshotTest(
+  client: Client,
+  server: any,
+  htmlContent: string = SCREENSHOT_HTML_TEMPLATES.FULL_PAGE_GRADIENT,
+  imageType: 'png' | 'jpeg' = 'png'
+): Promise<any> {
+  return await setupScreenshotTest(client, server, htmlContent, {
+    type: imageType,
+    fullPage: true,
+    expectation: SCREENSHOT_EXPECTATIONS.FULL_PAGE_RESPONSE,
+  });
+}
+
+/**
+ * Common assertions for screenshot test results
+ */
+export function expectScreenshotSuccess(
+  result: any,
+  screenshotType: 'viewport' | 'fullPage'
+): void {
+  expect(result.isError).toBeFalsy();
+  const expectedText =
+    screenshotType === 'viewport'
+      ? SCREENSHOT_ASSERTIONS.VIEWPORT_SCREENSHOT
+      : SCREENSHOT_ASSERTIONS.FULL_PAGE_SCREENSHOT;
+  expect(result.content[0].text).toContain(expectedText);
+}
+
+/**
+ * Assert minimal response (no additional content)
+ */
+export function expectMinimalScreenshotResponse(result: any): void {
+  expectScreenshotSuccess(result, 'viewport');
+  expect(result.content[0].text).not.toContain(
+    SCREENSHOT_ASSERTIONS.PAGE_SNAPSHOT_PRESENT
+  );
+  expect(result.content[0].text).not.toContain(
+    SCREENSHOT_ASSERTIONS.CONSOLE_MESSAGES_ABSENT
+  );
+}
+
+/**
+ * Assert full response (with additional content)
+ */
+export function expectFullScreenshotResponse(result: any): void {
+  expectScreenshotSuccess(result, 'viewport');
+  expect(result.content[0].text).toContain(
+    SCREENSHOT_ASSERTIONS.PAGE_SNAPSHOT_PRESENT
+  );
+}
+
+/**
+ * Assert full page screenshot response
+ */
+export function expectFullPageScreenshotResponse(result: any): void {
+  expectScreenshotSuccess(result, 'fullPage');
+  expect(result.content[0].text).not.toContain(
+    SCREENSHOT_ASSERTIONS.PAGE_SNAPSHOT_PRESENT
+  );
+}
+
+/**
+ * HTML templates for mouse operation tests
+ */
+export const MOUSE_HTML_TEMPLATES = {
+  BASIC_TEST: '<div>Test Page</div>',
+  FULL_TEST: '<div>Full Test Page</div>',
+} as const;
+
+/**
+ * Common expectation objects for mouse tests
+ */
+export const MOUSE_EXPECTATIONS = {
+  MINIMAL_RESPONSE: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: true,
+  },
+  FULL_RESPONSE: {
+    includeSnapshot: true,
+    includeConsole: true,
+    includeDownloads: true,
+    includeTabs: true,
+    includeCode: true,
+  },
+} as const;
+
+/**
+ * Mouse operation test assertions
+ */
+export const MOUSE_ASSERTIONS = {
+  NO_PAGE_SNAPSHOT: 'Page Snapshot:',
+  NO_CONSOLE_MESSAGES: 'Console messages',
+  MOUSE_MOVE: (x: number, y: number) => `await page.mouse.move(${x}, ${y});`,
+  MOUSE_DOWN: 'await page.mouse.down();',
+  MOUSE_UP: 'await page.mouse.up();',
+} as const;
+
+/**
+ * Setup and execute a mouse operation test
+ */
+export async function setupMouseTest(
+  client: Client,
+  server: any,
+  toolName: string,
+  args: any,
+  htmlContent: string = MOUSE_HTML_TEMPLATES.BASIC_TEST,
+  path = '/'
+): Promise<any> {
+  setServerContent(server, path, htmlContent);
+  await navigateToUrl(client, server.PREFIX);
+
+  return await callTool(client, toolName, args);
+}
+
+/**
+ * Execute mouse_move_xy test with minimal expectation
+ */
+export async function executeMouseMoveTest(
+  client: Client,
+  server: any,
+  x: number,
+  y: number,
+  htmlContent?: string
+): Promise<any> {
+  return await setupMouseTest(
+    client,
+    server,
+    'browser_mouse_move_xy',
+    {
+      element: 'test element',
+      x,
+      y,
+      expectation: MOUSE_EXPECTATIONS.MINIMAL_RESPONSE,
+    },
+    htmlContent
+  );
+}
+
+/**
+ * Execute mouse_click_xy test with minimal expectation
+ */
+export async function executeMouseClickTest(
+  client: Client,
+  server: any,
+  x: number,
+  y: number,
+  htmlContent?: string
+): Promise<any> {
+  return await setupMouseTest(
+    client,
+    server,
+    'browser_mouse_click_xy',
+    {
+      element: 'test element',
+      x,
+      y,
+      expectation: MOUSE_EXPECTATIONS.MINIMAL_RESPONSE,
+    },
+    htmlContent
+  );
+}
+
+/**
+ * Execute mouse_drag_xy test with minimal expectation
+ */
+export async function executeMouseDragTest(
+  client: Client,
+  server: any,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+  htmlContent?: string
+): Promise<any> {
+  return await setupMouseTest(
+    client,
+    server,
+    'browser_mouse_drag_xy',
+    {
+      element: 'test element',
+      startX,
+      startY,
+      endX,
+      endY,
+      expectation: MOUSE_EXPECTATIONS.MINIMAL_RESPONSE,
+    },
+    htmlContent
+  );
+}
+
+/**
+ * Common assertions for mouse operation test results
+ */
+export function expectMinimalMouseResponse(result: any): void {
+  expect(result.content[0].text).not.toContain(
+    MOUSE_ASSERTIONS.NO_PAGE_SNAPSHOT
+  );
+  expect(result.content[0].text).not.toContain(
+    MOUSE_ASSERTIONS.NO_CONSOLE_MESSAGES
+  );
+}
+
+/**
+ * Assert mouse move operation code
+ */
+export function expectMouseMoveCode(result: any, x: number, y: number): void {
+  expectMinimalMouseResponse(result);
+  expect(result.content[0].text).toContain(MOUSE_ASSERTIONS.MOUSE_MOVE(x, y));
+}
+
+/**
+ * Assert mouse click operation code
+ */
+export function expectMouseClickCode(result: any, x: number, y: number): void {
+  expectMinimalMouseResponse(result);
+  expect(result.content[0].text).toContain(MOUSE_ASSERTIONS.MOUSE_MOVE(x, y));
+  expect(result.content[0].text).toContain(MOUSE_ASSERTIONS.MOUSE_DOWN);
+  expect(result.content[0].text).toContain(MOUSE_ASSERTIONS.MOUSE_UP);
+}
+
+/**
+ * Assert mouse drag operation code
+ */
+export function expectMouseDragCode(
+  result: any,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number
+): void {
+  expectMinimalMouseResponse(result);
+  expect(result.content[0].text).toContain(
+    MOUSE_ASSERTIONS.MOUSE_MOVE(startX, startY)
+  );
+  expect(result.content[0].text).toContain(MOUSE_ASSERTIONS.MOUSE_DOWN);
+  expect(result.content[0].text).toContain(
+    MOUSE_ASSERTIONS.MOUSE_MOVE(endX, endY)
+  );
+  expect(result.content[0].text).toContain(MOUSE_ASSERTIONS.MOUSE_UP);
+}
+
+/**
+ * Common expectation test patterns to reduce duplication
+ */
+
+/**
+ * Common expectation objects for various test scenarios
+ */
+export const COMMON_EXPECTATIONS = {
+  MINIMAL_RESPONSE: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: false,
+  },
+  DEFAULT_TOOL_RESPONSE: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: false,
+  },
+  BASIC_FALSE_FLAGS: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: false,
+  },
+  EVALUATE_WITH_CODE: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: true,
+  },
+  FULL_RESPONSE: {
+    includeSnapshot: true,
+    includeConsole: true,
+    includeDownloads: true,
+    includeTabs: true,
+    includeCode: true,
+  },
+} as const;
+
+/**
+ * Helper function to test default expectation behavior for tools
+ */
+export function testDefaultExpectation(
+  toolName: string,
+  expectedDefaults: any
+): void {
+  const result = getDefaultExpectation(toolName);
+  for (const [key, value] of Object.entries(expectedDefaults)) {
+    expect(result[key]).toBe(value);
+  }
+}
+
+/**
+ * Helper function to create expectation validation test
+ */
+export function createExpectationTest(
+  expectationData: any,
+  expectedResult: any
+): void {
+  const result = expectationSchema.parse(expectationData);
+  expect(result).toEqual(expectedResult);
+}
+
+/**
+ * Helper function to test expectation schema validation with invalid data
+ */
+export function expectSchemaValidationError(invalidData: any): void {
+  expect(() => {
+    expectationSchema.parse(invalidData);
+  }).toThrow();
+}
+
+/**
+ * Helper function for batch execution summary assertions
+ */
+export function expectBatchExecutionSummary(
+  result: any,
+  expectedSummary: {
+    totalSteps: number;
+    successful: number;
+    failed: number;
+  }
+): void {
+  expect(result.content[0].text).toContain('Batch Execution Summary');
+  expect(result.content[0].text).toContain('✅ Completed');
+  expect(result.content[0].text).toContain(
+    `Total Steps: ${expectedSummary.totalSteps}`
+  );
+  expect(result.content[0].text).toContain(
+    `Successful: ${expectedSummary.successful}`
+  );
+  expect(result.content[0].text).toContain(`Failed: ${expectedSummary.failed}`);
+}
+
+/**
+ * Helper function for creating batch execution test arguments
+ */
+export function createBatchExecutionArgs(
+  steps: any[],
+  globalExpectation: any = COMMON_EXPECTATIONS.MINIMAL_RESPONSE,
+  stopOnFirstError = true
+): any {
+  return {
+    steps,
+    stopOnFirstError,
+    globalExpectation,
+  };
+}
+
+/**
+ * Helper function to create basic navigation step for batch execution
+ */
+export function createNavigationStep(
+  url: string,
+  expectation: any = COMMON_EXPECTATIONS.MINIMAL_RESPONSE
+): any {
+  return {
+    tool: 'browser_navigate',
+    arguments: { url },
+    expectation,
+  };
+}
+
+/**
+ * Helper function for partial snapshot tests
+ */
+export function expectPartialSnapshotBehavior(
+  result: any,
+  selectorUsed: string,
+  shouldContainSelector = true
+): void {
+  if (shouldContainSelector) {
+    expect(result.content[0].text).toContain(
+      `Capturing partial snapshot for selector: ${selectorUsed}`
+    );
+  } else {
+    expect(result.content[0].text).toContain('Falling back to full snapshot');
+  }
+}
+
+/**
+ * Helper function to create HTML content with various complexity levels
+ */
+export function createTestHtmlContent(
+  complexity: 'simple' | 'moderate' | 'complex' = 'simple'
+): string {
+  switch (complexity) {
+    case 'simple':
+      return '<title>Test</title><div>Simple content</div>';
+    case 'moderate':
+      return `
+        <title>Test</title>
+        <div>
+          <header>Header</header>
+          <main><h1>Main Content</h1><p>Some text</p></main>
+          <footer>Footer</footer>
+        </div>
+      `;
+    case 'complex':
+      return `
+        <title>Test</title>
+        <div>
+          <header>Header Content</header>
+          <main>
+            <h1>Main Content</h1>
+            <p>This is the main content area that should be captured by the selector.</p>
+            <form>
+              <input type="text" placeholder="Username">
+              <input type="password" placeholder="Password">
+              <button type="submit">Submit</button>
+            </form>
+          </main>
+          <footer>Footer Content</footer>
+        </div>
+      `;
+    default:
+      return '<title>Test</title><div>Default content</div>';
+  }
+}
+
+/**
+ * Helper to reduce import statement duplication
+ */
+import {
+  expectationSchema,
+  getDefaultExpectation,
+} from '../src/schemas/expectation.js';

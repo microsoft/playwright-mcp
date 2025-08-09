@@ -15,10 +15,13 @@
  */
 
 import { expect, test } from './fixtures.js';
-
-// Top-level regex patterns for performance optimization
-// Safe regex pattern to avoid ReDoS vulnerability - matches digits followed by 'ms'
-const MILLISECONDS_REGEX = /\d{1,10}ms/u;
+import {
+  COMMON_REGEX_PATTERNS,
+  createButtonPage,
+  createInputPage,
+  expectBatchExecutionPartialSuccess,
+  expectBatchExecutionSuccess,
+} from './test-utils.js';
 
 test.describe('Browser Batch Execute', () => {
   test('should execute multiple navigation and interaction steps in sequence', async ({
@@ -26,14 +29,8 @@ test.describe('Browser Batch Execute', () => {
     server,
   }) => {
     // Setup test page with clickable button
-    server.setContent(
-      '/',
-      `
-      <title>Test Page</title>
-      <button>Click Me</button>
-    `,
-      'text/html'
-    );
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
 
     const result = await client.callTool({
       name: 'browser_batch_execute',
@@ -55,11 +52,7 @@ test.describe('Browser Batch Execute', () => {
       },
     });
 
-    expect(result.content[0].text).toContain('Batch Execution Summary');
-    expect(result.content[0].text).toContain('✅ Completed');
-    expect(result.content[0].text).toContain('Total Steps: 2');
-    expect(result.content[0].text).toContain('Successful: 2');
-    expect(result.content[0].text).toContain('Failed: 0');
+    expectBatchExecutionSuccess(result, 2);
     expect(result.content[0].text).toContain('Step Details');
     expect(result.content[0].text).toContain('✅ Step 1: browser_navigate');
     expect(result.content[0].text).toContain('✅ Step 2: browser_click');
@@ -69,14 +62,8 @@ test.describe('Browser Batch Execute', () => {
     client,
     server,
   }) => {
-    server.setContent(
-      '/',
-      `
-      <title>Test Page</title>
-      <button>Click Me</button>
-    `,
-      'text/html'
-    );
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
 
     const result = await client.callTool({
       name: 'browser_batch_execute',
@@ -103,10 +90,7 @@ test.describe('Browser Batch Execute', () => {
       },
     });
 
-    expect(result.content[0].text).toContain('Batch Execution Summary');
-    expect(result.content[0].text).toContain('Total Steps: 3');
-    expect(result.content[0].text).toContain('Successful: 2');
-    expect(result.content[0].text).toContain('Failed: 1');
+    expectBatchExecutionPartialSuccess(result, 3, 2, 1);
     expect(result.content[0].text).toContain('✅ Step 1: browser_navigate');
     expect(result.content[0].text).toContain('❌ Step 2: browser_click');
     expect(result.content[0].text).toContain('✅ Step 3: browser_click');
@@ -116,14 +100,8 @@ test.describe('Browser Batch Execute', () => {
     client,
     server,
   }) => {
-    server.setContent(
-      '/',
-      `
-      <title>Test Page</title>
-      <button>Click Me</button>
-    `,
-      'text/html'
-    );
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
 
     const result = await client.callTool({
       name: 'browser_batch_execute',
@@ -165,14 +143,8 @@ test.describe('Browser Batch Execute', () => {
     client,
     server,
   }) => {
-    server.setContent(
-      '/',
-      `
-      <title>Test Page</title>
-      <button>Click Me</button>
-    `,
-      'text/html'
-    );
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
 
     const result = await client.callTool({
       name: 'browser_batch_execute',
@@ -198,9 +170,7 @@ test.describe('Browser Batch Execute', () => {
       },
     });
 
-    expect(result.content[0].text).toContain('✅ Completed');
-    expect(result.content[0].text).toContain('Successful: 2');
-    expect(result.content[0].text).toContain('Failed: 0');
+    expectBatchExecutionSuccess(result, 2);
   });
 
   test('should validate unknown tool names', async ({ client }) => {
@@ -221,15 +191,8 @@ test.describe('Browser Batch Execute', () => {
   });
 
   test('should handle complex batch workflows', async ({ client, server }) => {
-    server.setContent(
-      '/input.html',
-      `
-      <title>Input Page</title>
-      <input id="input" type="text" />
-      <button id="submit">Submit</button>
-    `,
-      'text/html'
-    );
+    const inputPage = createInputPage();
+    server.setContent('/input.html', inputPage.content, inputPage.contentType);
 
     const result = await client.callTool({
       name: 'browser_batch_execute',
@@ -259,24 +222,15 @@ test.describe('Browser Batch Execute', () => {
       },
     });
 
-    expect(result.content[0].text).toContain('✅ Completed');
-    expect(result.content[0].text).toContain('Total Steps: 3');
-    expect(result.content[0].text).toContain('Successful: 3');
-    expect(result.content[0].text).toContain('Failed: 0');
+    expectBatchExecutionSuccess(result, 3);
   });
 
   test('should track execution time for each step', async ({
     client,
     server,
   }) => {
-    server.setContent(
-      '/',
-      `
-      <title>Test Page</title>
-      <button>Click Me</button>
-    `,
-      'text/html'
-    );
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
 
     const result = await client.callTool({
       name: 'browser_batch_execute',
@@ -297,10 +251,9 @@ test.describe('Browser Batch Execute', () => {
       },
     });
 
-    expect(result.content[0].text).toContain('✅ Completed');
-    expect(result.content[0].text).toContain('Total Steps: 2');
+    expectBatchExecutionSuccess(result, 2);
     expect(result.content[0].text).toContain('Total Time:');
-    expect(result.content[0].text).toMatch(MILLISECONDS_REGEX); // Should contain execution time in milliseconds
+    expect(result.content[0].text).toMatch(COMMON_REGEX_PATTERNS.MILLISECONDS);
   });
 
   test('should handle empty steps array validation', async ({ client }) => {
@@ -321,14 +274,8 @@ test.describe('Browser Batch Execute', () => {
     client,
     server,
   }) => {
-    server.setContent(
-      '/',
-      `
-      <title>Test Page</title>
-      <button>Click Me</button>
-    `,
-      'text/html'
-    );
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
 
     const result = await client.callTool({
       name: 'browser_batch_execute',
@@ -349,7 +296,7 @@ test.describe('Browser Batch Execute', () => {
       },
     });
 
-    expect(result.content[0].text).toContain('✅ Completed');
+    expectBatchExecutionSuccess(result, 1);
     // Should have minimal content due to aggressive filtering
     expect(result.content[0].text.split('\n').length).toBeLessThan(20);
   });

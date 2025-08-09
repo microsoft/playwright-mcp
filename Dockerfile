@@ -69,9 +69,9 @@ RUN chmod -R 444 node_modules && \
 
 USER ${USERNAME}
 
-COPY --from=browser --chown=root:root --chmod=755 ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
-COPY --chown=root:root --chmod=444 cli.js package.json ./
-COPY --from=builder --chown=root:root --chmod=444 /app/lib /app/lib
+COPY --from=browser --chown=${USERNAME}:${USERNAME} --chmod=755 ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
+COPY --chown=${USERNAME}:${USERNAME} --chmod=444 cli.js package.json ./
+COPY --from=builder --chown=${USERNAME}:${USERNAME} --chmod=444 /app/lib /app/lib
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
 ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]

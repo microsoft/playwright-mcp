@@ -15,6 +15,17 @@
  */
 
 import { expect, test } from './fixtures.js';
+import {
+  executeMouseClickTest,
+  executeMouseDragTest,
+  executeMouseMoveTest,
+  expectMouseClickCode,
+  expectMouseDragCode,
+  expectMouseMoveCode,
+  MOUSE_EXPECTATIONS,
+  MOUSE_HTML_TEMPLATES,
+  setupMouseTest,
+} from './test-helpers.js';
 
 test.describe('Mouse Tools Expectation Parameter', () => {
   test.describe('browser_mouse_move_xy', () => {
@@ -23,34 +34,8 @@ test.describe('Mouse Tools Expectation Parameter', () => {
       server,
     }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
-      server.setContent('/', '<div>Test Page</div>', 'text/html');
-
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
-
-      const result = await client.callTool({
-        name: 'browser_mouse_move_xy',
-        arguments: {
-          element: 'test element',
-          x: 100,
-          y: 200,
-          expectation: {
-            includeSnapshot: false,
-            includeConsole: false,
-            includeDownloads: false,
-            includeTabs: false,
-            includeCode: true,
-          },
-        },
-      });
-
-      expect(result.content[0].text).not.toContain('Page Snapshot:');
-      expect(result.content[0].text).not.toContain('Console messages');
-      expect(result.content[0].text).toContain(
-        'await page.mouse.move(100, 200);'
-      );
+      const result = await executeMouseMoveTest(client, server, 100, 200);
+      expectMouseMoveCode(result, 100, 200);
     });
 
     test('should accept expectation parameter with full response', async ({
@@ -58,28 +43,18 @@ test.describe('Mouse Tools Expectation Parameter', () => {
       server,
     }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
-      server.setContent('/', '<div>Full Test Page</div>', 'text/html');
-
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
-
-      const result = await client.callTool({
-        name: 'browser_mouse_move_xy',
-        arguments: {
+      const result = await setupMouseTest(
+        client,
+        server,
+        'browser_mouse_move_xy',
+        {
           element: 'test element',
           x: 150,
           y: 250,
-          expectation: {
-            includeSnapshot: true,
-            includeConsole: true,
-            includeDownloads: true,
-            includeTabs: true,
-            includeCode: true,
-          },
+          expectation: MOUSE_EXPECTATIONS.FULL_RESPONSE,
         },
-      });
+        MOUSE_HTML_TEMPLATES.FULL_TEST
+      );
 
       expect(result.content[0].text).toContain('Page Snapshot:');
       expect(result.content[0].text).toContain(
@@ -94,35 +69,8 @@ test.describe('Mouse Tools Expectation Parameter', () => {
       server,
     }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
-      server.setContent('/', '<div>Test Page</div>', 'text/html');
-
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
-
-      const result = await client.callTool({
-        name: 'browser_mouse_click_xy',
-        arguments: {
-          element: 'test element',
-          x: 100,
-          y: 200,
-          expectation: {
-            includeSnapshot: false,
-            includeConsole: false,
-            includeDownloads: false,
-            includeTabs: false,
-            includeCode: true,
-          },
-        },
-      });
-
-      expect(result.content[0].text).not.toContain('Page Snapshot:');
-      expect(result.content[0].text).toContain(
-        'await page.mouse.move(100, 200);'
-      );
-      expect(result.content[0].text).toContain('await page.mouse.down();');
-      expect(result.content[0].text).toContain('await page.mouse.up();');
+      const result = await executeMouseClickTest(client, server, 100, 200);
+      expectMouseClickCode(result, 100, 200);
     });
   });
 
@@ -132,40 +80,15 @@ test.describe('Mouse Tools Expectation Parameter', () => {
       server,
     }) => {
       const { client } = await startClient({ args: ['--caps=vision'] });
-      server.setContent('/', '<div>Test Page</div>', 'text/html');
-
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
-
-      const result = await client.callTool({
-        name: 'browser_mouse_drag_xy',
-        arguments: {
-          element: 'test element',
-          startX: 50,
-          startY: 100,
-          endX: 200,
-          endY: 300,
-          expectation: {
-            includeSnapshot: false,
-            includeConsole: false,
-            includeDownloads: false,
-            includeTabs: false,
-            includeCode: true,
-          },
-        },
-      });
-
-      expect(result.content[0].text).not.toContain('Page Snapshot:');
-      expect(result.content[0].text).toContain(
-        'await page.mouse.move(50, 100);'
+      const result = await executeMouseDragTest(
+        client,
+        server,
+        50,
+        100,
+        200,
+        300
       );
-      expect(result.content[0].text).toContain('await page.mouse.down();');
-      expect(result.content[0].text).toContain(
-        'await page.mouse.move(200, 300);'
-      );
-      expect(result.content[0].text).toContain('await page.mouse.up();');
+      expectMouseDragCode(result, 50, 100, 200, 300);
     });
   });
 });

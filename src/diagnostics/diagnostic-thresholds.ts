@@ -134,6 +134,63 @@ const DEFAULT_THRESHOLDS: ResolvedDiagnosticThresholdsConfig = {
 };
 
 /**
+ * Validation rule type for threshold validation
+ */
+type ValidationRule<T> = (value: T, errors: string[]) => void;
+
+/**
+ * Create a validation rule for positive numbers in an object
+ */
+function createPositiveNumberRule<T>(
+  fieldName: string,
+  getValue: (obj: T) => number
+): ValidationRule<T> {
+  return (obj: T, errors: string[]) => {
+    if (getValue(obj) <= 0) {
+      errors.push(`${fieldName} must be positive`);
+    }
+  };
+}
+
+/**
+ * Create a comparison validation rule
+ */
+function createComparisonRule<T>(
+  getValue1: (obj: T) => number,
+  getValue2: (obj: T) => number,
+  message: string
+): ValidationRule<T> {
+  return (obj: T, errors: string[]) => {
+    if (getValue2(obj) <= getValue1(obj)) {
+      errors.push(message);
+    }
+  };
+}
+
+/**
+ * Generic configuration merger for threshold sections
+ */
+function mergeConfigSection<TSection extends keyof DiagnosticThresholdsConfig>(
+  result: ResolvedDiagnosticThresholdsConfig,
+  config: DiagnosticThresholdsConfig,
+  sectionKey: TSection,
+  propertyKeys: Array<keyof NonNullable<DiagnosticThresholdsConfig[TSection]>>
+): void {
+  const section = config[sectionKey];
+  if (!section) {
+    return;
+  }
+
+  for (const property of propertyKeys) {
+    if (section[property] !== undefined) {
+      // Type assertion is safe here as we're merging compatible configuration sections
+      (result[sectionKey] as Record<string, unknown>)[property as string] =
+        section[property];
+    }
+  }
+}
+
+/**
  * Diagnostic system threshold management (singleton)
  * Supports configuration validation, default value fallback, and runtime configuration changes
  */
@@ -250,151 +307,9 @@ export class DiagnosticThresholds {
   }
 
   /**
-   * Merge configuration with default values
+   * Merge configuration with default values using generic utility
    * Ensures all properties are defined in a type-safe manner
    */
-  private mergeExecutionTimeConfig(
-    result: ResolvedDiagnosticThresholdsConfig,
-    config: DiagnosticThresholdsConfig
-  ): void {
-    if (!config.executionTime) {
-      return;
-    }
-
-    const { executionTime } = config;
-    if (executionTime.pageAnalysis !== undefined) {
-      result.executionTime.pageAnalysis = executionTime.pageAnalysis;
-    }
-    if (executionTime.elementDiscovery !== undefined) {
-      result.executionTime.elementDiscovery = executionTime.elementDiscovery;
-    }
-    if (executionTime.resourceMonitoring !== undefined) {
-      result.executionTime.resourceMonitoring =
-        executionTime.resourceMonitoring;
-    }
-    if (executionTime.parallelAnalysis !== undefined) {
-      result.executionTime.parallelAnalysis = executionTime.parallelAnalysis;
-    }
-  }
-
-  private mergeMemoryConfig(
-    result: ResolvedDiagnosticThresholdsConfig,
-    config: DiagnosticThresholdsConfig
-  ): void {
-    if (!config.memory) {
-      return;
-    }
-
-    const { memory } = config;
-    if (memory.maxMemoryUsage !== undefined) {
-      result.memory.maxMemoryUsage = memory.maxMemoryUsage;
-    }
-    if (memory.memoryLeakThreshold !== undefined) {
-      result.memory.memoryLeakThreshold = memory.memoryLeakThreshold;
-    }
-    if (memory.gcTriggerThreshold !== undefined) {
-      result.memory.gcTriggerThreshold = memory.gcTriggerThreshold;
-    }
-  }
-
-  private mergePerformanceConfig(
-    result: ResolvedDiagnosticThresholdsConfig,
-    config: DiagnosticThresholdsConfig
-  ): void {
-    if (!config.performance) {
-      return;
-    }
-
-    const { performance } = config;
-    if (performance.domElementLimit !== undefined) {
-      result.performance.domElementLimit = performance.domElementLimit;
-    }
-    if (performance.maxDepthLimit !== undefined) {
-      result.performance.maxDepthLimit = performance.maxDepthLimit;
-    }
-    if (performance.largeSubtreeThreshold !== undefined) {
-      result.performance.largeSubtreeThreshold =
-        performance.largeSubtreeThreshold;
-    }
-  }
-
-  private mergeDomConfig(
-    result: ResolvedDiagnosticThresholdsConfig,
-    config: DiagnosticThresholdsConfig
-  ): void {
-    if (!config.dom) {
-      return;
-    }
-
-    const { dom } = config;
-    if (dom.totalElements !== undefined) {
-      result.dom.totalElements = dom.totalElements;
-    }
-    if (dom.maxDepth !== undefined) {
-      result.dom.maxDepth = dom.maxDepth;
-    }
-    if (dom.largeSubtrees !== undefined) {
-      result.dom.largeSubtrees = dom.largeSubtrees;
-    }
-    if (dom.elementsWarning !== undefined) {
-      result.dom.elementsWarning = dom.elementsWarning;
-    }
-    if (dom.elementsDanger !== undefined) {
-      result.dom.elementsDanger = dom.elementsDanger;
-    }
-    if (dom.depthWarning !== undefined) {
-      result.dom.depthWarning = dom.depthWarning;
-    }
-    if (dom.depthDanger !== undefined) {
-      result.dom.depthDanger = dom.depthDanger;
-    }
-    if (dom.largeSubtreeThreshold !== undefined) {
-      result.dom.largeSubtreeThreshold = dom.largeSubtreeThreshold;
-    }
-  }
-
-  private mergeInteractionConfig(
-    result: ResolvedDiagnosticThresholdsConfig,
-    config: DiagnosticThresholdsConfig
-  ): void {
-    if (!config.interaction) {
-      return;
-    }
-
-    const { interaction } = config;
-    if (interaction.clickableElements !== undefined) {
-      result.interaction.clickableElements = interaction.clickableElements;
-    }
-    if (interaction.formElements !== undefined) {
-      result.interaction.formElements = interaction.formElements;
-    }
-    if (interaction.clickableHigh !== undefined) {
-      result.interaction.clickableHigh = interaction.clickableHigh;
-    }
-  }
-
-  private mergeLayoutConfig(
-    result: ResolvedDiagnosticThresholdsConfig,
-    config: DiagnosticThresholdsConfig
-  ): void {
-    if (!config.layout) {
-      return;
-    }
-
-    const { layout } = config;
-    if (layout.fixedElements !== undefined) {
-      result.layout.fixedElements = layout.fixedElements;
-    }
-    if (layout.highZIndexElements !== undefined) {
-      result.layout.highZIndexElements = layout.highZIndexElements;
-    }
-    if (layout.highZIndexThreshold !== undefined) {
-      result.layout.highZIndexThreshold = layout.highZIndexThreshold;
-    }
-    if (layout.excessiveZIndexThreshold !== undefined) {
-      result.layout.excessiveZIndexThreshold = layout.excessiveZIndexThreshold;
-    }
-  }
 
   private mergeWithDefaults(
     config: DiagnosticThresholdsConfig
@@ -403,29 +318,155 @@ export class DiagnosticThresholds {
       JSON.stringify(DEFAULT_THRESHOLDS)
     ) as ResolvedDiagnosticThresholdsConfig;
 
-    this.mergeExecutionTimeConfig(result, config);
-    this.mergeMemoryConfig(result, config);
-    this.mergePerformanceConfig(result, config);
-    this.mergeDomConfig(result, config);
-    this.mergeInteractionConfig(result, config);
-    this.mergeLayoutConfig(result, config);
+    // Use generic merger for all configuration sections
+    mergeConfigSection(result, config, 'executionTime', [
+      'pageAnalysis',
+      'elementDiscovery',
+      'resourceMonitoring',
+      'parallelAnalysis',
+    ]);
+    mergeConfigSection(result, config, 'memory', [
+      'maxMemoryUsage',
+      'memoryLeakThreshold',
+      'gcTriggerThreshold',
+    ]);
+    mergeConfigSection(result, config, 'performance', [
+      'domElementLimit',
+      'maxDepthLimit',
+      'largeSubtreeThreshold',
+    ]);
+    mergeConfigSection(result, config, 'dom', [
+      'totalElements',
+      'maxDepth',
+      'largeSubtrees',
+      'elementsWarning',
+      'elementsDanger',
+      'depthWarning',
+      'depthDanger',
+      'largeSubtreeThreshold',
+    ]);
+    mergeConfigSection(result, config, 'interaction', [
+      'clickableElements',
+      'formElements',
+      'clickableHigh',
+    ]);
+    mergeConfigSection(result, config, 'layout', [
+      'fixedElements',
+      'highZIndexElements',
+      'highZIndexThreshold',
+      'excessiveZIndexThreshold',
+    ]);
 
     return result;
   }
 
   /**
-   * Validate threshold configuration
+   * Validate threshold configuration using rule-based approach
    */
   private validateThresholds(
     thresholds: ResolvedDiagnosticThresholdsConfig
   ): void {
     const errors: string[] = [];
 
-    this.validateExecutionTimeThresholds(thresholds.executionTime, errors);
-    this.validateMemoryThresholds(thresholds.memory, errors);
-    this.validateDomThresholds(thresholds.dom, errors);
-    this.validateInteractionThresholds(thresholds.interaction, errors);
-    this.validateLayoutThresholds(thresholds.layout, errors);
+    // Define validation rules with proper typing
+    const executionTimeRules: ValidationRule<
+      ResolvedDiagnosticThresholdsConfig['executionTime']
+    >[] = [
+      createPositiveNumberRule(
+        'pageAnalysis execution time',
+        (exec) => exec.pageAnalysis
+      ),
+      createPositiveNumberRule(
+        'elementDiscovery execution time',
+        (exec) => exec.elementDiscovery
+      ),
+      createPositiveNumberRule(
+        'resourceMonitoring execution time',
+        (exec) => exec.resourceMonitoring
+      ),
+      createPositiveNumberRule(
+        'parallelAnalysis execution time',
+        (exec) => exec.parallelAnalysis
+      ),
+    ];
+
+    const memoryRules: ValidationRule<
+      ResolvedDiagnosticThresholdsConfig['memory']
+    >[] = [
+      createPositiveNumberRule('maxMemoryUsage', (mem) => mem.maxMemoryUsage),
+      createPositiveNumberRule(
+        'memoryLeakThreshold',
+        (mem) => mem.memoryLeakThreshold
+      ),
+      createPositiveNumberRule(
+        'gcTriggerThreshold',
+        (mem) => mem.gcTriggerThreshold
+      ),
+      createComparisonRule(
+        (mem) => mem.memoryLeakThreshold,
+        (mem) => mem.maxMemoryUsage,
+        'memoryLeakThreshold should be less than maxMemoryUsage'
+      ),
+    ];
+
+    const domRules: ValidationRule<
+      ResolvedDiagnosticThresholdsConfig['dom']
+    >[] = [
+      createPositiveNumberRule('elementsWarning', (dom) => dom.elementsWarning),
+      createPositiveNumberRule('depthWarning', (dom) => dom.depthWarning),
+      createPositiveNumberRule(
+        'largeSubtreeThreshold',
+        (dom) => dom.largeSubtreeThreshold
+      ),
+      createComparisonRule(
+        (dom) => dom.elementsWarning,
+        (dom) => dom.elementsDanger,
+        'elementsDanger must be greater than elementsWarning'
+      ),
+      createComparisonRule(
+        (dom) => dom.depthWarning,
+        (dom) => dom.depthDanger,
+        'depthDanger must be greater than depthWarning'
+      ),
+    ];
+
+    const interactionRules: ValidationRule<
+      ResolvedDiagnosticThresholdsConfig['interaction']
+    >[] = [
+      createPositiveNumberRule(
+        'clickableElements threshold',
+        (inter) => inter.clickableElements
+      ),
+      createPositiveNumberRule(
+        'formElements threshold',
+        (inter) => inter.formElements
+      ),
+    ];
+
+    const layoutRules: ValidationRule<
+      ResolvedDiagnosticThresholdsConfig['layout']
+    >[] = [
+      createPositiveNumberRule(
+        'highZIndexThreshold',
+        (layout) => layout.highZIndexThreshold
+      ),
+      createComparisonRule(
+        (layout) => layout.highZIndexThreshold,
+        (layout) => layout.excessiveZIndexThreshold,
+        'excessiveZIndexThreshold must be greater than highZIndexThreshold'
+      ),
+    ];
+
+    // Apply validation rules
+    this.applyValidationRules(
+      thresholds.executionTime,
+      executionTimeRules,
+      errors
+    );
+    this.applyValidationRules(thresholds.memory, memoryRules, errors);
+    this.applyValidationRules(thresholds.dom, domRules, errors);
+    this.applyValidationRules(thresholds.interaction, interactionRules, errors);
+    this.applyValidationRules(thresholds.layout, layoutRules, errors);
 
     if (errors.length > 0) {
       throw new Error(`Invalid threshold configuration: ${errors.join(', ')}`);
@@ -433,100 +474,15 @@ export class DiagnosticThresholds {
   }
 
   /**
-   * Validate execution time thresholds
+   * Apply validation rules to a threshold section
    */
-  private validateExecutionTimeThresholds(
-    exec: ResolvedDiagnosticThresholdsConfig['executionTime'],
+  private applyValidationRules<T>(
+    section: T,
+    rules: ValidationRule<T>[],
     errors: string[]
   ): void {
-    if (exec.pageAnalysis <= 0) {
-      errors.push('pageAnalysis execution time must be positive');
-    }
-    if (exec.elementDiscovery <= 0) {
-      errors.push('elementDiscovery execution time must be positive');
-    }
-    if (exec.resourceMonitoring <= 0) {
-      errors.push('resourceMonitoring execution time must be positive');
-    }
-    if (exec.parallelAnalysis <= 0) {
-      errors.push('parallelAnalysis execution time must be positive');
-    }
-  }
-
-  /**
-   * Validate memory thresholds
-   */
-  private validateMemoryThresholds(
-    mem: ResolvedDiagnosticThresholdsConfig['memory'],
-    errors: string[]
-  ): void {
-    if (mem.maxMemoryUsage <= 0) {
-      errors.push('maxMemoryUsage must be positive');
-    }
-    if (mem.memoryLeakThreshold <= 0) {
-      errors.push('memoryLeakThreshold must be positive');
-    }
-    if (mem.gcTriggerThreshold <= 0) {
-      errors.push('gcTriggerThreshold must be positive');
-    }
-    if (mem.memoryLeakThreshold >= mem.maxMemoryUsage) {
-      errors.push('memoryLeakThreshold should be less than maxMemoryUsage');
-    }
-  }
-
-  /**
-   * Validate DOM thresholds
-   */
-  private validateDomThresholds(
-    dom: ResolvedDiagnosticThresholdsConfig['dom'],
-    errors: string[]
-  ): void {
-    if (dom.elementsWarning <= 0) {
-      errors.push('elementsWarning must be positive');
-    }
-    if (dom.elementsDanger <= dom.elementsWarning) {
-      errors.push('elementsDanger must be greater than elementsWarning');
-    }
-    if (dom.depthWarning <= 0) {
-      errors.push('depthWarning must be positive');
-    }
-    if (dom.depthDanger <= dom.depthWarning) {
-      errors.push('depthDanger must be greater than depthWarning');
-    }
-    if (dom.largeSubtreeThreshold <= 0) {
-      errors.push('largeSubtreeThreshold must be positive');
-    }
-  }
-
-  /**
-   * Validate interaction thresholds
-   */
-  private validateInteractionThresholds(
-    inter: ResolvedDiagnosticThresholdsConfig['interaction'],
-    errors: string[]
-  ): void {
-    if (inter.clickableElements <= 0) {
-      errors.push('clickableElements threshold must be positive');
-    }
-    if (inter.formElements <= 0) {
-      errors.push('formElements threshold must be positive');
-    }
-  }
-
-  /**
-   * Validate layout thresholds
-   */
-  private validateLayoutThresholds(
-    layout: ResolvedDiagnosticThresholdsConfig['layout'],
-    errors: string[]
-  ): void {
-    if (layout.highZIndexThreshold <= 0) {
-      errors.push('highZIndexThreshold must be positive');
-    }
-    if (layout.excessiveZIndexThreshold <= layout.highZIndexThreshold) {
-      errors.push(
-        'excessiveZIndexThreshold must be greater than highZIndexThreshold'
-      );
+    for (const rule of rules) {
+      rule(section, errors);
     }
   }
 
@@ -640,4 +596,87 @@ export function getCurrentThresholds(): DiagnosticThresholds {
  */
 export function getMetricsThresholds(): MetricsThresholds {
   return getCurrentThresholds().getMetricsThresholds();
+}
+
+/**
+ * Fluent configuration builder for creating DiagnosticThresholdsConfig
+ * Provides a more convenient API for configuration construction
+ */
+export class ThresholdConfigBuilder {
+  private config: DiagnosticThresholdsConfig = {};
+
+  /**
+   * Configure execution time thresholds
+   */
+  executionTime(
+    config: Partial<DiagnosticThresholdsConfig['executionTime']>
+  ): this {
+    this.config.executionTime = { ...this.config.executionTime, ...config };
+    return this;
+  }
+
+  /**
+   * Configure memory thresholds
+   */
+  memory(config: Partial<DiagnosticThresholdsConfig['memory']>): this {
+    this.config.memory = { ...this.config.memory, ...config };
+    return this;
+  }
+
+  /**
+   * Configure performance thresholds
+   */
+  performance(
+    config: Partial<DiagnosticThresholdsConfig['performance']>
+  ): this {
+    this.config.performance = { ...this.config.performance, ...config };
+    return this;
+  }
+
+  /**
+   * Configure DOM thresholds
+   */
+  dom(config: Partial<DiagnosticThresholdsConfig['dom']>): this {
+    this.config.dom = { ...this.config.dom, ...config };
+    return this;
+  }
+
+  /**
+   * Configure interaction thresholds
+   */
+  interaction(
+    config: Partial<DiagnosticThresholdsConfig['interaction']>
+  ): this {
+    this.config.interaction = { ...this.config.interaction, ...config };
+    return this;
+  }
+
+  /**
+   * Configure layout thresholds
+   */
+  layout(config: Partial<DiagnosticThresholdsConfig['layout']>): this {
+    this.config.layout = { ...this.config.layout, ...config };
+    return this;
+  }
+
+  /**
+   * Build the final configuration
+   */
+  build(): DiagnosticThresholdsConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Create a DiagnosticThresholds instance with the built configuration
+   */
+  create(): DiagnosticThresholds {
+    return DiagnosticThresholds.getInstance(this.build());
+  }
+
+  /**
+   * Static factory method for creating a new builder
+   */
+  static create(): ThresholdConfigBuilder {
+    return new ThresholdConfigBuilder();
+  }
 }

@@ -25,7 +25,6 @@ export class SessionLog {
   private _pendingEntries: LogEntry[] = [];
   private _sessionFileQueue = Promise.resolve();
   private _flushEntriesTimeout: NodeJS.Timeout | undefined;
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: _ordinal is used in _flush method line 111
   private _ordinal = 0;
   constructor(sessionFolder: string) {
     this._folder = sessionFolder;
@@ -169,7 +168,8 @@ export class SessionLog {
 
   private _processEntries(entries: LogEntry[], lines: string[]): void {
     for (const entry of entries) {
-      const ordinal = (++this._ordinal).toString().padStart(3, '0');
+      this._ordinal++;
+      const ordinal = this._ordinal.toString().padStart(3, '0');
       this._formatSingleLogEntry(entry, ordinal, lines);
     }
   }

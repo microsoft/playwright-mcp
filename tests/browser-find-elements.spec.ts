@@ -2,179 +2,84 @@
  * browser_find_elements Tool Tests
  */
 
-import { expect, test } from './fixtures.js';
+import { test } from './fixtures.js';
+import {
+  expectFindElementsNoMatches,
+  expectFindElementsSuccess,
+  FIND_ELEMENTS_HTML_TEMPLATES,
+  setupFindElementsTest,
+} from './test-helpers.js';
 
 test('browser_find_elements - find by multiple criteria', async ({
   client,
   server,
 }) => {
-  server.setContent(
-    '/',
-    `
-    <div>
-      <button class="btn">Submit</button>
-      <input type="submit" value="Submit">
-      <a role="button">Link Button</a>
-    </div>
-  `,
-    'text/html'
+  const result = await setupFindElementsTest(
+    client,
+    server,
+    FIND_ELEMENTS_HTML_TEMPLATES.MULTI_CRITERIA_ELEMENTS,
+    {
+      text: 'Submit',
+      role: 'button',
+    },
+    { maxResults: 5 }
   );
 
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  });
-
-  const result = await client.callTool({
-    name: 'browser_find_elements',
-    arguments: {
-      searchCriteria: {
-        text: 'Submit',
-        role: 'button',
-      },
-      maxResults: 5,
-      expectation: {
-        includeSnapshot: false,
-      },
-    },
-  });
-
-  expect(result.isError).toBeFalsy();
-  expect(result.content[0].text).toContain('Found');
+  expectFindElementsSuccess(result);
 });
 
 test('browser_find_elements - find by tag name', async ({ client, server }) => {
-  server.setContent(
-    '/',
-    `
-    <form>
-      <input type="text" name="username">
-      <input type="email" name="email">
-    </form>
-  `,
-    'text/html'
+  const result = await setupFindElementsTest(
+    client,
+    server,
+    FIND_ELEMENTS_HTML_TEMPLATES.FORM_WITH_INPUTS,
+    { tagName: 'input' },
+    { maxResults: 10 }
   );
 
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  });
-
-  const result = await client.callTool({
-    name: 'browser_find_elements',
-    arguments: {
-      searchCriteria: {
-        tagName: 'input',
-      },
-      maxResults: 10,
-      expectation: {
-        includeSnapshot: false,
-      },
-    },
-  });
-
-  expect(result.isError).toBeFalsy();
-  expect(result.content[0].text).toContain('Found');
+  expectFindElementsSuccess(result);
 });
 
 test('browser_find_elements - find by attributes', async ({
   client,
   server,
 }) => {
-  server.setContent(
-    '/',
-    `
-    <div>
-      <button data-action="save">Save</button>
-      <button data-action="cancel">Cancel</button>
-    </div>
-  `,
-    'text/html'
+  const result = await setupFindElementsTest(
+    client,
+    server,
+    FIND_ELEMENTS_HTML_TEMPLATES.BUTTONS_WITH_DATA_ACTION,
+    {
+      attributes: {
+        'data-action': 'save',
+      },
+    }
   );
 
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  });
-
-  const result = await client.callTool({
-    name: 'browser_find_elements',
-    arguments: {
-      searchCriteria: {
-        attributes: {
-          'data-action': 'save',
-        },
-      },
-      expectation: {
-        includeSnapshot: false,
-      },
-    },
-  });
-
-  expect(result.isError).toBeFalsy();
-  expect(result.content[0].text).toContain('Found');
+  expectFindElementsSuccess(result);
 });
 
 test('browser_find_elements - handle no matches', async ({
   client,
   server,
 }) => {
-  server.setContent(
-    '/',
-    `
-    <div>
-      <span>No buttons here</span>
-    </div>
-  `,
-    'text/html'
+  const result = await setupFindElementsTest(
+    client,
+    server,
+    FIND_ELEMENTS_HTML_TEMPLATES.NO_BUTTONS_CONTENT,
+    { role: 'button' }
   );
 
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  });
-
-  const result = await client.callTool({
-    name: 'browser_find_elements',
-    arguments: {
-      searchCriteria: {
-        role: 'button',
-      },
-      expectation: {
-        includeSnapshot: false,
-      },
-    },
-  });
-
-  expect(result.isError).toBeFalsy();
-  expect(result.content[0].text).toContain('No elements found');
+  expectFindElementsNoMatches(result);
 });
 
 test('browser_find_elements - limit results', async ({ client, server }) => {
-  const buttons = Array.from(
-    { length: 10 },
-    (_, i) => `<button>Button ${i}</button>`
-  ).join('');
-  server.setContent('/', `<div>${buttons}</div>`, 'text/html');
+  const result = await setupFindElementsTest(
+    client,
+    server,
+    FIND_ELEMENTS_HTML_TEMPLATES.MULTIPLE_BUTTONS(10),
+    { tagName: 'button' },
+    { maxResults: 3 }
+  );
 
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  });
-
-  const result = await client.callTool({
-    name: 'browser_find_elements',
-    arguments: {
-      searchCriteria: {
-        tagName: 'button',
-      },
-      maxResults: 3,
-      expectation: {
-        includeSnapshot: false,
-      },
-    },
-  });
-
-  expect(result.isError).toBeFalsy();
-  expect(result.content[0].text).toContain('Found');
+  expectFindElementsSuccess(result);
 });

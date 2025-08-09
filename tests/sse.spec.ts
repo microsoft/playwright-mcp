@@ -23,24 +23,7 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import type { Config } from '../config.d.ts';
 import { test as baseTest, expect } from './fixtures.js';
 
-// Top-level regex patterns for performance optimization
-const LISTENING_ON_REGEX = /Listening on (http:\/\/.*)/;
-const CREATE_SSE_SESSION_REGEX = /create SSE session/;
-const DELETE_SSE_SESSION_REGEX = /delete SSE session/;
-const CREATE_CONTEXT_REGEX = /create context/;
-const CLOSE_CONTEXT_REGEX = /close context/;
-const CREATE_BROWSER_CONTEXT_ISOLATED_REGEX =
-  /create browser context \(isolated\)/;
-const CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX =
-  /close browser context \(isolated\)/;
-const OBTAIN_BROWSER_ISOLATED_REGEX = /obtain browser \(isolated\)/;
-const CLOSE_BROWSER_ISOLATED_REGEX = /close browser \(isolated\)/;
-const CREATE_BROWSER_CONTEXT_PERSISTENT_REGEX =
-  /create browser context \(persistent\)/;
-const CLOSE_BROWSER_CONTEXT_PERSISTENT_REGEX =
-  /close browser context \(persistent\)/;
-const LOCK_USER_DATA_DIR_REGEX = /lock user data dir/;
-const RELEASE_USER_DATA_DIR_REGEX = /release user data dir/;
+import { COMMON_REGEX_PATTERNS, expectRegexCount } from './test-utils.js';
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = nodeUrl.fileURLToPath(import.meta.url);
@@ -91,7 +74,7 @@ const test = baseTest.extend<{
       const url = await new Promise<string>((resolve) =>
         cp?.stderr?.on('data', (data) => {
           stderr += data.toString();
-          const match = stderr.match(LISTENING_ON_REGEX);
+          const match = stderr.match(COMMON_REGEX_PATTERNS.LISTENING_ON);
           if (match) {
             resolve(match[1]);
           }
@@ -157,35 +140,26 @@ test('sse transport browser lifecycle (isolated)', async ({
 
   await expect(() => {
     const lines = stderr().split('\n');
-    expect(
-      lines.filter((line) => line.match(CREATE_SSE_SESSION_REGEX)).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(DELETE_SSE_SESSION_REGEX)).length
-    ).toBe(2);
-
-    expect(
-      lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
-    ).toBe(2);
-    expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_CONTEXT, 2);
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CREATE_BROWSER_CONTEXT_ISOLATED,
       2
     );
-
-    expect(
-      lines.filter((line) => line.match(CREATE_BROWSER_CONTEXT_ISOLATED_REGEX))
-        .length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX))
-        .length
-    ).toBe(2);
-
-    expect(
-      lines.filter((line) => line.match(OBTAIN_BROWSER_ISOLATED_REGEX)).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_ISOLATED_REGEX)).length
-    ).toBe(2);
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CLOSE_BROWSER_CONTEXT_ISOLATED,
+      2
+    );
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.OBTAIN_BROWSER_ISOLATED,
+      2
+    );
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_BROWSER_ISOLATED, 2);
   }).toPass();
 });
 
@@ -225,35 +199,26 @@ test('sse transport browser lifecycle (isolated, multiclient)', async ({
 
   await expect(() => {
     const lines = stderr().split('\n');
-    expect(
-      lines.filter((line) => line.match(CREATE_SSE_SESSION_REGEX)).length
-    ).toBe(3);
-    expect(
-      lines.filter((line) => line.match(DELETE_SSE_SESSION_REGEX)).length
-    ).toBe(3);
-
-    expect(
-      lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
-    ).toBe(3);
-    expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 3);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 3);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 3);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_CONTEXT, 3);
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CREATE_BROWSER_CONTEXT_ISOLATED,
       3
     );
-
-    expect(
-      lines.filter((line) => line.match(CREATE_BROWSER_CONTEXT_ISOLATED_REGEX))
-        .length
-    ).toBe(3);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_ISOLATED_REGEX))
-        .length
-    ).toBe(3);
-
-    expect(
-      lines.filter((line) => line.match(OBTAIN_BROWSER_ISOLATED_REGEX)).length
-    ).toBe(1);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_ISOLATED_REGEX)).length
-    ).toBe(1);
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CLOSE_BROWSER_CONTEXT_ISOLATED,
+      3
+    );
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.OBTAIN_BROWSER_ISOLATED,
+      1
+    );
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_BROWSER_ISOLATED, 1);
   }).toPass();
 });
 
@@ -283,36 +248,22 @@ test('sse transport browser lifecycle (persistent)', async ({
 
   await expect(() => {
     const lines = stderr().split('\n');
-    expect(
-      lines.filter((line) => line.match(CREATE_SSE_SESSION_REGEX)).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(DELETE_SSE_SESSION_REGEX)).length
-    ).toBe(2);
-
-    expect(
-      lines.filter((line) => line.match(CREATE_CONTEXT_REGEX)).length
-    ).toBe(2);
-    expect(lines.filter((line) => line.match(CLOSE_CONTEXT_REGEX)).length).toBe(
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_CONTEXT, 2);
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CREATE_BROWSER_CONTEXT_PERSISTENT,
       2
     );
-
-    expect(
-      lines.filter((line) =>
-        line.match(CREATE_BROWSER_CONTEXT_PERSISTENT_REGEX)
-      ).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(CLOSE_BROWSER_CONTEXT_PERSISTENT_REGEX))
-        .length
-    ).toBe(2);
-
-    expect(
-      lines.filter((line) => line.match(LOCK_USER_DATA_DIR_REGEX)).length
-    ).toBe(2);
-    expect(
-      lines.filter((line) => line.match(RELEASE_USER_DATA_DIR_REGEX)).length
-    ).toBe(2);
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CLOSE_BROWSER_CONTEXT_PERSISTENT,
+      2
+    );
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.LOCK_USER_DATA_DIR, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.RELEASE_USER_DATA_DIR, 2);
   }).toPass();
 });
 

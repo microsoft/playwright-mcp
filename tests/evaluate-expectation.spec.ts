@@ -15,6 +15,7 @@
  */
 
 import { expect, test } from './fixtures.js';
+import { COMMON_EXPECTATIONS, setupBasicNavigation } from './test-helpers.js';
 
 test.describe('Evaluate Tool Expectation Parameter', () => {
   test.describe('browser_evaluate', () => {
@@ -22,28 +23,18 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
       client,
       server,
     }) => {
-      server.setContent(
+      await setupBasicNavigation(
+        client,
+        server,
         '/',
-        '<div id="test">Test Page for Evaluation</div>',
-        'text/html'
+        '<div id="test">Test Page for Evaluation</div>'
       );
-
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
 
       const result = await client.callTool({
         name: 'browser_evaluate',
         arguments: {
           function: '() => document.getElementById("test").textContent',
-          expectation: {
-            includeSnapshot: false,
-            includeConsole: false,
-            includeDownloads: false,
-            includeTabs: false,
-            includeCode: true,
-          },
+          expectation: COMMON_EXPECTATIONS.EVALUATE_WITH_CODE,
         },
       });
 
@@ -57,28 +48,18 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
       client,
       server,
     }) => {
-      server.setContent(
+      await setupBasicNavigation(
+        client,
+        server,
         '/',
-        '<div id="test">Full Test Page</div>',
-        'text/html'
+        '<div id="test">Full Test Page</div>'
       );
-
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
 
       const result = await client.callTool({
         name: 'browser_evaluate',
         arguments: {
           function: '() => window.location.href',
-          expectation: {
-            includeSnapshot: true,
-            includeConsole: true,
-            includeDownloads: true,
-            includeTabs: true,
-            includeCode: true,
-          },
+          expectation: COMMON_EXPECTATIONS.FULL_RESPONSE,
         },
       });
 
@@ -91,21 +72,15 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
       client,
       server,
     }) => {
-      server.setContent(
+      await setupBasicNavigation(
+        client,
+        server,
         '/',
-        `
-        <div>
+        `<div>
           <button id="btn">Click me</button>
           <span id="counter">0</span>
-        </div>
-      `,
-        'text/html'
+        </div>`
       );
-
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-      });
 
       // First take a snapshot to get element references
       await client.callTool({
@@ -119,13 +94,7 @@ test.describe('Evaluate Tool Expectation Parameter', () => {
           function: '(element) => element.textContent',
           element: 'button with text Click me',
           ref: 'e2',
-          expectation: {
-            includeSnapshot: false,
-            includeConsole: false,
-            includeDownloads: false,
-            includeTabs: false,
-            includeCode: true,
-          },
+          expectation: COMMON_EXPECTATIONS.EVALUATE_WITH_CODE,
         },
       });
 

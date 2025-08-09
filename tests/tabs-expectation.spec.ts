@@ -15,6 +15,12 @@
  */
 
 import { expect, test } from './fixtures.js';
+import {
+  createFullExpectation,
+  createMinimalExpectation,
+  createTestPage,
+  expectToolCallResponse,
+} from './test-utils.js';
 
 test.describe('Tabs Tools Expectation Parameter', () => {
   test.describe('browser_tab_list', () => {
@@ -22,7 +28,8 @@ test.describe('Tabs Tools Expectation Parameter', () => {
       client,
       server,
     }) => {
-      server.setContent('/', '<div>Test Page</div>', 'text/html');
+      const page = createTestPage('<div>Test Page</div>');
+      server.setContent(page.path, page.content, page.contentType);
 
       await client.callTool({
         name: 'browser_navigate',
@@ -33,17 +40,17 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         name: 'browser_tab_list',
         arguments: {
           expectation: {
-            includeSnapshot: false,
-            includeConsole: false,
-            includeDownloads: false,
+            ...createMinimalExpectation(),
             includeTabs: true,
-            includeCode: false,
           },
         },
       });
 
-      expect(result.content[0].text).not.toContain('Page Snapshot:');
-      expect(result.content[0].text).not.toContain('Console messages');
+      expectToolCallResponse(result, {
+        containsSnapshot: false,
+        containsConsole: false,
+        containsTabs: false,
+      });
       expect(result.content[0].text).toContain('Open tabs');
     });
   });
@@ -53,8 +60,20 @@ test.describe('Tabs Tools Expectation Parameter', () => {
       client,
       server,
     }) => {
-      server.setContent('/', '<div>Original Tab</div>', 'text/html');
-      server.setContent('/new', '<div>New Tab Content</div>', 'text/html');
+      const originalPage = createTestPage(
+        '<div>Original Tab</div>',
+        'Original Tab'
+      );
+      const newPage = createTestPage(
+        '<div>New Tab Content</div>',
+        'New Tab Content'
+      );
+      server.setContent(
+        originalPage.path,
+        originalPage.content,
+        originalPage.contentType
+      );
+      server.setContent('/new', newPage.content, newPage.contentType);
 
       await client.callTool({
         name: 'browser_navigate',
@@ -65,27 +84,35 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         name: 'browser_tab_new',
         arguments: {
           url: `${server.PREFIX}/new`,
-          expectation: {
-            includeSnapshot: false,
-            includeConsole: false,
-            includeDownloads: false,
-            includeTabs: false,
-            includeCode: false,
-          },
+          expectation: createMinimalExpectation(),
         },
       });
 
-      expect(result.content[0].text).not.toContain('Page Snapshot:');
-      expect(result.content[0].text).not.toContain('Console messages');
-      expect(result.content[0].text).not.toContain('Open tabs');
+      expectToolCallResponse(result, {
+        containsSnapshot: false,
+        containsConsole: false,
+        containsTabs: false,
+      });
     });
 
     test('should accept expectation parameter with full response', async ({
       client,
       server,
     }) => {
-      server.setContent('/', '<div>Original Tab</div>', 'text/html');
-      server.setContent('/new', '<div>New Tab Content</div>', 'text/html');
+      const originalPage = createTestPage(
+        '<div>Original Tab</div>',
+        'Original Tab'
+      );
+      const newPage = createTestPage(
+        '<div>New Tab Content</div>',
+        'New Tab Content'
+      );
+      server.setContent(
+        originalPage.path,
+        originalPage.content,
+        originalPage.contentType
+      );
+      server.setContent('/new', newPage.content, newPage.contentType);
 
       await client.callTool({
         name: 'browser_navigate',
@@ -96,17 +123,13 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         name: 'browser_tab_new',
         arguments: {
           url: `${server.PREFIX}/new`,
-          expectation: {
-            includeSnapshot: true,
-            includeConsole: true,
-            includeDownloads: true,
-            includeTabs: true,
-            includeCode: true,
-          },
+          expectation: createFullExpectation(),
         },
       });
 
-      expect(result.content[0].text).toContain('Page Snapshot:');
+      expectToolCallResponse(result, {
+        containsSnapshot: true,
+      });
       expect(result.content[0].text).toContain('Open tabs');
     });
   });
@@ -116,8 +139,10 @@ test.describe('Tabs Tools Expectation Parameter', () => {
       client,
       server,
     }) => {
-      server.setContent('/', '<div>Tab 1</div>', 'text/html');
-      server.setContent('/tab2', '<div>Tab 2</div>', 'text/html');
+      const tab1Page = createTestPage('<div>Tab 1</div>', 'Tab 1');
+      const tab2Page = createTestPage('<div>Tab 2</div>', 'Tab 2');
+      server.setContent(tab1Page.path, tab1Page.content, tab1Page.contentType);
+      server.setContent('/tab2', tab2Page.content, tab2Page.contentType);
 
       await client.callTool({
         name: 'browser_navigate',
@@ -133,18 +158,14 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         name: 'browser_tab_select',
         arguments: {
           index: 0,
-          expectation: {
-            includeSnapshot: false,
-            includeConsole: false,
-            includeDownloads: false,
-            includeTabs: false,
-            includeCode: false,
-          },
+          expectation: createMinimalExpectation(),
         },
       });
 
-      expect(result.content[0].text).not.toContain('Page Snapshot:');
-      expect(result.content[0].text).not.toContain('Console messages');
+      expectToolCallResponse(result, {
+        containsSnapshot: false,
+        containsConsole: false,
+      });
     });
   });
 
@@ -153,8 +174,10 @@ test.describe('Tabs Tools Expectation Parameter', () => {
       client,
       server,
     }) => {
-      server.setContent('/', '<div>Tab 1</div>', 'text/html');
-      server.setContent('/tab2', '<div>Tab 2</div>', 'text/html');
+      const tab1Page = createTestPage('<div>Tab 1</div>', 'Tab 1');
+      const tab2Page = createTestPage('<div>Tab 2</div>', 'Tab 2');
+      server.setContent(tab1Page.path, tab1Page.content, tab1Page.contentType);
+      server.setContent('/tab2', tab2Page.content, tab2Page.contentType);
 
       await client.callTool({
         name: 'browser_navigate',
@@ -170,18 +193,14 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         name: 'browser_tab_close',
         arguments: {
           index: 1,
-          expectation: {
-            includeSnapshot: false,
-            includeConsole: false,
-            includeDownloads: false,
-            includeTabs: false,
-            includeCode: false,
-          },
+          expectation: createMinimalExpectation(),
         },
       });
 
-      expect(result.content[0].text).not.toContain('Page Snapshot:');
-      expect(result.content[0].text).not.toContain('Console messages');
+      expectToolCallResponse(result, {
+        containsSnapshot: false,
+        containsConsole: false,
+      });
     });
   });
 });

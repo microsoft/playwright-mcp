@@ -293,4 +293,53 @@ function formatValue(value: KeyValueConfigValue): string {
   return String(value);
 }
 
+/**
+ * Add formatted element list with consistent structure
+ * Reduces duplication in various element list formatting patterns
+ */
+export function addElementList<T>(
+  builder: TextReportBuilder,
+  title: string,
+  elements: T[] | undefined,
+  formatter: (element: T, index: number) => string,
+  maxItems = 5
+): void {
+  if (!elements?.length) {
+    return;
+  }
+
+  builder.addEmptyLine().addLine(`**${title}:**`);
+
+  const limitedElements = elements.slice(0, maxItems);
+  for (let index = 0; index < limitedElements.length; index++) {
+    builder.addLine(formatter(limitedElements[index], index));
+  }
+}
+
+/**
+ * Add optional list section with consistent header and content formatting
+ * Reduces duplication in conditional list sections
+ */
+export function addOptionalListSection<T>(
+  builder: TextReportBuilder,
+  title: string,
+  items: T[] | undefined,
+  formatter: (item: T) => string,
+  headerLevel = 2
+): void {
+  if (!items?.length) {
+    return;
+  }
+
+  builder.addSection(
+    title,
+    (sectionBuilder) => {
+      for (const item of items) {
+        sectionBuilder.addListItem(formatter(item));
+      }
+    },
+    headerLevel
+  );
+}
+
 // ArrayBuilder moved to codeDeduplicationUtils.ts to avoid duplication

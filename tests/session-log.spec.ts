@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-
 import { expect, test } from './fixtures.js';
+import {
+  createButtonPage,
+  extractSessionFolder,
+  readSessionLog,
+} from './test-utils.js';
 
 test('session log should record tool calls', async ({
   startClient,
@@ -27,11 +29,8 @@ test('session log should record tool calls', async ({
     args: ['--save-session', '--output-dir', testInfo.outputPath('output')],
   });
 
-  server.setContent(
-    '/',
-    '<title>Title</title><button>Submit</button>',
-    'text/html'
-  );
+  const page = createButtonPage('Submit');
+  server.setContent(page.path, page.content, page.contentType);
 
   await client.callTool({
     name: 'browser_navigate',
@@ -51,10 +50,7 @@ test('session log should record tool calls', async ({
     pageState: expect.stringContaining(`- button "Submit"`),
   });
 
-  const output = stderr()
-    .split('\n')
-    .filter((line) => line.startsWith('Session: '))[0];
-  const sessionFolder = output.substring('Session: '.length);
+  const sessionFolder = extractSessionFolder(stderr());
   await expect
     .poll(() => readSessionLog(sessionFolder))
     .toBe(`
@@ -116,10 +112,7 @@ test('session log should record user action', async ({
 
   await page.getByRole('button', { name: 'Button 1' }).click();
 
-  const output = stderr()
-    .split('\n')
-    .filter((line) => line.startsWith('Session: '))[0];
-  const sessionFolder = output.substring('Session: '.length);
+  const sessionFolder = extractSessionFolder(stderr());
 
   await expect
     .poll(() => readSessionLog(sessionFolder))
@@ -179,10 +172,7 @@ test('session log should update user action', async ({
 
   await page.getByRole('button', { name: 'Button 1' }).dblclick();
 
-  const output = stderr()
-    .split('\n')
-    .filter((line) => line.startsWith('Session: '))[0];
-  const sessionFolder = output.substring('Session: '.length);
+  const sessionFolder = extractSessionFolder(stderr());
 
   await expect
     .poll(() => readSessionLog(sessionFolder))
@@ -254,10 +244,7 @@ test('session log should record tool calls and user actions', async ({
     },
   });
 
-  const output = stderr()
-    .split('\n')
-    .filter((line) => line.startsWith('Session: '))[0];
-  const sessionFolder = output.substring('Session: '.length);
+  const sessionFolder = extractSessionFolder(stderr());
   await expect
     .poll(() => readSessionLog(sessionFolder))
     .toBe(`
@@ -303,9 +290,3 @@ await page.getByRole('button', { name: 'Button 2' }).click();
 
 `);
 });
-
-async function readSessionLog(sessionFolder: string): Promise<string> {
-  return await fs.promises
-    .readFile(path.join(sessionFolder, 'session.md'), 'utf8')
-    .catch(() => '');
-}

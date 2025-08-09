@@ -15,6 +15,13 @@
  */
 
 import { expect, test } from './fixtures.js';
+import {
+  COMMON_EXPECTATIONS,
+  callTool,
+  createBatchExecutionArgs,
+  createNavigationStep,
+  expectBatchExecutionSummary,
+} from './test-helpers.js';
 
 // Top-level regex patterns for performance optimization
 // Safe regex pattern to avoid ReDoS vulnerability - matches digits followed by 'ms'
@@ -25,26 +32,22 @@ test.describe('Browser Batch Execute Basic Tests', () => {
     client,
     server,
   }) => {
-    const result = await client.callTool({
-      name: 'browser_batch_execute',
-      arguments: {
-        steps: [
-          {
-            tool: 'browser_navigate',
-            arguments: { url: server.HELLO_WORLD },
-            expectation: { includeSnapshot: false, includeConsole: false },
-          },
-        ],
-        stopOnFirstError: true,
-        globalExpectation: { includeDownloads: false, includeTabs: false },
-      },
-    });
+    const args = createBatchExecutionArgs(
+      [
+        createNavigationStep(server.HELLO_WORLD, {
+          includeSnapshot: false,
+          includeConsole: false,
+        }),
+      ],
+      { includeDownloads: false, includeTabs: false }
+    );
 
-    expect(result.content[0].text).toContain('Batch Execution Summary');
-    expect(result.content[0].text).toContain('✅ Completed');
-    expect(result.content[0].text).toContain('Total Steps: 1');
-    expect(result.content[0].text).toContain('Successful: 1');
-    expect(result.content[0].text).toContain('Failed: 0');
+    const result = await callTool(client, 'browser_batch_execute', args);
+    expectBatchExecutionSummary(result, {
+      totalSteps: 1,
+      successful: 1,
+      failed: 0,
+    });
   });
 
   test('should handle invalid tool name in batch', async ({ client }) => {
@@ -67,24 +70,18 @@ test.describe('Browser Batch Execute Basic Tests', () => {
     client,
     server,
   }) => {
-    const result = await client.callTool({
-      name: 'browser_batch_execute',
-      arguments: {
-        steps: [
-          {
-            tool: 'browser_navigate',
-            arguments: { url: server.HELLO_WORLD },
-            expectation: {
-              includeSnapshot: false,
-              includeConsole: false,
-              includeTabs: false,
-              includeDownloads: false,
-              includeCode: false,
-            },
-          },
-        ],
-      },
-    });
+    const args = createBatchExecutionArgs(
+      [
+        createNavigationStep(
+          server.HELLO_WORLD,
+          COMMON_EXPECTATIONS.MINIMAL_RESPONSE
+        ),
+      ],
+      {},
+      false
+    );
+
+    const result = await callTool(client, 'browser_batch_execute', args);
 
     expect(result.content[0].text).toContain('✅ Completed');
     // Should have minimal content due to aggressive filtering
@@ -93,19 +90,12 @@ test.describe('Browser Batch Execute Basic Tests', () => {
   });
 
   test('should track execution time', async ({ client, server }) => {
-    const result = await client.callTool({
-      name: 'browser_batch_execute',
-      arguments: {
-        steps: [
-          {
-            tool: 'browser_navigate',
-            arguments: { url: server.HELLO_WORLD },
-            expectation: { includeSnapshot: false },
-          },
-        ],
-        globalExpectation: { includeConsole: false },
-      },
-    });
+    const args = createBatchExecutionArgs(
+      [createNavigationStep(server.HELLO_WORLD, { includeSnapshot: false })],
+      { includeConsole: false }
+    );
+
+    const result = await callTool(client, 'browser_batch_execute', args);
 
     expect(result.content[0].text).toContain('✅ Completed');
     expect(result.content[0].text).toContain('Total Time:');

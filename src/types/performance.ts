@@ -2,28 +2,47 @@
  * Performance-related type definitions for the unified diagnostic system
  */
 
+export interface BaseMemoryUsage {
+  used: number;
+  heapUsed: number;
+  heapTotal: number;
+  external: number;
+  rss: number;
+  arrayBuffers: number;
+}
+
+export interface BaseThreshold {
+  warning: number;
+  danger: number;
+}
+
+export interface ExecutionTimeThresholds {
+  pageAnalysis: number;
+  elementDiscovery: number;
+  resourceMonitoring: number;
+  parallelAnalysis: number;
+}
+
+export interface MemoryThresholds {
+  maxMemoryUsage: number;
+  memoryLeakThreshold: number;
+  gcTriggerThreshold: number;
+}
+
+export interface PerformanceThresholds {
+  domElementLimit: number;
+  maxDepthLimit: number;
+  largeSubtreeThreshold: number;
+}
+
 export interface MetricsThresholds {
-  executionTime: {
-    pageAnalysis: number;
-    elementDiscovery: number;
-    resourceMonitoring: number;
-    parallelAnalysis: number;
-  };
-  memory: {
-    maxMemoryUsage: number;
-    memoryLeakThreshold: number;
-    gcTriggerThreshold: number;
-  };
-  performance: {
-    domElementLimit: number;
-    maxDepthLimit: number;
-    largeSubtreeThreshold: number;
-  };
+  executionTime: ExecutionTimeThresholds;
+  memory: MemoryThresholds;
+  performance: PerformanceThresholds;
   dom: {
     totalElements: number;
     maxDepth: number;
     largeSubtrees: number;
-    // Additional properties used by PageAnalyzer
     elementsWarning: number;
     elementsDanger: number;
     depthWarning: number;
@@ -33,13 +52,11 @@ export interface MetricsThresholds {
   interaction: {
     clickableElements: number;
     formElements: number;
-    // Additional properties used by PageAnalyzer
     clickableHigh: number;
   };
   layout: {
     fixedElements: number;
     highZIndexElements: number;
-    // Additional properties used by PageAnalyzer
     highZIndexThreshold: number;
     excessiveZIndexThreshold: number;
   };
@@ -120,14 +137,7 @@ export interface OperationTiming {
 
 export interface ResourceSnapshot {
   timestamp: number;
-  memoryUsage: {
-    used: number;
-    heapUsed: number;
-    heapTotal: number;
-    external: number;
-    rss: number;
-    arrayBuffers: number;
-  };
+  memoryUsage: BaseMemoryUsage;
   handles: number;
   operationId?: string;
 }
@@ -220,14 +230,7 @@ export interface ParallelAnalysisResult {
 
 // ResourceUsage interface kept for compatibility but no longer used
 export interface ResourceUsage {
-  memoryUsage: {
-    used: number;
-    heapUsed: number;
-    heapTotal: number;
-    external: number;
-    rss: number;
-    arrayBuffers: number;
-  };
+  memoryUsage: BaseMemoryUsage;
   cpuTime: number;
   peakMemory: number;
   analysisSteps: Array<{
@@ -235,7 +238,6 @@ export interface ResourceUsage {
     duration: number;
     memoryDelta: number;
   }>;
-  // Additional properties used by diagnostic system
   duration: number;
   operationName: string;
 }
@@ -246,14 +248,6 @@ export interface OperationTimeline {
   endTime: number;
   duration: number;
   phase?: string;
-  // Additional properties used by diagnostic system
   operationName: string;
-  memoryUsage?: {
-    used: number;
-    heapUsed: number;
-    heapTotal: number;
-    external: number;
-    rss: number;
-    arrayBuffers: number;
-  };
+  memoryUsage?: BaseMemoryUsage;
 }
