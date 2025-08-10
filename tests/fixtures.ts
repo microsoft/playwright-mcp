@@ -22,11 +22,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import type { TestInfo } from '@playwright/test';
 import { expect as baseExpect, test as baseTest } from '@playwright/test';
-
-// biome-ignore lint/suspicious/noExplicitAny: Required for Playwright TestInfo type
-type TestInfo = any;
-
 import type { BrowserContext } from 'playwright';
 import { chromium } from 'playwright';
 import type { Config } from '../config';
@@ -298,8 +295,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    // biome-ignore lint/correctness/noEmptyPattern: Required by Playwright fixture pattern
-    async ({}, use, workerInfo) => {
+    async (_testInfo, use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 
