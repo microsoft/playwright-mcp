@@ -24,6 +24,7 @@ export class Response {
   private _includeSnapshot = false;
   private _includeTabs = false;
   private _tabSnapshot: TabSnapshot | undefined;
+  private _snapshotCaptured = false;
   private readonly _expectation: NonNullable<ExpectationOptions>;
   private _diffResult: DiffResult | undefined;
   readonly toolName: string;
@@ -79,6 +80,7 @@ export class Response {
   }
   setTabSnapshot(snapshot: TabSnapshot) {
     this._tabSnapshot = snapshot;
+    this._snapshotCaptured = true;
   }
   async finish() {
     // All the async snapshotting post-action is happening here.
@@ -86,7 +88,12 @@ export class Response {
     // Expectation settings take priority over legacy setIncludeSnapshot calls
     const shouldIncludeSnapshot =
       this._expectation.includeSnapshot || this._includeSnapshot;
-    if (shouldIncludeSnapshot && this._context.currentTab()) {
+    // Only capture snapshot if not already manually set
+    if (
+      shouldIncludeSnapshot &&
+      this._context.currentTab() &&
+      !this._snapshotCaptured
+    ) {
       // Enhanced navigation detection and deferred execution
       await this._captureSnapshotWithNavigationHandling();
     }

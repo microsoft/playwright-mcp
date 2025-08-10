@@ -26,6 +26,13 @@ const pressKey = defineTabTool({
   handle: async (tab, params, response) => {
     response.addCode(`// Press ${params.key}`);
     response.addCode(generateKeyPressCode(params.key));
+
+    // Capture pre-navigation snapshot for Enter key
+    if (params.key === 'Enter' && params.expectation?.includeSnapshot) {
+      const preNavSnapshot = await tab.captureSnapshot();
+      response.setTabSnapshot(preNavSnapshot);
+    }
+
     await tab.waitForCompletion(async () => {
       await tab.page.keyboard.press(params.key);
     });
@@ -64,6 +71,13 @@ const type = defineTabTool({
   },
   handle: async (tab, params, response) => {
     const locator = await tab.refLocator(params);
+
+    // Capture pre-submit snapshot if submit will cause navigation
+    if (params.submit && params.expectation?.includeSnapshot) {
+      const preSubmitSnapshot = await tab.captureSnapshot();
+      response.setTabSnapshot(preSubmitSnapshot);
+    }
+
     await tab.waitForCompletion(async () => {
       if (params.slowly) {
         response.addCode(
