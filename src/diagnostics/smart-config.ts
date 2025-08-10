@@ -80,9 +80,7 @@ export class SmartConfigManager {
   }
 
   static getInstance(initialConfig?: Partial<SmartConfig>): SmartConfigManager {
-    if (!SmartConfigManager.instance) {
-      SmartConfigManager.instance = new SmartConfigManager(initialConfig);
-    }
+    SmartConfigManager.instance ??= new SmartConfigManager(initialConfig);
 
     // Additional safety check - this should never happen, but provides a fallback
     if (!SmartConfigManager.instance) {

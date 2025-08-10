@@ -155,7 +155,8 @@ program
           '/trace.json';
         programDebug(`Trace viewer available at: ${url}`);
       }
-    } catch (_error) {
+    } catch {
+      // CLI action failed - exit with error code
       process.exit(1);
     }
   });
@@ -174,6 +175,7 @@ function setupExitWatchdog() {
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
 }
-program.parseAsync(process.argv).catch((_error) => {
+program.parseAsync(process.argv).catch(() => {
+  // Program execution failed - exit with error code
   process.exit(1);
 });

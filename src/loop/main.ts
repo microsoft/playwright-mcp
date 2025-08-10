@@ -41,7 +41,7 @@ program.option('--model <model>', 'model to use').action(async (options) => {
 async function startCLI() {
   try {
     await program.parseAsync(process.argv);
-  } catch (_error) {
+  } catch {
     // CLI parsing failed - exit with error code
     process.exit(1);
   }

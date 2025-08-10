@@ -254,15 +254,15 @@ const TabItem: React.FC<{
       <div
         aria-label={`Favicon for ${tab.title || 'tab'}`}
         className="tab-favicon"
-        role="img"
+        role="presentation"
         style={{
           backgroundImage: `url(${
             tab.favIconUrl ||
             'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'
           })`,
-          backgroundSize: 'contain',
-          backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'contain',
         }}
       />
       <div className="tab-content">

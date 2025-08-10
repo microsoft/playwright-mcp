@@ -47,20 +47,12 @@ const evaluate = defineTabTool({
       response.addCode(`await page.evaluate(${quote(params.function)});`);
     }
     await tab.waitForCompletion(async () => {
-      let result: unknown;
-
       // Handle function strings that need to be called
       const evaluationCode = params.function;
 
-      if (locator) {
-        // For locator.evaluate, pass the string directly to Playwright
-        // Playwright handles the function conversion internally
-        result = await tab.page.evaluate(evaluationCode);
-      } else {
-        // For page.evaluate, pass the string directly to Playwright
-        // Playwright handles the function conversion internally
-        result = await tab.page.evaluate(evaluationCode);
-      }
+      // Both locator and page evaluations use the same method
+      // Playwright handles the function conversion internally
+      const result = await tab.page.evaluate(evaluationCode);
       const stringifiedResult = JSON.stringify(result, null, 2);
       response.addResult(stringifiedResult ?? 'undefined');
     });

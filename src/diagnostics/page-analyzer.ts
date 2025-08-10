@@ -47,8 +47,8 @@ export class PageAnalyzer extends DiagnosticBase {
   protected async performDispose(): Promise<void> {
     try {
       await this.frameManager.dispose();
-    } catch (_error) {
-      // Failed to dispose frame manager
+    } catch {
+      // Failed to dispose frame manager - may already be disposed
     }
 
     this.frameRefs.clear();
@@ -152,8 +152,8 @@ export class PageAnalyzer extends DiagnosticBase {
       await this.verifyFrameAccessibility(frame);
       accessible.push({ src, accessible: true });
       await this.updateFrameMetadata(frame);
-    } catch (_frameError) {
-      // Frame access failed
+    } catch {
+      // Frame access failed - cross-origin or blocked content
       inaccessible.push({
         src,
         reason: 'Frame content not accessible - cross-origin or blocked',
@@ -179,8 +179,8 @@ export class PageAnalyzer extends DiagnosticBase {
         (elements: Element[]) => elements.length
       );
       this.frameManager.updateElementCount(frame, elementCount);
-    } catch (_countError) {
-      // Failed to count frame elements
+    } catch {
+      // Failed to count frame elements - frame may be inaccessible
     }
   }
 
@@ -200,8 +200,8 @@ export class PageAnalyzer extends DiagnosticBase {
   ): Promise<void> {
     try {
       await iframe.dispose();
-    } catch (_disposeError) {
-      // Failed to dispose iframe element
+    } catch {
+      // Failed to dispose iframe element - may already be disposed
     }
   }
 
@@ -212,8 +212,8 @@ export class PageAnalyzer extends DiagnosticBase {
       iframes.map(async (iframe) => {
         try {
           await iframe.dispose();
-        } catch (_disposeError) {
-          // Error during iframe disposal cleanup
+        } catch {
+          // Error during iframe disposal cleanup - continue with other iframes
         }
       })
     );
@@ -246,9 +246,8 @@ export class PageAnalyzer extends DiagnosticBase {
           return style.display !== 'none' && style.visibility !== 'hidden';
         });
       });
-    } catch (_error) {
-      // If evaluation fails, assume no modals (page might not be ready)
-      // Failed to evaluate modal states
+    } catch {
+      // Failed to evaluate modal states - page might not be ready or accessible
       hasDialog = false;
       hasFileChooser = false;
     }
@@ -1043,9 +1042,8 @@ export class PageAnalyzer extends DiagnosticBase {
         reason: 'Low complexity page - sequential analysis sufficient',
         estimatedBenefit: 'Minimal performance difference expected',
       };
-    } catch (_error) {
-      // Error evaluating complexity - defaulting to parallel analysis
-      // Complexity evaluation failed
+    } catch {
+      // Error evaluating complexity - defaulting to parallel analysis as fallback
       return {
         recommended: true,
         reason:

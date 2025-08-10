@@ -224,8 +224,8 @@ export class InitializationManager {
     const cleanupPromises = this.partiallyInitialized.map(async (component) => {
       try {
         await component.dispose();
-      } catch (_error) {
-        // Silently ignore disposal errors
+      } catch {
+        // Silently ignore disposal errors during cleanup - component may already be disposed
       }
     });
 

@@ -42,7 +42,7 @@ class LoopToolsServerBackend implements ServerBackend {
     return await tool.handle(this._context, parsedArguments as any);
   }
   serverClosed() {
-    this._context?.close().catch((_error) => {
+    this._context?.close().catch(() => {
       // Context close failed during server shutdown - ignore since server is shutting down
     });
   }

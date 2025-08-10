@@ -452,7 +452,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
       }
 
       return diagnosticError;
-    } catch (_processingError) {
+    } catch {
       // Fallback: create simple diagnostic error if processing fails
       return DiagnosticError.from(error as Error, component, operation, {
         executionTime: Date.now() - startTime,
@@ -482,8 +482,8 @@ export class EnhancedErrorHandler extends DiagnosticBase {
         operation,
         pageStructure
       );
-    } catch (_contextError) {
-      // Context generation error silently ignored
+    } catch {
+      // Context generation error silently ignored - fallback to error without context
     }
 
     return suggestions;

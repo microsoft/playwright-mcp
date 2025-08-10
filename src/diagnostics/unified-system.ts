@@ -282,8 +282,8 @@ export class UnifiedDiagnosticSystem {
       components.map(async (component) => {
         try {
           await component.dispose();
-        } catch (_error) {
-          // Failed to dispose partially initialized component
+        } catch {
+          // Failed to dispose partially initialized component - continue with others
         }
       })
     );
@@ -482,8 +482,8 @@ export class UnifiedDiagnosticSystem {
             enhancedDiagnosticError,
             operation
           );
-        } catch (_enrichmentError) {
-          // Error enrichment failed
+        } catch {
+          // Error enrichment failed - use original error
         }
       }
 
@@ -640,8 +640,8 @@ export class UnifiedDiagnosticSystem {
       );
 
       return enrichedDiagnosticError;
-    } catch (_enrichmentError) {
-      // Error enrichment process failed
+    } catch {
+      // Error enrichment process failed - return original error
       return error;
     }
   }
@@ -1229,8 +1229,8 @@ export class UnifiedDiagnosticSystem {
 
       await Promise.all(disposePromises);
       await this.initializationManager.dispose();
-    } catch (_error) {
-      // Error during disposal
+    } catch {
+      // Error during disposal - cleanup may have partially failed
     }
   }
 }

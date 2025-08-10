@@ -145,8 +145,8 @@ export async function safeDispose<T extends { dispose(): Promise<void> }>(
 ): Promise<void> {
   try {
     await resource.dispose();
-  } catch (_error) {
-    // Failed to dispose resource
+  } catch {
+    // Failed to dispose resource - non-critical operation
   }
 }
 

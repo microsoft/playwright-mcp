@@ -150,11 +150,8 @@ export class DisposableManager implements Disposable {
     ).length;
     const _successes = batchSize - failures;
 
-    if (failures > 0) {
-      // Batch disposal completed with failures
-    } else {
-      // Batch disposal completed successfully
-    }
+    // Batch disposal completed - track statistics if needed
+    // Success: batchSize - failures, Failures: failures
   }
 }
 

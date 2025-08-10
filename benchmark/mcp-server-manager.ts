@@ -278,8 +278,9 @@ export class MCPServerManager {
         server.kill('SIGKILL');
         await wait(500);
       }
-    } catch (_error: unknown) {
-      // Server shutdown error ignored silently
+    } catch {
+      // Server shutdown errors are expected and can be safely ignored
+      // The server process will be forcefully terminated if needed
     }
 
     this.servers[serverType] = null;

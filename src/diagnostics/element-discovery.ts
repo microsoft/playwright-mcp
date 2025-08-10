@@ -213,8 +213,8 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    } catch (_error) {
-      // Strategy failed for selector
+    } catch {
+      // Strategy failed for selector - continue with next strategy
       return totalFound;
     }
   }
@@ -368,9 +368,8 @@ export class ElementDiscovery extends DiagnosticBase {
         );
         alternatives.push(...implicitRoleElements);
       }
-    } catch (_error) {
-      // Role search failed - continue with processing
-      // Role search failed
+    } catch {
+      // Role search failed - continue with next search strategy
     }
 
     return alternatives;
@@ -421,9 +420,8 @@ export class ElementDiscovery extends DiagnosticBase {
           return currentFound;
         }
       }, Promise.resolve(0));
-    } catch (_error) {
-      // Tag name search failed - continue with processing
-      // Tag search failed
+    } catch {
+      // Tag name search failed - continue with next search strategy
     }
 
     return alternatives;
@@ -490,8 +488,8 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    } catch (_error) {
-      // Attribute search failed
+    } catch {
+      // Attribute search failed - continue with next search strategy
       return totalFound;
     }
   }
@@ -639,8 +637,8 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    } catch (_error) {
-      // Implicit role search failed
+    } catch {
+      // Implicit role search failed - continue processing
       return totalFound;
     }
   }

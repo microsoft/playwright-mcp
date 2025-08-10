@@ -40,7 +40,7 @@ async function main(): Promise<void> {
     } else {
       process.exit(1);
     }
-  } catch (_error) {
+  } catch {
     // Benchmark execution failed - exit with error code
     process.exit(1);
   }
@@ -61,7 +61,7 @@ if (process.argv.includes('--help')) {
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((_error) => {
+  main().catch(() => {
     // Main process failed - exit with error code
     process.exit(1);
   });

@@ -42,14 +42,14 @@ export function formatExecutionTime(ms: number): string {
   return `${minutes}m ${seconds}s`;
 }
 
+type PerformanceInput =
+  | { significance: 'significant' | 'notable' | 'minimal' | 'normal' }
+  | { value: number; thresholds: { good: number; warning: number } };
+
 /**
  * Get performance indicator icon based on deviation or value/thresholds
  */
-export function getPerformanceIcon(
-  input:
-    | { significance: 'significant' | 'notable' | 'minimal' | 'normal' }
-    | { value: number; thresholds: { good: number; warning: number } }
-): string {
+export function getPerformanceIcon(input: PerformanceInput): string {
   if ('significance' in input) {
     switch (input.significance) {
       case 'significant':

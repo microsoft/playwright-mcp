@@ -150,11 +150,8 @@ export class SecureTestProcessManager {
    * Cleanup all processes
    */
   cleanup(): void {
-    // Synchronous cleanup for immediate termination
-    for (const process of this.processes.keys()) {
-      process.kill('SIGTERM');
-    }
-    this.processes.clear();
+    // Delegate to terminateAllProcesses for consistency
+    this.terminateAllProcesses();
   }
 
   /**

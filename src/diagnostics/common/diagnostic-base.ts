@@ -77,8 +77,9 @@ export abstract class DiagnosticBase implements IDisposable {
 
     try {
       await this.performDispose();
-    } catch (_error) {
-      // Silently ignore disposal errors
+    } catch {
+      // Disposal errors are non-critical and can be safely ignored
+      // Resources will be cleaned up by the system
     } finally {
       this.markDisposed();
     }

@@ -229,6 +229,7 @@ async function updateReadme() {
   await fs.promises.writeFile(readmePath, withOptions, 'utf-8');
 }
 
-updateReadme().catch((_err) => {
+updateReadme().catch(() => {
+  // Update readme failed - exit with error code
   process.exit(1);
 });

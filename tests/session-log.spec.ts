@@ -100,7 +100,8 @@ test('session log should record tool calls', async ({
   let sessionFolder: string | undefined;
   try {
     sessionFolder = getSessionFolder();
-  } catch (_error) {
+  } catch {
+    // Session folder not available - skip test
     test.skip();
     return;
   }
@@ -162,7 +163,8 @@ test('session log should record user action', async ({
   let sessionFolder: string | undefined;
   try {
     sessionFolder = getSessionFolder();
-  } catch (_error) {
+  } catch {
+    // Session folder not available - skip test
     test.skip();
     return;
   }
@@ -221,7 +223,8 @@ test('session log should update user action', async ({
   let sessionFolder: string | undefined;
   try {
     sessionFolder = getSessionFolder();
-  } catch (_error) {
+  } catch {
+    // Session folder not available - skip test
     test.skip();
     return;
   }
@@ -292,7 +295,8 @@ test('session log should record tool calls and user actions', async ({
   let sessionFolder: string | undefined;
   try {
     sessionFolder = getSessionFolder();
-  } catch (_error) {
+  } catch {
+    // Session folder not available - skip test
     test.skip();
     return;
   }
