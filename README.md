@@ -155,6 +155,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --caps <caps>                comma-separated list of additional capabilities
                                to enable, possible values: vision, pdf.
   --cdp-endpoint <endpoint>    CDP endpoint to connect to.
+  --cdp-headers <headers>      JSON string of headers to send with CDP
+                               connection, e.g. '{"Authorization": "Bearer token"}'
   --config <path>              path to the configuration file.
   --device <device>            device to emulate, for example: "iPhone 15"
   --executable-path <path>     path to the browser executable.
@@ -229,6 +231,20 @@ state [here](https://playwright.dev/docs/auth).
     }
   }
 }
+```
+
+#### CDP Headers
+
+When connecting to a CDP endpoint that requires authentication, you can pass headers:
+
+```bash
+npx @playwright/mcp --cdp-endpoint=http://localhost:9222 --cdp-headers='{"Authorization": "Bearer your-token"}'
+```
+
+Or via environment variable:
+```bash
+export PLAYWRIGHT_MCP_CDP_HEADERS='{"Authorization": "Bearer your-token"}'
+npx @playwright/mcp --cdp-endpoint=http://localhost:9222
 ```
 
 ### Configuration file
