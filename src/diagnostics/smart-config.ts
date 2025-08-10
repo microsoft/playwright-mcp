@@ -86,7 +86,9 @@ export class SmartConfigManager {
 
     // Additional safety check - this should never happen, but provides a fallback
     if (!SmartConfigManager.instance) {
-      configDebug('Critical: SmartConfigManager instance is null after creation');
+      configDebug(
+        'Critical: SmartConfigManager instance is null after creation'
+      );
       SmartConfigManager.instance = new SmartConfigManager(initialConfig);
     }
 
@@ -100,7 +102,9 @@ export class SmartConfigManager {
   static resetInstance(): void {
     const wasNull = SmartConfigManager.instance === null;
     SmartConfigManager.instance = null;
-    configDebug('SmartConfigManager instance reset', { wasAlreadyNull: wasNull });
+    configDebug('SmartConfigManager instance reset', {
+      wasAlreadyNull: wasNull,
+    });
   }
 
   private createDefaultConfig(): SmartConfig {

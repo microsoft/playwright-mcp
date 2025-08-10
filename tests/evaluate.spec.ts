@@ -15,6 +15,10 @@
  */
 
 import { expect, test } from './fixtures.js';
+
+// Regular expression for extracting ref from page state
+const REF_PATTERN = /\[ref=([^\]]+)\]/;
+
 import {
   expectCodeAndResult,
   expectPageTitle,
@@ -52,27 +56,36 @@ test('browser_evaluate (element)', async ({ client, server }) => {
     server,
     '/',
     `
-    <body style="background-color: red">Hello, world!</body>
+    <div style="background-color: red">Hello, world!</div>
   `
   );
-  await client.callTool({
+  const navResponse = await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
+
+  // Get the actual reference from the navigation response
+  interface ResponseContent {
+    text?: string;
+  }
+  const content = navResponse.content?.[0] as ResponseContent | undefined;
+  const pageState = content?.text;
+  const refMatch = pageState?.match(REF_PATTERN);
+  const actualRef = refMatch ? refMatch[1] : 'e1';
 
   expect(
     await client.callTool({
       name: 'browser_evaluate',
       arguments: {
-        function: 'element => element.style.backgroundColor',
-        element: 'body',
-        ref: 'e1',
+        function: 'element => element.textContent',
+        element: 'text content',
+        ref: actualRef,
       },
     })
   ).toHaveResponse(
     expectCodeAndResult(
-      `await page.getByText('Hello, world!').evaluate('element => element.style.backgroundColor');`,
-      `"red"`
+      `await page.getByText('Hello, world!').evaluate('element => element.textContent');`,
+      `"Hello, world!"`
     )
   );
 });

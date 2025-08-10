@@ -20,7 +20,7 @@ test.describe('Security Fixes Validation', () => {
 
     // Check that environment variable is used
     expect(content).toContain('process.env.TEST_SSL_PASSPHRASE');
-    expect(content).toContain('test-default-passphrase');
+    expect(content).toContain('TEST_ONLY_MOCK_PASSPHRASE');
   });
 
   test('command injection should be prevented in execSync calls', async () => {
@@ -29,7 +29,7 @@ test.describe('Security Fixes Validation', () => {
     const libraryContent = await fs.readFile(librarySpecPath, 'utf-8');
 
     // Should use safe spawnSync with array form and shell: false
-    expect(libraryContent).toContain("spawnSync('node', [file]");
+    expect(libraryContent).toContain('spawnSync(process.execPath, [file]');
     expect(libraryContent).toContain('shell: false');
     // Should not contain dangerous template string injection
     // Check for template literal with interpolation - constructed to avoid lint warnings

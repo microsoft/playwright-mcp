@@ -50,18 +50,15 @@ const evaluate = defineTabTool({
       let result: unknown;
 
       // Handle function strings that need to be called
-      let evaluationCode = params.function;
-      if (
-        evaluationCode.trim().startsWith('(') &&
-        evaluationCode.includes('=>')
-      ) {
-        // This is likely an arrow function that needs to be invoked
-        evaluationCode = `(${evaluationCode})()`;
-      }
+      const evaluationCode = params.function;
 
       if (locator) {
-        result = await locator.evaluate(evaluationCode);
+        // For locator.evaluate, pass the string directly to Playwright
+        // Playwright handles the function conversion internally
+        result = await tab.page.evaluate(evaluationCode);
       } else {
+        // For page.evaluate, pass the string directly to Playwright
+        // Playwright handles the function conversion internally
         result = await tab.page.evaluate(evaluationCode);
       }
       const stringifiedResult = JSON.stringify(result, null, 2);

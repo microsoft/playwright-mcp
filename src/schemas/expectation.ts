@@ -82,11 +82,11 @@ const TOOL_DEFAULTS: Record<string, RequiredExpectationBase> = {
   // All tools default to minimal output for maximum token efficiency
   // Users can enable specific outputs as needed
   browser_navigate: {
-    includeSnapshot: false,
+    includeSnapshot: true,
     includeConsole: false,
     includeDownloads: false,
-    includeTabs: false,
-    includeCode: false,
+    includeTabs: true,
+    includeCode: true,
   },
   browser_click: {
     includeSnapshot: false,
@@ -131,6 +131,13 @@ const TOOL_DEFAULTS: Record<string, RequiredExpectationBase> = {
     includeDownloads: false,
     includeTabs: false,
     includeCode: false,
+  },
+  browser_close: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: true,
+    includeCode: true,
   },
 };
 /**

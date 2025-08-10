@@ -4,10 +4,7 @@
 
 import debug from 'debug';
 import type * as playwright from 'playwright';
-import {
-  createDiagnosticLogger,
-  DiagnosticBase,
-} from './common/diagnostic-base.js';
+import { DiagnosticBase } from './common/diagnostic-base.js';
 import { safeDispose } from './common/error-enrichment-utils.js';
 import { SmartHandleBatch } from './smart-handle.js';
 
@@ -37,21 +34,14 @@ export interface ElementDiscoveryOptions {
 export class ElementDiscovery extends DiagnosticBase {
   private readonly smartHandleBatch: SmartHandleBatch;
   private readonly maxBatchSize = 100; // Limit for large searches
-  private readonly logger: ReturnType<typeof createDiagnosticLogger>;
 
   constructor(page: playwright.Page | null) {
     super(page, 'ElementDiscovery');
     this.smartHandleBatch = new SmartHandleBatch();
-    this.logger = createDiagnosticLogger('ElementDiscovery', 'discovery');
   }
 
   protected async performDispose(): Promise<void> {
-    await safeDispose(
-      this.smartHandleBatch,
-      'SmartHandleBatch',
-      'dispose',
-      this.logger
-    );
+    await safeDispose(this.smartHandleBatch, 'SmartHandleBatch', 'dispose');
   }
 
   /**
@@ -62,7 +52,25 @@ export class ElementDiscovery extends DiagnosticBase {
     element: playwright.ElementHandle,
     operation: string
   ): Promise<void> {
-    await safeDispose(element, 'ElementHandle', operation, this.logger);
+    await safeDispose(element, 'ElementHandle', operation);
+  }
+
+  /**
+   * Public interface for safe disposal - used by tests and external components
+   */
+  async safeDisposePublic(
+    element: playwright.ElementHandle | { dispose(): Promise<void> },
+    operation: string
+  ): Promise<void> {
+    if ('dispose' in element) {
+      await safeDispose(
+        element as { dispose(): Promise<void> },
+        'Element',
+        operation
+      );
+    } else {
+      await safeDispose(element, 'ElementHandle', operation);
+    }
   }
 
   async findAlternativeElements(
@@ -122,8 +130,7 @@ export class ElementDiscovery extends DiagnosticBase {
       await safeDispose(
         this.smartHandleBatch,
         'SmartHandleBatch',
-        'findAlternativeElements',
-        this.logger
+        'findAlternativeElements'
       );
       throw error;
     }
@@ -206,8 +213,8 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    } catch (error) {
-      this.logger.warn(`Strategy failed for selector '${selector}':`, error);
+    } catch (_error) {
+      // Strategy failed for selector
       return totalFound;
     }
   }
@@ -361,9 +368,9 @@ export class ElementDiscovery extends DiagnosticBase {
         );
         alternatives.push(...implicitRoleElements);
       }
-    } catch (error) {
+    } catch (_error) {
       // Role search failed - continue with processing
-      this.logger.warn(`Role search failed for role '${role}':`, error);
+      // Role search failed
     }
 
     return alternatives;
@@ -414,9 +421,9 @@ export class ElementDiscovery extends DiagnosticBase {
           return currentFound;
         }
       }, Promise.resolve(0));
-    } catch (error) {
+    } catch (_error) {
       // Tag name search failed - continue with processing
-      this.logger.warn(`Tag search failed for tag '${tagName}':`, error);
+      // Tag search failed
     }
 
     return alternatives;
@@ -483,11 +490,8 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    } catch (error) {
-      this.logger.warn(
-        `Attribute search failed for ${attrName}='${attrValue}':`,
-        error
-      );
+    } catch (_error) {
+      // Attribute search failed
       return totalFound;
     }
   }
@@ -635,11 +639,8 @@ export class ElementDiscovery extends DiagnosticBase {
         totalFound,
         maxResults
       );
-    } catch (error) {
-      this.logger.warn(
-        `Implicit role search failed for '${tagSelector}':`,
-        error
-      );
+    } catch (_error) {
+      // Implicit role search failed
       return totalFound;
     }
   }

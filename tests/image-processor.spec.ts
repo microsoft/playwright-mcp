@@ -28,7 +28,7 @@ test.describe('Image Processing Utils', () => {
   test('processImage module should exist now', async () => {
     // Now the module should exist
     const { processImage, validateImageOptions } = await import(
-      '../src/utils/imageProcessor.js'
+      '../lib/utils/image-processor.js'
     );
     expect(typeof processImage).toBe('function');
     expect(typeof validateImageOptions).toBe('function');
@@ -36,7 +36,7 @@ test.describe('Image Processing Utils', () => {
 
   test('should validate image quality bounds correctly', async () => {
     const { validateImageOptions } = await import(
-      '../src/utils/imageProcessor.js'
+      '../lib/utils/image-processor.js'
     );
 
     const testCases = [
@@ -60,7 +60,7 @@ test.describe('Image Processing Utils', () => {
 
   test('should validate image dimension bounds correctly', async () => {
     const { validateImageOptions } = await import(
-      '../src/utils/imageProcessor.js'
+      '../lib/utils/image-processor.js'
     );
 
     const testCases = [
@@ -84,7 +84,7 @@ test.describe('Image Processing Utils', () => {
   });
 
   test('should process image with quality option', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../lib/utils/image-processor.js');
     const testBuffer = createTestImageBuffer();
     const options = { quality: 80, format: 'jpeg' as const };
 
@@ -98,7 +98,7 @@ test.describe('Image Processing Utils', () => {
   });
 
   test('should process image with size constraints', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../lib/utils/image-processor.js');
     const testBuffer = createTestImageBuffer();
     const options = { maxWidth: 50, maxHeight: 50 };
 
@@ -111,7 +111,7 @@ test.describe('Image Processing Utils', () => {
   });
 
   test('should handle different image formats', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../lib/utils/image-processor.js');
     const testBuffer = createTestImageBuffer();
     const formats = ['jpeg', 'png', 'webp'] as const;
 
@@ -126,7 +126,7 @@ test.describe('Image Processing Utils', () => {
   });
 
   test('should return original image when no options provided', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../lib/utils/image-processor.js');
     const testBuffer = createTestImageBuffer();
 
     const result = await processImage(testBuffer, 'image/png');

@@ -114,15 +114,40 @@ export class SecureTestProcessManager {
    * Waits for the server to start and returns the URL
    */
   private waitForServerStart(): Promise<string> {
-    return new Promise<string>((resolve) => {
+    return new Promise<string>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Server startup timeout after 30 seconds'));
+      }, 30_000);
+
       this.process?.stderr?.on('data', (data) => {
         this.stderrBuffer += data.toString();
         const match = this.stderrBuffer.match(
           COMMON_REGEX_PATTERNS.LISTENING_ON
         );
         if (match) {
+          clearTimeout(timeout);
           resolve(match[1]);
         }
+        // Check for errors in stderr
+        if (
+          this.stderrBuffer.includes('error') ||
+          this.stderrBuffer.includes('Error')
+        ) {
+          clearTimeout(timeout);
+          reject(new Error(`Server startup error: ${this.stderrBuffer}`));
+        }
+      });
+
+      this.process?.on('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+
+      this.process?.on('exit', (code) => {
+        clearTimeout(timeout);
+        reject(
+          new Error(`Process exited with code ${code} before server started`)
+        );
       });
     });
   }

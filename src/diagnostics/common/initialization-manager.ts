@@ -2,7 +2,7 @@
  * Common initialization patterns and dependency management
  */
 
-import { createDiagnosticLogger } from './diagnostic-base.js';
+import { DiagnosticError } from '../diagnostic-error.js';
 import type { PerformanceTracker } from './performance-tracker.js';
 
 export interface InitializationStage {
@@ -28,19 +28,14 @@ export interface DisposableComponent {
  */
 export class InitializationManager {
   private isInitialized = false;
-  private initializationPromise?: Promise<void>;
+  initializationPromise?: Promise<void>;
   private initializationError?: Error;
-  private readonly logger: ReturnType<typeof createDiagnosticLogger>;
   private readonly performanceTracker?: PerformanceTracker;
   private readonly partiallyInitialized: DisposableComponent[] = [];
   private readonly context: InitializationContext;
 
   constructor(context: InitializationContext) {
     this.context = context;
-    this.logger = createDiagnosticLogger(
-      context.componentName,
-      'initialization'
-    );
     this.performanceTracker = context.performanceTracker;
   }
 
@@ -65,14 +60,34 @@ export class InitializationManager {
     try {
       await this.initializationPromise;
       this.isInitialized = true;
-      this.logger.info('Component initialization completed successfully');
     } catch (error) {
-      this.initializationError =
-        error instanceof Error ? error : new Error(String(error));
-      this.logger.error(
-        'Component initialization failed',
-        this.initializationError
-      );
+      // Convert to DiagnosticError for consistent error handling
+      if (error instanceof DiagnosticError) {
+        this.initializationError = error;
+      } else {
+        const baseError =
+          error instanceof Error ? error : new Error(String(error));
+        this.initializationError = new DiagnosticError(
+          `Initialization failed: ${baseError.message}`,
+          {
+            timestamp: Date.now(),
+            component: 'InitializationManager',
+            operation: 'initialize',
+            suggestions: [
+              'Check component dependencies',
+              'Verify all required services are available',
+              'Review initialization order',
+            ],
+            context: {
+              componentName: this.context.componentName,
+              errorStage: 'initialization',
+            },
+          },
+          baseError
+        );
+      }
+
+      // Error already captured in initializationError
       throw this.initializationError;
     } finally {
       this.initializationPromise = undefined;
@@ -102,7 +117,7 @@ export class InitializationManager {
 
       await executeStagesSequentially(0);
     } catch (error) {
-      this.logger.error('Initialization failed during stage execution', error);
+      // Error will be thrown
       await this.cleanupPartialInitialization();
       throw error;
     }
@@ -122,13 +137,6 @@ export class InitializationManager {
         }
       }
     }
-
-    const stageLogger = createDiagnosticLogger(
-      this.context.componentName,
-      `init-stage-${stage.name}`
-    );
-
-    stageLogger.info(`Starting initialization stage: ${stage.name}`);
 
     // Execute stage with optional performance tracking
     const executeWithTracking = async () => {
@@ -162,8 +170,6 @@ export class InitializationManager {
     } else {
       await executeWithTracking();
     }
-
-    stageLogger.info(`Completed initialization stage: ${stage.name}`);
   }
 
   private async executeWithRetry(
@@ -192,10 +198,7 @@ export class InitializationManager {
         const lastError =
           error instanceof Error ? error : new Error(String(error));
         if (attempt < retryCount) {
-          this.logger.warn(
-            `Retry attempt ${attempt} failed, retrying...`,
-            lastError
-          );
+          // Retry silently
           await this.delay(1000 * attempt); // Exponential backoff
           return attemptOperation(attempt + 1);
         }
@@ -221,11 +224,8 @@ export class InitializationManager {
     const cleanupPromises = this.partiallyInitialized.map(async (component) => {
       try {
         await component.dispose();
-      } catch (error) {
-        this.logger.warn(
-          'Failed to dispose partially initialized component',
-          error
-        );
+      } catch (_error) {
+        // Silently ignore disposal errors
       }
     });
 

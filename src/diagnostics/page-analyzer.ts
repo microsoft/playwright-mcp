@@ -8,10 +8,7 @@ import type {
   ParallelAnalysisResult,
   PerformanceMetrics,
 } from '../types/performance.js';
-import {
-  createDiagnosticLogger,
-  DiagnosticBase,
-} from './common/diagnostic-base.js';
+import { DiagnosticBase } from './common/diagnostic-base.js';
 import { getCurrentThresholds } from './diagnostic-thresholds.js';
 import { FrameReferenceManager } from './frame-reference-manager.js';
 import { ParallelPageAnalyzer } from './parallel-page-analyzer.js';
@@ -39,12 +36,10 @@ export class PageAnalyzer extends DiagnosticBase {
   private readonly metricsThresholds: MetricsThresholds;
   private readonly frameRefs: Set<playwright.Frame> = new Set();
   private readonly frameManager: FrameReferenceManager;
-  private readonly logger: ReturnType<typeof createDiagnosticLogger>;
 
   constructor(page: playwright.Page | null) {
     super(page, 'PageAnalyzer');
     this.frameManager = new FrameReferenceManager();
-    this.logger = createDiagnosticLogger('PageAnalyzer', 'analysis');
     // Get thresholds from configuration system (eliminate hardcoding)
     this.metricsThresholds = getCurrentThresholds().getMetricsThresholds();
   }
@@ -52,8 +47,8 @@ export class PageAnalyzer extends DiagnosticBase {
   protected async performDispose(): Promise<void> {
     try {
       await this.frameManager.dispose();
-    } catch (error) {
-      this.logger.warn('Failed to dispose frame manager', error);
+    } catch (_error) {
+      // Failed to dispose frame manager
     }
 
     this.frameRefs.clear();
@@ -157,13 +152,8 @@ export class PageAnalyzer extends DiagnosticBase {
       await this.verifyFrameAccessibility(frame);
       accessible.push({ src, accessible: true });
       await this.updateFrameMetadata(frame);
-    } catch (frameError) {
-      // Log frame access error for debugging
-      this.logger.debug('Frame access failed:', {
-        src,
-        error:
-          frameError instanceof Error ? frameError.message : 'Unknown error',
-      });
+    } catch (_frameError) {
+      // Frame access failed
       inaccessible.push({
         src,
         reason: 'Frame content not accessible - cross-origin or blocked',
@@ -189,8 +179,8 @@ export class PageAnalyzer extends DiagnosticBase {
         (elements: Element[]) => elements.length
       );
       this.frameManager.updateElementCount(frame, elementCount);
-    } catch (countError) {
-      this.logger.warn('Failed to count frame elements', countError);
+    } catch (_countError) {
+      // Failed to count frame elements
     }
   }
 
@@ -210,8 +200,8 @@ export class PageAnalyzer extends DiagnosticBase {
   ): Promise<void> {
     try {
       await iframe.dispose();
-    } catch (disposeError) {
-      this.logger.warn('Failed to dispose iframe element', disposeError);
+    } catch (_disposeError) {
+      // Failed to dispose iframe element
     }
   }
 
@@ -222,11 +212,8 @@ export class PageAnalyzer extends DiagnosticBase {
       iframes.map(async (iframe) => {
         try {
           await iframe.dispose();
-        } catch (disposeError) {
-          this.logger.warn(
-            'Error during iframe disposal cleanup',
-            disposeError
-          );
+        } catch (_disposeError) {
+          // Error during iframe disposal cleanup
         }
       })
     );
@@ -259,9 +246,9 @@ export class PageAnalyzer extends DiagnosticBase {
           return style.display !== 'none' && style.visibility !== 'hidden';
         });
       });
-    } catch (error) {
+    } catch (_error) {
       // If evaluation fails, assume no modals (page might not be ready)
-      this.logger.warn('Failed to evaluate modal states:', error);
+      // Failed to evaluate modal states
       hasDialog = false;
       hasFileChooser = false;
     }
@@ -844,7 +831,7 @@ export class PageAnalyzer extends DiagnosticBase {
     } catch (error) {
       const executionTime = Date.now() - startTime;
       // Performance: analyzePerformanceMetrics failed
-      this.logger.warn('Performance analysis failed:', error);
+      // Performance analysis failed
 
       // Return minimal fallback metrics
       return {
@@ -1056,9 +1043,9 @@ export class PageAnalyzer extends DiagnosticBase {
         reason: 'Low complexity page - sequential analysis sufficient',
         estimatedBenefit: 'Minimal performance difference expected',
       };
-    } catch (error) {
+    } catch (_error) {
       // Error evaluating complexity - defaulting to parallel analysis
-      this.logger.warn('Complexity evaluation failed:', error);
+      // Complexity evaluation failed
       return {
         recommended: true,
         reason:

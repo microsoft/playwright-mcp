@@ -30,9 +30,17 @@ test('cdp server', async ({ cdpServer, startClient, server }) => {
       arguments: { url: server.HELLO_WORLD },
     })
   ).toHaveResponse({
+    result: undefined,
+    code: expect.any(String),
+    tabs: expect.any(String),
     pageState: expect.stringContaining(
       '- generic [active] [ref=e1]: Hello, world!'
     ),
+    consoleMessages: undefined,
+    modalState: undefined,
+    downloads: undefined,
+    isError: undefined,
+    attachments: expect.any(Array),
   });
 });
 
@@ -55,7 +63,14 @@ test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
     })
   ).toHaveResponse({
     result: `Error: No open pages available. Use the "browser_navigate" tool to navigate to a page first.`,
+    code: undefined,
+    tabs: expect.any(String),
+    pageState: undefined,
+    consoleMessages: undefined,
+    modalState: undefined,
+    downloads: undefined,
     isError: true,
+    attachments: expect.any(Array),
   });
 
   expect(
@@ -63,12 +78,20 @@ test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
       name: 'browser_snapshot',
     })
   ).toHaveResponse({
-    pageState: expect.stringContaining(`- Page URL: ${server.HELLO_WORLD}
-- Page Title: Title
+    result: undefined,
+    code: undefined,
+    tabs: undefined,
+    pageState: expect.stringContaining(`- **Page URL:** ${server.HELLO_WORLD}
+- **Page Title:** Title
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Hello, world!
 \`\`\``),
+    consoleMessages: undefined,
+    modalState: undefined,
+    downloads: undefined,
+    isError: undefined,
+    attachments: expect.any(Array),
   });
 });
 
@@ -99,7 +122,14 @@ test('should throw connection error and allow re-connecting', async ({
     result: expect.stringContaining(
       'Error: browserType.connectOverCDP: connect ECONNREFUSED'
     ),
+    code: undefined,
+    tabs: expect.any(String),
+    pageState: undefined,
+    consoleMessages: undefined,
+    modalState: undefined,
+    downloads: undefined,
     isError: true,
+    attachments: expect.any(Array),
   });
   await cdpServer.start();
   expect(
@@ -108,21 +138,30 @@ test('should throw connection error and allow re-connecting', async ({
       arguments: { url: server.PREFIX },
     })
   ).toHaveResponse({
+    result: undefined,
+    code: expect.any(String),
+    tabs: expect.any(String),
     pageState: expect.stringContaining(
       '- generic [active] [ref=e1]: Hello, world!'
     ),
+    consoleMessages: undefined,
+    modalState: undefined,
+    downloads: undefined,
+    isError: undefined,
+    attachments: expect.any(Array),
   });
 });
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 test('does not support --device', () => {
   // Execute CLI using spawnSync for security (no shell injection)
   const result = spawnSync(
     process.execPath,
     [
-      path.join(__filename, '../../cli.js'),
+      path.join(__dirname, '../cli.js'),
       '--device=Pixel 5',
       '--cdp-endpoint=http://localhost:1234',
     ],

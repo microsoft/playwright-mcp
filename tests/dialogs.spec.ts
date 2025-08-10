@@ -131,11 +131,12 @@ test('alert dialog w/ race', async ({ client, server }) => {
   await handleDialogAndExpectState(
     client,
     true,
-    expect.stringContaining(`- Page URL: ${server.PREFIX}
-- Page Title: 
+    expect.stringContaining(`- **Page URL:** ${server.PREFIX}
+- **Page Title:** 
 - Page Snapshot:
 \`\`\`yaml
-- button "Button"`),
+- button "Button" [active] [ref=e2]
+\`\`\``),
     DIALOG_EXPECTATIONS.NO_MODAL
   );
 });

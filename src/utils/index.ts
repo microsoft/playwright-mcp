@@ -3,9 +3,6 @@
  * Re-exports commonly used utilities from various modules
  */
 
-// Diagnostic utilities
-export { createDiagnosticLogger } from '../diagnostics/common/diagnostic-base.js';
-
 // Array manipulation utilities
 export {
   deduplicate,

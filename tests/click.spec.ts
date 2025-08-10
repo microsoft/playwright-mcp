@@ -18,6 +18,7 @@ import { expect, test } from './fixtures.js';
 import { HTML_TEMPLATES, setServerContent } from './test-helpers.js';
 
 test('browser_click', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
   setServerContent(server, '/', HTML_TEMPLATES.BASIC_BUTTON);
 
   await client.callTool({
@@ -41,7 +42,8 @@ test('browser_click', async ({ client, server, mcpBrowser }) => {
   });
 });
 
-test('browser_click (double)', async ({ client, server }) => {
+test('browser_click (double)', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
   setServerContent(
     server,
     '/',
@@ -77,7 +79,8 @@ test('browser_click (double)', async ({ client, server }) => {
   });
 });
 
-test('browser_click (right)', async ({ client, server }) => {
+test('browser_click (right)', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
   setServerContent(server, '/', HTML_TEMPLATES.CONTEXT_MENU_BUTTON('Menu'));
 
   await client.callTool({

@@ -16,8 +16,13 @@ test.describe('DiagnosticThresholds - Unit4 Configuration System', () => {
     testSetup.beforeEach(false); // Don't capture console for these tests
   });
 
-  test.afterEach(() => {
+  test.afterEach(async () => {
     testSetup.afterEach();
+    // Reset singleton to prevent test isolation issues
+    const { DiagnosticThresholds } = await import(
+      '../src/diagnostics/diagnostic-thresholds.js'
+    );
+    DiagnosticThresholds.reset();
   });
 
   test.describe('Basic functionality tests', () => {
@@ -231,8 +236,17 @@ test.describe('SmartConfig integration tests', () => {
     integrationTestSetup.beforeEach(false);
   });
 
-  test.afterEach(() => {
+  test.afterEach(async () => {
     integrationTestSetup.afterEach();
+    // Reset singletons to prevent test isolation issues
+    const { DiagnosticThresholds } = await import(
+      '../src/diagnostics/diagnostic-thresholds.js'
+    );
+    const { SmartConfigManager: ImportedSmartConfigManager } = await import(
+      '../src/diagnostics/smart-config.js'
+    );
+    DiagnosticThresholds.reset();
+    ImportedSmartConfigManager.resetInstance();
   });
 
   test.describe('SmartConfigManager integration', () => {
@@ -350,8 +364,17 @@ test.describe('Integration scenario tests', () => {
     scenarioTestSetup.beforeEach(false);
   });
 
-  test.afterEach(() => {
+  test.afterEach(async () => {
     scenarioTestSetup.afterEach();
+    // Reset singletons to prevent test isolation issues
+    const { DiagnosticThresholds } = await import(
+      '../src/diagnostics/diagnostic-thresholds.js'
+    );
+    const { SmartConfigManager: ImportedSmartConfigManager } = await import(
+      '../src/diagnostics/smart-config.js'
+    );
+    DiagnosticThresholds.reset();
+    ImportedSmartConfigManager.resetInstance();
   });
 
   test('完全な設定ライフサイクル', () => {

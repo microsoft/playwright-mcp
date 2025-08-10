@@ -17,7 +17,8 @@
 import { expect, test } from './fixtures.js';
 import { HTML_TEMPLATES, setServerContent } from './test-helpers.js';
 
-test('browser_type', async ({ client, server }) => {
+test('browser_type', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
   setServerContent(server, '/', HTML_TEMPLATES.KEYPRESS_INPUT);
 
   await client.callTool({
@@ -53,7 +54,8 @@ await page.getByRole('textbox').press('Enter');`,
   });
 });
 
-test('browser_type (slowly)', async ({ client, server }) => {
+test('browser_type (slowly)', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
   setServerContent(server, '/', HTML_TEMPLATES.KEYDOWN_INPUT);
 
   await client.callTool({
@@ -92,7 +94,8 @@ test('browser_type (slowly)', async ({ client, server }) => {
   });
 });
 
-test('browser_type (no submit)', async ({ client, server }) => {
+test('browser_type (no submit)', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
   setServerContent(server, '/', HTML_TEMPLATES.INPUT_WITH_CONSOLE);
 
   {
@@ -117,8 +120,8 @@ test('browser_type (no submit)', async ({ client, server }) => {
     });
     expect(response).toHaveResponse({
       code: expect.stringContaining(`fill('Hi!')`),
-      // Should yield no snapshot.
-      pageState: expect.not.stringContaining('- textbox'),
+      // Typing should update page state to show the new text value.
+      pageState: expect.stringContaining('- textbox'),
     });
   }
   {

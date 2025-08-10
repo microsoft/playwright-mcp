@@ -18,8 +18,8 @@ import { expect, test } from './fixtures.js';
 import { SecureTestProcessManager } from './secure-test-process-manager.js';
 
 test('SecureTestProcessManager can spawn and terminate processes', async ({
-  testInfo,
-}) => {
+  mcpHeadless: _mcpHeadless,
+}, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
@@ -50,8 +50,8 @@ test('SecureTestProcessManager can spawn and terminate processes', async ({
 });
 
 test('SecureTestProcessManager handles multiple processes', async ({
-  testInfo,
-}) => {
+  mcpHeadless: _mcpHeadless,
+}, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
@@ -81,8 +81,8 @@ test('SecureTestProcessManager handles multiple processes', async ({
 });
 
 test('SecureTestProcessManager creates secure environment', async ({
-  testInfo,
-}) => {
+  mcpHeadless: _mcpHeadless,
+}, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {
@@ -107,8 +107,8 @@ test('SecureTestProcessManager creates secure environment', async ({
 });
 
 test('SecureTestProcessManager creates fixture-compatible endpoint function', async ({
-  testInfo,
-}) => {
+  mcpHeadless: _mcpHeadless,
+}, testInfo) => {
   const manager = new SecureTestProcessManager();
 
   try {

@@ -26,7 +26,7 @@ test.describe('Sharp Implementation Performance Tests', () => {
   }
 
   test('should handle large image processing efficiently', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../src/utils/image-processor.js');
     const testBuffer = createLargerTestImageBuffer();
 
     const startTime = performance.now();
@@ -68,7 +68,7 @@ test.describe('Sharp Implementation Performance Tests', () => {
   });
 
   test('should not leak memory with multiple sequential operations', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../src/utils/image-processor.js');
     const testBuffer = createLargerTestImageBuffer();
 
     const initialMemory = process.memoryUsage().heapUsed;
@@ -104,7 +104,7 @@ test.describe('Sharp Implementation Performance Tests', () => {
   });
 
   test('should handle concurrent image processing', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../src/utils/image-processor.js');
     const testBuffer = createLargerTestImageBuffer();
 
     const startTime = performance.now();
@@ -137,7 +137,7 @@ test.describe('Sharp Implementation Performance Tests', () => {
   });
 
   test('should handle error conditions gracefully', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../src/utils/image-processor.js');
 
     // Test with invalid image data
     const invalidBuffer = Buffer.from('not an image');
@@ -148,7 +148,7 @@ test.describe('Sharp Implementation Performance Tests', () => {
   });
 
   test('should preserve metadata when appropriate', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../src/utils/image-processor.js');
     const testBuffer = createLargerTestImageBuffer();
 
     // Test preserving original format when no format specified

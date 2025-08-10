@@ -59,6 +59,8 @@ export class CDPRelayServer {
   private readonly _wss: WebSocketServer;
   private _playwrightConnection: WebSocket | null = null;
   private _extensionConnection: ExtensionConnection | null = null;
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Used in _handleCDPCommand() method
+  private _nextSessionId = 1;
   private _connectedTabInfo:
     | {
         targetInfo: Record<string, unknown>;
@@ -497,6 +499,8 @@ class ExtensionConnection {
     number,
     { resolve: (o: unknown) => void; reject: (e: Error) => void; error: Error }
   >();
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Used in send() method
+  private _lastId = 0;
   onmessage?: (method: string, params: Record<string, unknown>) => void;
   onclose?: (self: ExtensionConnection, reason: string) => void;
   constructor(ws: WebSocket) {

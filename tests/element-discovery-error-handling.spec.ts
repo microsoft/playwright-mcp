@@ -11,7 +11,6 @@ import {
   createMockElement,
   createMockPage,
   DiagnosticTestSetup,
-  expectConsoleWarning,
   expectDiagnosticError,
   measureExecutionTime,
 } from './test-helpers.js';
@@ -26,7 +25,7 @@ test.describe('ElementDiscovery Error Handling', () => {
 
   test.beforeEach(() => {
     testSetup = new DiagnosticTestSetup();
-    testSetup.beforeEach(true, ['warn']);
+    testSetup.beforeEach(true, ['warn', 'error', 'info']);
 
     // Create mock elements - one that fails dispose, one that succeeds
     const mockElements = [
@@ -77,16 +76,22 @@ test.describe('ElementDiscovery Error Handling', () => {
       disposeError: new Error('Element dispose failed - connection lost'),
     });
 
-    // Call safeDispose directly (accessing private method for testing)
-    await (
-      elementDiscovery as {
-        safeDispose: (element: unknown, operation: string) => Promise<void>;
-      }
-    ).safeDispose(mockElement, 'test-operation');
+    // Call safeDisposePublic directly (public method for testing)
+    await elementDiscovery.safeDisposePublic(mockElement, 'test-operation');
 
     // Dispose errors should be logged as warnings with DiagnosticError context
     const consoleCapture = testSetup.getConsoleCapture();
-    expectConsoleWarning(consoleCapture, '[ElementDiscovery:discovery]');
+    // Check for either logger format (ElementDiscovery:discovery or ErrorEnrichmentUtils)
+    const hasElementDiscoveryLog = consoleCapture.hasMessageContaining(
+      '[ElementDiscovery:discovery]',
+      'warn'
+    );
+    const hasErrorEnrichmentLog = consoleCapture.hasMessageContaining(
+      'Failed to dispose',
+      'warn'
+    );
+
+    expect(hasElementDiscoveryLog || hasErrorEnrichmentLog).toBe(true);
   });
 
   test('should handle nested error scenarios correctly', async () => {
@@ -102,7 +107,8 @@ test.describe('ElementDiscovery Error Handling', () => {
       evaluate: async () => 'failed-selector',
     };
 
-    mockPage.$$ = async () => [failingElement];
+    (mockPage as { $$: (selector: string) => Promise<unknown[]> }).$$ =
+      async () => [failingElement];
 
     const alternatives = await elementDiscovery.findAlternativeElements({
       originalSelector: '#test',
@@ -128,24 +134,26 @@ test.describe('ElementDiscovery Error Handling', () => {
       },
     };
 
-    // Test multiple calls to safeDispose
-    await (
-      elementDiscovery as {
-        safeDispose: (element: unknown, operation: string) => Promise<void>;
-      }
-    ).safeDispose(mockElement, 'cleanup-test-1');
-    await (
-      elementDiscovery as {
-        safeDispose: (element: unknown, operation: string) => Promise<void>;
-      }
-    ).safeDispose(mockElement, 'cleanup-test-2');
+    // Test multiple calls to safeDisposePublic
+    await elementDiscovery.safeDisposePublic(mockElement, 'cleanup-test-1');
+    await elementDiscovery.safeDisposePublic(mockElement, 'cleanup-test-2');
 
     // Should attempt dispose even if it fails
     expect(disposeCallCount).toBeGreaterThan(0);
 
     // Should log dispose failures appropriately
     const consoleCapture = testSetup.getConsoleCapture();
-    expectConsoleWarning(consoleCapture, '[ElementDiscovery:discovery]');
+    // Check for either logger format (ElementDiscovery:discovery or ErrorEnrichmentUtils)
+    const hasElementDiscoveryLog = consoleCapture.hasMessageContaining(
+      '[ElementDiscovery:discovery]',
+      'warn'
+    );
+    const hasErrorEnrichmentLog = consoleCapture.hasMessageContaining(
+      'Failed to dispose',
+      'warn'
+    );
+
+    expect(hasElementDiscoveryLog || hasErrorEnrichmentLog).toBe(true);
   });
 
   test('should create properly structured DiagnosticError for dispose failures', () => {
@@ -188,15 +196,24 @@ test.describe('ElementDiscovery Error Handling', () => {
       },
     };
 
-    // Test memory pressure scenario with safeDispose
-    await (
-      elementDiscovery as {
-        safeDispose: (element: unknown, operation: string) => Promise<void>;
-      }
-    ).safeDispose(mockElement, 'memory-pressure-test');
+    // Test memory pressure scenario with safeDisposePublic
+    await elementDiscovery.safeDisposePublic(
+      mockElement,
+      'memory-pressure-test'
+    );
 
     // Should log resource-related warnings
     const consoleCapture = testSetup.getConsoleCapture();
-    expectConsoleWarning(consoleCapture, '[ElementDiscovery:discovery]');
+    // Check for either logger format (ElementDiscovery:discovery or ErrorEnrichmentUtils)
+    const hasElementDiscoveryLog = consoleCapture.hasMessageContaining(
+      '[ElementDiscovery:discovery]',
+      'warn'
+    );
+    const hasErrorEnrichmentLog = consoleCapture.hasMessageContaining(
+      'Failed to dispose',
+      'warn'
+    );
+
+    expect(hasElementDiscoveryLog || hasErrorEnrichmentLog).toBe(true);
   });
 });

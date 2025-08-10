@@ -77,103 +77,10 @@ export abstract class DiagnosticBase implements IDisposable {
 
     try {
       await this.performDispose();
-    } catch (error) {
-      diagnosticWarn(
-        this.componentName,
-        'dispose',
-        'Failed to dispose component',
-        error instanceof Error ? error : String(error)
-      );
+    } catch (_error) {
+      // Silently ignore disposal errors
     } finally {
       this.markDisposed();
     }
   }
-}
-
-/**
- * Log warning message with consistent format
- */
-export function diagnosticWarn(
-  _component: string,
-  _operation: string,
-  _message: string,
-  _error?: unknown
-): void {
-  // Diagnostic warnings are handled silently
-}
-
-/**
- * Log error message with consistent format
- */
-export function diagnosticError(
-  _component: string,
-  _operation: string,
-  _message: string,
-  _error?: unknown
-): void {
-  // Diagnostic errors are handled silently
-}
-
-/**
- * Log info message with consistent format
- */
-export function diagnosticInfo(
-  _component: string,
-  _operation: string,
-  _message: string,
-  _data?: unknown
-): void {
-  // Diagnostic info messages are handled silently
-}
-
-/**
- * Log debug message with consistent format
- */
-export function diagnosticDebug(
-  _component: string,
-  _operation: string,
-  _message: string,
-  _data?: unknown
-): void {
-  // Diagnostic debug messages are handled silently
-}
-
-/**
- * Create operation-specific logger
- */
-export function createDiagnosticLogger(component: string, operation: string) {
-  return {
-    warn: (message: string, error?: unknown) =>
-      diagnosticWarn(
-        component,
-        operation,
-        message,
-        error instanceof Error ? error : String(error)
-      ),
-    error: (message: string, error?: unknown) =>
-      diagnosticError(
-        component,
-        operation,
-        message,
-        error instanceof Error ? error : String(error)
-      ),
-    info: (message: string, data?: unknown) =>
-      diagnosticInfo(
-        component,
-        operation,
-        message,
-        typeof data === 'object' && data !== null
-          ? (data as Record<string, unknown>)
-          : (data as string | number | undefined)
-      ),
-    debug: (message: string, data?: unknown) =>
-      diagnosticDebug(
-        component,
-        operation,
-        message,
-        typeof data === 'object' && data !== null
-          ? (data as Record<string, unknown>)
-          : (data as string | number | undefined)
-      ),
-  };
 }

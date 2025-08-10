@@ -3,7 +3,7 @@
  */
 
 import type * as playwright from 'playwright';
-import { createDiagnosticLogger, DiagnosticBase } from './common/index.js';
+import { DiagnosticBase } from './common/index.js';
 import type { DiagnosticComponent } from './diagnostic-error.js';
 import { DiagnosticError } from './diagnostic-error.js';
 import type { DiagnosticConfig } from './diagnostic-level.js';
@@ -74,7 +74,6 @@ export class EnhancedErrorHandler extends DiagnosticBase {
   private readonly elementDiscovery: ElementDiscovery;
   private readonly errorEnrichment: ErrorEnrichment;
   private readonly diagnosticManager: DiagnosticLevelManager;
-  private readonly logger: ReturnType<typeof createDiagnosticLogger>;
   private errorHistory: Array<{
     error: DiagnosticError;
     timestamp: number;
@@ -92,10 +91,6 @@ export class EnhancedErrorHandler extends DiagnosticBase {
     this.elementDiscovery = new ElementDiscovery(page);
     this.errorEnrichment = new ErrorEnrichment(page);
     this.diagnosticManager = new DiagnosticLevelManager(diagnosticConfig);
-    this.logger = createDiagnosticLogger(
-      'EnhancedErrorHandler',
-      'error-handling'
-    );
     this.maxErrorHistory = diagnosticConfig?.maxErrorHistory ?? 100;
   }
 
@@ -457,12 +452,8 @@ export class EnhancedErrorHandler extends DiagnosticBase {
       }
 
       return diagnosticError;
-    } catch (processingError) {
+    } catch (_processingError) {
       // Fallback: create simple diagnostic error if processing fails
-      this.logger.warn(
-        `Processing failed for ${component}:${operation}:`,
-        processingError
-      );
       return DiagnosticError.from(error as Error, component, operation, {
         executionTime: Date.now() - startTime,
       });
@@ -491,11 +482,8 @@ export class EnhancedErrorHandler extends DiagnosticBase {
         operation,
         pageStructure
       );
-    } catch (contextError) {
-      this.logger.warn(
-        `Context generation failed for ${component}:${operation}:`,
-        contextError
-      );
+    } catch (_contextError) {
+      // Context generation error silently ignored
     }
 
     return suggestions;
@@ -711,6 +699,7 @@ export class EnhancedErrorHandler extends DiagnosticBase {
       ErrorHandler: 0,
       ConfigManager: 0,
       UnifiedSystem: 0,
+      InitializationManager: 0,
     };
 
     const errorsByOperation: Record<string, number> = {};

@@ -599,6 +599,48 @@ export const HTML_TEMPLATES = {
       <button onclick="console.log('Hello, world!');">Click me</button>
     </html>
   `,
+  // Hover templates
+  HOVER_BUTTON: `
+    <title>Title</title>
+    <button onmouseenter="this.textContent = 'Hovered!'">Hover me</button>
+  `,
+  HOVER_TOOLTIP: `
+    <title>Title</title>
+    <button onmouseenter="showTooltip()" onmouseleave="hideTooltip()">Hover for tooltip</button>
+    <div id="tooltip" style="display:none; position:absolute; background:#000; color:#fff; padding:4px;">Tooltip text</div>
+    <script>
+      function showTooltip() {
+        document.getElementById('tooltip').style.display = 'block';
+      }
+      function hideTooltip() {
+        document.getElementById('tooltip').style.display = 'none';
+      }
+    </script>
+  `,
+  // Drag and drop templates
+  DRAG_DROP: `
+    <title>Title</title>
+    <div id="draggable" draggable="true">Draggable item</div>
+    <div id="drop-zone" ondragover="event.preventDefault()" ondrop="handleDrop(event)">Drop zone</div>
+    <script>
+      function handleDrop(event) {
+        event.preventDefault();
+        event.target.textContent = 'Item dropped!';
+      }
+    </script>
+  `,
+  MULTI_DRAG_DROP: `
+    <title>Title</title>
+    <div id="item1" draggable="true">Item 1</div>
+    <div id="item2" draggable="true">Item 2</div>
+    <div id="drop-area" ondragover="event.preventDefault()" ondrop="handleDrop(event)">Drop area</div>
+    <script>
+      function handleDrop(event) {
+        event.preventDefault();
+        event.target.textContent += ' ' + event.dataTransfer.getData('text/plain');
+      }
+    </script>
+  `,
 } as const;
 /**
  * HTML templates for browser diagnose tests
@@ -1596,10 +1638,18 @@ export function expectBatchExecutionSummary(
     totalSteps: number;
     successful: number;
     failed: number;
+    expectSuccess?: boolean; // Optional parameter to control status expectation
   }
 ): void {
   expect(result.content[0].text).toContain('Batch Execution Summary');
-  expect(result.content[0].text).toContain('✅ Completed');
+
+  // Check status based on expected results
+  if (expectedSummary.expectSuccess !== false && expectedSummary.failed === 0) {
+    expect(result.content[0].text).toContain('✅ Completed');
+  } else if (expectedSummary.failed > 0) {
+    expect(result.content[0].text).toContain('❌ Stopped on Error');
+  }
+
   expect(result.content[0].text).toContain(
     `Total Steps: ${expectedSummary.totalSteps}`
   );

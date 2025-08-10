@@ -53,8 +53,8 @@ test('create new tab', async ({ client }) => {
     tabs: `- 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`,
     pageState:
-      expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
-- Page Title: Tab one
+      expect.stringContaining(`- **Page URL:** data:text/html,<title>Tab one</title><body>Body one</body>
+- **Page Title:** Tab one
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body one
@@ -66,8 +66,8 @@ test('create new tab', async ({ client }) => {
 - 1: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 - 2: (current) [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`,
     pageState:
-      expect.stringContaining(`- Page URL: data:text/html,<title>Tab two</title><body>Body two</body>
-- Page Title: Tab two
+      expect.stringContaining(`- **Page URL:** data:text/html,<title>Tab two</title><body>Body two</body>
+- **Page Title:** Tab two
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body two
@@ -91,8 +91,8 @@ test('select tab', async ({ client }) => {
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
 - 2: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`,
     pageState:
-      expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
-- Page Title: Tab one
+      expect.stringContaining(`- **Page URL:** data:text/html,<title>Tab one</title><body>Body one</body>
+- **Page Title:** Tab one
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body one
@@ -115,8 +115,8 @@ test('close tab', async ({ client }) => {
     tabs: `- 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`,
     pageState:
-      expect.stringContaining(`- Page URL: data:text/html,<title>Tab one</title><body>Body one</body>
-- Page Title: Tab one
+      expect.stringContaining(`- **Page URL:** data:text/html,<title>Tab one</title><body>Body one</body>
+- **Page Title:** Tab one
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Body one

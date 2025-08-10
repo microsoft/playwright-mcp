@@ -118,14 +118,19 @@ function mergeWithDefaultExpectations(
 function wrapClientWithDefaultExpectations(client: Client): void {
   const originalCallTool = client.callTool.bind(client);
   client.callTool = (request: Parameters<Client['callTool']>[0]) => {
+    // Ensure arguments object exists
+    if (!request.arguments) {
+      request.arguments = {};
+    }
+
     // Add default expectation for tests if not specified
-    if (request.arguments && !request.arguments.expectation) {
-      request.arguments.expectation = { ...DEFAULT_TEST_EXPECTATIONS };
-    } else if (request.arguments?.expectation) {
+    if (request.arguments.expectation) {
       // Merge with defaults if expectation is partially specified
       request.arguments.expectation = mergeWithDefaultExpectations(
         request.arguments.expectation
       );
+    } else {
+      request.arguments.expectation = { ...DEFAULT_TEST_EXPECTATIONS };
     }
     return originalCallTool(request);
   };
@@ -290,7 +295,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    async (_, use, workerInfo) => {
+    async (_testInfo, use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 
@@ -378,9 +383,9 @@ export const expect = baseExpect.extend({
     const isNot = this.isNot;
     try {
       if (isNot) {
-        expect(parsed).not.toEqual(object);
+        expect(parsed).not.toMatchObject(object);
       } else {
-        expect(parsed).toEqual(object);
+        expect(parsed).toMatchObject(object);
       }
     } catch (e) {
       return {

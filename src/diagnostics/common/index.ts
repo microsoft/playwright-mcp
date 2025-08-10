@@ -10,11 +10,7 @@
  */
 
 export {
-  createDiagnosticLogger,
   DiagnosticBase,
-  diagnosticError,
-  diagnosticInfo,
-  diagnosticWarn,
   type IDisposable,
 } from './diagnostic-base.js';
 export {

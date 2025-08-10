@@ -5,10 +5,7 @@
 import type * as playwright from 'playwright';
 import { deduplicate } from '../utils/array-utils.js';
 import { createDisposableManager } from '../utils/disposable-manager.js';
-import {
-  createDiagnosticLogger,
-  DiagnosticBase,
-} from './common/diagnostic-base.js';
+import { DiagnosticBase } from './common/diagnostic-base.js';
 import { generateSuggestions } from './common/error-enrichment-utils.js';
 import type {
   AlternativeElement,
@@ -62,7 +59,6 @@ export interface BatchFailureOptions {
 export class ErrorEnrichment extends DiagnosticBase {
   private readonly pageAnalyzer: PageAnalyzer;
   private readonly elementDiscovery: ElementDiscovery;
-  protected readonly logger: ReturnType<typeof createDiagnosticLogger>;
   private readonly disposableManager =
     createDisposableManager('ErrorEnrichment');
 
@@ -72,7 +68,6 @@ export class ErrorEnrichment extends DiagnosticBase {
     this.elementDiscovery = this.disposableManager.register(
       new ElementDiscovery(page)
     );
-    this.logger = createDiagnosticLogger('ErrorEnrichment', 'enrichment');
   }
 
   protected async performDispose(): Promise<void> {

@@ -267,8 +267,16 @@ export class DiagnosticThresholds {
    * Update thresholds at runtime
    */
   updateThresholds(partialConfig: DiagnosticThresholdsConfig): void {
-    this.currentThresholds = this.mergeWithDefaults(partialConfig);
-    this.validateThresholds(this.currentThresholds);
+    const previousThresholds = { ...this.currentThresholds };
+    try {
+      const newThresholds = this.mergeWithCurrentThresholds(partialConfig);
+      this.validateThresholds(newThresholds);
+      this.currentThresholds = newThresholds;
+    } catch (error) {
+      // Restore previous thresholds on validation error
+      this.currentThresholds = previousThresholds;
+      throw error;
+    }
   }
 
   /**
@@ -281,6 +289,39 @@ export class DiagnosticThresholds {
   ): ResolvedDiagnosticThresholdsConfig {
     const result = JSON.parse(
       JSON.stringify(DEFAULT_THRESHOLDS)
+    ) as ResolvedDiagnosticThresholdsConfig;
+
+    // Use type-safe merger functions for all configuration sections
+    if (config.executionTime) {
+      Object.assign(result.executionTime, config.executionTime);
+    }
+    if (config.memory) {
+      Object.assign(result.memory, config.memory);
+    }
+    if (config.performance) {
+      Object.assign(result.performance, config.performance);
+    }
+    if (config.dom) {
+      Object.assign(result.dom, config.dom);
+    }
+    if (config.interaction) {
+      Object.assign(result.interaction, config.interaction);
+    }
+    if (config.layout) {
+      Object.assign(result.layout, config.layout);
+    }
+
+    return result;
+  }
+
+  /**
+   * Merge partial configuration with current thresholds
+   */
+  private mergeWithCurrentThresholds(
+    config: DiagnosticThresholdsConfig
+  ): ResolvedDiagnosticThresholdsConfig {
+    const result = JSON.parse(
+      JSON.stringify(this.currentThresholds)
     ) as ResolvedDiagnosticThresholdsConfig;
 
     // Use type-safe merger functions for all configuration sections

@@ -54,7 +54,6 @@ test('should use separate user data by root path', async ({
 test('check that trace is saved in workspace', async ({
   startClient,
   server,
-  _mcpMode,
 }, testInfo) => {
   const rootPath = testInfo.outputPath('workspace');
   const { client } = await startClient({
@@ -71,7 +70,12 @@ test('check that trace is saved in workspace', async ({
   expect(
     await client.callTool({
       name: 'browser_navigate',
-      arguments: { url: server.HELLO_WORLD },
+      arguments: {
+        url: server.HELLO_WORLD,
+        expectation: {
+          includeCode: true,
+        },
+      },
     })
   ).toHaveResponse({
     code: expect.stringContaining(`page.goto('http://localhost`),

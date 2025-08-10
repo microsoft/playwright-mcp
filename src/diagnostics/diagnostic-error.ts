@@ -8,7 +8,8 @@ export type DiagnosticComponent =
   | 'ResourceManager'
   | 'ErrorHandler'
   | 'ConfigManager'
-  | 'UnifiedSystem';
+  | 'UnifiedSystem'
+  | 'InitializationManager';
 
 export const PERFORMANCE_IMPACT_LEVELS = ['low', 'medium', 'high'] as const;
 export type PerformanceImpactLevel = (typeof PERFORMANCE_IMPACT_LEVELS)[number];

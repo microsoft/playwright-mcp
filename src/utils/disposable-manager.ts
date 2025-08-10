@@ -5,7 +5,6 @@
  * and logging, reducing duplicate disposal patterns across the codebase.
  */
 
-import { createDiagnosticLogger } from '../diagnostics/common/diagnostic-base.js';
 import { handleResourceDisposalError } from './common-formatters.js';
 
 export interface Disposable {
@@ -14,7 +13,6 @@ export interface Disposable {
 
 export interface DisposableManagerOptions {
   category?: string;
-  logger?: ReturnType<typeof createDiagnosticLogger>;
   maxParallelDisposals?: number;
 }
 
@@ -24,14 +22,11 @@ export interface DisposableManagerOptions {
 export class DisposableManager implements Disposable {
   private readonly disposables = new Set<Disposable>();
   private readonly category: string;
-  private readonly logger: ReturnType<typeof createDiagnosticLogger>;
   private readonly maxParallelDisposals: number;
   private disposed = false;
 
   constructor(options: DisposableManagerOptions = {}) {
     this.category = options.category ?? 'DisposableManager';
-    this.logger =
-      options.logger ?? createDiagnosticLogger('DisposableManager', 'resource');
     this.maxParallelDisposals = options.maxParallelDisposals ?? 10;
   }
 
@@ -85,21 +80,8 @@ export class DisposableManager implements Disposable {
     if (resources.length === 0) {
       return;
     }
-
-    this.logger.debug(
-      `Disposing ${resources.length} resources in ${this.category}`
-    );
-
-    try {
-      await this.disposeInBatches(resources);
-      this.disposables.clear();
-      this.logger.debug(
-        `Successfully disposed all resources in ${this.category}`
-      );
-    } catch (error) {
-      this.logger.error(`Error during disposal in ${this.category}`, error);
-      throw error;
-    }
+    await this.disposeInBatches(resources);
+    this.disposables.clear();
   }
 
   /**
@@ -150,11 +132,9 @@ export class DisposableManager implements Disposable {
     try {
       await resource.dispose();
     } catch (error) {
-      handleResourceDisposalError(
-        error,
-        `${this.category} resource`,
-        (message) => this.logger.warn(message)
-      );
+      handleResourceDisposalError(error, `${this.category} resource`, () => {
+        // Log handler no-op
+      });
     }
   }
 
@@ -168,16 +148,12 @@ export class DisposableManager implements Disposable {
     const failures = results.filter(
       (result) => result.status === 'rejected'
     ).length;
-    const successes = batchSize - failures;
+    const _successes = batchSize - failures;
 
     if (failures > 0) {
-      this.logger.warn(
-        `Batch disposal completed: ${successes} succeeded, ${failures} failed`
-      );
+      // Batch disposal completed with failures
     } else {
-      this.logger.debug(
-        `Batch disposal completed: ${successes} resources disposed successfully`
-      );
+      // Batch disposal completed successfully
     }
   }
 }

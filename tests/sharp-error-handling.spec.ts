@@ -23,7 +23,7 @@ const IMAGE_PROCESSING_FAILED_REGEX = /Image processing failed/;
 
 test.describe('Sharp Error Handling Tests', () => {
   test('should throw errors for invalid image data', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../lib/utils/image-processor.js');
 
     // Test with various invalid data - all should throw errors
     const testCases = [
@@ -47,7 +47,7 @@ test.describe('Sharp Error Handling Tests', () => {
   });
 
   test('should handle valid PNG data with Sharp', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../lib/utils/image-processor.js');
 
     // Use a real PNG file from the extension icons
     const pngPath = join(process.cwd(), 'extension/icons/icon-16.png');
@@ -66,7 +66,7 @@ test.describe('Sharp Error Handling Tests', () => {
   });
 
   test('should handle valid vs invalid image data correctly', async () => {
-    const { processImage } = await import('../src/utils/imageProcessor.js');
+    const { processImage } = await import('../lib/utils/image-processor.js');
 
     // Test case that should work with Sharp processing - use real PNG
     const validPngPath = join(process.cwd(), 'extension/icons/icon-32.png');

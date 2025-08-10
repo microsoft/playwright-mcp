@@ -33,7 +33,8 @@ test('browser_navigate', async ({ client, server }) => {
   });
 });
 
-test('browser_select_option', async ({ client, server }) => {
+test('browser_select_option', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
   server.setContent(
     '/',
     `
@@ -73,7 +74,12 @@ test('browser_select_option', async ({ client, server }) => {
   });
 });
 
-test('browser_select_option (multiple)', async ({ client, server }) => {
+test('browser_select_option (multiple)', async ({
+  client,
+  server,
+  mcpBrowser,
+}) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
   server.setContent(
     '/',
     `

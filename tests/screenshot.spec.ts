@@ -22,9 +22,10 @@ import { callTool, navigateToUrl } from './test-helpers.js';
 // Screenshot test constants
 const SCREENSHOT_PATTERNS = {
   FILENAME_VALIDATION:
-    /page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.(png|jpeg)/,
-  PAGE_TIMESTAMP: /^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png$/,
-  PAGE_TIMESTAMP_MATCH: /page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png/,
+    /page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{1,3}Z\.(png|jpeg)/,
+  PAGE_TIMESTAMP: /^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{1,3}Z\.png$/,
+  PAGE_TIMESTAMP_MATCH:
+    /page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{1,3}Z\.png/,
   OUTPUT_PNG: /^output\.png$/,
 } as const;
 
@@ -49,7 +50,7 @@ function expectImageAttachment(mimeType = 'image/png') {
   };
 }
 
-function expectScreenshotContent(text?: string, mimeType = 'image/png') {
+function _expectScreenshotContent(text?: string, mimeType = 'image/png') {
   const content: Array<{
     text?: unknown;
     type: string;
@@ -129,9 +130,10 @@ test('browser_take_screenshot (element)', async ({
       ref: 'e1',
       expectation: COMMON_EXPECTATIONS.WITH_CODE,
     })
-  ).toEqual(
-    expectScreenshotContent(`page.getByText('Hello, world!').screenshot`)
-  );
+  ).toHaveResponse({
+    code: expect.stringContaining(`page.getByText('Hello, world!').screenshot`),
+    attachments: [expectImageAttachment()],
+  });
 });
 
 test('--output-dir should work', async ({ startClient, server }, testInfo) => {
@@ -164,22 +166,15 @@ for (const type of ['png', 'jpeg']) {
       code: expect.stringContaining(`page.goto('http://localhost`),
     });
 
-    expect(await callTool(client, 'browser_take_screenshot', { type })).toEqual(
-      {
-        content: [
-          {
-            text: expect.stringMatching(
-              SCREENSHOT_PATTERNS.FILENAME_VALIDATION
-            ),
-            type: 'text',
-          },
-          expectImageAttachment(`image/${type}`),
-        ],
-      }
-    );
+    expect(
+      await callTool(client, 'browser_take_screenshot', { type })
+    ).toHaveResponse({
+      result: expect.stringContaining('Took the viewport screenshot'),
+      attachments: [expectImageAttachment(`image/${type}`)],
+    });
 
     const filePattern = new RegExp(
-      `^page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z\\.${type}$`
+      `^page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\.\\d{1,3}Z\\.${type}$`
     );
     verifyScreenshotFiles(outputDir, 1, type, filePattern);
   });
@@ -196,14 +191,9 @@ test('browser_take_screenshot (default type should be png)', async ({
     code: `await page.goto('${server.PREFIX}');`,
   });
 
-  expect(await callTool(client, 'browser_take_screenshot', {})).toEqual({
-    content: [
-      {
-        text: expect.stringMatching(SCREENSHOT_PATTERNS.PAGE_TIMESTAMP_MATCH),
-        type: 'text',
-      },
-      expectImageAttachment(),
-    ],
+  expect(await callTool(client, 'browser_take_screenshot', {})).toHaveResponse({
+    result: expect.stringContaining('Took the viewport screenshot'),
+    attachments: [expectImageAttachment()],
   });
 
   verifyScreenshotFiles(
@@ -229,7 +219,10 @@ test('browser_take_screenshot (filename: "output.png")', async ({
     await callTool(client, 'browser_take_screenshot', {
       filename: 'output.png',
     })
-  ).toEqual(expectScreenshotContent('output.png'));
+  ).toHaveResponse({
+    result: expect.stringContaining('output.png'),
+    attachments: [expectImageAttachment()],
+  });
 
   verifyScreenshotFiles(outputDir, 1, 'png', SCREENSHOT_PATTERNS.OUTPUT_PNG);
 });
@@ -256,13 +249,8 @@ test('browser_take_screenshot (imageResponses=omit)', async ({
     await callTool(client, 'browser_take_screenshot', {
       expectation: COMMON_EXPECTATIONS.WITH_CODE,
     })
-  ).toEqual({
-    content: [
-      {
-        text: expect.stringContaining('await page.screenshot'),
-        type: 'text',
-      },
-    ],
+  ).toHaveResponse({
+    code: expect.stringContaining('await page.screenshot'),
   });
 });
 
@@ -282,7 +270,10 @@ test('browser_take_screenshot (fullPage: true)', async ({
       fullPage: true,
       expectation: COMMON_EXPECTATIONS.WITH_CODE,
     })
-  ).toEqual(expectScreenshotContent('fullPage: true'));
+  ).toHaveResponse({
+    code: expect.stringContaining('fullPage: true'),
+    attachments: [expectImageAttachment()],
+  });
 });
 
 test('browser_take_screenshot (fullPage with element should error)', async ({
@@ -310,7 +301,6 @@ test('browser_take_screenshot (fullPage with element should error)', async ({
 
 test('browser_take_screenshot (viewport without snapshot)', async ({
   startClient,
-  _server,
 }, testInfo) => {
   const { clientConfig } = createScreenshotTestSetup(testInfo);
   const { client } = await startClient({ config: clientConfig });
@@ -325,5 +315,8 @@ test('browser_take_screenshot (viewport without snapshot)', async ({
     await callTool(client, 'browser_take_screenshot', {
       expectation: COMMON_EXPECTATIONS.WITH_CODE,
     })
-  ).toEqual(expectScreenshotContent('page.screenshot'));
+  ).toHaveResponse({
+    code: expect.stringContaining('page.screenshot'),
+    attachments: [expectImageAttachment()],
+  });
 });

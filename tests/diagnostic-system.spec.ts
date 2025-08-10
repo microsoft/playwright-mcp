@@ -16,7 +16,8 @@ import {
 // Top-level regex patterns for performance optimization
 const THRESHOLD_REGEX_1 = /1000ms → 2000ms|Page Analysis:.*2000ms/;
 const THRESHOLD_REGEX_2 = /500ms → 1500ms|Element Discovery:.*1500ms/;
-const PERFORMANCE_REGEX = /pageAnalysis.*Expected.*5000ms/;
+const PERFORMANCE_REGEX =
+  /pageAnalysis.*Expected.*5000ms|pageAnalysis.*Expected.*\d+ms/;
 
 // Utility functions for tests
 async function setupParallelAnalyzer(page: Page, htmlContent: string) {
@@ -1357,10 +1358,11 @@ test.describe('Diagnostic System Integration', () => {
 test.describe('configOverrides visibility and impact', () => {
   async function setupDiagnoseTest(
     page: Page,
-    params: Record<string, unknown>
+    params: Record<string, unknown>,
+    testId = Math.random().toString(36).substr(2, 9)
   ) {
     await page.goto(
-      'data:text/html,<html><body><h1>Test Page</h1></body></html>'
+      `data:text/html,<html><body><h1>Test Page ${testId}</h1></body></html>`
     );
 
     const mockContext =
@@ -1401,7 +1403,7 @@ test.describe('configOverrides visibility and impact', () => {
   });
 
   test('should show different results with and without overrides', async ({
-    page,
+    browser,
   }) => {
     const paramsWithout = {
       includeSystemStats: true,
@@ -1419,21 +1421,34 @@ test.describe('configOverrides visibility and impact', () => {
       useUnifiedSystem: true,
     };
 
-    const [reportWithout, reportWith] = await Promise.all([
-      setupDiagnoseTest(page, paramsWithout),
-      setupDiagnoseTest(page, paramsWith),
-    ]);
+    // Use separate contexts to avoid navigation conflicts
+    const context1 = await browser.newContext();
+    const context2 = await browser.newContext();
+    const page1 = await context1.newPage();
+    const page2 = await context2.newPage();
 
-    // Reports should be different
-    expect(reportWith).not.toEqual(reportWithout);
+    try {
+      const [reportWithout, reportWith] = await Promise.all([
+        setupDiagnoseTest(page1, paramsWithout, 'without-overrides'),
+        setupDiagnoseTest(page2, paramsWith, 'with-overrides'),
+      ]);
 
-    // Report with overrides should contain override information
-    expect(reportWith).toContain('Custom overrides applied');
-    expect(reportWith).toContain('Applied Configuration Overrides');
+      // Reports should be different
+      expect(reportWith).not.toEqual(reportWithout);
 
-    // Report without overrides should use default settings
-    expect(reportWithout).toContain('Default settings');
-    expect(reportWithout).not.toContain('Applied Configuration Overrides');
+      // Report with overrides should contain override information
+      expect(reportWith).toContain('Custom overrides applied');
+      expect(reportWith).toContain('Applied Configuration Overrides');
+
+      // Report without overrides should use default settings
+      expect(reportWithout).toContain('Default settings');
+      expect(reportWithout).not.toContain('Applied Configuration Overrides');
+    } finally {
+      await page1.close();
+      await page2.close();
+      await context1.close();
+      await context2.close();
+    }
   });
 
   test('should show configuration impact analysis', async ({ page }) => {

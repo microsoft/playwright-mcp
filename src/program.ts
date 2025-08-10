@@ -126,33 +126,37 @@ program
     if (options.vision) {
       options.caps = 'vision';
     }
-    const config = await resolveCLIConfig(options);
-    if (options.extension) {
-      await runWithExtension(config);
-      return;
-    }
-    if (options.loopTools) {
-      await runLoopTools(config);
-      return;
-    }
-    const browserContextFactory = contextFactory(config);
-    const factories: FactoryList = [browserContextFactory];
-    if (options.connectTool) {
-      factories.push(createExtensionContextFactory(config));
-    }
-    const serverBackendFactory = () =>
-      new BrowserServerBackend(config, factories);
-    logServerStart();
-    await start(serverBackendFactory, config.server);
-    if (config.saveTrace) {
-      const server = await startTraceViewerServer();
-      const urlPrefix = server.urlPrefix('human-readable');
-      const url =
-        urlPrefix +
-        '/trace/index.html?trace=' +
-        config.browser.launchOptions.tracesDir +
-        '/trace.json';
-      programDebug(`Trace viewer available at: ${url}`);
+    try {
+      const config = await resolveCLIConfig(options);
+      if (options.extension) {
+        await runWithExtension(config);
+        return;
+      }
+      if (options.loopTools) {
+        await runLoopTools(config);
+        return;
+      }
+      const browserContextFactory = contextFactory(config);
+      const factories: FactoryList = [browserContextFactory];
+      if (options.connectTool) {
+        factories.push(createExtensionContextFactory(config));
+      }
+      const serverBackendFactory = () =>
+        new BrowserServerBackend(config, factories);
+      logServerStart();
+      await start(serverBackendFactory, config.server);
+      if (config.saveTrace) {
+        const server = await startTraceViewerServer();
+        const urlPrefix = server.urlPrefix('human-readable');
+        const url =
+          urlPrefix +
+          '/trace/index.html?trace=' +
+          config.browser.launchOptions.tracesDir +
+          '/trace.json';
+        programDebug(`Trace viewer available at: ${url}`);
+      }
+    } catch (_error) {
+      process.exit(1);
     }
   });
 function setupExitWatchdog() {
@@ -170,6 +174,6 @@ function setupExitWatchdog() {
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
 }
-program.parseAsync(process.argv).catch(() => {
+program.parseAsync(process.argv).catch((_error) => {
   process.exit(1);
 });

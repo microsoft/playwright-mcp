@@ -18,7 +18,7 @@ import fs from 'node:fs';
 
 import { expect, formatOutput, test } from './fixtures.js';
 
-test('test reopen browser', async ({ startClient, server, _mcpMode }) => {
+test('test reopen browser', async ({ startClient, server }) => {
   const { client, stderr } = await startClient();
   await client.callTool({
     name: 'browser_navigate',
@@ -28,6 +28,12 @@ test('test reopen browser', async ({ startClient, server, _mcpMode }) => {
   expect(
     await client.callTool({
       name: 'browser_close',
+      arguments: {
+        expectation: {
+          includeCode: true,
+          includeTabs: true,
+        },
+      },
     })
   ).toHaveResponse({
     code: 'await page.close()',
@@ -37,7 +43,12 @@ test('test reopen browser', async ({ startClient, server, _mcpMode }) => {
   expect(
     await client.callTool({
       name: 'browser_navigate',
-      arguments: { url: server.HELLO_WORLD },
+      arguments: {
+        url: server.HELLO_WORLD,
+        expectation: {
+          includeSnapshot: true,
+        },
+      },
     })
   ).toHaveResponse({
     pageState: expect.stringContaining(
@@ -100,7 +111,12 @@ test('persistent context', async ({ startClient, server }) => {
   expect(
     await client.callTool({
       name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
+      arguments: {
+        url: server.PREFIX,
+        expectation: {
+          includeSnapshot: true,
+        },
+      },
     })
   ).toHaveResponse({
     pageState: expect.stringContaining('Storage: NO'),
@@ -116,7 +132,12 @@ test('persistent context', async ({ startClient, server }) => {
   expect(
     await client2.callTool({
       name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
+      arguments: {
+        url: server.PREFIX,
+        expectation: {
+          includeSnapshot: true,
+        },
+      },
     })
   ).toHaveResponse({
     pageState: expect.stringContaining('Storage: YES'),
@@ -141,7 +162,12 @@ test('isolated context', async ({ startClient, server }) => {
   expect(
     await client1.callTool({
       name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
+      arguments: {
+        url: server.PREFIX,
+        expectation: {
+          includeSnapshot: true,
+        },
+      },
     })
   ).toHaveResponse({
     pageState: expect.stringContaining('Storage: NO'),
@@ -155,7 +181,12 @@ test('isolated context', async ({ startClient, server }) => {
   expect(
     await client2.callTool({
       name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
+      arguments: {
+        url: server.PREFIX,
+        expectation: {
+          includeSnapshot: true,
+        },
+      },
     })
   ).toHaveResponse({
     pageState: expect.stringContaining('Storage: NO'),
@@ -197,7 +228,12 @@ test('isolated context with storage state', async ({
   expect(
     await client.callTool({
       name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
+      arguments: {
+        url: server.PREFIX,
+        expectation: {
+          includeSnapshot: true,
+        },
+      },
     })
   ).toHaveResponse({
     pageState: expect.stringContaining('Storage: session-value'),

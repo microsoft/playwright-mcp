@@ -4,11 +4,6 @@
 
 import { deduplicateAndLimit } from '../../utils/array-utils.js';
 
-import {
-  type createDiagnosticLogger,
-  diagnosticWarn,
-} from './diagnostic-base.js';
-
 export interface ErrorContext {
   operation: string;
   component: string;
@@ -145,24 +140,13 @@ export function generateSuggestions(
  */
 export async function safeDispose<T extends { dispose(): Promise<void> }>(
   resource: T,
-  resourceType: string,
-  operation: string,
-  logger?: ReturnType<typeof createDiagnosticLogger>
+  _resourceType: string,
+  _operation: string
 ): Promise<void> {
   try {
     await resource.dispose();
-  } catch (error) {
-    const message = `Failed to dispose ${resourceType}`;
-    if (logger) {
-      logger.warn(message, error);
-    } else {
-      diagnosticWarn(
-        'ErrorEnrichmentUtils',
-        operation,
-        message,
-        error instanceof Error ? error : String(error)
-      );
-    }
+  } catch (_error) {
+    // Failed to dispose resource
   }
 }
 
@@ -172,11 +156,10 @@ export async function safeDispose<T extends { dispose(): Promise<void> }>(
 export async function safeDisposeAll<T extends { dispose(): Promise<void> }>(
   resources: T[],
   resourceType: string,
-  operation: string,
-  logger?: ReturnType<typeof createDiagnosticLogger>
+  operation: string
 ): Promise<void> {
   const disposePromises = resources.map((resource) =>
-    safeDispose(resource, resourceType, operation, logger)
+    safeDispose(resource, resourceType, operation)
   );
 
   await Promise.allSettled(disposePromises);
