@@ -87,6 +87,11 @@ const click = defineTabTool({
         await locator.click({ button });
       }
     });
+    // If expectation includes snapshot, capture it now after potential navigation
+    if (params.expectation?.includeSnapshot) {
+      const newSnapshot = await tab.captureSnapshot();
+      response.setTabSnapshot(newSnapshot);
+    }
   },
 });
 const drag = defineTabTool({

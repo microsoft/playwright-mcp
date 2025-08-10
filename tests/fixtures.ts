@@ -213,7 +213,11 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await use(client);
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
+  startClient: async (
+    { mcpHeadless, mcpBrowser, mcpMode },
+    use,
+    { testInfo }
+  ) => {
     const configDir = path.dirname(test.info().config.configFile ?? '.');
     let client: Client | undefined;
 

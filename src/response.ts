@@ -86,7 +86,12 @@ export class Response {
     // Expectation settings take priority over legacy setIncludeSnapshot calls
     const shouldIncludeSnapshot =
       this._expectation.includeSnapshot || this._includeSnapshot;
-    if (shouldIncludeSnapshot && this._context.currentTab()) {
+    if (
+      shouldIncludeSnapshot &&
+      this._context.currentTab() &&
+      !this._tabSnapshot
+    ) {
+      // Only capture if not already set manually
       // Enhanced navigation detection and deferred execution
       await this._captureSnapshotWithNavigationHandling();
     }

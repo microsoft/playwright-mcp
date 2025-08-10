@@ -29,6 +29,11 @@ const pressKey = defineTabTool({
     await tab.waitForCompletion(async () => {
       await tab.page.keyboard.press(params.key);
     });
+    // If expectation includes snapshot, capture it now after navigation
+    if (params.expectation?.includeSnapshot) {
+      const newSnapshot = await tab.captureSnapshot();
+      response.setTabSnapshot(newSnapshot);
+    }
   },
 });
 const typeSchema = elementSchema.extend({
