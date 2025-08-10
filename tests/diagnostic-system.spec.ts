@@ -16,8 +16,7 @@ import {
 // Top-level regex patterns for performance optimization
 const THRESHOLD_REGEX_1 = /1000ms → 2000ms|Page Analysis:.*2000ms/;
 const THRESHOLD_REGEX_2 = /500ms → 1500ms|Element Discovery:.*1500ms/;
-const PERFORMANCE_REGEX =
-  /pageAnalysis.*Expected.*5000ms|pageAnalysis.*Expected.*\d+ms/;
+const PERFORMANCE_REGEX = /pageAnalysis[\s\S]*?Expected[\s\S]*?(?:5000|\d+)ms/;
 
 // Utility functions for tests
 async function setupParallelAnalyzer(page: Page, htmlContent: string) {
@@ -1359,7 +1358,7 @@ test.describe('configOverrides visibility and impact', () => {
   async function setupDiagnoseTest(
     page: Page,
     params: Record<string, unknown>,
-    testId = Math.random().toString(36).substr(2, 9)
+    testId = crypto.randomUUID().substring(0, 9)
   ) {
     await page.goto(
       `data:text/html,<html><body><h1>Test Page ${testId}</h1></body></html>`
