@@ -91,6 +91,15 @@ export class UnifiedDiagnosticSystem {
   private resourceManager?: ResourceManager;
   private errorHandler?: EnhancedErrorHandler;
 
+  // Exposed properties for testing initialization state
+  public get isInitialized(): boolean {
+    return this.initializationManager?.getIsInitialized() ?? false;
+  }
+
+  public get initializationPromise(): Promise<void> | null {
+    return this.initializationManager?.initializationPromise ?? null;
+  }
+
   private readonly stats: SystemStats;
   private operationHistory: Array<{
     operation: string;
@@ -103,6 +112,24 @@ export class UnifiedDiagnosticSystem {
   private constructor(page: playwright.Page, config?: Partial<SmartConfig>) {
     this.page = page;
     this.configManager = SmartConfigManager.getInstance(config);
+    
+    // Validate that configManager was properly initialized
+    if (!this.configManager) {
+      throw new DiagnosticError(
+        'Failed to initialize SmartConfigManager',
+        {
+          timestamp: Date.now(),
+          component: 'UnifiedSystem',
+          operation: 'constructor',
+          suggestions: [
+            'Ensure SmartConfigManager singleton is not reset during initialization',
+            'Check if config parameter is valid',
+            'Verify no concurrent initialization issues',
+          ],
+        }
+      );
+    }
+    
     this.performanceTracker = new PerformanceTracker();
     this.logger = createDiagnosticLogger('UnifiedSystem', 'system');
 
@@ -121,52 +148,146 @@ export class UnifiedDiagnosticSystem {
    * Initialize all diagnostic components using common initialization manager
    */
   async initializeComponents(): Promise<void> {
-    const stages = [
-      createCoreStage('core-infrastructure', [
-        () => {
-          this.resourceManager = new ResourceManager();
-          this.initializationManager.trackPartialInitialization(
-            this.resourceManager
-          );
-          return Promise.resolve();
-        },
-      ]),
-      createDependentStage(
-        'page-dependent',
-        ['core-infrastructure'],
-        [
-          () => {
-            const componentConfig =
-              this.configManager.getComponentConfig('pageAnalyzer');
-            this.pageAnalyzer = new PageAnalyzer(this.page);
-            this.elementDiscovery = new ElementDiscovery(this.page);
-            this.errorHandler = new EnhancedErrorHandler(
-              this.page,
-              componentConfig.diagnostic as Record<string, unknown>
-            );
+    // Ensure 'this' context is valid
+    if (!this.initializationManager) {
+      throw new DiagnosticError(
+        'InitializationManager is not available',
+        {
+          timestamp: Date.now(),
+          component: 'UnifiedSystem',
+          operation: 'initializeComponents',
+          suggestions: [
+            'Verify system was properly constructed',
+            'Check if instance was disposed',
+            'Ensure getInstance was called with valid page',
+          ],
+        }
+      );
+    }
 
+    try {
+      const stages = [
+        createCoreStage('core-infrastructure', [
+          () => {
+            this.resourceManager = new ResourceManager();
             this.initializationManager.trackPartialInitialization(
-              this.pageAnalyzer
-            );
-            this.initializationManager.trackPartialInitialization(
-              this.elementDiscovery
+              this.resourceManager
             );
             return Promise.resolve();
           },
-        ]
-      ),
-      createAdvancedStage('advanced-features', [
-        () => {
-          this.parallelAnalyzer = new ParallelPageAnalyzer(this.page);
-          this.initializationManager.trackPartialInitialization(
-            this.parallelAnalyzer
-          );
-          return Promise.resolve();
-        },
-      ]),
-    ];
+        ]),
+        createDependentStage(
+          'page-dependent',
+          ['core-infrastructure'],
+          [
+            () => {
+              // Validate configManager is still available
+              if (!this.configManager) {
+                throw new DiagnosticError(
+                  'SmartConfigManager is not available during component initialization',
+                  {
+                    timestamp: Date.now(),
+                    component: 'UnifiedSystem',
+                    operation: 'initializeComponents',
+                    suggestions: [
+                      'Check if SmartConfigManager instance was reset during initialization',
+                      'Ensure singleton lifecycle is properly managed',
+                      'Verify no concurrent disposal operations',
+                    ],
+                  }
+                );
+              }
+              
+              const componentConfig =
+                this.configManager.getComponentConfig('pageAnalyzer');
+              this.pageAnalyzer = new PageAnalyzer(this.page);
+              this.elementDiscovery = new ElementDiscovery(this.page);
+              this.errorHandler = new EnhancedErrorHandler(
+                this.page,
+                componentConfig.diagnostic as Record<string, unknown>
+              );
 
-    await this.initializationManager.initialize(stages);
+              this.initializationManager.trackPartialInitialization(
+                this.pageAnalyzer
+              );
+              this.initializationManager.trackPartialInitialization(
+                this.elementDiscovery
+              );
+              return Promise.resolve();
+            },
+          ]
+        ),
+        createAdvancedStage('advanced-features', [
+          () => {
+            this.parallelAnalyzer = new ParallelPageAnalyzer(this.page);
+            this.initializationManager.trackPartialInitialization(
+              this.parallelAnalyzer
+            );
+            return Promise.resolve();
+          },
+        ]),
+      ];
+
+      await this.initializationManager.initialize(stages);
+    } catch (error) {
+      // Ensure we always throw DiagnosticError for consistent error handling
+      if (error instanceof DiagnosticError) {
+        throw error;
+      }
+      
+      const baseError = error instanceof Error ? error : new Error(String(error));
+      throw new DiagnosticError(
+        `Component initialization failed: ${baseError.message}`,
+        {
+          timestamp: Date.now(),
+          component: 'UnifiedSystem',
+          operation: 'initializeComponents',
+          suggestions: [
+            'Review component dependencies',
+            'Check page and configuration validity',
+            'Verify all required components are available',
+          ],
+          context: {
+            stage: 'initialization',
+            failedComponents: this ? (this.getFailedComponents?.() ?? []) : [],
+          },
+        },
+        baseError
+      );
+    }
+  }
+
+  /**
+   * Helper method to identify failed components during initialization
+   */
+  private getFailedComponents(): string[] {
+    const failedComponents: string[] = [];
+    if (!this.resourceManager) failedComponents.push('ResourceManager');
+    if (!this.pageAnalyzer) failedComponents.push('PageAnalyzer');
+    if (!this.elementDiscovery) failedComponents.push('ElementDiscovery');
+    if (!this.errorHandler) failedComponents.push('ErrorHandler');
+    if (!this.parallelAnalyzer) failedComponents.push('ParallelAnalyzer');
+    return failedComponents;
+  }
+
+  /**
+   * Clean up partially initialized components (exposed for testing)
+   */
+  async cleanupPartialInitialization(
+    components: { dispose: () => Promise<void> }[]
+  ): Promise<void> {
+    await Promise.allSettled(
+      components.map(async (component) => {
+        try {
+          await component.dispose();
+        } catch (error) {
+          this.logger.warn(
+            'Failed to dispose partially initialized component',
+            error
+          );
+        }
+      })
+    );
   }
 
   /**
@@ -202,10 +323,6 @@ export class UnifiedDiagnosticSystem {
     if (!UnifiedDiagnosticSystem.instances.has(page)) {
       const instance = new UnifiedDiagnosticSystem(page, config);
       UnifiedDiagnosticSystem.instances.set(page, instance);
-      // Initialize components asynchronously without blocking getInstance
-      instance.initializeComponents().catch((_error) => {
-        // Initialization errors will be caught when methods are called
-      });
     }
     const system = UnifiedDiagnosticSystem.instances.get(page);
     if (!system) {
@@ -232,6 +349,7 @@ export class UnifiedDiagnosticSystem {
         ErrorHandler: 0,
         ConfigManager: 0,
         UnifiedSystem: 0,
+        InitializationManager: 0,
       },
       performanceMetrics: {
         averageExecutionTime: {},
@@ -249,6 +367,11 @@ export class UnifiedDiagnosticSystem {
   }
 
   private setupConfigurationListener(): void {
+    if (!this.configManager) {
+      this.logger.warn('Cannot setup configuration listener: SmartConfigManager is not available');
+      return;
+    }
+    
     this.configManager.onConfigChange((_config) => {
       this.logger.info('Configuration updated', { hasChanges: true });
     });
@@ -262,6 +385,28 @@ export class UnifiedDiagnosticSystem {
     options?: { timeout?: number; enableResourceMonitoring?: boolean }
   ): Promise<OperationResult<T>> {
     const startTime = Date.now();
+    
+    // Validate configManager is available before proceeding
+    if (!this.configManager) {
+      throw new DiagnosticError(
+        'SmartConfigManager is not available for operation execution',
+        {
+          timestamp: startTime,
+          component: 'UnifiedSystem',
+          operation: 'executeOperation',
+          suggestions: [
+            'Ensure UnifiedSystem is properly initialized',
+            'Check if SmartConfigManager instance was disposed',
+            'Verify system lifecycle management',
+          ],
+          context: {
+            operation,
+            targetComponent: component,
+          },
+        }
+      );
+    }
+    
     const config = this.configManager.getConfig();
     let componentConfigType:
       | 'pageAnalyzer'
@@ -412,8 +557,9 @@ export class UnifiedDiagnosticSystem {
       success,
     });
 
-    const maxHistory =
-      this.configManager.getConfig().errorHandling.maxErrorHistory;
+    const maxHistory = this.configManager
+      ? this.configManager.getConfig().errorHandling.maxErrorHistory
+      : 100; // fallback value
     if (this.operationHistory.length > maxHistory) {
       this.operationHistory = this.operationHistory.slice(-maxHistory);
     }
@@ -424,7 +570,7 @@ export class UnifiedDiagnosticSystem {
     component: DiagnosticComponent
   ): void {
     // Use centralized configuration check to eliminate duplication
-    if (!this.configManager.isAdaptiveThresholdsEnabled()) {
+    if (!this.configManager || !this.configManager.isAdaptiveThresholdsEnabled()) {
       return;
     }
 
@@ -449,6 +595,10 @@ export class UnifiedDiagnosticSystem {
     avgTime: number,
     successRate: number
   ): void {
+    if (!this.configManager) {
+      return; // Silently skip adjustment if configManager is not available
+    }
+    
     if (component === 'PageAnalyzer') {
       this.configManager.adjustThresholds('pageAnalysis', avgTime, successRate);
     } else if (component === 'ElementDiscovery') {
@@ -515,6 +665,23 @@ export class UnifiedDiagnosticSystem {
     forceParallel?: boolean
   ): Promise<OperationResult> {
     await this.ensureInitialized();
+    
+    if (!this.configManager) {
+      throw new DiagnosticError(
+        'Cannot analyze page structure: SmartConfigManager is not available',
+        {
+          timestamp: Date.now(),
+          component: 'UnifiedSystem',
+          operation: 'analyzePageStructure',
+          suggestions: [
+            'Ensure UnifiedSystem is properly initialized',
+            'Check if SmartConfigManager instance was disposed',
+            'Verify system lifecycle management',
+          ],
+        }
+      );
+    }
+    
     const config = this.configManager.getConfig();
 
     // Determine analysis mode with clear logging
@@ -588,10 +755,40 @@ export class UnifiedDiagnosticSystem {
 
   // Configuration management
   updateConfiguration(updates: Partial<SmartConfig>): void {
+    if (!this.configManager) {
+      throw new DiagnosticError(
+        'Cannot update configuration: SmartConfigManager is not available',
+        {
+          timestamp: Date.now(),
+          component: 'UnifiedSystem',
+          operation: 'updateConfiguration',
+          suggestions: [
+            'Ensure UnifiedSystem is properly initialized',
+            'Check if SmartConfigManager instance was disposed',
+            'Verify system lifecycle management',
+          ],
+        }
+      );
+    }
     this.configManager.updateConfig(updates);
   }
 
   getConfiguration(): SmartConfig {
+    if (!this.configManager) {
+      throw new DiagnosticError(
+        'Cannot get configuration: SmartConfigManager is not available',
+        {
+          timestamp: Date.now(),
+          component: 'UnifiedSystem',
+          operation: 'getConfiguration',
+          suggestions: [
+            'Ensure UnifiedSystem is properly initialized',
+            'Check if SmartConfigManager instance was disposed',
+            'Verify system lifecycle management',
+          ],
+        }
+      );
+    }
     return this.configManager.getConfig();
   }
 
@@ -658,6 +855,22 @@ export class UnifiedDiagnosticSystem {
   }
 
   private getConfigData() {
+    if (!this.configManager) {
+      throw new DiagnosticError(
+        'Cannot get configuration data: SmartConfigManager is not available',
+        {
+          timestamp: Date.now(),
+          component: 'UnifiedSystem',
+          operation: 'getConfigData',
+          suggestions: [
+            'Ensure UnifiedSystem is properly initialized',
+            'Check if SmartConfigManager instance was disposed',
+            'Verify system lifecycle management',
+          ],
+        }
+      );
+    }
+    
     const config = this.configManager.getConfig();
     const impactReport = this.configManager.getConfigurationImpactReport();
     const configSummary = this.configManager.getConfigurationSummary();
@@ -931,6 +1144,14 @@ export class UnifiedDiagnosticSystem {
   } {
     const issues: string[] = [];
     const recommendations: string[] = [];
+    
+    // Check if configManager is available
+    if (!this.configManager) {
+      issues.push('SmartConfigManager is not available');
+      recommendations.push('Reinitialize UnifiedSystem with proper configuration');
+      return { status: 'critical', issues, recommendations };
+    }
+    
     const config = this.configManager.getConfig();
 
     if (!this.initializationManager.getIsInitialized()) {

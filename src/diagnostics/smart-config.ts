@@ -65,7 +65,7 @@ export interface SmartConfig {
 }
 
 export class SmartConfigManager {
-  private static instance: SmartConfigManager;
+  private static instance: SmartConfigManager | null;
   private config: SmartConfig;
   private readonly listeners: Array<(config: SmartConfig) => void> = [];
   private readonly thresholdsManager: DiagnosticThresholds;
@@ -84,7 +84,23 @@ export class SmartConfigManager {
       SmartConfigManager.instance = new SmartConfigManager(initialConfig);
     }
 
+    // Additional safety check - this should never happen, but provides a fallback
+    if (!SmartConfigManager.instance) {
+      configDebug('Critical: SmartConfigManager instance is null after creation');
+      SmartConfigManager.instance = new SmartConfigManager(initialConfig);
+    }
+
     return SmartConfigManager.instance;
+  }
+
+  /**
+   * Reset the singleton instance (for testing)
+   * WARNING: This should only be used in test cleanup
+   */
+  static resetInstance(): void {
+    const wasNull = SmartConfigManager.instance === null;
+    SmartConfigManager.instance = null;
+    configDebug('SmartConfigManager instance reset', { wasAlreadyNull: wasNull });
   }
 
   private createDefaultConfig(): SmartConfig {
