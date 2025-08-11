@@ -505,7 +505,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     }
     return refMatches
       .map((match) => {
-        const refValue = match.match(REF_VALUE_REGEX);
+        const refValue = REF_VALUE_REGEX.exec(match);
         return refValue ? refValue[1] : '';
       })
       .filter(Boolean);
