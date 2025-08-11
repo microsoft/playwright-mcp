@@ -137,6 +137,52 @@ test('browser_type (no submit)', async ({ client, server, mcpBrowser }) => {
 // Regex patterns for testing code generation
 const FILL_AND_ENTER_PATTERN = /fill\('[^']+'\)|press\('Enter'\)/;
 
+// Helper function for browser_type submit tests
+async function setupAndTestBrowserTypeSubmit(
+  client: Awaited<ReturnType<typeof import('./fixtures.js').getClient>>,
+  server: import('./testserver/index.js').TestServer,
+  template: string,
+  inputText: string,
+  includeSnapshot = true
+) {
+  setServerContent(server, '/', template);
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX,
+    },
+  });
+
+  // Optionally capture snapshot first
+  if (includeSnapshot) {
+    await client.callTool({
+      name: 'browser_snapshot',
+      arguments: {
+        expectation: {
+          includeSnapshot: true,
+        },
+      },
+    });
+  }
+
+  // Test typing with submit option
+  const response = await client.callTool({
+    name: 'browser_type',
+    arguments: {
+      element: 'textbox',
+      ref: 'e2',
+      text: inputText,
+      submit: true,
+      expectation: {
+        includeSnapshot: true,
+      },
+    },
+  });
+
+  return response;
+}
+
 // Additional tests for keyboard navigation and submit functionality
 test.describe('Keyboard Navigation and Submit Tests', () => {
   test('browser_type submit navigation handling', async ({
@@ -146,39 +192,13 @@ test.describe('Keyboard Navigation and Submit Tests', () => {
   }) => {
     test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
 
-    // Use existing input template that works
-    setServerContent(server, '/', HTML_TEMPLATES.KEYPRESS_INPUT);
-
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: {
-        url: server.PREFIX,
-      },
-    });
-
-    // First capture snapshot to see the ref
-    const _snapshotResponse = await client.callTool({
-      name: 'browser_snapshot',
-      arguments: {
-        expectation: {
-          includeSnapshot: true,
-        },
-      },
-    });
-
-    // Test typing with submit option
-    const response = await client.callTool({
-      name: 'browser_type',
-      arguments: {
-        element: 'textbox',
-        ref: 'e2',
-        text: 'test query',
-        submit: true,
-        expectation: {
-          includeSnapshot: true,
-        },
-      },
-    });
+    const response = await setupAndTestBrowserTypeSubmit(
+      client,
+      server,
+      HTML_TEMPLATES.KEYPRESS_INPUT,
+      'test query',
+      true
+    );
 
     // Verify the operation completed successfully
     expect(response).toHaveResponse({
@@ -196,29 +216,13 @@ test.describe('Keyboard Navigation and Submit Tests', () => {
   }) => {
     test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
 
-    // Use existing input template
-    setServerContent(server, '/', HTML_TEMPLATES.INPUT_WITH_CONSOLE);
-
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: {
-        url: server.PREFIX,
-      },
-    });
-
-    // Test typing with submit option
-    const response = await client.callTool({
-      name: 'browser_type',
-      arguments: {
-        element: 'textbox',
-        ref: 'e2',
-        text: 'no navigation test',
-        submit: true,
-        expectation: {
-          includeSnapshot: true,
-        },
-      },
-    });
+    const response = await setupAndTestBrowserTypeSubmit(
+      client,
+      server,
+      HTML_TEMPLATES.INPUT_WITH_CONSOLE,
+      'no navigation test',
+      false
+    );
 
     // Verify the operation completed successfully
     expect(response).toHaveResponse({
@@ -236,29 +240,13 @@ test.describe('Keyboard Navigation and Submit Tests', () => {
   }) => {
     test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
 
-    // Use basic input for stability test
-    setServerContent(server, '/', HTML_TEMPLATES.KEYDOWN_INPUT);
-
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: {
-        url: server.PREFIX,
-      },
-    });
-
-    // Test typing with submit option for stability
-    const response = await client.callTool({
-      name: 'browser_type',
-      arguments: {
-        element: 'textbox',
-        ref: 'e2',
-        text: 'stability test',
-        submit: true,
-        expectation: {
-          includeSnapshot: true,
-        },
-      },
-    });
+    const response = await setupAndTestBrowserTypeSubmit(
+      client,
+      server,
+      HTML_TEMPLATES.KEYDOWN_INPUT,
+      'stability test',
+      false
+    );
 
     // Verify the operation completed successfully
     expect(response).toHaveResponse({

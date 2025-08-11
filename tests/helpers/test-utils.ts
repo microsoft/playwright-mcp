@@ -2,83 +2,40 @@
  * Common test utilities to reduce code duplication in test files
  */
 
+import type * as playwright from 'playwright';
 import type { ConsoleMessage } from '../../src/tab.js';
+
+/**
+ * Create a mock console message with standard toString implementation
+ */
+function createMockMessage(
+  type: string | undefined,
+  text: string
+): ConsoleMessage {
+  return {
+    type: type as ReturnType<playwright.ConsoleMessage['type']> | undefined,
+    text,
+    toString() {
+      return `[${this.type?.toUpperCase()}] ${this.text}`;
+    },
+  };
+}
 
 /**
  * Create mock console messages for testing
  */
 export function createMockConsoleMessages(): ConsoleMessage[] {
   return [
-    {
-      type: 'log',
-      text: 'User logged in successfully',
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
-    {
-      type: 'error',
-      text: 'Database connection failed',
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
-    {
-      type: 'warn',
-      text: 'Deprecated API usage detected',
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
-    {
-      type: 'log',
-      text: 'Page rendered successfully',
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
-    {
-      type: 'error',
-      text: 'Network request timeout',
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
-    {
-      type: 'info',
-      text: 'Cache cleared',
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
-    {
-      type: 'log',
-      text: 'User logged in successfully', // Duplicate
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
-    {
-      type: 'error',
-      text: 'Authentication failed',
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
-    {
-      type: 'warn',
-      text: 'API rate limit approaching',
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
-    {
-      type: 'log',
-      text: 'Component mounted',
-      toString() {
-        return `[${this.type?.toUpperCase()}] ${this.text}`;
-      },
-    },
+    createMockMessage('log', 'User logged in successfully'),
+    createMockMessage('error', 'Database connection failed'),
+    createMockMessage('warn', 'Deprecated API usage detected'),
+    createMockMessage('log', 'Page rendered successfully'),
+    createMockMessage('error', 'Network request timeout'),
+    createMockMessage('info', 'Cache cleared'),
+    createMockMessage('log', 'User logged in successfully'), // Duplicate
+    createMockMessage('error', 'Authentication failed'),
+    createMockMessage('warn', 'API rate limit approaching'),
+    createMockMessage('log', 'Component mounted'),
   ];
 }
 
@@ -93,19 +50,28 @@ export async function getFilterFunction() {
 }
 
 /**
+ * Generic test function for console message filtering
+ */
+async function testFiltering(options: {
+  levels?: readonly string[];
+  patterns?: string[];
+  removeDuplicates?: boolean;
+  maxMessages?: number;
+}) {
+  const filterConsoleMessages = await getFilterFunction();
+  const messages = createMockConsoleMessages();
+  const result = filterConsoleMessages(messages, options);
+  return result;
+}
+
+/**
  * Test filtering by message levels
  */
 export async function testLevelFiltering(
   levels: readonly string[],
   _expectedCount: number
 ) {
-  const filterConsoleMessages = await getFilterFunction();
-  const messages = createMockConsoleMessages();
-  const options = { levels: levels as string[] };
-
-  const result = filterConsoleMessages(messages, options);
-  // Note: Assertion moved to test file to satisfy BiomeJS linting rules
-  return result;
+  return await testFiltering({ levels: levels as string[] });
 }
 
 /**
@@ -115,40 +81,21 @@ export async function testPatternFiltering(
   patterns: string[],
   _expectedCount: number
 ) {
-  const filterConsoleMessages = await getFilterFunction();
-  const messages = createMockConsoleMessages();
-  const options = { patterns };
-
-  const result = filterConsoleMessages(messages, options);
-  // Note: Assertion moved to test file to satisfy BiomeJS linting rules
-  return result;
+  return await testFiltering({ patterns });
 }
 
 /**
  * Test duplicate removal
  */
 export async function testDuplicateRemoval(_expectedUniqueCount: number) {
-  const filterConsoleMessages = await getFilterFunction();
-  const messages = createMockConsoleMessages();
-  const options = { removeDuplicates: true };
-
-  const result = filterConsoleMessages(messages, options);
-  // Note: Assertions moved to test file to satisfy BiomeJS linting rules
-
-  return result;
+  return await testFiltering({ removeDuplicates: true });
 }
 
 /**
  * Test message limit
  */
 export async function testMessageLimit(limit: number) {
-  const filterConsoleMessages = await getFilterFunction();
-  const messages = createMockConsoleMessages();
-  const options = { maxMessages: limit };
-
-  const result = filterConsoleMessages(messages, options);
-  // Note: Assertion moved to test file to satisfy BiomeJS linting rules
-  return result;
+  return await testFiltering({ maxMessages: limit });
 }
 
 /**
@@ -163,13 +110,7 @@ export async function testCombinedFiltering(
   },
   _maxExpectedCount: number
 ) {
-  const filterConsoleMessages = await getFilterFunction();
-  const messages = createMockConsoleMessages();
-
-  const result = filterConsoleMessages(messages, options);
-  // Note: Assertions moved to test file to satisfy BiomeJS linting rules
-
-  return result;
+  return await testFiltering(options);
 }
 
 /**
