@@ -51,7 +51,7 @@ export interface ServerBackend {
   version: string;
   initialize?(server: Server): Promise<void>;
   tools(): ToolSchema<any>[];
-  callTool(schema: ToolSchema<any>, parsedArguments: any): Promise<ToolResponse>;
+  callTool(schema: ToolSchema<any>, rawArguments: any): Promise<ToolResponse>;
   serverClosed?(): void;
 }
 
@@ -71,8 +71,8 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
     }
   });
 
-  const tools = backend.tools();
   server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const tools = backend.tools();
     return { tools: tools.map(tool => ({
       name: tool.name,
       description: tool.description,
@@ -99,12 +99,13 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
       content: [{ type: 'text', text: '### Result\n' + messages.join('\n') }],
       isError: true,
     });
+    const tools = backend.tools();
     const tool = tools.find(tool => tool.name === request.params.name) as ToolSchema<any>;
     if (!tool)
       return errorResult(`Error: Tool "${request.params.name}" not found`);
 
     try {
-      return await backend.callTool(tool, tool.inputSchema.parse(request.params.arguments || {}));
+      return await backend.callTool(tool, request.params.arguments || {});
     } catch (error) {
       return errorResult(String(error));
     }

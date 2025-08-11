@@ -16,16 +16,23 @@
 
 import { ExtensionContextFactory } from './extensionContextFactory.js';
 import { BrowserServerBackend } from '../browserServerBackend.js';
+import { InProcessClientFactory } from '../inProcessClient.js';
 import * as mcpTransport from '../mcp/transport.js';
 
 import type { FullConfig } from '../config.js';
+import type { ClientFactory } from '../mcp/proxyBackend.js';
 
 export async function runWithExtension(config: FullConfig) {
-  const contextFactory = new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
-  const serverBackendFactory = () => new BrowserServerBackend(config, [contextFactory]);
+  const contextFactory = createExtensionContextFactory(config);
+  const serverBackendFactory = () => new BrowserServerBackend(config, contextFactory);
   await mcpTransport.start(serverBackendFactory, config.server);
 }
 
-export function createExtensionContextFactory(config: FullConfig) {
+export function createExtensionClientFactory(config: FullConfig): ClientFactory {
+  return new InProcessClientFactory(createExtensionContextFactory(config), config);
+}
+
+
+function createExtensionContextFactory(config: FullConfig) {
   return new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
 }
