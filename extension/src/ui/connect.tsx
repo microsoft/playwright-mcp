@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-import type * as React from 'react';
+import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-
-interface TabInfo {
-  id: number;
-  windowId: number;
-  title: string;
-  url: string;
-  favIconUrl?: string;
-}
+import type { TabInfo } from './tab-item.js';
+import { Button, TabItem } from './tab-item.js';
 
 type StatusType = 'connected' | 'error' | 'connecting';
 
 const ConnectApp: React.FC = () => {
   const [tabs, setTabs] = useState<TabInfo[]>([]);
-  const [selectedTab, setSelectedTab] = useState<TabInfo | undefined>();
   const [status, setStatus] = useState<{
     type: StatusType;
     message: string;
@@ -40,46 +33,20 @@ const ConnectApp: React.FC = () => {
   const [clientInfo, setClientInfo] = useState('unknown');
   const [mcpRelayUrl, setMcpRelayUrl] = useState('');
 
-  const loadTabs = useCallback(async () => {
-    const response = await chrome.runtime.sendMessage({ type: 'getTabs' });
-    if (response.success) {
-      setTabs(response.tabs);
-      const currentTab = response.tabs.find(
-        (tab: TabInfo) => tab.id === response.currentTabId
-      );
-      setSelectedTab(currentTab);
-    } else {
-      setStatus({
-        type: 'error',
-        message: `Failed to load tabs: ${response.error}`,
-      });
-    }
-  }, []);
-
   useEffect(() => {
-    let params: URLSearchParams;
-    try {
-      params = new URLSearchParams(window.location.search);
-      const relayUrl = params.get('mcpRelayUrl');
+    const params = new URLSearchParams(window.location.search);
+    const relayUrl = params.get('mcpRelayUrl');
 
-      if (!relayUrl) {
-        setShowButtons(false);
-        setStatus({
-          type: 'error',
-          message: 'Missing mcpRelayUrl parameter in URL.',
-        });
-        return;
-      }
-
-      setMcpRelayUrl(relayUrl);
-    } catch (error) {
+    if (!relayUrl) {
       setShowButtons(false);
       setStatus({
         type: 'error',
-        message: `Failed to parse URL parameters: ${error}`,
+        message: 'Missing mcpRelayUrl parameter in URL.',
       });
       return;
     }
+
+    setMcpRelayUrl(relayUrl);
 
     try {
       const client = JSON.parse(params.get('client') || '{}');
@@ -87,57 +54,74 @@ const ConnectApp: React.FC = () => {
       setClientInfo(info);
       setStatus({
         type: 'connecting',
-        message: `MCP client "${info}" is trying to connect. Do you want to continue?`,
+        message: `🎭 Playwright MCP started from  "${info}" is trying to connect. Do you want to continue?`,
       });
-    } catch (parseError) {
+    } catch (e) {
+      setStatus({ type: 'error', message: 'Failed to parse client version.' });
+      return;
+    }
+
+    void connectToMCPRelay(relayUrl);
+    void loadTabs();
+  }, []);
+
+  const connectToMCPRelay = useCallback(async (mcpRelayUrl: string) => {
+    const response = await chrome.runtime.sendMessage({
+      type: 'connectToMCPRelay',
+      mcpRelayUrl,
+    });
+    if (!response.success)
       setStatus({
         type: 'error',
-        message: `Failed to parse client information: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+        message: 'Failed to connect to MCP relay: ' + response.error,
       });
-      return;
-    }
+  }, []);
 
-    loadTabs().catch(() => {
-      // Tab loading errors are handled in the loadTabs function
-    });
-  }, [loadTabs]);
-
-  const handleContinue = useCallback(async () => {
-    setShowButtons(false);
-    setShowTabList(false);
-
-    if (!selectedTab) {
-      setStatus({ type: 'error', message: 'Tab not selected.' });
-      return;
-    }
-
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'connectToMCPRelay',
-        mcpRelayUrl,
-        tabId: selectedTab.id,
-        windowId: selectedTab.windowId,
+  const loadTabs = useCallback(async () => {
+    const response = await chrome.runtime.sendMessage({ type: 'getTabs' });
+    if (response.success) setTabs(response.tabs);
+    else
+      setStatus({
+        type: 'error',
+        message: 'Failed to load tabs: ' + response.error,
       });
+  }, []);
 
-      if (response?.success) {
-        setStatus({
-          type: 'connected',
-          message: `MCP client "${clientInfo}" connected.`,
+  const handleConnectToTab = useCallback(
+    async (tab: TabInfo) => {
+      setShowButtons(false);
+      setShowTabList(false);
+
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'connectToTab',
+          mcpRelayUrl,
+          tabId: tab.id,
+          windowId: tab.windowId,
         });
-      } else {
+
+        if (response?.success) {
+          setStatus({
+            type: 'connected',
+            message: `MCP client "${clientInfo}" connected.`,
+          });
+        } else {
+          setStatus({
+            type: 'error',
+            message:
+              response?.error ||
+              `MCP client "${clientInfo}" failed to connect.`,
+          });
+        }
+      } catch (e) {
         setStatus({
           type: 'error',
-          message:
-            response?.error || `MCP client "${clientInfo}" failed to connect.`,
+          message: `MCP client "${clientInfo}" failed to connect: ${e}`,
         });
       }
-    } catch (e) {
-      setStatus({
-        type: 'error',
-        message: `MCP client "${clientInfo}" failed to connect: ${e}`,
-      });
-    }
-  }, [selectedTab, clientInfo, mcpRelayUrl]);
+    },
+    [clientInfo, mcpRelayUrl]
+  );
 
   const handleReject = useCallback(() => {
     setShowButtons(false);
@@ -148,35 +132,47 @@ const ConnectApp: React.FC = () => {
     });
   }, []);
 
+  useEffect(() => {
+    const listener = (message: any) => {
+      if (message.type === 'connectionTimeout') handleReject();
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => {
+      chrome.runtime.onMessage.removeListener(listener);
+    };
+  }, []);
+
   return (
     <div className="app-container">
       <div className="content-wrapper">
-        <h1 className="main-title">Playwright MCP Extension</h1>
-
-        {status && <StatusBanner message={status.message} type={status.type} />}
-
-        {showButtons && (
-          <div className="button-container">
-            <Button onClick={handleContinue} variant="primary">
-              Continue
-            </Button>
-            <Button onClick={handleReject} variant="default">
-              Reject
-            </Button>
+        {status && (
+          <div className="status-container">
+            <StatusBanner message={status.message} type={status.type} />
+            {showButtons && (
+              <Button onClick={handleReject} variant="reject">
+                Reject
+              </Button>
+            )}
           </div>
         )}
 
         {showTabList && (
           <div>
-            <h2 className="tab-section-title" id="tab-section-title">
+            <div className="tab-section-title">
               Select page to expose to MCP server:
-            </h2>
-            <div aria-labelledby="tab-section-title" role="radiogroup">
+            </div>
+            <div>
               {tabs.map((tab) => (
                 <TabItem
-                  isSelected={selectedTab?.id === tab.id}
+                  button={
+                    <Button
+                      onClick={() => handleConnectToTab(tab)}
+                      variant="primary"
+                    >
+                      Connect
+                    </Button>
+                  }
                   key={tab.id}
-                  onSelect={() => setSelectedTab(tab)}
                   tab={tab}
                 />
               ))}
@@ -192,85 +188,7 @@ const StatusBanner: React.FC<{ type: StatusType; message: string }> = ({
   type,
   message,
 }) => {
-  const ariaLive = type === 'error' ? 'assertive' : 'polite';
-
-  return (
-    <output
-      aria-atomic="true"
-      aria-live={ariaLive}
-      className={`status-banner ${type}`}
-    >
-      {message}
-    </output>
-  );
-};
-
-const Button: React.FC<{
-  variant: 'primary' | 'default';
-  onClick: () => void;
-  children: React.ReactNode;
-}> = ({ variant, onClick, children }) => {
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onClick();
-    }
-  };
-
-  return (
-    <button
-      className={`button ${variant}`}
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
-      type="button"
-    >
-      {children}
-    </button>
-  );
-};
-
-const TabItem: React.FC<{
-  tab: TabInfo;
-  isSelected: boolean;
-  onSelect: () => void;
-}> = ({ tab, isSelected, onSelect }) => {
-  const className = `tab-item ${isSelected ? 'selected' : ''}`.trim();
-
-  const handleChange = () => {
-    onSelect();
-  };
-
-  return (
-    <label className={className} htmlFor={`tab-${tab.id}`}>
-      <input
-        checked={isSelected}
-        className="tab-radio"
-        id={`tab-${tab.id}`}
-        name="selected-tab"
-        onChange={handleChange}
-        type="radio"
-        value={tab.id.toString()}
-      />
-      {/* biome-ignore lint/performance/noImgElement: Chrome extension doesn't use Next.js Image optimization */}
-      <img
-        alt=""
-        className="tab-favicon"
-        src={
-          tab.favIconUrl ||
-          'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'
-        }
-        style={{
-          width: '16px',
-          height: '16px',
-          objectFit: 'contain',
-        }}
-      />
-      <div className="tab-content">
-        <div className="tab-title">{tab.title || 'Untitled'}</div>
-        <div className="tab-url">{tab.url}</div>
-      </div>
-    </label>
-  );
+  return <div className={`status-banner ${type}`}>{message}</div>;
 };
 
 // Initialize the React app

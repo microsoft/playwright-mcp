@@ -366,7 +366,7 @@ function createTransport(
   const transport = new StdioClientTransport({
     command: process.execPath, // Use secure node executable path
     args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
-    cwd: path.join(path.dirname(__filename), '..'),
+    cwd: path.dirname(test.info().config.configFile!),
     stderr: 'pipe',
     env: secureEnv,
   });

@@ -43,11 +43,8 @@ export interface ServerBackend {
   name: string;
   version: string;
   initialize?(server: Server): Promise<void>;
-  tools(): ToolSchema[];
-  callTool(
-    schema: ToolSchema,
-    parsedArguments: Record<string, unknown>
-  ): Promise<ToolResponse>;
+  tools(): ToolSchema<any>[];
+  callTool(schema: ToolSchema<any>, rawArguments: any): Promise<ToolResponse>;
   serverClosed?(): void;
 }
 export type ServerBackendFactory = () => ServerBackend;
@@ -73,8 +70,9 @@ export function createServer(
       },
     }
   );
-  const tools = backend.tools();
-  server.setRequestHandler(ListToolsRequestSchema, () => {
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const tools = backend.tools();
     return {
       tools: tools.map((tool) => ({
         name: tool.name,
@@ -100,18 +98,17 @@ export function createServer(
       content: [{ type: 'text', text: `### Result\n${messages.join('\n')}` }],
       isError: true,
     });
-    const tool = tools.find((t) => t.name === request.params.name);
-    if (!tool) {
+    const tools = backend.tools();
+    const tool = tools.find(
+      (tool) => tool.name === request.params.name
+    ) as ToolSchema<any>;
+    if (!tool)
       return errorResult(`Error: Tool "${request.params.name}" not found`);
-    }
     try {
       // Log the request
       logRequest(request.params.name, request.params.arguments ?? {});
 
-      return await backend.callTool(
-        tool,
-        tool.inputSchema.parse(request.params.arguments ?? {})
-      );
+      return await backend.callTool(tool, request.params.arguments || {});
     } catch (error) {
       return errorResult(String(error));
     }

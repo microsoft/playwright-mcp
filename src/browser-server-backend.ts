@@ -6,6 +6,7 @@ import type { FullConfig } from './config.js';
 import { Context } from './context.js';
 import { logUnhandledError } from './log.js';
 import type * as mcpServer from './mcp/server.js';
+import type { ServerBackend } from './mcp/server.js';
 import { packageJSON } from './package.js';
 import { Response } from './response.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
@@ -18,7 +19,7 @@ const backendDebug = debug('pw:mcp:backend');
 
 type NonEmptyArray<T> = [T, ...T[]];
 export type FactoryList = NonEmptyArray<BrowserContextFactory>;
-export class BrowserServerBackend implements mcpServer.ServerBackend {
+export class BrowserServerBackend implements ServerBackend {
   name = 'Playwright';
   version = packageJSON.version;
   private readonly _tools: AnyTool[];
@@ -62,15 +63,13 @@ export class BrowserServerBackend implements mcpServer.ServerBackend {
   tools(): mcpServer.ToolSchema[] {
     return this._tools.map((tool) => tool.schema);
   }
-  async callTool(
-    schema: mcpServer.ToolSchema,
-    parsedArguments: Record<string, unknown>
-  ) {
+  async callTool(schema: mcpServer.ToolSchema, rawArguments: any) {
     if (!this._context) {
       throw new Error('Context not initialized. Call initialize() first.');
     }
 
     const context = this._context;
+    const parsedArguments = schema.inputSchema.parse(rawArguments || {});
     const response = new Response(
       context,
       schema.name,

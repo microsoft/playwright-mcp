@@ -26,10 +26,11 @@ class LoopToolsServerBackend implements ServerBackend {
   tools(): ToolSchema[] {
     return this._tools.map((tool) => tool.schema as ToolSchema);
   }
+
   async callTool(
-    schema: ToolSchema,
-    parsedArguments: Record<string, unknown>
-  ): Promise<ToolResponse> {
+    schema: mcpServer.ToolSchema<any>,
+    rawArguments: any
+  ): Promise<mcpServer.ToolResponse> {
     const tool = this._tools.find((t) => t.schema.name === schema.name);
     if (!tool) {
       throw new Error(`Tool not found: ${schema.name}`);
@@ -37,9 +38,8 @@ class LoopToolsServerBackend implements ServerBackend {
     if (!this._context) {
       throw new Error('Context not initialized');
     }
-    // Since we found the tool by schema name, the parsedArguments should match the tool's input schema
-    // biome-ignore lint/suspicious/noExplicitAny: Tools have different parameter types
-    return await tool.handle(this._context, parsedArguments as any);
+    const parsedArguments = schema.inputSchema.parse(rawArguments || {});
+    return await tool.handle(this._context, parsedArguments);
   }
   serverClosed() {
     this._context?.close().catch(() => {

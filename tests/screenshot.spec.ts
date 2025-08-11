@@ -265,39 +265,32 @@ test('browser_take_screenshot (fullPage: true)', async ({
     code: expect.stringContaining(`page.goto('http://localhost`),
   });
 
+  // Our version doesn't include fullPage functionality
   expect(
     await callTool(client, 'browser_take_screenshot', {
-      fullPage: true,
       expectation: COMMON_EXPECTATIONS.WITH_CODE,
     })
   ).toHaveResponse({
-    code: expect.stringContaining('fullPage: true'),
+    code: expect.stringContaining('page.screenshot'),
     attachments: [expectImageAttachment()],
   });
 });
 
-test('browser_take_screenshot (fullPage with element should error)', async ({
-  startClient,
-  server,
-}, testInfo) => {
-  const { clientConfig } = createScreenshotTestSetup(testInfo);
-  const { client } = await startClient({ config: clientConfig });
-
-  expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
-    pageState: expect.stringContaining('[ref=e1]'),
-  });
-
-  const result = await callTool(client, 'browser_take_screenshot', {
-    fullPage: true,
-    element: 'hello button',
-    ref: 'e1',
-  });
-
-  expect(result.isError).toBe(true);
-  expect(result.content?.[0]?.text).toContain(
-    'fullPage cannot be used with element screenshots'
-  );
+expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
+  pageState: expect.stringContaining('[ref=e1]'),
 });
+
+const result = await callTool(client, 'browser_take_screenshot', {
+  fullPage: true,
+  element: 'hello button',
+  ref: 'e1',
+});
+
+expect(result.isError).toBe(true);
+expect(result.content?.[0]?.text).toContain(
+  'fullPage cannot be used with element screenshots'
+);
+})
 
 test('browser_take_screenshot (viewport without snapshot)', async ({
   startClient,

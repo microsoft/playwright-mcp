@@ -132,22 +132,6 @@ async function takeScreenshot(
     : await tab.page.screenshot(options);
 }
 
-function addScreenshotResult(
-  response: Response,
-  screenshotTarget: string,
-  fileName: string,
-  fileType: string,
-  buffer: Buffer
-): void {
-  response.addResult(
-    `Took the ${screenshotTarget} screenshot and saved it as ${fileName}`
-  );
-  response.addImage({
-    contentType: fileType === 'png' ? 'image/png' : 'image/jpeg',
-    data: buffer,
-  });
-}
-
 const screenshot = defineTabTool({
   capability: 'core',
   schema: {
@@ -185,7 +169,19 @@ const screenshot = defineTabTool({
     await addScreenshotCode(response, locator, options);
 
     const buffer = await takeScreenshot(tab, locator, options);
-    addScreenshotResult(response, screenshotTarget, fileName, fileType, buffer);
+
+    response.addResult(
+      `Took the ${screenshotTarget} screenshot and saved it as ${fileName}`
+    );
+
+    // https://github.com/microsoft/playwright-mcp/issues/817
+    // Never return large images to LLM, saving them to the file system is enough.
+    if (!params.fullPage) {
+      response.addImage({
+        contentType: fileType === 'png' ? 'image/png' : 'image/jpeg',
+        data: buffer,
+      });
+    }
   },
 });
 export default [screenshot];

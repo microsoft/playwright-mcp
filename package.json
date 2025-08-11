@@ -1,6 +1,6 @@
 {
   "name": "@tontoko/fast-playwright-mcp",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "description": "Fast Playwright Tools for MCP",
   "type": "module",
   "repository": {
@@ -47,8 +47,8 @@
     "dotenv": "^17.2.0",
     "fast-diff": "^1.3.0",
     "mime": "^4.0.7",
-    "playwright": "1.55.0-alpha-1753913825000",
-    "playwright-core": "1.55.0-alpha-1753913825000",
+    "playwright": "1.55.0-alpha-2025-08-07",
+    "playwright-core": "1.55.0-alpha-2025-08-07",
     "sharp": "^0.34.3",
     "ws": "^8.18.1",
     "zod": "^3.24.1",
@@ -57,7 +57,7 @@
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.57.0",
     "@biomejs/biome": "2.1.2",
-    "@playwright/test": "1.55.0-alpha-1753913825000",
+    "@playwright/test": "1.55.0-alpha-2025-08-07",
     "@types/debug": "^4.1.12",
     "@types/node": "^22.13.10",
     "@types/ws": "^8.18.1",
