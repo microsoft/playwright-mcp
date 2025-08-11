@@ -40,7 +40,7 @@ test.describe('Console Message Filtering', () => {
 
   test('should filter messages by pattern matching', async () => {
     const { filterConsoleMessages } = await import(
-      '../src/utils/consoleFilter.js'
+      '../src/utils/console-filter.js'
     );
     const messages = createMockConsoleMessages();
     const options = { patterns: ['User.*logged', 'API.*rate'] };
@@ -75,13 +75,13 @@ test.describe('Console Message Filtering', () => {
     const result = await testMessageLimit(3);
     const messages = createMockConsoleMessages();
     expect(result.length).toBe(Math.min(3, messages.length));
-    // Should keep the last 3 messages
-    expect(result[2].toString()).toContain('[ERROR] Permission denied');
+    // Should keep the last 3 messages - the last one should be 'Component mounted'
+    expect(result[2].toString()).toContain('[LOG] Component mounted');
   });
 
   test('should handle invalid regex patterns gracefully', async () => {
     const { filterConsoleMessages } = await import(
-      '../src/utils/consoleFilter.js'
+      '../src/utils/console-filter.js'
     );
     const messages = createMockConsoleMessages();
     const options = { patterns: ['[invalid regex', 'User'] };
@@ -96,7 +96,7 @@ test.describe('Console Message Filtering', () => {
 
   test('should combine multiple filtering options', async () => {
     const { filterConsoleMessages } = await import(
-      '../src/utils/consoleFilter.js'
+      '../src/utils/console-filter.js'
     );
     const messages = createMockConsoleMessages();
     const options = {
@@ -123,7 +123,7 @@ test.describe('Console Message Filtering', () => {
 
   test('should return original messages when no options provided', async () => {
     const { filterConsoleMessages } = await import(
-      '../src/utils/consoleFilter.js'
+      '../src/utils/console-filter.js'
     );
     const messages = createMockConsoleMessages();
 

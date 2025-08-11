@@ -9,16 +9,76 @@ import type { ConsoleMessage } from '../../src/tab.js';
  */
 export function createMockConsoleMessages(): ConsoleMessage[] {
   return [
-    { type: 'log', text: 'User logged in successfully' },
-    { type: 'error', text: 'Database connection failed' },
-    { type: 'warn', text: 'Deprecated API usage detected' },
-    { type: 'log', text: 'Page rendered successfully' },
-    { type: 'error', text: 'Network request timeout' },
-    { type: 'info', text: 'Cache cleared' },
-    { type: 'log', text: 'User logged in successfully' }, // Duplicate
-    { type: 'error', text: 'Authentication failed' },
-    { type: 'warn', text: 'API rate limit approaching' },
-    { type: 'log', text: 'Component mounted' },
+    {
+      type: 'log',
+      text: 'User logged in successfully',
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
+    {
+      type: 'error',
+      text: 'Database connection failed',
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
+    {
+      type: 'warn',
+      text: 'Deprecated API usage detected',
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
+    {
+      type: 'log',
+      text: 'Page rendered successfully',
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
+    {
+      type: 'error',
+      text: 'Network request timeout',
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
+    {
+      type: 'info',
+      text: 'Cache cleared',
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
+    {
+      type: 'log',
+      text: 'User logged in successfully', // Duplicate
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
+    {
+      type: 'error',
+      text: 'Authentication failed',
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
+    {
+      type: 'warn',
+      text: 'API rate limit approaching',
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
+    {
+      type: 'log',
+      text: 'Component mounted',
+      toString() {
+        return `[${this.type?.toUpperCase()}] ${this.text}`;
+      },
+    },
   ];
 }
 
@@ -27,7 +87,7 @@ export function createMockConsoleMessages(): ConsoleMessage[] {
  */
 export async function getFilterFunction() {
   const { filterConsoleMessages } = await import(
-    '../../src/utils/consoleFilter.js'
+    '../../src/utils/console-filter.js'
   );
   return filterConsoleMessages;
 }
