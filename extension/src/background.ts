@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-import { RelayConnection, debugLog } from './relayConnection.js';
+import { debugLog, RelayConnection } from './relay-connection.js';
 
-type PageMessage = {
-  type: 'connectToMCPRelay';
-  mcpRelayUrl: string;
-  tabId: number;
-  windowId: number;
-} | {
-  type: 'getTabs';
-};
+type PageMessage =
+  | {
+      type: 'connectToMCPRelay';
+      mcpRelayUrl: string;
+      tabId: number;
+      windowId: number;
+    }
+  | {
+      type: 'getTabs';
+    };
 
 class TabShareExtension {
   private _activeConnection: RelayConnection | undefined;
@@ -36,23 +38,52 @@ class TabShareExtension {
   }
 
   // Promise-based message handling is not supported in Chrome: https://issues.chromium.org/issues/40753031
-  private _onMessage(message: PageMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
+  private _onMessage(
+    message: PageMessage,
+    sender: chrome.runtime.MessageSender,
+    sendResponse: (response: Record<string, unknown>) => void
+  ) {
     switch (message.type) {
       case 'connectToMCPRelay':
-        this._connectTab(message.tabId, message.windowId, message.mcpRelayUrl!).then(
-            () => sendResponse({ success: true }),
-            (error: any) => sendResponse({ success: false, error: error.message }));
+        this._connectTab(
+          message.tabId,
+          message.windowId,
+          message.mcpRelayUrl
+        ).then(
+          () => sendResponse({ success: true }),
+          (error: unknown) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            })
+        );
         return true; // Return true to indicate that the response will be sent asynchronously
       case 'getTabs':
         this._getTabs().then(
-            tabs => sendResponse({ success: true, tabs, currentTabId: sender.tab?.id }),
-            (error: any) => sendResponse({ success: false, error: error.message }));
+          (tabs) =>
+            sendResponse({ success: true, tabs, currentTabId: sender.tab?.id }),
+          (error: unknown) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            })
+        );
         return true;
+      default:
+        // Explicitly handle unexpected message types
+        sendResponse({
+          success: false,
+          error: `Unknown message type: ${typeof message === 'object' && message !== null ? (message as { type?: unknown }).type : 'invalid'}`,
+        });
+        return false;
     }
-    return false;
   }
 
-  private async _connectTab(tabId: number, windowId: number, mcpRelayUrl: string): Promise<void> {
+  private async _connectTab(
+    tabId: number,
+    windowId: number,
+    mcpRelayUrl: string
+  ): Promise<void> {
     try {
       debugLog(`Connecting tab ${tabId} to bridge at ${mcpRelayUrl}`);
       const socket = new WebSocket(mcpRelayUrl);
@@ -67,11 +98,16 @@ class TabShareExtension {
         debugLog(m);
         if (this._activeConnection === connection) {
           this._activeConnection = undefined;
-          void this._setConnectedTabId(null);
+          this._setConnectedTabId(null).catch((error) => {
+            debugLog('Failed to update connected tab ID:', error);
+          });
         }
       };
       socket.onclose = () => connectionClosed('WebSocket closed');
-      socket.onerror = error => connectionClosed(`WebSocket error: ${error}`);
+      socket.onerror = (error) =>
+        connectionClosed(
+          `WebSocket error: ${error.message || 'Unknown error'}`
+        );
       this._activeConnection = connection;
 
       await Promise.all([
@@ -79,10 +115,13 @@ class TabShareExtension {
         chrome.tabs.update(tabId, { active: true }),
         chrome.windows.update(windowId, { focused: true }),
       ]);
-      debugLog(`Connected to MCP bridge`);
-    } catch (error: any) {
+      debugLog('Connected to MCP bridge');
+    } catch (error: unknown) {
       await this._setConnectedTabId(null);
-      debugLog(`Failed to connect tab ${tabId}:`, error.message);
+      debugLog(
+        `Failed to connect tab ${tabId}:`,
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -90,35 +129,56 @@ class TabShareExtension {
   private async _setConnectedTabId(tabId: number | null): Promise<void> {
     const oldTabId = this._connectedTabId;
     this._connectedTabId = tabId;
-    if (oldTabId && oldTabId !== tabId)
+    if (oldTabId && oldTabId !== tabId) {
       await this._updateBadge(oldTabId, { text: '', color: null });
-    if (tabId)
+    }
+    if (tabId) {
       await this._updateBadge(tabId, { text: '●', color: '#4CAF50' });
+    }
   }
 
-  private async _updateBadge(tabId: number, { text, color }: { text: string; color: string | null }): Promise<void> {
+  private async _updateBadge(
+    tabId: number,
+    { text, color }: { text: string; color: string | null }
+  ): Promise<void> {
     await chrome.action.setBadgeText({ tabId, text });
-    if (color)
+    if (color) {
       await chrome.action.setBadgeBackgroundColor({ tabId, color });
+    }
   }
 
-  private async _onTabRemoved(tabId: number): Promise<void> {
-    if (this._connectedTabId !== tabId)
+  private _onTabRemoved(tabId: number): void {
+    if (this._connectedTabId !== tabId) {
       return;
+    }
     this._activeConnection?.close('Browser tab closed');
     this._activeConnection = undefined;
     this._connectedTabId = null;
   }
 
-  private async _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab): Promise<void> {
-    if (changeInfo.status === 'complete' && this._connectedTabId === tabId)
+  private async _onTabUpdated(
+    tabId: number,
+    changeInfo: chrome.tabs.TabChangeInfo
+  ): Promise<void> {
+    if (changeInfo.status === 'complete' && this._connectedTabId === tabId) {
       await this._setConnectedTabId(tabId);
+    }
   }
 
   private async _getTabs(): Promise<chrome.tabs.Tab[]> {
     const tabs = await chrome.tabs.query({});
-    return tabs.filter(tab => tab.url && !['chrome:', 'edge:', 'devtools:'].some(scheme => tab.url!.startsWith(scheme)));
+    return tabs.filter(
+      (tab: chrome.tabs.Tab) =>
+        tab.url &&
+        !['chrome:', 'edge:', 'devtools:'].some((scheme) =>
+          tab.url?.startsWith(scheme)
+        )
+    );
   }
 }
 
-new TabShareExtension();
+// Initialize the extension to set up event listeners
+const tabShareExtension = new TabShareExtension();
+// Keep a reference to prevent garbage collection
+(globalThis as { tabShareExtension: TabShareExtension }).tabShareExtension =
+  tabShareExtension;

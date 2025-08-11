@@ -1,27 +1,9 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+import type * as playwright from 'playwright';
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';
 
-import type * as playwright from 'playwright';
-
 const requests = defineTabTool({
   capability: 'core',
-
   schema: {
     name: 'browser_network_requests',
     title: 'List network requests',
@@ -29,21 +11,22 @@ const requests = defineTabTool({
     inputSchema: z.object({}),
     type: 'readOnly',
   },
-
-  handle: async (tab, params, response) => {
-    const requests = tab.requests();
-    [...requests.entries()].forEach(([req, res]) => response.addResult(renderRequest(req, res)));
+  handle: async (tab, _params, response) => {
+    const requestList = await Promise.resolve(tab.requests());
+    for (const [req, res] of requestList.entries()) {
+      response.addResult(renderRequest(req, res));
+    }
   },
 });
-
-function renderRequest(request: playwright.Request, response: playwright.Response | null) {
+function renderRequest(
+  request: playwright.Request,
+  response: playwright.Response | null
+) {
   const result: string[] = [];
   result.push(`[${request.method().toUpperCase()}] ${request.url()}`);
-  if (response)
+  if (response) {
     result.push(`=> [${response.status()}] ${response.statusText()}`);
+  }
   return result.join(' ');
 }
-
-export default [
-  requests,
-];
+export default [requests];

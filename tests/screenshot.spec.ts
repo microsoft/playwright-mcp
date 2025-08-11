@@ -14,206 +14,223 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
+import fs from 'node:fs';
+import type { TestInfo } from '@playwright/test';
+import { expect, test } from './fixtures.js';
+import { callTool, navigateToUrl } from './test-helpers.js';
 
-import { test, expect } from './fixtures.js';
+// Screenshot test constants
+const SCREENSHOT_PATTERNS = {
+  FILENAME_VALIDATION:
+    /page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{1,3}Z\.(png|jpeg)/,
+  PAGE_TIMESTAMP: /^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{1,3}Z\.png$/,
+  PAGE_TIMESTAMP_MATCH:
+    /page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{1,3}Z\.png/,
+  OUTPUT_PNG: /^output\.png$/,
+} as const;
 
-test('browser_take_screenshot (viewport)', async ({ startClient, server }, testInfo) => {
-  const { client } = await startClient({
-    config: { outputDir: testInfo.outputPath('output') },
-  });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
+// Common expectation objects for screenshot tests
+const COMMON_EXPECTATIONS = {
+  WITH_CODE: { includeCode: true },
+  MINIMAL: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: false,
+  },
+} as const;
+
+// Common assertion patterns
+function expectImageAttachment(mimeType = 'image/png') {
+  return {
+    data: expect.any(String),
+    mimeType,
+    type: 'image',
+  };
+}
+
+function _expectScreenshotContent(text?: string, mimeType = 'image/png') {
+  const content: Array<{
+    text?: unknown;
+    type: string;
+    data?: string;
+    mimeType?: string;
+  }> = [];
+  if (text) {
+    content.push({
+      text: expect.stringContaining(text),
+      type: 'text',
+    });
+  }
+  content.push(expectImageAttachment(mimeType));
+  return { content };
+}
+
+// File verification helpers
+function verifyScreenshotFiles(
+  outputDir: string,
+  expectedCount = 1,
+  fileExtension = 'png',
+  pattern?: RegExp
+): void {
+  expect(fs.existsSync(outputDir)).toBeTruthy();
+  const files = fs
+    .readdirSync(outputDir)
+    .filter((f) => f.endsWith(`.${fileExtension}`));
+  expect(files).toHaveLength(expectedCount);
+  if (pattern && files.length > 0) {
+    expect(files[0]).toMatch(pattern);
+  }
+}
+
+// Common test setup
+function createScreenshotTestSetup(testInfo: TestInfo) {
+  return {
+    outputDir: testInfo.outputPath('output'),
+    clientConfig: { outputDir: testInfo.outputPath('output') },
+  };
+}
+
+test('browser_take_screenshot (viewport)', async ({
+  startClient,
+  server,
+}, testInfo) => {
+  const { clientConfig } = createScreenshotTestSetup(testInfo);
+  const { client } = await startClient({ config: clientConfig });
+
+  expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
     code: expect.stringContaining(`page.goto('http://localhost`),
   });
 
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-  })).toHaveResponse({
-    code: expect.stringContaining(`await page.screenshot`),
-    attachments: [{
-      data: expect.any(String),
-      mimeType: 'image/png',
-      type: 'image',
-    }],
+  expect(
+    await callTool(client, 'browser_take_screenshot', {
+      expectation: COMMON_EXPECTATIONS.WITH_CODE,
+    })
+  ).toHaveResponse({
+    code: expect.stringContaining('await page.screenshot'),
+    attachments: [expectImageAttachment()],
   });
 });
 
-test('browser_take_screenshot (element)', async ({ startClient, server }, testInfo) => {
-  const { client } = await startClient({
-    config: { outputDir: testInfo.outputPath('output') },
-  });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`[ref=e1]`),
+test('browser_take_screenshot (element)', async ({
+  startClient,
+  server,
+}, testInfo) => {
+  const { clientConfig } = createScreenshotTestSetup(testInfo);
+  const { client } = await startClient({ config: clientConfig });
+
+  expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
+    pageState: expect.stringContaining('[ref=e1]'),
   });
 
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-    arguments: {
+  expect(
+    await callTool(client, 'browser_take_screenshot', {
       element: 'hello button',
       ref: 'e1',
-    },
-  })).toEqual({
-    content: [
-      {
-        text: expect.stringContaining(`page.getByText('Hello, world!').screenshot`),
-        type: 'text',
-      },
-      {
-        data: expect.any(String),
-        mimeType: 'image/png',
-        type: 'image',
-      },
-    ],
+      expectation: COMMON_EXPECTATIONS.WITH_CODE,
+    })
+  ).toHaveResponse({
+    code: expect.stringContaining(`page.getByText('Hello, world!').screenshot`),
+    attachments: [expectImageAttachment()],
   });
 });
 
 test('--output-dir should work', async ({ startClient, server }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
-  const { client } = await startClient({
-    config: { outputDir },
-  });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
+  const { outputDir, clientConfig } = createScreenshotTestSetup(testInfo);
+  const { client } = await startClient({ config: clientConfig });
+
+  expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
     code: expect.stringContaining(`page.goto('http://localhost`),
   });
 
-  await client.callTool({
-    name: 'browser_take_screenshot',
-  });
+  await callTool(client, 'browser_take_screenshot', {});
 
-  expect(fs.existsSync(outputDir)).toBeTruthy();
-  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.png'));
-  expect(files).toHaveLength(1);
-  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png$/);
+  verifyScreenshotFiles(
+    outputDir,
+    1,
+    'png',
+    SCREENSHOT_PATTERNS.PAGE_TIMESTAMP
+  );
 });
 
 for (const type of ['png', 'jpeg']) {
-  test(`browser_take_screenshot (type: ${type})`, async ({ startClient, server }, testInfo) => {
-    const outputDir = testInfo.outputPath('output');
-    const { client } = await startClient({
-      config: { outputDir },
-    });
-    expect(await client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
-    })).toHaveResponse({
+  test(`browser_take_screenshot (type: ${type})`, async ({
+    startClient,
+    server,
+  }, testInfo) => {
+    const { outputDir, clientConfig } = createScreenshotTestSetup(testInfo);
+    const { client } = await startClient({ config: clientConfig });
+
+    expect(await navigateToUrl(client, server.PREFIX)).toHaveResponse({
       code: expect.stringContaining(`page.goto('http://localhost`),
     });
 
-    expect(await client.callTool({
-      name: 'browser_take_screenshot',
-      arguments: { type },
-    })).toEqual({
-      content: [
-        {
-          text: expect.stringMatching(
-              new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.${type}`)
-          ),
-          type: 'text',
-        },
-        {
-          data: expect.any(String),
-          mimeType: `image/${type}`,
-          type: 'image',
-        },
-      ],
+    expect(
+      await callTool(client, 'browser_take_screenshot', { type })
+    ).toHaveResponse({
+      result: expect.stringContaining('Took the viewport screenshot'),
+      attachments: [expectImageAttachment(`image/${type}`)],
     });
 
-    const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith(`.${type}`));
-
-    expect(fs.existsSync(outputDir)).toBeTruthy();
-    expect(files).toHaveLength(1);
-    expect(files[0]).toMatch(
-        new RegExp(`^page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z\\.${type}$`)
+    const filePattern = new RegExp(
+      `^page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\.\\d{1,3}Z\\.${type}$`
     );
+    verifyScreenshotFiles(outputDir, 1, type, filePattern);
   });
-
 }
 
-test('browser_take_screenshot (default type should be png)', async ({ startClient, server }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
-  const { client } = await startClient({
-    config: { outputDir },
-  });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  })).toHaveResponse({
+test('browser_take_screenshot (default type should be png)', async ({
+  startClient,
+  server,
+}, testInfo) => {
+  const { outputDir, clientConfig } = createScreenshotTestSetup(testInfo);
+  const { client } = await startClient({ config: clientConfig });
+
+  expect(await navigateToUrl(client, server.PREFIX)).toHaveResponse({
     code: `await page.goto('${server.PREFIX}');`,
   });
 
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-  })).toEqual({
-    content: [
-      {
-        text: expect.stringMatching(
-            new RegExp(`page-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\-\\d{3}Z\\.png`)
-        ),
-        type: 'text',
-      },
-      {
-        data: expect.any(String),
-        mimeType: 'image/png',
-        type: 'image',
-      },
-    ],
+  expect(await callTool(client, 'browser_take_screenshot', {})).toHaveResponse({
+    result: expect.stringContaining('Took the viewport screenshot'),
+    attachments: [expectImageAttachment()],
   });
 
-  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.png'));
-
-  expect(fs.existsSync(outputDir)).toBeTruthy();
-  expect(files).toHaveLength(1);
-  expect(files[0]).toMatch(/^page-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png$/);
+  verifyScreenshotFiles(
+    outputDir,
+    1,
+    'png',
+    SCREENSHOT_PATTERNS.PAGE_TIMESTAMP
+  );
 });
 
-test('browser_take_screenshot (filename: "output.png")', async ({ startClient, server }, testInfo) => {
-  const outputDir = testInfo.outputPath('output');
-  const { client } = await startClient({
-    config: { outputDir },
-  });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
+test('browser_take_screenshot (filename: "output.png")', async ({
+  startClient,
+  server,
+}, testInfo) => {
+  const { outputDir, clientConfig } = createScreenshotTestSetup(testInfo);
+  const { client } = await startClient({ config: clientConfig });
+
+  expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
     code: expect.stringContaining(`page.goto('http://localhost`),
   });
 
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-    arguments: {
+  expect(
+    await callTool(client, 'browser_take_screenshot', {
       filename: 'output.png',
-    },
-  })).toEqual({
-    content: [
-      {
-        text: expect.stringContaining(`output.png`),
-        type: 'text',
-      },
-      {
-        data: expect.any(String),
-        mimeType: 'image/png',
-        type: 'image',
-      },
-    ],
+    })
+  ).toHaveResponse({
+    result: expect.stringContaining('output.png'),
+    attachments: [expectImageAttachment()],
   });
 
-  const files = [...fs.readdirSync(outputDir)].filter(f => f.endsWith('.png'));
-
-  expect(fs.existsSync(outputDir)).toBeTruthy();
-  expect(files).toHaveLength(1);
-  expect(files[0]).toMatch(/^output\.png$/);
+  verifyScreenshotFiles(outputDir, 1, 'png', SCREENSHOT_PATTERNS.OUTPUT_PNG);
 });
 
-test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, server }, testInfo) => {
+test('browser_take_screenshot (imageResponses=omit)', async ({
+  startClient,
+  server,
+}, testInfo) => {
   const outputDir = testInfo.outputPath('output');
   const { client } = await startClient({
     config: {
@@ -222,108 +239,84 @@ test('browser_take_screenshot (imageResponses=omit)', async ({ startClient, serv
     },
   });
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
+  expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
     code: expect.stringContaining(`page.goto('http://localhost`),
   });
 
-  await client.callTool({
-    name: 'browser_take_screenshot',
-  });
+  await callTool(client, 'browser_take_screenshot', {});
 
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-  })).toEqual({
-    content: [
-      {
-        text: expect.stringContaining(`await page.screenshot`),
-        type: 'text',
-      },
-    ],
+  expect(
+    await callTool(client, 'browser_take_screenshot', {
+      expectation: COMMON_EXPECTATIONS.WITH_CODE,
+    })
+  ).toHaveResponse({
+    code: expect.stringContaining('await page.screenshot'),
   });
 });
 
-test('browser_take_screenshot (fullPage: true)', async ({ startClient, server }, testInfo) => {
-  const { client } = await startClient({
-    config: { outputDir: testInfo.outputPath('output') },
-  });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
+test('browser_take_screenshot (fullPage: true)', async ({
+  startClient,
+  server,
+}, testInfo) => {
+  const { clientConfig } = createScreenshotTestSetup(testInfo);
+  const { client } = await startClient({ config: clientConfig });
+
+  expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
     code: expect.stringContaining(`page.goto('http://localhost`),
   });
 
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-    arguments: { fullPage: true },
-  })).toEqual({
-    content: [
-      {
-        text: expect.stringContaining('fullPage: true'),
-        type: 'text',
-      },
-      {
-        data: expect.any(String),
-        mimeType: 'image/png',
-        type: 'image',
-      },
-    ],
-  });
-});
-
-test('browser_take_screenshot (fullPage with element should error)', async ({ startClient, server }, testInfo) => {
-  const { client } = await startClient({
-    config: { outputDir: testInfo.outputPath('output') },
-  });
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`[ref=e1]`),
-  });
-
-  const result = await client.callTool({
-    name: 'browser_take_screenshot',
-    arguments: {
+  expect(
+    await callTool(client, 'browser_take_screenshot', {
       fullPage: true,
-      element: 'hello button',
-      ref: 'e1',
-    },
+      expectation: COMMON_EXPECTATIONS.WITH_CODE,
+    })
+  ).toHaveResponse({
+    code: expect.stringContaining('fullPage: true'),
+    attachments: [expectImageAttachment()],
+  });
+});
+
+test('browser_take_screenshot (fullPage with element should error)', async ({
+  startClient,
+  server,
+}, testInfo) => {
+  const { clientConfig } = createScreenshotTestSetup(testInfo);
+  const { client } = await startClient({ config: clientConfig });
+
+  expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
+    pageState: expect.stringContaining('[ref=e1]'),
+  });
+
+  const result = await callTool(client, 'browser_take_screenshot', {
+    fullPage: true,
+    element: 'hello button',
+    ref: 'e1',
   });
 
   expect(result.isError).toBe(true);
-  expect(result.content?.[0]?.text).toContain('fullPage cannot be used with element screenshots');
+  expect(result.content?.[0]?.text).toContain(
+    'fullPage cannot be used with element screenshots'
+  );
 });
 
-test('browser_take_screenshot (viewport without snapshot)', async ({ startClient, server }, testInfo) => {
-  const { client } = await startClient({
-    config: { outputDir: testInfo.outputPath('output') },
-  });
+test('browser_take_screenshot (viewport without snapshot)', async ({
+  startClient,
+}, testInfo) => {
+  const { clientConfig } = createScreenshotTestSetup(testInfo);
+  const { client } = await startClient({ config: clientConfig });
 
   // Ensure we have a tab but don't navigate anywhere (no snapshot captured)
-  expect(await client.callTool({
-    name: 'browser_tab_list',
-  })).toHaveResponse({
-    tabs: `- 0: (current) [] (about:blank)`,
+  expect(await callTool(client, 'browser_tab_list', {})).toHaveResponse({
+    tabs: '- 0: (current) [] (about:blank)',
   });
 
   // This should work without requiring a snapshot since it's a viewport screenshot
-  expect(await client.callTool({
-    name: 'browser_take_screenshot',
-  })).toEqual({
-    content: [
-      {
-        text: expect.stringContaining(`page.screenshot`),
-        type: 'text',
-      },
-      {
-        data: expect.any(String),
-        mimeType: 'image/png',
-        type: 'image',
-      },
-    ],
+  expect(
+    await callTool(client, 'browser_take_screenshot', {
+      expectation: COMMON_EXPECTATIONS.WITH_CODE,
+    })
+  ).toHaveResponse({
+    code: expect.stringContaining('page.screenshot'),
+    attachments: [expectImageAttachment()],
   });
 });

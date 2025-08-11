@@ -14,242 +14,129 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
+import {
+  clickButtonAndExpectModal,
+  DIALOG_EXPECTATIONS,
+  executeDialogTest,
+  HTML_TEMPLATES,
+  handleDialogAndExpectState,
+  setupDialogTest,
+} from './test-helpers.js';
 
 test('alert dialog', async ({ client, server }) => {
-  server.setContent('/', `<button onclick="alert('Alert')">Button</button>`, 'text/html');
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- button "Button" [ref=e2]`),
-  });
-
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
-    code: `await page.getByRole('button', { name: 'Button' }).click();`,
-    modalState: `- ["alert" dialog with message "Alert"]: can be handled by the "browser_handle_dialog" tool`,
-  });
-
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
-    code: undefined,
-    modalState: `- ["alert" dialog with message "Alert"]: can be handled by the "browser_handle_dialog" tool`,
-  });
-
-  expect(await client.callTool({
-    name: 'browser_handle_dialog',
-    arguments: {
+  await executeDialogTest(
+    client,
+    server,
+    {
+      dialogType: 'alert',
+      message: 'Alert',
       accept: true,
     },
-  })).toHaveResponse({
-    modalState: undefined,
-    pageState: expect.stringContaining(`- button "Button"`),
-  });
+    {
+      htmlContent: HTML_TEMPLATES.ALERT_BUTTON(),
+    }
+  );
 });
 
 test('two alert dialogs', async ({ client, server }) => {
-  server.setContent('/', `
-    <title>Title</title>
-    <body>
-      <button onclick="alert('Alert 1');alert('Alert 2');">Button</button>
-    </body>
-  `, 'text/html');
+  await setupDialogTest(client, server, HTML_TEMPLATES.DOUBLE_ALERT_BUTTON());
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- button "Button" [ref=e2]`),
-  });
+  await clickButtonAndExpectModal(
+    client,
+    'Button',
+    DIALOG_EXPECTATIONS.ALERT_MODAL('Alert 1'),
+    DIALOG_EXPECTATIONS.BUTTON_CLICKED('Button').code
+  );
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
-    code: `await page.getByRole('button', { name: 'Button' }).click();`,
-    modalState: expect.stringContaining(`- ["alert" dialog with message "Alert 1"]: can be handled by the "browser_handle_dialog" tool`),
-  });
+  await handleDialogAndExpectState(
+    client,
+    true,
+    undefined,
+    DIALOG_EXPECTATIONS.ALERT_MODAL('Alert 2')
+  );
 
-  const result = await client.callTool({
-    name: 'browser_handle_dialog',
-    arguments: {
-      accept: true,
-    },
-  });
-
-  expect(result).toHaveResponse({
-    modalState: expect.stringContaining(`- ["alert" dialog with message "Alert 2"]: can be handled by the "browser_handle_dialog" tool`),
-  });
-
-  const result2 = await client.callTool({
-    name: 'browser_handle_dialog',
-    arguments: {
-      accept: true,
-    },
-  });
+  const result2 = await handleDialogAndExpectState(
+    client,
+    true,
+    undefined,
+    DIALOG_EXPECTATIONS.NO_MODAL
+  );
 
   expect(result2).not.toHaveResponse({
-    modalState: expect.stringContaining(`- ["alert" dialog with message "Alert 2"]: can be handled by the "browser_handle_dialog" tool`),
+    modalState: DIALOG_EXPECTATIONS.ALERT_MODAL('Alert 2'),
   });
 });
 
 test('confirm dialog (true)', async ({ client, server }) => {
-  server.setContent('/', `
-    <title>Title</title>
-    <body>
-      <button onclick="document.body.textContent = confirm('Confirm')">Button</button>
-    </body>
-  `, 'text/html');
-
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- button "Button" [ref=e2]`),
-  });
-
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
-    modalState: expect.stringContaining(`- ["confirm" dialog with message "Confirm"]: can be handled by the "browser_handle_dialog" tool`),
-  });
-
-  expect(await client.callTool({
-    name: 'browser_handle_dialog',
-    arguments: {
+  await executeDialogTest(
+    client,
+    server,
+    {
+      dialogType: 'confirm',
+      message: 'Confirm',
       accept: true,
+      expectedResult: 'true',
     },
-  })).toHaveResponse({
-    modalState: undefined,
-    pageState: expect.stringContaining(`- generic [active] [ref=e1]: "true"`),
-  });
+    {
+      htmlContent: HTML_TEMPLATES.CONFIRM_BUTTON(),
+    }
+  );
 });
 
 test('confirm dialog (false)', async ({ client, server }) => {
-  server.setContent('/', `
-    <title>Title</title>
-    <body>
-      <button onclick="document.body.textContent = confirm('Confirm')">Button</button>
-    </body>
-  `, 'text/html');
-
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- button "Button" [ref=e2]`),
-  });
-
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
-    modalState: expect.stringContaining(`- ["confirm" dialog with message "Confirm"]: can be handled by the "browser_handle_dialog" tool`),
-  });
-
-  expect(await client.callTool({
-    name: 'browser_handle_dialog',
-    arguments: {
+  await executeDialogTest(
+    client,
+    server,
+    {
+      dialogType: 'confirm',
+      message: 'Confirm',
       accept: false,
+      expectedResult: 'false',
     },
-  })).toHaveResponse({
-    modalState: undefined,
-    pageState: expect.stringContaining(`- generic [active] [ref=e1]: "false"`),
-  });
+    {
+      htmlContent: HTML_TEMPLATES.CONFIRM_BUTTON(),
+    }
+  );
 });
 
 test('prompt dialog', async ({ client, server }) => {
-  server.setContent('/', `
-    <title>Title</title>
-    <body>
-      <button onclick="document.body.textContent = prompt('Prompt')">Button</button>
-    </body>
-  `, 'text/html');
+  await setupDialogTest(client, server, HTML_TEMPLATES.PROMPT_BUTTON());
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- button "Button" [ref=e2]`),
-  });
+  await clickButtonAndExpectModal(
+    client,
+    'Button',
+    DIALOG_EXPECTATIONS.PROMPT_MODAL('Prompt')
+  );
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
-    modalState: expect.stringContaining(`- ["prompt" dialog with message "Prompt"]: can be handled by the "browser_handle_dialog" tool`),
-  });
-
-  const result = await client.callTool({
-    name: 'browser_handle_dialog',
-    arguments: {
-      accept: true,
-      promptText: 'Answer',
-    },
-  });
-
-  expect(result).toHaveResponse({
-    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Answer`),
-  });
+  await handleDialogAndExpectState(
+    client,
+    true,
+    DIALOG_EXPECTATIONS.RESULT_CONTENT('Answer'),
+    DIALOG_EXPECTATIONS.NO_MODAL,
+    'Answer'
+  );
 });
 
 test('alert dialog w/ race', async ({ client, server }) => {
-  server.setContent('/', `<button onclick="setTimeout(() => alert('Alert'), 100)">Button</button>`, 'text/html');
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- button "Button" [ref=e2]`),
-  });
+  await setupDialogTest(client, server, HTML_TEMPLATES.DELAYED_ALERT_BUTTON());
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
-    code: `await page.getByRole('button', { name: 'Button' }).click();`,
-    modalState: expect.stringContaining(`- ["alert" dialog with message "Alert"]: can be handled by the "browser_handle_dialog" tool`),
-  });
+  await clickButtonAndExpectModal(
+    client,
+    'Button',
+    DIALOG_EXPECTATIONS.ALERT_MODAL('Alert'),
+    DIALOG_EXPECTATIONS.BUTTON_CLICKED('Button').code
+  );
 
-  const result = await client.callTool({
-    name: 'browser_handle_dialog',
-    arguments: {
-      accept: true,
-    },
-  });
-
-  expect(result).toHaveResponse({
-    modalState: undefined,
-    pageState: expect.stringContaining(`- Page URL: ${server.PREFIX}
-- Page Title: 
+  await handleDialogAndExpectState(
+    client,
+    true,
+    expect.stringContaining(`- **Page URL:** ${server.PREFIX}
+- **Page Title:** 
 - Page Snapshot:
 \`\`\`yaml
-- button "Button"`),
-  });
+- button "Button" [active] [ref=e2]
+\`\`\``),
+    DIALOG_EXPECTATIONS.NO_MODAL
+  );
 });

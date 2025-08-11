@@ -14,22 +14,11 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
+import { HTML_TEMPLATES, setServerContent } from './test-helpers.js';
 
 test('browser_wait_for(text)', async ({ client, server }) => {
-  server.setContent('/', `
-    <script>
-      function update() {
-        setTimeout(() => {
-          document.querySelector('div').textContent = 'Text to appear';
-        }, 1000);
-      }
-    </script>
-    <body>
-      <button onclick="update()">Click me</button>
-      <div>Text to disappear</div>
-    </body>
-  `, 'text/html');
+  setServerContent(server, '/', HTML_TEMPLATES.WAIT_FOR_TEXT_UPDATE);
 
   await client.callTool({
     name: 'browser_navigate',
@@ -44,28 +33,18 @@ test('browser_wait_for(text)', async ({ client, server }) => {
     },
   });
 
-  expect(await client.callTool({
-    name: 'browser_wait_for',
-    arguments: { text: 'Text to appear' },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- generic [ref=e3]: Text to appear`),
+  expect(
+    await client.callTool({
+      name: 'browser_wait_for',
+      arguments: { text: 'Text to appear' },
+    })
+  ).toHaveResponse({
+    pageState: expect.stringContaining('- generic [ref=e3]: Text to appear'),
   });
 });
 
 test('browser_wait_for(textGone)', async ({ client, server }) => {
-  server.setContent('/', `
-    <script>
-      function update() {
-        setTimeout(() => {
-          document.querySelector('div').textContent = 'Text to appear';
-        }, 1000);
-      }
-    </script>
-    <body>
-      <button onclick="update()">Click me</button>
-      <div>Text to disappear</div>
-    </body>
-  `, 'text/html');
+  setServerContent(server, '/', HTML_TEMPLATES.WAIT_FOR_TEXT_UPDATE);
 
   await client.callTool({
     name: 'browser_navigate',
@@ -80,10 +59,12 @@ test('browser_wait_for(textGone)', async ({ client, server }) => {
     },
   });
 
-  expect(await client.callTool({
-    name: 'browser_wait_for',
-    arguments: { textGone: 'Text to disappear' },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- generic [ref=e3]: Text to appear`),
+  expect(
+    await client.callTool({
+      name: 'browser_wait_for',
+      arguments: { textGone: 'Text to disappear' },
+    })
+  ).toHaveResponse({
+    pageState: expect.stringContaining('- generic [ref=e3]: Text to appear'),
   });
 });

@@ -3,8 +3,22 @@ dist/
 node_modules/
 test-results/
 playwright-report/
-.vscode/mcp.json
-.idea
+.idea/
 .DS_Store
 .env
 sessions/
+.playwright-mcp/
+benchmark/*.json
+
+test-results.json
+
+# Build outputs
+dist/
+benchmark/lib/
+
+# Serena
+.serena/
+
+# Request logs
+logs/
+*.log

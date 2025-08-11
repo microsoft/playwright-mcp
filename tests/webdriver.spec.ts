@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
-test('do not falsely advertise user agent as a test driver', async ({ client, server, mcpBrowser }) => {
+test('do not falsely advertise user agent as a test driver', async ({
+  client,
+  server,
+  mcpBrowser,
+}) => {
   test.skip(mcpBrowser === 'firefox');
   test.skip(mcpBrowser === 'webkit');
-  server.route('/', (req, res) => {
+  server.route('/', (_req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(`
       <body></body>
@@ -29,12 +33,14 @@ test('do not falsely advertise user agent as a test driver', async ({ client, se
     `);
   });
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: server.PREFIX,
-    },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`webdriver: false`),
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: {
+        url: server.PREFIX,
+      },
+    })
+  ).toHaveResponse({
+    pageState: expect.stringContaining('webdriver: false'),
   });
 });

@@ -15,61 +15,50 @@
  */
 
 import fs from 'node:fs';
-import url from 'node:url';
-
-import { ChildProcess, spawn } from 'node:child_process';
-import path from 'node:path';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-
-import { test as baseTest, expect } from './fixtures.js';
 import type { Config } from '../config.d.ts';
+import { test as baseTest, expect } from './fixtures.js';
+import {
+  type SecureProcessOptions,
+  SecureTestProcessManager,
+} from './process-test-manager.js';
 
-// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-const __filename = url.fileURLToPath(import.meta.url);
+import {
+  COMMON_REGEX_PATTERNS,
+  createSSEClient,
+  expectRegexCount,
+} from './test-utils.js';
 
-const test = baseTest.extend<{ serverEndpoint: (options?: { args?: string[], noPort?: boolean }) => Promise<{ url: URL, stderr: () => string }> }>({
+const test = baseTest.extend<{
+  serverEndpoint: (
+    options?: SecureProcessOptions
+  ) => Promise<{ url: URL; stderr: () => string }>;
+}>({
   serverEndpoint: async ({ mcpHeadless }, use, testInfo) => {
-    let cp: ChildProcess | undefined;
+    const processManager = new SecureTestProcessManager();
     const userDataDir = testInfo.outputPath('user-data-dir');
-    await use(async (options?: { args?: string[], noPort?: boolean }) => {
-      if (cp)
-        throw new Error('Process already running');
 
-      cp = spawn('node', [
-        path.join(path.dirname(__filename), '../cli.js'),
-        ...(options?.noPort ? [] : ['--port=0']),
-        '--user-data-dir=' + userDataDir,
-        ...(mcpHeadless ? ['--headless'] : []),
-        ...(options?.args || []),
-      ], {
-        stdio: 'pipe',
-        env: {
-          ...process.env,
-          DEBUG: 'pw:mcp:test',
-          DEBUG_COLORS: '0',
-          DEBUG_HIDE_DATE: '1',
-        },
-      });
-      let stderr = '';
-      const url = await new Promise<string>(resolve => cp!.stderr?.on('data', data => {
-        stderr += data.toString();
-        const match = stderr.match(/Listening on (http:\/\/.*)/);
-        if (match)
-          resolve(match[1]);
-      }));
+    await use(async (options: SecureProcessOptions = {}) => {
+      const processOptions: SecureProcessOptions = {
+        ...options,
+        userDataDir,
+        headless: mcpHeadless,
+      };
 
-      return { url: new URL(url), stderr: () => stderr };
+      const result = await processManager.spawnSecureProcess(processOptions);
+      // Ensure url is always defined for this fixture
+      if (!result.url) {
+        throw new Error('Server URL not available');
+      }
+      return { url: result.url, stderr: result.stderr };
     });
-    cp?.kill('SIGTERM');
+
+    processManager.terminate();
   },
 });
 
 test('sse transport', async ({ serverEndpoint }) => {
   const { url } = await serverEndpoint();
-  const transport = new SSEClientTransport(new URL('/sse', url));
-  const client = new Client({ name: 'test', version: '1.0.0' });
-  await client.connect(transport);
+  const { client } = await createSSEClient(url);
   await client.ping();
 });
 
@@ -77,78 +66,83 @@ test('sse transport (config)', async ({ serverEndpoint }) => {
   const config: Config = {
     server: {
       port: 0,
-    }
+    },
   };
   const configFile = test.info().outputPath('config.json');
   await fs.promises.writeFile(configFile, JSON.stringify(config, null, 2));
 
-  const { url } = await serverEndpoint({ noPort: true, args: ['--config=' + configFile] });
-  const transport = new SSEClientTransport(new URL('/sse', url));
-  const client = new Client({ name: 'test', version: '1.0.0' });
-  await client.connect(transport);
+  const { url } = await serverEndpoint({
+    noPort: true,
+    args: [`--config=${configFile}`],
+  });
+  const { client } = await createSSEClient(url);
   await client.ping();
 });
 
-test('sse transport browser lifecycle (isolated)', async ({ serverEndpoint, server }) => {
+test('sse transport browser lifecycle (isolated)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
+  const { client: client1 } = await createSSEClient(url);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
   await client1.close();
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
+  const { client: client2 } = await createSSEClient(url);
   await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
   await client2.close();
 
-  await expect(async () => {
-    const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create SSE session/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/delete SSE session/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/create context/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close context/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/create browser context \(isolated\)/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close browser context \(isolated\)/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/obtain browser \(isolated\)/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close browser \(isolated\)/)).length).toBe(2);
+  await expect(() => {
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_CONTEXT, 2);
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CREATE_BROWSER_CONTEXT_ISOLATED,
+      2
+    );
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CLOSE_BROWSER_CONTEXT_ISOLATED,
+      2
+    );
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.OBTAIN_BROWSER_ISOLATED,
+      2
+    );
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_BROWSER_ISOLATED, 2);
   }).toPass();
 });
 
-test('sse transport browser lifecycle (isolated, multiclient)', async ({ serverEndpoint, server }) => {
+test('sse transport browser lifecycle (isolated, multiclient)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
+  const { client: client1 } = await createSSEClient(url);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
+  const { client: client2 } = await createSSEClient(url);
   await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
   await client1.close();
 
-  const transport3 = new SSEClientTransport(new URL('/sse', url));
-  const client3 = new Client({ name: 'test', version: '1.0.0' });
-  await client3.connect(transport3);
+  const { client: client3 } = await createSSEClient(url);
   await client3.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
@@ -157,79 +151,91 @@ test('sse transport browser lifecycle (isolated, multiclient)', async ({ serverE
   await client2.close();
   await client3.close();
 
-  await expect(async () => {
-    const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create SSE session/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/delete SSE session/)).length).toBe(3);
-
-    expect(lines.filter(line => line.match(/create context/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/close context/)).length).toBe(3);
-
-    expect(lines.filter(line => line.match(/create browser context \(isolated\)/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/close browser context \(isolated\)/)).length).toBe(3);
-
-    expect(lines.filter(line => line.match(/obtain browser \(isolated\)/)).length).toBe(1);
-    expect(lines.filter(line => line.match(/close browser \(isolated\)/)).length).toBe(1);
+  await expect(() => {
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 3);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 3);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 3);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_CONTEXT, 3);
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CREATE_BROWSER_CONTEXT_ISOLATED,
+      3
+    );
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CLOSE_BROWSER_CONTEXT_ISOLATED,
+      3
+    );
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.OBTAIN_BROWSER_ISOLATED,
+      1
+    );
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_BROWSER_ISOLATED, 1);
   }).toPass();
 });
 
-test('sse transport browser lifecycle (persistent)', async ({ serverEndpoint, server }) => {
+test('sse transport browser lifecycle (persistent)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url, stderr } = await serverEndpoint();
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
+  const { client: client1 } = await createSSEClient(url);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
   await client1.close();
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
+  const { client: client2 } = await createSSEClient(url);
   await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
   await client2.close();
 
-  await expect(async () => {
-    const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create SSE session/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/delete SSE session/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/create context/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close context/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/create browser context \(persistent\)/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close browser context \(persistent\)/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/lock user data dir/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/release user data dir/)).length).toBe(2);
+  await expect(() => {
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_CONTEXT, 2);
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CREATE_BROWSER_CONTEXT_PERSISTENT,
+      2
+    );
+    expectRegexCount(
+      stderr(),
+      COMMON_REGEX_PATTERNS.CLOSE_BROWSER_CONTEXT_PERSISTENT,
+      2
+    );
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.LOCK_USER_DATA_DIR, 2);
+    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.RELEASE_USER_DATA_DIR, 2);
   }).toPass();
 });
 
-test('sse transport browser lifecycle (persistent, multiclient)', async ({ serverEndpoint, server }) => {
+test('sse transport browser lifecycle (persistent, multiclient)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url } = await serverEndpoint();
 
-  const transport1 = new SSEClientTransport(new URL('/sse', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
+  const { client: client1 } = await createSSEClient(url);
   await client1.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
 
-  const transport2 = new SSEClientTransport(new URL('/sse', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
+  const { client: client2 } = await createSSEClient(url);
   const response = await client2.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
   expect(response.isError).toBe(true);
-  expect(response.content?.[0].text).toContain('use --isolated to run multiple instances of the same browser');
+  expect(response.content?.[0].text).toContain(
+    'use --isolated to run multiple instances of the same browser'
+  );
 
   await client1.close();
   await client2.close();

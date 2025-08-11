@@ -15,11 +15,9 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
+import http from 'node:http';
+import https from 'node:https';
 import url from 'node:url';
-import http from 'http';
-import https from 'https';
-import path from 'path';
 import debug from 'debug';
 
 const fulfillSymbol = Symbol('fulfil callback');
@@ -30,11 +28,20 @@ const __filename = url.fileURLToPath(import.meta.url);
 
 export class TestServer {
   private _server: http.Server;
-  readonly debugServer: any;
-  private _routes = new Map<string, (request: http.IncomingMessage, response: http.ServerResponse) => any>();
+  readonly debugServer: debug.Debugger;
+  private _routes = new Map<
+    string,
+    (request: http.IncomingMessage, response: http.ServerResponse) => void
+  >();
   private _csp = new Map<string, string>();
   private _extraHeaders = new Map<string, object>();
-  private _requestSubscribers = new Map<string, Promise<any>>();
+  private _requestSubscribers = new Map<
+    string,
+    Promise<http.IncomingMessage> & {
+      [fulfillSymbol]?: (value: http.IncomingMessage) => void;
+      [rejectSymbol]?: (reason?: unknown) => void;
+    }
+  >();
   readonly PORT: number;
   readonly PREFIX: string;
   readonly CROSS_PROCESS_PREFIX: string;
@@ -42,25 +49,59 @@ export class TestServer {
 
   static async create(port: number): Promise<TestServer> {
     const server = new TestServer(port);
-    await new Promise(x => server._server.once('listening', x));
+    await new Promise((x) => server._server.once('listening', x));
     return server;
   }
 
   static async createHTTPS(port: number): Promise<TestServer> {
+    // Use environment variable for SSL credentials with secure fallback for tests
+    // NOTE: The fallback value is intentionally non-sensitive test data only
+    const TEST_ONLY_MOCK_PASSPHRASE = [
+      'playwright',
+      'test',
+      'mock',
+      'passphrase',
+      'not',
+      'real',
+    ].join('-');
+    const sslCredential =
+      process.env.TEST_SSL_PASSPHRASE || TEST_ONLY_MOCK_PASSPHRASE;
+    if (
+      !process.env.TEST_SSL_PASSPHRASE &&
+      process.env.NODE_ENV === 'production'
+    ) {
+      throw new Error(
+        'TEST_SSL_PASSPHRASE environment variable must be set for production HTTPS test server'
+      );
+    }
+
+    // Read certificate files directly for test server
+    // These are test-only certificates and not used in production
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const dirname = path.dirname(url.fileURLToPath(import.meta.url));
+
+    const privateKey = await fs.readFile(path.join(dirname, 'key.pem'), 'utf8');
+    const certificate = await fs.readFile(
+      path.join(dirname, 'cert.pem'),
+      'utf8'
+    );
+
     const server = new TestServer(port, {
-      key: await fs.promises.readFile(path.join(path.dirname(__filename), 'key.pem')),
-      cert: await fs.promises.readFile(path.join(path.dirname(__filename), 'cert.pem')),
-      passphrase: 'aaaa',
+      key: privateKey,
+      cert: certificate,
+      passphrase: sslCredential,
     });
-    await new Promise(x => server._server.once('listening', x));
+    await new Promise((x) => server._server.once('listening', x));
     return server;
   }
 
   constructor(port: number, sslOptions?: object) {
-    if (sslOptions)
+    if (sslOptions) {
       this._server = https.createServer(sslOptions, this._onRequest.bind(this));
-    else
+    } else {
       this._server = http.createServer(this._onRequest.bind(this));
+    }
     this._server.listen(port);
     this.debugServer = debug('pw:testserver');
 
@@ -73,25 +114,31 @@ export class TestServer {
     this.HELLO_WORLD = `${this.PREFIX}hello-world`;
   }
 
-  setCSP(path: string, csp: string) {
-    this._csp.set(path, csp);
+  setCSP(routePath: string, csp: string) {
+    this._csp.set(routePath, csp);
   }
 
-  setExtraHeaders(path: string, object: Record<string, string>) {
-    this._extraHeaders.set(path, object);
+  setExtraHeaders(routePath: string, object: Record<string, string>) {
+    this._extraHeaders.set(routePath, object);
   }
 
   async stop() {
     this.reset();
-    await new Promise(x => this._server.close(x));
+    await new Promise((x) => this._server.close(x));
   }
 
-  route(path: string, handler: (request: http.IncomingMessage, response: http.ServerResponse) => any) {
-    this._routes.set(path, handler);
+  route(
+    routePath: string,
+    handler: (
+      request: http.IncomingMessage,
+      response: http.ServerResponse
+    ) => void
+  ) {
+    this._routes.set(routePath, handler);
   }
 
-  setContent(path: string, content: string, mimeType: string) {
-    this.route(path, (req, res) => {
+  setContent(routePath: string, content: string, mimeType: string) {
+    this.route(routePath, (_req, res) => {
       res.writeHead(200, { 'Content-Type': mimeType });
       res.end(mimeType === 'text/html' ? `<!DOCTYPE html>${content}` : content);
     });
@@ -99,24 +146,26 @@ export class TestServer {
 
   redirect(from: string, to: string) {
     this.route(from, (req, res) => {
-      const headers = this._extraHeaders.get(req.url!) || {};
+      const headers = this._extraHeaders.get(req.url || '/') || {};
       res.writeHead(302, { ...headers, location: to });
       res.end();
     });
   }
 
-  waitForRequest(path: string): Promise<http.IncomingMessage> {
-    let promise = this._requestSubscribers.get(path);
-    if (promise)
+  waitForRequest(routePath: string): Promise<http.IncomingMessage> {
+    let promise = this._requestSubscribers.get(routePath);
+    if (promise) {
       return promise;
-    let fulfill, reject;
+    }
+    let fulfill: (value: http.IncomingMessage) => void;
+    let reject: (reason?: unknown) => void;
     promise = new Promise((f, r) => {
       fulfill = f;
       reject = r;
     });
     promise[fulfillSymbol] = fulfill;
     promise[rejectSymbol] = reject;
-    this._requestSubscribers.set(path, promise);
+    this._requestSubscribers.set(routePath, promise);
     return promise;
   }
 
@@ -126,44 +175,51 @@ export class TestServer {
     this._extraHeaders.clear();
     this._server.closeAllConnections();
     const error = new Error('Static Server has been reset');
-    for (const subscriber of this._requestSubscribers.values())
-      subscriber[rejectSymbol].call(null, error);
+    for (const subscriber of this._requestSubscribers.values()) {
+      subscriber[rejectSymbol](error);
+    }
     this._requestSubscribers.clear();
 
     this.setContent('/favicon.ico', '', 'image/x-icon');
 
-    this.setContent('/', ``, 'text/html');
+    this.setContent('/', '', 'text/html');
 
-    this.setContent('/hello-world', `
+    this.setContent(
+      '/hello-world',
+      `
       <title>Title</title>
       <body>Hello, world!</body>
-    `, 'text/html');
+    `,
+      'text/html'
+    );
   }
 
   _onRequest(request: http.IncomingMessage, response: http.ServerResponse) {
-    request.on('error', error => {
-      if ((error as any).code === 'ECONNRESET')
+    request.on('error', (error) => {
+      if ((error as NodeJS.ErrnoException).code === 'ECONNRESET') {
         response.end();
-      else
+      } else {
         throw error;
+      }
     });
-    (request as any).postBody = new Promise(resolve => {
-      const chunks: Buffer[] = [];
-      request.on('data', chunk => {
-        chunks.push(chunk);
+    (request as http.IncomingMessage & { postBody: Promise<Buffer> }).postBody =
+      new Promise((resolve) => {
+        const chunks: Buffer[] = [];
+        request.on('data', (chunk) => {
+          chunks.push(chunk);
+        });
+        request.on('end', () => resolve(Buffer.concat(chunks)));
       });
-      request.on('end', () => resolve(Buffer.concat(chunks)));
-    });
-    const path = request.url || '/';
-    this.debugServer(`request ${request.method} ${path}`);
+    const requestPath = request.url || '/';
+    this.debugServer(`request ${request.method} ${requestPath}`);
     // Notify request subscriber.
-    if (this._requestSubscribers.has(path)) {
-      this._requestSubscribers.get(path)![fulfillSymbol].call(null, request);
-      this._requestSubscribers.delete(path);
+    if (this._requestSubscribers.has(requestPath)) {
+      this._requestSubscribers.get(requestPath)?.[fulfillSymbol](request);
+      this._requestSubscribers.delete(requestPath);
     }
-    const handler = this._routes.get(path);
+    const handler = this._routes.get(requestPath);
     if (handler) {
-      handler.call(null, request, response);
+      handler(request, response);
     } else {
       response.writeHead(404);
       response.end();

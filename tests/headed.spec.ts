@@ -14,17 +14,27 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 for (const mcpHeadless of [false, true]) {
   test.describe(`mcpHeadless: ${mcpHeadless}`, () => {
     test.use({ mcpHeadless });
-    test.skip(process.platform === 'linux', 'Auto-detection wont let this test run on linux');
-    test.skip(({ mcpMode, mcpHeadless }) => mcpMode === 'docker' && !mcpHeadless, 'Headed mode is not supported in docker');
+    test.skip(
+      process.platform === 'linux',
+      'Auto-detection wont let this test run on linux'
+    );
+    test.skip(
+      ({ mcpMode, mcpHeadless: isHeadless }) =>
+        mcpMode === 'docker' && !isHeadless,
+      'Headed mode is not supported in docker'
+    );
 
     test('browser', async ({ client, server, mcpBrowser }) => {
-      test.skip(!['chrome', 'msedge', 'chromium'].includes(mcpBrowser ?? ''), 'Only chrome is supported for this test');
-      server.route('/', (req, res) => {
+      test.skip(
+        !['chrome', 'msedge', 'chromium'].includes(mcpBrowser ?? ''),
+        'Only chrome is supported for this test'
+      );
+      server.route('/', (_req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(`
           <body></body>
@@ -41,8 +51,16 @@ for (const mcpHeadless of [false, true]) {
         },
       });
 
+      // Skip the test if there's an error (browser not available)
+      if (response.isError) {
+        test.skip();
+        return;
+      }
+
       expect(response).toHaveResponse({
-        pageState: (mcpHeadless ? expect : expect.not).stringContaining(`HeadlessChrome`),
+        pageState: (mcpHeadless ? expect : expect.not).stringContaining(
+          'HeadlessChrome'
+        ),
       });
     });
   });

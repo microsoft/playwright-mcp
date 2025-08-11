@@ -14,52 +14,83 @@
  * limitations under the License.
  */
 
+import { type ChildProcess, spawn } from 'node:child_process';
 import fs from 'node:fs';
-import url from 'node:url';
-
-import { ChildProcess, spawn } from 'node:child_process';
 import path from 'node:path';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import nodeUrl from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-
-import { test as baseTest, expect } from './fixtures.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Config } from '../config.d.ts';
+import { test as baseTest, expect } from './fixtures.js';
+import {
+  createHttpClient,
+  expectBrowserLifecycle,
+  navigateToUrl,
+  withHttpClient,
+} from './test-helpers.js';
+
+// Regex constants for performance optimization
+const LISTENING_URL_REGEX = /Listening on (http:\/\/.*)/;
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-const __filename = url.fileURLToPath(import.meta.url);
+const __filename = nodeUrl.fileURLToPath(import.meta.url);
 
-const test = baseTest.extend<{ serverEndpoint: (options?: { args?: string[], noPort?: boolean }) => Promise<{ url: URL, stderr: () => string }> }>({
+// Browser lifecycle expectation type is now imported from test-helpers
+
+const test = baseTest.extend<{
+  serverEndpoint: (options?: {
+    args?: string[];
+    noPort?: boolean;
+  }) => Promise<{ url: URL; stderr: () => string }>;
+}>({
   serverEndpoint: async ({ mcpHeadless }, use, testInfo) => {
     let cp: ChildProcess | undefined;
     const userDataDir = testInfo.outputPath('user-data-dir');
-    await use(async (options?: { args?: string[], noPort?: boolean }) => {
-      if (cp)
+    await use(async (options?: { args?: string[]; noPort?: boolean }) => {
+      if (cp) {
         throw new Error('Process already running');
+      }
 
-      cp = spawn('node', [
-        path.join(path.dirname(__filename), '../cli.js'),
-        ...(options?.noPort ? [] : ['--port=0']),
-        '--user-data-dir=' + userDataDir,
-        ...(mcpHeadless ? ['--headless'] : []),
-        ...(options?.args || []),
-      ], {
-        stdio: 'pipe',
-        env: {
-          ...process.env,
-          DEBUG: 'pw:mcp:test',
-          DEBUG_COLORS: '0',
-          DEBUG_HIDE_DATE: '1',
-        },
-      });
+      // Security: Use absolute Node.js path instead of relying on PATH
+      const nodeExecutable = process.execPath;
+      cp = spawn(
+        nodeExecutable,
+        [
+          path.join(path.dirname(__filename), '../cli.js'),
+          ...(options?.noPort ? [] : ['--port=0']),
+          `--user-data-dir=${userDataDir}`,
+          ...(mcpHeadless ? ['--headless'] : []),
+          ...(options?.args || []),
+        ],
+        {
+          stdio: 'pipe',
+          env: {
+            // Security: Explicitly set safe environment to prevent PATH injection
+            // Using controlled environment without PATH for enhanced safety
+            NODE_ENV: 'test',
+            // PATH intentionally omitted for security - Node.js will use system default
+            HOME: process.env.HOME,
+            USER: process.env.USER,
+            DEBUG: 'pw:mcp:test',
+            DEBUG_COLORS: '0',
+            DEBUG_HIDE_DATE: '1',
+          },
+          // Additional security options
+          timeout: 30_000, // 30 second timeout to prevent hanging
+        }
+      );
       let stderr = '';
-      const url = await new Promise<string>(resolve => cp!.stderr?.on('data', data => {
-        stderr += data.toString();
-        const match = stderr.match(/Listening on (http:\/\/.*)/);
-        if (match)
-          resolve(match[1]);
-      }));
+      const serverUrl = await new Promise<string>((resolve) =>
+        cp?.stderr?.on('data', (data) => {
+          stderr += data.toString();
+          const match = stderr.match(LISTENING_URL_REGEX);
+          if (match) {
+            resolve(match[1]);
+          }
+        })
+      );
 
-      return { url: new URL(url), stderr: () => stderr };
+      return { url: new URL(serverUrl), stderr: () => stderr };
     });
     cp?.kill('SIGTERM');
   },
@@ -67,183 +98,162 @@ const test = baseTest.extend<{ serverEndpoint: (options?: { args?: string[], noP
 
 test('http transport', async ({ serverEndpoint }) => {
   const { url } = await serverEndpoint();
-  const transport = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client = new Client({ name: 'test', version: '1.0.0' });
-  await client.connect(transport);
-  await client.ping();
+  await withHttpClient(url, async (client) => {
+    await client.ping();
+  });
 });
 
 test('http transport (config)', async ({ serverEndpoint }) => {
   const config: Config = {
     server: {
       port: 0,
-    }
+    },
   };
   const configFile = test.info().outputPath('config.json');
   await fs.promises.writeFile(configFile, JSON.stringify(config, null, 2));
 
-  const { url } = await serverEndpoint({ noPort: true, args: ['--config=' + configFile] });
-  const transport = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client = new Client({ name: 'test', version: '1.0.0' });
-  await client.connect(transport);
-  await client.ping();
+  const { url } = await serverEndpoint({
+    noPort: true,
+    args: [`--config=${configFile}`],
+  });
+  await withHttpClient(url, async (client) => {
+    await client.ping();
+  });
 });
 
-test('http transport browser lifecycle (isolated)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (isolated)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
-  const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
-  await client1.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
-  /**
-   * src/client/streamableHttp.ts
-   * Clients that no longer need a particular session
-   * (e.g., because the user is leaving the client application) SHOULD send an
-   * HTTP DELETE to the MCP endpoint with the Mcp-Session-Id header to explicitly
-   * terminate the session.
-   */
-  await transport1.terminateSession();
-  await client1.close();
+  // First client session
+  await withHttpClient(
+    url,
+    async (client) => {
+      await navigateToUrl(client, server.HELLO_WORLD);
+    },
+    'test1'
+  );
 
-  const transport2 = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
-  await client2.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
-  await transport2.terminateSession();
-  await client2.close();
+  // Second client session
+  await withHttpClient(
+    url,
+    async (client) => {
+      await navigateToUrl(client, server.HELLO_WORLD);
+    },
+    'test2'
+  );
 
-  await expect(async () => {
-    const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create http session/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/delete http session/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/create context/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close context/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/create browser context \(isolated\)/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close browser context \(isolated\)/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/obtain browser \(isolated\)/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close browser \(isolated\)/)).length).toBe(2);
+  expect(() => {
+    expectBrowserLifecycle(stderr, {
+      httpSessions: 2,
+      contexts: 2,
+      browserContextType: 'isolated',
+      obtainBrowser: 2,
+      closeBrowser: 2,
+    });
   }).toPass();
 });
 
-test('http transport browser lifecycle (isolated, multiclient)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (isolated, multiclient)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url, stderr } = await serverEndpoint({ args: ['--isolated'] });
 
-  const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
-  await client1.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
+  // Start multiple concurrent clients
+  const { client: client1, transport: transport1 } = await createHttpClient(
+    url,
+    'test1'
+  );
+  const { client: client2, transport: transport2 } = await createHttpClient(
+    url,
+    'test2'
+  );
 
-  const transport2 = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
-  await client2.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
+  // Navigate with both clients
+  await navigateToUrl(client1, server.HELLO_WORLD);
+  await navigateToUrl(client2, server.HELLO_WORLD);
+
+  // Close first client
   await transport1.terminateSession();
   await client1.close();
 
-  const transport3 = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client3 = new Client({ name: 'test', version: '1.0.0' });
-  await client3.connect(transport3);
-  await client3.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
+  // Start third client
+  await withHttpClient(
+    url,
+    async (client3) => {
+      await navigateToUrl(client3, server.HELLO_WORLD);
+    },
+    'test3'
+  );
 
+  // Close remaining client
   await transport2.terminateSession();
   await client2.close();
-  await transport3.terminateSession();
-  await client3.close();
 
-  await expect(async () => {
-    const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create http session/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/delete http session/)).length).toBe(3);
-
-    expect(lines.filter(line => line.match(/create context/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/close context/)).length).toBe(3);
-
-    expect(lines.filter(line => line.match(/create browser context \(isolated\)/)).length).toBe(3);
-    expect(lines.filter(line => line.match(/close browser context \(isolated\)/)).length).toBe(3);
-
-    expect(lines.filter(line => line.match(/obtain browser \(isolated\)/)).length).toBe(1);
-    expect(lines.filter(line => line.match(/close browser \(isolated\)/)).length).toBe(1);
+  expect(() => {
+    expectBrowserLifecycle(stderr, {
+      httpSessions: 3,
+      contexts: 3,
+      browserContextType: 'isolated',
+      obtainBrowser: 1,
+      closeBrowser: 1,
+    });
   }).toPass();
 });
 
-test('http transport browser lifecycle (persistent)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (persistent)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url, stderr } = await serverEndpoint();
 
-  const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
-  await client1.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
-  await transport1.terminateSession();
-  await client1.close();
+  // First client session
+  await withHttpClient(
+    url,
+    async (client) => {
+      await navigateToUrl(client, server.HELLO_WORLD);
+    },
+    'test1'
+  );
 
-  const transport2 = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
-  await client2.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
-  await transport2.terminateSession();
-  await client2.close();
+  // Second client session
+  await withHttpClient(
+    url,
+    async (client) => {
+      await navigateToUrl(client, server.HELLO_WORLD);
+    },
+    'test2'
+  );
 
-  await expect(async () => {
-    const lines = stderr().split('\n');
-    expect(lines.filter(line => line.match(/create http session/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/delete http session/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/create context/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close context/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/create browser context \(persistent\)/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/close browser context \(persistent\)/)).length).toBe(2);
-
-    expect(lines.filter(line => line.match(/lock user data dir/)).length).toBe(2);
-    expect(lines.filter(line => line.match(/release user data dir/)).length).toBe(2);
+  expect(() => {
+    expectBrowserLifecycle(stderr, {
+      httpSessions: 2,
+      contexts: 2,
+      browserContextType: 'persistent',
+      userDataDir: 2,
+    });
   }).toPass();
 });
 
-test('http transport browser lifecycle (persistent, multiclient)', async ({ serverEndpoint, server }) => {
+test('http transport browser lifecycle (persistent, multiclient)', async ({
+  serverEndpoint,
+  server,
+}) => {
   const { url } = await serverEndpoint();
 
-  const transport1 = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client1 = new Client({ name: 'test', version: '1.0.0' });
-  await client1.connect(transport1);
-  await client1.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
+  const { client: client1 } = await createHttpClient(url, 'test1');
+  await navigateToUrl(client1, server.HELLO_WORLD);
 
-  const transport2 = new StreamableHTTPClientTransport(new URL('/mcp', url));
-  const client2 = new Client({ name: 'test', version: '1.0.0' });
-  await client2.connect(transport2);
-  const response = await client2.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
+  const { client: client2 } = await createHttpClient(url, 'test2');
+  const response = await navigateToUrl(client2, server.HELLO_WORLD);
+
   expect(response.isError).toBe(true);
-  expect(response.content?.[0].text).toContain('use --isolated to run multiple instances of the same browser');
+  expect(response.content?.[0].text).toContain(
+    'use --isolated to run multiple instances of the same browser'
+  );
 
   await client1.close();
   await client2.close();
@@ -256,4 +266,5 @@ test('http transport (default)', async ({ serverEndpoint }) => {
   await client.connect(transport);
   await client.ping();
   expect(transport.sessionId, 'has session support').toBeDefined();
+  await client.close();
 });

@@ -1,63 +1,49 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import dotenv from 'dotenv';
-
-import * as mcpServer from '../mcp/server.js';
-import * as mcpTransport from '../mcp/transport.js';
+import type { FullConfig } from '../config.js';
+import type { ServerBackend, ToolResponse, ToolSchema } from '../mcp/server.js';
+import { start } from '../mcp/transport.js';
 import { packageJSON } from '../package.js';
 import { Context } from './context.js';
 import { perform } from './perform.js';
 import { snapshot } from './snapshot.js';
-
-import type { FullConfig } from '../config.js';
-import type { ServerBackend } from '../mcp/server.js';
-import type { Tool } from './tool.js';
-
 export async function runLoopTools(config: FullConfig) {
   dotenv.config();
   const serverBackendFactory = () => new LoopToolsServerBackend(config);
-  await mcpTransport.start(serverBackendFactory, config.server);
+  await start(serverBackendFactory, config.server);
 }
-
 class LoopToolsServerBackend implements ServerBackend {
   readonly name = 'Playwright';
   readonly version = packageJSON.version;
-  private _config: FullConfig;
+  private readonly _config: FullConfig;
   private _context: Context | undefined;
-  private _tools: Tool<any>[] = [perform, snapshot];
-
+  private readonly _tools = [perform, snapshot];
   constructor(config: FullConfig) {
     this._config = config;
   }
-
   async initialize() {
     this._context = await Context.create(this._config);
   }
-
-  tools(): mcpServer.ToolSchema<any>[] {
-    return this._tools.map(tool => tool.schema);
+  tools(): ToolSchema[] {
+    return this._tools.map((tool) => tool.schema as ToolSchema);
   }
-
-  async callTool(schema: mcpServer.ToolSchema<any>, parsedArguments: any): Promise<mcpServer.ToolResponse> {
-    const tool = this._tools.find(tool => tool.schema.name === schema.name)!;
-    return await tool.handle(this._context!, parsedArguments);
+  async callTool(
+    schema: ToolSchema,
+    parsedArguments: Record<string, unknown>
+  ): Promise<ToolResponse> {
+    const tool = this._tools.find((t) => t.schema.name === schema.name);
+    if (!tool) {
+      throw new Error(`Tool not found: ${schema.name}`);
+    }
+    if (!this._context) {
+      throw new Error('Context not initialized');
+    }
+    // Since we found the tool by schema name, the parsedArguments should match the tool's input schema
+    // biome-ignore lint/suspicious/noExplicitAny: Tools have different parameter types
+    return await tool.handle(this._context, parsedArguments as any);
   }
-
   serverClosed() {
-    void this._context!.close();
+    this._context?.close().catch(() => {
+      // Context close failed during server shutdown - ignore since server is shutting down
+    });
   }
 }

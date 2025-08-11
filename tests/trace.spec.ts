@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
+import fs from 'node:fs';
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
-test('check that trace is saved', async ({ startClient, server, mcpMode }, testInfo) => {
+test('check that trace is saved', async ({ startClient, server }, testInfo) => {
   const outputDir = testInfo.outputPath('output');
 
   const { client } = await startClient({
     args: ['--save-trace', `--output-dir=${outputDir}`],
   });
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.HELLO_WORLD },
+    })
+  ).toHaveResponse({
     code: expect.stringContaining(`page.goto('http://localhost`),
   });
 

@@ -14,104 +14,119 @@
  * limitations under the License.
  */
 
-import fs from 'fs/promises';
-import { test, expect } from './fixtures.js';
+import fs from 'node:fs/promises';
+import { expect, test } from './fixtures.js';
 
 test('browser_file_upload', async ({ client, server }, testInfo) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <input type="file" />
     <button>Button</button>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
-  expect(await client.callTool({
+  const navigateResponse = await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
-  })).toHaveResponse({
+  });
+  expect(navigateResponse).toHaveResponse({
     pageState: expect.stringContaining(`- generic [active] [ref=e1]:
   - button "Choose File" [ref=e2]
   - button "Button" [ref=e3]`),
   });
-
-  {
-    expect(await client.callTool({
+  expect(
+    await client.callTool({
       name: 'browser_file_upload',
       arguments: { paths: [] },
-    })).toHaveResponse({
-      isError: true,
-      result: expect.stringContaining(`The tool "browser_file_upload" can only be used when there is related modal state present.`),
-      modalState: expect.stringContaining(`- There is no modal state present`),
-    });
-  }
-
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Textbox',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
-    modalState: expect.stringContaining(`- [File chooser]: can be handled by the "browser_file_upload" tool`),
+    })
+  ).toHaveResponse({
+    isError: true,
+    result: expect.stringContaining(
+      `The tool "browser_file_upload" can only be used when there is related modal state present.`
+    ),
+    modalState: expect.stringContaining('- There is no modal state present'),
   });
 
-  const filePath = testInfo.outputPath('test.txt');
-  await fs.writeFile(filePath, 'Hello, world!');
-
-  {
-    const response = await client.callTool({
-      name: 'browser_file_upload',
-      arguments: {
-        paths: [filePath],
-      },
-    });
-
-    expect(response).toHaveResponse({
-      code: expect.stringContaining(`await fileChooser.setFiles(`),
-      modalState: undefined,
-    });
-  }
-
-  {
-    const response = await client.callTool({
+  expect(
+    await client.callTool({
       name: 'browser_click',
       arguments: {
         element: 'Textbox',
         ref: 'e2',
       },
-    });
+    })
+  ).toHaveResponse({
+    modalState: expect.stringContaining(
+      `- [File chooser]: can be handled by the "browser_file_upload" tool`
+    ),
+  });
 
-    expect(response).toHaveResponse({
-      modalState: `- [File chooser]: can be handled by the "browser_file_upload" tool`,
-    });
-  }
+  const filePath = testInfo.outputPath('test.txt');
+  await fs.writeFile(filePath, 'Hello, world!');
 
-  {
-    const response = await client.callTool({
-      name: 'browser_click',
-      arguments: {
-        element: 'Button',
-        ref: 'e3',
-      },
-    });
+  const response = await client.callTool({
+    name: 'browser_file_upload',
+    arguments: {
+      paths: [filePath],
+    },
+  });
 
-    expect(response).toHaveResponse({
-      result: `Error: Tool "browser_click" does not handle the modal state.`,
-      modalState: expect.stringContaining(`- [File chooser]: can be handled by the "browser_file_upload" tool`),
-    });
-  }
+  expect(response).toHaveResponse({
+    code: expect.stringContaining('await fileChooser.setFiles('),
+    modalState: undefined,
+  });
+
+  const response2 = await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Textbox',
+      ref: 'e2',
+    },
+  });
+
+  expect(response2).toHaveResponse({
+    modalState: `- [File chooser]: can be handled by the "browser_file_upload" tool`,
+  });
+
+  const response3 = await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Button',
+      ref: 'e3',
+    },
+  });
+
+  expect(response3).toHaveResponse({
+    result: `Error: Tool "browser_click" does not handle the modal state.`,
+    modalState: expect.stringContaining(
+      `- [File chooser]: can be handled by the "browser_file_upload" tool`
+    ),
+  });
 });
 
-test('clicking on download link emits download', async ({ startClient, server, mcpMode }, testInfo) => {
+test('clicking on download link emits download', async ({
+  startClient,
+  server,
+}, testInfo) => {
   const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
 
-  server.setContent('/', `<a href="/download" download="test.txt">Download</a>`, 'text/html');
+  server.setContent(
+    '/',
+    `<a href="/download" download="test.txt">Download</a>`,
+    'text/html'
+  );
   server.setContent('/download', 'Data', 'text/plain');
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.PREFIX },
+    })
+  ).toHaveResponse({
     pageState: expect.stringContaining(`- link "Download" [ref=e2]`),
   });
   await client.callTool({
@@ -121,18 +136,31 @@ test('clicking on download link emits download', async ({ startClient, server, m
       ref: 'e2',
     },
   });
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toHaveResponse({
-    downloads: `- Downloaded file test.txt to ${testInfo.outputPath('output', 'test.txt')}`,
-  });
+  await expect
+    .poll(() =>
+      client.callTool({
+        name: 'browser_snapshot',
+        arguments: {
+          expectation: { includeDownloads: true },
+        },
+      })
+    )
+    .toHaveResponse({
+      downloads: `- Downloaded file test.txt to ${testInfo.outputPath('output', 'test.txt')}`,
+    });
 });
 
-test('navigating to download link emits download', async ({ startClient, server, mcpBrowser, mcpMode }, testInfo) => {
+test('navigating to download link emits download', async ({
+  startClient,
+  server,
+  mcpBrowser,
+}, testInfo) => {
   const { client } = await startClient({
     config: { outputDir: testInfo.outputPath('output') },
   });
 
   test.skip(mcpBrowser !== 'chromium', 'This test is racy');
-  server.route('/download', (req, res) => {
+  server.route('/download', (_req, res) => {
     res.writeHead(200, {
       'Content-Type': 'text/plain',
       'Content-Disposition': 'attachment; filename=test.txt',
@@ -140,12 +168,14 @@ test('navigating to download link emits download', async ({ startClient, server,
     res.end('Hello world!');
   });
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: server.PREFIX + 'download',
-    },
-  })).toHaveResponse({
-    downloads: expect.stringContaining(`- Downloaded file test.txt to`),
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: {
+        url: `${server.PREFIX}download`,
+      },
+    })
+  ).toHaveResponse({
+    downloads: expect.stringContaining('- Downloaded file test.txt to'),
   });
 });

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
-test('--device should work', async ({ startClient, server, mcpMode }) => {
+test('--device should work', async ({ startClient, server }) => {
   const { client } = await startClient({
     args: ['--device', 'iPhone 15'],
   });
 
-  server.route('/', (req, res) => {
+  server.route('/', (_req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(`
       <head>
@@ -34,12 +34,14 @@ test('--device should work', async ({ startClient, server, mcpMode }) => {
     `);
   });
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: server.PREFIX,
-    },
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`393x659`),
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: {
+        url: server.PREFIX,
+      },
+    })
+  ).toHaveResponse({
+    pageState: expect.stringContaining('393x659'),
   });
 });

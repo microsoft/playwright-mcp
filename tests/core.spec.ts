@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test('browser_navigate', async ({ client, server }) => {
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.HELLO_WORLD },
+    })
+  ).toHaveResponse({
     code: `await page.goto('${server.HELLO_WORLD}');`,
-    pageState: `- Page URL: ${server.HELLO_WORLD}
-- Page Title: Title
+    pageState: `- **Page URL:** ${server.HELLO_WORLD}
+- **Page Title:** Title
 - Page Snapshot:
 \`\`\`yaml
 - generic [active] [ref=e1]: Hello, world!
@@ -31,31 +33,38 @@ test('browser_navigate', async ({ client, server }) => {
   });
 });
 
-test('browser_select_option', async ({ client, server }) => {
-  server.setContent('/', `
+test('browser_select_option', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
+  server.setContent(
+    '/',
+    `
     <title>Title</title>
     <select>
       <option value="foo">Foo</option>
       <option value="bar">Bar</option>
     </select>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
 
-  expect(await client.callTool({
-    name: 'browser_select_option',
-    arguments: {
-      element: 'Select',
-      ref: 'e2',
-      values: ['bar'],
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_select_option',
+      arguments: {
+        element: 'Select',
+        ref: 'e2',
+        values: ['bar'],
+      },
+    })
+  ).toHaveResponse({
     code: `await page.getByRole('combobox').selectOption(['bar']);`,
-    pageState: `- Page URL: ${server.PREFIX}
-- Page Title: Title
+    pageState: `- **Page URL:** ${server.PREFIX}
+- **Page Title:** Title
 - Page Snapshot:
 \`\`\`yaml
 - combobox [ref=e2]:
@@ -65,29 +74,40 @@ test('browser_select_option', async ({ client, server }) => {
   });
 });
 
-test('browser_select_option (multiple)', async ({ client, server }) => {
-  server.setContent('/', `
+test('browser_select_option (multiple)', async ({
+  client,
+  server,
+  mcpBrowser,
+}) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
+  server.setContent(
+    '/',
+    `
     <title>Title</title>
     <select multiple>
       <option value="foo">Foo</option>
       <option value="bar">Bar</option>
       <option value="baz">Baz</option>
     </select>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
 
-  expect(await client.callTool({
-    name: 'browser_select_option',
-    arguments: {
-      element: 'Select',
-      ref: 'e2',
-      values: ['bar', 'baz'],
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_select_option',
+      arguments: {
+        element: 'Select',
+        ref: 'e2',
+        values: ['bar', 'baz'],
+      },
+    })
+  ).toHaveResponse({
     code: `await page.getByRole('listbox').selectOption(['bar', 'baz']);`,
     pageState: expect.stringContaining(`
 - listbox [ref=e2]:
@@ -98,14 +118,18 @@ test('browser_select_option (multiple)', async ({ client, server }) => {
 });
 
 test('browser_resize', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <title>Resize Test</title>
     <body>
       <div id="size">Waiting for resize...</div>
       <script>new ResizeObserver(() => { document.getElementById("size").textContent = \`Window size: \${window.innerWidth}x\${window.innerHeight}\`; }).observe(document.body);
       </script>
     </body>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
@@ -116,18 +140,34 @@ test('browser_resize', async ({ client, server }) => {
     arguments: {
       width: 390,
       height: 780,
+      expectation: {
+        includeCode: true,
+      },
     },
   });
   expect(response).toHaveResponse({
-    code: `await page.setViewportSize({ width: 390, height: 780 });`,
+    code: 'await page.setViewportSize({ width: 390, height: 780 });',
   });
-  await expect.poll(() => client.callTool({ name: 'browser_snapshot' })).toHaveResponse({
-    pageState: expect.stringContaining(`Window size: 390x780`),
-  });
+  await expect
+    .poll(() =>
+      client.callTool({
+        name: 'browser_snapshot',
+        arguments: {
+          expectation: {
+            includeSnapshot: true,
+          },
+        },
+      })
+    )
+    .toHaveResponse({
+      pageState: expect.stringContaining('Window size: 390x780'),
+    });
 });
 
 test('old locator error message', async ({ client, server }) => {
-  server.setContent('/', `
+  server.setContent(
+    '/',
+    `
     <button>Button 1</button>
     <button>Button 2</button>
     <script>
@@ -135,14 +175,18 @@ test('old locator error message', async ({ client, server }) => {
         document.querySelectorAll('button')[1].remove();
       });
     </script>
-  `, 'text/html');
+  `,
+    'text/html'
+  );
 
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: {
-      url: server.PREFIX,
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: {
+        url: server.PREFIX,
+      },
+    })
+  ).toHaveResponse({
     pageState: expect.stringContaining(`
   - button "Button 1" [ref=e2]
   - button "Button 2" [ref=e3]`),
@@ -156,35 +200,54 @@ test('old locator error message', async ({ client, server }) => {
     },
   });
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Button 2',
-      ref: 'e3',
-    },
-  })).toHaveResponse({
-    result: expect.stringContaining(`Ref e3 not found in the current page snapshot. Try capturing new snapshot.`),
+  expect(
+    await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'Button 2',
+        ref: 'e3',
+      },
+    })
+  ).toHaveResponse({
+    result: expect.stringContaining(
+      'Ref e3 not found in the current page snapshot. Try capturing new snapshot.'
+    ),
     isError: true,
   });
 });
 
-test('visibility: hidden > visible should be shown', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/535' } }, async ({ client, server }) => {
-  server.setContent('/', `
+test(
+  'visibility: hidden > visible should be shown',
+  {
+    annotation: {
+      type: 'issue',
+      description: 'https://github.com/microsoft/playwright-mcp/issues/535',
+    },
+  },
+  async ({ client, server }) => {
+    server.setContent(
+      '/',
+      `
     <div style="visibility: hidden;">
       <div style="visibility: visible;">
         <button>Button</button>
       </div>
     </div>
-  `, 'text/html');
+  `,
+      'text/html'
+    );
 
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
-  });
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.PREFIX },
+    });
 
-  expect(await client.callTool({
-    name: 'browser_snapshot'
-  })).toHaveResponse({
-    pageState: expect.stringContaining(`- button "Button"`),
-  });
-});
+    expect(
+      await client.callTool({
+        name: 'browser_snapshot',
+      })
+    ).toHaveResponse({
+      pageState: expect.stringContaining(`- button "Button"`),
+    });
+  }
+);

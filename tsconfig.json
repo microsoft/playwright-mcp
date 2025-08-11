@@ -7,9 +7,8 @@
     "module": "NodeNext",
     "rootDir": "src",
     "outDir": "./lib",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "strictNullChecks": true
   },
-  "include": [
-    "src",
-  ],
+  "include": ["src"]
 }

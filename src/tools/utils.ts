@@ -1,85 +1,150 @@
-/**
- * Copyright (c) Microsoft Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-// @ts-ignore
-import { asLocator } from 'playwright-core/lib/utils';
-
+import debug from 'debug';
 import type * as playwright from 'playwright';
+
+// @ts-expect-error - playwright-core internal module without proper types
+import { asLocator } from 'playwright-core/lib/utils';
+import { TIMEOUTS } from '../config/constants.js';
 import type { Tab } from '../tab.js';
 
-export async function waitForCompletion<R>(tab: Tab, callback: () => Promise<R>): Promise<R> {
+const toolsDebug = debug('pw:mcp:tools');
+export async function waitForCompletion<R>(
+  tab: Tab,
+  callback: () => Promise<R>
+): Promise<R> {
   const requests = new Set<playwright.Request>();
   let frameNavigated = false;
-  let waitCallback: () => void = () => {};
-  const waitBarrier = new Promise<void>(f => { waitCallback = f; });
-
-  const requestListener = (request: playwright.Request) => requests.add(request);
+  let navigationCompleted = false;
+  let waitCallback: () => void = () => {
+    // Default empty callback
+  };
+  const waitBarrier = new Promise<void>((f) => {
+    waitCallback = f;
+  });
+  const requestListener = (request: playwright.Request) =>
+    requests.add(request);
   const requestFinishedListener = (request: playwright.Request) => {
     requests.delete(request);
-    if (!requests.size)
+    if (!requests.size && navigationCompleted) {
       waitCallback();
+    }
   };
-
   const frameNavigateListener = (frame: playwright.Frame) => {
-    if (frame.parentFrame())
+    if (frame.parentFrame()) {
       return;
+    }
     frameNavigated = true;
-    dispose();
-    clearTimeout(timeout);
-    void tab.waitForLoadState('load').then(waitCallback);
-  };
 
+    // Enhanced navigation handling with stability checks
+    (async () => {
+      try {
+        await tab.waitForLoadState('load');
+        await tab
+          .waitForLoadState('networkidle', {
+            timeout: getNavigationConfig().networkIdleTimeout,
+          })
+          .catch((error) => {
+            toolsDebug('Network idle timeout reached:', error);
+          });
+        navigationCompleted = true;
+        if (!requests.size) {
+          waitCallback();
+        }
+      } catch (error) {
+        // Fallback if load states fail
+        toolsDebug('Load state waiting failed, continuing:', error);
+        navigationCompleted = true;
+        waitCallback();
+      }
+    })().catch((error) => {
+      toolsDebug('Navigation handling failed:', error);
+      navigationCompleted = true;
+      waitCallback();
+    });
+  };
   const onTimeout = () => {
     dispose();
+    navigationCompleted = true;
     waitCallback();
   };
-
   tab.page.on('request', requestListener);
   tab.page.on('requestfinished', requestFinishedListener);
   tab.page.on('framenavigated', frameNavigateListener);
-  const timeout = setTimeout(onTimeout, 10000);
-
+  const timeout = setTimeout(
+    onTimeout,
+    getNavigationConfig().completionTimeout
+  );
   const dispose = () => {
     tab.page.off('request', requestListener);
     tab.page.off('requestfinished', requestFinishedListener);
     tab.page.off('framenavigated', frameNavigateListener);
     clearTimeout(timeout);
   };
-
   try {
     const result = await callback();
-    if (!requests.size && !frameNavigated)
+    if (!(requests.size || frameNavigated)) {
+      navigationCompleted = true;
       waitCallback();
+    }
     await waitBarrier;
-    await tab.waitForTimeout(1000);
+    // Additional stability wait with context verification
+    if (frameNavigated) {
+      await tab.waitForTimeout(getNavigationConfig().stabilityWait);
+      // Verify page is still responsive
+      try {
+        await tab.page.evaluate(() => document.readyState);
+      } catch (error) {
+        // Context might be destroyed, but we still return the result
+        toolsDebug(
+          'Page readyState check failed (context may be destroyed):',
+          error
+        );
+      }
+    } else {
+      await tab.waitForTimeout(getNavigationConfig().defaultWait);
+    }
     return result;
   } finally {
     dispose();
   }
 }
-
-export async function generateLocator(locator: playwright.Locator): Promise<string> {
+export async function generateLocator(
+  locator: playwright.Locator
+): Promise<string> {
   try {
-    const { resolvedSelector } = await (locator as any)._resolveSelector();
+    const { resolvedSelector } = await (
+      locator as unknown as {
+        _resolveSelector: () => Promise<{ resolvedSelector: string }>;
+      }
+    )._resolveSelector();
     return asLocator('javascript', resolvedSelector);
-  } catch (e) {
-    throw new Error('Ref not found, likely because element was removed. Use browser_snapshot to see what elements are currently on the page.');
+  } catch (error) {
+    toolsDebug('Locator generation failed:', error);
+    throw new Error(
+      'Ref not found, likely because element was removed. Use browser_snapshot to see what elements are currently on the page.'
+    );
   }
 }
+export async function callOnPageNoTrace<T>(
+  page: playwright.Page,
+  callback: (p: playwright.Page) => Promise<T>
+): Promise<T> {
+  return await (
+    page as unknown as {
+      _wrapApiCall: <U>(
+        fn: () => Promise<U>,
+        opts: { internal: boolean }
+      ) => Promise<U>;
+    }
+  )._wrapApiCall(() => callback(page), {
+    internal: true,
+  });
+}
 
-export async function callOnPageNoTrace<T>(page: playwright.Page, callback: (page: playwright.Page) => Promise<T>): Promise<T> {
-  return await (page as any)._wrapApiCall(() => callback(page), { internal: true });
+function getNavigationConfig() {
+  return {
+    networkIdleTimeout: TIMEOUTS.NETWORK_IDLE_TIMEOUT,
+    completionTimeout: 15_000,
+    stabilityWait: TIMEOUTS.STABILITY_WAIT,
+    defaultWait: TIMEOUTS.WAIT_FOR_COMPLETION,
+  };
 }

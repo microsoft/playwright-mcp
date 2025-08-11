@@ -1,0 +1,215 @@
+/**
+ * Performance-related type definitions for the unified diagnostic system
+ */
+
+import type { BaseMetricsThresholds } from './threshold-base.js';
+
+export interface BaseMemoryUsage {
+  used: number;
+  heapUsed: number;
+  heapTotal: number;
+  external: number;
+  rss: number;
+  arrayBuffers: number;
+}
+
+// Re-export base threshold types for backward compatibility
+export type {
+  BaseThreshold,
+  ExecutionTimeThresholds,
+  MemoryThresholds,
+  PerformanceThresholds,
+} from './threshold-base.js';
+
+// MetricsThresholds now extends the consolidated base structure
+export interface MetricsThresholds extends BaseMetricsThresholds {}
+
+export interface PerformanceMetrics {
+  executionTime: number;
+  memoryUsage: number;
+  cpuTime?: number;
+  operationCount: number;
+  errorCount: number;
+  successRate: number;
+  warnings?: Array<{
+    type: string;
+    level: string;
+    message: string;
+  }>;
+  domMetrics?: {
+    totalElements: number;
+    maxDepth: number;
+    largeSubtrees: Array<{
+      selector: string;
+      elementCount: number;
+      description: string;
+    }>;
+  };
+  interactionMetrics?: {
+    clickableElements: number;
+    formElements: number;
+    disabledElements: number;
+    iframes: number;
+  };
+  resourceMetrics?: {
+    totalRequests: number;
+    totalSize: number;
+    loadTime: number;
+    imageCount: number;
+    estimatedImageSize: string;
+    scriptTags: number;
+    externalScripts: number;
+    inlineScripts: number;
+    stylesheetCount: number;
+  };
+  layoutMetrics?: {
+    viewportWidth: number;
+    viewportHeight: number;
+    scrollHeight: number;
+    fixedElements: Array<{
+      selector: string;
+      purpose: string;
+      zIndex: number;
+    }>;
+    highZIndexElements: Array<{
+      selector: string;
+      zIndex: number;
+      description: string;
+    }>;
+    overflowHiddenElements: number;
+  };
+}
+
+export interface SystemPerformanceStats {
+  totalOperations: number;
+  averageExecutionTime: number;
+  peakMemoryUsage: number;
+  currentHandles: number;
+  errorRate: number;
+  uptime: number;
+}
+
+export interface OperationTiming {
+  start: number;
+  end: number;
+  duration: number;
+  phase?: string;
+  operation: string;
+}
+
+export interface ResourceSnapshot {
+  timestamp: number;
+  memoryUsage: BaseMemoryUsage;
+  handles: number;
+  operationId?: string;
+}
+
+export interface PerformanceWarning {
+  type: 'execution' | 'memory' | 'resource' | 'error';
+  level: 'low' | 'medium' | 'high' | 'critical';
+  message: string;
+  threshold: number;
+  actual: number;
+  suggestions?: string[];
+  component?: string;
+  operation?: string;
+}
+
+export interface PerformanceReport {
+  summary: SystemPerformanceStats;
+  warnings: PerformanceWarning[];
+  metrics: PerformanceMetrics;
+  trends: {
+    executionTimeChange: number; // percentage change
+    memoryUsageChange: number; // percentage change
+    errorRateChange: number; // percentage change
+    direction: 'improving' | 'degrading' | 'stable';
+  };
+  recommendations: string[];
+}
+
+export interface AdaptiveThresholds {
+  current: MetricsThresholds;
+  baseline: MetricsThresholds;
+  adjustmentHistory: Array<{
+    timestamp: number;
+    component: string;
+    metric: string;
+    oldValue: number;
+    newValue: number;
+    reason: string;
+  }>;
+}
+
+export interface PerformanceOptimization {
+  type:
+    | 'timeout_adjustment'
+    | 'memory_cleanup'
+    | 'resource_limit'
+    | 'parallel_processing';
+  description: string;
+  impact: 'low' | 'medium' | 'high';
+  implementation: string;
+  estimatedImprovement: number; // percentage
+}
+
+// Additional exports for existing code compatibility
+export interface ParallelAnalysisResult {
+  structureAnalysis: {
+    iframes: {
+      detected: boolean;
+      count: number;
+      accessible: Array<{
+        id: string;
+        url: string;
+        title: string;
+        contentAccessible: boolean;
+        crossOrigin: boolean;
+      }>;
+      inaccessible: Array<{
+        id: string;
+        reason: string;
+        url?: string;
+        title?: string;
+      }>;
+    };
+    modalStates: {
+      hasDialog: boolean;
+      hasFileChooser: boolean;
+      blockedBy: string[];
+    };
+    elements: {
+      totalVisible: number;
+      totalInteractable: number;
+      missingAria: number;
+    };
+  };
+  performanceMetrics: PerformanceMetrics;
+  resourceUsage: null; // Removed resource monitoring
+  executionTime: number;
+  errors: Array<{ step: string; error: string }>;
+}
+
+// ResourceUsage interface kept for compatibility but no longer used
+export interface ResourceUsage {
+  memoryUsage: BaseMemoryUsage;
+  cpuTime: number;
+  peakMemory: number;
+  analysisSteps: Array<{
+    step: string;
+    duration: number;
+    memoryDelta: number;
+  }>;
+  duration: number;
+  operationName: string;
+}
+
+export interface OperationTimeline {
+  operation: string;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  phase?: string;
+  operationName: string;
+  memoryUsage?: BaseMemoryUsage;
+}

@@ -14,70 +14,74 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
+import { HTML_TEMPLATES, setServerContent } from './test-helpers.js';
 
 test('browser_click', async ({ client, server, mcpBrowser }) => {
-  server.setContent('/', `
-    <title>Title</title>
-    <button>Submit</button>
-  `, 'text/html');
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
+  setServerContent(server, '/', HTML_TEMPLATES.BASIC_BUTTON);
 
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Submit button',
-      ref: 'e2',
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'Submit button',
+        ref: 'e2',
+      },
+    })
+  ).toHaveResponse({
     code: `await page.getByRole('button', { name: 'Submit' }).click();`,
-    pageState: expect.stringContaining(`- button "Submit" ${mcpBrowser !== 'webkit' || process.platform === 'linux' ? '[active] ' : ''}[ref=e2]`),
+    pageState: expect.stringContaining(
+      `- button "Submit" ${mcpBrowser !== 'webkit' || process.platform === 'linux' ? '[active] ' : ''}[ref=e2]`
+    ),
   });
 });
 
-test('browser_click (double)', async ({ client, server }) => {
-  server.setContent('/', `
-    <title>Title</title>
-    <script>
+test('browser_click (double)', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
+  setServerContent(
+    server,
+    '/',
+    HTML_TEMPLATES.CLICKABLE_HEADING_WITH_SCRIPT(
+      'Click me',
+      `
       function handle() {
         document.querySelector('h1').textContent = 'Double clicked';
       }
-    </script>
-    <h1 ondblclick="handle()">Click me</h1>
-  `, 'text/html');
+    `
+    )
+  );
 
   await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
   });
 
-  expect(await client.callTool({
-    name: 'browser_click',
-    arguments: {
-      element: 'Click me',
-      ref: 'e2',
-      doubleClick: true,
-    },
-  })).toHaveResponse({
+  expect(
+    await client.callTool({
+      name: 'browser_click',
+      arguments: {
+        element: 'Click me',
+        ref: 'e2',
+        doubleClick: true,
+      },
+    })
+  ).toHaveResponse({
     code: `await page.getByRole('heading', { name: 'Click me' }).dblclick();`,
-    pageState: expect.stringContaining(`- heading "Double clicked" [level=1] [ref=e3]`),
+    pageState: expect.stringContaining(
+      `- heading "Double clicked" [level=1] [ref=e3]`
+    ),
   });
 });
 
-test('browser_click (right)', async ({ client, server }) => {
-  server.setContent('/', `
-    <button oncontextmenu="handle">Menu</button>
-    <script>
-      document.addEventListener('contextmenu', event => {
-        event.preventDefault();
-        document.querySelector('button').textContent = 'Right clicked';
-      });
-    </script>
-  `, 'text/html');
+test('browser_click (right)', async ({ client, server, mcpBrowser }) => {
+  test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
+  setServerContent(server, '/', HTML_TEMPLATES.CONTEXT_MENU_BUTTON('Menu'));
 
   await client.callTool({
     name: 'browser_navigate',

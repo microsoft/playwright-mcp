@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test('browser_install', async ({ client, mcpBrowser }) => {
   test.skip(mcpBrowser !== 'chromium', 'Test only chromium');
-  expect(await client.callTool({
-    name: 'browser_install',
-  })).toHaveResponse({
-    tabs: expect.stringContaining(`No open tabs`),
+  expect(
+    await client.callTool({
+      name: 'browser_install',
+    })
+  ).toHaveResponse({
+    tabs: expect.stringContaining('No open tabs'),
   });
 });

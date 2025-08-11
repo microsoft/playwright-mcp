@@ -14,36 +14,41 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { expect, test } from './fixtures.js';
 
 test('test snapshot tool list', async ({ client }) => {
   const { tools } = await client.listTools();
-  expect(new Set(tools.map(t => t.name))).toEqual(new Set([
-    'browser_click',
-    'browser_console_messages',
-    'browser_drag',
-    'browser_evaluate',
-    'browser_file_upload',
-    'browser_handle_dialog',
-    'browser_hover',
-    'browser_select_option',
-    'browser_type',
-    'browser_close',
-    'browser_install',
-    'browser_navigate_back',
-    'browser_navigate_forward',
-    'browser_navigate',
-    'browser_network_requests',
-    'browser_press_key',
-    'browser_resize',
-    'browser_snapshot',
-    'browser_tab_close',
-    'browser_tab_list',
-    'browser_tab_new',
-    'browser_tab_select',
-    'browser_take_screenshot',
-    'browser_wait_for',
-  ]));
+  expect(new Set(tools.map((t) => t.name))).toEqual(
+    new Set([
+      'browser_batch_execute',
+      'browser_click',
+      'browser_close',
+      'browser_console_messages',
+      'browser_diagnose',
+      'browser_drag',
+      'browser_evaluate',
+      'browser_file_upload',
+      'browser_find_elements',
+      'browser_handle_dialog',
+      'browser_hover',
+      'browser_install',
+      'browser_navigate',
+      'browser_navigate_back',
+      'browser_navigate_forward',
+      'browser_network_requests',
+      'browser_press_key',
+      'browser_resize',
+      'browser_select_option',
+      'browser_snapshot',
+      'browser_tab_close',
+      'browser_tab_list',
+      'browser_tab_new',
+      'browser_tab_select',
+      'browser_take_screenshot',
+      'browser_type',
+      'browser_wait_for',
+    ])
+  );
 });
 
 test('test capabilities (pdf)', async ({ startClient }) => {
@@ -51,7 +56,7 @@ test('test capabilities (pdf)', async ({ startClient }) => {
     args: ['--caps=pdf'],
   });
   const { tools } = await client.listTools();
-  const toolNames = tools.map(t => t.name);
+  const toolNames = tools.map((t) => t.name);
   expect(toolNames).toContain('browser_pdf_save');
 });
 
@@ -60,7 +65,7 @@ test('test capabilities (vision)', async ({ startClient }) => {
     args: ['--caps=vision'],
   });
   const { tools } = await client.listTools();
-  const toolNames = tools.map(t => t.name);
+  const toolNames = tools.map((t) => t.name);
   expect(toolNames).toContain('browser_mouse_move_xy');
   expect(toolNames).toContain('browser_mouse_click_xy');
   expect(toolNames).toContain('browser_mouse_drag_xy');
@@ -71,7 +76,7 @@ test('support for legacy --vision option', async ({ startClient }) => {
     args: ['--vision'],
   });
   const { tools } = await client.listTools();
-  const toolNames = tools.map(t => t.name);
+  const toolNames = tools.map((t) => t.name);
   expect(toolNames).toContain('browser_mouse_move_xy');
   expect(toolNames).toContain('browser_mouse_click_xy');
   expect(toolNames).toContain('browser_mouse_drag_xy');

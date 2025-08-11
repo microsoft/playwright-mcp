@@ -1,0 +1,37 @@
+{
+  "mcpServers": {
+    "playwright-original": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@tontoko/fast-playwright-mcp@latest", "--isolated"],
+      "env": {}
+    },
+    "fast-playwright": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["cli.js", "--isolated"],
+      "env": {}
+    },
+    "serena": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "/Users/tomohiko/fast-playwright-mcp",
+        "--enable-web-dashboard",
+        "False"
+      ],
+      "env": {}
+    },
+    "ultracite": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://www.ultracite.ai/api/mcp/mcp"]
+    }
+  }
+}
