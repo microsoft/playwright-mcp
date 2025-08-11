@@ -7,9 +7,10 @@ import { TIMEOUTS } from './config/constants.js';
 import type { Context } from './context.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
 import { mergeExpectations } from './schemas/expectation.js';
-import type { ConsoleMessage, Tab, TabSnapshot } from './tab.js';
+import type { Tab, TabSnapshot } from './tab.js';
 import { renderModalStates } from './tab.js';
 import type { DiffResult } from './types/diff.js';
+import { filterConsoleMessages } from './utils/console-filter.js';
 import { processImage } from './utils/image-processor.js';
 import { TextReportBuilder } from './utils/report-builder.js';
 import { ResponseDiffDetector } from './utils/response-diff-detector.js';
@@ -196,7 +197,7 @@ export class Response {
       return null;
     }
 
-    const filteredMessages = this.filterConsoleMessages(
+    const filteredMessages = filterConsoleMessages(
       tabSnapshot.consoleMessages,
       this._expectation.consoleOptions
     );
@@ -247,46 +248,6 @@ export class Response {
     const builder = new TextReportBuilder();
     builder.addSection(title, contentFn);
     return builder.getSections().join('\n');
-  }
-  private filterConsoleMessages(
-    messages: ConsoleMessage[],
-    options?: NonNullable<ExpectationOptions>['consoleOptions']
-  ): ConsoleMessage[] {
-    return this._applyConsoleFilters(
-      messages,
-      options ?? { maxMessages: 10, removeDuplicates: false }
-    );
-  }
-
-  private _applyConsoleFilters(
-    messages: ConsoleMessage[],
-    options: NonNullable<ExpectationOptions>['consoleOptions']
-  ): ConsoleMessage[] {
-    const levelFiltered = this._filterByLevels(messages, options?.levels);
-    return this._limitMessages(levelFiltered, options?.maxMessages ?? 10);
-  }
-
-  private _filterByLevels(
-    messages: ConsoleMessage[],
-    levels?: ('log' | 'warn' | 'error' | 'info')[]
-  ): ConsoleMessage[] {
-    if (!levels?.length) {
-      return messages;
-    }
-
-    return messages.filter((msg) => {
-      const level = (msg.type ?? 'log') as 'log' | 'warn' | 'error' | 'info';
-      return levels.includes(level);
-    });
-  }
-
-  private _limitMessages(
-    messages: ConsoleMessage[],
-    maxMessages: number
-  ): ConsoleMessage[] {
-    return messages.length > maxMessages
-      ? messages.slice(0, maxMessages)
-      : messages;
   }
 
   private _addDiffSectionToResponse(response: string[]): void {
@@ -397,7 +358,7 @@ export class Response {
       return null;
     }
 
-    const filteredMessages = this.filterConsoleMessages(
+    const filteredMessages = filterConsoleMessages(
       this._tabSnapshot.consoleMessages,
       this._expectation.consoleOptions
     );

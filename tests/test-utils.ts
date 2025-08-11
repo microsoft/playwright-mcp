@@ -273,8 +273,132 @@ export function createFullExpectation() {
   };
 }
 
+/**
+ * Create a batch execution test case with common error handling
+ */
+export async function executeBatchWithErrorHandling(
+  client: Client,
+  steps: Array<{
+    tool: string;
+    arguments: Record<string, unknown>;
+    expectation?: Record<string, unknown>;
+    continueOnError?: boolean;
+  }>,
+  options: {
+    stopOnFirstError?: boolean;
+    globalExpectation?: Record<string, unknown>;
+  } = {}
+) {
+  const result = await client.callTool({
+    name: 'browser_batch_execute',
+    arguments: {
+      steps,
+      ...options,
+    },
+  });
+
+  // Handle browser not installed errors
+  const text = result.content[0].text;
+  const hasBrowserError =
+    text.includes('is not found at') ||
+    text.includes('browserType.launchPersistentContext');
+
+  return { result, hasBrowserError };
+}
+
+/**
+ * Create standard batch test steps for navigation and click
+ */
+export function createNavigationAndClickSteps(
+  serverPrefix: string,
+  clickElement = 'Click Me button',
+  clickRef = 'e2',
+  includeSnapshot = false
+) {
+  return [
+    {
+      tool: 'browser_navigate',
+      arguments: { url: serverPrefix },
+      expectation: { includeSnapshot },
+    },
+    {
+      tool: 'browser_click',
+      arguments: { element: clickElement, ref: clickRef },
+      expectation: { includeSnapshot },
+    },
+  ];
+}
+
+/**
+ * Create standard batch test steps with error in the middle
+ */
+export function createStepsWithError(
+  serverPrefix: string,
+  continueOnError = false,
+  includeSnapshot = false
+) {
+  return [
+    {
+      tool: 'browser_navigate',
+      arguments: { url: serverPrefix },
+      expectation: { includeSnapshot },
+    },
+    {
+      tool: 'browser_click',
+      arguments: { element: 'nonexistent button', ref: 'nonexistent' },
+      continueOnError,
+      expectation: { includeSnapshot },
+    },
+    {
+      tool: 'browser_click',
+      arguments: { element: 'Click Me button', ref: 'e2' },
+      expectation: { includeSnapshot },
+    },
+  ];
+}
+
 export function expectRegexMatch(text: string, regex: RegExp) {
   expect(text).toMatch(regex);
+}
+
+/**
+ * Assert batch execution stopped with error
+ */
+export function assertBatchStoppedOnError(
+  text: string,
+  totalSteps: number,
+  successfulSteps: number,
+  failedSteps: number
+) {
+  expect(text).toContain('Batch Execution Summary');
+  expect(text).toContain('❌ Stopped on Error');
+  expect(text).toContain(`Total Steps: ${totalSteps}`);
+  expect(text).toContain(`Successful: ${successfulSteps}`);
+  expect(text).toContain(`Failed: ${failedSteps}`);
+}
+
+/**
+ * Assert specific steps succeeded or failed
+ */
+export function assertStepResults(
+  text: string,
+  stepResults: Array<{ step: number; tool: string; success: boolean }>
+) {
+  for (const { step, tool, success } of stepResults) {
+    const icon = success ? '✅' : '❌';
+    expect(text).toContain(`${icon} Step ${step}: ${tool}`);
+  }
+}
+
+/**
+ * Assert step was not executed
+ */
+export function assertStepNotExecuted(
+  text: string,
+  step: number,
+  tool: string
+) {
+  expect(text).not.toContain(`Step ${step}: ${tool}`);
 }
 
 export function countRegexMatches(text: string, regex: RegExp): number {

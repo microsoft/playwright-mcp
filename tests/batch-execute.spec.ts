@@ -16,9 +16,15 @@
 
 import { expect, test } from './fixtures.js';
 import {
+  assertBatchStoppedOnError,
+  assertStepNotExecuted,
+  assertStepResults,
   COMMON_REGEX_PATTERNS,
   createButtonPage,
   createInputPage,
+  createNavigationAndClickSteps,
+  createStepsWithError,
+  executeBatchWithErrorHandling,
   expectBatchExecutionPartialSuccess,
   expectBatchExecutionSuccess,
 } from './test-utils.js';
@@ -32,34 +38,27 @@ test.describe('Browser Batch Execute', () => {
     const page = createButtonPage('Click Me');
     server.setContent(page.path, page.content, page.contentType);
 
-    const result = await client.callTool({
-      name: 'browser_batch_execute',
-      arguments: {
-        steps: [
-          {
-            tool: 'browser_navigate',
-            arguments: { url: server.PREFIX },
-            expectation: { includeSnapshot: true, includeConsole: false },
-          },
-          {
-            tool: 'browser_click',
-            arguments: { element: 'Click Me button', ref: 'e2' },
-            expectation: { includeSnapshot: true, includeConsole: false },
-          },
-        ],
+    const steps = createNavigationAndClickSteps(
+      server.PREFIX,
+      'Click Me button',
+      'e2',
+      true
+    );
+    steps[0].expectation.includeConsole = false;
+    steps[1].expectation.includeConsole = false;
+
+    const { result, hasBrowserError } = await executeBatchWithErrorHandling(
+      client,
+      steps,
+      {
         stopOnFirstError: true,
         globalExpectation: { includeDownloads: false, includeTabs: false },
-      },
-    });
-
-    // Handle the case where browser might not be installed (e.g., msedge on CI)
-    const text = result.content[0].text;
-    const hasBrowserError =
-      text.includes('is not found at') ||
-      text.includes('browserType.launchPersistentContext');
+      }
+    );
 
     if (hasBrowserError) {
       // Expect failure due to browser not being installed
+      const text = result.content[0].text;
       expect(text).toContain('Batch Execution Summary');
       expect(text).toContain('❌ Stopped on Error');
       expect(text).toContain('Step Details');
@@ -79,35 +78,19 @@ test.describe('Browser Batch Execute', () => {
     const page = createButtonPage('Click Me');
     server.setContent(page.path, page.content, page.contentType);
 
-    const result = await client.callTool({
-      name: 'browser_batch_execute',
-      arguments: {
-        steps: [
-          {
-            tool: 'browser_navigate',
-            arguments: { url: server.PREFIX },
-            expectation: { includeSnapshot: false },
-          },
-          {
-            tool: 'browser_click',
-            arguments: { element: 'nonexistent button', ref: 'nonexistent' },
-            continueOnError: true,
-            expectation: { includeSnapshot: false },
-          },
-          {
-            tool: 'browser_click',
-            arguments: { element: 'Click Me button', ref: 'e2' },
-            expectation: { includeSnapshot: true },
-          },
-        ],
-        stopOnFirstError: false,
-      },
+    const steps = createStepsWithError(server.PREFIX, true, false);
+    steps[2].expectation.includeSnapshot = true;
+
+    const { result } = await executeBatchWithErrorHandling(client, steps, {
+      stopOnFirstError: false,
     });
 
     expectBatchExecutionPartialSuccess(result, 3, 2, 1);
-    expect(result.content[0].text).toContain('✅ Step 1: browser_navigate');
-    expect(result.content[0].text).toContain('❌ Step 2: browser_click');
-    expect(result.content[0].text).toContain('✅ Step 3: browser_click');
+    assertStepResults(result.content[0].text, [
+      { step: 1, tool: 'browser_navigate', success: true },
+      { step: 2, tool: 'browser_click', success: false },
+      { step: 3, tool: 'browser_click', success: true },
+    ]);
   });
 
   test('should stop on first error when stopOnFirstError=true and step has continueOnError=false', async ({
@@ -117,29 +100,9 @@ test.describe('Browser Batch Execute', () => {
     const page = createButtonPage('Click Me');
     server.setContent(page.path, page.content, page.contentType);
 
-    const result = await client.callTool({
-      name: 'browser_batch_execute',
-      arguments: {
-        steps: [
-          {
-            tool: 'browser_navigate',
-            arguments: { url: server.PREFIX },
-            expectation: { includeSnapshot: false },
-          },
-          {
-            tool: 'browser_click',
-            arguments: { element: 'nonexistent button', ref: 'nonexistent' },
-            continueOnError: false,
-            expectation: { includeSnapshot: false },
-          },
-          {
-            tool: 'browser_click',
-            arguments: { element: 'Click Me button', ref: 'e2' },
-            expectation: { includeSnapshot: false },
-          },
-        ],
-        stopOnFirstError: true,
-      },
+    const steps = createStepsWithError(server.PREFIX, false, false);
+    const { result } = await executeBatchWithErrorHandling(client, steps, {
+      stopOnFirstError: true,
     });
 
     expect(result.content[0].text).toContain('Batch Execution Summary');
@@ -313,5 +276,48 @@ test.describe('Browser Batch Execute', () => {
     expectBatchExecutionSuccess(result, 1);
     // Should have minimal content due to aggressive filtering
     expect(result.content[0].text.split('\n').length).toBeLessThan(20);
+  });
+
+  test('should stop on error when continueOnError=false regardless of stopOnFirstError setting', async ({
+    client,
+    server,
+  }) => {
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
+
+    const steps = createStepsWithError(server.PREFIX, false, false);
+    const { result } = await executeBatchWithErrorHandling(client, steps, {
+      stopOnFirstError: false, // Global setting says continue, but step says stop
+    });
+
+    // Should stop after step 2 because continueOnError=false takes precedence
+    const text = result.content[0].text;
+    assertBatchStoppedOnError(text, 3, 1, 1);
+    assertStepResults(text, [
+      { step: 1, tool: 'browser_navigate', success: true },
+      { step: 2, tool: 'browser_click', success: false },
+    ]);
+    assertStepNotExecuted(text, 3, 'browser_click');
+  });
+
+  test('should continue on error when continueOnError=true even if stopOnFirstError=true', async ({
+    client,
+    server,
+  }) => {
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
+
+    const steps = createStepsWithError(server.PREFIX, true, false);
+    const { result } = await executeBatchWithErrorHandling(client, steps, {
+      stopOnFirstError: true, // Global setting says stop, but step says continue
+    });
+
+    // Should continue to step 3 because continueOnError=true overrides global setting
+    expectBatchExecutionPartialSuccess(result, 3, 2, 1);
+    assertStepResults(result.content[0].text, [
+      { step: 1, tool: 'browser_navigate', success: true },
+      { step: 2, tool: 'browser_click', success: false },
+      { step: 3, tool: 'browser_click', success: true },
+    ]);
   });
 });

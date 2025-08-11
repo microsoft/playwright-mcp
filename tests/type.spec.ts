@@ -133,3 +133,127 @@ test('browser_type (no submit)', async ({ client, server, mcpBrowser }) => {
     });
   }
 });
+
+// Regex patterns for testing code generation
+const FILL_AND_ENTER_PATTERN = /fill\('[^']+'\)|press\('Enter'\)/;
+
+// Helper function for browser_type submit tests
+async function setupAndTestBrowserTypeSubmit(
+  client: Awaited<ReturnType<typeof import('./fixtures.js').getClient>>,
+  server: import('./testserver/index.js').TestServer,
+  template: string,
+  inputText: string,
+  includeSnapshot = true
+) {
+  setServerContent(server, '/', template);
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: server.PREFIX,
+    },
+  });
+
+  // Optionally capture snapshot first
+  if (includeSnapshot) {
+    await client.callTool({
+      name: 'browser_snapshot',
+      arguments: {
+        expectation: {
+          includeSnapshot: true,
+        },
+      },
+    });
+  }
+
+  // Test typing with submit option
+  const response = await client.callTool({
+    name: 'browser_type',
+    arguments: {
+      element: 'textbox',
+      ref: 'e2',
+      text: inputText,
+      submit: true,
+      expectation: {
+        includeSnapshot: true,
+      },
+    },
+  });
+
+  return response;
+}
+
+// Additional tests for keyboard navigation and submit functionality
+test.describe('Keyboard Navigation and Submit Tests', () => {
+  test('browser_type submit navigation handling', async ({
+    client,
+    server,
+    mcpBrowser,
+  }) => {
+    test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
+
+    const response = await setupAndTestBrowserTypeSubmit(
+      client,
+      server,
+      HTML_TEMPLATES.KEYPRESS_INPUT,
+      'test query',
+      true
+    );
+
+    // Verify the operation completed successfully
+    expect(response).toHaveResponse({
+      code: expect.stringMatching(FILL_AND_ENTER_PATTERN),
+    });
+
+    // Verify no execution context errors occurred
+    expect(response.error).toBeUndefined();
+  });
+
+  test('browser_type submit without navigation', async ({
+    client,
+    server,
+    mcpBrowser,
+  }) => {
+    test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
+
+    const response = await setupAndTestBrowserTypeSubmit(
+      client,
+      server,
+      HTML_TEMPLATES.INPUT_WITH_CONSOLE,
+      'no navigation test',
+      false
+    );
+
+    // Verify the operation completed successfully
+    expect(response).toHaveResponse({
+      code: expect.stringMatching(FILL_AND_ENTER_PATTERN),
+    });
+
+    // Verify no execution context errors occurred
+    expect(response.error).toBeUndefined();
+  });
+
+  test('browser_type submit stability test', async ({
+    client,
+    server,
+    mcpBrowser,
+  }) => {
+    test.skip(mcpBrowser === 'msedge', 'msedge browser setup issues');
+
+    const response = await setupAndTestBrowserTypeSubmit(
+      client,
+      server,
+      HTML_TEMPLATES.KEYDOWN_INPUT,
+      'stability test',
+      false
+    );
+
+    // Verify the operation completed successfully
+    expect(response).toHaveResponse({
+      code: expect.stringMatching(FILL_AND_ENTER_PATTERN),
+    });
+
+    // Verify no execution context errors occurred
+    expect(response.error).toBeUndefined();
+  });
+});

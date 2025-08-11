@@ -8,6 +8,9 @@ import { ManualPromise } from './manual-promise.js';
 import type { ModalState } from './tools/tool.js';
 import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 
+// Regex constants
+const REF_VALUE_REGEX = /\[ref=([^\]]+)\]/;
+
 type PageEx = playwright.Page & {
   _snapshotForAI: () => Promise<string>;
 };
@@ -474,8 +477,9 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     const snapshot = await (this.page as PageEx)._snapshotForAI();
     return params.map((param) => {
       if (!snapshot.includes(`[ref=${param.ref}]`)) {
+        const availableRefs = this._getAvailableRefs(snapshot);
         throw new Error(
-          `Ref ${param.ref} not found in the current page snapshot. Try capturing new snapshot.`
+          `Ref ${param.ref} not found. Available refs: [${availableRefs.join(', ')}]. Element: ${param.element}. Consider capturing a new snapshot if the page has changed.`
         );
       }
       return this.page.locator(`aria-ref=${param.ref}`).describe(param.element);
@@ -492,6 +496,19 @@ export class Tab extends EventEmitter<TabEventsInterface> {
         time
       );
     });
+  }
+
+  private _getAvailableRefs(snapshot: string): string[] {
+    const refMatches = snapshot.match(/\[ref=([^\]]+)\]/g);
+    if (!refMatches) {
+      return [];
+    }
+    return refMatches
+      .map((match) => {
+        const refValue = REF_VALUE_REGEX.exec(match);
+        return refValue ? refValue[1] : '';
+      })
+      .filter(Boolean);
   }
 }
 export type ConsoleMessage = {

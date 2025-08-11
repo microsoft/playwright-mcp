@@ -98,7 +98,9 @@ export class BatchExecutor {
         });
 
         // Determine if we should continue or stop
-        if (options.stopOnFirstError && !step.continueOnError) {
+        // Stop unless step explicitly allows continuation
+        // This gives step-level continueOnError precedence over global stopOnFirstError
+        if (!step.continueOnError) {
           stopReason = 'error';
           return;
         }
