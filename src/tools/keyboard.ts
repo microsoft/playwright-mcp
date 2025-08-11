@@ -88,6 +88,10 @@ const type = defineTabTool({
         await locator.press('Enter');
       }
     });
+    if (params.expectation?.includeSnapshot) {
+      const newSnapshot = await tab.captureSnapshot();
+      response.setTabSnapshot(newSnapshot);
+    }
   },
 });
 export default [pressKey, type];
