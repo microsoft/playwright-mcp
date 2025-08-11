@@ -213,11 +213,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
     await use(client);
   },
 
-  startClient: async (
-    { mcpHeadless, mcpBrowser, mcpMode },
-    use,
-    { testInfo }
-  ) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
     const configDir = path.dirname(test.info().config.configFile ?? '.');
     let client: Client | undefined;
 
@@ -299,7 +295,8 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    async (_testInfo, use, workerInfo) => {
+    // biome-ignore lint/correctness/noEmptyPattern: Playwright requires object destructuring pattern
+    async ({}, use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
 
