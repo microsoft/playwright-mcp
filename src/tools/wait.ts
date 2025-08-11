@@ -36,10 +36,8 @@ const wait = defineTool({
     if (!params.text && !params.textGone && !params.time)
       throw new Error('Either time, text or textGone must be provided');
 
-    const code: string[] = [];
-
     if (params.time) {
-      code.push(`await new Promise(f => setTimeout(f, ${params.time!} * 1000));`);
+      response.addCode(`await new Promise(f => setTimeout(f, ${params.time!} * 1000));`);
       await new Promise(f => setTimeout(f, Math.min(30000, params.time! * 1000)));
     }
 
@@ -48,12 +46,12 @@ const wait = defineTool({
     const goneLocator = params.textGone ? tab.page.getByText(params.textGone).first() : undefined;
 
     if (goneLocator) {
-      code.push(`await page.getByText(${JSON.stringify(params.textGone)}).first().waitFor({ state: 'hidden' });`);
+      response.addCode(`await page.getByText(${JSON.stringify(params.textGone)}).first().waitFor({ state: 'hidden' });`);
       await goneLocator.waitFor({ state: 'hidden' });
     }
 
     if (locator) {
-      code.push(`await page.getByText(${JSON.stringify(params.text)}).first().waitFor({ state: 'visible' });`);
+      response.addCode(`await page.getByText(${JSON.stringify(params.text)}).first().waitFor({ state: 'visible' });`);
       await locator.waitFor({ state: 'visible' });
     }
 
