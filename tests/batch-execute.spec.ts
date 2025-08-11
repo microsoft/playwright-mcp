@@ -314,4 +314,87 @@ test.describe('Browser Batch Execute', () => {
     // Should have minimal content due to aggressive filtering
     expect(result.content[0].text.split('\n').length).toBeLessThan(20);
   });
+
+  test('should stop on error when continueOnError=false regardless of stopOnFirstError setting', async ({
+    client,
+    server,
+  }) => {
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
+
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: [
+          {
+            tool: 'browser_navigate',
+            arguments: { url: server.PREFIX },
+            expectation: { includeSnapshot: false },
+          },
+          {
+            tool: 'browser_click',
+            arguments: { element: 'nonexistent button', ref: 'nonexistent' },
+            continueOnError: false, // Step should stop on error
+            expectation: { includeSnapshot: false },
+          },
+          {
+            tool: 'browser_click',
+            arguments: { element: 'Click Me button', ref: 'e2' },
+            expectation: { includeSnapshot: false },
+          },
+        ],
+        stopOnFirstError: false, // Global setting says continue, but step says stop
+      },
+    });
+
+    // Should stop after step 2 because continueOnError=false takes precedence
+    expect(result.content[0].text).toContain('Batch Execution Summary');
+    expect(result.content[0].text).toContain('❌ Stopped on Error');
+    expect(result.content[0].text).toContain('Total Steps: 3');
+    expect(result.content[0].text).toContain('Successful: 1');
+    expect(result.content[0].text).toContain('Failed: 1');
+    expect(result.content[0].text).toContain('✅ Step 1: browser_navigate');
+    expect(result.content[0].text).toContain('❌ Step 2: browser_click');
+    // Step 3 should not be executed
+    expect(result.content[0].text).not.toContain('Step 3: browser_click');
+  });
+
+  test('should continue on error when continueOnError=true even if stopOnFirstError=true', async ({
+    client,
+    server,
+  }) => {
+    const page = createButtonPage('Click Me');
+    server.setContent(page.path, page.content, page.contentType);
+
+    const result = await client.callTool({
+      name: 'browser_batch_execute',
+      arguments: {
+        steps: [
+          {
+            tool: 'browser_navigate',
+            arguments: { url: server.PREFIX },
+            expectation: { includeSnapshot: false },
+          },
+          {
+            tool: 'browser_click',
+            arguments: { element: 'nonexistent button', ref: 'nonexistent' },
+            continueOnError: true, // Step says continue on error
+            expectation: { includeSnapshot: false },
+          },
+          {
+            tool: 'browser_click',
+            arguments: { element: 'Click Me button', ref: 'e2' },
+            expectation: { includeSnapshot: false },
+          },
+        ],
+        stopOnFirstError: true, // Global setting says stop, but step says continue
+      },
+    });
+
+    // Should continue to step 3 because continueOnError=true overrides global setting
+    expectBatchExecutionPartialSuccess(result, 3, 2, 1);
+    expect(result.content[0].text).toContain('✅ Step 1: browser_navigate');
+    expect(result.content[0].text).toContain('❌ Step 2: browser_click');
+    expect(result.content[0].text).toContain('✅ Step 3: browser_click');
+  });
 });
