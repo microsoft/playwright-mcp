@@ -17,8 +17,9 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsc",
-    "lint": "npm run update-readme && eslint . && tsc --noEmit",
+    "lint": "npm run update-readme && npm run check-deps && eslint . && tsc --noEmit",
     "lint-fix": "eslint . --fix",
+    "check-deps": "node utils/check-deps.js",
     "update-readme": "node utils/update-readme.js",
     "watch": "tsc --watch",
     "test": "playwright test",
