@@ -233,20 +233,6 @@ state [here](https://playwright.dev/docs/auth).
 }
 ```
 
-#### CDP Headers
-
-When connecting to a CDP endpoint that requires authentication, you can pass headers:
-
-```bash
-npx @playwright/mcp --cdp-endpoint=http://localhost:9222 --cdp-headers='{"Authorization": "Bearer your-token"}'
-```
-
-Or via environment variable:
-```bash
-export PLAYWRIGHT_MCP_CDP_HEADERS='{"Authorization": "Bearer your-token"}'
-npx @playwright/mcp --cdp-endpoint=http://localhost:9222
-```
-
 ### Configuration file
 
 The Playwright MCP server can be configured using a JSON configuration file. You can specify the configuration file

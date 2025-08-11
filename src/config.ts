@@ -18,6 +18,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { devices } from 'playwright';
+import { InvalidArgumentError } from 'commander';
 import { sanitizeForFilePath } from './utils.js';
 
 import type { Config, ToolCapability } from '../config.js';
@@ -207,7 +208,7 @@ function configFromEnv(): Config {
   options.browser = envToString(process.env.PLAYWRIGHT_MCP_BROWSER);
   options.caps = commaSeparatedList(process.env.PLAYWRIGHT_MCP_CAPS);
   options.cdpEndpoint = envToString(process.env.PLAYWRIGHT_MCP_CDP_ENDPOINT);
-  options.cdpHeaders = parseJsonEnv(process.env.PLAYWRIGHT_MCP_CDP_HEADERS);
+  options.cdpHeaders = parseJsonObject(process.env.PLAYWRIGHT_MCP_CDP_HEADERS);
   options.config = envToString(process.env.PLAYWRIGHT_MCP_CONFIG);
   options.device = envToString(process.env.PLAYWRIGHT_MCP_DEVICE);
   options.executablePath = envToString(process.env.PLAYWRIGHT_MCP_EXECUTABLE_PATH);
@@ -298,17 +299,21 @@ export function semicolonSeparatedList(value: string | undefined): string[] | un
   return value.split(';').map(v => v.trim());
 }
 
-function parseJsonEnv(value: string | undefined): Record<string, string> | undefined {
+export function parseJsonObject(value: string | undefined): Record<string, string> | undefined {
   if (!value)
     return undefined;
   try {
     const parsed = JSON.parse(value);
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      throw new Error('Expected JSON object');
+      throw new InvalidArgumentError('Expected JSON object');
     }
     return parsed;
   } catch (error) {
-    throw new Error(`Invalid JSON in environment variable: ${error}`);
+    if (error instanceof InvalidArgumentError) {
+      throw error;
+    }
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new InvalidArgumentError(`Invalid JSON format: ${errorMessage}`);
   }
 }
 

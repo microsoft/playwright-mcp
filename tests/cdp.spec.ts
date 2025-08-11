@@ -106,7 +106,7 @@ test('cdp server with invalid headers JSON', async () => {
   ]);
   expect(result.error).toBeUndefined();
   expect(result.status).toBe(1);
-  expect(result.stderr.toString()).toContain('Invalid JSON format for --cdp-headers');
+  expect(result.stderr.toString()).toContain('option \'--cdp-headers <headers>\' argument \'invalid-json\' is invalid');
 });
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.

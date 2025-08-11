@@ -19,7 +19,7 @@ import { program, Option } from 'commander';
 import { startTraceViewerServer } from 'playwright-core/lib/server';
 
 import * as mcpTransport from './mcp/transport.js';
-import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
+import { commaSeparatedList, parseJsonObject, resolveCLIConfig, semicolonSeparatedList } from './config.js';
 import { packageJSON } from './package.js';
 import { createExtensionContextFactory, runWithExtension } from './extension/main.js';
 import { BrowserServerBackend, FactoryList } from './browserServerBackend.js';
@@ -36,7 +36,7 @@ program
     .option('--browser <browser>', 'browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.')
     .option('--caps <caps>', 'comma-separated list of additional capabilities to enable, possible values: vision, pdf.', commaSeparatedList)
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
-    .option('--cdp-headers <headers>', 'JSON string of headers to send with CDP connection, e.g. \'{"Authorization": "Bearer token"}\'')
+    .option('--cdp-headers <headers>', 'JSON string of headers to send with CDP connection, e.g. \'{"Authorization": "Bearer token"}\'', parseJsonObject)
     .option('--config <path>', 'path to the configuration file.')
     .option('--device <device>', 'device to emulate, for example: "iPhone 15"')
     .option('--executable-path <path>', 'path to the browser executable.')
@@ -67,17 +67,6 @@ program
         // eslint-disable-next-line no-console
         console.error('The --vision option is deprecated, use --caps=vision instead');
         options.caps = 'vision';
-      }
-
-      // Parse CDP headers if provided
-      if (options.cdpHeaders) {
-        try {
-          options.cdpHeaders = JSON.parse(options.cdpHeaders);
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('Invalid JSON format for --cdp-headers:', error);
-          process.exit(1);
-        }
       }
 
       const config = await resolveCLIConfig(options);
