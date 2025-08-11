@@ -251,18 +251,18 @@ const TabItem: React.FC<{
         type="radio"
         value={tab.id.toString()}
       />
-      <div
-        aria-label={`Favicon for ${tab.title || 'tab'}`}
+      {/* biome-ignore lint/performance/noImgElement: Chrome extension doesn't use Next.js Image optimization */}
+      <img
+        alt=""
         className="tab-favicon"
-        role="presentation"
+        src={
+          tab.favIconUrl ||
+          'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'
+        }
         style={{
-          backgroundImage: `url(${
-            tab.favIconUrl ||
-            'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'
-          })`,
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'contain',
+          width: '16px',
+          height: '16px',
+          objectFit: 'contain',
         }}
       />
       <div className="tab-content">
