@@ -292,9 +292,12 @@ expect(result.content?.[0]?.text).toContain(
 );
 })
 
-test('browser_take_screenshot (viewport without snapshot)', async ({
+test('browser_take_screenshot (viewport without snapshot)', async (
+{
   startClient,
-}, testInfo) => {
+}
+, testInfo) =>
+{
   const { clientConfig } = createScreenshotTestSetup(testInfo);
   const { client } = await startClient({ config: clientConfig });
 
@@ -312,4 +315,5 @@ test('browser_take_screenshot (viewport without snapshot)', async ({
     code: expect.stringContaining('page.screenshot'),
     attachments: [expectImageAttachment()],
   });
-});
+}
+)
