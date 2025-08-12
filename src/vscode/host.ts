@@ -17,7 +17,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { FullConfig } from '../config.js';
 import { ClientFactory } from '../mcp/proxyBackend.js';
-import { packageJSON } from '../package.js';
+import type { Implementation } from '@modelcontextprotocol/sdk/types.js';
 
 class VSCodeClientFactory implements ClientFactory {
   name = 'vscode';
@@ -25,16 +25,13 @@ class VSCodeClientFactory implements ClientFactory {
 
   constructor(private readonly _config: FullConfig) {}
 
-  async create(options: any): Promise<Client> {
+  async create(clientVersion: Implementation, options: any): Promise<Client> {
     if (typeof options.connectionString !== 'string')
       throw new Error('Missing options.connectionString');
     if (typeof options.lib !== 'string')
       throw new Error('Missing options.library');
 
-    const client = new Client({
-      name: this.name,
-      version: packageJSON.version
-    });
+    const client = new Client(clientVersion);
     await client.connect(new StdioClientTransport({
       command: process.execPath,
       cwd: process.cwd(),

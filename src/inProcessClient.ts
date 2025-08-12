@@ -20,10 +20,10 @@ import { BrowserContextFactory } from './browserContextFactory.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { InProcessTransport } from './mcp/inProcessTransport.js';
 import * as mcpServer from './mcp/server.js';
-import { packageJSON } from './package.js';
 
 import type { FullConfig } from './config.js';
 import type { ClientFactory } from './mcp/proxyBackend.js';
+import type { Implementation } from '@modelcontextprotocol/sdk/types.js';
 
 export class InProcessClientFactory implements ClientFactory {
   name: string;
@@ -39,11 +39,8 @@ export class InProcessClientFactory implements ClientFactory {
     this._config = config;
   }
 
-  async create(): Promise<Client> {
-    const client = new Client({
-      name: this.name,
-      version: packageJSON.version
-    });
+  async create(clientVersion: Implementation): Promise<Client> {
+    const client = new Client(clientVersion);
     const server = mcpServer.createServer(new BrowserServerBackend(this._config, this._contextFactory), false);
     await client.connect(new InProcessTransport(server));
     await client.ping();

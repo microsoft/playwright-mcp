@@ -77,7 +77,7 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
       name: tool.name,
       description: tool.description,
       // TODO: we expect inputSchema to be a zod schema, but in the out-of-process case it's already a json schema.
-      // we should probably move the "zodToJsonSchema" call into defineTool.
+      // we should move the "zodToJsonSchema" call into defineTool.
       inputSchema: tool.inputSchema.$schema ? tool.inputSchema : zodToJsonSchema(tool.inputSchema),
       annotations: {
         title: tool.title,
