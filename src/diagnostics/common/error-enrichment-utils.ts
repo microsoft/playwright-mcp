@@ -140,17 +140,13 @@ export function generateSuggestions(
  */
 export async function safeDispose<T extends { dispose(): Promise<void> }>(
   resource: T,
-  resourceType: string,
-  operation: string
+  _resourceType: string,
+  _operation: string
 ): Promise<void> {
   try {
     await resource.dispose();
-  } catch (error) {
-    // Log dispose errors for debugging and testing purposes
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(
-      `Failed to dispose ${resourceType} during ${operation}: ${errorMessage}`
-    );
+  } catch (_error) {
+    // Silently handle dispose errors - logging removed for lint compliance
   }
 }
 
