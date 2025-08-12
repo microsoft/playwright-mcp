@@ -17,8 +17,8 @@
 import debug from 'debug';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { ManualPromise } from '../manualPromise.js';
-import { logUnhandledError } from '../log.js';
+import { ManualPromise } from '../utils/manualPromise.js';
+import { logUnhandledError } from '../utils/log.js';
 
 import type { ImageContent, TextContent, Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';

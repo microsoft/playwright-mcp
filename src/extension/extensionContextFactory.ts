@@ -16,7 +16,7 @@
 
 import debug from 'debug';
 import * as playwright from 'playwright';
-import { startHttpServer } from '../httpServer.js';
+import { startHttpServer } from '../utils/httpServer.js';
 import { CDPRelayServer } from './cdpRelay.js';
 
 import type { BrowserContextFactory, ClientInfo } from '../browserContextFactory.js';

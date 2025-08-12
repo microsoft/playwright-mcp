@@ -18,17 +18,18 @@ import { program, Option } from 'commander';
 
 import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
-import { packageJSON } from './package.js';
-import { createExtensionClientFactory, runWithExtension } from './extension/main.js';
+import { packageJSON } from './utils/package.js';
 import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
 import { ProxyBackend } from './mcp/proxyBackend.js';
 import { InProcessClientFactory } from './inProcessClient.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
+import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
 
 import type { ClientFactoryList } from './mcp/proxyBackend.js';
 import type { ServerBackendFactory } from './mcp/server.js';
+import type { FullConfig } from './config.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -73,7 +74,9 @@ program
       const config = await resolveCLIConfig(options);
 
       if (options.extension) {
-        await runWithExtension(config);
+        const contextFactory = createExtensionContextFactory(config);
+        const serverBackendFactory = () => new BrowserServerBackend(config, contextFactory);
+        await mcpTransport.start(serverBackendFactory, config.server);
         return;
       }
       if (options.loopTools) {
@@ -86,7 +89,7 @@ program
       if (options.connectTool) {
         const factories: ClientFactoryList = [
           new InProcessClientFactory(browserContextFactory, config),
-          createExtensionClientFactory(config)
+          new InProcessClientFactory(createExtensionContextFactory(config), config),
         ];
         serverBackendFactory = () => new ProxyBackend(factories);
       } else {
@@ -109,6 +112,10 @@ function setupExitWatchdog() {
   process.stdin.on('close', handleExit);
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
+}
+
+function createExtensionContextFactory(config: FullConfig) {
+  return new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
 }
 
 void program.parseAsync(process.argv);

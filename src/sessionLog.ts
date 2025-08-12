@@ -18,7 +18,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { Response } from './response.js';
-import { logUnhandledError } from './log.js';
+import { logUnhandledError } from './utils/log.js';
 import { outputFile  } from './config.js';
 
 import type { FullConfig } from './config.js';

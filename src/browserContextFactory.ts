@@ -23,8 +23,8 @@ import * as playwright from 'playwright';
 import { registryDirectory } from 'playwright-core/lib/server/registry/index';
 // @ts-ignore
 import { startTraceViewerServer } from 'playwright-core/lib/server';
-import { logUnhandledError, testDebug } from './log.js';
-import { createHash } from './utils.js';
+import { logUnhandledError, testDebug } from './utils/log.js';
+import { createHash } from './utils/guid.js';
 import { outputFile  } from './config.js';
 
 import type { FullConfig } from './config.js';

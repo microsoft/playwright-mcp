@@ -17,7 +17,7 @@
 import { z } from 'zod';
 
 import { defineTabTool, defineTool } from './tool.js';
-import * as javascript from '../javascript.js';
+import * as javascript from '../utils/codegen.js';
 import { generateLocator } from './utils.js';
 
 const snapshot = defineTool({

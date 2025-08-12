@@ -18,8 +18,8 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { logUnhandledError } from '../log.js';
-import { packageJSON } from '../package.js';
+import { logUnhandledError } from '../utils/log.js';
+import { packageJSON } from '../utils/package.js';
 import { ToolDefinition, ServerBackend, ToolResponse } from './server.js';
 
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
