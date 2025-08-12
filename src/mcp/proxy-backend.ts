@@ -28,7 +28,7 @@ type ContextSwitchParams = { name: string };
 export type ClientFactory = {
   name: string;
   description: string;
-  create(): Promise<Client>;
+  create(server: Server): Promise<Client>;
 };
 
 export type ClientFactoryList = NonEmptyArray<ClientFactory>;
@@ -43,13 +43,15 @@ export class ProxyBackend implements ServerBackend {
     z.ZodObject<{ name: z.ZodEnum<[string, ...string[]]> }>
   >;
   private _tools: ToolSchema<z.ZodTypeAny>[] = [];
+  private _server: Server | undefined;
 
   constructor(clientFactories: ClientFactoryList) {
     this._clientFactories = clientFactories;
     this._contextSwitchTool = this._defineContextSwitchTool();
   }
 
-  async initialize(_server: Server): Promise<void> {
+  async initialize(server: Server): Promise<void> {
+    this._server = server;
     await this._setCurrentClient(this._clientFactories[0]);
   }
 
@@ -141,7 +143,10 @@ export class ProxyBackend implements ServerBackend {
 
   private async _setCurrentClient(factory: ClientFactory) {
     await this._currentClient?.close();
-    this._currentClient = await factory.create();
+    if (!this._server) {
+      throw new Error('Server not initialized');
+    }
+    this._currentClient = await factory.create(this._server);
     const tools = await this._currentClient.listTools();
     this._tools = tools.tools.map((tool) => ({
       name: tool.name,

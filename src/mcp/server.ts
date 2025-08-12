@@ -9,7 +9,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import debug from 'debug';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { logUnhandledError } from '../log.js';
 import { ManualPromise } from '../manual-promise.js';
@@ -80,7 +80,10 @@ export function createServer(
       tools: tools.map((tool) => ({
         name: tool.name,
         description: tool.description,
-        inputSchema: zodToJsonSchema(tool.inputSchema),
+        inputSchema:
+          tool.inputSchema instanceof z.ZodType
+            ? zodToJsonSchema(tool.inputSchema)
+            : tool.inputSchema,
         annotations: {
           title: tool.title,
           readOnlyHint: tool.type === 'readOnly',
