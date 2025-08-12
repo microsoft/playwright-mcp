@@ -21,6 +21,7 @@ import { startTraceViewerServer } from 'playwright-core/lib/server';
 import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
 import { packageJSON } from './package.js';
+import { createVSCodeClientFactory } from './vscode/host.js';
 import { createExtensionClientFactory, runWithExtension } from './extension/main.js';
 import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
@@ -88,7 +89,8 @@ program
       if (options.connectTool) {
         const factories: ClientFactoryList = [
           new InProcessClientFactory(browserContextFactory, config),
-          createExtensionClientFactory(config)
+          createExtensionClientFactory(config),
+          createVSCodeClientFactory(config),
         ];
         serverBackendFactory = () => new ProxyBackend(factories);
       } else {
