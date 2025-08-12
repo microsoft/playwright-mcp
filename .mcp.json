@@ -22,8 +22,6 @@
         "start-mcp-server",
         "--context",
         "ide-assistant",
-        "--project",
-        "/Users/tomohiko/fast-playwright-mcp",
         "--enable-web-dashboard",
         "False"
       ],
