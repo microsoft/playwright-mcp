@@ -15,6 +15,8 @@
  */
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import type { BrowserContextFactory } from './browser-context-factory.js';
 import { BrowserServerBackend } from './browser-server-backend.js';
 import type { FullConfig } from './config.js';
@@ -37,19 +39,29 @@ export class InProcessClientFactory implements ClientFactory {
     this._config = config;
   }
 
-  async create(): Promise<Client> {
-    const client = new Client({
-      name: this.name,
-      version: packageJSON.version,
-    });
-    const server = createServer(
-      new BrowserServerBackend(this._config, [this._contextFactory] as [
-        BrowserContextFactory,
-        ...BrowserContextFactory[],
-      ]),
-      false
+  async create(server: Server): Promise<Client> {
+    const client = new Client(
+      server.getClientVersion() ?? {
+        name: this.name,
+        version: packageJSON.version,
+      }
     );
-    await client.connect(new InProcessTransport(server));
+    const clientCapabilities = server.getClientCapabilities();
+    if (clientCapabilities) {
+      client.registerCapabilities(clientCapabilities);
+    }
+
+    if (clientCapabilities?.roots) {
+      client.setRequestHandler(ListRootsRequestSchema, async () => {
+        return await server.listRoots();
+      });
+    }
+
+    const backend = new BrowserServerBackend(this._config, [
+      this._contextFactory,
+    ] as [BrowserContextFactory, ...BrowserContextFactory[]]);
+    const delegate = createServer(backend, false);
+    await client.connect(new InProcessTransport(delegate));
     await client.ping();
     return client;
   }
