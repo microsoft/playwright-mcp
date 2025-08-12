@@ -88,6 +88,6 @@ export class BrowserServerBackend implements ServerBackend {
   }
 
   serverClosed() {
-    void this._context!.dispose().catch(logUnhandledError);
+    void this._context?.dispose().catch(logUnhandledError);
   }
 }
