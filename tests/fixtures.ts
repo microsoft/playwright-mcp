@@ -295,7 +295,6 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [
-    // biome-ignore lint/correctness/noEmptyPattern: Playwright requires object destructuring pattern
     async ({}, use, workerInfo) => {
       const port = 8907 + workerInfo.workerIndex * 4;
       const server = await TestServer.create(port);
@@ -366,7 +365,7 @@ function createTransport(
   const transport = new StdioClientTransport({
     command: process.execPath, // Use secure node executable path
     args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
-    cwd: path.join(path.dirname(__filename), '..'),
+    cwd: path.dirname(test.info().config.configFile || ''),
     stderr: 'pipe',
     env: secureEnv,
   });

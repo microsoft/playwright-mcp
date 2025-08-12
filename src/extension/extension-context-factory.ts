@@ -14,7 +14,7 @@ export class ExtensionContextFactory implements BrowserContextFactory {
   private readonly _browserChannel: string;
   private _relayPromise: Promise<CDPRelayServer> | undefined;
   private _browserPromise: Promise<Browser> | undefined;
-  constructor(browserChannel: string) {
+  constructor(browserChannel: string, _userDataDir?: string) {
     this._browserChannel = browserChannel;
   }
   async createContext(

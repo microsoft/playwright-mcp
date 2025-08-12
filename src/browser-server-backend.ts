@@ -8,7 +8,6 @@ import { logUnhandledError } from './log.js';
 import type * as mcpServer from './mcp/server.js';
 import { packageJSON } from './package.js';
 import { Response } from './response.js';
-import type { ExpectationOptions } from './schemas/expectation.js';
 import { SessionLog } from './session-log.js';
 import type { AnyTool } from './tools/tool.js';
 import { defineTool } from './tools/tool.js';
@@ -64,18 +63,19 @@ export class BrowserServerBackend implements mcpServer.ServerBackend {
   }
   async callTool(
     schema: mcpServer.ToolSchema,
-    parsedArguments: Record<string, unknown>
+    rawArguments: Record<string, unknown> | undefined
   ) {
     if (!this._context) {
       throw new Error('Context not initialized. Call initialize() first.');
     }
 
     const context = this._context;
+    const parsedArguments = schema.inputSchema.parse(rawArguments || {});
     const response = new Response(
       context,
       schema.name,
       parsedArguments,
-      parsedArguments.expectation as ExpectationOptions | undefined
+      parsedArguments.expectation
     );
 
     const matchedTool = this._tools.find((t) => t.schema.name === schema.name);

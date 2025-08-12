@@ -71,7 +71,7 @@ const test = baseTest.extend<{
             // PATH intentionally omitted for security - Node.js will use system default
             HOME: process.env.HOME,
             USER: process.env.USER,
-            DEBUG: 'pw:mcp:test',
+            DEBUG: 'pw:mcp:test,pw:mcp:transport',
             DEBUG_COLORS: '0',
             DEBUG_HIDE_DATE: '1',
           },

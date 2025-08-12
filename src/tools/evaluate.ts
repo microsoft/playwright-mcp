@@ -47,19 +47,22 @@ const evaluate = defineTabTool({
       response.addCode(`await page.evaluate(${quote(params.function)});`);
     }
     await tab.waitForCompletion(async () => {
-      const evaluationCode = params.function;
-      let result: unknown;
-
-      if (locator) {
-        // Evaluate on the specific element
-        result = await locator.evaluate(evaluationCode);
-      } else {
-        // Evaluate on the page context
-        result = await tab.page.evaluate(evaluationCode);
+      try {
+        // Use Playwright's internal _evaluateFunction which safely handles string functions
+        // This method is used by the upstream microsoft/playwright-mcp implementation
+        interface ReceiverWithEvaluate {
+          _evaluateFunction(functionString: string): Promise<unknown>;
+        }
+        const receiver = (locator ??
+          tab.page) as unknown as ReceiverWithEvaluate;
+        const result = await receiver._evaluateFunction(params.function);
+        const stringifiedResult = JSON.stringify(result, null, 2);
+        response.addResult(stringifiedResult ?? 'undefined');
+      } catch (error) {
+        response.addError(
+          `JavaScript evaluation failed: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
-
-      const stringifiedResult = JSON.stringify(result, null, 2);
-      response.addResult(stringifiedResult ?? 'undefined');
     });
   },
 });

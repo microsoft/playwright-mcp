@@ -99,28 +99,25 @@ test('sse transport browser lifecycle (isolated)', async ({
   });
   await client2.close();
 
-  await expect(() => {
-    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 2);
-    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 2);
-    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 2);
-    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_CONTEXT, 2);
-    expectRegexCount(
-      stderr(),
-      COMMON_REGEX_PATTERNS.CREATE_BROWSER_CONTEXT_ISOLATED,
-      2
-    );
-    expectRegexCount(
-      stderr(),
-      COMMON_REGEX_PATTERNS.CLOSE_BROWSER_CONTEXT_ISOLATED,
-      2
-    );
-    expectRegexCount(
-      stderr(),
-      COMMON_REGEX_PATTERNS.OBTAIN_BROWSER_ISOLATED,
-      2
-    );
-    expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_BROWSER_ISOLATED, 2);
-  }).toPass();
+  // Wait a bit for all logs to be written
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_SSE_SESSION, 2);
+  expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.DELETE_SSE_SESSION, 2);
+  expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CREATE_CONTEXT, 2);
+  expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_CONTEXT, 2);
+  expectRegexCount(
+    stderr(),
+    COMMON_REGEX_PATTERNS.CREATE_BROWSER_CONTEXT_ISOLATED,
+    2
+  );
+  expectRegexCount(
+    stderr(),
+    COMMON_REGEX_PATTERNS.CLOSE_BROWSER_CONTEXT_ISOLATED,
+    2
+  );
+  expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.OBTAIN_BROWSER_ISOLATED, 2);
+  expectRegexCount(stderr(), COMMON_REGEX_PATTERNS.CLOSE_BROWSER_ISOLATED, 2);
 });
 
 test('sse transport browser lifecycle (isolated, multiclient)', async ({

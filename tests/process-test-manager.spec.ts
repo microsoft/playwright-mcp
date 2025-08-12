@@ -40,7 +40,8 @@ test('SecureTestProcessManager can spawn and terminate processes', async ({
     expect(stderr).toContain('Listening on');
 
     const extractedUrl = manager.extractListeningUrl(stderr);
-    expect(extractedUrl).toBe(result.url.toString());
+    // Normalize URLs for comparison (handle trailing slash differences)
+    expect(extractedUrl).toBe(result.url.origin);
 
     await manager.terminateProcess(result.process);
     expect(manager.activeProcessCount).toBe(0);

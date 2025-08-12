@@ -3,5 +3,37 @@
   "extends": ["ultracite"],
   "javascript": {
     "globals": ["chrome"]
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["extension/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noImgElement": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/extension/**/*.ts"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedPrivateClassMembers": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["tests/fixtures.ts"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noEmptyPattern": "off"
+          }
+        }
+      }
+    }
+  ]
 }

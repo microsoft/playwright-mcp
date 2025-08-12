@@ -72,24 +72,54 @@ export class SecureTestProcessManager {
     });
 
     let stderrBuffer = '';
+    let stdoutBuffer = '';
 
-    const urlPromise = new Promise<string>((resolve) => {
-      childProcess.stderr?.on('data', (data) => {
-        stderrBuffer += data.toString();
-        const match = stderrBuffer.match(COMMON_REGEX_PATTERNS.LISTENING_ON);
+    const urlPromise = new Promise<string>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Server startup timeout after 30 seconds'));
+      }, 30_000);
+
+      const checkForUrl = (data: string) => {
+        const match = data.match(COMMON_REGEX_PATTERNS.LISTENING_ON);
         if (match) {
+          clearTimeout(timeout);
           resolve(match[1]);
+        }
+      };
+
+      childProcess.stderr?.on('data', (data) => {
+        const str = data.toString();
+        stderrBuffer += str;
+        checkForUrl(stderrBuffer);
+      });
+
+      childProcess.stdout?.on('data', (data) => {
+        const str = data.toString();
+        stdoutBuffer += str;
+        checkForUrl(stdoutBuffer);
+      });
+
+      childProcess.on('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+
+      childProcess.on('exit', (code) => {
+        if (code !== 0) {
+          clearTimeout(timeout);
+          reject(new Error(`Process exited with code ${code}`));
         }
       });
     });
 
     const url = await urlPromise;
-    this.processes.set(childProcess, stderrBuffer);
+    this.processes.set(childProcess, `${stderrBuffer}\n${stdoutBuffer}`);
 
     return {
       url: new URL(url),
       process: childProcess,
-      stderr: () => this.processes.get(childProcess) || stderrBuffer,
+      stderr: () =>
+        this.processes.get(childProcess) || `${stderrBuffer}\n${stdoutBuffer}`,
     };
   }
 
@@ -155,10 +185,10 @@ export class SecureTestProcessManager {
   }
 
   /**
-   * Extracts listening URL from stderr
+   * Extracts listening URL from stderr/stdout output
    */
-  extractListeningUrl(stderr: string): string | null {
-    const match = stderr.match(COMMON_REGEX_PATTERNS.LISTENING_ON);
+  extractListeningUrl(output: string): string | null {
+    const match = output.match(COMMON_REGEX_PATTERNS.LISTENING_ON);
     return match ? match[1] : null;
   }
 
@@ -190,7 +220,7 @@ export class SecureTestProcessManager {
       NODE_ENV: 'test',
       HOME: process.env.HOME,
       USER: process.env.USER,
-      DEBUG: 'pw:mcp:test',
+      DEBUG: 'pw:mcp:test,pw:mcp:transport',
       DEBUG_COLORS: '0',
       DEBUG_HIDE_DATE: '1',
       ...additionalEnv,

@@ -24,19 +24,19 @@ type CallToolResponse = Awaited<ReturnType<Client['callTool']>>;
 
 export const COMMON_REGEX_PATTERNS = {
   LISTENING_ON: /Listening on (http:\/\/.*)/,
-  CREATE_SSE_SESSION: /create SSE session/,
-  DELETE_SSE_SESSION: /delete SSE session/,
-  CREATE_CONTEXT: /create context/,
-  CLOSE_CONTEXT: /close context/,
-  CREATE_BROWSER_CONTEXT_ISOLATED: /create browser context \(isolated\)/,
-  CLOSE_BROWSER_CONTEXT_ISOLATED: /close browser context \(isolated\)/,
-  OBTAIN_BROWSER_ISOLATED: /obtain browser \(isolated\)/,
-  CLOSE_BROWSER_ISOLATED: /close browser \(isolated\)/,
-  CREATE_BROWSER_CONTEXT_PERSISTENT: /create browser context \(persistent\)/,
-  CLOSE_BROWSER_CONTEXT_PERSISTENT: /close browser context \(persistent\)/,
-  LOCK_USER_DATA_DIR: /lock user data dir/,
-  RELEASE_USER_DATA_DIR: /release user data dir/,
-  MILLISECONDS: /\d{1,10}ms/u,
+  CREATE_SSE_SESSION: /create SSE session/g,
+  DELETE_SSE_SESSION: /delete SSE session/g,
+  CREATE_CONTEXT: /create context/g,
+  CLOSE_CONTEXT: /close context/g,
+  CREATE_BROWSER_CONTEXT_ISOLATED: /create browser context \(isolated\)/g,
+  CLOSE_BROWSER_CONTEXT_ISOLATED: /close browser context \(isolated\)/g,
+  OBTAIN_BROWSER_ISOLATED: /obtain browser \(isolated\)/g,
+  CLOSE_BROWSER_ISOLATED: /close browser \(isolated\)/g,
+  CREATE_BROWSER_CONTEXT_PERSISTENT: /create browser context \(persistent\)/g,
+  CLOSE_BROWSER_CONTEXT_PERSISTENT: /close browser context \(persistent\)/g,
+  LOCK_USER_DATA_DIR: /lock user data dir/g,
+  RELEASE_USER_DATA_DIR: /release user data dir/g,
+  MILLISECONDS: /\d{1,10}ms/gu,
 };
 
 export interface TestPageContent {

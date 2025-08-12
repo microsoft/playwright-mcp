@@ -76,6 +76,12 @@ test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
   expect(
     await client.callTool({
       name: 'browser_snapshot',
+      arguments: {
+        expectation: {
+          includeTabs: false,
+          includeCode: false,
+        },
+      },
     })
   ).toHaveResponse({
     result: undefined,

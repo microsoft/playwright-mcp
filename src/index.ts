@@ -6,6 +6,7 @@ import { contextFactory } from './browser-context-factory.js';
 import { BrowserServerBackend } from './browser-server-backend.js';
 import { resolveConfig } from './config.js';
 import { createServer } from './mcp/server.js';
+
 export function createConnection(
   userConfig: Config = {},
   contextGetter?: () => Promise<BrowserContext>

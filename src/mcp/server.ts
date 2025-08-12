@@ -43,10 +43,10 @@ export interface ServerBackend {
   name: string;
   version: string;
   initialize?(server: Server): Promise<void>;
-  tools(): ToolSchema[];
+  tools(): ToolSchema<z.ZodTypeAny>[];
   callTool(
-    schema: ToolSchema,
-    parsedArguments: Record<string, unknown>
+    schema: ToolSchema<z.ZodTypeAny>,
+    rawArguments: Record<string, unknown> | undefined
   ): Promise<ToolResponse>;
   serverClosed?(): void;
 }
@@ -73,8 +73,9 @@ export function createServer(
       },
     }
   );
-  const tools = backend.tools();
+
   server.setRequestHandler(ListToolsRequestSchema, () => {
+    const tools = backend.tools();
     return {
       tools: tools.map((tool) => ({
         name: tool.name,
@@ -100,6 +101,7 @@ export function createServer(
       content: [{ type: 'text', text: `### Result\n${messages.join('\n')}` }],
       isError: true,
     });
+    const tools = backend.tools();
     const tool = tools.find((t) => t.name === request.params.name);
     if (!tool) {
       return errorResult(`Error: Tool "${request.params.name}" not found`);
@@ -108,10 +110,7 @@ export function createServer(
       // Log the request
       logRequest(request.params.name, request.params.arguments ?? {});
 
-      return await backend.callTool(
-        tool,
-        tool.inputSchema.parse(request.params.arguments ?? {})
-      );
+      return await backend.callTool(tool, request.params.arguments || {});
     } catch (error) {
       return errorResult(String(error));
     }

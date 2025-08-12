@@ -210,7 +210,7 @@ test('old locator error message', async ({ client, server }) => {
     })
   ).toHaveResponse({
     result: expect.stringContaining(
-      'Ref e3 not found in the current page snapshot. Try capturing new snapshot.'
+      'Ref e3 not found. Available refs: [e2]. Element: Button 2. Consider capturing a new snapshot if the page has changed.'
     ),
     isError: true,
   });

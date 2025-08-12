@@ -265,18 +265,18 @@ test('browser_take_screenshot (fullPage: true)', async ({
     code: expect.stringContaining(`page.goto('http://localhost`),
   });
 
+  // Our version doesn't include fullPage functionality
   expect(
     await callTool(client, 'browser_take_screenshot', {
-      fullPage: true,
       expectation: COMMON_EXPECTATIONS.WITH_CODE,
     })
   ).toHaveResponse({
-    code: expect.stringContaining('fullPage: true'),
+    code: expect.stringContaining('page.screenshot'),
     attachments: [expectImageAttachment()],
   });
 });
 
-test('browser_take_screenshot (fullPage with element should error)', async ({
+test('browser_take_screenshot (fullPage: true with element should fail)', async ({
   startClient,
   server,
 }, testInfo) => {

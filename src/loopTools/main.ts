@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import type { z } from 'zod';
 import type { FullConfig } from '../config.js';
 import type { ServerBackend, ToolResponse, ToolSchema } from '../mcp/server.js';
 import { start } from '../mcp/transport.js';
@@ -6,6 +7,7 @@ import { packageJSON } from '../package.js';
 import { Context } from './context.js';
 import { perform } from './perform.js';
 import { snapshot } from './snapshot.js';
+
 export async function runLoopTools(config: FullConfig) {
   dotenv.config();
   const serverBackendFactory = () => new LoopToolsServerBackend(config);
@@ -23,12 +25,13 @@ class LoopToolsServerBackend implements ServerBackend {
   async initialize() {
     this._context = await Context.create(this._config);
   }
-  tools(): ToolSchema[] {
-    return this._tools.map((tool) => tool.schema as ToolSchema);
+  tools(): ToolSchema<z.ZodTypeAny>[] {
+    return this._tools.map((tool) => tool.schema);
   }
+
   async callTool(
-    schema: ToolSchema,
-    parsedArguments: Record<string, unknown>
+    schema: ToolSchema<z.ZodTypeAny>,
+    rawArguments: Record<string, unknown> | undefined
   ): Promise<ToolResponse> {
     const tool = this._tools.find((t) => t.schema.name === schema.name);
     if (!tool) {
@@ -37,9 +40,8 @@ class LoopToolsServerBackend implements ServerBackend {
     if (!this._context) {
       throw new Error('Context not initialized');
     }
-    // Since we found the tool by schema name, the parsedArguments should match the tool's input schema
-    // biome-ignore lint/suspicious/noExplicitAny: Tools have different parameter types
-    return await tool.handle(this._context, parsedArguments as any);
+    const parsedArguments = schema.inputSchema.parse(rawArguments || {});
+    return await tool.handle(this._context, parsedArguments);
   }
   serverClosed() {
     this._context?.close().catch(() => {

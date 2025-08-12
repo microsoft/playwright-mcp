@@ -82,6 +82,7 @@ export class UnifiedDiagnosticSystem {
   readonly configManager: SmartConfigManager;
   readonly initializationManager: InitializationManager;
   private readonly performanceTracker: PerformanceTracker;
+  private disposed = false;
 
   private pageAnalyzer?: PageAnalyzer;
   private parallelAnalyzer?: ParallelPageAnalyzer;
@@ -142,6 +143,23 @@ export class UnifiedDiagnosticSystem {
    * Initialize all diagnostic components using common initialization manager
    */
   async initializeComponents(): Promise<void> {
+    // Check if system has been disposed
+    if (this.disposed) {
+      throw new DiagnosticError(
+        'System has been disposed and cannot be reinitialized',
+        {
+          timestamp: Date.now(),
+          component: 'UnifiedSystem',
+          operation: 'initializeComponents',
+          suggestions: [
+            'Create a new system instance instead of reusing disposed instance',
+            'Check component dependencies',
+            'Ensure proper disposal handling',
+          ],
+        }
+      );
+    }
+
     // Ensure 'this' context is valid
     if (!this.initializationManager) {
       throw new DiagnosticError('InitializationManager is not available', {
@@ -1211,6 +1229,12 @@ export class UnifiedDiagnosticSystem {
   // Cleanup and disposal
   async dispose(): Promise<void> {
     // Disposing UnifiedSystem
+
+    if (this.disposed) {
+      return; // Already disposed
+    }
+
+    this.disposed = true;
 
     try {
       const disposePromises: Promise<void>[] = [];

@@ -3,6 +3,7 @@ import debug from 'debug';
 
 // @ts-expect-error - playwright-core internal module without proper types
 import { startTraceViewerServer } from 'playwright-core/lib/server';
+
 import { contextFactory } from './browser-context-factory.js';
 import {
   BrowserServerBackend,
@@ -23,6 +24,7 @@ import { start } from './mcp/transport.js';
 
 const programDebug = debug('pw:mcp:program');
 
+import type { ServerBackendFactory } from './mcp/server.js';
 import { packageJSON } from './package.js';
 import { logServerStart } from './utils/request-logger.js';
 
@@ -137,12 +139,23 @@ program
         return;
       }
       const browserContextFactory = contextFactory(config);
-      const factories: FactoryList = [browserContextFactory];
+      let serverBackendFactory: ServerBackendFactory;
+
       if (options.connectTool) {
-        factories.push(createExtensionContextFactory(config));
+        // Use our FactoryList approach for multi-factory support
+        const factories: FactoryList = [
+          browserContextFactory,
+          createExtensionContextFactory(config),
+        ];
+        serverBackendFactory = () =>
+          new BrowserServerBackend(config, factories);
+      } else {
+        // Single factory for regular usage
+        const factories: FactoryList = [browserContextFactory];
+        serverBackendFactory = () =>
+          new BrowserServerBackend(config, factories);
       }
-      const serverBackendFactory = () =>
-        new BrowserServerBackend(config, factories);
+
       logServerStart();
       await start(serverBackendFactory, config.server);
       if (config.saveTrace) {
@@ -155,8 +168,11 @@ program
           '/trace.json';
         programDebug(`Trace viewer available at: ${url}`);
       }
-    } catch {
-      // CLI action failed - exit with error code
+    } catch (error) {
+      // CLI action failed - output error to stderr and exit with error code
+      process.stderr.write(
+        `${error instanceof Error ? error.message : String(error)}\n`
+      );
       process.exit(1);
     }
   });

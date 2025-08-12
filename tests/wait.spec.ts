@@ -39,6 +39,9 @@ test('browser_wait_for(text)', async ({ client, server }) => {
       arguments: { text: 'Text to appear' },
     })
   ).toHaveResponse({
+    code: expect.stringContaining(
+      `await page.getByText("Text to appear").first().waitFor({ state: 'visible' });`
+    ),
     pageState: expect.stringContaining('- generic [ref=e3]: Text to appear'),
   });
 });
@@ -65,6 +68,27 @@ test('browser_wait_for(textGone)', async ({ client, server }) => {
       arguments: { textGone: 'Text to disappear' },
     })
   ).toHaveResponse({
+    code: expect.stringContaining(
+      `await page.getByText("Text to disappear").first().waitFor({ state: 'hidden' });`
+    ),
     pageState: expect.stringContaining('- generic [ref=e3]: Text to appear'),
+  });
+});
+
+test('browser_wait_for(time)', async ({ client, server }) => {
+  server.setContent('/', '<body><div>Hello World</div></body>', 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  expect(
+    await client.callTool({
+      name: 'browser_wait_for',
+      arguments: { time: 1 },
+    })
+  ).toHaveResponse({
+    code: 'await new Promise(f => setTimeout(f, 1 * 1000));',
   });
 });
