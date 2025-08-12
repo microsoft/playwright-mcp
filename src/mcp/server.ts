@@ -76,7 +76,7 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
     return { tools: tools.map(tool => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: zodToJsonSchema(tool.inputSchema),
+      inputSchema: tool.inputSchema instanceof z.ZodType ? zodToJsonSchema(tool.inputSchema) : tool.inputSchema,
       annotations: {
         title: tool.title,
         readOnlyHint: tool.type === 'readOnly',

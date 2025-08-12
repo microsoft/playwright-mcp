@@ -23,48 +23,55 @@ import { createHash } from '../src/utils.js';
 
 const p = process.platform === 'win32' ? 'c:\\non\\existent\\folder' : '/non/existent/folder';
 
-test('should use separate user data by root path', async ({ startClient, server }, testInfo) => {
-  const { client } = await startClient({
-    clientName: 'Visual Studio Code', // Simulate VS Code client, roots only work with it
-    roots: [
-      {
-        name: 'test',
-        uri: 'file://' + p.replace(/\\/g, '/'),
-      }
-    ],
+for (const mode of ['default', 'proxy']) {
+  const extraArgs = mode === 'proxy' ? ['--connect-tool'] : [];
+
+  test.describe(`${mode} mode`, () => {
+    test('should use separate user data by root path', async ({ startClient, server }, testInfo) => {
+      const { client } = await startClient({
+        args: extraArgs,
+        clientName: 'Visual Studio Code', // Simulate VS Code client, roots only work with it
+        roots: [
+          {
+            name: 'test',
+            uri: 'file://' + p.replace(/\\/g, '/'),
+          }
+        ],
+      });
+
+      await client.callTool({
+        name: 'browser_navigate',
+        arguments: { url: server.HELLO_WORLD },
+      });
+
+      const hash = createHash(p);
+      const [file] = await fs.promises.readdir(testInfo.outputPath('ms-playwright'));
+      expect(file).toContain(hash);
+    });
+
+
+    test('check that trace is saved in workspace', async ({ startClient, server, mcpMode }, testInfo) => {
+      const rootPath = testInfo.outputPath('workspace');
+      const { client } = await startClient({
+        args: ['--save-trace', ...extraArgs],
+        clientName: 'Visual Studio Code - Insiders', // Simulate VS Code client, roots only work with it
+        roots: [
+          {
+            name: 'workspace',
+            uri: pathToFileURL(rootPath).toString(),
+          },
+        ],
+      });
+
+      expect(await client.callTool({
+        name: 'browser_navigate',
+        arguments: { url: server.HELLO_WORLD },
+      })).toHaveResponse({
+        code: expect.stringContaining(`page.goto('http://localhost`),
+      });
+
+      const [file] = await fs.promises.readdir(path.join(rootPath, '.playwright-mcp'));
+      expect(file).toContain('traces');
+    });
   });
-
-  await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
-
-  const hash = createHash(p);
-  const [file] = await fs.promises.readdir(testInfo.outputPath('ms-playwright'));
-  expect(file).toContain(hash);
-});
-
-
-test('check that trace is saved in workspace', async ({ startClient, server, mcpMode }, testInfo) => {
-  const rootPath = testInfo.outputPath('workspace');
-  const { client } = await startClient({
-    args: ['--save-trace'],
-    clientName: 'Visual Studio Code - Insiders', // Simulate VS Code client, roots only work with it
-    roots: [
-      {
-        name: 'workspace',
-        uri: pathToFileURL(rootPath).toString(),
-      },
-    ],
-  });
-
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
-    code: expect.stringContaining(`page.goto('http://localhost`),
-  });
-
-  const [file] = await fs.promises.readdir(path.join(rootPath, '.playwright-mcp'));
-  expect(file).toContain('traces');
-});
+}

@@ -29,7 +29,7 @@ type NonEmptyArray<T> = [T, ...T[]];
 export type ClientFactory = {
   name: string;
   description: string;
-  create(): Promise<Client>;
+  create(server: Server): Promise<Client>;
 };
 
 export type ClientFactoryList = NonEmptyArray<ClientFactory>;
@@ -42,6 +42,7 @@ export class ProxyBackend implements ServerBackend {
   private _currentClient: Client | undefined;
   private _contextSwitchTool: Tool<any>;
   private _tools: ToolSchema<any>[] = [];
+  private _server: Server | undefined;
 
   constructor(clientFactories: ClientFactoryList) {
     this._clientFactories = clientFactories;
@@ -49,6 +50,7 @@ export class ProxyBackend implements ServerBackend {
   }
 
   async initialize(server: Server): Promise<void> {
+    this._server = server;
     await this._setCurrentClient(this._clientFactories[0]);
   }
 
@@ -118,7 +120,7 @@ export class ProxyBackend implements ServerBackend {
 
   private async _setCurrentClient(factory: ClientFactory) {
     await this._currentClient?.close();
-    this._currentClient = await factory.create();
+    this._currentClient = await factory.create(this._server!);
     const tools = await this._currentClient.listTools();
     this._tools = tools.tools.map(tool => ({
       name: tool.name,
