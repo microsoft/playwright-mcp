@@ -145,8 +145,12 @@ export async function safeDispose<T extends { dispose(): Promise<void> }>(
 ): Promise<void> {
   try {
     await resource.dispose();
-  } catch (_error) {
-    // Silently handle dispose errors - logging removed for lint compliance
+  } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: Disposal errors need to be logged for debugging
+    console.warn(
+      `Failed to dispose ${_resourceType} during ${_operation}:`,
+      error
+    );
   }
 }
 

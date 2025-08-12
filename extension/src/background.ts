@@ -325,4 +325,5 @@ class TabShareExtension {
   }
 }
 
-new TabShareExtension();
+const _tabShareExtension = new TabShareExtension();
+// Extension instance is intentionally kept in scope for lifecycle management
