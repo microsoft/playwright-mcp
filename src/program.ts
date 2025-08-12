@@ -90,6 +90,7 @@ program
         const factories: ClientFactoryList = [
           new InProcessClientFactory(browserContextFactory, config),
           createExtensionClientFactory(config),
+          // TODO: enable vscode client factory without --connect-tool, just based on client name
           createVSCodeClientFactory(config),
         ];
         serverBackendFactory = () => new ProxyBackend(factories);
