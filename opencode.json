@@ -1,0 +1,43 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "fast-playwright": {
+      "type": "local",
+      "command": ["node", "cli.js", "--isolated"],
+      "enabled": true,
+      "environment": {}
+    },
+    "playwright-original": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@tontoko/fast-playwright-mcp@latest",
+        "--isolated"
+      ],
+      "enabled": false,
+      "environment": {}
+    },
+    "serena": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--enable-web-dashboard",
+        "False"
+      ],
+      "enabled": true,
+      "environment": {}
+    },
+    "ultracite": {
+      "type": "remote",
+      "url": "https://www.ultracite.ai/api/mcp/mcp",
+      "enabled": true
+    }
+  }
+}
