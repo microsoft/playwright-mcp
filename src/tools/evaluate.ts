@@ -47,26 +47,15 @@ const evaluate = defineTabTool({
       response.addCode(`await page.evaluate(${quote(params.function)});`);
     }
     await tab.waitForCompletion(async () => {
-      let result: unknown;
       try {
-        if (locator) {
-          // Playwright evaluates string expressions directly in browser context
-          // For element evaluation, we need to pass the element as an argument
-          const functionBody = params.function;
-          result = await locator.evaluate((element, fnString) => {
-            // Execute the function string with the element in browser context
-            // This runs safely within the browser's JavaScript sandbox
-            return Function(
-              'element',
-              `return (${fnString})(element)`
-            )(element);
-          }, functionBody);
-        } else {
-          // For page evaluation, wrap the function string in an IIFE (Immediately Invoked Function Expression)
-          // This allows Playwright to evaluate it directly in the browser context
-          const expression = `(${params.function})()`;
-          result = await tab.page.evaluate(expression);
+        // Use Playwright's internal _evaluateFunction which safely handles string functions
+        // This method is used by the upstream microsoft/playwright-mcp implementation
+        interface ReceiverWithEvaluate {
+          _evaluateFunction(functionString: string): Promise<unknown>;
         }
+        const receiver = (locator ??
+          tab.page) as unknown as ReceiverWithEvaluate;
+        const result = await receiver._evaluateFunction(params.function);
         const stringifiedResult = JSON.stringify(result, null, 2);
         response.addResult(
           stringifiedResult === undefined ? 'undefined' : stringifiedResult
