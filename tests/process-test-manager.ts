@@ -79,18 +79,25 @@ export class SecureTestProcessManager {
 
     this.stderrBuffer = '';
 
+    // Set up stderr capture
+    this.process.stderr?.on('data', (data) => {
+      this.stderrBuffer += data.toString();
+    });
+
     // Wait for server to start if we expect a URL
     if (!noPort) {
       const url = await this.waitForServerStart();
       return { url: new URL(url), stderr: () => this.stderrBuffer };
     }
 
-    // Set up stderr capture for non-server processes
-    this.process.stderr?.on('data', (data) => {
-      this.stderrBuffer += data.toString();
-    });
-
-    return { stderr: () => this.stderrBuffer };
+    // For noPort case, still check if server starts (due to config file)
+    try {
+      const url = await this.waitForServerStart();
+      return { url: new URL(url), stderr: () => this.stderrBuffer };
+    } catch {
+      // If no server starts, return without URL
+      return { stderr: () => this.stderrBuffer };
+    }
   }
 
   /**
@@ -119,8 +126,7 @@ export class SecureTestProcessManager {
         reject(new Error('Server startup timeout after 30 seconds'));
       }, 30_000);
 
-      this.process?.stderr?.on('data', (data) => {
-        this.stderrBuffer += data.toString();
+      const checkBuffer = () => {
         const match = this.stderrBuffer.match(
           COMMON_REGEX_PATTERNS.LISTENING_ON
         );
@@ -136,6 +142,13 @@ export class SecureTestProcessManager {
           clearTimeout(timeout);
           reject(new Error(`Server startup error: ${this.stderrBuffer}`));
         }
+      };
+
+      // Check buffer immediately in case server already started
+      checkBuffer();
+
+      this.process?.stderr?.on('data', (_data) => {
+        checkBuffer();
       });
 
       this.process?.on('error', (error) => {

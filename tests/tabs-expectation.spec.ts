@@ -51,7 +51,7 @@ test.describe('Tabs Tools Expectation Parameter', () => {
         {
           containsSnapshot: false,
           containsConsole: false,
-          containsTabs: false,
+          containsTabs: true,
         },
         (result) => {
           expect(result.content[0].text).toContain('Open tabs');
@@ -75,7 +75,7 @@ test.describe('Tabs Tools Expectation Parameter', () => {
           {
             name: 'browser_tab_new',
             arguments: {
-              url: `${server.PREFIX}/new`,
+              url: server.HELLO_WORLD,
               expectation: testCase.expectation,
             },
           },
