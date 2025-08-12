@@ -84,6 +84,31 @@ test('should throw connection error and allow re-connecting', async ({ cdpServer
   });
 });
 
+test('cdp server with headers', async ({ cdpServer, startClient, server }) => {
+  await cdpServer.start();
+  const headers = { 'X-Test-Header': 'test-value' };
+  const { client } = await startClient({
+    args: [`--cdp-endpoint=${cdpServer.endpoint}`, `--cdp-headers=${JSON.stringify(headers)}`]
+  });
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
+});
+
+test('cdp server with invalid headers JSON', async () => {
+  const result = spawnSync('node', [
+    path.join(__filename, '../../cli.js'),
+    '--cdp-endpoint=http://localhost:1234',
+    '--cdp-headers=invalid-json'
+  ]);
+  expect(result.error).toBeUndefined();
+  expect(result.status).toBe(1);
+  expect(result.stderr.toString()).toContain('option \'--cdp-headers <headers>\' argument \'invalid-json\' is invalid');
+});
+
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
 
