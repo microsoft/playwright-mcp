@@ -53,9 +53,9 @@ const test = base.extend<{ browserWithExtension: BrowserWithExtension }>({
         });
 
         // for manifest v3:
-        let [serviceWorker] = browserContext.serviceWorkers();
+        const [serviceWorker] = browserContext.serviceWorkers();
         if (!serviceWorker) {
-          serviceWorker = await browserContext.waitForEvent('serviceworker');
+          await browserContext.waitForEvent('serviceworker');
         }
 
         return browserContext;

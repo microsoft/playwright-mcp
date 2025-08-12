@@ -81,8 +81,12 @@ const ConnectApp: React.FC = () => {
         type: 'connecting',
         message: `🎭 Playwright MCP started from  "${info}" is trying to connect. Do you want to continue?`,
       });
-    } catch (_e) {
-      setStatus({ type: 'error', message: 'Failed to parse client version.' });
+    } catch (error: unknown) {
+      // Error details are captured in the status message for user visibility
+      setStatus({
+        type: 'error',
+        message: `Failed to parse client version${error instanceof Error ? `: ${error.message}` : '.'}`,
+      });
       return;
     }
 

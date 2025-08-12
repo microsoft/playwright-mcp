@@ -27,8 +27,8 @@ export class InProcessClientFactory implements ClientFactory {
   name: string;
   description: string;
 
-  private _contextFactory: BrowserContextFactory;
-  private _config: FullConfig;
+  private readonly _contextFactory: BrowserContextFactory;
+  private readonly _config: FullConfig;
 
   constructor(contextFactory: BrowserContextFactory, config: FullConfig) {
     this.name = contextFactory.name;

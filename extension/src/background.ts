@@ -40,7 +40,7 @@ type PageMessage =
 class TabShareExtension {
   private _activeConnection: RelayConnection | undefined;
   private _connectedTabId: number | null = null;
-  private _pendingTabSelection = new Map<
+  private readonly _pendingTabSelection = new Map<
     number,
     { connection: RelayConnection; timerId?: number }
   >();
@@ -158,7 +158,6 @@ class TabShareExtension {
       connection.onclose = () => {
         debugLog('Connection closed');
         this._pendingTabSelection.delete(selectorTabId);
-        // TODO: show error in the selector tab?
       };
       this._pendingTabSelection.set(selectorTabId, { connection });
       debugLog('Connected to MCP relay');
@@ -243,8 +242,12 @@ class TabShareExtension {
       if (color) {
         await chrome.action.setBadgeBackgroundColor({ tabId, color });
       }
-    } catch (_error: unknown) {
-      // Ignore errors as the tab may be closed already.
+    } catch (error: unknown) {
+      // Log errors as the tab may be closed already, but still track the issue
+      debugLog(
+        'Failed to update badge:',
+        error instanceof Error ? error.message : String(error)
+      );
     }
   }
 

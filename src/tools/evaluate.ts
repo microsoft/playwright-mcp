@@ -57,9 +57,7 @@ const evaluate = defineTabTool({
           tab.page) as unknown as ReceiverWithEvaluate;
         const result = await receiver._evaluateFunction(params.function);
         const stringifiedResult = JSON.stringify(result, null, 2);
-        response.addResult(
-          stringifiedResult === undefined ? 'undefined' : stringifiedResult
-        );
+        response.addResult(stringifiedResult ?? 'undefined');
       } catch (error) {
         response.addError(
           `JavaScript evaluation failed: ${error instanceof Error ? error.message : String(error)}`

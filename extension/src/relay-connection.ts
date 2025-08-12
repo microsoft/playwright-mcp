@@ -38,17 +38,17 @@ type ProtocolResponse = {
 
 export class RelayConnection {
   private _debuggee: chrome.debugger.Debuggee;
-  private _ws: WebSocket;
-  private _eventListener: (
+  private readonly _ws: WebSocket;
+  private readonly _eventListener: (
     source: chrome.debugger.DebuggerSession,
     method: string,
     params: Record<string, unknown>
   ) => void;
-  private _detachListener: (
+  private readonly _detachListener: (
     source: chrome.debugger.Debuggee,
     reason: string
   ) => void;
-  private _tabPromise: Promise<void>;
+  private readonly _tabPromise: Promise<void>;
   private _tabPromiseResolve!: () => void;
   private _closed = false;
 

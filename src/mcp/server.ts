@@ -102,9 +102,7 @@ export function createServer(
       isError: true,
     });
     const tools = backend.tools();
-    const tool = tools.find((t) => t.name === request.params.name) as
-      | ToolSchema<z.ZodTypeAny>
-      | undefined;
+    const tool = tools.find((t) => t.name === request.params.name);
     if (!tool) {
       return errorResult(`Error: Tool "${request.params.name}" not found`);
     }

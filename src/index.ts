@@ -7,11 +7,11 @@ import { BrowserServerBackend } from './browser-server-backend.js';
 import { resolveConfig } from './config.js';
 import { createServer } from './mcp/server.js';
 
-export async function createConnection(
+export function createConnection(
   userConfig: Config = {},
   contextGetter?: () => Promise<BrowserContext>
-): Promise<Server> {
-  const config = await resolveConfig(userConfig);
+): Server {
+  const config = resolveConfig(userConfig);
   const factory = contextGetter
     ? new SimpleBrowserContextFactory(contextGetter)
     : contextFactory(config);

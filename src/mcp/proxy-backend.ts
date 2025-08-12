@@ -37,9 +37,9 @@ export class ProxyBackend implements ServerBackend {
   name = 'Playwright MCP Client Switcher';
   version = packageJSON.version;
 
-  private _clientFactories: ClientFactoryList;
+  private readonly _clientFactories: ClientFactoryList;
   private _currentClient: Client | undefined;
-  private _contextSwitchTool: Tool<
+  private readonly _contextSwitchTool: Tool<
     z.ZodObject<{ name: z.ZodEnum<[string, ...string[]]> }>
   >;
   private _tools: ToolSchema<z.ZodTypeAny>[] = [];
