@@ -15,6 +15,7 @@ jobs:
           node-version: 18
           registry-url: https://registry.npmjs.org/
       - run: npm ci
+      - run: npm install @typescript/native-preview-linux-x64@7.0.0-dev.20250808.1 --save-dev --force || true
       - run: npx playwright install --with-deps
       - run: npm run build
       - run: npm run lint
