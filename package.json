@@ -21,7 +21,7 @@
     "benchmark": "npm run build:benchmark && node benchmark/lib/index.js",
     "benchmark:verbose": "npm run build:benchmark && node benchmark/lib/index.js --verbose",
     "benchmark:quiet": "npm run build:benchmark && node benchmark/lib/index.js --quiet",
-    "lint": "npm run update-readme && ultracite lint",
+    "lint": "ultracite lint",
     "lint-fix": "ultracite format",
     "update-readme": "node utils/update-readme.js",
     "watch": "tsgo --watch",
