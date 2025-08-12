@@ -57,31 +57,63 @@ class TabShareExtension {
   private _onMessage(
     message: PageMessage,
     sender: chrome.runtime.MessageSender,
-    sendResponse: (response: any) => void
+    sendResponse: (response: {
+      success: boolean;
+      error?: string;
+      tabs?: chrome.tabs.Tab[];
+      currentTabId?: number;
+      connectedTabId?: number | null;
+    }) => void
   ) {
     switch (message.type) {
       case 'connectToMCPRelay':
-        this._connectToRelay(sender.tab!.id!, message.mcpRelayUrl!).then(
+        if (!(sender.tab?.id && message.mcpRelayUrl)) {
+          sendResponse({
+            success: false,
+            error: 'Missing tab ID or relay URL',
+          });
+          return false;
+        }
+        this._connectToRelay(sender.tab.id, message.mcpRelayUrl).then(
           () => sendResponse({ success: true }),
-          (error: any) => sendResponse({ success: false, error: error.message })
+          (error: unknown) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            })
         );
         return true;
       case 'getTabs':
         this._getTabs().then(
           (tabs) =>
             sendResponse({ success: true, tabs, currentTabId: sender.tab?.id }),
-          (error: any) => sendResponse({ success: false, error: error.message })
+          (error: unknown) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            })
         );
         return true;
       case 'connectToTab':
+        if (!(sender.tab?.id && message.mcpRelayUrl)) {
+          sendResponse({
+            success: false,
+            error: 'Missing tab ID or relay URL',
+          });
+          return false;
+        }
         this._connectTab(
-          sender.tab!.id!,
+          sender.tab.id,
           message.tabId,
           message.windowId,
-          message.mcpRelayUrl!
+          message.mcpRelayUrl
         ).then(
           () => sendResponse({ success: true }),
-          (error: any) => sendResponse({ success: false, error: error.message })
+          (error: unknown) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            })
         );
         return true; // Return true to indicate that the response will be sent asynchronously
       case 'getConnectionStatus':
@@ -92,11 +124,21 @@ class TabShareExtension {
       case 'disconnect':
         this._disconnect().then(
           () => sendResponse({ success: true }),
-          (error: any) => sendResponse({ success: false, error: error.message })
+          (error: unknown) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            })
         );
         return true;
+      default:
+        // Handle unexpected message types
+        sendResponse({
+          success: false,
+          error: `Unknown message type: ${(message as { type: string }).type}`,
+        });
+        return false;
     }
-    return false;
   }
 
   private async _connectToRelay(
@@ -120,8 +162,11 @@ class TabShareExtension {
       };
       this._pendingTabSelection.set(selectorTabId, { connection });
       debugLog('Connected to MCP relay');
-    } catch (error: any) {
-      debugLog('Failed to connect to MCP relay:', error.message);
+    } catch (error: unknown) {
+      debugLog(
+        'Failed to connect to MCP relay:',
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -136,22 +181,25 @@ class TabShareExtension {
       debugLog(`Connecting tab ${tabId} to relay at ${mcpRelayUrl}`);
       try {
         this._activeConnection?.close('Another connection is requested');
-      } catch (error: any) {
+      } catch (error: unknown) {
         debugLog('Error closing active connection:', error);
       }
       await this._setConnectedTabId(null);
 
       this._activeConnection =
         this._pendingTabSelection.get(selectorTabId)?.connection;
-      if (!this._activeConnection)
+      if (!this._activeConnection) {
         throw new Error('No active MCP relay connection');
+      }
       this._pendingTabSelection.delete(selectorTabId);
 
       this._activeConnection.setTabId(tabId);
       this._activeConnection.onclose = () => {
         debugLog('MCP connection closed');
         this._activeConnection = undefined;
-        void this._setConnectedTabId(null);
+        this._setConnectedTabId(null).catch(() => {
+          // Ignore errors during cleanup
+        });
       };
 
       await Promise.all([
@@ -160,9 +208,12 @@ class TabShareExtension {
         chrome.windows.update(windowId, { focused: true }),
       ]);
       debugLog('Connected to MCP bridge');
-    } catch (error: any) {
+    } catch (error: unknown) {
       await this._setConnectedTabId(null);
-      debugLog(`Failed to connect tab ${tabId}:`, error.message);
+      debugLog(
+        `Failed to connect tab ${tabId}:`,
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -170,14 +221,16 @@ class TabShareExtension {
   private async _setConnectedTabId(tabId: number | null): Promise<void> {
     const oldTabId = this._connectedTabId;
     this._connectedTabId = tabId;
-    if (oldTabId && oldTabId !== tabId)
+    if (oldTabId && oldTabId !== tabId) {
       await this._updateBadge(oldTabId, { text: '' });
-    if (tabId)
+    }
+    if (tabId) {
       await this._updateBadge(tabId, {
         text: '✓',
         color: '#4CAF50',
         title: 'Connected to MCP client',
       });
+    }
   }
 
   private async _updateBadge(
@@ -187,20 +240,24 @@ class TabShareExtension {
     try {
       await chrome.action.setBadgeText({ tabId, text });
       await chrome.action.setTitle({ tabId, title: title || '' });
-      if (color) await chrome.action.setBadgeBackgroundColor({ tabId, color });
-    } catch (error: any) {
+      if (color) {
+        await chrome.action.setBadgeBackgroundColor({ tabId, color });
+      }
+    } catch (_error: unknown) {
       // Ignore errors as the tab may be closed already.
     }
   }
 
-  private async _onTabRemoved(tabId: number): Promise<void> {
+  private _onTabRemoved(tabId: number): void {
     const pendingConnection = this._pendingTabSelection.get(tabId)?.connection;
     if (pendingConnection) {
       this._pendingTabSelection.delete(tabId);
       pendingConnection.close('Browser tab closed');
       return;
     }
-    if (this._connectedTabId !== tabId) return;
+    if (this._connectedTabId !== tabId) {
+      return;
+    }
     this._activeConnection?.close('Browser tab closed');
     this._activeConnection = undefined;
     this._connectedTabId = null;
@@ -231,10 +288,13 @@ class TabShareExtension {
   private _onTabUpdated(
     tabId: number,
     changeInfo: chrome.tabs.TabChangeInfo,
-    tab: chrome.tabs.Tab
+    _tab: chrome.tabs.Tab
   ) {
-    if (changeInfo.status === 'complete' && this._connectedTabId === tabId)
-      void this._setConnectedTabId(tabId);
+    if (changeInfo.status === 'complete' && this._connectedTabId === tabId) {
+      this._setConnectedTabId(tabId).catch(() => {
+        // Ignore errors during badge update
+      });
+    }
   }
 
   private async _getTabs(): Promise<chrome.tabs.Tab[]> {
@@ -243,7 +303,7 @@ class TabShareExtension {
       (tab) =>
         tab.url &&
         !['chrome:', 'edge:', 'devtools:'].some((scheme) =>
-          tab.url!.startsWith(scheme)
+          tab.url?.startsWith(scheme)
         )
     );
   }

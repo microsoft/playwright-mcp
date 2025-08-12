@@ -19,14 +19,11 @@ import {
   createExtensionContextFactory,
   runWithExtension,
 } from './extension/main.js';
-import { InProcessClientFactory } from './inProcessClient.js';
 import { runLoopTools } from './loopTools/main.js';
-import { ProxyBackend } from './mcp/proxyBackend.js';
 import { start } from './mcp/transport.js';
 
 const programDebug = debug('pw:mcp:program');
 
-import type { ClientFactoryList } from './mcp/proxyBackend.js';
 import type { ServerBackendFactory } from './mcp/server.js';
 import { packageJSON } from './package.js';
 import { logServerStart } from './utils/request-logger.js';
@@ -171,8 +168,11 @@ program
           '/trace.json';
         programDebug(`Trace viewer available at: ${url}`);
       }
-    } catch {
-      // CLI action failed - exit with error code
+    } catch (error) {
+      // CLI action failed - output error to stderr and exit with error code
+      process.stderr.write(
+        `${error instanceof Error ? error.message : String(error)}\n`
+      );
       process.exit(1);
     }
   });

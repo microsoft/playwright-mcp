@@ -18,9 +18,9 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { BrowserContextFactory } from './browser-context-factory.js';
 import { BrowserServerBackend } from './browser-server-backend.js';
 import type { FullConfig } from './config.js';
-import { InProcessTransport } from './mcp/inProcessTransport.js';
-import type { ClientFactory } from './mcp/proxyBackend.js';
-import * as mcpServer from './mcp/server.js';
+import { InProcessTransport } from './mcp/in-process-transport.js';
+import type { ClientFactory } from './mcp/proxy-backend.js';
+import { createServer } from './mcp/server.js';
 import { packageJSON } from './package.js';
 
 export class InProcessClientFactory implements ClientFactory {
@@ -42,8 +42,11 @@ export class InProcessClientFactory implements ClientFactory {
       name: this.name,
       version: packageJSON.version,
     });
-    const server = mcpServer.createServer(
-      new BrowserServerBackend(this._config, this._contextFactory),
+    const server = createServer(
+      new BrowserServerBackend(this._config, [this._contextFactory] as [
+        BrowserContextFactory,
+        ...BrowserContextFactory[],
+      ]),
       false
     );
     await client.connect(new InProcessTransport(server));

@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import type { z } from 'zod';
 import type { FullConfig } from '../config.js';
 import type { ServerBackend, ToolResponse, ToolSchema } from '../mcp/server.js';
 import { start } from '../mcp/transport.js';
@@ -6,6 +7,7 @@ import { packageJSON } from '../package.js';
 import { Context } from './context.js';
 import { perform } from './perform.js';
 import { snapshot } from './snapshot.js';
+
 export async function runLoopTools(config: FullConfig) {
   dotenv.config();
   const serverBackendFactory = () => new LoopToolsServerBackend(config);
@@ -23,14 +25,14 @@ class LoopToolsServerBackend implements ServerBackend {
   async initialize() {
     this._context = await Context.create(this._config);
   }
-  tools(): ToolSchema[] {
-    return this._tools.map((tool) => tool.schema as ToolSchema);
+  tools(): ToolSchema<z.ZodTypeAny>[] {
+    return this._tools.map((tool) => tool.schema);
   }
 
   async callTool(
-    schema: mcpServer.ToolSchema<any>,
-    rawArguments: any
-  ): Promise<mcpServer.ToolResponse> {
+    schema: ToolSchema<z.ZodTypeAny>,
+    rawArguments: Record<string, unknown> | undefined
+  ): Promise<ToolResponse> {
     const tool = this._tools.find((t) => t.schema.name === schema.name);
     if (!tool) {
       throw new Error(`Tool not found: ${schema.name}`);

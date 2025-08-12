@@ -29,7 +29,7 @@ const wait = defineTool({
         `await new Promise(f => setTimeout(f, ${params.time} * 1000));`
       );
       await new Promise((f) =>
-        setTimeout(f, Math.min(30_000, params.time * 1000))
+        setTimeout(f, Math.min(30_000, (params.time ?? 0) * 1000))
       );
     }
     const tab = context.currentTabOrDie();

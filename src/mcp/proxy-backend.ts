@@ -23,6 +23,7 @@ import { defineTool, type Tool } from '../tools/tool.js';
 import type { ServerBackend, ToolResponse, ToolSchema } from './server.js';
 
 type NonEmptyArray<T> = [T, ...T[]];
+type ContextSwitchParams = { name: string };
 
 export type ClientFactory = {
   name: string;
@@ -38,30 +39,35 @@ export class ProxyBackend implements ServerBackend {
 
   private _clientFactories: ClientFactoryList;
   private _currentClient: Client | undefined;
-  private _contextSwitchTool: Tool<any>;
-  private _tools: ToolSchema<any>[] = [];
+  private _contextSwitchTool: Tool<
+    z.ZodObject<{ name: z.ZodEnum<[string, ...string[]]> }>
+  >;
+  private _tools: ToolSchema<z.ZodTypeAny>[] = [];
 
   constructor(clientFactories: ClientFactoryList) {
     this._clientFactories = clientFactories;
     this._contextSwitchTool = this._defineContextSwitchTool();
   }
 
-  async initialize(server: Server): Promise<void> {
+  async initialize(_server: Server): Promise<void> {
     await this._setCurrentClient(this._clientFactories[0]);
   }
 
-  tools(): ToolSchema<any>[] {
-    if (this._clientFactories.length === 1) return this._tools;
+  tools(): ToolSchema<z.ZodTypeAny>[] {
+    if (this._clientFactories.length === 1) {
+      return this._tools;
+    }
     return [...this._tools, this._contextSwitchTool.schema];
   }
 
   async callTool(
-    schema: ToolSchema<any>,
-    rawArguments: any
+    schema: ToolSchema<z.ZodTypeAny>,
+    rawArguments: Record<string, unknown> | undefined
   ): Promise<ToolResponse> {
-    if (schema.name === this._contextSwitchTool.schema.name)
+    if (schema.name === this._contextSwitchTool.schema.name) {
       return this._callContextSwitchTool(rawArguments);
-    const result = await this._currentClient!.callTool({
+    }
+    const result = await this._currentClient?.callTool({
       name: schema.name,
       arguments: rawArguments,
     });
@@ -69,16 +75,18 @@ export class ProxyBackend implements ServerBackend {
   }
 
   serverClosed?(): void {
-    void this._currentClient?.close().catch(logUnhandledError);
+    this._currentClient?.close().catch(logUnhandledError);
   }
 
-  private async _callContextSwitchTool(params: any): Promise<ToolResponse> {
+  private async _callContextSwitchTool(params: unknown): Promise<ToolResponse> {
     try {
+      const contextParams = params as ContextSwitchParams;
       const factory = this._clientFactories.find(
-        (factory) => factory.name === params.name
+        (f) => f.name === contextParams.name
       );
-      if (!factory)
-        throw new Error('Unknown connection method: ' + params.name);
+      if (!factory) {
+        throw new Error(`Unknown connection method: ${contextParams.name}`);
+      }
 
       await this._setCurrentClient(factory);
       return {
@@ -97,7 +105,9 @@ export class ProxyBackend implements ServerBackend {
     }
   }
 
-  private _defineContextSwitchTool(): Tool<any> {
+  private _defineContextSwitchTool(): Tool<
+    z.ZodObject<{ name: z.ZodEnum<[string, ...string[]]> }>
+  > {
     return defineTool({
       capability: 'core',
 
@@ -118,16 +128,15 @@ export class ProxyBackend implements ServerBackend {
                 ...string[],
               ]
             )
-            .default(this._clientFactories[0].name)
             .describe('The method to use to connect to the browser'),
         }),
-        type: 'readOnly',
+        type: 'readOnly' as const,
       },
 
-      async handle() {
+      handle() {
         throw new Error('Unreachable');
       },
-    });
+    }) as Tool<z.ZodObject<{ name: z.ZodEnum<[string, ...string[]]> }>>;
   }
 
   private async _setCurrentClient(factory: ClientFactory) {
@@ -138,7 +147,7 @@ export class ProxyBackend implements ServerBackend {
       name: tool.name,
       title: tool.title ?? '',
       description: tool.description ?? '',
-      inputSchema: tool.inputSchema ?? z.object({}),
+      inputSchema: tool.inputSchema ? z.any() : z.object({}),
       type: tool.annotations?.readOnlyHint
         ? ('readOnly' as const)
         : ('destructive' as const),

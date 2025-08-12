@@ -47,19 +47,26 @@ const evaluate = defineTabTool({
       response.addCode(`await page.evaluate(${quote(params.function)});`);
     }
     await tab.waitForCompletion(async () => {
-      const evaluationCode = params.function;
       let result: unknown;
-
-      if (locator) {
-        // Evaluate on the specific element
-        result = await locator.evaluate(evaluationCode);
-      } else {
-        // Evaluate on the page context
-        result = await tab.page.evaluate(evaluationCode);
+      try {
+        if (locator) {
+          // Convert string to function and execute it
+          const fn = new Function(`return (${params.function})`);
+          result = await locator.evaluate(fn());
+        } else {
+          // Convert string to function and execute it
+          const fn = new Function(`return (${params.function})`);
+          result = await tab.page.evaluate(fn());
+        }
+        const stringifiedResult = JSON.stringify(result, null, 2);
+        response.addResult(
+          stringifiedResult === undefined ? 'undefined' : stringifiedResult
+        );
+      } catch (error) {
+        response.addError(
+          `JavaScript evaluation failed: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
-
-      const stringifiedResult = JSON.stringify(result, null, 2);
-      response.addResult(stringifiedResult ?? 'undefined');
     });
   },
 });

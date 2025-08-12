@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+import { fileURLToPath } from 'node:url';
 import type { BrowserContext } from 'playwright';
 import { chromium } from 'playwright';
-import { fileURLToPath } from 'url';
 import { test as base, expect } from '../../tests/fixtures.js';
 
 type BrowserWithExtension = {
@@ -54,8 +54,9 @@ const test = base.extend<{ browserWithExtension: BrowserWithExtension }>({
 
         // for manifest v3:
         let [serviceWorker] = browserContext.serviceWorkers();
-        if (!serviceWorker)
+        if (!serviceWorker) {
           serviceWorker = await browserContext.waitForEvent('serviceworker');
+        }
 
         return browserContext;
       },
@@ -94,8 +95,8 @@ test('navigate with extension', async ({
 
   const confirmationPagePromise = browserContext.waitForEvent(
     'page',
-    (page) => {
-      return page
+    (newPage) => {
+      return newPage
         .url()
         .startsWith(
           'chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html'
@@ -158,8 +159,8 @@ test('snapshot of an existing page', async ({
 
   const confirmationPagePromise = browserContext.waitForEvent(
     'page',
-    (page) => {
-      return page
+    (newPage) => {
+      return newPage
         .url()
         .startsWith(
           'chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html'

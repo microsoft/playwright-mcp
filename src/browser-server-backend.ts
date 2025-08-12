@@ -63,7 +63,10 @@ export class BrowserServerBackend implements ServerBackend {
   tools(): mcpServer.ToolSchema[] {
     return this._tools.map((tool) => tool.schema);
   }
-  async callTool(schema: mcpServer.ToolSchema, rawArguments: any) {
+  async callTool(
+    schema: mcpServer.ToolSchema,
+    rawArguments: Record<string, unknown> | undefined
+  ) {
     if (!this._context) {
       throw new Error('Context not initialized. Call initialize() first.');
     }

@@ -1,13 +1,16 @@
 import { BrowserServerBackend } from '../browser-server-backend.js';
 import type { FullConfig } from '../config.js';
-import { InProcessClientFactory } from '../inProcessClient.js';
-import type { ClientFactory } from '../mcp/proxyBackend.js';
+import { InProcessClientFactory } from '../in-process-client.js';
+import type { ClientFactory } from '../mcp/proxy-backend.js';
 import { start } from '../mcp/transport.js';
 import { ExtensionContextFactory } from './extension-context-factory.js';
 
 export async function runWithExtension(config: FullConfig) {
   const contextFactory = createExtensionContextFactory(config);
-  const factories = [contextFactory];
+  const factories = [contextFactory] as [
+    ExtensionContextFactory,
+    ...ExtensionContextFactory[],
+  ];
   const serverBackendFactory = () =>
     new BrowserServerBackend(config, factories);
   await start(serverBackendFactory, config.server);

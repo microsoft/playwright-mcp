@@ -15,7 +15,7 @@
  */
 
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { TabInfo } from './tab-item.js';
 import { Button, TabItem } from './tab-item.js';
@@ -32,11 +32,7 @@ const StatusApp: React.FC = () => {
     connectedTabId: null,
   });
 
-  useEffect(() => {
-    void loadStatus();
-  }, []);
-
-  const loadStatus = async () => {
+  const loadStatus = useCallback(async () => {
     // Get current connection status from background script
     const { connectedTabId } = await chrome.runtime.sendMessage({
       type: 'getConnectionStatus',
@@ -47,10 +43,10 @@ const StatusApp: React.FC = () => {
         isConnected: true,
         connectedTabId,
         connectedTab: {
-          id: tab.id!,
-          windowId: tab.windowId!,
-          title: tab.title!,
-          url: tab.url!,
+          id: tab.id ?? 0,
+          windowId: tab.windowId ?? 0,
+          title: tab.title ?? 'Untitled',
+          url: tab.url ?? '',
           favIconUrl: tab.favIconUrl,
         },
       });
@@ -60,10 +56,18 @@ const StatusApp: React.FC = () => {
         connectedTabId: null,
       });
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadStatus().catch(() => {
+      // Errors are handled within the function
+    });
+  }, [loadStatus]);
 
   const openConnectedTab = async () => {
-    if (!status.connectedTabId) return;
+    if (!status.connectedTabId) {
+      return;
+    }
     await chrome.tabs.update(status.connectedTabId, { active: true });
     window.close();
   };

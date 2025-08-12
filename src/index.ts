@@ -5,7 +5,7 @@ import type { BrowserContextFactory } from './browser-context-factory.js';
 import { contextFactory } from './browser-context-factory.js';
 import { BrowserServerBackend } from './browser-server-backend.js';
 import { resolveConfig } from './config.js';
-import * as mcpServer from './mcp/server.js';
+import { createServer } from './mcp/server.js';
 
 export async function createConnection(
   userConfig: Config = {},
@@ -15,10 +15,7 @@ export async function createConnection(
   const factory = contextGetter
     ? new SimpleBrowserContextFactory(contextGetter)
     : contextFactory(config);
-  return mcpServer.createServer(
-    new BrowserServerBackend(config, [factory]),
-    false
-  );
+  return createServer(new BrowserServerBackend(config, [factory]), false);
 }
 class SimpleBrowserContextFactory implements BrowserContextFactory {
   name = 'custom';

@@ -276,28 +276,32 @@ test('browser_take_screenshot (fullPage: true)', async ({
   });
 });
 
-expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
-  pageState: expect.stringContaining('[ref=e1]'),
-});
-
-const result = await callTool(client, 'browser_take_screenshot', {
-  fullPage: true,
-  element: 'hello button',
-  ref: 'e1',
-});
-
-expect(result.isError).toBe(true);
-expect(result.content?.[0]?.text).toContain(
-  'fullPage cannot be used with element screenshots'
-);
-})
-
-test('browser_take_screenshot (viewport without snapshot)', async (
-{
+test('browser_take_screenshot (fullPage: true with element should fail)', async ({
   startClient,
-}
-, testInfo) =>
-{
+  server,
+}, testInfo) => {
+  const { clientConfig } = createScreenshotTestSetup(testInfo);
+  const { client } = await startClient({ config: clientConfig });
+
+  expect(await navigateToUrl(client, server.HELLO_WORLD)).toHaveResponse({
+    pageState: expect.stringContaining('[ref=e1]'),
+  });
+
+  const result = await callTool(client, 'browser_take_screenshot', {
+    fullPage: true,
+    element: 'hello button',
+    ref: 'e1',
+  });
+
+  expect(result.isError).toBe(true);
+  expect(result.content?.[0]?.text).toContain(
+    'fullPage cannot be used with element screenshots'
+  );
+});
+
+test('browser_take_screenshot (viewport without snapshot)', async ({
+  startClient,
+}, testInfo) => {
   const { clientConfig } = createScreenshotTestSetup(testInfo);
   const { client } = await startClient({ config: clientConfig });
 
@@ -315,5 +319,4 @@ test('browser_take_screenshot (viewport without snapshot)', async (
     code: expect.stringContaining('page.screenshot'),
     attachments: [expectImageAttachment()],
   });
-}
-)
+});

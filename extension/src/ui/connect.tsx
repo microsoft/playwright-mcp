@@ -33,6 +33,31 @@ const ConnectApp: React.FC = () => {
   const [clientInfo, setClientInfo] = useState('unknown');
   const [mcpRelayUrl, setMcpRelayUrl] = useState('');
 
+  const connectToMCPRelay = useCallback(async (relayUrlParam: string) => {
+    const response = await chrome.runtime.sendMessage({
+      type: 'connectToMCPRelay',
+      mcpRelayUrl: relayUrlParam,
+    });
+    if (!response.success) {
+      setStatus({
+        type: 'error',
+        message: `Failed to connect to MCP relay: ${response.error}`,
+      });
+    }
+  }, []);
+
+  const loadTabs = useCallback(async () => {
+    const response = await chrome.runtime.sendMessage({ type: 'getTabs' });
+    if (response.success) {
+      setTabs(response.tabs);
+    } else {
+      setStatus({
+        type: 'error',
+        message: `Failed to load tabs: ${response.error}`,
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const relayUrl = params.get('mcpRelayUrl');
@@ -56,36 +81,18 @@ const ConnectApp: React.FC = () => {
         type: 'connecting',
         message: `🎭 Playwright MCP started from  "${info}" is trying to connect. Do you want to continue?`,
       });
-    } catch (e) {
+    } catch (_e) {
       setStatus({ type: 'error', message: 'Failed to parse client version.' });
       return;
     }
 
-    void connectToMCPRelay(relayUrl);
-    void loadTabs();
-  }, []);
-
-  const connectToMCPRelay = useCallback(async (mcpRelayUrl: string) => {
-    const response = await chrome.runtime.sendMessage({
-      type: 'connectToMCPRelay',
-      mcpRelayUrl,
+    connectToMCPRelay(relayUrl).catch(() => {
+      // Errors are handled within the function
     });
-    if (!response.success)
-      setStatus({
-        type: 'error',
-        message: 'Failed to connect to MCP relay: ' + response.error,
-      });
-  }, []);
-
-  const loadTabs = useCallback(async () => {
-    const response = await chrome.runtime.sendMessage({ type: 'getTabs' });
-    if (response.success) setTabs(response.tabs);
-    else
-      setStatus({
-        type: 'error',
-        message: 'Failed to load tabs: ' + response.error,
-      });
-  }, []);
+    loadTabs().catch(() => {
+      // Errors are handled within the function
+    });
+  }, [connectToMCPRelay, loadTabs]);
 
   const handleConnectToTab = useCallback(
     async (tab: TabInfo) => {
@@ -133,14 +140,16 @@ const ConnectApp: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const listener = (message: any) => {
-      if (message.type === 'connectionTimeout') handleReject();
+    const listener = (message: { type?: string }) => {
+      if (message.type === 'connectionTimeout') {
+        handleReject();
+      }
     };
     chrome.runtime.onMessage.addListener(listener);
     return () => {
       chrome.runtime.onMessage.removeListener(listener);
     };
-  }, []);
+  }, [handleReject]);
 
   return (
     <div className="app-container">

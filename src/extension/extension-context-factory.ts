@@ -12,12 +12,10 @@ export class ExtensionContextFactory implements BrowserContextFactory {
   name = 'extension';
   description = 'Connect to a browser using the Playwright MCP extension';
   private readonly _browserChannel: string;
-  private readonly _userDataDir?: string;
   private _relayPromise: Promise<CDPRelayServer> | undefined;
   private _browserPromise: Promise<Browser> | undefined;
-  constructor(browserChannel: string, userDataDir?: string) {
+  constructor(browserChannel: string, _userDataDir?: string) {
     this._browserChannel = browserChannel;
-    this._userDataDir = userDataDir;
   }
   async createContext(
     clientInfo: ClientInfo,

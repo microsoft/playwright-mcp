@@ -82,11 +82,11 @@ const TOOL_DEFAULTS: Record<string, RequiredExpectationBase> = {
   // All tools default to minimal output for maximum token efficiency
   // Users can enable specific outputs as needed
   browser_navigate: {
-    includeSnapshot: true,
+    includeSnapshot: false,
     includeConsole: false,
     includeDownloads: false,
-    includeTabs: true,
-    includeCode: true,
+    includeTabs: false,
+    includeCode: false,
   },
   browser_click: {
     includeSnapshot: false,
@@ -124,6 +124,14 @@ const TOOL_DEFAULTS: Record<string, RequiredExpectationBase> = {
     includeDownloads: false,
     includeTabs: false,
     includeCode: false,
+  },
+  // PDF tool should show the code by default for transparency
+  browser_pdf_save: {
+    includeSnapshot: false,
+    includeConsole: false,
+    includeDownloads: false,
+    includeTabs: false,
+    includeCode: true,
   },
   browser_wait_for: {
     includeSnapshot: false,

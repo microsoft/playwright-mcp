@@ -206,11 +206,15 @@ export class Response {
       return null;
     }
 
-    return this.buildSection('New console messages', (b) => {
-      for (const message of filteredMessages) {
-        b.addListItem(trim(message.toString(), 100));
-      }
-    });
+    return this.buildSection(
+      'New console messages',
+      (b) => {
+        for (const message of filteredMessages) {
+          b.addListItem(trim(message.toString(), 100));
+        }
+      },
+      3
+    );
   }
 
   private buildDownloadsSection(tabSnapshot: TabSnapshot): string | null {
@@ -218,35 +222,44 @@ export class Response {
       return null;
     }
 
-    return this.buildSection('Downloads', (b) => {
-      for (const entry of tabSnapshot.downloads) {
-        const filename = entry.download.suggestedFilename();
-        const status = entry.finished
-          ? `Downloaded file ${filename} to ${entry.outputFile}`
-          : `Downloading file ${filename} ...`;
-        b.addListItem(status);
-      }
-    });
+    return this.buildSection(
+      'Downloads',
+      (b) => {
+        for (const entry of tabSnapshot.downloads) {
+          const filename = entry.download.suggestedFilename();
+          const status = entry.finished
+            ? `Downloaded file ${filename} to ${entry.outputFile}`
+            : `Downloading file ${filename} ...`;
+          b.addListItem(status);
+        }
+      },
+      3
+    );
   }
 
   private buildPageStateSection(tabSnapshot: TabSnapshot): string {
-    return this.buildSection('Page state', (b) => {
-      b.addKeyValue('Page URL', tabSnapshot.url);
-      b.addKeyValue('Page Title', tabSnapshot.title);
+    return this.buildSection(
+      'Page state',
+      (b) => {
+        b.addKeyValue('Page URL', tabSnapshot.url);
+        b.addKeyValue('Page Title', tabSnapshot.title);
 
-      if (this._expectation.includeSnapshot) {
-        b.addLine('- Page Snapshot:');
-        b.addCodeBlock(tabSnapshot.ariaSnapshot, 'yaml');
-      }
-    });
+        if (this._expectation.includeSnapshot) {
+          b.addLine('- Page Snapshot:');
+          b.addCodeBlock(tabSnapshot.ariaSnapshot, 'yaml');
+        }
+      },
+      3
+    );
   }
 
   private buildSection(
     title: string,
-    contentFn: (builder: TextReportBuilder) => void
+    contentFn: (builder: TextReportBuilder) => void,
+    level = 2
   ): string {
     const builder = new TextReportBuilder();
-    builder.addSection(title, contentFn);
+    builder.addSection(title, contentFn, level);
     return builder.getSections().join('\n');
   }
 
