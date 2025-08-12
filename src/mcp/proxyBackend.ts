@@ -104,7 +104,9 @@ export class ProxyBackend implements ServerBackend {
         title: 'Connect to a browser context',
         description: [
           'Connect to a browser using one of the available methods:',
+          '',
           ...this._clientFactories.map(factory => `- "${factory.name}": ${factory.description}`),
+          '',
           `By default, you're connected to the first method. Only call this tool to change it.`,
         ].join('\n'),
         inputSchema: z.object({
