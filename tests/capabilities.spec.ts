@@ -46,6 +46,40 @@ test('test snapshot tool list', async ({ client }) => {
   ]));
 });
 
+test('test tool list proxy mode', async ({ startClient }) => {
+  const { client } = await startClient({
+    args: ['--connect-tool'],
+  });
+  const { tools } = await client.listTools();
+  expect(new Set(tools.map(t => t.name))).toEqual(new Set([
+    'browser_click',
+    'browser_connect', // the extra tool
+    'browser_console_messages',
+    'browser_drag',
+    'browser_evaluate',
+    'browser_file_upload',
+    'browser_handle_dialog',
+    'browser_hover',
+    'browser_select_option',
+    'browser_type',
+    'browser_close',
+    'browser_install',
+    'browser_navigate_back',
+    'browser_navigate_forward',
+    'browser_navigate',
+    'browser_network_requests',
+    'browser_press_key',
+    'browser_resize',
+    'browser_snapshot',
+    'browser_tab_close',
+    'browser_tab_list',
+    'browser_tab_new',
+    'browser_tab_select',
+    'browser_take_screenshot',
+    'browser_wait_for',
+  ]));
+});
+
 test('test capabilities (pdf)', async ({ startClient }) => {
   const { client } = await startClient({
     args: ['--caps=pdf'],

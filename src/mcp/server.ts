@@ -76,9 +76,7 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
     return { tools: tools.map(tool => ({
       name: tool.name,
       description: tool.description,
-      // TODO: we expect inputSchema to be a zod schema, but in the out-of-process case it's already a json schema.
-      // we should move the "zodToJsonSchema" call into defineTool.
-      inputSchema: tool.inputSchema.$schema ? tool.inputSchema : zodToJsonSchema(tool.inputSchema),
+      inputSchema: tool.inputSchema instanceof z.ZodType ? zodToJsonSchema(tool.inputSchema) : tool.inputSchema,
       annotations: {
         title: tool.title,
         readOnlyHint: tool.type === 'readOnly',

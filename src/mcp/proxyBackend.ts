@@ -23,14 +23,13 @@ import { packageJSON } from '../package.js';
 import { logUnhandledError } from '../log.js';
 
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import type { Implementation } from '@modelcontextprotocol/sdk/types.js';
 
 type NonEmptyArray<T> = [T, ...T[]];
 
 export type ClientFactory = {
   name: string;
   description: string;
-  create(clientVersion: Implementation, options: any): Promise<Client>;
+  create(server: Server, options: any): Promise<Client>;
 };
 
 export type ClientFactoryList = NonEmptyArray<ClientFactory>;
@@ -43,7 +42,7 @@ export class ProxyBackend implements ServerBackend {
   private _currentClient: Client | undefined;
   private _contextSwitchTool: Tool<any>;
   private _tools: ToolSchema<any>[] = [];
-  private _server?: Server;
+  private _server: Server | undefined;
 
   constructor(clientFactories: ClientFactoryList) {
     this._clientFactories = clientFactories;
@@ -123,7 +122,7 @@ export class ProxyBackend implements ServerBackend {
 
   private async _setCurrentClient(factory: ClientFactory, options: any) {
     await this._currentClient?.close();
-    this._currentClient = await factory.create(this._server!.getClientVersion()!, options);
+    this._currentClient = await factory.create(this._server!, options);
     const tools = await this._currentClient.listTools();
     this._tools = tools.tools.map(tool => ({
       name: tool.name,
