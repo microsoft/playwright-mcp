@@ -304,14 +304,14 @@ export function parseJsonObject(value: string | undefined): Record<string, strin
     return undefined;
   try {
     const parsed = JSON.parse(value);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
       throw new InvalidArgumentError('Expected JSON object');
-    }
+
     return parsed;
   } catch (error) {
-    if (error instanceof InvalidArgumentError) {
+    if (error instanceof InvalidArgumentError)
       throw error;
-    }
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new InvalidArgumentError(`Invalid JSON format: ${errorMessage}`);
   }

@@ -156,7 +156,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                to enable, possible values: vision, pdf.
   --cdp-endpoint <endpoint>    CDP endpoint to connect to.
   --cdp-headers <headers>      JSON string of headers to send with CDP
-                               connection, e.g. '{"Authorization": "Bearer token"}'
+                               connection, e.g. '{"Authorization": "Bearer
+                               token"}'
   --config <path>              path to the configuration file.
   --device <device>            device to emulate, for example: "iPhone 15"
   --executable-path <path>     path to the browser executable.

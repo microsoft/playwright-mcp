@@ -87,8 +87,8 @@ test('should throw connection error and allow re-connecting', async ({ cdpServer
 test('cdp server with headers', async ({ cdpServer, startClient, server }) => {
   await cdpServer.start();
   const headers = { 'X-Test-Header': 'test-value' };
-  const { client } = await startClient({ 
-    args: [`--cdp-endpoint=${cdpServer.endpoint}`, `--cdp-headers=${JSON.stringify(headers)}`] 
+  const { client } = await startClient({
+    args: [`--cdp-endpoint=${cdpServer.endpoint}`, `--cdp-headers=${JSON.stringify(headers)}`]
   });
   expect(await client.callTool({
     name: 'browser_navigate',
@@ -100,7 +100,7 @@ test('cdp server with headers', async ({ cdpServer, startClient, server }) => {
 
 test('cdp server with invalid headers JSON', async () => {
   const result = spawnSync('node', [
-    path.join(__filename, '../../cli.js'), 
+    path.join(__filename, '../../cli.js'),
     '--cdp-endpoint=http://localhost:1234',
     '--cdp-headers=invalid-json'
   ]);
