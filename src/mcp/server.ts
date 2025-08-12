@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-import { z } from 'zod';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 import { ManualPromise } from '../manualPromise.js';
 import { logUnhandledError } from '../log.js';
 
-import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
+import type { ImageContent, TextContent, Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 export type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
@@ -36,22 +34,14 @@ export type ToolResponse = {
   isError?: boolean;
 };
 
-export type ToolSchema<Input extends z.Schema> = {
-  name: string;
-  title: string;
-  description: string;
-  inputSchema: Input;
-  type: 'readOnly' | 'destructive';
-};
-
-export type ToolHandler = (toolName: string, params: any) => Promise<ToolResponse>;
+export type ToolDefinition = Tool;
 
 export interface ServerBackend {
   name: string;
   version: string;
   initialize?(server: Server): Promise<void>;
-  tools(): ToolSchema<any>[];
-  callTool(schema: ToolSchema<any>, rawArguments: any): Promise<ToolResponse>;
+  tools(): ToolDefinition[];
+  callTool(name: string, rawArguments: any): Promise<ToolResponse>;
   serverClosed?(): void;
 }
 
@@ -73,17 +63,7 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const tools = backend.tools();
-    return { tools: tools.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema instanceof z.ZodType ? zodToJsonSchema(tool.inputSchema) : tool.inputSchema,
-      annotations: {
-        title: tool.title,
-        readOnlyHint: tool.type === 'readOnly',
-        destructiveHint: tool.type === 'destructive',
-        openWorldHint: true,
-      },
-    })) };
+    return { tools };
   });
 
   let heartbeatRunning = false;
@@ -100,12 +80,12 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
       isError: true,
     });
     const tools = backend.tools();
-    const tool = tools.find(tool => tool.name === request.params.name) as ToolSchema<any>;
+    const tool = tools.find(tool => tool.name === request.params.name);
     if (!tool)
       return errorResult(`Error: Tool "${request.params.name}" not found`);
 
     try {
-      return await backend.callTool(tool, request.params.arguments || {});
+      return await backend.callTool(tool.name, request.params.arguments || {});
     } catch (error) {
       return errorResult(String(error));
     }
