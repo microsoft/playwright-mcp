@@ -50,13 +50,22 @@ const evaluate = defineTabTool({
       let result: unknown;
       try {
         if (locator) {
-          // Convert string to function and execute it
-          const fn = new Function(`return (${params.function})`);
-          result = await locator.evaluate(fn());
+          // Playwright evaluates string expressions directly in browser context
+          // For element evaluation, we need to pass the element as an argument
+          const functionBody = params.function;
+          result = await locator.evaluate((element, fnString) => {
+            // Execute the function string with the element in browser context
+            // This runs safely within the browser's JavaScript sandbox
+            return Function(
+              'element',
+              `return (${fnString})(element)`
+            )(element);
+          }, functionBody);
         } else {
-          // Convert string to function and execute it
-          const fn = new Function(`return (${params.function})`);
-          result = await tab.page.evaluate(fn());
+          // For page evaluation, wrap the function string in an IIFE (Immediately Invoked Function Expression)
+          // This allows Playwright to evaluate it directly in the browser context
+          const expression = `(${params.function})()`;
+          result = await tab.page.evaluate(expression);
         }
         const stringifiedResult = JSON.stringify(result, null, 2);
         response.addResult(
