@@ -28,8 +28,8 @@ const lib = process.argv[4];
 const playwright = await import(lib).then(mod => mod.default ?? mod) as typeof import('playwright');
 
 class VSCodeBrowserContextFactory implements BrowserContextFactory {
-  name = 'unused';
-  description = 'unused';
+  name = 'vscode';
+  description = 'Connect to a browser running in the Playwright VS Code extension';
 
   async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<{ browserContext: BrowserContext; close: () => Promise<void>; }> {
     connectionString.searchParams.set('launch-options', JSON.stringify({
