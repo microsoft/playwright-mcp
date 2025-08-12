@@ -17,11 +17,11 @@
 import { fileURLToPath } from 'url';
 import { FullConfig } from './config.js';
 import { Context } from './context.js';
-import { logUnhandledError } from './log.js';
+import { logUnhandledError } from './utils/log.js';
 import { Response } from './response.js';
 import { SessionLog } from './sessionLog.js';
 import { filteredTools } from './tools.js';
-import { packageJSON } from './package.js';
+import { packageJSON } from './utils/package.js';
 import { toToolDefinition } from './tools/tool.js';
 
 import type { Tool } from './tools/tool.js';

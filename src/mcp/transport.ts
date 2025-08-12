@@ -21,7 +21,7 @@ import debug from 'debug';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { httpAddressToString, startHttpServer } from '../httpServer.js';
+import { httpAddressToString, startHttpServer } from '../utils/httpServer.js';
 import * as mcpServer from './server.js';
 
 import type { ServerBackendFactory } from './server.js';

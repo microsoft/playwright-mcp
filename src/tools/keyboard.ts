@@ -19,7 +19,7 @@ import { z } from 'zod';
 import { defineTabTool } from './tool.js';
 import { elementSchema } from './snapshot.js';
 import { generateLocator } from './utils.js';
-import * as javascript from '../javascript.js';
+import * as javascript from '../utils/codegen.js';
 
 const pressKey = defineTabTool({
   capability: 'core',

@@ -1,4 +1,2 @@
 [*]
-../javascript.js
-../log.js
-../manualPromise.js
+../utils/

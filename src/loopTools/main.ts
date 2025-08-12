@@ -18,7 +18,7 @@ import dotenv from 'dotenv';
 
 import * as mcpServer from '../mcp/server.js';
 import * as mcpTransport from '../mcp/transport.js';
-import { packageJSON } from '../package.js';
+import { packageJSON } from '../utils/package.js';
 import { Context } from './context.js';
 import { perform } from './perform.js';
 import { snapshot } from './snapshot.js';
