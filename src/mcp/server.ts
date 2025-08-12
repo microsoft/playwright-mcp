@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import debug from 'debug';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { ManualPromise } from '../manualPromise.js';
@@ -22,6 +23,8 @@ import { logUnhandledError } from '../log.js';
 import type { ImageContent, TextContent, Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 export type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+
+const serverDebug = debug('pw:mcp:server');
 
 export type ClientCapabilities = {
   roots?: {
@@ -62,12 +65,14 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
   });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
+    serverDebug('listTools');
     const tools = backend.tools();
     return { tools };
   });
 
   let heartbeatRunning = false;
   server.setRequestHandler(CallToolRequestSchema, async request => {
+    serverDebug('callTool', request);
     await initializedPromise;
 
     if (runHeartbeat && !heartbeatRunning) {

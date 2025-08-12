@@ -21,6 +21,8 @@ import path from 'path';
 import * as playwright from 'playwright';
 // @ts-ignore
 import { registryDirectory } from 'playwright-core/lib/server/registry/index';
+// @ts-ignore
+import { startTraceViewerServer } from 'playwright-core/lib/server';
 import { logUnhandledError, testDebug } from './log.js';
 import { createHash } from './utils.js';
 import { outputFile  } from './config.js';
@@ -50,7 +52,6 @@ class BaseContextFactory implements BrowserContextFactory {
   readonly description: string;
   readonly config: FullConfig;
   protected _browserPromise: Promise<playwright.Browser> | undefined;
-  protected _tracesDir: string | undefined;
 
   constructor(name: string, description: string, config: FullConfig) {
     this.name = name;
@@ -58,11 +59,11 @@ class BaseContextFactory implements BrowserContextFactory {
     this.config = config;
   }
 
-  protected async _obtainBrowser(): Promise<playwright.Browser> {
+  protected async _obtainBrowser(clientInfo: ClientInfo): Promise<playwright.Browser> {
     if (this._browserPromise)
       return this._browserPromise;
     testDebug(`obtain browser (${this.name})`);
-    this._browserPromise = this._doObtainBrowser();
+    this._browserPromise = this._doObtainBrowser(clientInfo);
     void this._browserPromise.then(browser => {
       browser.on('disconnected', () => {
         this._browserPromise = undefined;
@@ -73,16 +74,13 @@ class BaseContextFactory implements BrowserContextFactory {
     return this._browserPromise;
   }
 
-  protected async _doObtainBrowser(): Promise<playwright.Browser> {
+  protected async _doObtainBrowser(clientInfo: ClientInfo): Promise<playwright.Browser> {
     throw new Error('Not implemented');
   }
 
   async createContext(clientInfo: ClientInfo): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
-    if (this.config.saveTrace)
-      this._tracesDir = await outputFile(this.config, clientInfo.rootPath, `traces-${Date.now()}`);
-
     testDebug(`create browser context (${this.name})`);
-    const browser = await this._obtainBrowser();
+    const browser = await this._obtainBrowser(clientInfo);
     const browserContext = await this._doCreateContext(browser);
     return { browserContext, close: () => this._closeBrowserContext(browserContext, browser) };
   }
@@ -108,11 +106,11 @@ class IsolatedContextFactory extends BaseContextFactory {
     super('isolated', 'Create a new isolated browser context', config);
   }
 
-  protected override async _doObtainBrowser(): Promise<playwright.Browser> {
+  protected override async _doObtainBrowser(clientInfo: ClientInfo): Promise<playwright.Browser> {
     await injectCdpPort(this.config.browser);
     const browserType = playwright[this.config.browser.browserName];
     return browserType.launch({
-      tracesDir: this._tracesDir,
+      tracesDir: await startTraceServer(this.config, clientInfo.rootPath),
       ...this.config.browser.launchOptions,
       handleSIGINT: false,
       handleSIGTERM: false,
@@ -175,9 +173,7 @@ class PersistentContextFactory implements BrowserContextFactory {
     await injectCdpPort(this.config.browser);
     testDebug('create browser context (persistent)');
     const userDataDir = this.config.browser.userDataDir ?? await this._createUserDataDir(clientInfo.rootPath);
-    let tracesDir: string | undefined;
-    if (this.config.saveTrace)
-      tracesDir = await outputFile(this.config, clientInfo.rootPath, `traces-${Date.now()}`);
+    const tracesDir = await startTraceServer(this.config, clientInfo.rootPath);
 
     this._userDataDirs.add(userDataDir);
     testDebug('lock user data dir', userDataDir);
@@ -241,4 +237,17 @@ async function findFreePort(): Promise<number> {
     });
     server.on('error', reject);
   });
+}
+
+async function startTraceServer(config: FullConfig, rootPath: string | undefined): Promise<string | undefined> {
+  if (!config.saveTrace)
+    return undefined;
+
+  const tracesDir = await outputFile(config, rootPath, `traces-${Date.now()}`);
+  const server = await startTraceViewerServer();
+  const urlPrefix = server.urlPrefix('human-readable');
+  const url = urlPrefix + '/trace/index.html?trace=' + tracesDir + '/trace.json';
+  // eslint-disable-next-line no-console
+  console.error('\nTrace viewer listening on ' + url);
+  return tracesDir;
 }

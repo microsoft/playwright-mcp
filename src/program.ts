@@ -15,8 +15,6 @@
  */
 
 import { program, Option } from 'commander';
-// @ts-ignore
-import { startTraceViewerServer } from 'playwright-core/lib/server';
 
 import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
@@ -95,14 +93,6 @@ program
         serverBackendFactory = () => new BrowserServerBackend(config, browserContextFactory);
       }
       await mcpTransport.start(serverBackendFactory, config.server);
-
-      if (config.saveTrace) {
-        const server = await startTraceViewerServer();
-        const urlPrefix = server.urlPrefix('human-readable');
-        const url = urlPrefix + '/trace/index.html?trace=' + config.browser.launchOptions.tracesDir + '/trace.json';
-        // eslint-disable-next-line no-console
-        console.error('\nTrace viewer listening on ' + url);
-      }
     });
 
 function setupExitWatchdog() {
