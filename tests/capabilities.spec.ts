@@ -16,38 +16,39 @@
 
 import { expect, test } from './fixtures.js';
 
+const BASE_BROWSER_TOOLS = [
+  'browser_batch_execute',
+  'browser_click',
+  'browser_console_messages',
+  'browser_diagnose',
+  'browser_drag',
+  'browser_evaluate',
+  'browser_file_upload',
+  'browser_find_elements',
+  'browser_handle_dialog',
+  'browser_hover',
+  'browser_install',
+  'browser_navigate_back',
+  'browser_navigate_forward',
+  'browser_navigate',
+  'browser_network_requests',
+  'browser_press_key',
+  'browser_resize',
+  'browser_snapshot',
+  'browser_tab_close',
+  'browser_tab_list',
+  'browser_tab_new',
+  'browser_tab_select',
+  'browser_take_screenshot',
+  'browser_type',
+  'browser_wait_for',
+  'browser_close',
+];
+
 test('test snapshot tool list', async ({ client }) => {
   const { tools } = await client.listTools();
   expect(new Set(tools.map((t) => t.name))).toEqual(
-    new Set([
-      'browser_batch_execute',
-      'browser_click',
-      'browser_close',
-      'browser_console_messages',
-      'browser_diagnose',
-      'browser_drag',
-      'browser_evaluate',
-      'browser_file_upload',
-      'browser_find_elements',
-      'browser_handle_dialog',
-      'browser_hover',
-      'browser_install',
-      'browser_navigate',
-      'browser_navigate_back',
-      'browser_navigate_forward',
-      'browser_network_requests',
-      'browser_press_key',
-      'browser_resize',
-      'browser_select_option',
-      'browser_snapshot',
-      'browser_tab_close',
-      'browser_tab_list',
-      'browser_tab_new',
-      'browser_tab_select',
-      'browser_take_screenshot',
-      'browser_type',
-      'browser_wait_for',
-    ])
+    new Set([...BASE_BROWSER_TOOLS, 'browser_select_option'])
   );
 });
 
@@ -58,34 +59,9 @@ test('test tool list proxy mode', async ({ startClient }) => {
   const { tools } = await client.listTools();
   expect(new Set(tools.map((t) => t.name))).toEqual(
     new Set([
-      'browser_batch_execute',
-      'browser_click',
+      ...BASE_BROWSER_TOOLS,
       'browser_connect', // the extra tool
-      'browser_console_messages',
-      'browser_diagnose',
-      'browser_drag',
-      'browser_evaluate',
-      'browser_file_upload',
-      'browser_find_elements',
-      'browser_handle_dialog',
-      'browser_hover',
       'browser_select_option',
-      'browser_type',
-      'browser_close',
-      'browser_install',
-      'browser_navigate_back',
-      'browser_navigate_forward',
-      'browser_navigate',
-      'browser_network_requests',
-      'browser_press_key',
-      'browser_resize',
-      'browser_snapshot',
-      'browser_tab_close',
-      'browser_tab_list',
-      'browser_tab_new',
-      'browser_tab_select',
-      'browser_take_screenshot',
-      'browser_wait_for',
     ])
   );
 });
