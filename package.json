@@ -16,8 +16,8 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build": "bun build ./src/*.ts ./src/**/*.ts --outdir ./lib --root ./src --target node --format esm --external '*'",
-    "build:publish": "bun build ./src/*.ts ./src/**/*.ts --outdir ./lib --root ./src --target node --format esm --external '*'",
+    "build": "bun build ./src/**/**/*.ts ./src/**/*.ts ./src/*.ts --outdir ./lib --root ./src --target node --format esm --external '*'",
+    "build:publish": "bun build ./src/**/**/*.ts ./src/**/*.ts ./src/*.ts --outdir ./lib --root ./src --target node --format esm --external '*'",
     "benchmark": "bun benchmark/src/index.ts",
     "benchmark:verbose": "bun benchmark/src/index.ts --verbose",
     "benchmark:quiet": "bun benchmark/src/index.ts --quiet",
