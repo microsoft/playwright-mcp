@@ -22,7 +22,7 @@ import { Response } from './response.js';
 import { SessionLog } from './sessionLog.js';
 import { filteredTools } from './tools.js';
 import { packageJSON } from './utils/package.js';
-import { toToolDefinition } from './tools/tool.js';
+import { toMcpTool } from './tools/tool.js';
 
 import type { Tool } from './tools/tool.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
@@ -64,12 +64,14 @@ export class BrowserServerBackend implements ServerBackend {
     });
   }
 
-  tools(): mcpServer.ToolDefinition[] {
-    return this._tools.map(tool => toToolDefinition(tool.schema));
+  async listTools(): Promise<mcpServer.Tool[]> {
+    return this._tools.map(tool => toMcpTool(tool.schema));
   }
 
-  async callTool(name: string, rawArguments: any) {
+  async callTool(name: string, rawArguments: mcpServer.CallToolRequest['params']['arguments']) {
     const tool = this._tools.find(tool => tool.schema.name === name)!;
+    if (!tool)
+      throw new Error(`Tool "${name}" not found`);
     const parsedArguments = tool.schema.inputSchema.parse(rawArguments || {});
     const context = this._context!;
     const response = new Response(context, name, parsedArguments);

@@ -24,65 +24,67 @@ import { packageJSON } from '../utils/package.js';
 
 
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import type { ToolDefinition, ServerBackend, ToolResponse } from './server.js';
+import type { ServerBackend } from './server.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { Root, Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 
-type NonEmptyArray<T> = [T, ...T[]];
-
-export type MCPFactory = {
+export type MCPProvider = {
   name: string;
   description: string;
-  create(): Promise<Transport>;
+  connect(): Promise<Transport>;
 };
-
-export type MCPFactoryList = NonEmptyArray<MCPFactory>;
 
 export class ProxyBackend implements ServerBackend {
   name = 'Playwright MCP Client Switcher';
   version = packageJSON.version;
 
-  private _mcpFactories: MCPFactoryList;
+  private _mcpProviders: MCPProvider[];
   private _currentClient: Client | undefined;
-  private _contextSwitchTool: ToolDefinition;
-  private _tools: ToolDefinition[] = [];
-  private _server: Server | undefined;
+  private _contextSwitchTool: Tool;
+  private _roots: Root[] = [];
 
-  constructor(clientFactories: MCPFactoryList) {
-    this._mcpFactories = clientFactories;
+  constructor(mcpProviders: MCPProvider[]) {
+    this._mcpProviders = mcpProviders;
     this._contextSwitchTool = this._defineContextSwitchTool();
   }
 
   async initialize(server: Server): Promise<void> {
-    this._server = server;
-    await this._setCurrentClient(this._mcpFactories[0]);
+    const version = server.getClientVersion();
+    const capabilities = server.getClientCapabilities();
+    if (capabilities?.roots && version && clientsWithRoots.includes(version.name)) {
+      const { roots } = await server.listRoots();
+      this._roots = roots;
+    }
+
+    await this._setCurrentClient(this._mcpProviders[0]);
   }
 
-  tools(): ToolDefinition[] {
-    if (this._mcpFactories.length === 1)
-      return this._tools;
+  async listTools(): Promise<Tool[]> {
+    const response = await this._currentClient!.listTools();
+    if (this._mcpProviders.length === 1)
+      return response.tools;
     return [
-      ...this._tools,
+      ...response.tools,
       this._contextSwitchTool,
     ];
   }
 
-  async callTool(name: string, rawArguments: any): Promise<ToolResponse> {
+  async callTool(name: string, args: CallToolRequest['params']['arguments']): Promise<CallToolResult> {
     if (name === this._contextSwitchTool.name)
-      return this._callContextSwitchTool(rawArguments);
-    const result = await this._currentClient!.callTool({
+      return this._callContextSwitchTool(args);
+    return await this._currentClient!.callTool({
       name,
-      arguments: rawArguments,
-    });
-    return result as unknown as ToolResponse;
+      arguments: args,
+    }) as CallToolResult;
   }
 
   serverClosed?(): void {
     void this._currentClient?.close().catch(logUnhandledError);
   }
 
-  private async _callContextSwitchTool(params: any): Promise<ToolResponse> {
+  private async _callContextSwitchTool(params: any): Promise<CallToolResult> {
     try {
-      const factory = this._mcpFactories.find(factory => factory.name === params.name);
+      const factory = this._mcpProviders.find(factory => factory.name === params.name);
       if (!factory)
         throw new Error('Unknown connection method: ' + params.name);
 
@@ -98,16 +100,16 @@ export class ProxyBackend implements ServerBackend {
     }
   }
 
-  private _defineContextSwitchTool(): ToolDefinition {
+  private _defineContextSwitchTool(): Tool {
     return {
       name: 'browser_connect',
       description: [
         'Connect to a browser using one of the available methods:',
-        ...this._mcpFactories.map(factory => `- "${factory.name}": ${factory.description}`),
+        ...this._mcpProviders.map(factory => `- "${factory.name}": ${factory.description}`),
       ].join('\n'),
       inputSchema: zodToJsonSchema(z.object({
-        name: z.enum(this._mcpFactories.map(factory => factory.name) as [string, ...string[]]).default(this._mcpFactories[0].name).describe('The method to use to connect to the browser'),
-      }), { strictUnions: true }) as ToolDefinition['inputSchema'],
+        name: z.enum(this._mcpProviders.map(factory => factory.name) as [string, ...string[]]).default(this._mcpProviders[0].name).describe('The method to use to connect to the browser'),
+      }), { strictUnions: true }) as Tool['inputSchema'],
       annotations: {
         title: 'Connect to a browser context',
         readOnlyHint: true,
@@ -116,7 +118,7 @@ export class ProxyBackend implements ServerBackend {
     };
   }
 
-  private async _setCurrentClient(factory: MCPFactory) {
+  private async _setCurrentClient(factory: MCPProvider) {
     await this._currentClient?.close();
     this._currentClient = undefined;
 
@@ -126,23 +128,13 @@ export class ProxyBackend implements ServerBackend {
         listRoots: true,
       },
     });
-    client.setRequestHandler(ListRootsRequestSchema, async () => {
-      const clientName = this._server!.getClientVersion()?.name;
-      if (this._server!.getClientCapabilities()?.roots && (
-        clientName === 'Visual Studio Code' ||
-        clientName === 'Visual Studio Code - Insiders')) {
-        const { roots } = await this._server!.listRoots();
-        return { roots };
-      }
-      return { roots: [] };
-    });
+    client.setRequestHandler(ListRootsRequestSchema, () => ({ roots: this._roots }));
     client.setRequestHandler(PingRequestSchema, () => ({}));
 
-    const transport = await factory.create();
+    const transport = await factory.connect();
     await client.connect(transport);
-
     this._currentClient = client;
-    const tools = await this._currentClient.listTools();
-    this._tools = tools.tools;
   }
 }
+
+const clientsWithRoots = ['Visual Studio Code', 'Visual Studio Code - Insiders'];

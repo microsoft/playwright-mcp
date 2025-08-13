@@ -22,7 +22,7 @@ import type * as playwright from 'playwright';
 import type { ToolCapability } from '../../config.js';
 import type { Tab } from '../tab.js';
 import type { Response } from '../response.js';
-import type { ToolDefinition } from '../mcp/server.js';
+import type * as mcpServer from '../mcp/server.js';
 
 export type FileUploadModalState = {
   type: 'fileChooser';
@@ -46,11 +46,11 @@ export type ToolSchema<Input extends z.Schema> = {
   type: 'readOnly' | 'destructive';
 };
 
-export function toToolDefinition(tool: ToolSchema<any>): ToolDefinition {
+export function toMcpTool(tool: ToolSchema<any>): mcpServer.Tool {
   return {
     name: tool.name,
     description: tool.description,
-    inputSchema: zodToJsonSchema(tool.inputSchema, { strictUnions: true }) as ToolDefinition['inputSchema'],
+    inputSchema: zodToJsonSchema(tool.inputSchema, { strictUnions: true }) as mcpServer.Tool['inputSchema'],
     annotations: {
       title: tool.title,
       readOnlyHint: tool.type === 'readOnly',
