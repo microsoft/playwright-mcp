@@ -21,26 +21,28 @@ import * as mcpServer from '../mcp/server.js';
 import { BrowserServerBackend } from '../browserServerBackend.js';
 import { BrowserContextFactory, ClientInfo } from '../browserContextFactory.js';
 
-const config: FullConfig = JSON.parse(process.argv[2]);
-const connectionString = new URL(process.argv[3]);
-const lib = process.argv[4];
-
-const playwright = await import(lib).then(mod => mod.default ?? mod) as typeof import('playwright');
-
 class VSCodeBrowserContextFactory implements BrowserContextFactory {
   name = 'vscode';
   description = 'Connect to a browser running in the Playwright VS Code extension';
 
+  constructor(private _config: FullConfig, private _playwright: typeof import('playwright'), private _connectionString: string) {}
+
   async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<{ browserContext: BrowserContext; close: () => Promise<void>; }> {
-    connectionString.searchParams.set('launch-options', JSON.stringify({
-      ...config.browser.launchOptions,
-      ...config.browser.contextOptions,
-      userDataDir: config.browser.userDataDir,
-    }));
+    let launchOptions: any = this._config.browser.launchOptions;
+    if (this._config.browser.userDataDir) {
+      launchOptions = {
+        ...launchOptions,
+        ...this._config.browser.contextOptions,
+        userDataDir: this._config.browser.userDataDir,
+      };
+    }
+    const connectionString = new URL(this._connectionString);
+    connectionString.searchParams.set('launch-options', JSON.stringify(launchOptions));
 
-    const browser = await playwright.chromium.connect(connectionString.toString());
+    const browserType = this._playwright.chromium; // it could also be firefox or webkit, we just need some browser type to call `connect` on
+    const browser = await browserType.connect(connectionString.toString());
 
-    const context = browser.contexts()[0] ?? await browser.newContext(config.browser.contextOptions);
+    const context = browser.contexts()[0] ?? await browser.newContext(this._config.browser.contextOptions);
 
     return {
       browserContext: context,
@@ -51,8 +53,18 @@ class VSCodeBrowserContextFactory implements BrowserContextFactory {
   }
 }
 
-await mcpServer.connect(
-    () => new BrowserServerBackend(config, new VSCodeBrowserContextFactory()),
-    new StdioServerTransport(),
-    false
+async function main(config: FullConfig, connectionString: string, lib: string) {
+  const playwright = await import(lib).then(mod => mod.default ?? mod);
+  const factory = new VSCodeBrowserContextFactory(config, playwright, connectionString);
+  await mcpServer.connect(
+      () => new BrowserServerBackend(config, factory),
+      new StdioServerTransport(),
+      false
+  );
+}
+
+await main(
+    JSON.parse(process.argv[2]),
+    process.argv[3],
+    process.argv[4]
 );

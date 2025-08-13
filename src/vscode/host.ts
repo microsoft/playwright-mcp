@@ -28,7 +28,7 @@ export class VSCodeMCPFactory implements MCPFactory {
     if (typeof options.connectionString !== 'string')
       throw new Error('Missing options.connectionString');
     if (typeof options.lib !== 'string')
-      throw new Error('Missing options.library');
+      throw new Error('Missing options.lib');
 
     return new StdioClientTransport({
       command: process.execPath,
