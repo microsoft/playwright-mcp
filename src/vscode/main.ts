@@ -15,11 +15,11 @@
  */
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { BrowserContext } from 'playwright-core';
-import { FullConfig } from '../config.js';
 import * as mcpServer from '../mcp/server.js';
 import { BrowserServerBackend } from '../browserServerBackend.js';
 import { BrowserContextFactory, ClientInfo } from '../browserContextFactory.js';
+import type { FullConfig } from '../config.js';
+import type { BrowserContext } from 'playwright-core';
 
 class VSCodeBrowserContextFactory implements BrowserContextFactory {
   name = 'vscode';

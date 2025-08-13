@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { FullConfig } from '../config.js';
-import { MCPFactory } from '../mcp/proxyBackend.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { FullConfig } from '../config.js';
+import type { MCPFactory } from '../mcp/proxyBackend.js';
 
 export class VSCodeMCPFactory implements MCPFactory {
   name = 'vscode';
