@@ -11,16 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
     - name: Use Node.js 20
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
     - name: Install dependencies
-      run: npm ci
-    - run: npm run build
+      run: bun install
+    - run: bun run build
     - name: Run ESLint
-      run: npm run lint
+      run: bun run lint
     - name: Ensure no changes
       run: git diff --exit-code
 
@@ -32,40 +35,46 @@ jobs:
   #   runs-on: ${{ matrix.os }}
   #   steps:
   #   - uses: actions/checkout@v4
+  #   - name: Setup Bun
+  #     uses: oven-sh/setup-bun@v2
+  #     with:
+  #       bun-version: latest
   #   - name: Use Node.js 18
   #     uses: actions/setup-node@v4
   #     with:
   #       # https://github.com/microsoft/playwright-mcp/issues/344
   #       node-version: '18.19'
-  #       cache: 'npm'
   #   - name: Install dependencies
-  #     run: npm ci
+  #     run: bun install
   #   - name: Playwright install
-  #     run: npx playwright install --with-deps
+  #     run: bunx playwright install --with-deps
   #   - name: Install MS Edge
   #     # MS Edge is not preinstalled on macOS runners.
   #     if: ${{ matrix.os == 'macos-latest' }}
-  #     run: npx playwright install msedge
+  #     run: bunx playwright install msedge
   #   - name: Build
-  #     run: npm run build
+  #     run: bun run build
   #   - name: Run tests
-  #     run: npm test
+  #     run: bun run test
 
   # test_docker:
   #   runs-on: ubuntu-latest
   #   steps:
   #   - uses: actions/checkout@v4
+  #   - name: Setup Bun
+  #     uses: oven-sh/setup-bun@v2
+  #     with:
+  #       bun-version: latest
   #   - name: Use Node.js 18
   #     uses: actions/setup-node@v4
   #     with:
   #       node-version: '18'
-  #       cache: 'npm'
   #   - name: Install dependencies
-  #     run: npm ci
+  #     run: bun install
   #   - name: Playwright install
-  #     run: npx playwright install --with-deps chromium
+  #     run: bunx playwright install --with-deps chromium
   #   - name: Build
-  #     run: npm run build
+  #     run: bun run build
   #   - name: Set up Docker Buildx
   #     uses: docker/setup-buildx-action@v3
   #   - name: Build and push
@@ -80,7 +89,7 @@ jobs:
   #     run: |
   #       # Used for the Docker tests to share the test-results folder with the container.
   #       umask 0000
-  #       npm run test -- --project=chromium-docker
+  #       bun run test -- --project=chromium-docker
   #     env:
   #       MCP_IN_DOCKER: 1
 
@@ -93,15 +102,18 @@ jobs:
   #       working-directory: ./extension
   #   steps:
   #   - uses: actions/checkout@v4
+  #   - name: Setup Bun
+  #     uses: oven-sh/setup-bun@v2
+  #     with:
+  #       bun-version: latest
   #   - name: Use Node.js 18
   #     uses: actions/setup-node@v4
   #     with:
   #       node-version: '18'
-  #       cache: 'npm'
   #   - name: Install dependencies
-  #     run: npm ci
+  #     run: bun install
   #   - name: Build extension
-  #     run: npm run build
+  #     run: bun run build
   #   - name: Upload artifact
   #     uses: actions/upload-artifact@v4
   #     with:

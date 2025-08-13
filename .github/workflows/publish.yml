@@ -10,15 +10,18 @@ jobs:
       id-token: write # Needed for npm provenance
     steps:
       - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
       - uses: actions/setup-node@v4
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
-      - run: npx playwright install --with-deps
-      - run: npx tsc
-      - run: npm run lint
-      - run: npm run ctest
+      - run: bun install
+      - run: bunx playwright install --with-deps
+      - run: bun run build
+      - run: bun run lint
+      - run: bun run ctest
       - run: npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
