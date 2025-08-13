@@ -27,9 +27,9 @@ import { InProcessMCPFactory } from './inProcessMcpFactrory.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
 
+import { VSCodeMCPFactory } from './vscode/host.js';
 import type { MCPFactoryList } from './mcp/proxyBackend.js';
 import type { FullConfig } from './config.js';
-import { VSCodeMCPFactory } from './vscode/host.js';
 
 program
     .version('Version ' + packageJSON.version)
