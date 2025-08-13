@@ -91,7 +91,7 @@ program
       if (options.connectTool) {
         factories.push(
             new InProcessMCPFactory(createExtensionContextFactory(config), config),
-            new VSCodeMCPFactory(config),
+            new VSCodeMCPFactory(config), // TODO: automatically add this based on the client name
         );
       }
       await mcpTransport.start(() => new ProxyBackend(factories), config.server);
