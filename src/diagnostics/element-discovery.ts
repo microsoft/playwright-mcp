@@ -10,6 +10,9 @@ import { SmartHandleBatch } from './smart-handle.js';
 
 const elementDiscoveryDebug = debug('pw:mcp:element-discovery');
 
+// Regex for splitting class names - moved to top level for performance
+const CLASS_SPLIT_REGEX = /\s+/;
+
 export interface SearchCriteria {
   text?: string;
   role?: string;
@@ -724,32 +727,149 @@ export class ElementDiscovery extends DiagnosticBase {
     element: playwright.ElementHandle
   ): Promise<string> {
     return await element.evaluate((el) => {
-      // Generate a unique selector for the element
       if (!(el instanceof Element)) {
         return 'unknown';
       }
 
       const tag = el.tagName.toLowerCase();
-      const id = el.id ? `#${el.id}` : '';
+
+      // Strategy 1: Use ID if available (highest priority)
+      if (el.id) {
+        const idSelector = `${tag}#${el.id}`;
+        if (document.querySelectorAll(idSelector).length === 1) {
+          return idSelector;
+        }
+      }
+
+      // Strategy 2: Try data attributes for uniqueness
+      const dataAttrs = Array.from(el.attributes)
+        .filter((attr) => attr.name.startsWith('data-'))
+        .map((attr) => `[${attr.name}="${attr.value}"]`)
+        .join('');
+
+      if (dataAttrs) {
+        const dataSelector = `${tag}${dataAttrs}`;
+        if (document.querySelectorAll(dataSelector).length === 1) {
+          return dataSelector;
+        }
+      }
+
+      // Strategy 3: Try meaningful attributes (name, type, aria-label, etc.)
+      const meaningfulAttrs = [
+        'name',
+        'type',
+        'aria-label',
+        'placeholder',
+        'value',
+        'role',
+      ];
+      for (const attrName of meaningfulAttrs) {
+        const attrValue = el.getAttribute(attrName);
+        if (attrValue) {
+          const attrSelector = `${tag}[${attrName}="${attrValue}"]`;
+          if (document.querySelectorAll(attrSelector).length === 1) {
+            return attrSelector;
+          }
+        }
+      }
+
+      // Strategy 4: Try class-based selector with validation
       const classes = el.className
-        ? `.${el.className.split(' ').join('.')}`
+        ? `.${el.className.trim().split(CLASS_SPLIT_REGEX).join('.')}`
         : '';
 
-      if (id) {
-        return `${tag}${id}`;
-      }
       if (classes) {
-        return `${tag}${classes}`;
+        const classSelector = `${tag}${classes}`;
+        if (document.querySelectorAll(classSelector).length === 1) {
+          return classSelector;
+        }
       }
 
-      // Fallback to nth-child selector
+      // Strategy 5: Use parent context for uniqueness
       const parent = el.parentElement;
+      if (parent) {
+        const parentClasses = parent.className
+          ? `.${parent.className.trim().split(CLASS_SPLIT_REGEX).join('.')}`
+          : '';
+        const parentId = parent.id ? `#${parent.id}` : '';
+        const parentTag = parent.tagName.toLowerCase();
+
+        // Try parent context with classes
+        if (parentClasses || parentId) {
+          const contextSelector = `${parentTag}${parentId}${parentClasses} ${tag}`;
+          if (document.querySelectorAll(contextSelector).length === 1) {
+            return contextSelector;
+          }
+        }
+      }
+
+      // Strategy 6: Use nth-child or nth-of-type with parent context
       if (parent) {
         const siblings = Array.from(parent.children);
         const index = siblings.indexOf(el) + 1;
-        return `${parent.tagName.toLowerCase()} > ${tag}:nth-child(${index})`;
+
+        // Get parent selector for better context
+        const parentTag = parent.tagName.toLowerCase();
+        const parentClasses = parent.className
+          ? `.${parent.className.trim().split(CLASS_SPLIT_REGEX).join('.')}`
+          : '';
+        const parentId = parent.id ? `#${parent.id}` : '';
+
+        // Build parent selector
+        const parentSelector = `${parentTag}${parentId}${parentClasses}`;
+
+        // Try nth-of-type first with parent context (more stable than nth-child)
+        const sameTagSiblings = siblings.filter(
+          (sibling) => sibling.tagName.toLowerCase() === tag
+        );
+
+        if (sameTagSiblings.length > 1) {
+          const tagIndex = sameTagSiblings.indexOf(el) + 1;
+          const nthTypeSelector = classes
+            ? `${parentSelector} > ${tag}${classes}:nth-of-type(${tagIndex})`
+            : `${parentSelector} > ${tag}:nth-of-type(${tagIndex})`;
+
+          if (document.querySelectorAll(nthTypeSelector).length === 1) {
+            return nthTypeSelector;
+          }
+        }
+
+        // Fallback to nth-child with parent context
+        const nthChildSelector = classes
+          ? `${parentSelector} > ${tag}${classes}:nth-child(${index})`
+          : `${parentSelector} > ${tag}:nth-child(${index})`;
+
+        // Verify this selector is unique
+        if (document.querySelectorAll(nthChildSelector).length === 1) {
+          return nthChildSelector;
+        }
+
+        // If parent context doesn't help, try grandparent context
+        const grandParent = parent.parentElement;
+        if (grandParent) {
+          const grandParentTag = grandParent.tagName.toLowerCase();
+          const grandParentClasses = grandParent.className
+            ? `.${grandParent.className.trim().split(CLASS_SPLIT_REGEX).join('.')}`
+            : '';
+          const grandParentId = grandParent.id ? `#${grandParent.id}` : '';
+
+          const grandParentSelector = `${grandParentTag}${grandParentId}${grandParentClasses}`;
+          const deepContextSelector = `${grandParentSelector} ${parentTag}:nth-of-type(${
+            Array.from(grandParent.children)
+              .filter((child) => child.tagName.toLowerCase() === parentTag)
+              .indexOf(parent) + 1
+          }) > ${tag}:nth-child(${index})`;
+
+          if (document.querySelectorAll(deepContextSelector).length === 1) {
+            return deepContextSelector;
+          }
+        }
+
+        // If all else fails, return the selector even if not unique
+        return nthChildSelector;
       }
 
+      // Final fallback
       return tag;
     });
   }
