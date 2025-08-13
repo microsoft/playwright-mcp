@@ -108,6 +108,7 @@ export class ProxyBackend implements ServerBackend {
       ].join('\n'),
       inputSchema: zodToJsonSchema(z.object({
         name: z.enum(this._mcpFactories.map(factory => factory.name) as [string, ...string[]]).default(this._mcpFactories[0].name).describe('The method to use to connect to the browser'),
+        options: z.any().optional().describe('Options for the connection method'),
       }), { strictUnions: true }) as ToolDefinition['inputSchema'],
       annotations: {
         title: 'Connect to a browser context',
