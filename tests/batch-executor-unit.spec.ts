@@ -206,6 +206,8 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
       }
     } catch (error) {
       // Mock execution may fail, but we can still verify the batch ID generation
+      // This is expected behavior as we're testing with incomplete mocks
+      // The important part is verifying batch ID generation works
       const generateBatchId = (batchExecutor as any).generateBatchId?.bind(
         batchExecutor
       );
@@ -215,11 +217,14 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
         expect(batchId1).not.toBe(batchId2);
         expect(typeof batchId1).toBe('string');
         expect(typeof batchId2).toBe('string');
+      } else {
+        // If generateBatchId is not available, fail the test
+        throw new Error('generateBatchId method not found on BatchExecutor');
       }
     }
   });
 
-  test('should include batch ID in correct format when generated', async () => {
+  test('should include batch ID in correct format when generated', () => {
     const batchExecutor = new BatchExecutor(mockContext, mockToolRegistry);
 
     // Access the private generateBatchId method through reflection
@@ -231,7 +236,8 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
       const batchId = generateBatchId();
 
       // Expected format: batch_timestamp_random
-      const expectedRegex = /^batch_\d{13}_[a-f0-9]{8}$/;
+      const BATCH_ID_REGEX = /^batch_\d{13}_[a-f0-9]{8}$/;
+      const expectedRegex = BATCH_ID_REGEX;
       expect(batchId).toMatch(expectedRegex);
 
       // Ensure batch ID is unique by generating multiple
@@ -240,7 +246,7 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
     }
   });
 
-  test('should maintain batch context during execution', async () => {
+  test('should maintain batch context during execution', () => {
     // Create a more complete mock context
     mockContext = {
       batchContext: undefined,
@@ -263,7 +269,7 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
     }
   });
 
-  test('should generate different batch IDs for concurrent executions', async () => {
+  test('should generate different batch IDs for concurrent executions', () => {
     // Create a more complete mock context
     mockContext = {
       batchContext: undefined,

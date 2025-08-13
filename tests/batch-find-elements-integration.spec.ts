@@ -10,12 +10,11 @@ import { expect, test } from './fixtures.js';
 import {
   createTestPage,
   executeBatchWithErrorHandling,
-  expectBatchExecutionPartialSuccess,
   expectBatchExecutionSuccess,
 } from './test-utils.js';
 import type { TestServer } from './testserver/index.js';
 
-type CallToolResponse = Awaited<ReturnType<Client['callTool']>>;
+// type CallToolResponse = Awaited<ReturnType<Client['callTool']>>; // Kept for potential future use
 
 // HTML templates for integration testing
 const INTEGRATION_HTML_TEMPLATES = {
@@ -121,7 +120,7 @@ function setupTestPage(
 /**
  * Helper function to create batch steps for find_elements followed by type
  */
-function createFindElementsAndTypeSteps(
+function _createFindElementsAndTypeSteps(
   searchCriteria: Record<string, unknown>[],
   typeData: { text: string; element: string }[]
 ): Array<{
@@ -136,7 +135,7 @@ function createFindElementsAndTypeSteps(
   }> = [];
 
   // Add find_elements steps
-  searchCriteria.forEach((criteria, index) => {
+  searchCriteria.forEach((criteria) => {
     steps.push({
       tool: 'browser_find_elements',
       arguments: {
@@ -522,7 +521,8 @@ test.describe('Batch Find Elements Integration Tests', () => {
 
     // Verify reasonable performance (all operations complete reasonably fast)
     expect(text).toContain('Total Time:');
-    const timeMatch = text.match(/Total Time: (\d+)ms/);
+    const TIME_REGEX = /Total Time: (\d+)ms/;
+    const timeMatch = text.match(TIME_REGEX);
     if (timeMatch) {
       const totalTime = Number.parseInt(timeMatch[1], 10);
       expect(totalTime).toBeLessThan(5000); // Should complete in under 5 seconds

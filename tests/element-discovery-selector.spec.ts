@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type * as playwright from 'playwright';
 import { ElementDiscovery } from '../src/diagnostics/element-discovery.js';
-import { testSetup } from './fixtures.js';
 
 test.describe('ElementDiscovery generateSelector improvements', () => {
   let testPage: playwright.Page;

@@ -15,7 +15,7 @@ import {
 } from './test-utils.js';
 import type { TestServer } from './testserver/index.js';
 
-type CallToolResponse = Awaited<ReturnType<Client['callTool']>>;
+// type CallToolResponse = Awaited<ReturnType<Client['callTool']>>; // Kept for potential future use
 
 // Complex HTML templates for advanced testing
 const COMPLEX_HTML_TEMPLATES = {
@@ -668,7 +668,11 @@ test.describe('Complex Batch Find Elements Tests', () => {
     setupTestPage(server, COMPLEX_HTML_TEMPLATES.E_COMMERCE_PRODUCT);
 
     // Create a massive batch with many find_elements operations
-    const steps: any[] = [
+    const steps: Array<{
+      tool: string;
+      arguments: Record<string, unknown>;
+      expectation?: Record<string, unknown>;
+    }> = [
       {
         tool: 'browser_navigate',
         arguments: { url: server.PREFIX },
@@ -732,7 +736,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
     }
 
     // Verify performance is reasonable even with many operations
-    const timeMatch = text.match(/Total Time: (\d+)ms/);
+    const TIME_REGEX = /Total Time: (\d+)ms/;
+    const timeMatch = text.match(TIME_REGEX);
     if (timeMatch) {
       const totalTime = Number.parseInt(timeMatch[1], 10);
       expect(totalTime).toBeLessThan(10_000); // Should complete in under 10 seconds

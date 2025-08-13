@@ -727,6 +727,9 @@ export class ElementDiscovery extends DiagnosticBase {
     element: playwright.ElementHandle
   ): Promise<string> {
     return await element.evaluate((el) => {
+      // Define regex inside evaluate context
+      const CLASS_SPLIT_REGEX = /\s+/;
+      
       if (!(el instanceof Element)) {
         return 'unknown';
       }
