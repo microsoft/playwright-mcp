@@ -33,7 +33,14 @@ test.describe('Tab.getNextCustomRefId', () => {
     page = await context.newPage();
 
     // Create mock context that provides required methods
-    const mockContext = {
+    interface MockContext {
+      log: {
+        log: () => void;
+        debug: () => void;
+        error: () => void;
+      };
+    }
+    const mockContext: MockContext = {
       log: {
         log: () => {
           /* no-op */
@@ -45,7 +52,7 @@ test.describe('Tab.getNextCustomRefId', () => {
           /* no-op */
         },
       },
-    } as any;
+    };
 
     const mockOnPageClose = () => {
       /* no-op */

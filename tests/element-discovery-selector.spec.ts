@@ -2,11 +2,20 @@ import { expect, test } from '@playwright/test';
 import type * as playwright from 'playwright';
 import { ElementDiscovery } from '../src/diagnostics/element-discovery.js';
 
+// Regex patterns for selector validation
+const USERNAME_REGEX = /name="username"/;
+const NTH_SELECTOR_REGEX = /:nth-of-type\(2\)|:nth-child\(2\)/;
+const NTH_SELECTOR_COMPLEX_REGEX = /:nth-child\(2\)|:nth-of-type\(2\)|tr.*td/;
+const DATA_TESTID_REGEX = /data-testid="submit-btn"/;
+const PARENT_CONTEXT_REGEX = /container.*form-control|\.col.*input/;
+const DATA_ID_2_REGEX = /data-id="2"/;
+const EMAIL_LOGIN_FORM_REGEX = /email|login-form/;
+
 test.describe('ElementDiscovery generateSelector improvements', () => {
   let testPage: playwright.Page;
   let elementDiscovery: ElementDiscovery;
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(({ page }) => {
     testPage = page;
     elementDiscovery = new ElementDiscovery(page);
   });
@@ -29,7 +38,11 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const element = await testPage.$('#unique-element');
     expect(element).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(element);
+    // Access private method for testing
+    const discovery = elementDiscovery as unknown as {
+      generateSelector(elem: playwright.ElementHandle): Promise<string>;
+    };
+    const selector = await discovery.generateSelector(element);
 
     // Should prioritize ID
     expect(selector).toBe('div#unique-element');
@@ -56,15 +69,17 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const usernameInput = await testPage.$('input[name="username"]');
     expect(usernameInput).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(
-      usernameInput
-    );
+    // Access private method for testing
+    const discovery = elementDiscovery as unknown as {
+      generateSelector(element: playwright.ElementHandle): Promise<string>;
+    };
+    const selector = await discovery.generateSelector(usernameInput);
 
     // Should not be ambiguous like 'input.form-control'
     expect(selector).not.toBe('input.form-control');
 
     // Should be more specific with attribute selector
-    expect(selector).toMatch(/name="username"/);
+    expect(selector).toMatch(USERNAME_REGEX);
 
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
@@ -86,12 +101,14 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const secondItem = await testPage.$('div.item:nth-of-type(2)');
     expect(secondItem).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(
-      secondItem
-    );
+    // Access private method for testing
+    const discovery = elementDiscovery as unknown as {
+      generateSelector(element: playwright.ElementHandle): Promise<string>;
+    };
+    const selector = await discovery.generateSelector(secondItem);
 
     // Should include nth-of-type to make it unique
-    expect(selector).toMatch(/:nth-of-type\(2\)|:nth-child\(2\)/);
+    expect(selector).toMatch(NTH_SELECTOR_REGEX);
 
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
@@ -113,12 +130,14 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const submitBtn = await testPage.$('[data-testid="submit-btn"]');
     expect(submitBtn).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(
-      submitBtn
-    );
+    // Access private method for testing
+    const discovery = elementDiscovery as unknown as {
+      generateSelector(element: playwright.ElementHandle): Promise<string>;
+    };
+    const selector = await discovery.generateSelector(submitBtn);
 
     // Should include data-testid for uniqueness
-    expect(selector).toMatch(/data-testid="submit-btn"/);
+    expect(selector).toMatch(DATA_TESTID_REGEX);
 
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
@@ -147,12 +166,14 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const containerInput = await testPage.$('.container .form-control');
     expect(containerInput).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(
-      containerInput
-    );
+    // Access private method for testing
+    const discovery = elementDiscovery as unknown as {
+      generateSelector(element: playwright.ElementHandle): Promise<string>;
+    };
+    const selector = await discovery.generateSelector(containerInput);
 
     // Should include parent context for uniqueness
-    expect(selector).toMatch(/container.*form-control|\.col.*input/);
+    expect(selector).toMatch(PARENT_CONTEXT_REGEX);
 
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
@@ -182,10 +203,16 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
       return document.querySelectorAll('td.cell')[1]; // A2
     });
 
-    const selector = await (elementDiscovery as any).generateSelector(cellA2);
+    // Type for accessing private method
+    interface TestElementDiscovery {
+      generateSelector(element: playwright.ElementHandle): Promise<string>;
+    }
+    const selector = await (
+      elementDiscovery as unknown as TestElementDiscovery
+    ).generateSelector(cellA2);
 
     // Should be specific enough to identify A2 uniquely
-    expect(selector).toMatch(/:nth-child\(2\)|:nth-of-type\(2\)|tr.*td/);
+    expect(selector).toMatch(NTH_SELECTOR_COMPLEX_REGEX);
 
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
@@ -215,12 +242,16 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const loginEmail = await testPage.$('.login-form input[name="email"]');
     expect(loginEmail).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(
-      loginEmail
-    );
+    // Type for accessing private method
+    interface TestElementDiscovery {
+      generateSelector(element: playwright.ElementHandle): Promise<string>;
+    }
+    const selector = await (
+      elementDiscovery as unknown as TestElementDiscovery
+    ).generateSelector(loginEmail);
 
     // Should be unique and include distinguishing attributes
-    expect(selector).toMatch(/email|login-form/);
+    expect(selector).toMatch(EMAIL_LOGIN_FORM_REGEX);
 
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
@@ -242,13 +273,19 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const item2 = await testPage.$('[data-id="2"]');
     expect(item2).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(item2);
+    // Type for accessing private method
+    interface TestElementDiscovery {
+      generateSelector(element: playwright.ElementHandle): Promise<string>;
+    }
+    const selector = await (
+      elementDiscovery as unknown as TestElementDiscovery
+    ).generateSelector(item2);
 
     // Should not return generic 'div.item' which would match multiple elements
     expect(selector).not.toBe('div.item');
 
     // Should include data-id for uniqueness
-    expect(selector).toMatch(/data-id="2"/);
+    expect(selector).toMatch(DATA_ID_2_REGEX);
 
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);

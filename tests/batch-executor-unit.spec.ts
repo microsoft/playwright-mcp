@@ -19,6 +19,9 @@ import type { Context } from '../src/context.js';
 import { batchExecuteSchema, batchStepSchema } from '../src/types/batch.js';
 import { expect, test } from './fixtures.js';
 
+// Constants for regex patterns
+const BATCH_ID_REGEX = /^batch_\d{13}_[a-f0-9]{8}$/;
+
 test.describe('Batch Execution Schema Tests', () => {
   test('batchStepSchema should validate correct step configuration', () => {
     const validStep = {
@@ -187,6 +190,13 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
       ],
     };
 
+    // Type for accessing private BatchExecutor properties in tests
+    interface TestBatchExecutor extends BatchExecutor {
+      lastBatchContext?: { batchId: string };
+      currentBatchContext?: { batchId: string };
+      generateBatchId?: () => string;
+    }
+
     try {
       const result1 = await batchExecutor.execute(options);
       const result2 = await batchExecutor.execute(options);
@@ -196,21 +206,27 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
       expect(typeof result2.stopReason).toBe('string');
 
       // Verify batch contexts are different
-      const batchContext1 = (batchExecutor as any).lastBatchContext;
-      const batchContext2 = (batchExecutor as any).currentBatchContext;
+      const testExecutor = batchExecutor as unknown as TestBatchExecutor;
+      const batchContext1 = testExecutor.lastBatchContext;
+      const batchContext2 = testExecutor.currentBatchContext;
 
       if (batchContext1 && batchContext2) {
         expect(batchContext1.batchId).not.toBe(batchContext2.batchId);
         expect(typeof batchContext1.batchId).toBe('string');
         expect(typeof batchContext2.batchId).toBe('string');
       }
-    } catch (_error) {
-      // Mock execution may fail, but we can still verify the batch ID generation
-      // This is expected behavior as we're testing with incomplete mocks
-      // The important part is verifying batch ID generation works
-      const generateBatchId = (batchExecutor as any).generateBatchId?.bind(
-        batchExecutor
-      );
+    } catch (error) {
+      // Mock execution may fail with incomplete mocks, but this is expected.
+      // We verify that even when execute() fails, batch ID generation still works.
+      // The error itself is not important for this test - we're testing batch ID uniqueness.
+      if (error instanceof Error && error.message.includes('generateBatchId')) {
+        // Re-throw if it's our specific test failure
+        throw error;
+      }
+
+      // Otherwise, proceed to verify batch ID generation works independently
+      const testExecutor = batchExecutor as unknown as TestBatchExecutor;
+      const generateBatchId = testExecutor.generateBatchId?.bind(batchExecutor);
       if (generateBatchId) {
         const batchId1 = generateBatchId();
         const batchId2 = generateBatchId();
@@ -227,18 +243,20 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
   test('should include batch ID in correct format when generated', () => {
     const batchExecutor = new BatchExecutor(mockContext, mockToolRegistry);
 
+    // Type for accessing private BatchExecutor properties in tests
+    interface TestBatchExecutor extends BatchExecutor {
+      generateBatchId?: () => string;
+    }
+
     // Access the private generateBatchId method through reflection
-    const generateBatchId = (batchExecutor as any).generateBatchId?.bind(
-      batchExecutor
-    );
+    const testExecutor = batchExecutor as unknown as TestBatchExecutor;
+    const generateBatchId = testExecutor.generateBatchId?.bind(batchExecutor);
 
     if (generateBatchId) {
       const batchId = generateBatchId();
 
       // Expected format: batch_timestamp_random
-      const BATCH_ID_REGEX = /^batch_\d{13}_[a-f0-9]{8}$/;
-      const expectedRegex = BATCH_ID_REGEX;
-      expect(batchId).toMatch(expectedRegex);
+      expect(batchId).toMatch(BATCH_ID_REGEX);
 
       // Ensure batch ID is unique by generating multiple
       const batchId2 = generateBatchId();
@@ -254,14 +272,19 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
 
     const batchExecutor = new BatchExecutor(mockContext, mockToolRegistry);
 
+    // Type for accessing private BatchExecutor properties in tests
+    interface TestBatchExecutor extends BatchExecutor {
+      currentBatchContext?: { batchId: string };
+      generateBatchId?: () => string;
+    }
+
     // Verify the current batch context is created during execution
-    const currentBatchContext = (batchExecutor as any).currentBatchContext;
+    const testExecutor = batchExecutor as unknown as TestBatchExecutor;
+    const currentBatchContext = testExecutor.currentBatchContext;
     expect(currentBatchContext).toBeUndefined(); // Should be undefined before execution
 
     // Access the generateBatchId method to verify it works
-    const generateBatchId = (batchExecutor as any).generateBatchId?.bind(
-      batchExecutor
-    );
+    const generateBatchId = testExecutor.generateBatchId?.bind(batchExecutor);
     if (generateBatchId) {
       const batchId = generateBatchId();
       expect(typeof batchId).toBe('string');
@@ -277,12 +300,16 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
 
     const batchExecutor = new BatchExecutor(mockContext, mockToolRegistry);
 
+    // Type for accessing private BatchExecutor properties in tests
+    interface TestBatchExecutor extends BatchExecutor {
+      generateBatchId?: () => string;
+    }
+
     // Test multiple batch ID generation to ensure uniqueness
-    const generateBatchId = (batchExecutor as any).generateBatchId?.bind(
-      batchExecutor
-    );
+    const testExecutor = batchExecutor as unknown as TestBatchExecutor;
+    const generateBatchId = testExecutor.generateBatchId?.bind(batchExecutor);
     if (generateBatchId) {
-      const batchIds = [];
+      const batchIds: string[] = [];
       for (let i = 0; i < 5; i++) {
         const batchId = generateBatchId();
         expect(batchIds).not.toContain(batchId);
