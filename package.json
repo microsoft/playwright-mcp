@@ -1,6 +1,9 @@
 {
   "name": "@tontoko/fast-playwright-mcp",
   "version": "0.0.4",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Fast Playwright Tools for MCP",
   "type": "module",
   "repository": {
