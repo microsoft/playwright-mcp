@@ -5,7 +5,6 @@
  * covering basic integration, complex workflows, edge cases, and real-world usage patterns.
  */
 
-import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { expect, test } from './fixtures.js';
 import {
   createTestPage,
@@ -1569,4 +1568,3 @@ test.describe('Batch Find Elements Tests', () => {
     });
   });
 });
-

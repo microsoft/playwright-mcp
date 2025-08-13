@@ -11,7 +11,7 @@ import { SmartHandleBatch } from './smart-handle.js';
 const elementDiscoveryDebug = debug('pw:mcp:element-discovery');
 
 // Regex for splitting class names - moved to top level for performance
-const CLASS_SPLIT_REGEX = /\s+/;
+const _CLASS_SPLIT_REGEX = /\s+/;
 
 export interface SearchCriteria {
   text?: string;

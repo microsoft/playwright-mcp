@@ -204,7 +204,7 @@ test.describe('BatchExecutor Batch ID Management Tests', () => {
         expect(typeof batchContext1.batchId).toBe('string');
         expect(typeof batchContext2.batchId).toBe('string');
       }
-    } catch (error) {
+    } catch (_error) {
       // Mock execution may fail, but we can still verify the batch ID generation
       // This is expected behavior as we're testing with incomplete mocks
       // The important part is verifying batch ID generation works
