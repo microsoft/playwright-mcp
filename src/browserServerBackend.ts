@@ -46,11 +46,9 @@ export class BrowserServerBackend implements ServerBackend {
   }
 
   async initialize(server: mcpServer.Server): Promise<void> {
-    const capabilities = server.getClientCapabilities() as mcpServer.ClientCapabilities;
+    const capabilities = server.getClientCapabilities();
     let rootPath: string | undefined;
-    if (capabilities.roots && (
-      server.getClientVersion()?.name === 'Visual Studio Code' ||
-      server.getClientVersion()?.name === 'Visual Studio Code - Insiders')) {
+    if (capabilities?.roots) {
       const { roots } = await server.listRoots();
       const firstRootUri = roots[0]?.uri;
       const url = firstRootUri ? new URL(firstRootUri) : undefined;
@@ -89,6 +87,6 @@ export class BrowserServerBackend implements ServerBackend {
   }
 
   serverClosed() {
-    void this._context!.dispose().catch(logUnhandledError);
+    void this._context?.dispose().catch(logUnhandledError);
   }
 }

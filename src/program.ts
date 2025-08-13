@@ -23,12 +23,11 @@ import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
 import { ProxyBackend } from './mcp/proxyBackend.js';
-import { InProcessClientFactory } from './inProcessClient.js';
+import { InProcessMCPFactory } from './inProcessMcpFactrory.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
 
-import type { ClientFactoryList } from './mcp/proxyBackend.js';
-import type { ServerBackendFactory } from './mcp/server.js';
+import type { MCPFactoryList } from './mcp/proxyBackend.js';
 import type { FullConfig } from './config.js';
 
 program
@@ -84,18 +83,13 @@ program
         return;
       }
 
-      let serverBackendFactory: ServerBackendFactory;
       const browserContextFactory = contextFactory(config);
-      if (options.connectTool) {
-        const factories: ClientFactoryList = [
-          new InProcessClientFactory(browserContextFactory, config),
-          new InProcessClientFactory(createExtensionContextFactory(config), config),
-        ];
-        serverBackendFactory = () => new ProxyBackend(factories);
-      } else {
-        serverBackendFactory = () => new BrowserServerBackend(config, browserContextFactory);
-      }
-      await mcpTransport.start(serverBackendFactory, config.server);
+      const factories: MCPFactoryList = [
+        new InProcessMCPFactory(browserContextFactory, config),
+      ];
+      if (options.connectTool)
+        factories.push(new InProcessMCPFactory(createExtensionContextFactory(config), config));
+      await mcpTransport.start(() => new ProxyBackend(factories), config.server);
     });
 
 function setupExitWatchdog() {

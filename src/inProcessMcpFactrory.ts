@@ -15,18 +15,16 @@
  */
 
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { BrowserContextFactory } from './browserContextFactory.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { InProcessTransport } from './mcp/inProcessTransport.js';
 import * as mcpServer from './mcp/server.js';
 
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { FullConfig } from './config.js';
-import type { ClientFactory } from './mcp/proxyBackend.js';
+import type { MCPFactory } from './mcp/proxyBackend.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
-export class InProcessClientFactory implements ClientFactory {
+export class InProcessMCPFactory implements MCPFactory {
   name: string;
   description: string;
 
@@ -40,21 +38,8 @@ export class InProcessClientFactory implements ClientFactory {
     this._config = config;
   }
 
-  async create(server: Server): Promise<Client> {
-    const client = new Client(server.getClientVersion() ?? { name: 'unknown', version: 'unknown' });
-    const clientCapabilities = server.getClientCapabilities();
-    if (clientCapabilities)
-      client.registerCapabilities(clientCapabilities);
-
-    if (clientCapabilities?.roots) {
-      client.setRequestHandler(ListRootsRequestSchema, async () => {
-        return await server.listRoots();
-      });
-    }
-
+  async create(): Promise<Transport> {
     const delegate = mcpServer.createServer(new BrowserServerBackend(this._config, this._contextFactory), false);
-    await client.connect(new InProcessTransport(delegate));
-    await client.ping();
-    return client;
+    return new InProcessTransport(delegate);
   }
 }
