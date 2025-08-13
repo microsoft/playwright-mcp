@@ -21,7 +21,6 @@ jobs:
         node-version: '20'
     - name: Install dependencies
       run: bun install
-    - run: bun run build
     - name: Run ESLint
       run: bun run lint
     - name: Ensure no changes
@@ -52,8 +51,6 @@ jobs:
   #     # MS Edge is not preinstalled on macOS runners.
   #     if: ${{ matrix.os == 'macos-latest' }}
   #     run: bunx playwright install msedge
-  #   - name: Build
-  #     run: bun run build
   #   - name: Run tests
   #     run: bun run test
 
@@ -73,8 +70,6 @@ jobs:
   #     run: bun install
   #   - name: Playwright install
   #     run: bunx playwright install --with-deps chromium
-  #   - name: Build
-  #     run: bun run build
   #   - name: Set up Docker Buildx
   #     uses: docker/setup-buildx-action@v3
   #   - name: Build and push
@@ -102,18 +97,16 @@ jobs:
   #       working-directory: ./extension
   #   steps:
   #   - uses: actions/checkout@v4
-  #   - name: Setup Bun
-  #     uses: oven-sh/setup-bun@v2
-  #     with:
-  #       bun-version: latest
   #   - name: Use Node.js 18
   #     uses: actions/setup-node@v4
   #     with:
   #       node-version: '18'
+  #       cache: 'npm'
+  #       cache-dependency-path: extension/package-lock.json
   #   - name: Install dependencies
-  #     run: bun install
+  #     run: npm ci
   #   - name: Build extension
-  #     run: bun run build
+  #     run: npm run build
   #   - name: Upload artifact
   #     uses: actions/upload-artifact@v4
   #     with:

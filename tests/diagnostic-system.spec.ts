@@ -2,6 +2,7 @@
  * Diagnostic System Tests - PageAnalyzer, ElementDiscovery, ErrorEnrichment
  */
 
+import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import type { Page } from 'playwright';
 import { ElementDiscovery } from '../src/diagnostics/element-discovery.js';
@@ -1358,7 +1359,7 @@ test.describe('configOverrides visibility and impact', () => {
   async function setupDiagnoseTest(
     page: Page,
     params: Record<string, unknown>,
-    testId = crypto.randomUUID().substring(0, 9)
+    testId = randomUUID().substring(0, 9)
   ) {
     await page.goto(
       `data:text/html,<html><body><h1>Test Page ${testId}</h1></body></html>`

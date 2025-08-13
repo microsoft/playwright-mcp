@@ -19,7 +19,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - run: bun install
       - run: bunx playwright install --with-deps
-      - run: bun run build
+      - run: bun run build:publish
       - run: bun run lint
       - run: bun run ctest
       - run: npm publish --provenance
