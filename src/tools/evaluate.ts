@@ -17,7 +17,7 @@
 import { z } from 'zod';
 
 import { defineTabTool } from './tool.js';
-import * as javascript from '../javascript.js';
+import * as javascript from '../utils/codegen.js';
 import { generateLocator } from './utils.js';
 
 import type * as playwright from 'playwright';

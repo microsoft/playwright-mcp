@@ -15,23 +15,21 @@
  */
 
 import { program, Option } from 'commander';
-// @ts-ignore
-import { startTraceViewerServer } from 'playwright-core/lib/server';
 
 import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
-import { packageJSON } from './package.js';
-import { createVSCodeClientFactory } from './vscode/host.js';
-import { createExtensionClientFactory, runWithExtension } from './extension/main.js';
+import { packageJSON } from './utils/package.js';
 import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
 import { ProxyBackend } from './mcp/proxyBackend.js';
-import { InProcessClientFactory } from './inProcessClient.js';
+import { InProcessMCPFactory } from './inProcessMcpFactrory.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
+import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
 
-import type { ClientFactoryList } from './mcp/proxyBackend.js';
-import type { ServerBackendFactory } from './mcp/server.js';
+import type { MCPFactoryList } from './mcp/proxyBackend.js';
+import type { FullConfig } from './config.js';
+import { VSCodeMCPFactory } from './vscode/host.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -76,7 +74,9 @@ program
       const config = await resolveCLIConfig(options);
 
       if (options.extension) {
-        await runWithExtension(config);
+        const contextFactory = createExtensionContextFactory(config);
+        const serverBackendFactory = () => new BrowserServerBackend(config, contextFactory);
+        await mcpTransport.start(serverBackendFactory, config.server);
         return;
       }
       if (options.loopTools) {
@@ -84,28 +84,17 @@ program
         return;
       }
 
-      let serverBackendFactory: ServerBackendFactory;
       const browserContextFactory = contextFactory(config);
+      const factories: MCPFactoryList = [
+        new InProcessMCPFactory(browserContextFactory, config),
+      ];
       if (options.connectTool) {
-        const factories: ClientFactoryList = [
-          new InProcessClientFactory(browserContextFactory, config),
-          createExtensionClientFactory(config),
-          // TODO: enable vscode client factory without --connect-tool, just based on client name
-          createVSCodeClientFactory(config),
-        ];
-        serverBackendFactory = () => new ProxyBackend(factories);
-      } else {
-        serverBackendFactory = () => new BrowserServerBackend(config, browserContextFactory);
+        factories.push(
+            new InProcessMCPFactory(createExtensionContextFactory(config), config),
+            new VSCodeMCPFactory(config),
+        );
       }
-      await mcpTransport.start(serverBackendFactory, config.server);
-
-      if (config.saveTrace) {
-        const server = await startTraceViewerServer();
-        const urlPrefix = server.urlPrefix('human-readable');
-        const url = urlPrefix + '/trace/index.html?trace=' + config.browser.launchOptions.tracesDir + '/trace.json';
-        // eslint-disable-next-line no-console
-        console.error('\nTrace viewer listening on ' + url);
-      }
+      await mcpTransport.start(() => new ProxyBackend(factories), config.server);
     });
 
 function setupExitWatchdog() {
@@ -122,6 +111,10 @@ function setupExitWatchdog() {
   process.stdin.on('close', handleExit);
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
+}
+
+function createExtensionContextFactory(config: FullConfig) {
+  return new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
 }
 
 void program.parseAsync(process.argv);

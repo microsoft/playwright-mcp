@@ -17,7 +17,7 @@
 import debug from 'debug';
 import * as playwright from 'playwright';
 
-import { logUnhandledError } from './log.js';
+import { logUnhandledError } from './utils/log.js';
 import { Tab } from './tab.js';
 import { outputFile  } from './config.js';
 

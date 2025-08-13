@@ -17,11 +17,12 @@
 import { fileURLToPath } from 'url';
 import { FullConfig } from './config.js';
 import { Context } from './context.js';
-import { logUnhandledError } from './log.js';
+import { logUnhandledError } from './utils/log.js';
 import { Response } from './response.js';
 import { SessionLog } from './sessionLog.js';
 import { filteredTools } from './tools.js';
-import { packageJSON } from './package.js';
+import { packageJSON } from './utils/package.js';
+import { toToolDefinition } from './tools/tool.js';
 
 import type { Tool } from './tools/tool.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
@@ -45,11 +46,9 @@ export class BrowserServerBackend implements ServerBackend {
   }
 
   async initialize(server: mcpServer.Server): Promise<void> {
-    const capabilities = server.getClientCapabilities() as mcpServer.ClientCapabilities;
+    const capabilities = server.getClientCapabilities();
     let rootPath: string | undefined;
-    if (capabilities.roots && (
-      server.getClientVersion()?.name === 'Visual Studio Code' ||
-      server.getClientVersion()?.name === 'Visual Studio Code - Insiders')) {
+    if (capabilities?.roots) {
       const { roots } = await server.listRoots();
       const firstRootUri = roots[0]?.uri;
       const url = firstRootUri ? new URL(firstRootUri) : undefined;
@@ -65,15 +64,15 @@ export class BrowserServerBackend implements ServerBackend {
     });
   }
 
-  tools(): mcpServer.ToolSchema<any>[] {
-    return this._tools.map(tool => tool.schema);
+  tools(): mcpServer.ToolDefinition[] {
+    return this._tools.map(tool => toToolDefinition(tool.schema));
   }
 
-  async callTool(schema: mcpServer.ToolSchema<any>, rawArguments: any) {
+  async callTool(name: string, rawArguments: any) {
+    const tool = this._tools.find(tool => tool.schema.name === name)!;
+    const parsedArguments = tool.schema.inputSchema.parse(rawArguments || {});
     const context = this._context!;
-    const parsedArguments = schema.inputSchema.parse(rawArguments || {});
-    const response = new Response(context, schema.name, parsedArguments);
-    const tool = this._tools.find(tool => tool.schema.name === schema.name)!;
+    const response = new Response(context, name, parsedArguments);
     context.setRunningTool(true);
     try {
       await tool.handle(context, parsedArguments, response);

@@ -17,7 +17,7 @@
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';
 
-import * as javascript from '../javascript.js';
+import * as javascript from '../utils/codegen.js';
 
 const pdfSchema = z.object({
   filename: z.string().optional().describe('File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.'),

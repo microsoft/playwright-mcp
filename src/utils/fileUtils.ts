@@ -17,7 +17,7 @@
 import os from 'node:os';
 import path from 'node:path';
 
-import type { FullConfig } from './config.js';
+import type { FullConfig } from '../config.js';
 
 export function cacheDir() {
   let cacheDirectory: string;
@@ -34,4 +34,12 @@ export function cacheDir() {
 
 export async function userDataDir(browserConfig: FullConfig['browser']) {
   return path.join(cacheDir(), 'ms-playwright', `mcp-${browserConfig.launchOptions?.channel ?? browserConfig?.browserName}-profile`);
+}
+
+export function sanitizeForFilePath(s: string) {
+  const sanitize = (s: string) => s.replace(/[\x00-\x2C\x2E-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F]+/g, '-');
+  const separator = s.lastIndexOf('.');
+  if (separator === -1)
+    return sanitize(s);
+  return sanitize(s.substring(0, separator)) + '.' + sanitize(s.substring(separator + 1));
 }

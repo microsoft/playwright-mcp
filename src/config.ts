@@ -18,7 +18,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { devices } from 'playwright';
-import { sanitizeForFilePath } from './utils.js';
+import { sanitizeForFilePath } from './utils/fileUtils.js';
 
 import type { Config, ToolCapability } from '../config.js';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';

@@ -26,9 +26,9 @@ import { spawn } from 'child_process';
 import http from 'http';
 import debug from 'debug';
 import { WebSocket, WebSocketServer } from 'ws';
-import { httpAddressToString } from '../httpServer.js';
-import { logUnhandledError } from '../log.js';
-import { ManualPromise } from '../manualPromise.js';
+import { httpAddressToString } from '../utils/httpServer.js';
+import { logUnhandledError } from '../utils/log.js';
+import { ManualPromise } from '../utils/manualPromise.js';
 import type websocket from 'ws';
 import type { ClientInfo } from '../browserContextFactory.js';
 
