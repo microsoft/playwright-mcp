@@ -118,7 +118,7 @@ export const browserFindElements = defineTabTool({
       // Use batch-aware ref generation for consistent refs across batch operations
       const batchId = tab.context.batchContext?.batchId;
       const usesBatchRefs = Boolean(batchId);
-      
+
       if (usesBatchRefs) {
         // For batch operations, use getNextCustomRefId with batchId to ensure uniqueness
         for (const alt of alternatives) {

@@ -31,10 +31,10 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     expect(element).not.toBeNull();
 
     const selector = await (elementDiscovery as any).generateSelector(element);
-    
+
     // Should prioritize ID
     expect(selector).toBe('div#unique-element');
-    
+
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
     expect(matchedElements).toHaveLength(1);
@@ -57,14 +57,16 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const usernameInput = await testPage.$('input[name="username"]');
     expect(usernameInput).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(usernameInput);
-    
+    const selector = await (elementDiscovery as any).generateSelector(
+      usernameInput
+    );
+
     // Should not be ambiguous like 'input.form-control'
     expect(selector).not.toBe('input.form-control');
-    
+
     // Should be more specific with attribute selector
     expect(selector).toMatch(/name="username"/);
-    
+
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
     expect(matchedElements).toHaveLength(1);
@@ -85,11 +87,13 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const secondItem = await testPage.$('div.item:nth-of-type(2)');
     expect(secondItem).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(secondItem);
-    
+    const selector = await (elementDiscovery as any).generateSelector(
+      secondItem
+    );
+
     // Should include nth-of-type to make it unique
     expect(selector).toMatch(/:nth-of-type\(2\)|:nth-child\(2\)/);
-    
+
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
     expect(matchedElements).toHaveLength(1);
@@ -110,11 +114,13 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const submitBtn = await testPage.$('[data-testid="submit-btn"]');
     expect(submitBtn).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(submitBtn);
-    
+    const selector = await (elementDiscovery as any).generateSelector(
+      submitBtn
+    );
+
     // Should include data-testid for uniqueness
     expect(selector).toMatch(/data-testid="submit-btn"/);
-    
+
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
     expect(matchedElements).toHaveLength(1);
@@ -142,11 +148,13 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const containerInput = await testPage.$('.container .form-control');
     expect(containerInput).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(containerInput);
-    
+    const selector = await (elementDiscovery as any).generateSelector(
+      containerInput
+    );
+
     // Should include parent context for uniqueness
     expect(selector).toMatch(/container.*form-control|\.col.*input/);
-    
+
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
     expect(matchedElements).toHaveLength(1);
@@ -176,14 +184,14 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     });
 
     const selector = await (elementDiscovery as any).generateSelector(cellA2);
-    
-    // Should be specific enough to identify A2 uniquely  
+
+    // Should be specific enough to identify A2 uniquely
     expect(selector).toMatch(/:nth-child\(2\)|:nth-of-type\(2\)|tr.*td/);
-    
+
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
     expect(matchedElements).toHaveLength(1);
-    
+
     // Verify we got the right element (A2)
     const elementText = await matchedElements[0].textContent();
     expect(elementText).toBe('A2');
@@ -208,11 +216,13 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     const loginEmail = await testPage.$('.login-form input[name="email"]');
     expect(loginEmail).not.toBeNull();
 
-    const selector = await (elementDiscovery as any).generateSelector(loginEmail);
-    
+    const selector = await (elementDiscovery as any).generateSelector(
+      loginEmail
+    );
+
     // Should be unique and include distinguishing attributes
     expect(selector).toMatch(/email|login-form/);
-    
+
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
     expect(matchedElements).toHaveLength(1);
@@ -234,13 +244,13 @@ test.describe('ElementDiscovery generateSelector improvements', () => {
     expect(item2).not.toBeNull();
 
     const selector = await (elementDiscovery as any).generateSelector(item2);
-    
+
     // Should not return generic 'div.item' which would match multiple elements
     expect(selector).not.toBe('div.item');
-    
+
     // Should include data-id for uniqueness
     expect(selector).toMatch(/data-id="2"/);
-    
+
     // Verify selector uniqueness - should match only one element
     const matchedElements = await testPage.$$(selector);
     expect(matchedElements).toHaveLength(1);

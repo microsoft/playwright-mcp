@@ -1,19 +1,19 @@
 /**
  * Batch Find Elements Integration Tests
- * 
+ *
  * Tests batch execution with multiple browser_find_elements and browser_type operations
  * to ensure proper coordination, ref handling, and uniqueness guarantees.
  */
 
-import { expect, test } from './fixtures.js';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import type { TestServer } from './testserver/index.js';
+import { expect, test } from './fixtures.js';
 import {
-  expectBatchExecutionSuccess,
-  expectBatchExecutionPartialSuccess,
-  executeBatchWithErrorHandling,
   createTestPage,
+  executeBatchWithErrorHandling,
+  expectBatchExecutionPartialSuccess,
+  expectBatchExecutionSuccess,
 } from './test-utils.js';
+import type { TestServer } from './testserver/index.js';
 
 type CallToolResponse = Awaited<ReturnType<Client['callTool']>>;
 
@@ -47,7 +47,7 @@ const INTEGRATION_HTML_TEMPLATES = {
       </form>
     </div>
   `,
-  
+
   MULTI_SECTION_FORM: `
     <div>
       <h1>Multi-Section Form</h1>
@@ -78,7 +78,7 @@ const INTEGRATION_HTML_TEMPLATES = {
       </div>
     </div>
   `,
-  
+
   DUPLICATE_ELEMENTS: `
     <div>
       <div class="section section-a">
@@ -109,7 +109,11 @@ const INTEGRATION_HTML_TEMPLATES = {
 /**
  * Helper function to setup test server with content
  */
-function setupTestPage(server: TestServer, htmlContent: string, path = '/'): void {
+function setupTestPage(
+  server: TestServer,
+  htmlContent: string,
+  path = '/'
+): void {
   const page = createTestPage(htmlContent, 'Integration Test Page');
   server.setContent(path, page.content, page.contentType);
 }
@@ -166,7 +170,6 @@ function createFindElementsAndTypeSteps(
 }
 
 test.describe('Batch Find Elements Integration Tests', () => {
-
   test('should execute find_elements in batch mode successfully', async ({
     client,
     server,
@@ -215,11 +218,15 @@ test.describe('Batch Find Elements Integration Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 3);
-    
+
     // Verify that both find_elements steps executed successfully
-    expect(result.content[0].text).toContain('✅ Step 2: browser_find_elements');
-    expect(result.content[0].text).toContain('✅ Step 3: browser_find_elements');
-    
+    expect(result.content[0].text).toContain(
+      '✅ Step 2: browser_find_elements'
+    );
+    expect(result.content[0].text).toContain(
+      '✅ Step 3: browser_find_elements'
+    );
+
     // Verify that elements were found
     expect(result.content[0].text).toContain('Found');
     expect(result.content[0].text).toContain('elements matching the criteria');
@@ -282,16 +289,26 @@ test.describe('Batch Find Elements Integration Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 5);
-    
+
     // Verify all find_elements steps executed successfully
-    expect(result.content[0].text).toContain('✅ Step 2: browser_find_elements');
-    expect(result.content[0].text).toContain('✅ Step 3: browser_find_elements');
-    expect(result.content[0].text).toContain('✅ Step 4: browser_find_elements');
-    expect(result.content[0].text).toContain('✅ Step 5: browser_find_elements');
-    
+    expect(result.content[0].text).toContain(
+      '✅ Step 2: browser_find_elements'
+    );
+    expect(result.content[0].text).toContain(
+      '✅ Step 3: browser_find_elements'
+    );
+    expect(result.content[0].text).toContain(
+      '✅ Step 4: browser_find_elements'
+    );
+    expect(result.content[0].text).toContain(
+      '✅ Step 5: browser_find_elements'
+    );
+
     // Verify that elements were found in each search
     const text = result.content[0].text;
-    const foundCount = (text.match(/Found \d+ elements matching the criteria/g) || []).length;
+    const foundCount = (
+      text.match(/Found \d+ elements matching the criteria/g) || []
+    ).length;
     expect(foundCount).toBeGreaterThanOrEqual(3); // Should have multiple "Found X elements" messages
   });
 
@@ -355,16 +372,17 @@ test.describe('Batch Find Elements Integration Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 5);
-    
+
     // Verify all find_elements operations succeeded without conflicts
     const text = result.content[0].text;
     expect(text).toContain('✅ Step 2: browser_find_elements');
     expect(text).toContain('✅ Step 3: browser_find_elements');
     expect(text).toContain('✅ Step 4: browser_find_elements');
     expect(text).toContain('✅ Step 5: browser_find_elements');
-    
+
     // Verify that different searches returned results
-    const foundMatches = text.match(/Found \d+ elements matching the criteria/g) || [];
+    const foundMatches =
+      text.match(/Found \d+ elements matching the criteria/g) || [];
     expect(foundMatches.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -374,48 +392,52 @@ test.describe('Batch Find Elements Integration Tests', () => {
   }) => {
     setupTestPage(server, INTEGRATION_HTML_TEMPLATES.ERROR_HANDLING_FORM);
 
-    const { result } = await executeBatchWithErrorHandling(client, [
-      {
-        tool: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-        expectation: { includeSnapshot: false, includeConsole: false },
-      },
-      // Valid find_elements operation
-      {
-        tool: 'browser_find_elements',
-        arguments: {
-          searchCriteria: { tagName: 'input' },
-          maxResults: 5,
+    const { result } = await executeBatchWithErrorHandling(
+      client,
+      [
+        {
+          tool: 'browser_navigate',
+          arguments: { url: server.PREFIX },
+          expectation: { includeSnapshot: false, includeConsole: false },
         },
-        expectation: { includeSnapshot: false, includeConsole: false },
-        continueOnError: true,
-      },
-      // Search for non-existent elements - should return 0 results but not error
-      {
-        tool: 'browser_find_elements',
-        arguments: {
-          searchCriteria: { tagName: 'nonexistent' },
-          maxResults: 1,
+        // Valid find_elements operation
+        {
+          tool: 'browser_find_elements',
+          arguments: {
+            searchCriteria: { tagName: 'input' },
+            maxResults: 5,
+          },
+          expectation: { includeSnapshot: false, includeConsole: false },
+          continueOnError: true,
         },
-        expectation: { includeSnapshot: false, includeConsole: false },
-        continueOnError: true,
-      },
-      // Another valid search
-      {
-        tool: 'browser_find_elements',
-        arguments: {
-          searchCriteria: { tagName: 'button' },
-          maxResults: 3,
+        // Search for non-existent elements - should return 0 results but not error
+        {
+          tool: 'browser_find_elements',
+          arguments: {
+            searchCriteria: { tagName: 'nonexistent' },
+            maxResults: 1,
+          },
+          expectation: { includeSnapshot: false, includeConsole: false },
+          continueOnError: true,
         },
-        expectation: { includeSnapshot: false, includeConsole: false },
-      },
-    ], {
-      stopOnFirstError: false,
-    });
+        // Another valid search
+        {
+          tool: 'browser_find_elements',
+          arguments: {
+            searchCriteria: { tagName: 'button' },
+            maxResults: 3,
+          },
+          expectation: { includeSnapshot: false, includeConsole: false },
+        },
+      ],
+      {
+        stopOnFirstError: false,
+      }
+    );
 
     // All operations should succeed, even if some return 0 results
     expectBatchExecutionSuccess(result, 4);
-    
+
     const text = result.content[0].text;
     expect(text).toContain('✅ Step 1: browser_navigate');
     expect(text).toContain('✅ Step 2: browser_find_elements');
@@ -488,21 +510,21 @@ test.describe('Batch Find Elements Integration Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 6);
-    
+
     const text = result.content[0].text;
-    
+
     // Check that all find_elements operations succeeded
     expect(text).toContain('✅ Step 2: browser_find_elements');
     expect(text).toContain('✅ Step 3: browser_find_elements');
     expect(text).toContain('✅ Step 4: browser_find_elements');
     expect(text).toContain('✅ Step 5: browser_find_elements');
     expect(text).toContain('✅ Step 6: browser_find_elements');
-    
+
     // Verify reasonable performance (all operations complete reasonably fast)
     expect(text).toContain('Total Time:');
     const timeMatch = text.match(/Total Time: (\d+)ms/);
     if (timeMatch) {
-      const totalTime = parseInt(timeMatch[1], 10);
+      const totalTime = Number.parseInt(timeMatch[1], 10);
       expect(totalTime).toBeLessThan(5000); // Should complete in under 5 seconds
     }
   });
@@ -526,7 +548,10 @@ test.describe('Batch Find Elements Integration Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { tagName: 'input', attributes: { type: 'text' } },
+              searchCriteria: {
+                tagName: 'input',
+                attributes: { type: 'text' },
+              },
               maxResults: 5,
             },
             expectation: { includeSnapshot: false, includeConsole: false },
@@ -534,7 +559,10 @@ test.describe('Batch Find Elements Integration Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { tagName: 'input', attributes: { type: 'email' } },
+              searchCriteria: {
+                tagName: 'input',
+                attributes: { type: 'email' },
+              },
               maxResults: 5,
             },
             expectation: { includeSnapshot: false, includeConsole: false },
@@ -542,7 +570,10 @@ test.describe('Batch Find Elements Integration Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { tagName: 'input', attributes: { type: 'password' } },
+              searchCriteria: {
+                tagName: 'input',
+                attributes: { type: 'password' },
+              },
               maxResults: 5,
             },
             expectation: { includeSnapshot: false, includeConsole: false },
@@ -581,9 +612,9 @@ test.describe('Batch Find Elements Integration Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 7);
-    
+
     const text = result.content[0].text;
-    
+
     // Verify all find_elements operations succeeded
     expect(text).toContain('✅ Step 2: browser_find_elements'); // text inputs
     expect(text).toContain('✅ Step 3: browser_find_elements'); // email inputs
@@ -591,9 +622,10 @@ test.describe('Batch Find Elements Integration Tests', () => {
     expect(text).toContain('✅ Step 5: browser_find_elements'); // buttons
     expect(text).toContain('✅ Step 6: browser_find_elements'); // forms
     expect(text).toContain('✅ Step 7: browser_find_elements'); // form groups
-    
+
     // Verify that elements were found for form analysis
-    const foundMatches = text.match(/Found \d+ elements matching the criteria/g) || [];
+    const foundMatches =
+      text.match(/Found \d+ elements matching the criteria/g) || [];
     expect(foundMatches.length).toBeGreaterThanOrEqual(4); // At least some successful searches
   });
 
@@ -654,16 +686,16 @@ test.describe('Batch Find Elements Integration Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 5);
-    
+
     const text = result.content[0].text;
     expect(text).toContain('✅ Step 2: browser_find_elements');
     expect(text).toContain('✅ Step 3: browser_find_elements');
     expect(text).toContain('✅ Step 4: browser_find_elements');
     expect(text).toContain('✅ Step 5: browser_find_elements');
-    
+
     // Verify that different result limits work correctly
-    const foundMatches = text.match(/Found \d+ elements matching the criteria/g) || [];
+    const foundMatches =
+      text.match(/Found \d+ elements matching the criteria/g) || [];
     expect(foundMatches.length).toBeGreaterThanOrEqual(3);
   });
-
 });

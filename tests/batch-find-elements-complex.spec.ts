@@ -1,19 +1,19 @@
 /**
  * Complex Batch Find Elements Tests
- * 
+ *
  * Advanced test scenarios for browser_find_elements in batch execution
  * including complex workflows, edge cases, and real-world usage patterns.
  */
 
-import { expect, test } from './fixtures.js';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import type { TestServer } from './testserver/index.js';
+import { expect, test } from './fixtures.js';
 import {
-  expectBatchExecutionSuccess,
-  expectBatchExecutionPartialSuccess,
-  executeBatchWithErrorHandling,
   createTestPage,
+  executeBatchWithErrorHandling,
+  expectBatchExecutionPartialSuccess,
+  expectBatchExecutionSuccess,
 } from './test-utils.js';
+import type { TestServer } from './testserver/index.js';
 
 type CallToolResponse = Awaited<ReturnType<Client['callTool']>>;
 
@@ -80,7 +80,7 @@ const COMPLEX_HTML_TEMPLATES = {
       </main>
     </div>
   `,
-  
+
   DYNAMIC_FORM_WIZARD: `
     <div id="form-wizard">
       <div class="wizard-progress">
@@ -143,7 +143,7 @@ const COMPLEX_HTML_TEMPLATES = {
       </form>
     </div>
   `,
-  
+
   NESTED_COMPONENTS: `
     <div id="app">
       <div class="component-a" data-component="header">
@@ -263,13 +263,16 @@ const COMPLEX_HTML_TEMPLATES = {
 /**
  * Helper function to setup test server with content
  */
-function setupTestPage(server: TestServer, htmlContent: string, path = '/'): void {
+function setupTestPage(
+  server: TestServer,
+  htmlContent: string,
+  path = '/'
+): void {
   const page = createTestPage(htmlContent, 'Complex Test Page');
   server.setContent(path, page.content, page.contentType);
 }
 
 test.describe('Complex Batch Find Elements Tests', () => {
-
   test('should handle e-commerce product page workflow', async ({
     client,
     server,
@@ -298,7 +301,10 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { tagName: 'button', attributes: { class: 'btn' } },
+              searchCriteria: {
+                tagName: 'button',
+                attributes: { class: 'btn' },
+              },
               maxResults: 10,
             },
             expectation: { includeSnapshot: false },
@@ -345,18 +351,19 @@ test.describe('Complex Batch Find Elements Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 7);
-    
+
     const text = result.content[0].text;
-    
+
     // Verify all find_elements operations succeeded
     expect(text).toContain('✅ Step 2: browser_find_elements'); // nav links
     expect(text).toContain('✅ Step 3: browser_find_elements'); // buttons
     expect(text).toContain('✅ Step 4: browser_find_elements'); // selects
     expect(text).toContain('✅ Step 5: browser_find_elements'); // features
     expect(text).toContain('✅ Step 6: browser_find_elements'); // products
-    
+
     // Verify that multiple elements were found
-    const foundMatches = text.match(/Found \d+ elements matching the criteria/g) || [];
+    const foundMatches =
+      text.match(/Found \d+ elements matching the criteria/g) || [];
     expect(foundMatches.length).toBeGreaterThanOrEqual(5);
   });
 
@@ -379,9 +386,9 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
+              searchCriteria: {
                 tagName: 'input',
-                attributes: { class: 'form-input' }
+                attributes: { class: 'form-input' },
               },
               maxResults: 10,
             },
@@ -391,8 +398,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'required' }
+              searchCriteria: {
+                attributes: { class: 'required' },
               },
               maxResults: 15,
             },
@@ -402,8 +409,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'next-step' }
+              searchCriteria: {
+                attributes: { class: 'next-step' },
               },
               maxResults: 5,
             },
@@ -413,8 +420,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'step' }
+              searchCriteria: {
+                attributes: { class: 'step' },
               },
               maxResults: 10,
             },
@@ -424,8 +431,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'payment-radio' }
+              searchCriteria: {
+                attributes: { class: 'payment-radio' },
               },
               maxResults: 5,
             },
@@ -440,7 +447,7 @@ test.describe('Complex Batch Find Elements Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 6);
-    
+
     // Verify form analysis workflow succeeded
     const text = result.content[0].text;
     for (let i = 2; i <= 6; i++) {
@@ -467,8 +474,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { 'data-component': 'header' }
+              searchCriteria: {
+                attributes: { 'data-component': 'header' },
               },
               maxResults: 5,
             },
@@ -478,8 +485,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'menu-item' }
+              searchCriteria: {
+                attributes: { class: 'menu-item' },
               },
               maxResults: 10,
             },
@@ -489,8 +496,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'submenu-item' }
+              searchCriteria: {
+                attributes: { class: 'submenu-item' },
               },
               maxResults: 10,
             },
@@ -500,8 +507,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'card' }
+              searchCriteria: {
+                attributes: { class: 'card' },
               },
               maxResults: 10,
             },
@@ -511,9 +518,9 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
+              searchCriteria: {
                 tagName: 'a',
-                attributes: { class: 'link' }
+                attributes: { class: 'link' },
               },
               maxResults: 20,
             },
@@ -523,8 +530,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'card-action' }
+              searchCriteria: {
+                attributes: { class: 'card-action' },
               },
               maxResults: 10,
             },
@@ -539,16 +546,17 @@ test.describe('Complex Batch Find Elements Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 7);
-    
+
     const text = result.content[0].text;
-    
+
     // Verify nested structure discovery
     for (let i = 2; i <= 7; i++) {
       expect(text).toContain(`✅ Step ${i}: browser_find_elements`);
     }
-    
+
     // Should find elements at various nesting levels
-    const foundMatches = text.match(/Found \d+ elements matching the criteria/g) || [];
+    const foundMatches =
+      text.match(/Found \d+ elements matching the criteria/g) || [];
     expect(foundMatches.length).toBeGreaterThanOrEqual(6);
   });
 
@@ -571,9 +579,9 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
+              searchCriteria: {
                 tagName: 'tr',
-                attributes: { 'data-row-id': '1' }
+                attributes: { 'data-row-id': '1' },
               },
               maxResults: 1,
             },
@@ -583,9 +591,9 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
+              searchCriteria: {
                 tagName: 'input',
-                attributes: { type: 'checkbox' }
+                attributes: { type: 'checkbox' },
               },
               maxResults: 10,
             },
@@ -595,8 +603,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'btn-edit' }
+              searchCriteria: {
+                attributes: { class: 'btn-edit' },
               },
               maxResults: 10,
             },
@@ -606,8 +614,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'btn-delete' }
+              searchCriteria: {
+                attributes: { class: 'btn-delete' },
               },
               maxResults: 10,
             },
@@ -617,8 +625,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'row-status active' }
+              searchCriteria: {
+                attributes: { class: 'row-status active' },
               },
               maxResults: 10,
             },
@@ -628,8 +636,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'page-btn' }
+              searchCriteria: {
+                attributes: { class: 'page-btn' },
               },
               maxResults: 5,
             },
@@ -644,9 +652,9 @@ test.describe('Complex Batch Find Elements Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 7);
-    
+
     const text = result.content[0].text;
-    
+
     // Verify table element discovery
     for (let i = 2; i <= 7; i++) {
       expect(text).toContain(`✅ Step ${i}: browser_find_elements`);
@@ -715,19 +723,19 @@ test.describe('Complex Batch Find Elements Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 21);
-    
+
     const text = result.content[0].text;
-    
+
     // Verify all 20 find_elements operations succeeded
     for (let i = 2; i <= 21; i++) {
       expect(text).toContain(`✅ Step ${i}: browser_find_elements`);
     }
-    
+
     // Verify performance is reasonable even with many operations
     const timeMatch = text.match(/Total Time: (\d+)ms/);
     if (timeMatch) {
-      const totalTime = parseInt(timeMatch[1], 10);
-      expect(totalTime).toBeLessThan(10000); // Should complete in under 10 seconds
+      const totalTime = Number.parseInt(timeMatch[1], 10);
+      expect(totalTime).toBeLessThan(10_000); // Should complete in under 10 seconds
     }
   });
 
@@ -750,9 +758,9 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
+              searchCriteria: {
                 tagName: 'input',
-                attributes: { class: 'form-input' }
+                attributes: { class: 'form-input' },
               },
               maxResults: 5,
             },
@@ -768,8 +776,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                tagName: 'button'
+              searchCriteria: {
+                tagName: 'button',
               },
               maxResults: 5,
             },
@@ -778,15 +786,17 @@ test.describe('Complex Batch Find Elements Tests', () => {
           // Evaluate some JavaScript
           {
             tool: 'browser_evaluate',
-            arguments: { function: '() => document.querySelectorAll("input").length' },
+            arguments: {
+              function: '() => document.querySelectorAll("input").length',
+            },
             expectation: { includeSnapshot: false },
           },
           // Find more elements
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                attributes: { class: 'step' }
+              searchCriteria: {
+                attributes: { class: 'step' },
               },
               maxResults: 10,
             },
@@ -802,8 +812,8 @@ test.describe('Complex Batch Find Elements Tests', () => {
           {
             tool: 'browser_find_elements',
             arguments: {
-              searchCriteria: { 
-                tagName: 'select'
+              searchCriteria: {
+                tagName: 'select',
               },
               maxResults: 5,
             },
@@ -824,9 +834,9 @@ test.describe('Complex Batch Find Elements Tests', () => {
     });
 
     expectBatchExecutionSuccess(result, 9);
-    
+
     const text = result.content[0].text;
-    
+
     // Verify mixed operations all succeeded
     expect(text).toContain('✅ Step 2: browser_find_elements');
     expect(text).toContain('✅ Step 3: browser_take_screenshot');
@@ -836,11 +846,12 @@ test.describe('Complex Batch Find Elements Tests', () => {
     expect(text).toContain('✅ Step 7: browser_wait_for');
     expect(text).toContain('✅ Step 8: browser_find_elements');
     expect(text).toContain('✅ Step 9: browser_snapshot');
-    
+
     // Verify refs are maintained throughout
     // The snapshot should contain element refs from find_elements operations
     // Check that we found elements in steps 2, 4, 6, 8
-    const foundMatches = text.match(/Found \d+ elements matching the criteria/g) || [];
+    const foundMatches =
+      text.match(/Found \d+ elements matching the criteria/g) || [];
     expect(foundMatches.length).toBeGreaterThanOrEqual(4);
   });
 
@@ -850,54 +861,58 @@ test.describe('Complex Batch Find Elements Tests', () => {
   }) => {
     setupTestPage(server, COMPLEX_HTML_TEMPLATES.E_COMMERCE_PRODUCT);
 
-    const { result } = await executeBatchWithErrorHandling(client, [
-      {
-        tool: 'browser_navigate',
-        arguments: { url: server.PREFIX },
-        expectation: { includeSnapshot: false },
-      },
-      // Valid find_elements
-      {
-        tool: 'browser_find_elements',
-        arguments: {
-          searchCriteria: { tagName: 'button' },
-          maxResults: 5,
+    const { result } = await executeBatchWithErrorHandling(
+      client,
+      [
+        {
+          tool: 'browser_navigate',
+          arguments: { url: server.PREFIX },
+          expectation: { includeSnapshot: false },
         },
-        expectation: { includeSnapshot: false },
-        continueOnError: true,
-      },
-      // Invalid operation (will fail)
-      {
-        tool: 'browser_click',
-        arguments: { element: 'nonexistent', ref: 'invalid_ref' },
-        expectation: { includeSnapshot: false },
-        continueOnError: true,
-      },
-      // Another valid find_elements after error
-      {
-        tool: 'browser_find_elements',
-        arguments: {
-          searchCriteria: { tagName: 'input' },
-          maxResults: 5,
+        // Valid find_elements
+        {
+          tool: 'browser_find_elements',
+          arguments: {
+            searchCriteria: { tagName: 'button' },
+            maxResults: 5,
+          },
+          expectation: { includeSnapshot: false },
+          continueOnError: true,
         },
-        expectation: { includeSnapshot: false },
-      },
-      // More operations
-      {
-        tool: 'browser_find_elements',
-        arguments: {
-          searchCriteria: { attributes: { class: 'product-card' } },
-          maxResults: 5,
+        // Invalid operation (will fail)
+        {
+          tool: 'browser_click',
+          arguments: { element: 'nonexistent', ref: 'invalid_ref' },
+          expectation: { includeSnapshot: false },
+          continueOnError: true,
         },
-        expectation: { includeSnapshot: false },
-      },
-    ], {
-      stopOnFirstError: false,
-    });
+        // Another valid find_elements after error
+        {
+          tool: 'browser_find_elements',
+          arguments: {
+            searchCriteria: { tagName: 'input' },
+            maxResults: 5,
+          },
+          expectation: { includeSnapshot: false },
+        },
+        // More operations
+        {
+          tool: 'browser_find_elements',
+          arguments: {
+            searchCriteria: { attributes: { class: 'product-card' } },
+            maxResults: 5,
+          },
+          expectation: { includeSnapshot: false },
+        },
+      ],
+      {
+        stopOnFirstError: false,
+      }
+    );
 
     // Should have partial success
     expectBatchExecutionPartialSuccess(result, 5, 4, 1);
-    
+
     const text = result.content[0].text;
     expect(text).toContain('✅ Step 1: browser_navigate');
     expect(text).toContain('✅ Step 2: browser_find_elements');
@@ -905,5 +920,4 @@ test.describe('Complex Batch Find Elements Tests', () => {
     expect(text).toContain('✅ Step 4: browser_find_elements');
     expect(text).toContain('✅ Step 5: browser_find_elements');
   });
-
 });

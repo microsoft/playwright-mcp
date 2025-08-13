@@ -15,7 +15,7 @@
  */
 
 import { BatchExecutor } from '../src/batch/batch-executor.js';
-import { Context } from '../src/context.js';
+import type { Context } from '../src/context.js';
 import { batchExecuteSchema, batchStepSchema } from '../src/types/batch.js';
 import { expect, test } from './fixtures.js';
 
