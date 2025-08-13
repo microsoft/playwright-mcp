@@ -14,6 +14,39 @@ import {
 } from './test-utils.js';
 import type { TestServer } from './testserver/index.js';
 
+// Common test configurations
+const DEFAULT_EXPECTATION = { includeSnapshot: false };
+const SNAPSHOT_EXPECTATION = { includeSnapshot: true };
+
+// Helper to create navigate step
+const createNavigateStep = (
+  url: string,
+  expectation = DEFAULT_EXPECTATION
+) => ({
+  tool: 'browser_navigate',
+  arguments: { url },
+  expectation,
+});
+
+// Helper for common batch execution
+const executeBatch = async (
+  client: any,
+  steps: any[],
+  globalExpectation = {}
+) => {
+  return await client.callTool({
+    name: 'browser_batch_execute',
+    arguments: {
+      steps,
+      globalExpectation: {
+        includeDownloads: false,
+        includeTabs: false,
+        ...globalExpectation,
+      },
+    },
+  });
+};
+
 // HTML templates for testing
 const HTML_TEMPLATES = {
   // Basic templates for integration testing
@@ -385,7 +418,7 @@ test.describe('Batch Find Elements Tests', () => {
             {
               tool: 'browser_navigate',
               arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -393,7 +426,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'input' },
                 maxResults: 3,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -401,15 +434,10 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'button' },
                 maxResults: 3,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 3);
 
@@ -441,7 +469,7 @@ test.describe('Batch Find Elements Tests', () => {
             {
               tool: 'browser_navigate',
               arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Multiple find_elements operations with different criteria
             {
@@ -450,7 +478,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'input' },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -458,7 +486,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'textarea' },
                 maxResults: 2,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -466,7 +494,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'select' },
                 maxResults: 2,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -474,15 +502,10 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'button' },
                 maxResults: 3,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 5);
 
@@ -521,7 +544,7 @@ test.describe('Batch Find Elements Tests', () => {
             {
               tool: 'browser_navigate',
               arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find by class name - should find multiple input fields
             {
@@ -530,7 +553,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'input-field' } },
                 maxResults: 3,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find by different class name - should find multiple buttons
             {
@@ -539,7 +562,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'action-btn' } },
                 maxResults: 3,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find by specific text content - should find one input
             {
@@ -548,7 +571,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { text: 'Section A Input' },
                 maxResults: 1,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find by section class - should find container divs
             {
@@ -557,15 +580,10 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'section' } },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 5);
 
@@ -595,7 +613,7 @@ test.describe('Batch Find Elements Tests', () => {
             {
               tool: 'browser_navigate',
               arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Test different maxResults settings to ensure proper batching behavior
             {
@@ -604,7 +622,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'input-field' } },
                 maxResults: 1, // Only first match
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -612,7 +630,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'action-btn' } },
                 maxResults: 10, // All matches (more than available)
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -620,7 +638,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'section' } },
                 maxResults: 2, // Limited matches
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -628,15 +646,10 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'div' },
                 maxResults: 0, // Edge case: limit of 0
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 5);
 
@@ -671,7 +684,7 @@ test.describe('Batch Find Elements Tests', () => {
             {
               tool: 'browser_navigate',
               arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Multiple concurrent find_elements operations with different criteria
             {
@@ -680,7 +693,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'input' },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -688,7 +701,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'button' },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -696,7 +709,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { type: 'password' } },
                 maxResults: 3,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -704,7 +717,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { type: 'text' } },
                 maxResults: 3,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -712,15 +725,10 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'form-group' } },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 6);
 
@@ -801,10 +809,6 @@ test.describe('Batch Find Elements Tests', () => {
         name: 'browser_batch_execute',
         arguments: {
           steps,
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
         },
       });
 
@@ -845,7 +849,7 @@ test.describe('Batch Find Elements Tests', () => {
             {
               tool: 'browser_navigate',
               arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Analyze different types of form elements
             {
@@ -857,7 +861,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -868,7 +872,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -879,7 +883,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -887,7 +891,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'button' },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Analyze form structure
             {
@@ -896,7 +900,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { tagName: 'form' },
                 maxResults: 3,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             {
               tool: 'browser_find_elements',
@@ -904,15 +908,10 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'form-group' } },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false, includeConsole: false },
+              expectation: DEFAULT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 7);
 
@@ -938,15 +937,8 @@ test.describe('Batch Find Elements Tests', () => {
     }) => {
       setupTestPage(server, HTML_TEMPLATES.E_COMMERCE_PRODUCT);
 
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false },
-            },
+      const result = await executeBatch(client, [
+            createNavigateStep(server.PREFIX),
             // Find all navigation links
             {
               tool: 'browser_find_elements',
@@ -954,7 +946,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'nav-link' } },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find product action buttons
             {
@@ -966,7 +958,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find product options (selects and inputs)
             {
@@ -975,7 +967,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'option-select' } },
                 maxResults: 3,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find feature list items
             {
@@ -984,7 +976,7 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'feature-item' } },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find related product cards
             {
@@ -993,21 +985,16 @@ test.describe('Batch Find Elements Tests', () => {
                 searchCriteria: { attributes: { class: 'product-card' } },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Get a final snapshot to see all refs
             {
               tool: 'browser_snapshot',
               arguments: {},
-              expectation: { includeSnapshot: true },
+              expectation: SNAPSHOT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 7);
 
@@ -1032,15 +1019,8 @@ test.describe('Batch Find Elements Tests', () => {
     }) => {
       setupTestPage(server, HTML_TEMPLATES.DYNAMIC_FORM_WIZARD);
 
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false },
-            },
+      const result = await executeBatch(client, [
+            createNavigateStep(server.PREFIX),
             // Find all form inputs in step 1
             {
               tool: 'browser_find_elements',
@@ -1051,7 +1031,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find required fields specifically
             {
@@ -1062,7 +1042,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 15,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find navigation buttons
             {
@@ -1073,7 +1053,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find all step indicators
             {
@@ -1084,7 +1064,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find payment options
             {
@@ -1095,15 +1075,10 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 6);
 
@@ -1120,15 +1095,8 @@ test.describe('Batch Find Elements Tests', () => {
     }) => {
       setupTestPage(server, HTML_TEMPLATES.NESTED_COMPONENTS);
 
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false },
-            },
+      const result = await executeBatch(client, [
+            createNavigateStep(server.PREFIX),
             // Find top-level components
             {
               tool: 'browser_find_elements',
@@ -1138,7 +1106,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find menu items
             {
@@ -1149,7 +1117,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find submenu items (nested)
             {
@@ -1160,7 +1128,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find cards
             {
@@ -1171,7 +1139,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find all links
             {
@@ -1183,7 +1151,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 20,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find card action buttons
             {
@@ -1194,15 +1162,10 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 7);
 
@@ -1225,15 +1188,8 @@ test.describe('Batch Find Elements Tests', () => {
     }) => {
       setupTestPage(server, HTML_TEMPLATES.TABLE_WITH_ACTIONS);
 
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false },
-            },
+      const result = await executeBatch(client, [
+            createNavigateStep(server.PREFIX),
             // Find all table rows
             {
               tool: 'browser_find_elements',
@@ -1244,7 +1200,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 1,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find all checkboxes
             {
@@ -1256,7 +1212,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find edit buttons
             {
@@ -1267,7 +1223,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find delete buttons
             {
@@ -1278,7 +1234,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find active status cells
             {
@@ -1289,7 +1245,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find pagination buttons
             {
@@ -1300,15 +1256,10 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 7);
 
@@ -1326,15 +1277,8 @@ test.describe('Batch Find Elements Tests', () => {
     }) => {
       setupTestPage(server, HTML_TEMPLATES.DYNAMIC_FORM_WIZARD);
 
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: { includeSnapshot: false },
-            },
+      const result = await executeBatch(client, [
+            createNavigateStep(server.PREFIX),
             // Find form inputs
             {
               tool: 'browser_find_elements',
@@ -1345,13 +1289,13 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Take a screenshot
             {
               tool: 'browser_take_screenshot',
               arguments: { filename: 'form-step1.png' },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find buttons
             {
@@ -1362,7 +1306,7 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Evaluate some JavaScript
             {
@@ -1370,7 +1314,7 @@ test.describe('Batch Find Elements Tests', () => {
               arguments: {
                 function: '() => document.querySelectorAll("input").length',
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find more elements
             {
@@ -1381,13 +1325,13 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 10,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Wait a bit
             {
               tool: 'browser_wait_for',
               arguments: { time: 0.5 },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Find more elements after wait
             {
@@ -1398,21 +1342,16 @@ test.describe('Batch Find Elements Tests', () => {
                 },
                 maxResults: 5,
               },
-              expectation: { includeSnapshot: false },
+              expectation: DEFAULT_EXPECTATION,
             },
             // Get final snapshot
             {
               tool: 'browser_snapshot',
               arguments: {},
-              expectation: { includeSnapshot: true },
+              expectation: SNAPSHOT_EXPECTATION,
             },
           ],
-          globalExpectation: {
-            includeDownloads: false,
-            includeTabs: false,
-          },
-        },
-      });
+      ])
 
       expectBatchExecutionSuccess(result, 9);
 
