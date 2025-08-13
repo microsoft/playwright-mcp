@@ -41,19 +41,21 @@ export class ProxyBackend implements ServerBackend {
   name = 'Playwright MCP Client Switcher';
   version = packageJSON.version;
 
-  private _mcpFactories: MCPFactoryList;
+  private _getMcpFactories: (server: Server) => MCPFactoryList;
+  private _mcpFactories!: MCPFactoryList;
+  private _contextSwitchTool!: ToolDefinition;
   private _currentClient: Client | undefined;
-  private _contextSwitchTool: ToolDefinition;
   private _tools: ToolDefinition[] = [];
   private _server: Server | undefined;
 
-  constructor(clientFactories: MCPFactoryList) {
-    this._mcpFactories = clientFactories;
-    this._contextSwitchTool = this._defineContextSwitchTool();
+  constructor(getMcpFactories: (server: Server) => MCPFactoryList) {
+    this._getMcpFactories = getMcpFactories;
   }
 
   async initialize(server: Server): Promise<void> {
     this._server = server;
+    this._mcpFactories = this._getMcpFactories(server);
+    this._contextSwitchTool = this._defineContextSwitchTool();
     await this._setCurrentClient(this._mcpFactories[0]);
   }
 

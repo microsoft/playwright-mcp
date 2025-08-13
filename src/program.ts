@@ -83,13 +83,17 @@ program
         return;
       }
 
-      const browserContextFactory = contextFactory(config);
-      const factories: MCPFactoryList = [
-        new InProcessMCPFactory(browserContextFactory, config),
-      ];
-      if (options.connectTool)
-        factories.push(new InProcessMCPFactory(createExtensionContextFactory(config), config));
-      await mcpTransport.start(() => new ProxyBackend(factories), config.server);
+      await mcpTransport.start(
+          () => new ProxyBackend(server => {
+            const factories: MCPFactoryList = [
+              new InProcessMCPFactory(contextFactory(config), config),
+            ];
+            if (options.connectTool)
+              factories.push(new InProcessMCPFactory(createExtensionContextFactory(config), config));
+            return factories;
+          }),
+          config.server
+      );
     });
 
 function setupExitWatchdog() {
