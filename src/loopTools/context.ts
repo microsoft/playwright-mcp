@@ -52,7 +52,7 @@ export class Context {
     return new Context(config, client);
   }
 
-  async runTask(task: string, oneShot: boolean = false): Promise<mcpServer.ToolResponse> {
+  async runTask(task: string, oneShot: boolean = false): Promise<mcpServer.CallToolResult> {
     const messages = await runTask(this._delegate, this._client!, task, oneShot);
     const lines: string[] = [];
 

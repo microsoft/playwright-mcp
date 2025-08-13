@@ -15,7 +15,7 @@
  */
 
 import { program, Option } from 'commander';
-
+import * as mcpServer from './mcp/server.js';
 import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
 import { packageJSON } from './utils/package.js';
@@ -23,12 +23,13 @@ import { Context } from './context.js';
 import { contextFactory } from './browserContextFactory.js';
 import { runLoopTools } from './loopTools/main.js';
 import { ProxyBackend } from './mcp/proxyBackend.js';
-import { InProcessMCPFactory } from './inProcessMcpFactrory.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
+import { InProcessTransport } from './mcp/inProcessTransport.js';
 
-import type { MCPFactoryList } from './mcp/proxyBackend.js';
+import type { MCPProvider } from './mcp/proxyBackend.js';
 import type { FullConfig } from './config.js';
+import type { BrowserContextFactory } from './browserContextFactory.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -78,18 +79,17 @@ program
         await mcpTransport.start(serverBackendFactory, config.server);
         return;
       }
+
       if (options.loopTools) {
         await runLoopTools(config);
         return;
       }
 
       const browserContextFactory = contextFactory(config);
-      const factories: MCPFactoryList = [
-        new InProcessMCPFactory(browserContextFactory, config),
-      ];
+      const providers: MCPProvider[] = [mcpProviderForBrowserContextFactory(config, browserContextFactory)];
       if (options.connectTool)
-        factories.push(new InProcessMCPFactory(createExtensionContextFactory(config), config));
-      await mcpTransport.start(() => new ProxyBackend(factories), config.server);
+        providers.push(mcpProviderForBrowserContextFactory(config, createExtensionContextFactory(config)));
+      await mcpTransport.start(() => new ProxyBackend(providers), config.server);
     });
 
 function setupExitWatchdog() {
@@ -110,6 +110,17 @@ function setupExitWatchdog() {
 
 function createExtensionContextFactory(config: FullConfig) {
   return new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
+}
+
+function mcpProviderForBrowserContextFactory(config: FullConfig, browserContextFactory: BrowserContextFactory) {
+  return {
+    name: browserContextFactory.name,
+    description: browserContextFactory.description,
+    connect: async () => {
+      const server = mcpServer.createServer(new BrowserServerBackend(config, browserContextFactory), false);
+      return new InProcessTransport(server);
+    },
+  };
 }
 
 void program.parseAsync(process.argv);

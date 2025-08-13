@@ -22,7 +22,7 @@ import { packageJSON } from '../utils/package.js';
 import { Context } from './context.js';
 import { perform } from './perform.js';
 import { snapshot } from './snapshot.js';
-import { toToolDefinition } from '../tools/tool.js';
+import { toMcpTool } from '../tools/tool.js';
 
 import type { FullConfig } from '../config.js';
 import type { ServerBackend } from '../mcp/server.js';
@@ -49,13 +49,13 @@ class LoopToolsServerBackend implements ServerBackend {
     this._context = await Context.create(this._config);
   }
 
-  tools(): mcpServer.ToolDefinition[] {
-    return this._tools.map(tool => toToolDefinition(tool.schema));
+  async listTools(): Promise<mcpServer.Tool[]> {
+    return this._tools.map(tool => toMcpTool(tool.schema));
   }
 
-  async callTool(name: string, rawArguments: any): Promise<mcpServer.ToolResponse> {
+  async callTool(name: string, args: mcpServer.CallToolRequest['params']['arguments']): Promise<mcpServer.CallToolResult> {
     const tool = this._tools.find(tool => tool.schema.name === name)!;
-    const parsedArguments = tool.schema.inputSchema.parse(rawArguments || {});
+    const parsedArguments = tool.schema.inputSchema.parse(args || {});
     return await tool.handle(this._context!, parsedArguments);
   }
 

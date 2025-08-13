@@ -20,31 +20,19 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { ManualPromise } from '../utils/manualPromise.js';
 import { logUnhandledError } from '../utils/log.js';
 
-import type { ImageContent, TextContent, Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 export type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+export type { Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 
 const serverDebug = debug('pw:mcp:server');
-
-export type ClientCapabilities = {
-  roots?: {
-    listRoots?: boolean
-  };
-};
-
-export type ToolResponse = {
-  content: (TextContent | ImageContent)[];
-  isError?: boolean;
-};
-
-export type ToolDefinition = Tool;
 
 export interface ServerBackend {
   name: string;
   version: string;
   initialize?(server: Server): Promise<void>;
-  tools(): ToolDefinition[];
-  callTool(name: string, rawArguments: any): Promise<ToolResponse>;
+  listTools(): Promise<Tool[]>;
+  callTool(name: string, args: CallToolRequest['params']['arguments']): Promise<CallToolResult>;
   serverClosed?(): void;
 }
 
@@ -66,7 +54,7 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     serverDebug('listTools');
-    const tools = backend.tools();
+    const tools = await backend.listTools();
     return { tools };
   });
 
@@ -80,19 +68,13 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
       startHeartbeat(server);
     }
 
-    const errorResult = (...messages: string[]) => ({
-      content: [{ type: 'text', text: '### Result\n' + messages.join('\n') }],
-      isError: true,
-    });
-    const tools = backend.tools();
-    const tool = tools.find(tool => tool.name === request.params.name);
-    if (!tool)
-      return errorResult(`Error: Tool "${request.params.name}" not found`);
-
     try {
-      return await backend.callTool(tool.name, request.params.arguments || {});
+      return await backend.callTool(request.params.name, request.params.arguments || {});
     } catch (error) {
-      return errorResult(String(error));
+      return {
+        content: [{ type: 'text', text: '### Result\n' + String(error) }],
+        isError: true,
+      };
     }
   });
   addServerListener(server, 'initialized', () => {
