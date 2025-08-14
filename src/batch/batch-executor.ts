@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import debug from 'debug';
 import type { Context } from '../context.js';
 import { Response } from '../response.js';
@@ -39,12 +40,8 @@ export class BatchExecutor {
    */
   private generateBatchId(): string {
     const timestamp = Date.now();
-    // Use crypto.getRandomValues for secure random generation (SonarQube compliance)
-    const array = new Uint8Array(4);
-    crypto.getRandomValues(array);
-    const random = Array.from(array, (byte) =>
-      byte.toString(16).padStart(2, '0')
-    ).join('');
+    // Use Node.js crypto for secure random generation
+    const random = randomBytes(4).toString('hex');
     return `batch_${timestamp}_${random}`;
   }
   /**
