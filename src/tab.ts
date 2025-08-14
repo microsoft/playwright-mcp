@@ -23,6 +23,7 @@ export type TabEventsInterface = {
 };
 
 const snapshotDebug = debug('pw:mcp:snapshot');
+const tabDebug = debug('pw:mcp:tab');
 export type TabSnapshot = {
   url: string;
   title: string;
@@ -91,8 +92,9 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     });
     page.on('dialog', (dialog) => this._dialogShown(dialog));
     page.on('download', (download) => {
-      this._downloadStarted(download).catch(() => {
+      this._downloadStarted(download).catch((error) => {
         // Intentionally ignore download errors to prevent crashing
+        tabDebug('Download error ignored:', error);
       });
     });
 
@@ -179,8 +181,12 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     state: 'load' | 'networkidle',
     options?: { timeout?: number }
   ): Promise<void> {
+    tabDebug(`Waiting for load state: ${state}`);
     await callOnPageNoTrace(this.page, (page) =>
-      page.waitForLoadState(state, options).catch(logUnhandledError)
+      page.waitForLoadState(state, options).catch((error) => {
+        tabDebug(`Failed to wait for load state ${state}:`, error);
+        logUnhandledError(error);
+      })
     );
   }
 

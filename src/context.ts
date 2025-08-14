@@ -15,6 +15,7 @@ import type { Tool } from './tools/tool.js';
 import type { BatchContext } from './types/batch.js';
 
 const testDebug = debug('pw:mcp:test');
+const contextDebug = debug('pw:mcp:context');
 type ContextOptions = {
   tools: Tool[];
   config: FullConfig;
@@ -132,16 +133,24 @@ export class Context {
       this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
     }
     if (!this._tabs.length) {
-      this.closeBrowserContext().catch(() => {
+      contextDebug('No tabs remaining, closing browser context');
+      this.closeBrowserContext().catch((error) => {
         // Error is handled by logUnhandledError in closeBrowserContext
+        contextDebug('Error closing browser context:', error);
       });
     }
   }
   async closeBrowserContext() {
-    this._closeBrowserContextPromise ??=
-      this._closeBrowserContextImpl().catch(logUnhandledError);
+    contextDebug('Closing browser context');
+    this._closeBrowserContextPromise ??= this._closeBrowserContextImpl().catch(
+      (error) => {
+        contextDebug('Failed to close browser context:', error);
+        logUnhandledError(error);
+      }
+    );
     await this._closeBrowserContextPromise;
     this._closeBrowserContextPromise = undefined;
+    contextDebug('Browser context closed');
   }
   isRunningTool() {
     return this._isRunningTool;
@@ -203,8 +212,10 @@ export class Context {
   }
   private _ensureBrowserContext() {
     this._browserContextPromise ??= (() => {
+      contextDebug('Ensuring browser context exists');
       const promise = this._setupBrowserContext();
-      promise.catch(() => {
+      promise.catch((error) => {
+        contextDebug('Failed to setup browser context:', error);
         this._browserContextPromise = undefined;
       });
       return promise;
@@ -218,6 +229,7 @@ export class Context {
     if (this._closeBrowserContextPromise) {
       throw new Error('Another browser context is being closed.');
     }
+    contextDebug('Setting up new browser context');
     const result = await this._browserContextFactory.createContext(
       this._clientInfo,
       this._abortController.signal
