@@ -1,6 +1,6 @@
 {
   "name": "@tontoko/fast-playwright-mcp",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publishConfig": {
     "access": "public"
   },

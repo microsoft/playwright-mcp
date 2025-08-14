@@ -52,7 +52,16 @@ export class BatchExecutor {
     for (const [index, step] of steps.entries()) {
       const tool = this.toolRegistry.get(step.tool);
       if (!tool) {
-        throw new Error(`Unknown tool: ${step.tool}`);
+        const availableTools = Array.from(this.toolRegistry.keys())
+          .filter(
+            (name) =>
+              name.startsWith('browser_') && name !== 'browser_batch_execute'
+          )
+          .sort((a, b) => a.localeCompare(b))
+          .join(',');
+        throw new Error(
+          `Unknown tool: "${step.tool}" at step ${index}. Available tools: ${availableTools}`
+        );
       }
       // Validate arguments using tool's schema
       try {
@@ -65,7 +74,9 @@ export class BatchExecutor {
         }
       } catch (error) {
         throw new Error(
-          `Invalid arguments for ${step.tool} at step ${index}: ${getErrorMessage(error)}`
+          `Invalid arguments for ${
+            step.tool
+          } at step ${index}: ${getErrorMessage(error)}`
         );
       }
     }

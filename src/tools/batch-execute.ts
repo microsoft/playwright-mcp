@@ -13,7 +13,7 @@ export const batchExecuteTool = defineTool({
   schema: {
     name: 'browser_batch_execute',
     title: 'Batch Execute Browser Actions',
-    description: `Execute multiple browser actions in sequence with optimized response handling.RECOMMENDED:Use this tool instead of individual actions when performing multiple operations to significantly reduce token usage and improve performance.BY DEFAULT use for:form filling(multiple type→click),multi-step navigation,any workflow with 2+ known steps.Saves 90% tokens vs individual calls.globalExpectation:{includeSnapshot:false,snapshotOptions:{selector:"#app"},diffOptions:{enabled:true}}.Per-step override:steps[].expectation.Example:[{tool:"browser_navigate",arguments:{url:"https://example.com"}},{tool:"browser_type",arguments:{element:"username",ref:"#user",text:"john"}},{tool:"browser_click",arguments:{element:"submit",ref:"#btn"}}].`,
+    description: `Execute multiple browser actions in sequence with optimized response handling.RECOMMENDED:Use this tool instead of individual actions when performing multiple operations to significantly reduce token usage and improve performance.BY DEFAULT use for:form filling(multiple type→click),multi-step navigation,any workflow with 2+ known steps.Saves 90% tokens vs individual calls.globalExpectation:{includeSnapshot:false,snapshotOptions:{selector:"#app"},diffOptions:{enabled:true}}.Per-step override:steps[].expectation.Example:[{tool:"browser_navigate",arguments:{url:"https://example.com"}},{tool:"browser_type",arguments:{element:"username",ref:"#user",text:"john"}},{tool:"browser_click",arguments:{element:"submit",ref:"#btn"}}].Tool names must match exactly(e.g.browser_navigate,browser_click,browser_type).`,
     inputSchema: batchExecuteSchema,
     type: 'destructive',
   },
@@ -82,7 +82,9 @@ function addStepResult(stepResult: StepResult, response: Response): void {
   const status = stepResult.success ? '✅' : '❌';
   const duration = `${stepResult.executionTimeMs}ms`;
   response.addResult(
-    `${status} Step ${stepResult.stepIndex + 1}: ${stepResult.toolName} (${duration})`
+    `${status} Step ${stepResult.stepIndex + 1}: ${
+      stepResult.toolName
+    } (${duration})`
   );
 
   if (stepResult.success && stepResult.result) {
