@@ -150,23 +150,6 @@ test.describe('Browser Batch Execute', () => {
     expectBatchExecutionSuccess(result, 2);
   });
 
-  test('should validate unknown tool names', async ({ client }) => {
-    const result = await client.callTool({
-      name: 'browser_batch_execute',
-      arguments: {
-        steps: [
-          {
-            tool: 'unknown_tool',
-            arguments: { param: 'value' },
-          },
-        ],
-      },
-    });
-
-    expect(result.content[0].text).toContain('### Result');
-    expect(result.content[0].text).toContain('Unknown tool: unknown_tool');
-  });
-
   test('should handle complex batch workflows', async ({ client, server }) => {
     const inputPage = createInputPage();
     server.setContent('/input.html', inputPage.content, inputPage.contentType);

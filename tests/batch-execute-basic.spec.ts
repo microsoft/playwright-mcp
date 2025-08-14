@@ -79,7 +79,8 @@ test.describe('Browser Batch Execute Basic Tests', () => {
       },
     });
 
-    expect(result.content[0].text).toContain('Unknown tool: unknown_tool');
+    expect(result.content[0].text).toContain('Unknown tool: "unknown_tool"');
+    expect(result.content[0].text).toContain('Available tools:');
   });
 
   test('should optimize token usage with minimal expectations', async ({
