@@ -31,32 +31,42 @@ const createNavigateStep = (
   expectation,
 });
 
-// Type for client parameter
-interface TestClient {
-  callTool(params: {
-    name: string;
-    arguments: Record<string, unknown>;
-  }): Promise<{ content: Array<{ text: string }> }>;
-}
+// Helper to create find_elements step
+const createFindElementsStep = (
+  searchCriteria: Record<string, unknown>,
+  maxResults = 5,
+  expectation = DEFAULT_EXPECTATION
+) => ({
+  tool: 'browser_find_elements',
+  arguments: {
+    searchCriteria,
+    maxResults,
+  },
+  expectation,
+});
 
-// Helper for common batch execution
-const executeBatch = async (
-  client: TestClient,
-  steps: Record<string, unknown>[],
-  globalExpectation = {}
+// Helper to verify multiple find_elements steps succeeded
+const verifyFindElementsSteps = (
+  text: string,
+  startStep: number,
+  endStep: number
 ) => {
-  return await client.callTool({
-    name: 'browser_batch_execute',
-    arguments: {
-      steps,
-      globalExpectation: {
-        includeDownloads: false,
-        includeTabs: false,
-        ...globalExpectation,
-      },
-    },
-  });
+  for (let i = startStep; i <= endStep; i++) {
+    expect(text).toContain(`✅ Step ${i}: browser_find_elements`);
+  }
 };
+
+// Test case definitions for parameterized tests
+interface FindElementsTestCase {
+  name: string;
+  template: string;
+  steps: Array<{
+    criteria: Record<string, unknown>;
+    maxResults?: number;
+  }>;
+  expectedStepCount: number;
+  verifyResults?: (text: string) => void;
+}
 
 // HTML templates for testing
 const HTML_TEMPLATES = {
@@ -389,6 +399,161 @@ const HTML_TEMPLATES = {
   `,
 } as const;
 
+// Complex scenario test cases
+const complexScenarioTests: FindElementsTestCase[] = [
+  {
+    name: 'should handle complex form analysis workflow',
+    template: HTML_TEMPLATES.COMPLEX_FORM,
+    steps: [
+      {
+        criteria: { tagName: 'input', attributes: { type: 'text' } },
+        maxResults: 10,
+      },
+      {
+        criteria: { tagName: 'input', attributes: { type: 'email' } },
+        maxResults: 5,
+      },
+      {
+        criteria: { tagName: 'input', attributes: { type: 'password' } },
+        maxResults: 5,
+      },
+      { criteria: { tagName: 'button' }, maxResults: 5 },
+      { criteria: { tagName: 'form' }, maxResults: 3 },
+      { criteria: { attributes: { class: 'form-group' } }, maxResults: 10 },
+    ],
+    expectedStepCount: 7,
+  },
+  {
+    name: 'should handle e-commerce product page workflow',
+    template: HTML_TEMPLATES.E_COMMERCE_PRODUCT,
+    steps: [
+      { criteria: { tagName: 'nav' }, maxResults: 5 },
+      { criteria: { tagName: 'button' }, maxResults: 10 },
+      { criteria: { tagName: 'select' }, maxResults: 3 },
+      {
+        criteria: { attributes: { class: 'product-feature' } },
+        maxResults: 10,
+      },
+      { criteria: { attributes: { class: 'spec-item' } }, maxResults: 20 },
+    ],
+    expectedStepCount: 6,
+  },
+  {
+    name: 'should handle multi-step form wizard with progressive discovery',
+    template: HTML_TEMPLATES.DYNAMIC_FORM_WIZARD,
+    steps: [
+      { criteria: { attributes: { class: 'wizard-step' } }, maxResults: 10 },
+      { criteria: { tagName: 'input' }, maxResults: 20 },
+      { criteria: { tagName: 'button' }, maxResults: 10 },
+      { criteria: { attributes: { class: 'step-indicator' } }, maxResults: 5 },
+    ],
+    expectedStepCount: 5,
+  },
+  {
+    name: 'should handle deeply nested component structures',
+    template: HTML_TEMPLATES.NESTED_COMPONENTS,
+    steps: [
+      { criteria: { attributes: { class: 'container' } }, maxResults: 10 },
+      { criteria: { attributes: { class: 'row' } }, maxResults: 10 },
+      { criteria: { attributes: { class: 'col' } }, maxResults: 20 },
+      { criteria: { attributes: { class: 'card' } }, maxResults: 10 },
+      { criteria: { attributes: { class: 'card-body' } }, maxResults: 10 },
+      { criteria: { attributes: { class: 'card-action' } }, maxResults: 10 },
+    ],
+    expectedStepCount: 7,
+  },
+  {
+    name: 'should handle data table with complex selectors',
+    template: HTML_TEMPLATES.DATA_TABLE,
+    steps: [
+      { criteria: { tagName: 'table' }, maxResults: 3 },
+      { criteria: { tagName: 'thead' }, maxResults: 3 },
+      { criteria: { tagName: 'tbody' }, maxResults: 3 },
+      { criteria: { tagName: 'tr' }, maxResults: 20 },
+      { criteria: { tagName: 'th' }, maxResults: 10 },
+      { criteria: { tagName: 'td' }, maxResults: 50 },
+    ],
+    expectedStepCount: 7,
+  },
+];
+
+const basicFindElementsTests: FindElementsTestCase[] = [
+  {
+    name: 'should execute find_elements in batch mode successfully',
+    template: `
+      <form>
+        <input id="username" type="text" placeholder="Username">
+        <input id="password" type="password" placeholder="Password">
+        <button type="submit">Submit</button>
+      </form>
+    `,
+    steps: [
+      { criteria: { tagName: 'input' }, maxResults: 3 },
+      { criteria: { tagName: 'button' }, maxResults: 3 },
+    ],
+    expectedStepCount: 3,
+  },
+  {
+    name: 'should execute multiple find_elements operations without conflicts',
+    template: HTML_TEMPLATES.MULTI_SECTION_FORM,
+    steps: [
+      { criteria: { tagName: 'input' }, maxResults: 5 },
+      { criteria: { tagName: 'textarea' }, maxResults: 2 },
+      { criteria: { tagName: 'select' }, maxResults: 2 },
+      { criteria: { tagName: 'button' }, maxResults: 3 },
+    ],
+    expectedStepCount: 5,
+  },
+  {
+    name: 'should handle different search criteria on same page without conflicts',
+    template: HTML_TEMPLATES.DUPLICATE_ELEMENTS,
+    steps: [
+      { criteria: { attributes: { class: 'input-field' } }, maxResults: 3 },
+      { criteria: { attributes: { class: 'action-btn' } }, maxResults: 3 },
+      { criteria: { text: 'Section A Input' }, maxResults: 1 },
+      { criteria: { attributes: { class: 'section' } }, maxResults: 5 },
+    ],
+    expectedStepCount: 5,
+  },
+  {
+    name: 'should handle mixed find_elements operations with different result limits',
+    template: HTML_TEMPLATES.DUPLICATE_ELEMENTS,
+    steps: [
+      { criteria: { tagName: 'input' }, maxResults: 10 },
+      { criteria: { tagName: 'button' }, maxResults: 5 },
+      { criteria: { attributes: { class: 'section' } }, maxResults: 3 },
+    ],
+    expectedStepCount: 4,
+  },
+];
+
+// Type for client parameter
+interface TestClient {
+  callTool(params: {
+    name: string;
+    arguments: Record<string, unknown>;
+  }): Promise<{ content: Array<{ text: string }> }>;
+}
+
+// Helper for common batch execution
+const executeBatch = async (
+  client: TestClient,
+  steps: Record<string, unknown>[],
+  globalExpectation = {}
+) => {
+  return await client.callTool({
+    name: 'browser_batch_execute',
+    arguments: {
+      steps,
+      globalExpectation: {
+        includeDownloads: false,
+        includeTabs: false,
+        ...globalExpectation,
+      },
+    },
+  });
+};
+
 /**
  * Helper function to setup test server with content
  */
@@ -408,272 +573,36 @@ test.describe('Batch Find Elements Tests', () => {
   // =====================================================
 
   test.describe('Basic Integration Tests', () => {
-    test('should execute find_elements in batch mode successfully', async ({
-      client,
-      server,
-    }) => {
-      // Focus on verifying that browser_find_elements works in batch mode
-      const simpleForm = `
-        <form>
-          <input id="username" type="text" placeholder="Username">
-          <input id="password" type="password" placeholder="Password">
-          <button type="submit">Submit</button>
-        </form>
-      `;
-      setupTestPage(server, simpleForm);
+    // Parameterized tests for basic find_elements scenarios
+    for (const testCase of basicFindElementsTests) {
+      test(testCase.name, async ({ client, server }) => {
+        setupTestPage(server, testCase.template);
 
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { tagName: 'input' },
-                maxResults: 3,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { tagName: 'button' },
-                maxResults: 3,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-          ],
-        },
+        const steps = [
+          createNavigateStep(server.PREFIX),
+          ...testCase.steps.map((step) =>
+            createFindElementsStep(step.criteria, step.maxResults)
+          ),
+        ];
+
+        const result = await executeBatch(client, steps);
+        expectBatchExecutionSuccess(result, testCase.expectedStepCount);
+
+        const text = result.content[0].text;
+
+        // Verify all find_elements steps succeeded
+        verifyFindElementsSteps(text, 2, testCase.expectedStepCount);
+
+        // Verify that elements were found
+        expect(text).toContain('Found');
+        expect(text).toContain('elements matching the criteria');
+
+        // Run custom verification if provided
+        if (testCase.verifyResults) {
+          testCase.verifyResults(text);
+        }
       });
-
-      expectBatchExecutionSuccess(result, 3);
-
-      // Verify that both find_elements steps executed successfully
-      expect(result.content[0].text).toContain(
-        '✅ Step 2: browser_find_elements'
-      );
-      expect(result.content[0].text).toContain(
-        '✅ Step 3: browser_find_elements'
-      );
-
-      // Verify that elements were found
-      expect(result.content[0].text).toContain('Found');
-      expect(result.content[0].text).toContain(
-        'elements matching the criteria'
-      );
-    });
-
-    test('should execute multiple find_elements operations without conflicts', async ({
-      client,
-      server,
-    }) => {
-      setupTestPage(server, HTML_TEMPLATES.MULTI_SECTION_FORM);
-
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            // Multiple find_elements operations with different criteria
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { tagName: 'input' },
-                maxResults: 5,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { tagName: 'textarea' },
-                maxResults: 2,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { tagName: 'select' },
-                maxResults: 2,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { tagName: 'button' },
-                maxResults: 3,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-          ],
-        },
-      });
-
-      expectBatchExecutionSuccess(result, 5);
-
-      // Verify all find_elements steps executed successfully
-      expect(result.content[0].text).toContain(
-        '✅ Step 2: browser_find_elements'
-      );
-      expect(result.content[0].text).toContain(
-        '✅ Step 3: browser_find_elements'
-      );
-      expect(result.content[0].text).toContain(
-        '✅ Step 4: browser_find_elements'
-      );
-      expect(result.content[0].text).toContain(
-        '✅ Step 5: browser_find_elements'
-      );
-
-      // Verify that elements were found in each search
-      const text = result.content[0].text;
-      const foundCount = (
-        text.match(/Found \d+ elements matching the criteria/g) || []
-      ).length;
-      expect(foundCount).toBeGreaterThanOrEqual(3); // Should have multiple "Found X elements" messages
-    });
-
-    test('should handle different search criteria on same page without conflicts', async ({
-      client,
-      server,
-    }) => {
-      setupTestPage(server, HTML_TEMPLATES.DUPLICATE_ELEMENTS);
-
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            // Find by class name - should find multiple input fields
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { attributes: { class: 'input-field' } },
-                maxResults: 3,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            // Find by different class name - should find multiple buttons
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { attributes: { class: 'action-btn' } },
-                maxResults: 3,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            // Find by specific text content - should find one input
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { text: 'Section A Input' },
-                maxResults: 1,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            // Find by section class - should find container divs
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { attributes: { class: 'section' } },
-                maxResults: 5,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-          ],
-        },
-      });
-
-      expectBatchExecutionSuccess(result, 5);
-
-      // Verify all find_elements operations succeeded without conflicts
-      const text = result.content[0].text;
-      expect(text).toContain('✅ Step 2: browser_find_elements');
-      expect(text).toContain('✅ Step 3: browser_find_elements');
-      expect(text).toContain('✅ Step 4: browser_find_elements');
-      expect(text).toContain('✅ Step 5: browser_find_elements');
-
-      // Note: Not checking exact element counts as they depend on HTML content
-    });
-
-    test('should handle mixed find_elements operations with different result limits', async ({
-      client,
-      server,
-    }) => {
-      setupTestPage(server, HTML_TEMPLATES.DUPLICATE_ELEMENTS);
-
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            // Test different maxResults settings to ensure proper batching behavior
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { attributes: { class: 'input-field' } },
-                maxResults: 1, // Only first match
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { attributes: { class: 'action-btn' } },
-                maxResults: 10, // All matches (more than available)
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { attributes: { class: 'section' } },
-                maxResults: 2, // Limited matches
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { tagName: 'div' },
-                maxResults: 0, // Edge case: limit of 0
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-          ],
-        },
-      });
-
-      expectBatchExecutionSuccess(result, 5);
-
-      const text = result.content[0].text;
-      expect(text).toContain('✅ Step 2: browser_find_elements');
-      expect(text).toContain('✅ Step 3: browser_find_elements');
-      expect(text).toContain('✅ Step 4: browser_find_elements');
-      expect(text).toContain('✅ Step 5: browser_find_elements');
-
-      // Verify that different result limits work correctly
-      // Note: Not checking exact element counts as they depend on HTML content
-    });
+    }
   });
 
   // =====================================================
@@ -765,428 +694,36 @@ test.describe('Batch Find Elements Tests', () => {
   // =====================================================
 
   test.describe('Complex Scenarios', () => {
-    test('should handle complex form analysis workflow', async ({
-      client,
-      server,
-    }) => {
-      setupTestPage(server, HTML_TEMPLATES.COMPLEX_FORM);
+    // Parameterized tests for complex scenarios
+    for (const testCase of complexScenarioTests) {
+      test(testCase.name, async ({ client, server }) => {
+        setupTestPage(server, testCase.template);
 
-      const result = await client.callTool({
-        name: 'browser_batch_execute',
-        arguments: {
-          steps: [
-            {
-              tool: 'browser_navigate',
-              arguments: { url: server.PREFIX },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            // Analyze different types of form elements
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: {
-                  tagName: 'input',
-                  attributes: { type: 'text' },
-                },
-                maxResults: 5,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: {
-                  tagName: 'input',
-                  attributes: { type: 'email' },
-                },
-                maxResults: 5,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: {
-                  tagName: 'input',
-                  attributes: { type: 'password' },
-                },
-                maxResults: 5,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { tagName: 'button' },
-                maxResults: 10,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            // Analyze form structure
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { tagName: 'form' },
-                maxResults: 3,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-            {
-              tool: 'browser_find_elements',
-              arguments: {
-                searchCriteria: { attributes: { class: 'form-group' } },
-                maxResults: 10,
-              },
-              expectation: DEFAULT_EXPECTATION,
-            },
-          ],
-        },
+        const steps = [
+          createNavigateStep(server.PREFIX),
+          ...testCase.steps.map((step) =>
+            createFindElementsStep(step.criteria, step.maxResults)
+          ),
+        ];
+
+        const result = await executeBatch(client, steps);
+        expectBatchExecutionSuccess(result, testCase.expectedStepCount);
+
+        const text = result.content[0].text;
+
+        // Verify all find_elements steps succeeded
+        verifyFindElementsSteps(text, 2, testCase.expectedStepCount);
+
+        // Note: Not checking exact element counts as they depend on HTML content
+
+        // Run custom verification if provided
+        if (testCase.verifyResults) {
+          testCase.verifyResults(text);
+        }
       });
+    }
 
-      expectBatchExecutionSuccess(result, 7);
-
-      const text = result.content[0].text;
-
-      // Verify all find_elements operations succeeded
-      expect(text).toContain('✅ Step 2: browser_find_elements'); // text inputs
-      expect(text).toContain('✅ Step 3: browser_find_elements'); // email inputs
-      expect(text).toContain('✅ Step 4: browser_find_elements'); // password inputs
-      expect(text).toContain('✅ Step 5: browser_find_elements'); // buttons
-      expect(text).toContain('✅ Step 6: browser_find_elements'); // forms
-      expect(text).toContain('✅ Step 7: browser_find_elements'); // form groups
-
-      // Note: Not checking exact element counts as they depend on HTML content
-    });
-
-    test('should handle e-commerce product page workflow', async ({
-      client,
-      server,
-    }) => {
-      setupTestPage(server, HTML_TEMPLATES.E_COMMERCE_PRODUCT);
-
-      const result = await executeBatch(client, [
-        createNavigateStep(server.PREFIX),
-        // Find all navigation links
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: { attributes: { class: 'nav-link' } },
-            maxResults: 5,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find product action buttons
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              tagName: 'button',
-              attributes: { class: 'btn' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find product options (selects and inputs)
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: { attributes: { class: 'option-select' } },
-            maxResults: 3,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find feature list items
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: { attributes: { class: 'feature-item' } },
-            maxResults: 5,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find related product cards
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: { attributes: { class: 'product-card' } },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Get a final snapshot to see all refs
-        {
-          tool: 'browser_snapshot',
-          arguments: {},
-          expectation: SNAPSHOT_EXPECTATION,
-        },
-      ]);
-
-      expectBatchExecutionSuccess(result, 7);
-
-      const text = result.content[0].text;
-
-      // Verify all find_elements operations succeeded
-      expect(text).toContain('✅ Step 2: browser_find_elements'); // nav links
-      expect(text).toContain('✅ Step 3: browser_find_elements'); // buttons
-      expect(text).toContain('✅ Step 4: browser_find_elements'); // selects
-      expect(text).toContain('✅ Step 5: browser_find_elements'); // features
-      expect(text).toContain('✅ Step 6: browser_find_elements'); // products
-
-      // Note: Not checking exact element counts as they depend on HTML content
-    });
-
-    test('should handle multi-step form wizard with progressive discovery', async ({
-      client,
-      server,
-    }) => {
-      setupTestPage(server, HTML_TEMPLATES.DYNAMIC_FORM_WIZARD);
-
-      const result = await executeBatch(client, [
-        createNavigateStep(server.PREFIX),
-        // Find all form inputs in step 1
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              tagName: 'input',
-              attributes: { class: 'form-input' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find required fields specifically
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'required' },
-            },
-            maxResults: 15,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find navigation buttons
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'next-step' },
-            },
-            maxResults: 5,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find all step indicators
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'step' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find payment options
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'payment-radio' },
-            },
-            maxResults: 5,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-      ]);
-
-      expectBatchExecutionSuccess(result, 6);
-
-      // Verify form analysis workflow succeeded
-      const text = result.content[0].text;
-      for (let i = 2; i <= 6; i++) {
-        expect(text).toContain(`✅ Step ${i}: browser_find_elements`);
-      }
-    });
-
-    test('should handle deeply nested component structures', async ({
-      client,
-      server,
-    }) => {
-      setupTestPage(server, HTML_TEMPLATES.NESTED_COMPONENTS);
-
-      const result = await executeBatch(client, [
-        createNavigateStep(server.PREFIX),
-        // Find top-level components
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { 'data-component': 'header' },
-            },
-            maxResults: 5,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find menu items
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'menu-item' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find submenu items (nested)
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'submenu-item' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find cards
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'card' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find all links
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              tagName: 'a',
-              attributes: { class: 'link' },
-            },
-            maxResults: 20,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find card action buttons
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'card-action' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-      ]);
-
-      expectBatchExecutionSuccess(result, 7);
-
-      const text = result.content[0].text;
-
-      // Verify nested structure discovery
-      for (let i = 2; i <= 7; i++) {
-        expect(text).toContain(`✅ Step ${i}: browser_find_elements`);
-      }
-
-      // Note: Not checking exact element counts as they depend on HTML content
-    });
-
-    test('should handle data table with complex selectors', async ({
-      client,
-      server,
-    }) => {
-      setupTestPage(server, HTML_TEMPLATES.TABLE_WITH_ACTIONS);
-
-      const result = await executeBatch(client, [
-        createNavigateStep(server.PREFIX),
-        // Find all table rows
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              tagName: 'tr',
-              attributes: { 'data-row-id': '1' },
-            },
-            maxResults: 1,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find all checkboxes
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              tagName: 'input',
-              attributes: { type: 'checkbox' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find edit buttons
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'btn-edit' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find delete buttons
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'btn-delete' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find active status cells
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'row-status active' },
-            },
-            maxResults: 10,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-        // Find pagination buttons
-        {
-          tool: 'browser_find_elements',
-          arguments: {
-            searchCriteria: {
-              attributes: { class: 'page-btn' },
-            },
-            maxResults: 5,
-          },
-          expectation: DEFAULT_EXPECTATION,
-        },
-      ]);
-
-      expectBatchExecutionSuccess(result, 7);
-
-      const text = result.content[0].text;
-
-      // Verify table element discovery
-      for (let i = 2; i <= 7; i++) {
-        expect(text).toContain(`✅ Step ${i}: browser_find_elements`);
-      }
-    });
+    // Keep only unique complex tests that don't fit the pattern
 
     test('should handle mixed operations with find_elements maintaining ref consistency', async ({
       client,
