@@ -114,6 +114,31 @@ export const browserFindElements = defineTabTool({
         return;
       }
 
+      // Register found elements as custom refs in the tab
+      // Use batch-aware ref generation for consistent refs across batch operations
+      const batchId = tab.context.batchContext?.batchId;
+      const usesBatchRefs = Boolean(batchId);
+
+      if (usesBatchRefs) {
+        // For batch operations, use getNextCustomRefId with batchId to ensure uniqueness
+        for (const alt of alternatives) {
+          const customRef = tab.getNextCustomRefId({ batchId });
+          tab.registerCustomRef(customRef, alt.selector);
+          alt.ref = customRef;
+        }
+      } else {
+        // For non-batch operations, maintain backward compatibility with found_N pattern
+        // Clear previous found_ refs and register new ones
+        for (let i = 1; i <= 100; i++) {
+          tab.unregisterCustomRef(`found_${i}`);
+        }
+        for (const [index, alt] of alternatives.entries()) {
+          const customRef = `found_${index + 1}`;
+          tab.registerCustomRef(customRef, alt.selector);
+          alt.ref = customRef;
+        }
+      }
+
       const resultsText = formatElementResults(alternatives);
       await addDiagnosticInfoIfRequested(tab, context, resultsText);
       addPerformanceInfoIfAvailable(context, resultsText);
@@ -315,7 +340,8 @@ function formatElementResults(alternatives: ElementAlternative[]): string[] {
   builder.addEmptyLine();
 
   for (const [index, alt] of alternatives.entries()) {
-    builder.addLine(`${index + 1}. Selector: ${alt.selector}`);
+    builder.addLine(`${index + 1}. Ref: ${alt.ref}`);
+    builder.addLine(`   Selector: ${alt.selector}`);
     builder.addLine(
       `   Confidence: ${formatConfidencePercentage(alt.confidence)}`
     );

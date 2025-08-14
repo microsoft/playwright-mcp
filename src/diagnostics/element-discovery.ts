@@ -10,6 +10,9 @@ import { SmartHandleBatch } from './smart-handle.js';
 
 const elementDiscoveryDebug = debug('pw:mcp:element-discovery');
 
+// Regex for splitting class names - moved to top level for performance
+const _CLASS_SPLIT_REGEX = /\s+/;
+
 export interface SearchCriteria {
   text?: string;
   role?: string;
@@ -724,33 +727,214 @@ export class ElementDiscovery extends DiagnosticBase {
     element: playwright.ElementHandle
   ): Promise<string> {
     return await element.evaluate((el) => {
-      // Generate a unique selector for the element
+      // Define regex pattern as string to avoid lint warning
+      const CLASS_SPLIT_PATTERN = '\\s+';
+      const classSplitRegex = new RegExp(CLASS_SPLIT_PATTERN);
+
+      // Helper functions to reduce complexity
+      const isUnique = (selector: string): boolean => {
+        return document.querySelectorAll(selector).length === 1;
+      };
+
+      const getClasses = (elem: Element): string => {
+        return elem.className
+          ? `.${elem.className.trim().split(classSplitRegex).join('.')}`
+          : '';
+      };
+
+      const tryIdSelector = (elem: Element, elemTag: string): string | null => {
+        if (!elem.id) {
+          return null;
+        }
+        const selector = `${elemTag}#${elem.id}`;
+        return isUnique(selector) ? selector : null;
+      };
+
+      const tryDataAttributes = (
+        elem: Element,
+        elemTag: string
+      ): string | null => {
+        const dataAttrs = Array.from(elem.attributes)
+          .filter((attr) => attr.name.startsWith('data-'))
+          .map((attr) => `[${attr.name}="${attr.value}"]`)
+          .join('');
+        if (!dataAttrs) {
+          return null;
+        }
+        const selector = `${elemTag}${dataAttrs}`;
+        return isUnique(selector) ? selector : null;
+      };
+
+      const tryMeaningfulAttributes = (
+        elem: Element,
+        elemTag: string
+      ): string | null => {
+        const attrs = [
+          'name',
+          'type',
+          'aria-label',
+          'placeholder',
+          'value',
+          'role',
+        ];
+        for (const attrName of attrs) {
+          const attrValue = elem.getAttribute(attrName);
+          if (attrValue) {
+            const selector = `${elemTag}[${attrName}="${attrValue}"]`;
+            if (isUnique(selector)) {
+              return selector;
+            }
+          }
+        }
+        return null;
+      };
+
+      const tryClassSelector = (
+        elem: Element,
+        elemTag: string
+      ): string | null => {
+        const classes = getClasses(elem);
+        if (!classes) {
+          return null;
+        }
+        const selector = `${elemTag}${classes}`;
+        return isUnique(selector) ? selector : null;
+      };
+
+      const tryParentContext = (
+        elem: Element,
+        elemTag: string
+      ): string | null => {
+        const parent = elem.parentElement;
+        if (!parent) {
+          return null;
+        }
+
+        const parentSelector = buildParentSelector(parent);
+        const selector = `${parentSelector} ${elemTag}`;
+        return isUnique(selector) ? selector : null;
+      };
+
+      const buildParentSelector = (parent: Element): string => {
+        const tag = parent.tagName.toLowerCase();
+        const id = parent.id ? `#${parent.id}` : '';
+        const classes = getClasses(parent);
+        return `${tag}${id}${classes}`;
+      };
+
+      const tryNthOfType = (
+        elem: Element,
+        elemTag: string,
+        siblings: Element[],
+        parentSelector: string,
+        elemClasses: string
+      ): string | null => {
+        const sameTagSiblings = siblings.filter(
+          (s) => s.tagName.toLowerCase() === elemTag
+        );
+        if (sameTagSiblings.length > 1) {
+          const tagIndex = sameTagSiblings.indexOf(elem) + 1;
+          const selector = `${parentSelector} > ${elemTag}${elemClasses}:nth-of-type(${tagIndex})`;
+          if (isUnique(selector)) {
+            return selector;
+          }
+        }
+        return null;
+      };
+
+      const tryGrandparentContext = (
+        parent: Element,
+        parentTag: string,
+        elemTag: string,
+        index: number
+      ): string | null => {
+        const grandParent = parent.parentElement;
+        if (!grandParent) {
+          return null;
+        }
+
+        const gpSelector = buildParentSelector(grandParent);
+        const parentIndex =
+          Array.from(grandParent.children)
+            .filter((c) => c.tagName.toLowerCase() === parentTag)
+            .indexOf(parent) + 1;
+
+        const selector = `${gpSelector} ${parentTag}:nth-of-type(${parentIndex}) > ${elemTag}:nth-child(${index})`;
+        return isUnique(selector) ? selector : null;
+      };
+
+      const tryNthSelectors = (
+        elem: Element,
+        elemTag: string
+      ): string | null => {
+        const parent = elem.parentElement;
+        if (!parent) {
+          return null;
+        }
+
+        const siblings = Array.from(parent.children);
+        const index = siblings.indexOf(elem) + 1;
+        const parentSelector = buildParentSelector(parent);
+        const elemClasses = getClasses(elem);
+
+        // Try nth-of-type first
+        const nthOfTypeResult = tryNthOfType(
+          elem,
+          elemTag,
+          siblings,
+          parentSelector,
+          elemClasses
+        );
+        if (nthOfTypeResult) {
+          return nthOfTypeResult;
+        }
+
+        // Try nth-child
+        const nthChildSelector = `${parentSelector} > ${elemTag}${elemClasses}:nth-child(${index})`;
+        if (isUnique(nthChildSelector)) {
+          return nthChildSelector;
+        }
+
+        // Try grandparent context
+        const parentTag = parent.tagName.toLowerCase();
+        const gpResult = tryGrandparentContext(
+          parent,
+          parentTag,
+          elemTag,
+          index
+        );
+        if (gpResult) {
+          return gpResult;
+        }
+
+        return nthChildSelector; // Return even if not unique
+      };
+
+      // Main logic
       if (!(el instanceof Element)) {
         return 'unknown';
       }
 
       const tag = el.tagName.toLowerCase();
-      const id = el.id ? `#${el.id}` : '';
-      const classes = el.className
-        ? `.${el.className.split(' ').join('.')}`
-        : '';
 
-      if (id) {
-        return `${tag}${id}`;
-      }
-      if (classes) {
-        return `${tag}${classes}`;
-      }
+      // Try strategies in order
+      const strategies = [
+        () => tryIdSelector(el, tag),
+        () => tryDataAttributes(el, tag),
+        () => tryMeaningfulAttributes(el, tag),
+        () => tryClassSelector(el, tag),
+        () => tryParentContext(el, tag),
+        () => tryNthSelectors(el, tag),
+      ];
 
-      // Fallback to nth-child selector
-      const parent = el.parentElement;
-      if (parent) {
-        const siblings = Array.from(parent.children);
-        const index = siblings.indexOf(el) + 1;
-        return `${parent.tagName.toLowerCase()} > ${tag}:nth-child(${index})`;
+      for (const strategy of strategies) {
+        const result = strategy();
+        if (result) {
+          return result;
+        }
       }
 
-      return tag;
+      return tag; // Final fallback
     });
   }
 

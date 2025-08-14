@@ -12,6 +12,7 @@ import { logUnhandledError } from './log.js';
 import type { SessionLog } from './session-log.js';
 import { Tab } from './tab.js';
 import type { Tool } from './tools/tool.js';
+import type { BatchContext } from './types/batch.js';
 
 const testDebug = debug('pw:mcp:test');
 type ContextOptions = {
@@ -41,6 +42,7 @@ export class Context {
   private _closeBrowserContextPromise: Promise<void> | undefined;
   private _isRunningTool = false;
   private readonly _abortController = new AbortController();
+  batchContext?: BatchContext;
   constructor(options: ContextOptions) {
     this.tools = options.tools;
     this.config = options.config;

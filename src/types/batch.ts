@@ -70,9 +70,25 @@ export interface BatchResult {
   stopReason: 'completed' | 'error' | 'stopped';
 }
 /**
+ * Options for custom ref ID generation
+ */
+export interface CustomRefOptions {
+  batchId?: string;
+}
+
+/**
  * Options for merging step-level and global expectations
  */
 export interface ExpectationMergeOptions {
   globalExpectation?: z.infer<typeof expectationSchema>;
   stepExpectation?: z.infer<typeof expectationSchema>;
+}
+
+/**
+ * Batch execution context
+ */
+export interface BatchContext {
+  batchId: string;
+  startTime: number;
+  currentStepIndex?: number;
 }

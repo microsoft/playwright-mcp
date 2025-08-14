@@ -1,3 +1,7 @@
 {
-  "typescript.experimental.useTsgo": true
+  "typescript.experimental.useTsgo": true,
+  "sonarlint.connectedMode.project": {
+    "connectionId": "tontoko",
+    "projectKey": "tontoko_fast-playwright-mcp"
+  }
 }

@@ -4,6 +4,7 @@ import type { ExpectationOptions } from '../schemas/expectation.js';
 import { mergeExpectations } from '../schemas/expectation.js';
 import type { Tool } from '../tools/tool.js';
 import type {
+  BatchContext,
   BatchExecuteOptions,
   BatchResult,
   BatchStep,
@@ -22,9 +23,26 @@ export interface SerializedResponse {
 export class BatchExecutor {
   private readonly toolRegistry: Map<string, Tool>;
   private readonly context: Context;
+  private currentBatchContext?: BatchContext;
+
   constructor(context: Context, toolRegistry: Map<string, Tool>) {
     this.context = context;
     this.toolRegistry = toolRegistry;
+  }
+
+  /**
+   * Generates a unique batch ID using crypto for security
+   * @returns Unique batch identifier
+   */
+  private generateBatchId(): string {
+    const timestamp = Date.now();
+    // Use crypto.getRandomValues for secure random generation (SonarQube compliance)
+    const array = new Uint8Array(4);
+    crypto.getRandomValues(array);
+    const random = Array.from(array, (byte) =>
+      byte.toString(16).padStart(2, '0')
+    ).join('');
+    return `batch_${timestamp}_${random}`;
   }
   /**
    * Validates all steps in the batch before execution
@@ -61,6 +79,13 @@ export class BatchExecutor {
     const results: StepResult[] = [];
     const startTime = Date.now();
     let stopReason: BatchResult['stopReason'] = 'completed';
+
+    // Create batch context
+    this.currentBatchContext = {
+      batchId: this.generateBatchId(),
+      startTime,
+    };
+
     // Pre-validation phase
     this.validateAllSteps(options.steps);
 
@@ -74,7 +99,16 @@ export class BatchExecutor {
       const stepStartTime = Date.now();
 
       try {
-        const result = await this.executeStep(step, options.globalExpectation);
+        // Update current step index in batch context
+        if (this.currentBatchContext) {
+          this.currentBatchContext.currentStepIndex = index;
+        }
+
+        const result = await this.executeStep(
+          step,
+          options.globalExpectation,
+          this.currentBatchContext
+        );
         const stepEndTime = Date.now();
         results.push({
           stepIndex: index,
@@ -128,11 +162,13 @@ export class BatchExecutor {
    * Executes a single step with merged expectations
    * @param step - Step to execute
    * @param globalExpectation - Global expectation to merge with step expectation
+   * @param batchContext - Current batch execution context
    * @returns Step execution result
    */
   async executeStep(
     step: BatchStep,
-    globalExpectation?: ExpectationOptions
+    globalExpectation?: ExpectationOptions,
+    batchContext?: BatchContext
   ): Promise<unknown> {
     const tool = this.toolRegistry.get(step.tool);
     if (!tool) {
@@ -149,19 +185,28 @@ export class BatchExecutor {
       ...step.arguments,
       expectation: mergedExpectation,
     };
-    // Create response instance for this step
-    const response = new Response(
-      this.context,
-      step.tool,
-      argsWithExpectation,
-      mergedExpectation
-    );
-    // Execute the tool
-    await tool.handle(this.context, argsWithExpectation, response);
-    // Finish the response (capture snapshots, etc.)
-    await response.finish();
-    // Return serialized response
-    return response.serialize();
+    // Temporarily set batch context on the main context
+    const previousBatchContext = this.context.batchContext;
+    this.context.batchContext = batchContext;
+
+    try {
+      // Create response instance for this step
+      const response = new Response(
+        this.context,
+        step.tool,
+        argsWithExpectation,
+        mergedExpectation
+      );
+      // Execute the tool
+      await tool.handle(this.context, argsWithExpectation, response);
+      // Finish the response (capture snapshots, etc.)
+      await response.finish();
+      // Return serialized response
+      return response.serialize();
+    } finally {
+      // Restore previous batch context
+      this.context.batchContext = previousBatchContext;
+    }
   }
   /**
    * Merges global and step-level expectations

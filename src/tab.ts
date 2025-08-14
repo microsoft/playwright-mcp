@@ -7,6 +7,7 @@ import { logUnhandledError } from './log.js';
 import { ManualPromise } from './manual-promise.js';
 import type { ModalState } from './tools/tool.js';
 import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
+import type { CustomRefOptions } from './types/batch.js';
 
 // Regex constants
 const REF_VALUE_REGEX = /\[ref=([^\]]+)\]/;
@@ -51,6 +52,8 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     finished: boolean;
     outputFile: string;
   }[] = [];
+  private readonly _customRefMappings: Map<string, string> = new Map();
+  private _customRefCounter = 0;
   private readonly _navigationState: {
     isNavigating: boolean;
     lastNavigationStart: number;
@@ -465,6 +468,28 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   async waitForCompletion(callback: () => Promise<void>) {
     await this._raceAgainstModalStates(() => waitForCompletion(this, callback));
   }
+  registerCustomRef(ref: string, selector: string): void {
+    this._customRefMappings.set(ref, selector);
+  }
+
+  unregisterCustomRef(ref: string): void {
+    this._customRefMappings.delete(ref);
+  }
+
+  clearCustomRefs(): void {
+    this._customRefMappings.clear();
+  }
+
+  getNextCustomRefId(options?: CustomRefOptions): string {
+    this._customRefCounter++;
+
+    if (options?.batchId && options.batchId.length > 0) {
+      return `batch_${options.batchId}_element_${this._customRefCounter}`;
+    }
+
+    return `element_${this._customRefCounter}`;
+  }
+
   async refLocator(params: {
     element: string;
     ref: string;
@@ -476,6 +501,15 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   ): Promise<playwright.Locator[]> {
     const snapshot = await (this.page as PageEx)._snapshotForAI();
     return params.map((param) => {
+      // Check if this is a custom ref mapping first
+      if (this._customRefMappings.has(param.ref)) {
+        const selector = this._customRefMappings.get(param.ref);
+        if (selector) {
+          return this.page.locator(selector).describe(param.element);
+        }
+      }
+
+      // Otherwise, use the standard ref lookup
       if (!snapshot.includes(`[ref=${param.ref}]`)) {
         const availableRefs = this._getAvailableRefs(snapshot);
         throw new Error(
