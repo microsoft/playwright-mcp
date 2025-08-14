@@ -17,7 +17,7 @@
 import type { z } from 'zod';
 import type * as mcpServer from '../mcp/server.js';
 import type { Context } from './context.js';
-import type { ToolSchema } from '../tools/tool.js';
+import type { ToolSchema } from '../mcp/tool.js';
 
 
 export type Tool<Input extends z.Schema = z.Schema> = {

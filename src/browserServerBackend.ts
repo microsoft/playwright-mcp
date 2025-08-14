@@ -22,7 +22,7 @@ import { Response } from './response.js';
 import { SessionLog } from './sessionLog.js';
 import { filteredTools } from './tools.js';
 import { packageJSON } from './utils/package.js';
-import { toMcpTool } from './tools/tool.js';
+import { toMcpTool } from './mcp/tool.js';
 
 import type { Tool } from './tools/tool.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';

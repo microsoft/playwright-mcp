@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-import { zodToJsonSchema } from 'zod-to-json-schema';
-
 import type { z } from 'zod';
 import type { Context } from '../context.js';
 import type * as playwright from 'playwright';
 import type { ToolCapability } from '../../config.js';
 import type { Tab } from '../tab.js';
 import type { Response } from '../response.js';
-import type * as mcpServer from '../mcp/server.js';
+import type { ToolSchema } from '../mcp/tool.js';
 
 export type FileUploadModalState = {
   type: 'fileChooser';
@@ -37,28 +35,6 @@ export type DialogModalState = {
 };
 
 export type ModalState = FileUploadModalState | DialogModalState;
-
-export type ToolSchema<Input extends z.Schema> = {
-  name: string;
-  title: string;
-  description: string;
-  inputSchema: Input;
-  type: 'readOnly' | 'destructive';
-};
-
-export function toMcpTool(tool: ToolSchema<any>): mcpServer.Tool {
-  return {
-    name: tool.name,
-    description: tool.description,
-    inputSchema: zodToJsonSchema(tool.inputSchema, { strictUnions: true }) as mcpServer.Tool['inputSchema'],
-    annotations: {
-      title: tool.title,
-      readOnlyHint: tool.type === 'readOnly',
-      destructiveHint: tool.type === 'destructive',
-      openWorldHint: true,
-    },
-  };
-}
 
 export type Tool<Input extends z.Schema = z.Schema> = {
   capability: ToolCapability;
