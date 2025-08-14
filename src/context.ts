@@ -74,6 +74,7 @@ export class Context {
     return this._currentTab;
   }
   async newTab(): Promise<Tab> {
+    contextDebug('Creating new tab');
     const { browserContext } = await this._ensureBrowserContext();
     const page = await browserContext.newPage();
     const tab = this._tabs.find((t) => t.page === page);
@@ -81,6 +82,7 @@ export class Context {
       throw new Error('Failed to create tab: tab not found after creation');
     }
     this._currentTab = tab;
+    contextDebug('New tab created successfully');
     return this._currentTab;
   }
   async selectTab(index: number) {

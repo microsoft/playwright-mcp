@@ -125,8 +125,9 @@ export class ResourceManager implements SmartTracker {
 
   private startCleanupTimer(): void {
     this.cleanupInterval = setInterval(() => {
-      this.cleanupExpiredResources().catch(() => {
+      this.cleanupExpiredResources().catch((error) => {
         // Cleanup errors are handled internally
+        resourceDebug('Resource cleanup error (handled internally):', error);
       });
     }, this.disposeTimeout / 2); // Run cleanup every half of timeout period
   }

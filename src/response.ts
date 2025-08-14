@@ -632,8 +632,12 @@ export class Response {
       });
       await tab.page
         .waitForLoadState('networkidle', { timeout: TIMEOUTS.SHORT_DELAY })
-        .catch(() => {
+        .catch((error) => {
           // Ignore networkidle timeout as it's not critical for stability check
+          responseDebug(
+            'networkidle timeout ignored during stability check:',
+            error
+          );
         });
 
       return await tab.page

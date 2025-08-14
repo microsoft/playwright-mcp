@@ -255,6 +255,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   }
 
   async navigate(url: string) {
+    tabDebug(`Navigating to: ${url}`);
     this._clearCollectedArtifacts();
     const downloadEvent = callOnPageNoTrace(this.page, (page) =>
       page.waitForEvent('download').catch(logUnhandledError)
