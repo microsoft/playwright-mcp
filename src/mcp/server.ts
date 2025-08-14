@@ -54,6 +54,7 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     serverDebug('listTools');
+    await initializedPromise;
     const tools = await backend.listTools();
     return { tools };
   });
