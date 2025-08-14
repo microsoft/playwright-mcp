@@ -17,8 +17,6 @@
 import os from 'node:os';
 import path from 'node:path';
 
-import type { FullConfig } from '../config.js';
-
 export function cacheDir() {
   let cacheDirectory: string;
   if (process.platform === 'linux')
@@ -30,10 +28,6 @@ export function cacheDir() {
   else
     throw new Error('Unsupported platform: ' + process.platform);
   return path.join(cacheDirectory, 'ms-playwright');
-}
-
-export async function userDataDir(browserConfig: FullConfig['browser']) {
-  return path.join(cacheDir(), 'ms-playwright', `mcp-${browserConfig.launchOptions?.channel ?? browserConfig?.browserName}-profile`);
 }
 
 export function sanitizeForFilePath(s: string) {
