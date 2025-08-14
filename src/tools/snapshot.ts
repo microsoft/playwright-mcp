@@ -45,7 +45,7 @@ export const elementSchema = z.object({
   ref: z
     .string()
     .describe(
-      'Element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs.'
+      'System-generated element ID from previous tool results (e.g., "rNODE-45-1"). Never use custom values.'
     ),
 });
 
@@ -111,7 +111,7 @@ const drag = defineTabTool({
       startRef: z
         .string()
         .describe(
-          'Source element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs.'
+          'System-generated source element ID from previous tool results (e.g., "rNODE-45-1"). Never use custom values.'
         ),
       endElement: z
         .string()
@@ -121,7 +121,7 @@ const drag = defineTabTool({
       endRef: z
         .string()
         .describe(
-          'Target element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs.'
+          'System-generated target element ID from previous tool results (e.g., "rNODE-45-1"). Never use custom values.'
         ),
       expectation: expectationSchema,
     }),

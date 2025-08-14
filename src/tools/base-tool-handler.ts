@@ -26,7 +26,7 @@ export const baseElementSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs.'
+      'System-generated element ID from previous tool results (e.g., "rNODE-45-1"). Never use custom values.'
     ),
 });
 
