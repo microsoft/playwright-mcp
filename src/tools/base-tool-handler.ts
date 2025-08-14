@@ -25,7 +25,9 @@ export const baseElementSchema = z.object({
   ref: z
     .string()
     .optional()
-    .describe('Exact target element reference from the page snapshot'),
+    .describe(
+      'System-generated element ID from previous tool results (e.g., "rNODE-45-1"). Never use custom values.'
+    ),
 });
 
 export const baseExpectationSchema = z.object({
