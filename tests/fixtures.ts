@@ -47,6 +47,7 @@ type TestFixtures = {
     args?: string[],
     config?: Config,
     roots?: { name: string, uri: string }[],
+    rootsResponseDelay?: number,
   }) => Promise<{ client: Client, stderr: () => string }>;
   wsEndpoint: string;
   cdpServer: CDPServer;
@@ -89,6 +90,8 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' }, options?.roots ? { capabilities: { roots: {} } } : undefined);
       if (options?.roots) {
         client.setRequestHandler(ListRootsRequestSchema, async request => {
+          if (options.rootsResponseDelay)
+            await new Promise(resolve => setTimeout(resolve, options.rootsResponseDelay));
           return {
             roots: options.roots,
           };

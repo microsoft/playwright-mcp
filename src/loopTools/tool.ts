@@ -17,12 +17,12 @@
 import type { z } from 'zod';
 import type * as mcpServer from '../mcp/server.js';
 import type { Context } from './context.js';
-import type { ToolSchema } from '../tools/tool.js';
+import type { ToolSchema } from '../mcp/tool.js';
 
 
 export type Tool<Input extends z.Schema = z.Schema> = {
   schema: ToolSchema<Input>;
-  handle: (context: Context, params: z.output<Input>) => Promise<mcpServer.ToolResponse>;
+  handle: (context: Context, params: z.output<Input>) => Promise<mcpServer.CallToolResult>;
 };
 
 export function defineTool<Input extends z.Schema>(tool: Tool<Input>): Tool<Input> {
