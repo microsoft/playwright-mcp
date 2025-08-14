@@ -44,7 +44,9 @@ export const elementSchema = z.object({
     ),
   ref: z
     .string()
-    .describe('Exact target element reference from the page snapshot'),
+    .describe(
+      'Element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs.'
+    ),
 });
 
 const clickSchema = elementSchema.extend({
@@ -108,7 +110,9 @@ const drag = defineTabTool({
         ),
       startRef: z
         .string()
-        .describe('Exact source element reference from the page snapshot'),
+        .describe(
+          'Source element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs.'
+        ),
       endElement: z
         .string()
         .describe(
@@ -116,7 +120,9 @@ const drag = defineTabTool({
         ),
       endRef: z
         .string()
-        .describe('Exact target element reference from the page snapshot'),
+        .describe(
+          'Target element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs.'
+        ),
       expectation: expectationSchema,
     }),
     type: 'destructive',

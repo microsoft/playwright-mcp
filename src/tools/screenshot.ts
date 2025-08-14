@@ -29,7 +29,7 @@ const screenshotSchema = z
       .string()
       .optional()
       .describe(
-        'Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.'
+        'Element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.'
       ),
     fullPage: z
       .boolean()

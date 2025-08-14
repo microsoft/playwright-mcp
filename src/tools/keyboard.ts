@@ -44,7 +44,9 @@ const typeSchema = elementSchema.extend({
     ),
   ref: z
     .string()
-    .describe('Exact target element reference from the page snapshot'),
+    .describe(
+      'Element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs.'
+    ),
   text: z.string().describe('Text to type into the element'),
   submit: z
     .boolean()

@@ -20,7 +20,9 @@ const evaluateSchema = z.object({
   ref: z
     .string()
     .optional()
-    .describe('Exact target element reference from the page snapshot'),
+    .describe(
+      'Element reference ID from browser_snapshot or browser_find_elements results (e.g., "rNODE-45-1"). DO NOT create custom ref values - they must be obtained from previous tool outputs.'
+    ),
   expectation: expectationSchema,
 });
 const evaluate = defineTabTool({
