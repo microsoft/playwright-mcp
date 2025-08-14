@@ -84,10 +84,12 @@ export class BrowserServerBackend implements mcpServer.ServerBackend {
     }
 
     context.setRunningTool(true);
+    backendDebug(`Executing tool: ${schema.name}`);
     try {
       await matchedTool.handle(context, parsedArguments, response);
       await response.finish();
       this._sessionLog?.logResponse(response);
+      backendDebug(`Tool ${schema.name} completed successfully`);
     } catch (error: unknown) {
       backendDebug(`Error executing tool ${schema.name}:`, error);
       response.addError(String(error));
