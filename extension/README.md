@@ -7,7 +7,7 @@ The Playwright MCP Chrome Extension allows you to connect to pages in your exist
 ## Prerequisites
 
 - Chrome/Edge/Chromium browser
-- Node
+- Node.js (version 14 or higher)
 
 ## Installation Steps
 
@@ -22,8 +22,15 @@ Download the latest Chrome extension from GitHub:
 
 ### Build the Extension
 
-1) Open `extension` folder
-2) Run `npm i && npm run build`
+1) Open a terminal and navigate to the `extension` folder:
+   ```sh
+   cd extension
+   ```
+2) Install dependencies and build the extension:
+   ```sh
+   npm i && npm run build
+   ```
+This will create a dist folder inside the extension directory, which contains the built extension.
 
 ### Load Chrome Extension
 
