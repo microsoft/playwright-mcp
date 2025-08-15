@@ -23,10 +23,9 @@ import { logUnhandledError } from '../utils/log.js';
 import { packageJSON } from '../utils/package.js';
 
 
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import type { ServerBackend } from './server.js';
+import type { ServerBackend, ClientVersion, Root } from './server.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type { Root, Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 
 export type MCPProvider = {
   name: string;
@@ -48,14 +47,8 @@ export class ProxyBackend implements ServerBackend {
     this._contextSwitchTool = this._defineContextSwitchTool();
   }
 
-  async initialize(server: Server): Promise<void> {
-    const version = server.getClientVersion();
-    const capabilities = server.getClientCapabilities();
-    if (capabilities?.roots && version && clientsWithRoots.includes(version.name)) {
-      const { roots } = await server.listRoots();
-      this._roots = roots;
-    }
-
+  async initialize(clientVersion: ClientVersion, roots: Root[]): Promise<void> {
+    this._roots = roots;
     await this._setCurrentClient(this._mcpProviders[0]);
   }
 
@@ -136,5 +129,3 @@ export class ProxyBackend implements ServerBackend {
     this._currentClient = client;
   }
 }
-
-const clientsWithRoots = ['Visual Studio Code', 'Visual Studio Code - Insiders'];
