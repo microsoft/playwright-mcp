@@ -40,15 +40,18 @@ type CDPServer = {
   start: () => Promise<BrowserContext>;
 };
 
+export type StartClient = (options?: {
+  clientName?: string,
+  args?: string[],
+  config?: Config,
+  roots?: { name: string, uri: string }[],
+  rootsResponseDelay?: number,
+}) => Promise<{ client: Client, stderr: () => string }>;
+
+
 type TestFixtures = {
   client: Client;
-  startClient: (options?: {
-    clientName?: string,
-    args?: string[],
-    config?: Config,
-    roots?: { name: string, uri: string }[],
-    rootsResponseDelay?: number,
-  }) => Promise<{ client: Client, stderr: () => string }>;
+  startClient: StartClient;
   wsEndpoint: string;
   cdpServer: CDPServer;
   server: TestServer;

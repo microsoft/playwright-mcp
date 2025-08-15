@@ -100,6 +100,9 @@ export class CDPRelayServer {
     debugLogger('Waiting for incoming extension connection');
     await Promise.race([
       this._extensionConnectionPromise,
+      new Promise((_, reject) => setTimeout(() => {
+        reject(new Error(`Extension connection timeout. Make sure the "Playwright MCP Bridge" extension is installed. See https://github.com/microsoft/playwright-mcp/blob/main/extension/README.md for installation instructions.`));
+      }, process.env.PWMCP_TEST_CONNECTION_TIMEOUT ? parseInt(process.env.PWMCP_TEST_CONNECTION_TIMEOUT, 10) : 5_000)),
       new Promise((_, reject) => abortSignal.addEventListener('abort', reject))
     ]);
     debugLogger('Extension connection established');
