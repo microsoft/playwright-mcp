@@ -3,9 +3,9 @@ import path from 'node:path';
 import type * as actions from './actions.js';
 import type { FullConfig } from './config.js';
 import { outputFile } from './config.js';
-import { logUnhandledError } from './log.js';
 import type { Response } from './response.js';
 import type { Tab, TabSnapshot } from './tab.js';
+import { logUnhandledError } from './utils/log.js';
 
 type LogEntry = {
   timestamp: number;

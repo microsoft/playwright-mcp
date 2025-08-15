@@ -15,7 +15,7 @@ import {
 import { registryDirectory } from 'playwright-core/lib/server/registry/index';
 import type { FullConfig } from './config.js';
 import { outputFile } from './config.js';
-import { logUnhandledError, testDebug } from './log.js';
+import { logUnhandledError, testDebug } from './utils/log.js';
 import { createHash } from './utils.js';
 
 const browserDebug = debug('pw:mcp:browser');

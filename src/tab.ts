@@ -3,11 +3,11 @@ import debug from 'debug';
 import type * as playwright from 'playwright';
 import { TIMEOUTS } from './config/constants.js';
 import type { Context } from './context.js';
-import { logUnhandledError } from './log.js';
 import { ManualPromise } from './manual-promise.js';
 import type { ModalState } from './tools/tool.js';
 import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 import type { CustomRefOptions } from './types/batch.js';
+import { logUnhandledError } from './utils/log.js';
 
 // Regex constants
 const REF_VALUE_REGEX = /\[ref=([^\]]+)\]/;

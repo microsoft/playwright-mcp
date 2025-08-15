@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createHash } from '../src/utils.js';
+import { createHash } from '../src/utils/guid.js';
 import { expect, test } from './fixtures.js';
 
 const p =
