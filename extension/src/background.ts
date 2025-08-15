@@ -193,7 +193,7 @@ class TabShareExtension {
   }
 
   private _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {
-    if (changeInfo.status === 'complete' && this._connectedTabId === tabId)
+    if (this._connectedTabId === tabId)
       void this._setConnectedTabId(tabId);
   }
 
