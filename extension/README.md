@@ -31,7 +31,7 @@ Configure Playwright MCP server to connect to the browser using the extension by
     "playwright-extension": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest",
+        "@tontoko/fast-playwright-mcp",
         "--extension"
       ]
     }

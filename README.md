@@ -146,7 +146,7 @@ Follow the MCP Servers [documentation](https://opencode.ai/docs/mcp-servers/). F
       "type": "local",
       "command": [
         "npx",
-        "@playwright/mcp@latest"
+        "@tontoko/fast-playwright-mcp"
       ],
       "enabled": true
     }
