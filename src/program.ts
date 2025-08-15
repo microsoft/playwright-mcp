@@ -27,6 +27,7 @@ import { BrowserServerBackend } from './browserServerBackend.js';
 import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
 import { InProcessTransport } from './mcp/inProcessTransport.js';
 
+import { VSCodeMCPFactory } from './vscode/host.js';
 import type { MCPProvider } from './mcp/proxyBackend.js';
 import type { FullConfig } from './config.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
@@ -87,8 +88,12 @@ program
 
       const browserContextFactory = contextFactory(config);
       const providers: MCPProvider[] = [mcpProviderForBrowserContextFactory(config, browserContextFactory)];
-      if (options.connectTool)
-        providers.push(mcpProviderForBrowserContextFactory(config, createExtensionContextFactory(config)));
+      if (options.connectTool) {
+        providers.push(
+            mcpProviderForBrowserContextFactory(config, createExtensionContextFactory(config)),
+            new VSCodeMCPFactory(config), // TODO: automatically add this based on the client name
+        );
+      }
       await mcpTransport.start(() => new ProxyBackend(providers), config.server);
     });
 

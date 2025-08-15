@@ -31,7 +31,7 @@ import type { Root, Tool, CallToolResult, CallToolRequest } from '@modelcontextp
 export type MCPProvider = {
   name: string;
   description: string;
-  connect(): Promise<Transport>;
+  connect(options: any): Promise<Transport>;
 };
 
 export class ProxyBackend implements ServerBackend {
@@ -56,7 +56,7 @@ export class ProxyBackend implements ServerBackend {
       this._roots = roots;
     }
 
-    await this._setCurrentClient(this._mcpProviders[0]);
+    await this._setCurrentClient(this._mcpProviders[0], undefined);
   }
 
   async listTools(): Promise<Tool[]> {
@@ -88,7 +88,7 @@ export class ProxyBackend implements ServerBackend {
       if (!factory)
         throw new Error('Unknown connection method: ' + params.name);
 
-      await this._setCurrentClient(factory);
+      await this._setCurrentClient(factory, params.options);
       return {
         content: [{ type: 'text', text: '### Result\nSuccessfully changed connection method.\n' }],
       };
@@ -106,9 +106,11 @@ export class ProxyBackend implements ServerBackend {
       description: [
         'Connect to a browser using one of the available methods:',
         ...this._mcpProviders.map(factory => `- "${factory.name}": ${factory.description}`),
+        `By default, you're connected to the first method. Only call this tool to change it.`,
       ].join('\n'),
       inputSchema: zodToJsonSchema(z.object({
         name: z.enum(this._mcpProviders.map(factory => factory.name) as [string, ...string[]]).default(this._mcpProviders[0].name).describe('The method to use to connect to the browser'),
+        options: z.any().optional().describe('Options for the connection method'),
       }), { strictUnions: true }) as Tool['inputSchema'],
       annotations: {
         title: 'Connect to a browser context',
@@ -118,7 +120,7 @@ export class ProxyBackend implements ServerBackend {
     };
   }
 
-  private async _setCurrentClient(factory: MCPProvider) {
+  private async _setCurrentClient(factory: MCPProvider, options: any) {
     await this._currentClient?.close();
     this._currentClient = undefined;
 
@@ -131,7 +133,7 @@ export class ProxyBackend implements ServerBackend {
     client.setRequestHandler(ListRootsRequestSchema, () => ({ roots: this._roots }));
     client.setRequestHandler(PingRequestSchema, () => ({}));
 
-    const transport = await factory.connect();
+    const transport = await factory.connect(options);
     await client.connect(transport);
     this._currentClient = client;
   }
