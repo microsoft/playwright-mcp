@@ -42,6 +42,14 @@ async function updatePackageJSON(dir, version) {
   });
 }
 
+async function updateExtensionManifest(dir, version) {
+  const manifestPath = path.join(dir, 'manifest.json');
+  const manifest = await readJSON(manifestPath);
+  console.log(`Updating ${manifestPath} to version ${version}`);
+  manifest.version = version;
+  await writeJSON(manifestPath, manifest);
+}
+
 async function setVersion(version) {
   if (version.startsWith('v'))
     throw new Error('version must not start with "v"');
@@ -49,6 +57,7 @@ async function setVersion(version) {
   const packageRoot = path.join(__dirname, '..');
   await updatePackageJSON(packageRoot, version)
   await updatePackageJSON(path.join(packageRoot, 'extension'), version)
+  await updateExtensionManifest(path.join(packageRoot, 'extension'), version)
 }
 
 if (argv.length !== 3) {
