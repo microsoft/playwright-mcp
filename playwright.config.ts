@@ -26,7 +26,6 @@ export default defineConfig<TestOptions>({
   reporter: 'list',
   projects: [
     { name: 'chrome' },
-    { name: 'msedge', use: { mcpBrowser: 'msedge' } },
     { name: 'chromium', use: { mcpBrowser: 'chromium' } },
     ...process.env.MCP_IN_DOCKER ? [{
       name: 'chromium-docker',
@@ -38,5 +37,6 @@ export default defineConfig<TestOptions>({
     }] : [],
     { name: 'firefox', use: { mcpBrowser: 'firefox' } },
     { name: 'webkit', use: { mcpBrowser: 'webkit' } },
+    ... process.platform === 'win32' ? [{ name: 'msedge', use: { mcpBrowser: 'msedge' } }] : [],
   ],
 });
