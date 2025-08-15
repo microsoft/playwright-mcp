@@ -4,7 +4,6 @@ import { z } from 'zod';
 import type { BrowserContextFactory } from './browser-context-factory.js';
 import type { FullConfig } from './config.js';
 import { Context } from './context.js';
-import { logUnhandledError } from './log.js';
 import type * as mcpServer from './mcp/server.js';
 import { packageJSON } from './package.js';
 import { Response } from './response.js';
@@ -12,6 +11,7 @@ import { SessionLog } from './session-log.js';
 import type { AnyTool } from './tools/tool.js';
 import { defineTool } from './tools/tool.js';
 import { filteredTools } from './tools.js';
+import { logUnhandledError } from './utils/log.js';
 
 const backendDebug = debug('pw:mcp:backend');
 

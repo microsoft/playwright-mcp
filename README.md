@@ -134,6 +134,29 @@ Go to `Program` in the right sidebar -> `Install` -> `Edit mcp.json`. Use the st
 </details>
 
 <details>
+<summary>opencode</summary>
+
+Follow the MCP Servers [documentation](https://opencode.ai/docs/mcp-servers/). For example in `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": true
+    }
+  }
+}
+
+```
+</details>
+
+<details>
 <summary>Qodo Gen</summary>
 
 Open [Qodo Gen](https://docs.qodo.ai/qodo-documentation/qodo-gen) chat panel in VSCode or IntelliJ → Connect more tools → + Add new MCP → Paste the standard config above.
@@ -191,6 +214,9 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --config <path>              path to the configuration file.
   --device <device>            device to emulate, for example: "iPhone 15"
   --executable-path <path>     path to the browser executable.
+  --extension                  Connect to a running browser instance
+                               (Edge/Chrome only). Requires the "Playwright MCP
+                               Bridge" browser extension to be installed.
   --headless                   run browser in headless mode, headed by default
   --host <host>                host to bind server to. Default is localhost. Use
                                0.0.0.0 to bind to all interfaces.
@@ -224,7 +250,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
 
 ### User profile
 
-You can run Playwright MCP with persistent profile like a regular browser (default), or in the isolated contexts for the testing sessions.
+You can run Playwright MCP with persistent profile like a regular browser (default), in isolated contexts for testing sessions, or connect to your existing browser using the browser extension.
 
 **Persistent profile**
 
@@ -263,6 +289,10 @@ state [here](https://playwright.dev/docs/auth).
   }
 }
 ```
+
+**Browser Extension**
+
+The Playwright MCP Chrome Extension allows you to connect to existing browser tabs and leverage your logged-in sessions and browser state. See [extension/README.md](extension/README.md) for installation and setup instructions.
 
 ### Configuration file
 
