@@ -23,7 +23,7 @@ import { logUnhandledError } from '../utils/log.js';
 import { packageJSON } from '../utils/package.js';
 
 
-import type { ServerBackend, ClientVersion, Root } from './server.js';
+import type { ServerBackend, ClientVersion, Root, ProgressCallback } from './server.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 
@@ -62,7 +62,7 @@ export class ProxyBackend implements ServerBackend {
     ];
   }
 
-  async callTool(name: string, args: CallToolRequest['params']['arguments']): Promise<CallToolResult> {
+  async callTool(name: string, args: CallToolRequest['params']['arguments'], _sendProgress?: ProgressCallback): Promise<CallToolResult> {
     if (name === this._contextSwitchTool.name)
       return this._callContextSwitchTool(args);
     return await this._currentClient!.callTool({

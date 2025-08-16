@@ -28,15 +28,17 @@ export class Response {
   private _includeSnapshot = false;
   private _includeTabs = false;
   private _tabSnapshot: TabSnapshot | undefined;
+  private _sendProgress?: (progress: number, total?: number) => Promise<void>;
 
   readonly toolName: string;
   readonly toolArgs: Record<string, any>;
   private _isError: boolean | undefined;
 
-  constructor(context: Context, toolName: string, toolArgs: Record<string, any>) {
+  constructor(context: Context, toolName: string, toolArgs: Record<string, any>, sendProgress?: (progress: number, total?: number) => Promise<void>) {
     this._context = context;
     this.toolName = toolName;
     this.toolArgs = toolArgs;
+    this._sendProgress = sendProgress;
   }
 
   addResult(result: string) {
@@ -78,6 +80,16 @@ export class Response {
 
   setIncludeTabs() {
     this._includeTabs = true;
+  }
+
+  /**
+   * Send a progress notification to the MCP client if progress tracking is enabled.
+   * @param progress - Current progress value
+   * @param total - Optional total value. Omit for indeterminate progress.
+   */
+  async sendProgress(progress: number, total?: number) {
+    if (this._sendProgress)
+      await this._sendProgress(progress, total);
   }
 
   async finish() {

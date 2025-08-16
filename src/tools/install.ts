@@ -21,6 +21,10 @@ import { z } from 'zod';
 import { defineTool } from './tool.js';
 
 
+// Progress notification constants
+const PROGRESS_UPDATE_INTERVAL_MS = 5000; // Send progress update every 5 seconds
+const INDETERMINATE_PROGRESS_MAX = 100; // Maximum value for cycling progress indicator
+
 const install = defineTool({
   capability: 'core-install',
   schema: {
@@ -31,7 +35,7 @@ const install = defineTool({
     type: 'destructive',
   },
 
-  handle: async (context, params, response) => {
+  handle: async (context, _params, response) => {
     const channel = context.config.browser?.launchOptions?.channel ?? context.config.browser?.browserName ?? 'chrome';
     const cliUrl = import.meta.resolve('playwright/package.json');
     const cliPath = path.join(fileURLToPath(cliUrl), '..', 'cli.js');
@@ -39,16 +43,31 @@ const install = defineTool({
       stdio: 'pipe',
     });
     const output: string[] = [];
-    child.stdout?.on('data', data => output.push(data.toString()));
-    child.stderr?.on('data', data => output.push(data.toString()));
-    await new Promise<void>((resolve, reject) => {
-      child.on('close', code => {
-        if (code === 0)
-          resolve();
-        else
-          reject(new Error(`Failed to install browser: ${output.join('')}`));
+
+    // Send periodic progress notifications (indeterminate progress)
+    // Progress cycles from 0 to INDETERMINATE_PROGRESS_MAX-1 to show activity
+    let progressValue = 0;
+    const progressInterval = response.sendProgress ? setInterval(async () => {
+      progressValue = (progressValue + 1) % INDETERMINATE_PROGRESS_MAX;
+      await response.sendProgress(progressValue); // Send without total for indeterminate
+    }, PROGRESS_UPDATE_INTERVAL_MS) : undefined;
+
+    child.stdout?.on('data', (data: Buffer) => output.push(data.toString()));
+    child.stderr?.on('data', (data: Buffer) => output.push(data.toString()));
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        child.on('close', code => {
+          if (code === 0)
+            resolve();
+          else
+            reject(new Error(`Failed to install browser: ${output.join('')}`));
+        });
       });
-    });
+    } finally {
+      clearInterval(progressInterval);
+    }
+
     response.setIncludeTabs();
   },
 });

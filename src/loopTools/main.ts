@@ -53,7 +53,7 @@ class LoopToolsServerBackend implements ServerBackend {
     return this._tools.map(tool => toMcpTool(tool.schema));
   }
 
-  async callTool(name: string, args: mcpServer.CallToolRequest['params']['arguments']): Promise<mcpServer.CallToolResult> {
+  async callTool(name: string, args: mcpServer.CallToolRequest['params']['arguments'], _sendProgress?: mcpServer.ProgressCallback): Promise<mcpServer.CallToolResult> {
     const tool = this._tools.find(tool => tool.schema.name === name)!;
     const parsedArguments = tool.schema.inputSchema.parse(args || {});
     return await tool.handle(this._context!, parsedArguments);

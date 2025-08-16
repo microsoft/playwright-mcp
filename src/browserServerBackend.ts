@@ -66,13 +66,13 @@ export class BrowserServerBackend implements ServerBackend {
     return this._tools.map(tool => toMcpTool(tool.schema));
   }
 
-  async callTool(name: string, rawArguments: mcpServer.CallToolRequest['params']['arguments']) {
+  async callTool(name: string, rawArguments: mcpServer.CallToolRequest['params']['arguments'], sendProgress?: mcpServer.ProgressCallback) {
     const tool = this._tools.find(tool => tool.schema.name === name)!;
     if (!tool)
       throw new Error(`Tool "${name}" not found`);
     const parsedArguments = tool.schema.inputSchema.parse(rawArguments || {});
     const context = this._context!;
-    const response = new Response(context, name, parsedArguments);
+    const response = new Response(context, name, parsedArguments, sendProgress);
     context.setRunningTool(true);
     try {
       await tool.handle(context, parsedArguments, response);
