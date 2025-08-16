@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import batchForm from './tools/batch-form.js';
 import common from './tools/common.js';
 import console from './tools/console.js';
 import dialogs from './tools/dialogs.js';
@@ -34,6 +35,7 @@ import type { Tool } from './tools/tool.js';
 import type { FullConfig } from './config.js';
 
 export const allTools: Tool<any>[] = [
+  ...batchForm,
   ...common,
   ...console,
   ...dialogs,
