@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { chromium } from 'playwright';
+import packageJSON from '../../package.json' assert { type: 'json' };
 import { test as base, expect } from '../../tests/fixtures.js';
 
-import type { BrowserContext } from 'playwright';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import type { BrowserContext } from 'playwright';
 import type { StartClient } from '../../tests/fixtures.js';
 
 type BrowserWithExtension = {
@@ -27,13 +30,15 @@ type BrowserWithExtension = {
   launch: (mode?: 'disable-extension') => Promise<BrowserContext>;
 };
 
-const test = base.extend<{ browserWithExtension: BrowserWithExtension }>({
-  browserWithExtension: async ({ mcpBrowser }, use, testInfo) => {
+const test = base.extend<{ browserWithExtension: BrowserWithExtension, pathToExtension: string }>({
+  pathToExtension: async () => {
+    return fileURLToPath(new URL('../dist', import.meta.url));
+  },
+
+  browserWithExtension: async ({ mcpBrowser, pathToExtension }, use, testInfo) => {
     // The flags no longer work in Chrome since
     // https://chromium.googlesource.com/chromium/src/+/290ed8046692651ce76088914750cb659b65fb17%5E%21/chrome/browser/extensions/extension_service.cc?pli=1#
     test.skip('chromium' !== mcpBrowser, '--load-extension is not supported for official builds of Chromium');
-
-    const pathToExtension = fileURLToPath(new URL('../dist', import.meta.url));
 
     let browserContext: BrowserContext | undefined;
     const userDataDir = testInfo.outputPath('extension-user-data-dir');
@@ -185,3 +190,35 @@ for (const [mode, startClientMethod] of [
   });
 
 }
+
+const testWithOldVersion = test.extend({
+  pathToExtension: async ({}, use, testInfo) => {
+    const extensionDir = testInfo.outputPath('extension');
+    const oldPath = fileURLToPath(new URL('../dist', import.meta.url));
+
+    await fs.promises.cp(oldPath, extensionDir, { recursive: true });
+    const manifestPath = path.join(extensionDir, 'manifest.json');
+    const manifest = JSON.parse(await fs.promises.readFile(manifestPath, 'utf8'));
+    manifest.version = '0.0.1';
+    await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+
+    await use(extensionDir);
+  },
+});
+
+testWithOldVersion(`extension version mismatch`, async ({ browserWithExtension, startClient, server }) => {
+  // Prelaunch the browser, so that it is properly closed after the test.
+  await browserWithExtension.launch();
+
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  });
+
+  expect(await navigateResponse).toHaveResponse({
+    result: expect.stringContaining('Extension version mismatch: expected ' + packageJSON.version + ', got 0.0.1. Make sure the extension is up to date.'),
+    isError: true,
+  });
+});

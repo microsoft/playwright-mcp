@@ -135,6 +135,10 @@ export class RelayConnection {
   }
 
   private async _handleCommand(message: ProtocolCommand): Promise<any> {
+    if (message.method === 'getVersion') {
+      const { version } = chrome.runtime.getManifest();
+      return { version };
+    }
     if (message.method === 'attachToTab') {
       await this._tabPromise;
       debugLog('Attaching debugger to tab:', this._debuggee);
