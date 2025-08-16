@@ -42,27 +42,23 @@ export function contextFactory(config: FullConfig): BrowserContextFactory {
 export type ClientInfo = { name?: string, version?: string, rootPath?: string };
 
 export interface BrowserContextFactory {
-  readonly name: string;
-  readonly description: string;
   createContext(clientInfo: ClientInfo, abortSignal: AbortSignal): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }>;
 }
 
 class BaseContextFactory implements BrowserContextFactory {
-  readonly name: string;
-  readonly description: string;
   readonly config: FullConfig;
+  private _logName: string;
   protected _browserPromise: Promise<playwright.Browser> | undefined;
 
-  constructor(name: string, description: string, config: FullConfig) {
-    this.name = name;
-    this.description = description;
+  constructor(name: string, config: FullConfig) {
+    this._logName = name;
     this.config = config;
   }
 
   protected async _obtainBrowser(clientInfo: ClientInfo): Promise<playwright.Browser> {
     if (this._browserPromise)
       return this._browserPromise;
-    testDebug(`obtain browser (${this.name})`);
+    testDebug(`obtain browser (${this._logName})`);
     this._browserPromise = this._doObtainBrowser(clientInfo);
     void this._browserPromise.then(browser => {
       browser.on('disconnected', () => {
@@ -79,7 +75,7 @@ class BaseContextFactory implements BrowserContextFactory {
   }
 
   async createContext(clientInfo: ClientInfo): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
-    testDebug(`create browser context (${this.name})`);
+    testDebug(`create browser context (${this._logName})`);
     const browser = await this._obtainBrowser(clientInfo);
     const browserContext = await this._doCreateContext(browser);
     return { browserContext, close: () => this._closeBrowserContext(browserContext, browser) };
@@ -90,12 +86,12 @@ class BaseContextFactory implements BrowserContextFactory {
   }
 
   private async _closeBrowserContext(browserContext: playwright.BrowserContext, browser: playwright.Browser) {
-    testDebug(`close browser context (${this.name})`);
+    testDebug(`close browser context (${this._logName})`);
     if (browser.contexts().length === 1)
       this._browserPromise = undefined;
     await browserContext.close().catch(logUnhandledError);
     if (browser.contexts().length === 0) {
-      testDebug(`close browser (${this.name})`);
+      testDebug(`close browser (${this._logName})`);
       await browser.close().catch(logUnhandledError);
     }
   }
@@ -103,7 +99,7 @@ class BaseContextFactory implements BrowserContextFactory {
 
 class IsolatedContextFactory extends BaseContextFactory {
   constructor(config: FullConfig) {
-    super('isolated', 'Create a new isolated browser context', config);
+    super('isolated', config);
   }
 
   protected override async _doObtainBrowser(clientInfo: ClientInfo): Promise<playwright.Browser> {
@@ -128,7 +124,7 @@ class IsolatedContextFactory extends BaseContextFactory {
 
 class CdpContextFactory extends BaseContextFactory {
   constructor(config: FullConfig) {
-    super('cdp', 'Connect to a browser over CDP', config);
+    super('cdp', config);
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {
@@ -142,7 +138,7 @@ class CdpContextFactory extends BaseContextFactory {
 
 class RemoteContextFactory extends BaseContextFactory {
   constructor(config: FullConfig) {
-    super('remote', 'Connect to a browser using a remote endpoint', config);
+    super('remote', config);
   }
 
   protected override async _doObtainBrowser(): Promise<playwright.Browser> {

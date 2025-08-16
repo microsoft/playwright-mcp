@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
+import debug from 'debug';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { ListRootsRequestSchema, PingRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { logUnhandledError } from '../utils/log.js';
-import { packageJSON } from '../utils/package.js';
-
 
 import type { ServerBackend, ClientVersion, Root } from './server.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
@@ -33,10 +31,9 @@ export type MCPProvider = {
   connect(): Promise<Transport>;
 };
 
-export class ProxyBackend implements ServerBackend {
-  name = 'Playwright MCP Client Switcher';
-  version = packageJSON.version;
+const errorsDebug = debug('pw:mcp:errors');
 
+export class ProxyBackend implements ServerBackend {
   private _mcpProviders: MCPProvider[];
   private _currentClient: Client | undefined;
   private _contextSwitchTool: Tool;
@@ -72,7 +69,7 @@ export class ProxyBackend implements ServerBackend {
   }
 
   serverClosed?(): void {
-    void this._currentClient?.close().catch(logUnhandledError);
+    void this._currentClient?.close().catch(errorsDebug);
   }
 
   private async _callContextSwitchTool(params: any): Promise<CallToolResult> {
@@ -115,7 +112,7 @@ export class ProxyBackend implements ServerBackend {
     await this._currentClient?.close();
     this._currentClient = undefined;
 
-    const client = new Client({ name: 'Playwright MCP Proxy', version: packageJSON.version });
+    const client = new Client({ name: 'Playwright MCP Proxy', version: '0.0.0' });
     client.registerCapabilities({
       roots: {
         listRoots: true,
