@@ -21,7 +21,6 @@ import { logUnhandledError } from './utils/log.js';
 import { Response } from './response.js';
 import { SessionLog } from './sessionLog.js';
 import { filteredTools } from './tools.js';
-import { packageJSON } from './utils/package.js';
 import { toMcpTool } from './mcp/tool.js';
 
 import type { Tool } from './tools/tool.js';
@@ -30,9 +29,6 @@ import type * as mcpServer from './mcp/server.js';
 import type { ServerBackend } from './mcp/server.js';
 
 export class BrowserServerBackend implements ServerBackend {
-  name = 'Playwright';
-  version = packageJSON.version;
-
   private _tools: Tool[];
   private _context: Context | undefined;
   private _sessionLog: SessionLog | undefined;

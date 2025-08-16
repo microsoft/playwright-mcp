@@ -16,7 +16,7 @@
 
 import debug from 'debug';
 import * as playwright from 'playwright';
-import { startHttpServer } from '../utils/httpServer.js';
+import { startHttpServer } from '../mcp/http.js';
 import { CDPRelayServer } from './cdpRelay.js';
 
 import type { BrowserContextFactory, ClientInfo } from '../browserContextFactory.js';
@@ -24,9 +24,6 @@ import type { BrowserContextFactory, ClientInfo } from '../browserContextFactory
 const debugLogger = debug('pw:mcp:relay');
 
 export class ExtensionContextFactory implements BrowserContextFactory {
-  name = 'extension';
-  description = 'Connect to a browser using the Playwright MCP extension';
-
   private _browserChannel: string;
   private _userDataDir?: string;
 
