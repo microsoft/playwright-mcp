@@ -16,7 +16,6 @@
 
 import { program, Option } from 'commander';
 import * as mcpServer from './mcp/server.js';
-import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
 import { packageJSON } from './utils/package.js';
 import { Context } from './context.js';
@@ -25,11 +24,8 @@ import { runLoopTools } from './loopTools/main.js';
 import { ProxyBackend } from './mcp/proxyBackend.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
-import { InProcessTransport } from './mcp/inProcessTransport.js';
 
 import type { MCPProvider } from './mcp/proxyBackend.js';
-import type { FullConfig } from './config.js';
-import type { BrowserContextFactory } from './browserContextFactory.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -71,12 +67,19 @@ program
         console.error('The --vision option is deprecated, use --caps=vision instead');
         options.caps = 'vision';
       }
+
       const config = await resolveCLIConfig(options);
+      const browserContextFactory = contextFactory(config);
+      const extensionContextFactory = new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
 
       if (options.extension) {
-        const contextFactory = createExtensionContextFactory(config);
-        const serverBackendFactory = () => new BrowserServerBackend(config, contextFactory);
-        await mcpTransport.start(serverBackendFactory, config.server);
+        const serverBackendFactory: mcpServer.ServerBackendFactory = {
+          name: 'Playwright w/ extension',
+          nameInConfig: 'playwright-extension',
+          version: packageJSON.version,
+          create: () => new BrowserServerBackend(config, extensionContextFactory)
+        };
+        await mcpServer.start(serverBackendFactory, config.server);
         return;
       }
 
@@ -85,11 +88,36 @@ program
         return;
       }
 
-      const browserContextFactory = contextFactory(config);
-      const providers: MCPProvider[] = [mcpProviderForBrowserContextFactory(config, browserContextFactory)];
-      if (options.connectTool)
-        providers.push(mcpProviderForBrowserContextFactory(config, createExtensionContextFactory(config)));
-      await mcpTransport.start(() => new ProxyBackend(providers), config.server);
+      if (options.connectTool) {
+        const providers: MCPProvider[] = [
+          {
+            name: 'default',
+            description: 'Starts standalone browser',
+            connect: () => mcpServer.wrapInProcess(new BrowserServerBackend(config, browserContextFactory)),
+          },
+          {
+            name: 'extension',
+            description: 'Connect to a browser using the Playwright MCP extension',
+            connect: () => mcpServer.wrapInProcess(new BrowserServerBackend(config, extensionContextFactory)),
+          },
+        ];
+        const factory: mcpServer.ServerBackendFactory = {
+          name: 'Playwright w/ switch',
+          nameInConfig: 'playwright-switch',
+          version: packageJSON.version,
+          create: () => new ProxyBackend(providers),
+        };
+        await mcpServer.start(factory, config.server);
+        return;
+      }
+
+      const factory: mcpServer.ServerBackendFactory = {
+        name: 'Playwright',
+        nameInConfig: 'playwright',
+        version: packageJSON.version,
+        create: () => new BrowserServerBackend(config, browserContextFactory)
+      };
+      await mcpServer.start(factory, config.server);
     });
 
 function setupExitWatchdog() {
@@ -106,21 +134,6 @@ function setupExitWatchdog() {
   process.stdin.on('close', handleExit);
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
-}
-
-function createExtensionContextFactory(config: FullConfig) {
-  return new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
-}
-
-function mcpProviderForBrowserContextFactory(config: FullConfig, browserContextFactory: BrowserContextFactory) {
-  return {
-    name: browserContextFactory.name,
-    description: browserContextFactory.description,
-    connect: async () => {
-      const server = mcpServer.createServer(new BrowserServerBackend(config, browserContextFactory), false);
-      return new InProcessTransport(server);
-    },
-  };
 }
 
 void program.parseAsync(process.argv);
