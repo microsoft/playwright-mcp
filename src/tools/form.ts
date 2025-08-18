@@ -22,7 +22,7 @@ import * as javascript from '../utils/codegen.js';
 
 // Action schema for multi-action support
 const actionSchema = z.object({
-  type: z.enum(['fill', 'click', 'select_by_text', 'select_by_value', 'select_by_index', 'clear_then_fill', 'wait_for_options', 'wait_for_element', 'press_key', 'select_first']).describe('Type of action to perform'),
+  type: z.enum(['fill', 'click', 'select_by_text', 'select_by_value', 'select_by_index', 'clear_then_fill', 'wait_for_options', 'wait_for_element', 'press_key', 'select_first', 'check', 'uncheck']).describe('Type of action to perform'),
   value: z.string().optional().describe('Value for the action (required for fill, select_by_text, select_by_value actions)'),
   index: z.number().optional().describe('Index for select_by_index action'),
   key: z.string().optional().describe('Key to press for press_key action'),
@@ -33,7 +33,7 @@ const actionSchema = z.object({
 });
 
 // Enhanced field schema supporting both legacy and action-based formats
-const batchFieldSchema = z.object({
+const fillFormSchema = z.object({
   ref: z.string().describe('Exact target element reference from the page snapshot'),
   element: z.string().describe('Human-readable element description'),
   
@@ -53,14 +53,14 @@ const batchFieldSchema = z.object({
 });
 
 const batchFormFillSchema = z.object({
-  fields: z.array(batchFieldSchema).describe('Array of fields to fill in batch'),
+  fields: z.array(fillFormSchema).describe('Array of fields to fill in batch'),
   timeout: z.number().default(30000).describe('Timeout in milliseconds for the entire batch operation'),
 });
 
 const batchFormFill = defineTabTool({
   capability: 'core',
   schema: {
-    name: 'browser_fill_form_batch',
+    name: 'browser_fill_form',
     title: 'Fill multiple form fields in batch',
     description: 'Fill multiple form fields sequentially with optimized timing. Supports both simple fields and complex multi-action sequences. Reduces form filling time by 95% compared to individual field filling.',
     inputSchema: batchFormFillSchema,
@@ -69,9 +69,8 @@ const batchFormFill = defineTabTool({
 
   handle: async (tab, params, response) => {
     response.setIncludeSnapshot();
-    response.addCode(`// Batch fill ${params.fields.length} form fields`);
+    response.addCode(`// Fill ${params.fields.length} form fields`);
     
-    const startTime = Date.now();
     let successCount = 0;
     let failureCount = 0;
     
@@ -111,22 +110,14 @@ const batchFormFill = defineTabTool({
         }
       });
       
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      response.addCode(`// Batch filling completed: ${successCount}/${params.fields.length} successful in ${duration}ms`);
-      response.addCode(`// Average time per field: ${Math.round(duration / params.fields.length)}ms`);
+      response.addCode(`// Form filling completed: ${successCount}/${params.fields.length} successful`);
       
       if (failureCount > 0) {
-        response.addCode(`// Warning: ${failureCount} fields failed during batch fill`);
+        response.addCode(`// Warning: ${failureCount} fields failed`);
       }
       
     } catch (error) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.addCode(`// Batch form filling failed after ${duration}ms: ${errorMessage}`);
       throw error;
     }
   },
@@ -347,6 +338,16 @@ async function executeAction(tab: any, locator: any, action: any, timeout: numbe
         response.addCode(`await page.${locatorCode}.click();`);
         await locator.click({ timeout });
       }
+      break;
+      
+    case 'check':
+      response.addCode(`await page.${locatorCode}.check();`);
+      await locator.check({ timeout });
+      break;
+      
+    case 'uncheck':
+      response.addCode(`await page.${locatorCode}.uncheck();`);
+      await locator.uncheck({ timeout });
       break;
       
     default:
