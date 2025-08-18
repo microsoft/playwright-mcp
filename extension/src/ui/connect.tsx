@@ -54,15 +54,21 @@ const ConnectApp: React.FC = () => {
       return;
     }
 
-    void connectToMCPRelay(relayUrl);
+    void connectToMCPRelay(relayUrl, params.get('pwMcpVersion'));
     void loadTabs();
   }, []);
 
-  const connectToMCPRelay = useCallback(async (mcpRelayUrl: string) => {
-    const response = await chrome.runtime.sendMessage({ type: 'connectToMCPRelay', mcpRelayUrl });
-    if (!response.success)
-      setStatus({ type: 'error', message: 'Failed to connect to MCP relay: ' + response.error });
+  const handleReject = useCallback((message: string) => {
+    setShowButtons(false);
+    setShowTabList(false);
+    setStatus({ type: 'error', message });
   }, []);
+
+  const connectToMCPRelay = useCallback(async (mcpRelayUrl: string, pwMcpVersion: string | null) => {
+    const response = await chrome.runtime.sendMessage({ type: 'connectToMCPRelay', mcpRelayUrl, pwMcpVersion  });
+    if (!response.success)
+      handleReject(response.error);
+  }, [handleReject]);
 
   const loadTabs = useCallback(async () => {
     const response = await chrome.runtime.sendMessage({ type: 'getTabs' });
@@ -100,22 +106,16 @@ const ConnectApp: React.FC = () => {
     }
   }, [clientInfo, mcpRelayUrl]);
 
-  const handleReject = useCallback(() => {
-    setShowButtons(false);
-    setShowTabList(false);
-    setStatus({ type: 'error', message: 'Connection rejected. This tab can be closed.' });
-  }, []);
-
   useEffect(() => {
     const listener = (message: any) => {
       if (message.type === 'connectionTimeout')
-        handleReject();
+        handleReject('Connection timed out.');
     };
     chrome.runtime.onMessage.addListener(listener);
     return () => {
       chrome.runtime.onMessage.removeListener(listener);
     };
-  }, []);
+  }, [handleReject]);
 
   return (
     <div className='app-container'>
@@ -124,7 +124,7 @@ const ConnectApp: React.FC = () => {
           <div className='status-container'>
             <StatusBanner type={status.type} message={status.message} />
             {showButtons && (
-              <Button variant='reject' onClick={handleReject}>
+              <Button variant='reject' onClick={() => handleReject('Connection rejected. This tab can be closed.')}>
                 Reject
               </Button>
             )}

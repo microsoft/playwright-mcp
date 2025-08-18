@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { chromium } from 'playwright';
+import packageJSON from '../../package.json' assert { type: 'json' };
 import { test as base, expect } from '../../tests/fixtures.js';
 
-import type { BrowserContext } from 'playwright';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import type { BrowserContext } from 'playwright';
 import type { StartClient } from '../../tests/fixtures.js';
 
 type BrowserWithExtension = {
@@ -27,13 +30,21 @@ type BrowserWithExtension = {
   launch: (mode?: 'disable-extension') => Promise<BrowserContext>;
 };
 
-const test = base.extend<{ browserWithExtension: BrowserWithExtension }>({
-  browserWithExtension: async ({ mcpBrowser }, use, testInfo) => {
+type TestFixtures = {
+  browserWithExtension: BrowserWithExtension,
+  pathToExtension: string,
+  useShortConnectionTimeout: (timeoutMs: number) => void
+};
+
+const test = base.extend<TestFixtures>({
+  pathToExtension: async ({}, use) => {
+    await use(fileURLToPath(new URL('../dist', import.meta.url)));
+  },
+
+  browserWithExtension: async ({ mcpBrowser, pathToExtension }, use, testInfo) => {
     // The flags no longer work in Chrome since
     // https://chromium.googlesource.com/chromium/src/+/290ed8046692651ce76088914750cb659b65fb17%5E%21/chrome/browser/extensions/extension_service.cc?pli=1#
     test.skip('chromium' !== mcpBrowser, '--load-extension is not supported for official builds of Chromium');
-
-    const pathToExtension = fileURLToPath(new URL('../dist', import.meta.url));
 
     let browserContext: BrowserContext | undefined;
     const userDataDir = testInfo.outputPath('extension-user-data-dir');
@@ -60,9 +71,16 @@ const test = base.extend<{ browserWithExtension: BrowserWithExtension }>({
         return browserContext;
       }
     });
-
     await browserContext?.close();
   },
+
+  useShortConnectionTimeout: async ({}, use) => {
+    await use((timeoutMs: number) => {
+      process.env.PWMCP_TEST_CONNECTION_TIMEOUT = timeoutMs.toString();
+    });
+    process.env.PWMCP_TEST_CONNECTION_TIMEOUT = undefined;
+  },
+
 });
 
 async function startAndCallConnectTool(browserWithExtension: BrowserWithExtension, startClient: StartClient): Promise<Client> {
@@ -98,6 +116,21 @@ async function startWithExtensionFlag(browserWithExtension: BrowserWithExtension
   });
   return client;
 }
+
+const testWithOldVersion = test.extend({
+  pathToExtension: async ({}, use, testInfo) => {
+    const extensionDir = testInfo.outputPath('extension');
+    const oldPath = fileURLToPath(new URL('../dist', import.meta.url));
+
+    await fs.promises.cp(oldPath, extensionDir, { recursive: true });
+    const manifestPath = path.join(extensionDir, 'manifest.json');
+    const manifest = JSON.parse(await fs.promises.readFile(manifestPath, 'utf8'));
+    manifest.version = '0.0.1';
+    await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+
+    await use(extensionDir);
+  },
+});
 
 for (const [mode, startClientMethod] of [
   ['connect-tool', startAndCallConnectTool],
@@ -160,8 +193,8 @@ for (const [mode, startClientMethod] of [
     expect(browserContext.pages()).toHaveLength(4);
   });
 
-  test(`extension not installed timeout (${mode})`, async ({ browserWithExtension, startClient, server }) => {
-    process.env.PWMCP_TEST_CONNECTION_TIMEOUT = '100';
+  test(`extension not installed timeout (${mode})`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout }) => {
+    useShortConnectionTimeout(100);
 
     const browserContext = await browserWithExtension.launch();
 
@@ -180,8 +213,32 @@ for (const [mode, startClientMethod] of [
     });
 
     await confirmationPagePromise;
+  });
 
-    process.env.PWMCP_TEST_CONNECTION_TIMEOUT = undefined;
+  testWithOldVersion(`extension version mismatch (${mode})`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout }) => {
+    useShortConnectionTimeout(500);
+
+    // Prelaunch the browser, so that it is properly closed after the test.
+    const browserContext = await browserWithExtension.launch();
+
+    const client = await startClientMethod(browserWithExtension, startClient);
+
+    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+      return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
+    });
+
+    const navigateResponse = client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.HELLO_WORLD },
+    });
+
+    const confirmationPage = await confirmationPagePromise;
+    await expect(confirmationPage.locator('.status-banner')).toHaveText(`Incompatible Playwright MCP version: ${packageJSON.version} (extension version: 0.0.1). Please install the latest version of the extension.`);
+
+    expect(await navigateResponse).toHaveResponse({
+      result: expect.stringContaining('Extension connection timeout.'),
+      isError: true,
+    });
   });
 
 }
