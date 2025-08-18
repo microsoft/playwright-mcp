@@ -61,13 +61,37 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
   });
 
   let heartbeatRunning = false;
-  server.setRequestHandler(CallToolRequestSchema, async request => {
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     serverDebug('callTool', request);
     await initializedPromise;
 
     if (runHeartbeat && !heartbeatRunning) {
       heartbeatRunning = true;
       startHeartbeat(server);
+    }
+
+    // Set up automatic progress notifications for timeout prevention
+    const progressToken = request.params._meta?.progressToken;
+    let progressTimeout: NodeJS.Timeout | null = null;
+
+    if (progressToken) {
+      let progressValue = 0;
+      const sendPeriodicProgress = async (): Promise<void> => {
+        try {
+          await extra.sendNotification({
+            method: 'notifications/progress',
+            params: {
+              progressToken,
+              progress: progressValue,
+            },
+          });
+          progressValue = (progressValue + 1) % 100;
+          progressTimeout = setTimeout(sendPeriodicProgress, 5000);
+        } catch (error) {
+          serverDebug('Progress notification failed:', error);
+        }
+      };
+      progressTimeout = setTimeout(sendPeriodicProgress, 5000);
     }
 
     try {
@@ -77,6 +101,10 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
         content: [{ type: 'text', text: '### Result\n' + String(error) }],
         isError: true,
       };
+    } finally {
+      if (progressTimeout !== null)
+        clearTimeout(progressTimeout);
+
     }
   });
   addServerListener(server, 'initialized', async () => {
