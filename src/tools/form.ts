@@ -52,18 +52,18 @@ const fillFormSchema = z.object({
   message: "Field must have either 'value' (legacy format) or 'actions' array (new format)"
 });
 
-const batchFormFillSchema = z.object({
+const fillFormBatchSchema = z.object({
   fields: z.array(fillFormSchema).describe('Array of fields to fill in batch'),
   timeout: z.number().default(30000).describe('Timeout in milliseconds for the entire batch operation'),
 });
 
-const batchFormFill = defineTabTool({
+const fillForm = defineTabTool({
   capability: 'core',
   schema: {
     name: 'browser_fill_form',
     title: 'Fill multiple form fields in batch',
     description: 'Fill multiple form fields sequentially with optimized timing. Supports both simple fields and complex multi-action sequences. Reduces form filling time by 95% compared to individual field filling.',
-    inputSchema: batchFormFillSchema,
+    inputSchema: fillFormBatchSchema,
     type: 'destructive',
   },
 
@@ -384,5 +384,5 @@ async function selectCustomDropdownByText(tab: any, text: string, timeout: numbe
 }
 
 export default [
-  batchFormFill,
+  fillForm,
 ];
