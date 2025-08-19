@@ -25,7 +25,7 @@ First, install the Playwright MCP server with your client.
 
 ```js
 {
-  "mcpServers": {
+  "servers": {
     "playwright": {
       "command": "npx",
       "args": [
