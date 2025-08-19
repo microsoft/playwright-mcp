@@ -479,6 +479,16 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_fill_form**
+  - Title: Fill multiple form fields in batch
+  - Description: Fill multiple form fields sequentially with optimized timing. Supports both simple fields and complex multi-action sequences. Reduces form filling time by 95% compared to individual field filling.
+  - Parameters:
+    - `fields` (array): Array of fields to fill in batch
+    - `timeout` (number, optional): Timeout in milliseconds for the entire batch operation
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_handle_dialog**
   - Title: Handle a dialog
   - Description: Handle a dialog

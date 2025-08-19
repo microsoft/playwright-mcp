@@ -16,7 +16,7 @@
 
 import { z } from 'zod';
 import { defineTabTool } from './tool.js';
-import { elementSchema } from './snapshot.js';
+
 import { generateLocator } from './utils.js';
 import * as javascript from '../utils/codegen.js';
 
@@ -36,11 +36,11 @@ const actionSchema = z.object({
 const fillFormSchema = z.object({
   ref: z.string().describe('Exact target element reference from the page snapshot'),
   element: z.string().describe('Human-readable element description'),
-  
+
   // Legacy format (backward compatible)
   value: z.string().optional().describe('Value to enter into the field (legacy format)'),
   type: z.enum(['text', 'select']).optional().default('text').describe('Type of field: text input or select dropdown (legacy format)'),
-  
+
   // New action-based format
   actions: z.array(actionSchema).optional().describe('Array of actions to perform on this field (new format)'),
 }).refine(data => {
@@ -70,54 +70,54 @@ const fillForm = defineTabTool({
   handle: async (tab, params, response) => {
     response.setIncludeSnapshot();
     response.addCode(`// Fill ${params.fields.length} form fields`);
-    
+
     let successCount = 0;
     let failureCount = 0;
-    
+
     try {
       // Sequential execution with multi-action support
       response.addCode(`// Sequential batch filling with multi-action support`);
-      
+
       await tab.waitForCompletion(async () => {
         for (let i = 0; i < params.fields.length; i++) {
           const field = params.fields[i];
-          
+
           try {
             response.addCode(`// Field ${i + 1}/${params.fields.length}: ${field.element}`);
-            
+
             // Parse field to actions (backward compatible)
             const actions = parseFieldToActions(field);
-            
+
             // Execute all actions for this field sequentially
             await executeFieldActions(tab, field, actions, response, params.timeout);
-            
+
             successCount++;
             response.addCode(`// ✅ Field ${i + 1} completed successfully`);
-            
+
           } catch (fieldError) {
             failureCount++;
             const errorMsg = fieldError instanceof Error ? fieldError.message : String(fieldError);
             response.addCode(`// ❌ Field ${i + 1} failed: ${errorMsg}`);
-            
+
             // Continue with next field (don't stop entire batch)
+            // eslint-disable-next-line no-console
             console.error(`Field ${i + 1} (${field.element}) failed:`, errorMsg);
           }
-          
+
           // Small delay between fields
-          if (i < params.fields.length - 1) {
+          if (i < params.fields.length - 1)
             await tab.page.waitForTimeout(100);
-          }
+
         }
       });
-      
+
       response.addCode(`// Form filling completed: ${successCount}/${params.fields.length} successful`);
-      
-      if (failureCount > 0) {
+
+      if (failureCount > 0)
         response.addCode(`// Warning: ${failureCount} fields failed`);
-      }
-      
+
+
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
       throw error;
     }
   },
@@ -128,10 +128,10 @@ const fillForm = defineTabTool({
  */
 function parseFieldToActions(field: any): any[] {
   // If field already has actions, process them with auto-enhancement
-  if (field.actions && Array.isArray(field.actions)) {
+  if (field.actions && Array.isArray(field.actions))
     return enhanceSelectActions(field.actions, field);
-  }
-  
+
+
   // Convert legacy format to actions
   if (field.value !== undefined) {
     if (field.type === 'select') {
@@ -145,7 +145,7 @@ function parseFieldToActions(field: any): any[] {
       ];
     }
   }
-  
+
   throw new Error(`Field must have either 'value' (legacy) or 'actions' array`);
 }
 
@@ -155,19 +155,19 @@ function parseFieldToActions(field: any): any[] {
 function enhanceSelectActions(actions: any[], field: any): any[] {
   // Check if this is a simple click action that needs enhancement
   const hasClick = actions.some(action => action.type === 'click');
-  const hasSelectAction = actions.some(action => 
-    action.type === 'select_by_text' || 
-    action.type === 'select_by_value' || 
+  const hasSelectAction = actions.some(action =>
+    action.type === 'select_by_text' ||
+    action.type === 'select_by_value' ||
     action.type === 'select_by_index' ||
     action.type === 'select_first'
   );
   const hasKeyPress = actions.some(action => action.type === 'press_key');
-  
+
   // If it's a simple click with no explicit selection or key presses, enhance it
   if (hasClick && !hasSelectAction && !hasKeyPress) {
     const enhanced = [...actions];
     const lastClickIndex = actions.map(a => a.type).lastIndexOf('click');
-    
+
     if (lastClickIndex !== -1) {
       // Detect field type from element description or ref
       const isRadioOrCheckbox = field.element && (
@@ -175,7 +175,7 @@ function enhanceSelectActions(actions: any[], field: any): any[] {
         field.element.toLowerCase().includes('checkbox') ||
         field.element.toLowerCase().includes('button')
       );
-      
+
       if (isRadioOrCheckbox) {
         // For radio/checkbox, use select_first action to ensure first option is selected
         enhanced.splice(lastClickIndex + 1, 0, {
@@ -184,23 +184,23 @@ function enhanceSelectActions(actions: any[], field: any): any[] {
         });
       } else {
         // For dropdowns, use ArrowDown + Enter sequence
-        enhanced.splice(lastClickIndex + 1, 0, 
-          {
-            type: 'press_key',
-            key: 'ArrowDown',
-            description: 'Navigate to first option (auto-added)'
-          },
-          {
-            type: 'press_key',
-            key: 'Enter',
-            description: 'Select first option (auto-added)'
-          }
+        enhanced.splice(lastClickIndex + 1, 0,
+            {
+              type: 'press_key',
+              key: 'ArrowDown',
+              description: 'Navigate to first option (auto-added)'
+            },
+            {
+              type: 'press_key',
+              key: 'Enter',
+              description: 'Select first option (auto-added)'
+            }
         );
       }
     }
     return enhanced;
   }
-  
+
   return actions;
 }
 
@@ -210,7 +210,7 @@ function enhanceSelectActions(actions: any[], field: any): any[] {
 async function executeFieldActions(tab: any, field: any, actions: any[], response: any, globalTimeout: number) {
   const locator = await tab.refLocator({ ref: field.ref, element: field.element });
   let failedActions = 0;
-  
+
   // Quick check if field is disabled before attempting actions
   try {
     const isDisabled = await locator.isDisabled({ timeout: 1000 });
@@ -222,37 +222,38 @@ async function executeFieldActions(tab: any, field: any, actions: any[], respons
     // If we can't check disabled state, continue and let actions handle it
     response.addCode(`// ℹ️ Could not check disabled state - attempting actions anyway`);
   }
-  
+
   for (let actionIndex = 0; actionIndex < actions.length; actionIndex++) {
     const action = actions[actionIndex];
     const actionTimeout = action.timeout || 5000;
-    
+
     try {
       response.addCode(`// Action ${actionIndex + 1}/${actions.length}: ${action.description || action.type}`);
-      
+
       await executeAction(tab, locator, action, actionTimeout, response);
-      
+
     } catch (actionError) {
       failedActions++;
       const errorMsg = actionError instanceof Error ? actionError.message : String(actionError);
       response.addCode(`// ⚠️ Action ${actionIndex + 1} failed (continuing): ${errorMsg}`);
-      
+
       // Check if this might be a disabled/readonly field
-      if (errorMsg.includes('disabled') || errorMsg.includes('readonly') || 
+      if (errorMsg.includes('disabled') || errorMsg.includes('readonly') ||
           errorMsg.includes('not editable') || errorMsg.includes('not clickable')) {
         response.addCode(`// 🔒 Field appears to be disabled/readonly - skipping remaining actions`);
         break; // Skip remaining actions for this field
       }
-      
+
       // For other errors, continue with next action but don't fail the entire field
+      // eslint-disable-next-line no-console
       console.warn(`Action ${actionIndex + 1} failed but continuing:`, errorMsg);
     }
   }
-  
+
   // Only throw if ALL actions failed and it's not a disabled field issue
-  if (failedActions === actions.length && failedActions > 0) {
+  if (failedActions === actions.length && failedActions > 0)
     throw new Error(`All ${actions.length} actions failed for field ${field.element}`);
-  }
+
 }
 
 /**
@@ -260,21 +261,23 @@ async function executeFieldActions(tab: any, field: any, actions: any[], respons
  */
 async function executeAction(tab: any, locator: any, action: any, timeout: number, response: any) {
   const locatorCode = await generateLocator(locator);
-  
+
   switch (action.type) {
     case 'fill':
-      if (action.value === undefined) throw new Error('Fill action requires value');
+      if (action.value === undefined)
+        throw new Error('Fill action requires value');
       response.addCode(`await page.${locatorCode}.fill(${javascript.quote(action.value)});`);
       await locator.fill(action.value, { timeout });
       break;
-      
+
     case 'click':
       response.addCode(`await page.${locatorCode}.click();`);
       await locator.click({ timeout });
       break;
-      
+
     case 'select_by_text':
-      if (!action.value) throw new Error('select_by_text action requires value');
+      if (!action.value)
+        throw new Error('select_by_text action requires value');
       try {
         // Try standard HTML select first
         response.addCode(`await page.${locatorCode}.selectOption({ label: ${javascript.quote(action.value)} });`);
@@ -285,45 +288,50 @@ async function executeAction(tab: any, locator: any, action: any, timeout: numbe
         await selectCustomDropdownByText(tab, action.value, timeout);
       }
       break;
-      
+
     case 'select_by_value':
-      if (action.value === undefined) throw new Error('select_by_value action requires value');
+      if (action.value === undefined)
+        throw new Error('select_by_value action requires value');
       response.addCode(`await page.${locatorCode}.selectOption({ value: ${javascript.quote(action.value)} });`);
       await locator.selectOption({ value: action.value }, { timeout });
       break;
-      
+
     case 'select_by_index':
-      if (action.index === undefined) throw new Error('select_by_index action requires index');
+      if (action.index === undefined)
+        throw new Error('select_by_index action requires index');
       response.addCode(`await page.${locatorCode}.selectOption({ index: ${action.index} });`);
       await locator.selectOption({ index: action.index }, { timeout });
       break;
-      
+
     case 'clear_then_fill':
-      if (action.value === undefined) throw new Error('clear_then_fill action requires value');
+      if (action.value === undefined)
+        throw new Error('clear_then_fill action requires value');
       response.addCode(`await page.${locatorCode}.clear();`);
       response.addCode(`await page.${locatorCode}.fill(${javascript.quote(action.value)});`);
       await locator.clear({ timeout: timeout / 2 });
       await locator.fill(action.value, { timeout: timeout / 2 });
       break;
-      
+
     case 'wait_for_options':
       response.addCode(`await page.locator('[role="option"], .ant-select-item').first().waitFor({ timeout: ${timeout} });`);
       await tab.page.locator('[role="option"], .ant-select-item').first().waitFor({ timeout });
       break;
-      
+
     case 'wait_for_element':
       const selector = action.ref ? `[aria-ref="${action.ref}"]` : action.selector;
-      if (!selector) throw new Error('wait_for_element action requires selector or ref');
+      if (!selector)
+        throw new Error('wait_for_element action requires selector or ref');
       response.addCode(`await page.locator(${javascript.quote(selector)}).waitFor({ timeout: ${timeout} });`);
       await tab.page.locator(selector).waitFor({ timeout });
       break;
-      
+
     case 'press_key':
-      if (!action.key) throw new Error('press_key action requires key');
+      if (!action.key)
+        throw new Error('press_key action requires key');
       response.addCode(`await page.${locatorCode}.press(${javascript.quote(action.key)});`);
       await locator.press(action.key, { timeout });
       break;
-      
+
     case 'select_first':
       // Use keyboard navigation to select first option
       response.addCode(`// Select first option using keyboard navigation`);
@@ -331,7 +339,7 @@ async function executeAction(tab: any, locator: any, action: any, timeout: numbe
         // Press arrow down to navigate to first option
         response.addCode(`await page.${locatorCode}.press('ArrowDown');`);
         await locator.press('ArrowDown', { timeout: timeout / 2 });
-        
+
         // Press enter to select the option
         response.addCode(`await page.${locatorCode}.press('Enter');`);
         await locator.press('Enter', { timeout: timeout / 2 });
@@ -348,17 +356,17 @@ async function executeAction(tab: any, locator: any, action: any, timeout: numbe
         }
       }
       break;
-      
+
     case 'check':
       response.addCode(`await page.${locatorCode}.check();`);
       await locator.check({ timeout });
       break;
-      
+
     case 'uncheck':
       response.addCode(`await page.${locatorCode}.uncheck();`);
       await locator.uncheck({ timeout });
       break;
-      
+
     default:
       throw new Error(`Unsupported action type: ${action.type}`);
   }
@@ -375,7 +383,7 @@ async function selectCustomDropdownByText(tab: any, text: string, timeout: numbe
     `[role="option"]:has-text("${text}")`,
     `[data-value="${text}"]`
   ];
-  
+
   let lastError;
   for (const selector of optionSelectors) {
     try {
@@ -388,7 +396,7 @@ async function selectCustomDropdownByText(tab: any, text: string, timeout: numbe
       continue;
     }
   }
-  
+
   throw new Error(`Could not find dropdown option with text: "${text}". Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
 }
 
