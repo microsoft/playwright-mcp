@@ -28,7 +28,7 @@ import debug from 'debug';
 import { WebSocket, WebSocketServer } from 'ws';
 import { httpAddressToString } from '../mcp/http.js';
 import { logUnhandledError } from '../utils/log.js';
-import { ManualPromise } from '../utils/manualPromise.js';
+import { ManualPromise } from '../mcp/manualPromise.js';
 import { packageJSON } from '../utils/package.js';
 
 import type websocket from 'ws';

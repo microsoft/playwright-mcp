@@ -32,6 +32,7 @@ const testDebug = debug('pw:mcp:test');
 export async function startHttpServer(config: { host?: string, port?: number }, abortSignal?: AbortSignal): Promise<http.Server> {
   const { host, port } = config;
   const httpServer = http.createServer();
+  decorateServer(httpServer);
   await new Promise<void>((resolve, reject) => {
     httpServer.on('error', reject);
     abortSignal?.addEventListener('abort', () => {
@@ -135,4 +136,20 @@ async function handleStreamable(serverBackendFactory: ServerBackendFactory, req:
 
   res.statusCode = 400;
   res.end('Invalid request');
+}
+
+function decorateServer(server: net.Server) {
+  const sockets = new Set<net.Socket>();
+  server.on('connection', socket => {
+    sockets.add(socket);
+    socket.once('close', () => sockets.delete(socket));
+  });
+
+  const close = server.close;
+  server.close = (callback?: (err?: Error) => void) => {
+    for (const socket of sockets)
+      socket.destroy();
+    sockets.clear();
+    return close.call(server, callback);
+  };
 }

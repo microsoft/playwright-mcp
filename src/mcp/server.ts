@@ -31,11 +31,12 @@ const serverDebug = debug('pw:mcp:server');
 const errorsDebug = debug('pw:mcp:errors');
 
 export type ClientVersion = { name: string, version: string };
+
 export interface ServerBackend {
-  initialize?(clientVersion: ClientVersion, roots: Root[]): Promise<void>;
+  initialize?(server: Server, clientVersion: ClientVersion, roots: Root[]): Promise<void>;
   listTools(): Promise<Tool[]>;
   callTool(name: string, args: CallToolRequest['params']['arguments']): Promise<CallToolResult>;
-  serverClosed?(): void;
+  serverClosed?(server: Server): void;
 }
 
 export type ServerBackendFactory = {
@@ -99,13 +100,13 @@ export function createServer(name: string, version: string, backend: ServerBacke
         clientRoots = roots;
       }
       const clientVersion = server.getClientVersion() ?? { name: 'unknown', version: 'unknown' };
-      await backend.initialize?.(clientVersion, clientRoots);
+      await backend.initialize?.(server, clientVersion, clientRoots);
       initializedPromiseResolve();
     } catch (e) {
       errorsDebug(e);
     }
   });
-  addServerListener(server, 'close', () => backend.serverClosed?.());
+  addServerListener(server, 'close', () => backend.serverClosed?.(server));
   return server;
 }
 
