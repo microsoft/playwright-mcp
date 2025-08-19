@@ -18,7 +18,7 @@
 import http from 'node:http';
 import https from 'node:https';
 import url from 'node:url';
-import debug from 'debug';
+import { testserverDebug } from '../../src/utils/log.js';
 
 const fulfillSymbol = Symbol('fulfil callback');
 const rejectSymbol = Symbol('reject callback');
@@ -103,7 +103,7 @@ export class TestServer {
       this._server = http.createServer(this._onRequest.bind(this));
     }
     this._server.listen(port);
-    this.debugServer = debug('pw:testserver');
+    this.debugServer = testserverDebug;
 
     const cross_origin = '127.0.0.1';
     const same_origin = 'localhost';

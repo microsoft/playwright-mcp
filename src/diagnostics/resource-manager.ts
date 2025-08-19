@@ -1,6 +1,4 @@
-import debug from 'debug';
-
-const resourceDebug = debug('pw:mcp:resource');
+import { resourceDebug } from '../utils/log.js';
 
 export interface IDisposable {
   dispose(): Promise<void>;

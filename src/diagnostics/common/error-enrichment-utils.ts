@@ -3,6 +3,7 @@
  */
 
 import { deduplicateAndLimit } from '../../utils/array-utils.js';
+import { errorEnrichmentDebug } from '../../utils/log.js';
 
 export interface ErrorContext {
   operation: string;
@@ -135,20 +136,16 @@ export function generateSuggestions(
   return deduplicateAndLimit(suggestions, 5);
 }
 
-/**
- * Safely dispose resources with enhanced error handling
- */
 export async function safeDispose<T extends { dispose(): Promise<void> }>(
   resource: T,
-  _resourceType: string,
-  _operation: string
+  resourceType: string,
+  operation: string
 ): Promise<void> {
   try {
     await resource.dispose();
   } catch (error) {
-    // biome-ignore lint/suspicious/noConsole: Disposal errors need to be logged for debugging
-    console.warn(
-      `Failed to dispose ${_resourceType} during ${_operation}:`,
+    errorEnrichmentDebug(
+      `Failed to dispose ${resourceType} during ${operation}:`,
       error
     );
   }

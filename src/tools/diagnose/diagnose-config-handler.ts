@@ -2,15 +2,12 @@
  * Handles configuration management for the diagnose tool
  */
 
-import debug from 'debug';
 import { getCurrentThresholds } from '../../diagnostics/diagnostic-thresholds.js';
-
-const configDebug = debug('pw:mcp:diagnose-config');
-
 import { PageAnalyzer } from '../../diagnostics/page-analyzer.js';
 import type { SmartConfig } from '../../diagnostics/smart-config.js';
 import { UnifiedDiagnosticSystem } from '../../diagnostics/unified-system.js';
 import type { Tab } from '../../tab.js';
+import { smartConfigDebug } from '../../utils/log.js';
 
 export interface ConfigOverrides {
   enableResourceMonitoring?: boolean;
@@ -39,7 +36,7 @@ export class DiagnoseConfigHandler {
       const thresholdsManager = getCurrentThresholds();
       return thresholdsManager.getConfigDiagnostics();
     } catch (error) {
-      configDebug('Configuration validation failed:', error);
+      smartConfigDebug('Configuration validation failed:', error);
       return {
         status: 'failed',
         warnings: [
@@ -99,7 +96,9 @@ export class DiagnoseConfigHandler {
         enableRealTimeMonitoring: false,
       };
       appliedOverrides.push(
-        `Resource Monitoring: ${configOverrides.enableResourceMonitoring ? 'Enabled' : 'Disabled'}`
+        `Resource Monitoring: ${
+          configOverrides.enableResourceMonitoring ? 'Enabled' : 'Disabled'
+        }`
       );
     }
 
@@ -112,7 +111,9 @@ export class DiagnoseConfigHandler {
         enablePerformanceErrorDetection: true,
       };
       appliedOverrides.push(
-        `Error Enrichment: ${configOverrides.enableErrorEnrichment ? 'Enabled' : 'Disabled'}`
+        `Error Enrichment: ${
+          configOverrides.enableErrorEnrichment ? 'Enabled' : 'Disabled'
+        }`
       );
     }
 
@@ -123,7 +124,9 @@ export class DiagnoseConfigHandler {
         statsCollectionEnabled: true,
       };
       appliedOverrides.push(
-        `Adaptive Thresholds: ${configOverrides.enableAdaptiveThresholds ? 'Enabled' : 'Disabled'}`
+        `Adaptive Thresholds: ${
+          configOverrides.enableAdaptiveThresholds ? 'Enabled' : 'Disabled'
+        }`
       );
     }
 

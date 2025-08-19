@@ -1,7 +1,6 @@
 import { promises as fsPromises } from 'node:fs';
 import { type AddressInfo, createServer } from 'node:net';
 import { join as pathJoin } from 'node:path';
-import debug from 'debug';
 import {
   type Browser,
   type BrowserContext,
@@ -15,10 +14,8 @@ import {
 import { registryDirectory } from 'playwright-core/lib/server/registry/index';
 import type { FullConfig } from './config.js';
 import { outputFile } from './config.js';
-import { logUnhandledError, testDebug } from './utils/log.js';
+import { browserDebug, logUnhandledError, testDebug } from './utils/log.js';
 import { createHash } from './utils.js';
-
-const browserDebug = debug('pw:mcp:browser');
 
 function getBrowserType(browserName: string): BrowserType {
   switch (browserName) {

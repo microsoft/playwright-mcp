@@ -2,9 +2,7 @@
  * Common formatting functions to reduce code duplication
  */
 
-import debug from 'debug';
-
-const formattersDebug = debug('pw:mcp:formatters');
+import { commonFormattersDebug } from './log.js';
 
 /**
  * Format performance metrics with consistent styling
@@ -281,7 +279,7 @@ export function createDiagnosticErrorInfo(
 export function handleResourceDisposalError(
   error: unknown,
   resourceType: string,
-  logger: (message: string) => void = formattersDebug
+  logger: (message: string) => void = commonFormattersDebug
 ): void {
   logger(`${resourceType} disposal failed: ${getErrorMessage(error)}`);
 }
@@ -364,7 +362,9 @@ export function formatPerformanceComparison(
     deviationText = ` (${sign}${deviation.percent}% ${deviation.significance})`;
   }
 
-  return `  ${icon} **${component}**: Expected ${expected}ms, Actual ${actual.toFixed(0)}ms${deviationText}`;
+  return `  ${icon} **${component}**: Expected ${expected}ms, Actual ${actual.toFixed(
+    0
+  )}ms${deviationText}`;
 }
 
 /**

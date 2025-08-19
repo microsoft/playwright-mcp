@@ -1,5 +1,4 @@
 import { fileURLToPath } from 'node:url';
-import debug from 'debug';
 import { z } from 'zod';
 import type { BrowserContextFactory } from './browser-context-factory.js';
 import type { FullConfig } from './config.js';
@@ -11,9 +10,7 @@ import { SessionLog } from './session-log.js';
 import type { AnyTool } from './tools/tool.js';
 import { defineTool } from './tools/tool.js';
 import { filteredTools } from './tools.js';
-import { logUnhandledError } from './utils/log.js';
-
-const backendDebug = debug('pw:mcp:backend');
+import { browserServerBackendDebug, logUnhandledError } from './utils/log.js';
 
 type NonEmptyArray<T> = [T, ...T[]];
 export type FactoryList = NonEmptyArray<BrowserContextFactory>;
@@ -84,14 +81,14 @@ export class BrowserServerBackend implements mcpServer.ServerBackend {
     }
 
     context.setRunningTool(true);
-    backendDebug(`Executing tool: ${schema.name}`);
+    browserServerBackendDebug(`Executing tool: ${schema.name}`);
     try {
       await matchedTool.handle(context, parsedArguments, response);
       await response.finish();
       this._sessionLog?.logResponse(response);
-      backendDebug(`Tool ${schema.name} completed successfully`);
+      browserServerBackendDebug(`Tool ${schema.name} completed successfully`);
     } catch (error: unknown) {
-      backendDebug(`Error executing tool ${schema.name}:`, error);
+      browserServerBackendDebug(`Error executing tool ${schema.name}:`, error);
       response.addError(String(error));
     } finally {
       context.setRunningTool(false);

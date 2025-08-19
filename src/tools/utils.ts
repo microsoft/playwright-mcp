@@ -1,12 +1,9 @@
-import debug from 'debug';
 import type * as playwright from 'playwright';
-
 // @ts-expect-error - playwright-core internal module without proper types
 import { asLocator } from 'playwright-core/lib/utils';
 import { TIMEOUTS } from '../config/constants.js';
 import type { Tab } from '../tab.js';
-
-const toolsDebug = debug('pw:mcp:tools');
+import { toolsUtilsDebug } from '../utils/log.js';
 export async function waitForCompletion<R>(
   tab: Tab,
   callback: () => Promise<R>
@@ -43,7 +40,7 @@ export async function waitForCompletion<R>(
             timeout: getNavigationConfig().networkIdleTimeout,
           })
           .catch((error) => {
-            toolsDebug('Network idle timeout reached:', error);
+            toolsUtilsDebug('Network idle timeout reached:', error);
           });
         navigationCompleted = true;
         if (!requests.size) {
@@ -51,12 +48,12 @@ export async function waitForCompletion<R>(
         }
       } catch (error) {
         // Fallback if load states fail
-        toolsDebug('Load state waiting failed, continuing:', error);
+        toolsUtilsDebug('Load state waiting failed, continuing:', error);
         navigationCompleted = true;
         waitCallback();
       }
     })().catch((error) => {
-      toolsDebug('Navigation handling failed:', error);
+      toolsUtilsDebug('Navigation handling failed:', error);
       navigationCompleted = true;
       waitCallback();
     });
@@ -94,7 +91,7 @@ export async function waitForCompletion<R>(
         await tab.page.evaluate(() => document.readyState);
       } catch (error) {
         // Context might be destroyed, but we still return the result
-        toolsDebug(
+        toolsUtilsDebug(
           'Page readyState check failed (context may be destroyed):',
           error
         );
@@ -118,7 +115,7 @@ export async function generateLocator(
     )._resolveSelector();
     return asLocator('javascript', resolvedSelector);
   } catch (error) {
-    toolsDebug('Locator generation failed:', error);
+    toolsUtilsDebug('Locator generation failed:', error);
     throw new Error(
       'Ref not found, likely because element was removed. Use browser_snapshot to see what elements are currently on the page.'
     );

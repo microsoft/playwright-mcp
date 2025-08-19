@@ -4,8 +4,8 @@ import type {
   TextContent,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import debug from 'debug';
 import { getErrorMessage } from '../utils/common-formatters.js';
+import { historyDebug, toolDebug } from '../utils/log.js';
 export type LLMToolCall = {
   name: string;
   arguments: Record<string, unknown>;
@@ -114,7 +114,7 @@ async function executeIteration(
   conversation: LLMConversation,
   iteration: number
 ): Promise<{ isDone: boolean }> {
-  debug('history')('Making API call for iteration', iteration);
+  historyDebug('Making API call for iteration', iteration);
   const toolCalls = await delegate.makeApiCall(conversation);
 
   validateToolCallsPresent(toolCalls);
@@ -363,21 +363,23 @@ async function executeToolCall(
   const { name, arguments: args, id } = toolCall;
 
   try {
-    debug('tool')(name, args);
+    toolDebug(name, args);
     const response = await client.callTool({ name, arguments: args });
     const responseContent = (response.content ?? []) as (
       | TextContent
       | ImageContent
     )[];
-    debug('tool')(responseContent);
+    toolDebug(responseContent);
 
     const text = extractTextFromResponse(responseContent);
     return { toolCallId: id, content: text };
   } catch (error) {
-    debug('tool')(error);
+    toolDebug(error);
     return {
       toolCallId: id,
-      content: `Error while executing tool "${name}": ${getErrorMessage(error)}\n\nPlease try to recover and complete the task.`,
+      content: `Error while executing tool "${name}": ${getErrorMessage(
+        error
+      )}\n\nPlease try to recover and complete the task.`,
       isError: true,
     };
   }

@@ -2,7 +2,6 @@ import type {
   ImageContent,
   TextContent,
 } from '@modelcontextprotocol/sdk/types.js';
-import debug from 'debug';
 import { TIMEOUTS } from './config/constants.js';
 import type { Context } from './context.js';
 import type { ExpectationOptions } from './schemas/expectation.js';
@@ -12,10 +11,9 @@ import { renderModalStates } from './tab.js';
 import type { DiffResult } from './types/diff.js';
 import { filterConsoleMessages } from './utils/console-filter.js';
 import { processImage } from './utils/image-processor.js';
+import { responseDebug } from './utils/log.js';
 import { TextReportBuilder } from './utils/report-builder.js';
 import { ResponseDiffDetector } from './utils/response-diff-detector.js';
-
-const responseDebug = debug('pw:mcp:response');
 
 export class Response {
   private readonly _result: string[] = [];

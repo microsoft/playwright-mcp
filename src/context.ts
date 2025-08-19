@@ -1,4 +1,3 @@
-import debug from 'debug';
 import type * as playwright from 'playwright';
 import type * as actions from './actions.js';
 import { BatchExecutor } from './batch/batch-executor.js';
@@ -12,10 +11,8 @@ import type { SessionLog } from './session-log.js';
 import { Tab } from './tab.js';
 import type { Tool } from './tools/tool.js';
 import type { BatchContext } from './types/batch.js';
-import { logUnhandledError } from './utils/log.js';
+import { contextDebug, logUnhandledError, testDebug } from './utils/log.js';
 
-const testDebug = debug('pw:mcp:test');
-const contextDebug = debug('pw:mcp:context');
 type ContextOptions = {
   tools: Tool[];
   config: FullConfig;

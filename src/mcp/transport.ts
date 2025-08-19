@@ -3,7 +3,6 @@ import type http from 'node:http';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import debug from 'debug';
 import { httpAddressToString, startHttpServer } from '../http-server.js';
 import type { ServerBackendFactory } from './server.js';
 import { connect } from './server.js';
@@ -21,8 +20,9 @@ export async function start(
 async function startStdioTransport(serverBackendFactory: ServerBackendFactory) {
   await connect(serverBackendFactory, new StdioServerTransport(), false);
 }
-const testDebug = debug('pw:mcp:test');
-const transportDebug = debug('pw:mcp:transport');
+
+import { mcpTransportDebug, testDebug } from '../utils/log.js';
+
 async function handleSSE(
   serverBackendFactory: ServerBackendFactory,
   req: http.IncomingMessage,
@@ -168,5 +168,5 @@ function startHttpTransport(
     ),
     'For legacy SSE transport support, you can use the /sse endpoint instead.',
   ].join('\n');
-  transportDebug('Server listening:', message);
+  mcpTransportDebug('Server listening:', message);
 }

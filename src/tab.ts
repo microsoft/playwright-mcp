@@ -1,5 +1,4 @@
 import { EventEmitter } from 'node:events';
-import debug from 'debug';
 import type * as playwright from 'playwright';
 import { TIMEOUTS } from './config/constants.js';
 import type { Context } from './context.js';
@@ -22,8 +21,8 @@ export type TabEventsInterface = {
   [TabEvents.modalState]: [modalState: ModalState];
 };
 
-const snapshotDebug = debug('pw:mcp:snapshot');
-const tabDebug = debug('pw:mcp:tab');
+import { snapshotDebug, tabDebug } from './utils/log.js';
+
 export type TabSnapshot = {
   url: string;
   title: string;
@@ -520,7 +519,11 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       if (!snapshot.includes(`[ref=${param.ref}]`)) {
         const availableRefs = this._getAvailableRefs(snapshot);
         throw new Error(
-          `Ref ${param.ref} not found. Available refs: [${availableRefs.join(', ')}]. Element: ${param.element}. Consider capturing a new snapshot if the page has changed.`
+          `Ref ${param.ref} not found. Available refs: [${availableRefs.join(
+            ', '
+          )}]. Element: ${
+            param.element
+          }. Consider capturing a new snapshot if the page has changed.`
         );
       }
       return this.page.locator(`aria-ref=${param.ref}`).describe(param.element);
@@ -564,7 +567,9 @@ function messageToConsoleMessage(
     type: message.type(),
     text: message.text(),
     toString: () =>
-      `[${message.type().toUpperCase()}] ${message.text()} @ ${message.location().url}:${message.location().lineNumber}`,
+      `[${message.type().toUpperCase()}] ${message.text()} @ ${
+        message.location().url
+      }:${message.location().lineNumber}`,
   };
 }
 function pageErrorToConsoleMessage(error: Error): ConsoleMessage {

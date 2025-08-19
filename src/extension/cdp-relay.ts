@@ -7,18 +7,17 @@
  */
 import { spawn } from 'node:child_process';
 import type http from 'node:http';
-import debug from 'debug';
 import type websocket from 'ws';
 import { WebSocket, WebSocketServer } from 'ws';
 import type { ClientInfo } from '../browser-context-factory.js';
 import { httpAddressToString } from '../http-server.js';
 import { logUnhandledError } from '../log.js';
 import { ManualPromise } from '../manual-promise.js';
+import { cdpRelayDebug } from '../utils/log.js';
 
 //
 // @ts-expect-error - playwright internal module
 const { registry } = await import('playwright-core/lib/server/registry/index');
-const debugLogger = debug('pw:mcp:relay');
 
 // Regex constants for performance
 const HTTP_TO_WS_REGEX = /^http/;
@@ -91,17 +90,17 @@ export class CDPRelayServer {
     clientInfo: ClientInfo,
     abortSignal: AbortSignal
   ) {
-    debugLogger('Ensuring extension connection for MCP context');
+    cdpRelayDebug('Ensuring extension connection for MCP context');
     if (this._extensionConnection) {
       return;
     }
     this._connectBrowser(clientInfo);
-    debugLogger('Waiting for incoming extension connection');
+    cdpRelayDebug('Waiting for incoming extension connection');
     await Promise.race([
       this._extensionConnectionPromise,
       new Promise((_, reject) => abortSignal.addEventListener('abort', reject)),
     ]);
-    debugLogger('Extension connection established');
+    cdpRelayDebug('Extension connection established');
   }
   private _connectBrowser(clientInfo: ClientInfo) {
     const mcpRelayEndpoint = `${this._wsHost}${this._extensionPath}`;
@@ -194,7 +193,7 @@ export class CDPRelayServer {
         jsonString.includes('constructor') ||
         jsonString.includes('prototype')
       ) {
-        debugLogger('Potential prototype pollution attempt detected');
+        cdpRelayDebug('Potential prototype pollution attempt detected');
         return null;
       }
 
@@ -210,7 +209,7 @@ export class CDPRelayServer {
 
       return result as T;
     } catch (error) {
-      debugLogger('JSON parsing failed:', error);
+      cdpRelayDebug('JSON parsing failed:', error);
       return null;
     }
   }
@@ -264,19 +263,19 @@ export class CDPRelayServer {
   }
   private _onConnection(ws: WebSocket, request: http.IncomingMessage): void {
     const url = new URL(`http://localhost${request.url}`);
-    debugLogger(`New connection to ${url.pathname}`);
+    cdpRelayDebug(`New connection to ${url.pathname}`);
     if (url.pathname === this._cdpPath) {
       this._handlePlaywrightConnection(ws);
     } else if (url.pathname === this._extensionPath) {
       this._handleExtensionConnection(ws);
     } else {
-      debugLogger(`Invalid path: ${url.pathname}`);
+      cdpRelayDebug(`Invalid path: ${url.pathname}`);
       ws.close(4004, 'Invalid path');
     }
   }
   private _handlePlaywrightConnection(ws: WebSocket): void {
     if (this._playwrightConnection) {
-      debugLogger('Rejecting second Playwright connection');
+      cdpRelayDebug('Rejecting second Playwright connection');
       ws.close(1000, 'Another CDP client already connected');
       return;
     }
@@ -288,20 +287,20 @@ export class CDPRelayServer {
         // Validate message size to prevent DoS attacks
         if (messageString.length > 1024 * 1024) {
           // 1MB limit
-          debugLogger('Message too large, rejecting');
+          cdpRelayDebug('Message too large, rejecting');
           return;
         }
 
         const message = this._safeJsonParse(messageString);
         if (message === null) {
-          debugLogger('Invalid JSON message received from Playwright');
+          cdpRelayDebug('Invalid JSON message received from Playwright');
           return;
         }
 
         await this._handlePlaywrightMessage(message);
       } catch (error: unknown) {
         const truncatedData = String(data).slice(0, 500);
-        debugLogger(
+        cdpRelayDebug(
           `Error while handling Playwright message\n${truncatedData}...\n`,
           error
         );
@@ -313,12 +312,12 @@ export class CDPRelayServer {
       }
       this._playwrightConnection = null;
       this._closeExtensionConnection('Playwright client disconnected');
-      debugLogger('Playwright WebSocket closed');
+      cdpRelayDebug('Playwright WebSocket closed');
     });
     ws.on('error', (error) => {
-      debugLogger('Playwright WebSocket error:', error);
+      cdpRelayDebug('Playwright WebSocket error:', error);
     });
-    debugLogger('Playwright MCP connected');
+    cdpRelayDebug('Playwright MCP connected');
   }
   private _closeExtensionConnection(reason: string) {
     this._extensionConnection?.close(reason);
@@ -344,7 +343,7 @@ export class CDPRelayServer {
     }
     this._extensionConnection = new ExtensionConnection(ws);
     this._extensionConnection.onclose = (c, reason) => {
-      debugLogger(
+      cdpRelayDebug(
         'Extension WebSocket closed:',
         reason,
         c === this._extensionConnection
@@ -376,28 +375,28 @@ export class CDPRelayServer {
         break;
       }
       case 'detachedFromTab':
-        debugLogger('← Debugger detached from tab:', params);
+        cdpRelayDebug('← Debugger detached from tab:', params);
         this._connectedTabInfo = undefined;
         break;
       default:
-        debugLogger(`← Extension: unhandled method ${method}`, params);
+        cdpRelayDebug(`← Extension: unhandled method ${method}`, params);
         break;
     }
   }
   private async _handlePlaywrightMessage(message: unknown): Promise<void> {
     // Type guard to ensure message is a valid CDPCommand
     if (!this._isValidCDPCommand(message)) {
-      debugLogger('Invalid CDP command received from Playwright');
+      cdpRelayDebug('Invalid CDP command received from Playwright');
       return;
     }
 
-    debugLogger('← Playwright:', `${message.method} (id=${message.id})`);
+    cdpRelayDebug('← Playwright:', `${message.method} (id=${message.id})`);
     const { id, sessionId, method, params } = message;
     try {
       const result = await this._handleCDPCommand(method, params, sessionId);
       this._sendToPlaywright({ id, sessionId, result });
     } catch (e) {
-      debugLogger('Error in the extension:', e);
+      cdpRelayDebug('Error in the extension:', e);
       this._sendToPlaywright({
         id,
         sessionId,
@@ -436,7 +435,7 @@ export class CDPRelayServer {
             targetInfo,
             sessionId: `pw-tab-${this._nextSessionId++}`,
           };
-          debugLogger('Simulating auto-attach');
+          cdpRelayDebug('Simulating auto-attach');
           this._sendToPlaywright({
             method: 'Target.attachedToTarget',
             params: {
@@ -481,7 +480,7 @@ export class CDPRelayServer {
   }
   private _sendToPlaywright(message: CDPResponse): void {
     const messageDesc = message.method ?? `response(id=${message.id})`;
-    debugLogger('→ Playwright:', messageDesc);
+    cdpRelayDebug('→ Playwright:', messageDesc);
     this._playwrightConnection?.send(JSON.stringify(message));
   }
 }
@@ -523,7 +522,7 @@ class ExtensionConnection {
     });
   }
   close(message: string) {
-    debugLogger('closing extension connection:', message);
+    cdpRelayDebug('closing extension connection:', message);
     if (this._ws.readyState === WebSocket.OPEN) {
       this._ws.close(1000, message);
     }
@@ -537,7 +536,7 @@ class ExtensionConnection {
         jsonString.includes('constructor') ||
         jsonString.includes('prototype')
       ) {
-        debugLogger('Potential prototype pollution attempt detected');
+        cdpRelayDebug('Potential prototype pollution attempt detected');
         return null;
       }
 
@@ -553,7 +552,7 @@ class ExtensionConnection {
 
       return result as T;
     } catch (error) {
-      debugLogger('JSON parsing failed:', error);
+      cdpRelayDebug('JSON parsing failed:', error);
       return null;
     }
   }
@@ -587,15 +586,18 @@ class ExtensionConnection {
     // Validate message size to prevent DoS attacks
     if (eventData.length > 1024 * 1024) {
       // 1MB limit
-      debugLogger('<closing ws> Message too large, closing websocket');
+      cdpRelayDebug('<closing ws> Message too large, closing websocket');
       this._ws.close();
       return;
     }
 
     const parsedJson = this._parseJsonSafely<ExtensionResponse>(eventData);
     if (parsedJson === null) {
-      debugLogger(
-        `<closing ws> Closing websocket due to malformed JSON. eventData=${eventData.slice(0, 200)}...`
+      cdpRelayDebug(
+        `<closing ws> Closing websocket due to malformed JSON. eventData=${eventData.slice(
+          0,
+          200
+        )}...`
       );
       this._ws.close();
       return;
@@ -604,7 +606,7 @@ class ExtensionConnection {
       this._handleParsedMessage(parsedJson);
     } catch (e: unknown) {
       const errorMessage = (e as Error)?.message;
-      debugLogger(
+      cdpRelayDebug(
         `<closing ws> Closing websocket due to failed onmessage callback. eventData=${eventData} e=${errorMessage}`
       );
       this._ws.close();
@@ -625,19 +627,21 @@ class ExtensionConnection {
         callback.resolve(object.result);
       }
     } else if (object.id) {
-      debugLogger('← Extension: unexpected response', object);
+      cdpRelayDebug('← Extension: unexpected response', object);
     } else if (object.method) {
       this.onmessage?.(object.method, object.params ?? {});
     }
   }
   private _onClose(event: websocket.CloseEvent) {
-    debugLogger(`<ws closed> code=${event.code} reason=${event.reason}`);
+    cdpRelayDebug(`<ws closed> code=${event.code} reason=${event.reason}`);
     this._dispose();
     this.onclose?.(this, event.reason);
   }
   private _onError(event: websocket.ErrorEvent) {
-    debugLogger(
-      `<ws error> message=${event.message} type=${event.type} target=${String(event.target)}`
+    cdpRelayDebug(
+      `<ws error> message=${event.message} type=${event.type} target=${String(
+        event.target
+      )}`
     );
     this._dispose();
   }

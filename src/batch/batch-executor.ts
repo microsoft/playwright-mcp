@@ -1,5 +1,4 @@
 import { randomBytes } from 'node:crypto';
-import debug from 'debug';
 import type { Context } from '../context.js';
 import { Response } from '../response.js';
 import type { ExpectationOptions } from '../schemas/expectation.js';
@@ -13,8 +12,7 @@ import type {
   StepResult,
 } from '../types/batch.js';
 import { getErrorMessage } from '../utils/common-formatters.js';
-
-const batchDebug = debug('pw:mcp:batch');
+import { batchExecutorDebug } from '../utils/log.js';
 
 // Type for serialized response content
 export interface SerializedResponse {
@@ -97,7 +95,7 @@ export class BatchExecutor {
       startTime,
     };
 
-    batchDebug(
+    batchExecutorDebug(
       `Starting batch execution ${this.currentBatchContext.batchId} with ${options.steps.length} steps`
     );
 
@@ -213,11 +211,11 @@ export class BatchExecutor {
         mergedExpectation
       );
       // Execute the tool
-      batchDebug(`Executing batch step: ${step.tool}`);
+      batchExecutorDebug(`Executing batch step: ${step.tool}`);
       await tool.handle(this.context, argsWithExpectation, response);
       // Finish the response (capture snapshots, etc.)
       await response.finish();
-      batchDebug(`Batch step ${step.tool} completed`);
+      batchExecutorDebug(`Batch step ${step.tool} completed`);
       // Return serialized response
       return response.serialize();
     } finally {

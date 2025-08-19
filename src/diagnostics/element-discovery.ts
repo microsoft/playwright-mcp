@@ -2,13 +2,11 @@
  * Element discovery for finding alternative elements
  */
 
-import debug from 'debug';
 import type * as playwright from 'playwright';
+import { elementDiscoveryDebug } from '../utils/log.js';
 import { DiagnosticBase } from './common/diagnostic-base.js';
 import { safeDispose } from './common/error-enrichment-utils.js';
 import { SmartHandleBatch } from './smart-handle.js';
-
-const elementDiscoveryDebug = debug('pw:mcp:element-discovery');
 
 // Regex for splitting class names - moved to top level for performance
 const _CLASS_SPLIT_REGEX = /\s+/;

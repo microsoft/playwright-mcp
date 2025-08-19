@@ -2,10 +2,8 @@
  * Unified configuration system for all diagnostic components
  */
 
-import debug from 'debug';
 import type { MetricsThresholds } from '../types/performance.js';
-
-const configDebug = debug('pw:mcp:config');
+import { smartConfigDebug } from '../utils/log.js';
 
 import type { DiagnosticConfig } from './diagnostic-level.js';
 import { DiagnosticLevel } from './diagnostic-level.js';
@@ -84,7 +82,7 @@ export class SmartConfigManager {
 
     // Additional safety check - this should never happen, but provides a fallback
     if (!SmartConfigManager.instance) {
-      configDebug(
+      smartConfigDebug(
         'Critical: SmartConfigManager instance is null after creation'
       );
       SmartConfigManager.instance = new SmartConfigManager(initialConfig);
@@ -100,7 +98,7 @@ export class SmartConfigManager {
   static resetInstance(): void {
     const wasNull = SmartConfigManager.instance === null;
     SmartConfigManager.instance = null;
-    configDebug('SmartConfigManager instance reset', {
+    smartConfigDebug('SmartConfigManager instance reset', {
       wasAlreadyNull: wasNull,
     });
   }
@@ -220,7 +218,7 @@ export class SmartConfigManager {
       try {
         listener(this.config);
       } catch (error) {
-        configDebug('Config change listener failed:', error);
+        smartConfigDebug('Config change listener failed:', error);
       }
     }
   }
@@ -353,7 +351,7 @@ export class SmartConfigManager {
       // Update DiagnosticThresholds
       this.thresholdsManager.updateThresholds(thresholdsConfig);
     } catch (error) {
-      configDebug('Failed to sync thresholds:', error);
+      smartConfigDebug('Failed to sync thresholds:', error);
     }
   }
 
@@ -612,7 +610,9 @@ export class SmartConfigManager {
           percentChange: Math.round(percentChange),
         };
         activeOverrides.push(
-          `${key} threshold: ${defaultValue}ms → ${currentValue}ms (${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}%)`
+          `${key} threshold: ${defaultValue}ms → ${currentValue}ms (${
+            percentChange > 0 ? '+' : ''
+          }${percentChange.toFixed(1)}%)`
         );
       }
     }

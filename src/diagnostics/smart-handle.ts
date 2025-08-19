@@ -1,11 +1,9 @@
-import debug from 'debug';
 import type * as playwright from 'playwright';
+import { smartHandleDebug } from '../utils/log.js';
 import {
   globalResourceManager,
   type SmartTracker,
 } from './resource-manager.js';
-
-const smartHandleDebug = debug('pw:mcp:smart-handle');
 
 /**
  * Smart wrapper for ElementHandles that automatically manages disposal

@@ -2,10 +2,8 @@
  * Error handling middleware to reduce duplicate error handling patterns
  */
 
-import debug from 'debug';
 import { getErrorMessage } from './common-formatters.js';
-
-const errorHandlerDebug = debug('pw:mcp:error-handler');
+import { errorHandlerDebug } from './log.js';
 
 /**
  * Common error handling wrapper for async operations
@@ -24,7 +22,9 @@ export async function withErrorHandling<T>(
   } catch (error) {
     const message = getErrorMessage(error);
     const contextInfo = context
-      ? `[${context.component || 'Unknown'}:${context.operationName || 'operation'}]`
+      ? `[${context.component || 'Unknown'}:${
+          context.operationName || 'operation'
+        }]`
       : '[Unknown:operation]';
 
     const enrichedError = new Error(`${contextInfo} ${message}`);
@@ -55,7 +55,9 @@ export function withErrorHandlingSync<T>(
   } catch (error) {
     const message = getErrorMessage(error);
     const contextInfo = context
-      ? `[${context.component || 'Unknown'}:${context.operationName || 'operation'}]`
+      ? `[${context.component || 'Unknown'}:${
+          context.operationName || 'operation'
+        }]`
       : '[Unknown:operation]';
 
     const enrichedError = new Error(`${contextInfo} ${message}`);

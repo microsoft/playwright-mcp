@@ -1,5 +1,4 @@
 import { Option, program } from 'commander';
-import debug from 'debug';
 
 // @ts-expect-error - playwright-core internal module without proper types
 import { startTraceViewerServer } from 'playwright-core/lib/server';
@@ -20,12 +19,10 @@ import {
   runWithExtension,
 } from './extension/main.js';
 import { runLoopTools } from './loopTools/main.js';
-import { start } from './mcp/transport.js';
-
-const programDebug = debug('pw:mcp:program');
-
 import type { ServerBackendFactory } from './mcp/server.js';
+import { start } from './mcp/transport.js';
 import { packageJSON } from './package.js';
+import { programDebug } from './utils/log.js';
 import { logServerStart } from './utils/request-logger.js';
 
 program
