@@ -43,7 +43,7 @@ jobs:
       run: npx playwright install --with-deps
     - name: Install MS Edge
       # MS Edge is not preinstalled on macOS runners.
-      if: ${{ matrix.os == 'macos-latest' }}
+      if: ${{ matrix.os == 'macos-15' }}
       run: npx playwright install msedge
     - name: Build
       run: npm run build

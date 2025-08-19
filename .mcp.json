@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "playwright-custom": {
+      "command": "node",
+      "args": [
+        "/Users/tfs-mt-132/Documents/automation/playwright/playwright-mcp-custom/cli.js",
+        "--extension"
+      ]
+    }
+  }
+}
