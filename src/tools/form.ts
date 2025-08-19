@@ -325,18 +325,27 @@ async function executeAction(tab: any, locator: any, action: any, timeout: numbe
       break;
       
     case 'select_first':
-      // For radio/checkbox groups, find the first option and click it
-      response.addCode(`// Select first option in radio/checkbox group`);
+      // Use keyboard navigation to select first option
+      response.addCode(`// Select first option using keyboard navigation`);
       try {
-        // Try to find first radio button in the group
-        const firstRadio = locator.first();
-        response.addCode(`await page.${locatorCode}.first().click();`);
-        await firstRadio.click({ timeout });
+        // Press arrow down to navigate to first option
+        response.addCode(`await page.${locatorCode}.press('ArrowDown');`);
+        await locator.press('ArrowDown', { timeout: timeout / 2 });
+        
+        // Press enter to select the option
+        response.addCode(`await page.${locatorCode}.press('Enter');`);
+        await locator.press('Enter', { timeout: timeout / 2 });
       } catch (error) {
-        // Fallback: just click the element itself
+        // Fallback: try clicking approach for radio/checkbox groups
         response.addCode(`// Fallback: click the element directly`);
-        response.addCode(`await page.${locatorCode}.click();`);
-        await locator.click({ timeout });
+        try {
+          const firstRadio = locator.first();
+          response.addCode(`await page.${locatorCode}.first().click();`);
+          await firstRadio.click({ timeout });
+        } catch (fallbackError) {
+          response.addCode(`await page.${locatorCode}.click();`);
+          await locator.click({ timeout });
+        }
       }
       break;
       
