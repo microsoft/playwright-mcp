@@ -57,7 +57,12 @@ async function main(config: FullConfig, connectionString: string, lib: string) {
   const playwright = await import(lib).then(mod => mod.default ?? mod);
   const factory = new VSCodeBrowserContextFactory(config, playwright, connectionString);
   await mcpServer.connect(
-      () => new BrowserServerBackend(config, factory),
+      {
+        name: 'Playwright MCP',
+        nameInConfig: 'playwright-vscode',
+        create: () => new BrowserServerBackend(config, factory),
+        version: 'unused'
+      },
       new StdioServerTransport(),
       false
   );

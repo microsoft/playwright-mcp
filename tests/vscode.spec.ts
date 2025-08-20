@@ -18,7 +18,7 @@ import { test, expect } from './fixtures.js';
 
 test('browser_connect(vscode) works', async ({ startClient, playwright, browserName }) => {
   const { client } = await startClient({
-    args: ['--connect-tool'],
+    args: ['--vscode'],
   });
 
   const server = await playwright[browserName].launchServer();
@@ -26,14 +26,11 @@ test('browser_connect(vscode) works', async ({ startClient, playwright, browserN
   expect(await client.callTool({
     name: 'browser_connect',
     arguments: {
-      name: 'vscode',
-      options: {
-        connectionString: server.wsEndpoint(),
-        lib: new URL('./index.js', import.meta.resolve('playwright')).pathname,
-      }
+      connectionString: server.wsEndpoint(),
+      lib: new URL('./index.js', import.meta.resolve('playwright')).pathname,
     }
   })).toHaveResponse({
-    result: 'Successfully changed connection method.'
+    result: 'Successfully connected.'
   });
 
   expect(await client.callTool({
