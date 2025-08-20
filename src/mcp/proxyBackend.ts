@@ -78,7 +78,7 @@ export class ProxyBackend implements ServerBackend {
       if (!factory)
         throw new Error('Unknown connection method: ' + params.name);
 
-      await this._setCurrentClient(factory, params.options);
+      await this._setCurrentClient(factory);
       return {
         content: [{ type: 'text', text: '### Result\nSuccessfully changed connection method.\n' }],
       };
@@ -96,11 +96,9 @@ export class ProxyBackend implements ServerBackend {
       description: [
         'Connect to a browser using one of the available methods:',
         ...this._mcpProviders.map(factory => `- "${factory.name}": ${factory.description}`),
-        `By default, you're connected to the first method. Only call this tool to change it.`,
       ].join('\n'),
       inputSchema: zodToJsonSchema(z.object({
         name: z.enum(this._mcpProviders.map(factory => factory.name) as [string, ...string[]]).default(this._mcpProviders[0].name).describe('The method to use to connect to the browser'),
-        options: z.any().optional().describe('Options for the connection method'),
       }), { strictUnions: true }) as Tool['inputSchema'],
       annotations: {
         title: 'Connect to a browser context',
