@@ -44,11 +44,16 @@ const requests = defineTabTool({
     try {
       const requestList = await Promise.resolve(tab.requests());
       const requests = Array.from(requestList.entries());
-      
+
       const filterOptions = buildFilterOptions(params);
       const result = processNetworkRequests(requests, filterOptions);
-      
-      displayFilterSummary(response, filterOptions, result.filteredCount, result.totalCount);
+
+      displayFilterSummary(
+        response,
+        filterOptions,
+        result.filteredCount,
+        result.totalCount
+      );
       displayResults(response, result.filteredRequests, result.totalCount);
     } catch (error) {
       response.addResult(
@@ -149,14 +154,17 @@ function processNetworkRequests(
   }
 
   // Apply max requests limit
-  if (filterOptions.maxRequests && filteredRequests.length > filterOptions.maxRequests) {
+  if (
+    filterOptions.maxRequests &&
+    filteredRequests.length > filterOptions.maxRequests
+  ) {
     filteredRequests = filteredRequests.slice(0, filterOptions.maxRequests);
   }
 
   return {
     filteredRequests,
     filteredCount: filteredRequests.length,
-    totalCount
+    totalCount,
   };
 }
 
@@ -168,16 +176,24 @@ function displayFilterSummary(
 ) {
   if (!hasFilterOptions(filterOptions)) return;
 
-  response.addResult(`Filter Summary: ${filteredCount}/${totalCount} requests match criteria`);
-  
+  response.addResult(
+    `Filter Summary: ${filteredCount}/${totalCount} requests match criteria`
+  );
+
   if (filterOptions.urlPatterns?.length) {
-    response.addResult(`  URL patterns: ${filterOptions.urlPatterns.join(', ')}`);
+    response.addResult(
+      `  URL patterns: ${filterOptions.urlPatterns.join(', ')}`
+    );
   }
   if (filterOptions.excludeUrlPatterns?.length) {
-    response.addResult(`  Exclude URL patterns: ${filterOptions.excludeUrlPatterns.join(', ')}`);
+    response.addResult(
+      `  Exclude URL patterns: ${filterOptions.excludeUrlPatterns.join(', ')}`
+    );
   }
   if (filterOptions.statusRanges?.length) {
-    response.addResult(`  Status ranges: ${filterOptions.statusRanges.map((r) => `${r.min}-${r.max}`).join(', ')}`);
+    response.addResult(
+      `  Status ranges: ${filterOptions.statusRanges.map((r) => `${r.min}-${r.max}`).join(', ')}`
+    );
   }
   if (filterOptions.methods?.length) {
     response.addResult(`  Methods: ${filterOptions.methods.join(', ')}`);
