@@ -3,6 +3,7 @@
  * Testing filtering, sorting, and edge cases
  */
 
+import { randomBytes } from 'node:crypto';
 import {
   createStatusCategoryFilter,
   filterNetworkRequests,
@@ -352,7 +353,7 @@ test.describe('Network Filter Unit Tests', () => {
         status: 200 + (i % 300),
         headers: { 'content-type': 'application/json' },
         timestamp: Date.now() + i,
-        duration: Math.random() * 1000,
+        duration: (randomBytes(2).readUInt16BE(0) / 0xff_ff) * 1000,
         statusText: 'OK',
       })
     );
