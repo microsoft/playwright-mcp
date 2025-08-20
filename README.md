@@ -611,8 +611,14 @@ http.createServer(async (req, res) => {
 
 - **browser_network_requests**
   - Title: List network requests
-  - Description: Returns all network requests since loading the page
-  - Parameters: None
+  - Description: Returns network requests since loading the page with optional filtering. urlPatterns:["api/users"] to filter by URL patterns. excludeUrlPatterns:["analytics"] to exclude specific patterns. statusRanges:[{min:200,max:299}] for success codes only. methods:["GET","POST"] to filter by HTTP method. maxRequests:10 to limit results. newestFirst:false for chronological order. Supports regex patterns for advanced filtering.
+  - Parameters:
+    - `urlPatterns` (array, optional): URL patterns to include (supports regex)
+    - `excludeUrlPatterns` (array, optional): URL patterns to exclude (supports regex)
+    - `statusRanges` (array, optional): Status code ranges to include
+    - `methods` (array, optional): HTTP methods to filter by
+    - `maxRequests` (number, optional): Maximum number of results to return (default: 20)
+    - `newestFirst` (boolean, optional): Sort order - true for newest first (default: true)
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -822,19 +828,27 @@ All browser tools support an optional `expectation` parameter that controls what
 
 #### Basic Usage
 
-```javascript
+```json
 // Standard call - includes all information (snapshot, console, tabs, etc.)
-await browser_navigate({ url: 'https://example.com' });
+{
+  "name": "browser_navigate",
+  "arguments": {
+    "url": "https://example.com"
+  }
+}
 
 // Optimized call - only includes essential information
-await browser_navigate({ 
-  url: 'https://example.com',
-  expectation: {
-    includeSnapshot: false,  // Skip page snapshot
-    includeConsole: false,   // Skip console messages
-    includeTabs: false       // Skip tab information
+{
+  "name": "browser_navigate",
+  "arguments": {
+    "url": "https://example.com",
+    "expectation": {
+      "includeSnapshot": false,
+      "includeConsole": false,
+      "includeTabs": false
+    }
   }
-});
+}
 ```
 
 #### Expectation Options
@@ -847,36 +861,42 @@ await browser_navigate({
 
 #### Advanced Snapshot Options
 
-```javascript
-await browser_click({
-  element: 'Login button',
-  ref: '#login-btn',
-  expectation: {
-    includeSnapshot: true,
-    snapshotOptions: {
-      selector: '.dashboard',  // Only capture dashboard area
-      maxLength: 1000,         // Limit snapshot length
-      format: 'text'           // Use text format instead of aria
+```json
+{
+  "name": "browser_click",
+  "arguments": {
+    "element": "Login button",
+    "ref": "#login-btn",
+    "expectation": {
+      "includeSnapshot": true,
+      "snapshotOptions": {
+        "selector": ".dashboard",
+        "maxLength": 1000,
+        "format": "text"
+      }
     }
   }
-});
+}
 ```
 
 #### Console Filtering Options
 
-```javascript
-await browser_navigate({
-  url: 'https://example.com',
-  expectation: {
-    includeConsole: true,
-    consoleOptions: {
-      levels: ['error', 'warn'],     // Only errors and warnings
-      maxMessages: 5,                // Limit to 5 messages
-      patterns: ['^Error:'],         // Filter by regex patterns
-      removeDuplicates: true         // Remove duplicate messages
+```json
+{
+  "name": "browser_navigate",
+  "arguments": {
+    "url": "https://example.com",
+    "expectation": {
+      "includeConsole": true,
+      "consoleOptions": {
+        "levels": ["error", "warn"],
+        "maxMessages": 5,
+        "patterns": ["^Error:"],
+        "removeDuplicates": true
+      }
     }
   }
-});
+}
 ```
 
 ### Batch Execution
@@ -885,63 +905,69 @@ Execute multiple browser actions in a single request with optimized response han
 
 #### Basic Batch Execution
 
-```javascript
-await browser_batch_execute({
-  steps: [
-    {
-      tool: 'browser_navigate',
-      arguments: { url: 'https://example.com/login' }
-    },
-    {
-      tool: 'browser_type',
-      arguments: { 
-        element: 'username field', 
-        ref: '#username', 
-        text: 'testuser' 
+```json
+{
+  "name": "browser_batch_execute",
+  "arguments": {
+    "steps": [
+      {
+        "tool": "browser_navigate",
+        "arguments": { "url": "https://example.com/login" }
+      },
+      {
+        "tool": "browser_type",
+        "arguments": { 
+          "element": "username field", 
+          "ref": "#username", 
+          "text": "testuser" 
+        }
+      },
+      {
+        "tool": "browser_type",
+        "arguments": { 
+          "element": "password field", 
+          "ref": "#password", 
+          "text": "password" 
+        }
+      },
+      {
+        "tool": "browser_click",
+        "arguments": { "element": "login button", "ref": "#login-btn" }
       }
-    },
-    {
-      tool: 'browser_type',
-      arguments: { 
-        element: 'password field', 
-        ref: '#password', 
-        text: 'password' 
-      }
-    },
-    {
-      tool: 'browser_click',
-      arguments: { element: 'login button', ref: '#login-btn' }
-    }
-  ]
-});
+    ]
+  }
+}
 ```
 
 #### Advanced Batch Configuration
 
-```javascript
-await browser_batch_execute({
-  steps: [
-    {
-      tool: 'browser_navigate',
-      arguments: { url: 'https://example.com' },
-      expectation: { includeSnapshot: false },  // Step-specific optimization
-      continueOnError: true                     // Continue if this step fails
-    },
-    {
-      tool: 'browser_click',
-      arguments: { element: 'button', ref: '#submit' },
-      expectation: { 
-        includeSnapshot: true,
-        snapshotOptions: { selector: '.result-area' }
+```json
+{
+  "name": "browser_batch_execute",
+  "arguments": {
+    "steps": [
+      {
+        "tool": "browser_navigate",
+        "arguments": { "url": "https://example.com" },
+        "expectation": { "includeSnapshot": false },
+        "continueOnError": true
+      },
+      {
+        "tool": "browser_click",
+        "arguments": { "element": "button", "ref": "#submit" },
+        "expectation": { 
+          "includeSnapshot": true,
+          "snapshotOptions": { "selector": ".result-area" }
+        }
       }
+    ],
+    "stopOnFirstError": false,
+    "globalExpectation": {
+      "includeConsole": false,
+      "includeTabs": false
     }
-  ],
-  stopOnFirstError: false,           // Continue executing remaining steps
-  globalExpectation: {               // Default for all steps
-    includeConsole: false,
-    includeTabs: false
   }
-});
+}
 ```
 
 #### Error Handling Options
@@ -971,22 +997,24 @@ Each tool has optimized defaults based on typical usage patterns:
 
 The Fast Server includes automatic diff detection to efficiently track changes between consecutive tool executions:
 
-```javascript
-// Enable diff detection for any tool
-await browser_click({
-  element: 'Load more button',
-  ref: '#load-more',
-  expectation: {
-    includeSnapshot: true,
-    diffOptions: {
-      enabled: true,
-      threshold: 0.1,         // Show diff if >10% changed
-      format: 'unified',      // or 'split', 'minimal'
-      maxDiffLines: 50,       // Limit diff output size
-      context: 3              // Lines of context around changes
+```json
+{
+  "name": "browser_click",
+  "arguments": {
+    "element": "Load more button",
+    "ref": "#load-more",
+    "expectation": {
+      "includeSnapshot": true,
+      "diffOptions": {
+        "enabled": true,
+        "threshold": 0.1,
+        "format": "unified",
+        "maxDiffLines": 50,
+        "context": 3
+      }
     }
   }
-});
+}
 ```
 
 #### Diff Detection Benefits
@@ -1003,23 +1031,25 @@ await browser_click({
 3. **Form interactions**: Track changes as users fill forms
 4. **Selective monitoring**: Use with CSS selectors to track specific areas
 
-```javascript
-// Example: Track only search results changes
-await browser_type({
-  element: 'Search input',
-  ref: '#search',
-  text: 'playwright',
-  expectation: {
-    includeSnapshot: true,
-    snapshotOptions: {
-      selector: '#search-results'  // Only monitor results area
-    },
-    diffOptions: {
-      enabled: true,
-      format: 'minimal'  // Just show what changed
+```json
+{
+  "name": "browser_type",
+  "arguments": {
+    "element": "Search input",
+    "ref": "#search",
+    "text": "playwright",
+    "expectation": {
+      "includeSnapshot": true,
+      "snapshotOptions": {
+        "selector": "#search-results"
+      },
+      "diffOptions": {
+        "enabled": true,
+        "format": "minimal"
+      }
     }
   }
-});
+}
 ```
 
 ### Best Practices
@@ -1066,6 +1096,107 @@ All tools automatically provide enhanced error messages with:
 - Page structure analysis
 - Context-aware troubleshooting tips
 - Performance insights
+
+### Network Request Filtering
+
+The `browser_network_requests` tool provides advanced filtering capabilities to reduce token usage by up to 80-95% when working with network logs.
+
+#### Basic Usage Examples
+
+```json
+// Filter API requests only
+{
+  "name": "browser_network_requests",
+  "arguments": {
+    "urlPatterns": ["api/", "/graphql"]
+  }
+}
+
+// Exclude analytics and tracking
+{
+  "name": "browser_network_requests", 
+  "arguments": {
+    "excludeUrlPatterns": ["analytics", "tracking", "ads"]
+  }
+}
+
+// Success responses only
+{
+  "name": "browser_network_requests",
+  "arguments": {
+    "statusRanges": [{ "min": 200, "max": 299 }]
+  }
+}
+
+// Recent errors only
+{
+  "name": "browser_network_requests",
+  "arguments": {
+    "statusRanges": [{ "min": 400, "max": 599 }],
+    "maxRequests": 5,
+    "newestFirst": true
+  }
+}
+```
+
+#### Advanced Filtering
+
+```json
+// Complex filtering for API debugging
+{
+  "name": "browser_network_requests",
+  "arguments": {
+    "urlPatterns": ["/api/users", "/api/posts"],
+    "excludeUrlPatterns": ["/api/health"],
+    "methods": ["GET", "POST"],
+    "statusRanges": [
+      { "min": 200, "max": 299 },
+      { "min": 400, "max": 499 }
+    ],
+    "maxRequests": 10,
+    "newestFirst": true
+  }
+}
+
+// Monitor only failed requests
+{
+  "name": "browser_network_requests", 
+  "arguments": {
+    "statusRanges": [
+      { "min": 400, "max": 499 },
+      { "min": 500, "max": 599 }
+    ],
+    "maxRequests": 3
+  }
+}
+```
+
+#### Regex Pattern Support
+
+```json
+{
+  "name": "browser_network_requests",
+  "arguments": {
+    "urlPatterns": ["^/api/v[0-9]+/users$"],
+    "excludeUrlPatterns": ["\\.(css|js|png)$"]
+  }
+}
+```
+
+#### Token Optimization Benefits
+
+- **Massive reduction**: 80-95% fewer tokens for large applications
+- **Focused debugging**: See only relevant network activity
+- **Performance monitoring**: Track specific endpoints or error patterns
+- **Cost savings**: Lower API costs due to reduced token usage
+
+#### When to Use Network Filtering
+
+1. **API debugging**: Focus on specific endpoints and methods
+2. **Error monitoring**: Track only failed requests
+3. **Performance analysis**: Monitor slow or problematic endpoints  
+4. **Large applications**: Reduce overwhelming network logs
+5. **Token management**: Stay within LLM context limits
 
 ### Migration Guide
 

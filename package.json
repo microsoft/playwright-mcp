@@ -1,6 +1,6 @@
 {
   "name": "@tontoko/fast-playwright-mcp",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "publishConfig": {
     "access": "public"
   },
@@ -15,7 +15,7 @@
     "node": ">=18"
   },
   "author": {
-    "name": "Microsoft Corporation"
+    "name": "Tomohiko Hiraki"
   },
   "license": "Apache-2.0",
   "scripts": {

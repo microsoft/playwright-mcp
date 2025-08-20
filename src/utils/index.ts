@@ -35,6 +35,14 @@ export {
 // Resource management
 export { createDisposableManager } from './disposable-manager.js';
 
+// Network filtering utilities
+export {
+  createStatusCategoryFilter,
+  filterNetworkRequests,
+  type NetworkFilterOptions,
+  type NetworkRequest,
+} from './network-filter.js';
+
 // Tool patterns
 export {
   addMouseOperationComment,
