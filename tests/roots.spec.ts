@@ -23,65 +23,57 @@ import { createHash } from '../src/utils/guid.js';
 
 const p = process.platform === 'win32' ? 'c:\\non\\existent\\folder' : '/non/existent/folder';
 
-for (const mode of ['default', 'proxy']) {
-  const extraArgs = mode === 'proxy' ? ['--connect-tool'] : [];
-
-  test.describe(`${mode} mode`, () => {
-    test('should use separate user data by root path', async ({ startClient, server }, testInfo) => {
-      const { client } = await startClient({
-        args: extraArgs,
-        clientName: 'Visual Studio Code', // Simulate VS Code client, roots only work with it
-        roots: [
-          {
-            name: 'test',
-            uri: 'file://' + p.replace(/\\/g, '/'),
-          }
-        ],
-      });
-
-      await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.HELLO_WORLD },
-      });
-
-      const hash = createHash(p);
-      const [file] = await fs.promises.readdir(testInfo.outputPath('ms-playwright'));
-      expect(file).toContain(hash);
-    });
-
-
-    test('check that trace is saved in workspace', async ({ startClient, server }, testInfo) => {
-      const rootPath = testInfo.outputPath('workspace');
-      const { client } = await startClient({
-        args: ['--save-trace', ...extraArgs],
-        clientName: 'Visual Studio Code - Insiders', // Simulate VS Code client, roots only work with it
-        roots: [
-          {
-            name: 'workspace',
-            uri: pathToFileURL(rootPath).toString(),
-          },
-        ],
-      });
-
-      expect(await client.callTool({
-        name: 'browser_navigate',
-        arguments: { url: server.HELLO_WORLD },
-      })).toHaveResponse({
-        code: expect.stringContaining(`page.goto('http://localhost`),
-      });
-
-      const [file] = await fs.promises.readdir(path.join(rootPath, '.playwright-mcp'));
-      expect(file).toContain('traces');
-    });
-
-    test('should list all tools when listRoots is slow', async ({ startClient, server }, testInfo) => {
-      const { client } = await startClient({
-        clientName: 'Visual Studio Code', // Simulate VS Code client, roots only work with it
-        roots: [],
-        rootsResponseDelay: 1000,
-      });
-      const tools = await client.listTools();
-      expect(tools.tools.length).toBeGreaterThan(20);
-    });
+test('should use separate user data by root path', async ({ startClient, server }, testInfo) => {
+  const { client } = await startClient({
+    clientName: 'Visual Studio Code',
+    roots: [
+      {
+        name: 'test',
+        uri: 'file://' + p.replace(/\\/g, '/'),
+      }
+    ],
   });
-}
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  });
+
+  const hash = createHash(p);
+  const [file] = await fs.promises.readdir(testInfo.outputPath('ms-playwright'));
+  expect(file).toContain(hash);
+});
+
+test('check that trace is saved in workspace', async ({ startClient, server }, testInfo) => {
+  const rootPath = testInfo.outputPath('workspace');
+  const { client } = await startClient({
+    args: ['--save-trace'],
+    clientName: 'My client',
+    roots: [
+      {
+        name: 'workspace',
+        uri: pathToFileURL(rootPath).toString(),
+      },
+    ],
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toHaveResponse({
+    code: expect.stringContaining(`page.goto('http://localhost`),
+  });
+
+  const [file] = await fs.promises.readdir(path.join(rootPath, '.playwright-mcp'));
+  expect(file).toContain('traces');
+});
+
+test('should list all tools when listRoots is slow', async ({ startClient, server }, testInfo) => {
+  const { client } = await startClient({
+    clientName: 'Another custom client',
+    roots: [],
+    rootsResponseDelay: 1000,
+  });
+  const tools = await client.listTools();
+  expect(tools.tools.length).toBeGreaterThan(20);
+});

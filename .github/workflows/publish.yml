@@ -68,3 +68,31 @@ jobs:
           for tag in $(echo ${{ steps.build-push.outputs.metadata['image.name'] }} | tr ',' '\n'); do
             attach_eol_manifest $tag
           done
+
+  package-extension:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to upload release assets
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install extension dependencies
+        working-directory: ./extension
+        run: npm ci
+      - name: Build extension
+        working-directory: ./extension
+        run: npm run build
+      - name: Package extension
+        working-directory: ./extension
+        run: |
+          cd dist
+          zip -r ../playwright-mcp-extension-${{ github.event.release.tag_name }}.zip .
+          cd ..
+      - name: Upload extension to release
+        env:
+           GITHUB_TOKEN: ${{ github.token }}
+        run: |
+            gh release upload ${{github.event.release.tag_name}} ./extension/playwright-mcp-extension-${{ github.event.release.tag_name }}.zip

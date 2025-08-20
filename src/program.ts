@@ -16,7 +16,6 @@
 
 import { program, Option } from 'commander';
 import * as mcpServer from './mcp/server.js';
-import * as mcpTransport from './mcp/transport.js';
 import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
 import { packageJSON } from './utils/package.js';
 import { Context } from './context.js';
@@ -25,13 +24,10 @@ import { runLoopTools } from './loopTools/main.js';
 import { ProxyBackend } from './mcp/proxyBackend.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
-import { InProcessTransport } from './mcp/inProcessTransport.js';
 
 import { VSCodeMCPFactory } from './vscode/host.js';
 import { VSCodeProxyBackend } from './vscode/proxyBackend.js';
 import type { MCPProvider } from './mcp/proxyBackend.js';
-import type { FullConfig } from './config.js';
-import type { BrowserContextFactory } from './browserContextFactory.js';
 
 program
     .version('Version ' + packageJSON.version)
@@ -45,6 +41,7 @@ program
     .option('--config <path>', 'path to the configuration file.')
     .option('--device <device>', 'device to emulate, for example: "iPhone 15"')
     .option('--executable-path <path>', 'path to the browser executable.')
+    .option('--extension', 'Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright MCP Bridge" browser extension to be installed.')
     .option('--headless', 'run browser in headless mode, headed by default')
     .option('--host <host>', 'host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.')
     .option('--ignore-https-errors', 'ignore https errors')
@@ -61,7 +58,6 @@ program
     .option('--user-agent <ua string>', 'specify user agent string')
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
-    .addOption(new Option('--extension', 'Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright MCP Bridge" browser extension to be installed.').hideHelp())
     .addOption(new Option('--connect-tool', 'Allow to switch between different browser connection methods.').hideHelp())
     .addOption(new Option('--vscode', 'VS Code tools.').hideHelp())
     .addOption(new Option('--loop-tools', 'Run loop tools').hideHelp())
@@ -74,12 +70,19 @@ program
         console.error('The --vision option is deprecated, use --caps=vision instead');
         options.caps = 'vision';
       }
+
       const config = await resolveCLIConfig(options);
+      const browserContextFactory = contextFactory(config);
+      const extensionContextFactory = new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
 
       if (options.extension) {
-        const contextFactory = createExtensionContextFactory(config);
-        const serverBackendFactory = () => new BrowserServerBackend(config, contextFactory);
-        await mcpTransport.start(serverBackendFactory, config.server);
+        const serverBackendFactory: mcpServer.ServerBackendFactory = {
+          name: 'Playwright w/ extension',
+          nameInConfig: 'playwright-extension',
+          version: packageJSON.version,
+          create: () => new BrowserServerBackend(config, extensionContextFactory)
+        };
+        await mcpServer.start(serverBackendFactory, config.server);
         return;
       }
 
@@ -88,22 +91,36 @@ program
         return;
       }
 
-      if (options.vscode) {
-        const browserContextFactory = contextFactory(config);
-        const vscodeBackendFactory = () => new VSCodeProxyBackend(config, browserContextFactory);
-        await mcpTransport.start(vscodeBackendFactory, config.server);
+      if (options.connectTool) {
+        const providers: MCPProvider[] = [
+          {
+            name: 'default',
+            description: 'Starts standalone browser',
+            connect: () => mcpServer.wrapInProcess(new BrowserServerBackend(config, browserContextFactory)),
+          },
+          {
+            name: 'extension',
+            description: 'Connect to a browser using the Playwright MCP extension',
+            connect: () => mcpServer.wrapInProcess(new BrowserServerBackend(config, extensionContextFactory)),
+          },
+        ];
+        const factory: mcpServer.ServerBackendFactory = {
+          name: 'Playwright w/ switch',
+          nameInConfig: 'playwright-switch',
+          version: packageJSON.version,
+          create: () => new ProxyBackend(providers),
+        };
+        await mcpServer.start(factory, config.server);
         return;
       }
 
-      const browserContextFactory = contextFactory(config);
-      const providers: MCPProvider[] = [mcpProviderForBrowserContextFactory(config, browserContextFactory)];
-      if (options.connectTool) {
-        providers.push(
-            mcpProviderForBrowserContextFactory(config, createExtensionContextFactory(config)),
-            new VSCodeMCPFactory(config), // TODO: automatically add this based on the client name
-        );
-      }
-      await mcpTransport.start(() => new ProxyBackend(providers), config.server);
+      const factory: mcpServer.ServerBackendFactory = {
+        name: 'Playwright',
+        nameInConfig: 'playwright',
+        version: packageJSON.version,
+        create: () => new BrowserServerBackend(config, browserContextFactory)
+      };
+      await mcpServer.start(factory, config.server);
     });
 
 function setupExitWatchdog() {
@@ -120,21 +137,6 @@ function setupExitWatchdog() {
   process.stdin.on('close', handleExit);
   process.on('SIGINT', handleExit);
   process.on('SIGTERM', handleExit);
-}
-
-function createExtensionContextFactory(config: FullConfig) {
-  return new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
-}
-
-function mcpProviderForBrowserContextFactory(config: FullConfig, browserContextFactory: BrowserContextFactory) {
-  return {
-    name: browserContextFactory.name,
-    description: browserContextFactory.description,
-    connect: async () => {
-      const server = mcpServer.createServer(new BrowserServerBackend(config, browserContextFactory), false);
-      return new InProcessTransport(server);
-    },
-  };
 }
 
 void program.parseAsync(process.argv);

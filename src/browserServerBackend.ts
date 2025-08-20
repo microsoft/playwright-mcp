@@ -21,7 +21,6 @@ import { logUnhandledError } from './utils/log.js';
 import { Response } from './response.js';
 import { SessionLog } from './sessionLog.js';
 import { filteredTools } from './tools.js';
-import { packageJSON } from './utils/package.js';
 import { toMcpTool } from './mcp/tool.js';
 
 import type { Tool } from './tools/tool.js';
@@ -30,9 +29,6 @@ import type * as mcpServer from './mcp/server.js';
 import type { ServerBackend } from './mcp/server.js';
 
 export class BrowserServerBackend implements ServerBackend {
-  name = 'Playwright';
-  version = packageJSON.version;
-
   private _tools: Tool[];
   private _context: Context | undefined;
   private _sessionLog: SessionLog | undefined;
@@ -45,11 +41,9 @@ export class BrowserServerBackend implements ServerBackend {
     this._tools = filteredTools(config);
   }
 
-  async initialize(server: mcpServer.Server): Promise<void> {
-    const capabilities = server.getClientCapabilities();
+  async initialize(clientVersion: mcpServer.ClientVersion, roots: mcpServer.Root[]): Promise<void> {
     let rootPath: string | undefined;
-    if (capabilities?.roots) {
-      const { roots } = await server.listRoots();
+    if (roots.length > 0) {
       const firstRootUri = roots[0]?.uri;
       const url = firstRootUri ? new URL(firstRootUri) : undefined;
       rootPath = url ? fileURLToPath(url) : undefined;
@@ -60,7 +54,7 @@ export class BrowserServerBackend implements ServerBackend {
       config: this._config,
       browserContextFactory: this._browserContextFactory,
       sessionLog: this._sessionLog,
-      clientInfo: { ...server.getClientVersion(), rootPath },
+      clientInfo: { ...clientVersion, rootPath },
     });
   }
 

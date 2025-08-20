@@ -17,7 +17,6 @@
 import dotenv from 'dotenv';
 
 import * as mcpServer from '../mcp/server.js';
-import * as mcpTransport from '../mcp/transport.js';
 import { packageJSON } from '../utils/package.js';
 import { Context } from './context.js';
 import { perform } from './perform.js';
@@ -30,13 +29,16 @@ import type { Tool } from './tool.js';
 
 export async function runLoopTools(config: FullConfig) {
   dotenv.config();
-  const serverBackendFactory = () => new LoopToolsServerBackend(config);
-  await mcpTransport.start(serverBackendFactory, config.server);
+  const serverBackendFactory = {
+    name: 'Playwright',
+    nameInConfig: 'playwright-loop',
+    version: packageJSON.version,
+    create: () => new LoopToolsServerBackend(config)
+  };
+  await mcpServer.start(serverBackendFactory, config.server);
 }
 
 class LoopToolsServerBackend implements ServerBackend {
-  readonly name = 'Playwright';
-  readonly version = packageJSON.version;
   private _config: FullConfig;
   private _context: Context | undefined;
   private _tools: Tool<any>[] = [perform, snapshot];
