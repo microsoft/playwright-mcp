@@ -16,28 +16,23 @@
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { FullConfig } from '../config.js';
-import type { MCPProvider } from '../mcp/proxyBackend.js';
+import type { MCPProvider } from './proxyBackend.js';
 
 export class VSCodeMCPFactory implements MCPProvider {
   name = 'vscode';
   description = 'Connect to a browser running in the Playwright VS Code extension';
 
-  constructor(private readonly _config: FullConfig) {}
+  constructor(private readonly _config: FullConfig, private readonly _connectionString: string, private readonly _lib: string) {}
 
-  async connect(options: any): Promise<Transport> {
-    if (typeof options.connectionString !== 'string')
-      throw new Error('Missing options.connectionString');
-    if (typeof options.lib !== 'string')
-      throw new Error('Missing options.lib');
-
+  async connect(): Promise<Transport> {
     return new StdioClientTransport({
       command: process.execPath,
       cwd: process.cwd(),
       args: [
         new URL('./main.js', import.meta.url).pathname,
         JSON.stringify(this._config),
-        options.connectionString,
-        options.lib,
+        this._connectionString,
+        this._lib,
       ],
     });
   }

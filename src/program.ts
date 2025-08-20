@@ -28,6 +28,7 @@ import { ExtensionContextFactory } from './extension/extensionContextFactory.js'
 import { InProcessTransport } from './mcp/inProcessTransport.js';
 
 import { VSCodeMCPFactory } from './vscode/host.js';
+import { VSCodeProxyBackend } from './vscode/proxyBackend.js';
 import type { MCPProvider } from './mcp/proxyBackend.js';
 import type { FullConfig } from './config.js';
 import type { BrowserContextFactory } from './browserContextFactory.js';
@@ -62,6 +63,7 @@ program
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .addOption(new Option('--extension', 'Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright MCP Bridge" browser extension to be installed.').hideHelp())
     .addOption(new Option('--connect-tool', 'Allow to switch between different browser connection methods.').hideHelp())
+    .addOption(new Option('--vscode', 'VS Code tools.').hideHelp())
     .addOption(new Option('--loop-tools', 'Run loop tools').hideHelp())
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
@@ -83,6 +85,13 @@ program
 
       if (options.loopTools) {
         await runLoopTools(config);
+        return;
+      }
+
+      if (options.vscode) {
+        const browserContextFactory = contextFactory(config);
+        const vscodeBackendFactory = () => new VSCodeProxyBackend(config, browserContextFactory);
+        await mcpTransport.start(vscodeBackendFactory, config.server);
         return;
       }
 
