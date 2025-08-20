@@ -244,21 +244,26 @@ test.describe('Network Filter Integration Tests', () => {
     const response = await client.callTool({
       name: 'browser_network_requests',
       arguments: {
-        urlPatterns: ['api/resource'],
+        urlPatterns: ['/api/resource'],
         maxRequests: 3,
       },
     });
 
     const results = response.content[0].text;
-    const lines = results
-      .split('\n')
-      .filter((line) => line.includes('/api/resource'));
 
-    // Should be limited to 3 requests (not counting filter summary lines)
-    // Note: Due to browser navigation, there might be additional requests (like favicon)
-    expect(lines.length).toBeGreaterThan(0);
-    expect(lines.length).toBeLessThanOrEqual(5); // Allow some flexibility for browser requests
-    expect(results).toContain('maxRequests');
+    // Count only the actual request lines (starting with [GET])
+    const requestLines = results
+      .split('\n')
+      .filter(
+        (line) => line.startsWith('[GET]') && line.includes('/api/resource')
+      );
+
+    // Should be limited to exactly 3 requests due to maxRequests: 3
+    expect(requestLines.length).toBe(3);
+
+    // Verify that maxRequests filtering works (we expect exactly 3 results, not 5)
+    expect(results).toContain('Filter Summary:');
+    expect(results).toContain('URL patterns: /api/resource');
   });
 
   test('should maintain backward compatibility when no filters are provided', async ({
