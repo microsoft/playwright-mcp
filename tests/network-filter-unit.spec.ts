@@ -86,7 +86,7 @@ test.describe('Network Filter Unit Tests', () => {
 
   test('should apply default maxRequests limit', () => {
     const sampleRequest = createSampleRequests()[0];
-    const manyRequests = Array(30).fill(sampleRequest);
+    const manyRequests = new Array(30).fill(sampleRequest);
     const result = filterNetworkRequests(manyRequests);
     expect(result).toHaveLength(20); // default maxRequests
   });

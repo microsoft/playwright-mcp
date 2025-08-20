@@ -2,6 +2,7 @@ import type * as playwright from 'playwright';
 import { z } from 'zod';
 import {
   filterNetworkRequests,
+  type NetworkFilterOptions,
   type NetworkRequest,
 } from '../utils/network-filter.js';
 import { defineTabTool } from './tool.js';
@@ -21,15 +22,6 @@ const networkFilterSchema = z.object({
   maxRequests: z.number().default(20),
   newestFirst: z.boolean().default(true),
 });
-
-interface NetworkFilterOptions {
-  urlPatterns?: string[];
-  excludeUrlPatterns?: string[];
-  statusRanges?: { min: number; max: number }[];
-  methods?: string[];
-  maxRequests?: number;
-  newestFirst?: boolean;
-}
 
 const requests = defineTabTool({
   capability: 'core',
@@ -73,64 +65,31 @@ function hasFilterOptions(options: NetworkFilterOptions): boolean {
 }
 
 function applyFilters(
-  requests: [playwright.Request, playwright.Response | null][],
+  requestList: [playwright.Request, playwright.Response | null][],
   options: NetworkFilterOptions
 ): [playwright.Request, playwright.Response | null][] {
-  return requests.filter(([request, response]) => {
-    // URLパターンフィルタ
-    if (options.urlPatterns?.length) {
-      const url = request.url();
-      const matchesPattern = options.urlPatterns.some((pattern) => {
-        try {
-          const regex = new RegExp(pattern, 'i');
-          return regex.test(url);
-        } catch {
-          // 正規表現でない場合は部分文字列マッチ
-          return url.toLowerCase().includes(pattern.toLowerCase());
-        }
-      });
-      if (!matchesPattern) return false;
-    }
+  // Convert to NetworkRequest format and use existing filter utility
+  const requests: NetworkRequest[] = requestList.map(([request, response]) => ({
+    url: request.url(),
+    method: request.method(),
+    status: response?.status(),
+    statusText: response?.statusText() || '',
+    headers: response?.headers() || {},
+    timestamp: Date.now(),
+    duration: undefined,
+  }));
 
-    // 除外URLパターンフィルタ
-    if (options.excludeUrlPatterns?.length) {
-      const url = request.url();
-      const matchesExcludePattern = options.excludeUrlPatterns.some(
-        (pattern) => {
-          try {
-            const regex = new RegExp(pattern, 'i');
-            return regex.test(url);
-          } catch {
-            // 正規表現でない場合は部分文字列マッチ
-            return url.toLowerCase().includes(pattern.toLowerCase());
-          }
-        }
-      );
-      if (matchesExcludePattern) return false;
-    }
+  const filtered = filterNetworkRequests(requests, options);
 
-    // ステータスコードフィルタ
-    if (options.statusRanges?.length && response) {
-      const status = response.status();
-      const matchesStatusRange = options.statusRanges.some(
-        (range) => status >= range.min && status <= range.max
-      );
-      if (!matchesStatusRange) return false;
-    }
-
-    // HTTPメソッドフィルタ
-    if (options.methods?.length) {
-      const method = request.method().toUpperCase();
-      if (!options.methods.map((m) => m.toUpperCase()).includes(method)) {
-        return false;
-      }
-    }
-
-    return true;
-  });
+  // Map back to original format
+  return requestList.filter(([request]) =>
+    filtered.some(
+      (f) => f.url === request.url() && f.method === request.method()
+    )
+  );
 }
 
-function buildFilterOptions(params: any): NetworkFilterOptions {
+function buildFilterOptions(params: Record<string, unknown>): NetworkFilterOptions {
   return {
     urlPatterns: params.urlPatterns,
     excludeUrlPatterns: params.excludeUrlPatterns,
@@ -169,12 +128,14 @@ function processNetworkRequests(
 }
 
 function displayFilterSummary(
-  response: any,
+  response: { addResult: (message: string) => void },
   filterOptions: NetworkFilterOptions,
   filteredCount: number,
   totalCount: number
 ) {
-  if (!hasFilterOptions(filterOptions)) return;
+  if (!hasFilterOptions(filterOptions)) {
+    return;
+  }
 
   response.addResult(
     `Filter Summary: ${filteredCount}/${totalCount} requests match criteria`
@@ -202,7 +163,7 @@ function displayFilterSummary(
 }
 
 function displayResults(
-  response: any,
+  response: { addResult: (message: string) => void },
   filteredRequests: [playwright.Request, playwright.Response | null][],
   totalCount: number
 ) {
