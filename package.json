@@ -15,7 +15,7 @@
     "node": ">=18"
   },
   "author": {
-    "name": "Microsoft Corporation"
+    "name": "Tomohiko Hiraki"
   },
   "license": "Apache-2.0",
   "scripts": {
