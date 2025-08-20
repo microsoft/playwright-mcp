@@ -19,7 +19,6 @@ import { RelayConnection, debugLog } from './relayConnection.js';
 type PageMessage = {
   type: 'connectToMCPRelay';
   mcpRelayUrl: string;
-  pwMcpVersion: string | null;
 } | {
   type: 'getTabs';
 } | {
@@ -50,7 +49,7 @@ class TabShareExtension {
   private _onMessage(message: PageMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
     switch (message.type) {
       case 'connectToMCPRelay':
-        this._connectToRelay(sender.tab!.id!, message.mcpRelayUrl, message.pwMcpVersion).then(
+        this._connectToRelay(sender.tab!.id!, message.mcpRelayUrl).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true;
@@ -78,11 +77,7 @@ class TabShareExtension {
     return false;
   }
 
-  private async _connectToRelay(selectorTabId: number, mcpRelayUrl: string, pwMcpVersion: string | null): Promise<void> {
-    const version = chrome.runtime.getManifest().version;
-    if (pwMcpVersion !== version)
-      throw new Error(`Incompatible Playwright MCP version: ${pwMcpVersion} (extension version: ${version}). Please install the latest version of the extension.`);
-
+  private async _connectToRelay(selectorTabId: number, mcpRelayUrl: string): Promise<void> {
     try {
       debugLog(`Connecting to relay at ${mcpRelayUrl}`);
       const socket = new WebSocket(mcpRelayUrl);

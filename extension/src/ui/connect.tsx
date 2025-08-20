@@ -19,11 +19,15 @@ import { createRoot } from 'react-dom/client';
 import { Button, TabItem  } from './tabItem.js';
 import type { TabInfo } from './tabItem.js';
 
-type StatusType = 'connected' | 'error' | 'connecting';
+type Status =
+  | { type: 'connecting'; message: string }
+  | { type: 'connected'; message: string }
+  | { type: 'error'; message: string }
+  | { type: 'error'; versionMismatch: { pwMcpVersion: string; extensionVersion: string } };
 
 const ConnectApp: React.FC = () => {
   const [tabs, setTabs] = useState<TabInfo[]>([]);
-  const [status, setStatus] = useState<{ type: StatusType; message: string } | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
   const [showButtons, setShowButtons] = useState(true);
   const [showTabList, setShowTabList] = useState(true);
   const [clientInfo, setClientInfo] = useState('unknown');
@@ -54,7 +58,22 @@ const ConnectApp: React.FC = () => {
       return;
     }
 
-    void connectToMCPRelay(relayUrl, params.get('pwMcpVersion'));
+    const pwMcpVersion = params.get('pwMcpVersion');
+    const extensionVersion = chrome.runtime.getManifest().version;
+    if (pwMcpVersion !== extensionVersion) {
+      setShowButtons(false);
+      setShowTabList(false);
+      setStatus({
+        type: 'error',
+        versionMismatch: {
+          pwMcpVersion: pwMcpVersion || 'unknown',
+          extensionVersion
+        }
+      });
+      return;
+    }
+
+    void connectToMCPRelay(relayUrl);
     void loadTabs();
   }, []);
 
@@ -64,8 +83,9 @@ const ConnectApp: React.FC = () => {
     setStatus({ type: 'error', message });
   }, []);
 
-  const connectToMCPRelay = useCallback(async (mcpRelayUrl: string, pwMcpVersion: string | null) => {
-    const response = await chrome.runtime.sendMessage({ type: 'connectToMCPRelay', mcpRelayUrl, pwMcpVersion  });
+  const connectToMCPRelay = useCallback(async (mcpRelayUrl: string) => {
+
+    const response = await chrome.runtime.sendMessage({ type: 'connectToMCPRelay', mcpRelayUrl  });
     if (!response.success)
       handleReject(response.error);
   }, [handleReject]);
@@ -122,7 +142,7 @@ const ConnectApp: React.FC = () => {
       <div className='content-wrapper'>
         {status && (
           <div className='status-container'>
-            <StatusBanner type={status.type} message={status.message} />
+            <StatusBanner status={status} />
             {showButtons && (
               <Button variant='reject' onClick={() => handleReject('Connection rejected. This tab can be closed.')}>
                 Reject
@@ -156,8 +176,27 @@ const ConnectApp: React.FC = () => {
   );
 };
 
-const StatusBanner: React.FC<{ type: StatusType; message: string }> = ({ type, message }) => {
-  return <div className={`status-banner ${type}`}>{message}</div>;
+const VersionMismatchError: React.FC<{ pwMcpVersion: string; extensionVersion: string }> = ({ pwMcpVersion, extensionVersion }) => {
+  const readmeUrl = 'https://github.com/microsoft/playwright-mcp/blob/main/extension/README.md';
+  return (
+    <div>
+      Incompatible Playwright MCP version: {pwMcpVersion} (extension version: {extensionVersion}).
+      Please install the latest version of the extension.{' '}
+      See <a href={readmeUrl} target='_blank' rel='noopener noreferrer'>installation instructions</a>.
+    </div>
+  );
+};
+
+const StatusBanner: React.FC<{ status: Status }> = ({ status }) => {
+  return (
+    <div className={`status-banner ${status.type}`}>
+      {'versionMismatch' in status ? (
+        <VersionMismatchError pwMcpVersion={status.versionMismatch.pwMcpVersion} extensionVersion={status.versionMismatch.extensionVersion} />
+      ) : (
+        status.message
+      )}
+    </div>
+  );
 };
 
 // Initialize the React app
