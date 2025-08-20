@@ -60,7 +60,8 @@ function hasFilterOptions(options: NetworkFilterOptions): boolean {
     options.urlPatterns?.length ||
     options.excludeUrlPatterns?.length ||
     options.statusRanges?.length ||
-    options.methods?.length
+    options.methods?.length ||
+    (options.maxRequests && options.maxRequests !== 20)
   );
 }
 
@@ -162,6 +163,9 @@ function displayFilterSummary(
   }
   if (filterOptions.methods?.length) {
     response.addResult(`  Methods: ${filterOptions.methods.join(', ')}`);
+  }
+  if (filterOptions.maxRequests && filterOptions.maxRequests !== 20) {
+    response.addResult(`  maxRequests: ${filterOptions.maxRequests}`);
   }
   response.addResult('');
 }

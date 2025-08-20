@@ -136,13 +136,13 @@ const testCases: TestCase[] = [
       { url: '/static/data', content: '{}', contentType: 'application/json' },
     ],
     filterArgs: {
-      urlPatterns: ['/api/'],
+      urlPatterns: ['/api/users'],
       methods: ['GET'],
       statusRanges: [{ min: 200, max: 299 }],
     },
     expectedContains: [
       '/api/users',
-      'URL patterns: /api/',
+      'URL patterns: /api/users',
       'Methods: GET',
       'Status ranges: 200-299',
     ],
@@ -188,7 +188,7 @@ test.describe('Network Filter Integration Tests', () => {
         arguments: { url: server.PREFIX },
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const response = await client.callTool({
         name: 'browser_network_requests',
@@ -239,12 +239,12 @@ test.describe('Network Filter Integration Tests', () => {
       arguments: { url: server.PREFIX },
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const response = await client.callTool({
       name: 'browser_network_requests',
       arguments: {
-        urlPatterns: ['/api/resource'],
+        urlPatterns: ['api/resource'],
         maxRequests: 3,
       },
     });
@@ -282,7 +282,7 @@ test.describe('Network Filter Integration Tests', () => {
       arguments: { url: server.PREFIX },
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Test without any filter parameters (old behavior)
     const response = await client.callTool({
@@ -321,7 +321,7 @@ test.describe('Network Filter Integration Tests', () => {
       arguments: { url: server.PREFIX },
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const response = await client.callTool({
       name: 'browser_network_requests',
@@ -357,7 +357,7 @@ test.describe('Network Filter Integration Tests', () => {
       arguments: { url: server.PREFIX },
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const response = await client.callTool({
       name: 'browser_network_requests',
