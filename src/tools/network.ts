@@ -35,10 +35,10 @@ const requests = defineTabTool({
   handle: async (tab, params, response) => {
     try {
       const requestList = await Promise.resolve(tab.requests());
-      const requests = Array.from(requestList.entries());
+      const requestEntries = Array.from(requestList.entries());
 
       const filterOptions = buildFilterOptions(params);
-      const result = processNetworkRequests(requests, filterOptions);
+      const result = processNetworkRequests(requestEntries, filterOptions);
 
       displayFilterSummary(
         response,
@@ -69,17 +69,19 @@ function applyFilters(
   options: NetworkFilterOptions
 ): [playwright.Request, playwright.Response | null][] {
   // Convert to NetworkRequest format and use existing filter utility
-  const requests: NetworkRequest[] = requestList.map(([request, response]) => ({
-    url: request.url(),
-    method: request.method(),
-    status: response?.status(),
-    statusText: response?.statusText() || '',
-    headers: response?.headers() || {},
-    timestamp: Date.now(),
-    duration: undefined,
-  }));
+  const networkRequests: NetworkRequest[] = requestList.map(
+    ([request, response]) => ({
+      url: request.url(),
+      method: request.method(),
+      status: response?.status(),
+      statusText: response?.statusText() || '',
+      headers: response?.headers() || {},
+      timestamp: Date.now(),
+      duration: undefined,
+    })
+  );
 
-  const filtered = filterNetworkRequests(requests, options);
+  const filtered = filterNetworkRequests(networkRequests, options);
 
   // Map back to original format
   return requestList.filter(([request]) =>
@@ -89,7 +91,9 @@ function applyFilters(
   );
 }
 
-function buildFilterOptions(params: Record<string, unknown>): NetworkFilterOptions {
+function buildFilterOptions(
+  params: Record<string, unknown>
+): NetworkFilterOptions {
   return {
     urlPatterns: params.urlPatterns,
     excludeUrlPatterns: params.excludeUrlPatterns,
@@ -101,11 +105,11 @@ function buildFilterOptions(params: Record<string, unknown>): NetworkFilterOptio
 }
 
 function processNetworkRequests(
-  requests: [playwright.Request, playwright.Response | null][],
+  requestEntries: [playwright.Request, playwright.Response | null][],
   filterOptions: NetworkFilterOptions
 ) {
-  const totalCount = requests.length;
-  let filteredRequests = applyFilters(requests, filterOptions);
+  const totalCount = requestEntries.length;
+  let filteredRequests = applyFilters(requestEntries, filterOptions);
 
   // Apply sorting for backward compatibility
   if (hasFilterOptions(filterOptions) && filterOptions.newestFirst === false) {

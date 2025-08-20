@@ -72,7 +72,7 @@ export function filterNetworkRequests(
   if (opts.methods && opts.methods.length > 0) {
     filtered = filtered.filter((request) => {
       const method = request.method.toUpperCase();
-      return opts.methods!.some((m) => m.toUpperCase() === method);
+      return opts.methods?.some((m) => m.toUpperCase() === method) ?? false;
     });
   }
 
@@ -108,8 +108,10 @@ function applyUrlPatternFilters(
   // Apply include patterns
   if (options.urlPatterns && options.urlPatterns.length > 0) {
     filtered = filtered.filter((request) => {
-      return options.urlPatterns!.some((pattern) =>
-        matchesUrlPattern(request.url, pattern)
+      return (
+        options.urlPatterns?.some((pattern) =>
+          matchesUrlPattern(request.url, pattern)
+        ) ?? false
       );
     });
   }
@@ -117,7 +119,7 @@ function applyUrlPatternFilters(
   // Apply exclude patterns
   if (options.excludeUrlPatterns && options.excludeUrlPatterns.length > 0) {
     filtered = filtered.filter((request) => {
-      return !options.excludeUrlPatterns!.some((pattern) =>
+      return !options.excludeUrlPatterns?.some((pattern) =>
         matchesUrlPattern(request.url, pattern)
       );
     });
@@ -148,9 +150,11 @@ function applyStatusRangeFilters(
     }
 
     // Check if status falls within any of the specified ranges
-    return options.statusRanges!.some((range) => {
-      return status >= range.min && status <= range.max;
-    });
+    return (
+      options.statusRanges?.some((range) => {
+        return status >= range.min && status <= range.max;
+      }) ?? false
+    );
   });
 }
 

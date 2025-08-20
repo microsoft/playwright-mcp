@@ -80,7 +80,7 @@ test.describe('Network Filter Unit Tests', () => {
   });
 
   test('should handle null/undefined input gracefully', () => {
-    const result = filterNetworkRequests(null as any);
+    const result = filterNetworkRequests(null as unknown as NetworkRequest[]);
     expect(result).toHaveLength(0);
   });
 
@@ -188,7 +188,9 @@ test.describe('Network Filter Unit Tests', () => {
     expect(result).toHaveLength(3); // 2 success + 1 undefined status
     const withStatus = result.filter((req) => req.status);
     expect(
-      withStatus.every((req) => req.status! >= 200 && req.status! <= 299)
+      withStatus.every(
+        (req) => req.status && req.status >= 200 && req.status <= 299
+      )
     ).toBe(true);
   });
 
@@ -307,7 +309,7 @@ test.describe('Network Filter Unit Tests', () => {
   });
 
   test('createStatusCategoryFilter should handle invalid category', () => {
-    const filter = createStatusCategoryFilter('invalid' as any);
+    const filter = createStatusCategoryFilter('invalid' as 'success');
     expect(filter).toEqual({});
   });
 
@@ -319,7 +321,9 @@ test.describe('Network Filter Unit Tests', () => {
     expect(result).toHaveLength(3); // 2 success + 1 undefined status
     const withStatus = result.filter((req) => req.status);
     expect(
-      withStatus.every((req) => req.status! >= 200 && req.status! <= 299)
+      withStatus.every(
+        (req) => req.status && req.status >= 200 && req.status <= 299
+      )
     ).toBe(true);
   });
 

@@ -5,228 +5,206 @@
 
 import { expect, test } from './fixtures.js';
 
+interface TestCase {
+  name: string;
+  fetchUrls: string[];
+  serverResponses: Array<{
+    url: string;
+    content: string;
+    contentType: string;
+    status?: number;
+  }>;
+  filterArgs: Record<string, unknown>;
+  expectedContains: string[];
+  expectedNotContains: string[];
+  expectedSpecialChecks?: (results: string) => void;
+}
+
+const testCases: TestCase[] = [
+  {
+    name: 'should show filter summary when filters are applied',
+    fetchUrls: ['/api/users', '/static/style.css'],
+    serverResponses: [
+      {
+        url: '/api/users',
+        content: '{"users": []}',
+        contentType: 'application/json',
+      },
+      {
+        url: '/static/style.css',
+        content: 'body { color: red; }',
+        contentType: 'text/css',
+      },
+    ],
+    filterArgs: { urlPatterns: ['/api/'] },
+    expectedContains: ['Filter Summary:', 'URL patterns: /api/', '/api/users'],
+    expectedNotContains: ['/static/style.css'],
+  },
+  {
+    name: 'should filter by URL patterns',
+    fetchUrls: ['/api/posts', '/static/image.png', '/analytics/track'],
+    serverResponses: [
+      { url: '/api/posts', content: '{}', contentType: 'application/json' },
+      { url: '/static/image.png', content: '', contentType: 'image/png' },
+      {
+        url: '/analytics/track',
+        content: '{}',
+        contentType: 'application/json',
+      },
+    ],
+    filterArgs: { urlPatterns: ['api'] },
+    expectedContains: ['/api/posts'],
+    expectedNotContains: ['/static/', '/analytics/'],
+  },
+  {
+    name: 'should exclude URL patterns',
+    fetchUrls: ['/api/data', '/analytics/track', '/ads/banner'],
+    serverResponses: [
+      { url: '/api/data', content: '{}', contentType: 'application/json' },
+      {
+        url: '/analytics/track',
+        content: '{}',
+        contentType: 'application/json',
+      },
+      { url: '/ads/banner', content: '{}', contentType: 'application/json' },
+    ],
+    filterArgs: { excludeUrlPatterns: ['analytics', 'ads'] },
+    expectedContains: ['/api/data'],
+    expectedNotContains: ['/analytics/', '/ads/'],
+  },
+  {
+    name: 'should filter by status code ranges - success only',
+    fetchUrls: ['/success', '/not-found', '/server-error'],
+    serverResponses: [
+      { url: '/success', content: 'OK', contentType: 'text/plain' },
+      {
+        url: '/not-found',
+        content: '',
+        contentType: 'text/plain',
+        status: 404,
+      },
+      {
+        url: '/server-error',
+        content: '',
+        contentType: 'text/plain',
+        status: 500,
+      },
+    ],
+    filterArgs: { statusRanges: [{ min: 200, max: 299 }] },
+    expectedContains: ['[200]'],
+    expectedNotContains: ['[404]', '[500]'],
+  },
+  {
+    name: 'should filter by status code ranges - errors only',
+    fetchUrls: ['/success', '/not-found', '/server-error'],
+    serverResponses: [
+      { url: '/success', content: 'OK', contentType: 'text/plain' },
+      {
+        url: '/not-found',
+        content: '',
+        contentType: 'text/plain',
+        status: 404,
+      },
+      {
+        url: '/server-error',
+        content: '',
+        contentType: 'text/plain',
+        status: 500,
+      },
+    ],
+    filterArgs: {
+      statusRanges: [
+        { min: 400, max: 499 },
+        { min: 500, max: 599 },
+      ],
+    },
+    expectedContains: ['[404]', '[500]'],
+    expectedNotContains: ['[200]'],
+  },
+  {
+    name: 'should handle complex combined filters',
+    fetchUrls: ['/api/users', '/api/posts', '/api/error', '/static/data'],
+    serverResponses: [
+      { url: '/api/users', content: '{}', contentType: 'application/json' },
+      { url: '/api/posts', content: '{}', contentType: 'application/json' },
+      {
+        url: '/api/error',
+        content: '',
+        contentType: 'text/plain',
+        status: 500,
+      },
+      { url: '/static/data', content: '{}', contentType: 'application/json' },
+    ],
+    filterArgs: {
+      urlPatterns: ['/api/'],
+      methods: ['GET'],
+      statusRanges: [{ min: 200, max: 299 }],
+    },
+    expectedContains: [
+      '/api/users',
+      'URL patterns: /api/',
+      'Methods: GET',
+      'Status ranges: 200-299',
+    ],
+    expectedNotContains: ['/api/posts', '/api/error', '/static/'],
+  },
+];
+
 test.describe('Network Filter Integration Tests', () => {
-  test('should show filter summary when filters are applied', async ({
-    client,
-    server,
-  }) => {
-    server.setContent(
-      '/',
-      `
-      <script>
-        fetch('/api/users');
-        fetch('/static/style.css');
-      </script>
-    `,
-      'text/html'
-    );
+  // Parameterized tests for common filter scenarios
+  for (const testCase of testCases) {
+    test(testCase.name, async ({ client, server }) => {
+      // Set up HTML with fetch scripts
+      const fetchScripts = testCase.fetchUrls
+        .map((url) => `fetch('${url}');`)
+        .join('\n        ');
+      server.setContent(
+        '/',
+        `<script>\n        ${fetchScripts}\n      </script>`,
+        'text/html'
+      );
 
-    server.setContent('/api/users', '{"users": []}', 'application/json');
-    server.setContent('/static/style.css', 'body { color: red; }', 'text/css');
+      // Set up server responses
+      for (const response of testCase.serverResponses) {
+        if (response.status) {
+          server.setStatus(response.url, response.status);
+        } else {
+          server.setContent(
+            response.url,
+            response.content,
+            response.contentType
+          );
+        }
+      }
 
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
+      await client.callTool({
+        name: 'browser_navigate',
+        arguments: { url: server.PREFIX },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const response = await client.callTool({
+        name: 'browser_network_requests',
+        arguments: testCase.filterArgs,
+      });
+
+      const results = response.content[0].text;
+
+      // Check expected contains
+      for (const expected of testCase.expectedContains) {
+        expect(results).toContain(expected);
+      }
+
+      // Check expected not contains
+      for (const notExpected of testCase.expectedNotContains) {
+        expect(results).not.toContain(notExpected);
+      }
+
+      // Run any special checks
+      testCase.expectedSpecialChecks?.(results);
     });
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const response = await client.callTool({
-      name: 'browser_network_requests',
-      arguments: {
-        urlPatterns: ['/api/'],
-      },
-    });
-
-    const results = response.content[0].text;
-
-    // Should include filter summary when filters are used
-    expect(results).toContain('Filter Summary:');
-    expect(results).toContain('URL patterns: /api/');
-    expect(results).toContain('/api/users');
-    expect(results).not.toContain('/static/style.css');
-  });
-
-  test('should filter by URL patterns', async ({ client, server }) => {
-    server.setContent(
-      '/',
-      `
-      <script>
-        fetch('/api/posts');
-        fetch('/static/image.png');
-        fetch('/analytics/track');
-      </script>
-    `,
-      'text/html'
-    );
-
-    server.setContent('/api/posts', '{}', 'application/json');
-    server.setContent('/static/image.png', '', 'image/png');
-    server.setContent('/analytics/track', '{}', 'application/json');
-
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const response = await client.callTool({
-      name: 'browser_network_requests',
-      arguments: {
-        urlPatterns: ['api'],
-      },
-    });
-
-    const results = response.content[0].text;
-    expect(results).toContain('/api/posts');
-    expect(results).not.toContain('/static/');
-    expect(results).not.toContain('/analytics/');
-  });
-
-  test('should exclude URL patterns', async ({ client, server }) => {
-    server.setContent(
-      '/',
-      `
-      <script>
-        fetch('/api/data');
-        fetch('/analytics/track');
-        fetch('/ads/banner');
-      </script>
-    `,
-      'text/html'
-    );
-
-    server.setContent('/api/data', '{}', 'application/json');
-    server.setContent('/analytics/track', '{}', 'application/json');
-    server.setContent('/ads/banner', '{}', 'application/json');
-
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const response = await client.callTool({
-      name: 'browser_network_requests',
-      arguments: {
-        excludeUrlPatterns: ['analytics', 'ads'],
-      },
-    });
-
-    const results = response.content[0].text;
-    expect(results).toContain('/api/data');
-    expect(results).not.toContain('/analytics/');
-    expect(results).not.toContain('/ads/');
-  });
-
-  test('should filter by HTTP methods', async ({ client, server }) => {
-    server.setContent(
-      '/',
-      `
-      <form method="post" action="/submit">
-        <input name="data" value="test">
-        <button type="submit">Submit</button>
-      </form>
-      <script>
-        fetch('/api/get-data'); // GET request
-        setTimeout(() => {
-          document.querySelector('form').submit(); // POST request
-        }, 100);
-      </script>
-    `,
-      'text/html'
-    );
-
-    server.setContent('/api/get-data', '{}', 'application/json');
-    server.setContent('/submit', 'Success', 'text/plain');
-
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Test GET requests only
-    const getResponse = await client.callTool({
-      name: 'browser_network_requests',
-      arguments: {
-        methods: ['GET'],
-      },
-    });
-
-    const getResults = getResponse.content[0].text;
-    expect(getResults).toContain('[GET]');
-    expect(getResults).not.toContain('[POST]');
-
-    // Test POST requests only
-    const postResponse = await client.callTool({
-      name: 'browser_network_requests',
-      arguments: {
-        methods: ['POST'],
-      },
-    });
-
-    const postResults = postResponse.content[0].text;
-    expect(postResults).toContain('[POST]');
-    expect(postResults).not.toContain('/api/get-data'); // This is GET, so shouldn't appear
-  });
-
-  test('should filter by status code ranges', async ({ client, server }) => {
-    server.setContent(
-      '/',
-      `
-      <script>
-        fetch('/success');
-        fetch('/not-found').catch(() => {});
-        fetch('/server-error').catch(() => {});
-      </script>
-    `,
-      'text/html'
-    );
-
-    server.setContent('/success', 'OK', 'text/plain');
-    server.setStatus('/not-found', 404);
-    server.setStatus('/server-error', 500);
-
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Test success status codes only
-    const successResponse = await client.callTool({
-      name: 'browser_network_requests',
-      arguments: {
-        statusRanges: [{ min: 200, max: 299 }],
-      },
-    });
-
-    const successResults = successResponse.content[0].text;
-    expect(successResults).toContain('[200]');
-    expect(successResults).not.toContain('[404]');
-    expect(successResults).not.toContain('[500]');
-
-    // Test error status codes
-    const errorResponse = await client.callTool({
-      name: 'browser_network_requests',
-      arguments: {
-        statusRanges: [
-          { min: 400, max: 499 },
-          { min: 500, max: 599 },
-        ],
-      },
-    });
-
-    const errorResults = errorResponse.content[0].text;
-    expect(errorResults).toContain('[404]');
-    expect(errorResults).toContain('[500]');
-    expect(errorResults).not.toContain('[200]');
-  });
+  }
 
   test('should limit results with maxRequests', async ({ client, server }) => {
     server.setContent(
@@ -382,54 +360,5 @@ test.describe('Network Filter Integration Tests', () => {
 
     // Should not crash, should fall back to string matching
     expect(response.isError).toBeFalsy();
-  });
-
-  test('should handle complex combined filters', async ({ client, server }) => {
-    server.setContent(
-      '/',
-      `
-      <script>
-        fetch('/api/users', { method: 'GET' });
-        fetch('/api/posts', { method: 'POST', body: '{}' });
-        fetch('/api/error', { method: 'GET' });
-        fetch('/static/data', { method: 'GET' });
-      </script>
-    `,
-      'text/html'
-    );
-
-    server.setContent('/api/users', '{}', 'application/json');
-    server.setContent('/api/posts', '{}', 'application/json');
-    server.setStatus('/api/error', 500);
-    server.setContent('/static/data', '{}', 'application/json');
-
-    await client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX },
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const response = await client.callTool({
-      name: 'browser_network_requests',
-      arguments: {
-        urlPatterns: ['/api/'],
-        methods: ['GET'],
-        statusRanges: [{ min: 200, max: 299 }],
-      },
-    });
-
-    const results = response.content[0].text;
-
-    // Should only include GET requests to /api/ with 2xx status
-    expect(results).toContain('/api/users');
-    expect(results).not.toContain('/api/posts'); // POST method
-    expect(results).not.toContain('/api/error'); // 500 status
-    expect(results).not.toContain('/static/'); // Wrong URL pattern
-
-    // Should show all filter criteria
-    expect(results).toContain('URL patterns: /api/');
-    expect(results).toContain('Methods: GET');
-    expect(results).toContain('Status ranges: 200-299');
   });
 });
