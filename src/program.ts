@@ -25,8 +25,7 @@ import { ProxyBackend } from './mcp/proxyBackend.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
 
-import { VSCodeMCPFactory } from './vscode/host.js';
-import { VSCodeProxyBackend } from './vscode/proxyBackend.js';
+import { VSCodeProxyBackend } from './vscode/host.js';
 import type { MCPProvider } from './mcp/proxyBackend.js';
 
 program
@@ -81,6 +80,17 @@ program
           nameInConfig: 'playwright-extension',
           version: packageJSON.version,
           create: () => new BrowserServerBackend(config, extensionContextFactory)
+        };
+        await mcpServer.start(serverBackendFactory, config.server);
+        return;
+      }
+
+      if (options.vscode) {
+        const serverBackendFactory: mcpServer.ServerBackendFactory = {
+          name: 'Playwright w/ vscode',
+          nameInConfig: 'playwright-vscode',
+          version: packageJSON.version,
+          create: () => new VSCodeProxyBackend(config, () => mcpServer.wrapInProcess(new BrowserServerBackend(config, browserContextFactory)))
         };
         await mcpServer.start(serverBackendFactory, config.server);
         return;
