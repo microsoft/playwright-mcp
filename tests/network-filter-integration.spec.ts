@@ -261,9 +261,11 @@ test.describe('Network Filter Integration Tests', () => {
     // Should be limited to exactly 3 requests due to maxRequests: 3
     expect(requestLines.length).toBe(3);
 
-    // Verify that maxRequests filtering works (we expect exactly 3 results, not 5)
-    expect(results).toContain('Filter Summary:');
-    expect(results).toContain('URL patterns: /api/resource');
+    // Verify that all shown requests match the pattern (maxRequests worked)
+    // Without maxRequests, we would see 5 requests, but we only see 3
+    expect(requestLines.every((line) => line.includes('api/resource'))).toBe(
+      true
+    );
   });
 
   test('should maintain backward compatibility when no filters are provided', async ({
