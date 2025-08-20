@@ -55,9 +55,15 @@ test('browser_fill_form - basic text inputs', async ({ client, server }) => {
     },
   });
 
-  expect(response.response.code).toContain(`fill('john_doe')`);
-  expect(response.response.code).toContain(`fill('john@example.com')`);
-  expect(response.response.code).toContain('Form filling completed: 2/2 successful');
+  expect(response).toHaveResponse({
+    code: expect.stringContaining(`fill('john_doe')`),
+  });
+  expect(response).toHaveResponse({
+    code: expect.stringContaining(`fill('john@example.com')`),
+  });
+  expect(response).toHaveResponse({
+    code: expect.stringContaining('Form filling completed: 2/2 successful'),
+  });
 });
 
 test('browser_fill_form - checkboxes', async ({ client, server }) => {
@@ -111,9 +117,15 @@ test('browser_fill_form - checkboxes', async ({ client, server }) => {
     },
   });
 
-  expect(response.response.code).toContain(`.check()`);
-  expect(response.response.code).toContain(`.uncheck()`);
-  expect(response.response.code).toContain('Form filling completed: 2/2 successful');
+  expect(response).toHaveResponse({
+    code: expect.stringContaining(`.check()`),
+  });
+  expect(response).toHaveResponse({
+    code: expect.stringContaining(`.uncheck()`),
+  });
+  expect(response).toHaveResponse({
+    code: expect.stringContaining('Form filling completed: 2/2 successful'),
+  });
 });
 
 test('browser_fill_form - dropdowns', async ({ client, server }) => {
@@ -158,8 +170,12 @@ test('browser_fill_form - dropdowns', async ({ client, server }) => {
     },
   });
 
-  expect(response.response.code).toContain(`selectOption('us')`);
-  expect(response.response.code).toContain('Form filling completed: 1/1 successful');
+  expect(response).toHaveResponse({
+    code: expect.stringContaining(`selectOption({ value: 'us' })`),
+  });
+  expect(response).toHaveResponse({
+    code: expect.stringContaining('Form filling completed: 1/1 successful'),
+  });
 });
 
 test('browser_fill_form - mixed legacy and action formats', async ({ client, server }) => {
@@ -210,9 +226,15 @@ test('browser_fill_form - mixed legacy and action formats', async ({ client, ser
     },
   });
 
-  expect(response.response.code).toContain(`fill('John Smith')`);
-  expect(response.response.code).toContain(`selectOption('admin')`);
-  expect(response.response.code).toContain('Form filling completed: 2/2 successful');
+  expect(response).toHaveResponse({
+    code: expect.stringContaining(`fill('John Smith')`),
+  });
+  expect(response).toHaveResponse({
+    code: expect.stringContaining(`selectOption({ value: 'admin' })`),
+  });
+  expect(response).toHaveResponse({
+    code: expect.stringContaining('Form filling completed: 2/2 successful'),
+  });
 });
 
 test('browser_fill_form - error handling', async ({ client, server }) => {
@@ -253,6 +275,10 @@ test('browser_fill_form - error handling', async ({ client, server }) => {
     },
   });
 
-  expect(response.response.code).toContain(`fill('Valid input')`);
-  expect(response.response.code).toContain('1 fields failed');
+  expect(response).toHaveResponse({
+    code: expect.stringContaining(`fill('Valid input')`),
+  });
+  expect(response).toHaveResponse({
+    code: expect.stringContaining('1 fields failed'),
+  });
 });
