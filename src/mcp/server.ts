@@ -15,10 +15,12 @@
  */
 
 import debug from 'debug';
+
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { ManualPromise } from '../utils/manualPromise.js';
-import { logUnhandledError } from '../utils/log.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { httpAddressToString, installHttpTransport, startHttpServer } from './http.js';
+import { InProcessTransport } from './inProcessTransport.js';
 
 import type { Tool, CallToolResult, CallToolRequest, Root } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
@@ -26,28 +28,37 @@ export type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 export type { Tool, CallToolResult, CallToolRequest, Root } from '@modelcontextprotocol/sdk/types.js';
 
 const serverDebug = debug('pw:mcp:server');
+const errorsDebug = debug('pw:mcp:errors');
 
 export type ClientVersion = { name: string, version: string };
 export interface ServerBackend {
-  name: string;
-  version: string;
   initialize?(clientVersion: ClientVersion, roots: Root[]): Promise<void>;
   listTools(): Promise<Tool[]>;
   callTool(name: string, args: CallToolRequest['params']['arguments']): Promise<CallToolResult>;
   serverClosed?(): void;
 }
 
-export type ServerBackendFactory = () => ServerBackend;
+export type ServerBackendFactory = {
+  name: string;
+  nameInConfig: string;
+  version: string;
+  create: () => ServerBackend;
+};
 
-export async function connect(serverBackendFactory: ServerBackendFactory, transport: Transport, runHeartbeat: boolean) {
-  const backend = serverBackendFactory();
-  const server = createServer(backend, runHeartbeat);
+export async function connect(factory: ServerBackendFactory, transport: Transport, runHeartbeat: boolean) {
+  const server = createServer(factory.name, factory.version, factory.create(), runHeartbeat);
   await server.connect(transport);
 }
 
-export function createServer(backend: ServerBackend, runHeartbeat: boolean): Server {
-  const initializedPromise = new ManualPromise<void>();
-  const server = new Server({ name: backend.name, version: backend.version }, {
+export async function wrapInProcess(backend: ServerBackend): Promise<Transport> {
+  const server = createServer('Internal', '0.0.0', backend, false);
+  return new InProcessTransport(server);
+}
+
+export function createServer(name: string, version: string, backend: ServerBackend, runHeartbeat: boolean): Server {
+  let initializedPromiseResolve = () => {};
+  const initializedPromise = new Promise<void>(resolve => initializedPromiseResolve = resolve);
+  const server = new Server({ name, version }, {
     capabilities: {
       tools: {},
     }
@@ -89,9 +100,9 @@ export function createServer(backend: ServerBackend, runHeartbeat: boolean): Ser
       }
       const clientVersion = server.getClientVersion() ?? { name: 'unknown', version: 'unknown' };
       await backend.initialize?.(clientVersion, clientRoots);
-      initializedPromise.resolve();
+      initializedPromiseResolve();
     } catch (e) {
-      logUnhandledError(e);
+      errorsDebug(e);
     }
   });
   addServerListener(server, 'close', () => backend.serverClosed?.());
@@ -119,4 +130,28 @@ function addServerListener(server: Server, event: 'close' | 'initialized', liste
     oldListener?.();
     listener();
   };
+}
+
+export async function start(serverBackendFactory: ServerBackendFactory, options: { host?: string; port?: number }) {
+  if (options.port === undefined) {
+    await connect(serverBackendFactory, new StdioServerTransport(), false);
+    return;
+  }
+
+  const httpServer = await startHttpServer(options);
+  await installHttpTransport(httpServer, serverBackendFactory);
+  const url = httpAddressToString(httpServer.address());
+
+  const mcpConfig: any = { mcpServers: { } };
+  mcpConfig.mcpServers[serverBackendFactory.nameInConfig] = {
+    url: `${url}/mcp`
+  };
+  const message = [
+    `Listening on ${url}`,
+    'Put this in your client config:',
+    JSON.stringify(mcpConfig, undefined, 2),
+    'For legacy SSE transport support, you can use the /sse endpoint instead.',
+  ].join('\n');
+    // eslint-disable-next-line no-console
+  console.error(message);
 }

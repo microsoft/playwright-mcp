@@ -49,7 +49,7 @@ class TabShareExtension {
   private _onMessage(message: PageMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
     switch (message.type) {
       case 'connectToMCPRelay':
-        this._connectToRelay(sender.tab!.id!, message.mcpRelayUrl!).then(
+        this._connectToRelay(sender.tab!.id!, message.mcpRelayUrl).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true;
@@ -96,8 +96,9 @@ class TabShareExtension {
       this._pendingTabSelection.set(selectorTabId, { connection });
       debugLog(`Connected to MCP relay`);
     } catch (error: any) {
-      debugLog(`Failed to connect to MCP relay:`, error.message);
-      throw error;
+      const message = `Failed to connect to MCP relay: ${error.message}`;
+      debugLog(message);
+      throw new Error(message);
     }
   }
 
