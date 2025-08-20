@@ -28,7 +28,8 @@ const requests = defineTabTool({
   schema: {
     name: 'browser_network_requests',
     title: 'List network requests',
-    description: 'Returns all network requests since loading the page',
+    description:
+      'Returns network requests since loading the page with optional filtering. urlPatterns:["api/users"] to filter by URL patterns. excludeUrlPatterns:["analytics"] to exclude specific patterns. statusRanges:[{min:200,max:299}] for success codes only. methods:["GET","POST"] to filter by HTTP method. maxRequests:10 to limit results. newestFirst:false for chronological order. Supports regex patterns for advanced filtering.',
     inputSchema: networkFilterSchema.partial(),
     type: 'readOnly',
   },
