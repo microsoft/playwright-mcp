@@ -215,7 +215,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
 
   startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
     const configDir = path.dirname(test.info().config.configFile ?? '.');
-    let client: Client | undefined;
+    const clients: Client[] = [];
 
     await use(async (options) => {
       const argsResult = prepareClientArgs(
@@ -227,7 +227,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
       );
       const args = Array.isArray(argsResult) ? argsResult : await argsResult;
 
-      client = createAndConfigureClient(options);
+      const client = createAndConfigureClient(options);
 
       const { transport, stderr } = createTransport(
         args,
@@ -241,6 +241,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
         }
         stderrBuffer += data.toString();
       });
+      clients.push(client);
       await client.connect(transport);
       await client.ping();
 
@@ -249,7 +250,7 @@ export const test = baseTest.extend<TestFixtures, WorkerFixtures>({
       return { client, stderr: () => stderrBuffer };
     });
 
-    await client?.close();
+    await Promise.all(clients.map((client) => client.close()));
   },
 
   wsEndpoint: async (
