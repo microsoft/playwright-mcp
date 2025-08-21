@@ -5,7 +5,7 @@ import url from 'node:url';
 const __filename = url.fileURLToPath(import.meta.url);
 export const packageJSON = JSON.parse(
   fs.readFileSync(
-    path.join(path.dirname(__filename), '..', 'package.json'),
+    path.join(path.dirname(__filename), '..', '..', 'package.json'),
     'utf8'
   )
 );
