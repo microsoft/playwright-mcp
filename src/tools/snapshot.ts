@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { formatObject } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import { formatObject } from '../utils/codegen.js';
 import { defineTabTool, defineTool } from './tool.js';
 import { generateLocator } from './utils.js';
 

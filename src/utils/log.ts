@@ -69,6 +69,9 @@ export const snapshotDebug = noop;
 // Error enrichment debug instance
 export const errorEnrichmentDebug = noop;
 
+// Request debug instance
+export const requestDebug = noop;
+
 // Error logging function
 export function logUnhandledError(_error: unknown) {
   // noop for now

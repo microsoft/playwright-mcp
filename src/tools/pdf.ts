@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { formatObject } from '../javascript.js';
+import { formatObject } from '../utils/codegen.js';
 import { defineTabTool } from './tool.js';
 
 const pdfSchema = z.object({

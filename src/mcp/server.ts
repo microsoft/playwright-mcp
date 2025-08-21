@@ -10,9 +10,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { logUnhandledError } from '../log.js';
 import { ManualPromise } from '../manual-promise.js';
-import { mcpServerDebug } from '../utils/log.js';
+import { logUnhandledError, mcpServerDebug } from '../utils/log.js';
 
 import { logRequest } from '../utils/request-logger.js';
 

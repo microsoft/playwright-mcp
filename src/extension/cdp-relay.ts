@@ -11,9 +11,8 @@ import type websocket from 'ws';
 import { WebSocket, WebSocketServer } from 'ws';
 import type { ClientInfo } from '../browser-context-factory.js';
 import { httpAddressToString } from '../http-server.js';
-import { logUnhandledError } from '../log.js';
 import { ManualPromise } from '../manual-promise.js';
-import { cdpRelayDebug } from '../utils/log.js';
+import { cdpRelayDebug, logUnhandledError } from '../utils/log.js';
 
 //
 // @ts-expect-error - playwright internal module

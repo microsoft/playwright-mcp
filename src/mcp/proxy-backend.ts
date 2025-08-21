@@ -17,8 +17,8 @@
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { z } from 'zod';
-import { logUnhandledError } from '../log.js';
 import { defineTool, type Tool } from '../tools/tool.js';
+import { logUnhandledError } from '../utils/log.js';
 import { packageJSON } from '../utils/package.js';
 import type { ServerBackend, ToolResponse, ToolSchema } from './server.js';
 
