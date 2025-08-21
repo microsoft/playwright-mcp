@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { fileURLToPath } from 'url';
+import path from 'path';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
@@ -31,8 +33,6 @@ import { contextFactory } from '../browserContextFactory.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { ClientVersion, ServerBackend } from '../mcp/server.js';
 import type { Root, Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
-import { fileURLToPath } from 'url';
-import path from 'path';
 
 const contextSwitchOptions = z.object({
   connectionString: z.string().optional().describe('The connection string to use to connect to the browser'),
