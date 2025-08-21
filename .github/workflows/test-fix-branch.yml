@@ -55,6 +55,16 @@ jobs:
       - name: Run lint
         run: bun run lint
         
+      - name: Test MCP server startup directly
+        run: |
+          echo "=== Testing MCP server startup ==="
+          echo "CLI file exists:" && ls -la cli.js
+          echo "Lib directory:" && ls -la lib/
+          echo "Program.js exists:" && ls -la lib/program.js
+          echo "Testing server startup..."
+          timeout 5s node cli.js --headless --help || echo "Server startup failed with exit code: $?"
+        continue-on-error: true
+        
       - name: Run single test with debug output
         run: bunx playwright test --project=chrome "tests/batch-execute-basic.spec.ts" --grep "should execute basic navigation batch successfully" --reporter=list
         env:
