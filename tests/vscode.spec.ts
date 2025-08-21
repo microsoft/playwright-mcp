@@ -27,7 +27,7 @@ test('browser_connect(vscode) works', async ({ startClient, playwright, browserN
     name: 'browser_connect',
     arguments: {
       connectionString: server.wsEndpoint(),
-      lib: new URL('./index.js', import.meta.resolve('playwright')).pathname,
+      lib: import.meta.resolve('playwright'),
     }
   })).toHaveResponse({
     result: 'Successfully connected.'

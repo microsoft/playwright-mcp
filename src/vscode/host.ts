@@ -31,6 +31,8 @@ import { contextFactory } from '../browserContextFactory.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { ClientVersion, ServerBackend } from '../mcp/server.js';
 import type { Root, Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 const contextSwitchOptions = z.object({
   connectionString: z.string().optional().describe('The connection string to use to connect to the browser'),
@@ -92,7 +94,7 @@ class VSCodeProxyBackend implements ServerBackend {
           command: process.execPath,
           cwd: process.cwd(),
           args: [
-            new URL('./main.js', import.meta.url).pathname,
+            path.join(fileURLToPath(import.meta.url), '..', 'main.js'),
             JSON.stringify(this._config),
             params.connectionString,
             params.lib,
