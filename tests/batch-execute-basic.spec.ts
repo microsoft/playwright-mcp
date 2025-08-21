@@ -29,9 +29,12 @@ const MILLISECONDS_REGEX = /\d{1,10}ms/u;
 
 test.describe('Browser Batch Execute Basic Tests', () => {
   test('should execute basic navigation batch successfully', async ({
-    client,
+    startClient,
     server,
   }) => {
+    // Start client with stderr capture
+    const { client, stderr } = await startClient();
+
     const args = createBatchExecutionArgs(
       [
         createNavigationStep(server.HELLO_WORLD, {
@@ -42,27 +45,45 @@ test.describe('Browser Batch Execute Basic Tests', () => {
       { includeDownloads: false, includeTabs: false }
     );
 
-    const result = await callTool(client, 'browser_batch_execute', args);
+    try {
+      const result = await callTool(client, 'browser_batch_execute', args);
 
-    // Handle the case where browser might not be installed (e.g., msedge on CI)
-    const text = result.content[0].text;
-    const hasBrowserError =
-      text.includes('is not found at') ||
-      text.includes('browserType.launchPersistentContext');
+      // Handle the case where browser might not be installed (e.g., msedge on CI)
+      const text = result.content[0].text;
+      const hasBrowserError =
+        text.includes('is not found at') ||
+        text.includes('browserType.launchPersistentContext');
 
-    if (hasBrowserError) {
-      expectBatchExecutionSummary(result, {
-        totalSteps: 1,
-        successful: 0,
-        failed: 1,
-        expectSuccess: false,
-      });
-    } else {
-      expectBatchExecutionSummary(result, {
-        totalSteps: 1,
-        successful: 1,
-        failed: 0,
-      });
+      if (hasBrowserError) {
+        expectBatchExecutionSummary(result, {
+          totalSteps: 1,
+          successful: 0,
+          failed: 1,
+          expectSuccess: false,
+        });
+      } else {
+        expectBatchExecutionSummary(result, {
+          totalSteps: 1,
+          successful: 1,
+          failed: 0,
+        });
+      }
+    } catch (error) {
+      // Output server stderr if available when MCP connection fails
+      const stderrOutput = stderr();
+      if (stderrOutput) {
+        // Attach stderr to test error for debugging
+        const originalMessage =
+          error instanceof Error ? error.message : String(error);
+        const errorWithStderr = new Error(
+          `${originalMessage}\n\n--- SERVER STDERR ---\n${stderrOutput}\n--- END STDERR ---`
+        );
+        if (error instanceof Error) {
+          errorWithStderr.stack = error.stack;
+        }
+        throw errorWithStderr;
+      }
+      throw error;
     }
   });
 
