@@ -17,13 +17,17 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
+
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { ListRootsRequestSchema, PingRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import * as mcpServer from '../mcp/server.js';
 import { logUnhandledError } from '../utils/log.js';
 import { packageJSON } from '../utils/package.js';
 
 import { FullConfig } from '../config.js';
+import { BrowserServerBackend } from '../browserServerBackend.js';
+import { contextFactory } from '../browserContextFactory.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { ClientVersion, ServerBackend } from '../mcp/server.js';
 import type { Root, Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
@@ -33,7 +37,7 @@ const contextSwitchOptions = z.object({
   lib: z.string().optional().describe('The library to use for the connection'),
 });
 
-export class VSCodeProxyBackend implements ServerBackend {
+class VSCodeProxyBackend implements ServerBackend {
   name = 'Playwright MCP Client Switcher';
   version = packageJSON.version;
 
@@ -129,4 +133,15 @@ export class VSCodeProxyBackend implements ServerBackend {
     await client.connect(transport);
     this._currentClient = client;
   }
+}
+
+export async function runVSCodeTools(config: FullConfig) {
+  const serverBackendFactory: mcpServer.ServerBackendFactory = {
+    name: 'Playwright w/ vscode',
+    nameInConfig: 'playwright-vscode',
+    version: packageJSON.version,
+    create: () => new VSCodeProxyBackend(config, () => mcpServer.wrapInProcess(new BrowserServerBackend(config, contextFactory(config))))
+  };
+  await mcpServer.start(serverBackendFactory, config.server);
+  return;
 }
