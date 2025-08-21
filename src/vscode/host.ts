@@ -107,7 +107,7 @@ class VSCodeProxyBackend implements ServerBackend {
   private _defineContextSwitchTool(): Tool {
     return {
       name: 'browser_connect',
-      description: 'Connect to a browser running in VS Code.',
+      description: 'Do not call, this tool is used in the integration with the Playwright VS Code Extension and meant for programmatic usage only.',
       inputSchema: zodToJsonSchema(contextSwitchOptions, { strictUnions: true }) as Tool['inputSchema'],
       annotations: {
         title: 'Connect to a browser running in VS Code.',
