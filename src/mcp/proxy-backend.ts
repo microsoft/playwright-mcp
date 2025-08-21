@@ -18,8 +18,8 @@ import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { z } from 'zod';
 import { logUnhandledError } from '../log.js';
-import { packageJSON } from '../package.js';
 import { defineTool, type Tool } from '../tools/tool.js';
+import { packageJSON } from '../utils/package.js';
 import type { ServerBackend, ToolResponse, ToolSchema } from './server.js';
 
 type NonEmptyArray<T> = [T, ...T[]];

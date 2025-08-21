@@ -21,8 +21,8 @@ import {
 import { runLoopTools } from './loopTools/main.js';
 import type { ServerBackendFactory } from './mcp/server.js';
 import { start } from './mcp/transport.js';
-import { packageJSON } from './package.js';
 import { programDebug } from './utils/log.js';
+import { packageJSON } from './utils/package.js';
 import { logServerStart } from './utils/request-logger.js';
 
 program
