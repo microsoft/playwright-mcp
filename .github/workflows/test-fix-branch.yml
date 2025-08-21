@@ -1,0 +1,56 @@
+name: Test Fix Branch
+
+on:
+  push:
+    branches:
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'test/**'
+  pull_request:
+    branches:
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'test/**'
+
+jobs:
+  test-chrome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          
+      - name: Install dependencies
+        run: bun install
+        
+      - name: Install Playwright
+        run: bunx playwright install --with-deps
+        
+      - name: Build project
+        run: bun run build:publish
+        
+      - name: Run lint
+        run: bun run lint
+        
+      - name: Run Chrome tests with verbose output
+        run: bun run ctest
+        env:
+          DEBUG: 'pw:mcp:*'
+          CI: true
+        continue-on-error: false
+        
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
