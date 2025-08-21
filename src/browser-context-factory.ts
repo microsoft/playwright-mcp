@@ -14,8 +14,8 @@ import {
 import { registryDirectory } from 'playwright-core/lib/server/registry/index';
 import type { FullConfig } from './config.js';
 import { outputFile } from './config.js';
+import { createHash } from './utils/guid.js';
 import { browserDebug, logUnhandledError, testDebug } from './utils/log.js';
-import { createHash } from './utils.js';
 
 function getBrowserType(browserName: string): BrowserType {
   switch (browserName) {

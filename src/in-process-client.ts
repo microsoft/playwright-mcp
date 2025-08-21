@@ -23,7 +23,7 @@ import type { FullConfig } from './config.js';
 import { InProcessTransport } from './mcp/in-process-transport.js';
 import type { ClientFactory } from './mcp/proxy-backend.js';
 import { createServer } from './mcp/server.js';
-import { packageJSON } from './package.js';
+import { packageJSON } from './utils/package.js';
 
 export class InProcessClientFactory implements ClientFactory {
   name: string;

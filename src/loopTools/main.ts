@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import type { FullConfig } from '../config.js';
 import type { ServerBackend, ToolResponse, ToolSchema } from '../mcp/server.js';
 import { start } from '../mcp/transport.js';
-import { packageJSON } from '../package.js';
+import { packageJSON } from '../utils/package.js';
 import { Context } from './context.js';
 import { perform } from './perform.js';
 import { snapshot } from './snapshot.js';

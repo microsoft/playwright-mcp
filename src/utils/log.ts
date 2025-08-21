@@ -74,6 +74,9 @@ export const errorEnrichmentDebug = debug(
   'pw:mcp:diagnostics:error-enrichment'
 );
 
+// Request debug instance
+export const requestDebug = debug('pw:mcp:request');
+
 // Error logging function
 const errorsDebug = debug('pw:mcp:errors');
 export function logUnhandledError(error: unknown) {

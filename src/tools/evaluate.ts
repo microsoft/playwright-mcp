@@ -1,7 +1,7 @@
 import type * as playwright from 'playwright';
 import { z } from 'zod';
-import { quote } from '../javascript.js';
 import { expectationSchema } from '../schemas/expectation.js';
+import { quote } from '../utils/codegen.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
 

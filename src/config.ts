@@ -4,7 +4,7 @@ import { join as pathJoin } from 'node:path';
 import type { BrowserContextOptions, LaunchOptions } from 'playwright';
 import { devices } from 'playwright';
 import type { Config, ToolCapability } from '../config.js';
-import { sanitizeForFilePath } from './utils.js';
+import { sanitizeForFilePath } from './utils/guid.js';
 export type CLIOptions = {
   allowedOrigins?: string[];
   blockedOrigins?: string[];

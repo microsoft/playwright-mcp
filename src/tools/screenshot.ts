@@ -1,9 +1,9 @@
 import type * as playwright from 'playwright';
 import { z } from 'zod';
-import { formatObject } from '../javascript.js';
 import type { Response } from '../response.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import type { Tab } from '../tab.js';
+import { formatObject } from '../utils/codegen.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
 

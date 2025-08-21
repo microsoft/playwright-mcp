@@ -4,13 +4,13 @@ import type { BrowserContextFactory } from './browser-context-factory.js';
 import type { FullConfig } from './config.js';
 import { Context } from './context.js';
 import type * as mcpServer from './mcp/server.js';
-import { packageJSON } from './package.js';
 import { Response } from './response.js';
 import { SessionLog } from './session-log.js';
 import type { AnyTool } from './tools/tool.js';
 import { defineTool } from './tools/tool.js';
 import { filteredTools } from './tools.js';
 import { browserServerBackendDebug, logUnhandledError } from './utils/log.js';
+import { packageJSON } from './utils/package.js';
 
 type NonEmptyArray<T> = [T, ...T[]];
 export type FactoryList = NonEmptyArray<BrowserContextFactory>;
