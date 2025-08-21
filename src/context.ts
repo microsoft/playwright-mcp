@@ -116,6 +116,16 @@ export class Context {
     return outputFile(this.config, this._clientInfo.rootPath, name);
   }
   private _onPageCreated(page: playwright.Page) {
+    // CI環境デバッグ: Page作成時点でのオブジェクト詳細ログ
+    contextDebug('_onPageCreated - received page object:', {
+      pageType: typeof page,
+      pageConstructorName: page?.constructor?.name,
+      hasEvaluate: typeof page?.evaluate,
+      hasWaitForLoadState: typeof page?.waitForLoadState,
+      hasOn: typeof page?.on,
+      pageUrl: page ? page.url() : 'N/A',
+    });
+
     const newTab = new Tab(this, page, (closedTab) =>
       this._onPageClosed(closedTab)
     );
