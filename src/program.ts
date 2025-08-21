@@ -25,6 +25,7 @@ import { ProxyBackend } from './mcp/proxyBackend.js';
 import { BrowserServerBackend } from './browserServerBackend.js';
 import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
 
+import { runVSCodeTools } from './vscode/host.js';
 import type { MCPProvider } from './mcp/proxyBackend.js';
 
 program
@@ -57,6 +58,7 @@ program
     .option('--user-data-dir <path>', 'path to the user data directory. If not specified, a temporary directory will be created.')
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .addOption(new Option('--connect-tool', 'Allow to switch between different browser connection methods.').hideHelp())
+    .addOption(new Option('--vscode', 'VS Code tools.').hideHelp())
     .addOption(new Option('--loop-tools', 'Run loop tools').hideHelp())
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
@@ -80,6 +82,11 @@ program
           create: () => new BrowserServerBackend(config, extensionContextFactory)
         };
         await mcpServer.start(serverBackendFactory, config.server);
+        return;
+      }
+
+      if (options.vscode) {
+        await runVSCodeTools(config);
         return;
       }
 
