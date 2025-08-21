@@ -38,8 +38,8 @@ jobs:
       - name: Run lint
         run: bun run lint
         
-      - name: Run single test with verbose output
-        run: bunx playwright test --project=chrome "tests/batch-execute-basic.spec.ts" --grep "should execute basic navigation batch successfully" --verbose
+      - name: Run single test with debug output
+        run: bunx playwright test --project=chrome "tests/batch-execute-basic.spec.ts" --grep "should execute basic navigation batch successfully" --reporter=list
         env:
           DEBUG: 'pw:mcp:*'
           CI: true
