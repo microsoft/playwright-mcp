@@ -57,6 +57,21 @@ Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user),
 </details>
 
 <details>
+<summary>Codex</summary>
+
+Create or edit the configuration file `~/.codex/config.toml` and add:
+
+```toml
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+```
+
+For more information, see the [Codex MCP documentation](https://github.com/openai/codex/blob/main/codex-rs/config.md#mcp_servers).
+
+</details>
+
+<details>
 <summary>Cursor</summary>
 
 #### Click the button to install:
