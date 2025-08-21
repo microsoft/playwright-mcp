@@ -1,81 +1,75 @@
-import debug from 'debug';
+// import debug from 'debug';
+
+// No-op function to replace debug calls
+const noop = (..._args: unknown[]) => {
+  // Intentionally empty - replaces debug calls
+};
 
 // Diagnostics module debug instances
-export const elementDiscoveryDebug = debug(
-  'pw:mcp:diagnostics:element-discovery'
-);
-export const frameReferenceDebug = debug('pw:mcp:diagnostics:frame-reference');
-export const resourceDebug = debug('pw:mcp:diagnostics:resource');
-export const smartConfigDebug = debug('pw:mcp:diagnostics:smart-config');
-export const smartHandleDebug = debug('pw:mcp:diagnostics:smart-handle');
-export const commonFormattersDebug = debug('pw:mcp:utils:common-formatters');
+export const elementDiscoveryDebug = noop;
+export const frameReferenceDebug = noop;
+export const resourceDebug = noop;
+export const smartConfigDebug = noop;
+export const smartHandleDebug = noop;
+export const commonFormattersDebug = noop;
 
 // Browser context debug instances
-export const browserContextDebug = debug('pw:mcp:browser-context');
-export const browserContextFactoryDebug = debug(
-  'pw:mcp:browser-context-factory'
-);
-export const browserServerBackendDebug = debug('pw:mcp:browser-server-backend');
+export const browserContextDebug = noop;
+export const browserContextFactoryDebug = noop;
+export const browserServerBackendDebug = noop;
 
 // Browser debug instance (for browser-context-factory)
-export const browserDebug = debug('pw:mcp:browser');
+export const browserDebug = noop;
 
 // Test debug instance
-export const testDebug = debug('pw:mcp:test');
+export const testDebug = noop;
 
 // Context debug instance
-export const contextDebug = debug('pw:mcp:context');
+export const contextDebug = noop;
 
 // MCP module debug instances
-export const mcpServerDebug = debug('pw:mcp:server');
-export const mcpTransportDebug = debug('pw:mcp:transport');
+export const mcpServerDebug = noop;
+export const mcpTransportDebug = noop;
 
 // Extension module debug instances
-export const extensionContextDebug = debug('pw:mcp:extension:context');
-export const extensionContextFactoryDebug = debug(
-  'pw:mcp:extension:context-factory'
-);
-export const cdpRelayDebug = debug('pw:mcp:extension:cdp-relay');
+export const extensionContextDebug = noop;
+export const extensionContextFactoryDebug = noop;
+export const cdpRelayDebug = noop;
 
 // Batch execution debug instances
-export const batchExecutorDebug = debug('pw:mcp:batch:executor');
+export const batchExecutorDebug = noop;
 
 // Loop module debug instances
-export const loopDebug = debug('pw:mcp:loop');
-export const historyDebug = debug('pw:mcp:loop:history');
-export const toolDebug = debug('pw:mcp:loop:tool');
+export const loopDebug = noop;
+export const historyDebug = noop;
+export const toolDebug = noop;
 
 // Tools module debug instances
-export const toolsUtilsDebug = debug('pw:mcp:tools:utils');
-export const diagnoseConfigHandlerDebug = debug(
-  'pw:mcp:tools:diagnose:config-handler'
-);
+export const toolsUtilsDebug = noop;
+export const diagnoseConfigHandlerDebug = noop;
 
 // Tab module debug instance
-export const tabDebug = debug('pw:mcp:tab');
+export const tabDebug = noop;
 
 // Program debug instance
-export const programDebug = debug('pw:mcp:program');
+export const programDebug = noop;
 
 // Response module debug instance
-export const responseDebug = debug('pw:mcp:response');
+export const responseDebug = noop;
 
 // Error handler debug instance
-export const errorHandlerDebug = debug('pw:mcp:error-handler');
+export const errorHandlerDebug = noop;
 
 // Test server debug instance
-export const testserverDebug = debug('pw:mcp:testserver');
+export const testserverDebug = noop;
 
 // Tab module additional debug instances
-export const snapshotDebug = debug('pw:mcp:tab:snapshot');
+export const snapshotDebug = noop;
 
 // Error enrichment debug instance
-export const errorEnrichmentDebug = debug(
-  'pw:mcp:diagnostics:error-enrichment'
-);
+export const errorEnrichmentDebug = noop;
 
 // Error logging function
-const errorsDebug = debug('pw:mcp:errors');
-export function logUnhandledError(error: unknown) {
-  errorsDebug(error);
+export function logUnhandledError(_error: unknown) {
+  // noop for now
 }
