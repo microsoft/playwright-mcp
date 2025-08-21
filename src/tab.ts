@@ -69,20 +69,6 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   ) {
     super();
     this.context = context;
-
-    // CI環境デバッグ: pageオブジェクトの詳細ログ
-    tabDebug('Tab constructor - page object analysis:', {
-      pageType: typeof page,
-      pageConstructorName: page?.constructor?.name,
-      hasEvaluate: typeof page?.evaluate,
-      hasWaitForLoadState: typeof page?.waitForLoadState,
-      hasOn: typeof page?.on,
-      pageKeys: page ? Object.getOwnPropertyNames(page) : [],
-      pageProtoKeys: page
-        ? Object.getOwnPropertyNames(Object.getPrototypeOf(page))
-        : [],
-    });
-
     this.page = page;
     this._onPageClose = onPageClose;
     page.on('console', (event) =>

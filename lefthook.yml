@@ -29,3 +29,7 @@ pre-commit:
         - "*.jsonc"
         - "*.css"
       stage_fixed: true
+    - run: bunx tsc --noEmit
+      glob:
+        - "*.ts"
+        - "*.tsx"

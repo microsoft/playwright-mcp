@@ -97,12 +97,14 @@ function buildFilterOptions(
   params: Record<string, unknown>
 ): NetworkFilterOptions {
   return {
-    urlPatterns: params.urlPatterns,
-    excludeUrlPatterns: params.excludeUrlPatterns,
-    statusRanges: params.statusRanges,
-    methods: params.methods,
-    maxRequests: params.maxRequests ?? 20,
-    newestFirst: params.newestFirst ?? true,
+    urlPatterns: params.urlPatterns as string[] | undefined,
+    excludeUrlPatterns: params.excludeUrlPatterns as string[] | undefined,
+    statusRanges: params.statusRanges as
+      | { min: number; max: number }[]
+      | undefined,
+    methods: params.methods as string[] | undefined,
+    maxRequests: (params.maxRequests as number) ?? 20,
+    newestFirst: (params.newestFirst as boolean | undefined) ?? true,
   };
 }
 

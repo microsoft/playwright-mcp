@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import type * as mcpServer from './server.js';
 
 export type ToolSchema<Input extends z.Schema> = {
   name: string;
@@ -26,15 +26,13 @@ export type ToolSchema<Input extends z.Schema> = {
   type: 'readOnly' | 'destructive';
 };
 
-export function toMcpTool<T extends z.Schema>(
-  tool: ToolSchema<T>
-): mcpServer.Tool {
+export function toMcpTool<T extends z.Schema>(tool: ToolSchema<T>): Tool {
   return {
     name: tool.name,
     description: tool.description,
     inputSchema: zodToJsonSchema(tool.inputSchema, {
       strictUnions: true,
-    }) as mcpServer.Tool['inputSchema'],
+    }) as Tool['inputSchema'],
     annotations: {
       title: tool.title,
       readOnlyHint: tool.type === 'readOnly',

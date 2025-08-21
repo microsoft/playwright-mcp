@@ -532,16 +532,6 @@ export class Response {
   private async _evaluateNavigationState(
     tab: Tab
   ): Promise<[string | null, boolean | null]> {
-    // CI環境でのデバッグ用: tab.pageの型を確認
-    if (typeof tab.page?.evaluate !== 'function') {
-      responseDebug('tab.page is not a Playwright Page:', {
-        type: typeof tab.page,
-        keys: tab.page ? Object.keys(tab.page) : [],
-        evaluate: typeof tab.page?.evaluate,
-      });
-      return [null, null]; // デフォルト値を返す
-    }
-
     return (await Promise.race([
       tab.page
         .evaluate(() => [
