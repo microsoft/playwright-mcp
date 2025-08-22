@@ -20,6 +20,7 @@ import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
 import { logUnhandledError } from './utils/log.js';
 import { ManualPromise } from './mcp/manualPromise.js';
 import { ModalState } from './tools/tool.js';
+import { FullConfig } from './config.js';
 
 import type { Context } from './context.js';
 
@@ -54,12 +55,14 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   private _onPageClose: (tab: Tab) => void;
   private _modalStates: ModalState[] = [];
   private _downloads: { download: playwright.Download, finished: boolean, outputFile: string }[] = [];
+  private _config: FullConfig;
 
-  constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void) {
+  constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void, config: FullConfig) {
     super();
     this.context = context;
     this.page = page;
     this._onPageClose = onPageClose;
+    this._config = config;
     page.on('console', event => this._handleConsoleMessage(messageToConsoleMessage(event)));
     page.on('pageerror', error => this._handleConsoleMessage(pageErrorToConsoleMessage(error)));
     page.on('request', request => this._requests.set(request, null));
@@ -76,8 +79,9 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     page.on('download', download => {
       void this._downloadStarted(download);
     });
-    page.setDefaultNavigationTimeout(60000);
-    page.setDefaultTimeout(5000);
+    // Use configurable timeouts from config
+    page.setDefaultNavigationTimeout(this._config.timeouts.navigation);
+    page.setDefaultTimeout(this._config.timeouts.action);
     (page as any)[tabSymbol] = this;
   }
 
@@ -180,8 +184,8 @@ export class Tab extends EventEmitter<TabEventsInterface> {
       return;
     }
 
-    // Cap load event to 5 seconds, the page is operational at this point.
-    await this.waitForLoadState('load', { timeout: 5000 });
+    // Use configurable load timeout from config instead of hardcoded 5000ms
+    await this.waitForLoadState('load', { timeout: this._config.timeouts.load });
   }
 
   consoleMessages(): ConsoleMessage[] {
