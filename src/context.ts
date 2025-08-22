@@ -119,7 +119,7 @@ export class Context {
   }
 
   private _onPageCreated(page: playwright.Page) {
-    const tab = new Tab(this, page, tab => this._onPageClosed(tab));
+    const tab = new Tab(this, page, tab => this._onPageClosed(tab), this.config);
     this._tabs.push(tab);
     if (!this._currentTab)
       this._currentTab = tab;
