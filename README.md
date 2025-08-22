@@ -531,14 +531,6 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_navigate_forward**
-  - Title: Go forward
-  - Description: Go forward to the next page
-  - Parameters: None
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
 - **browser_network_requests**
   - Title: List network requests
   - Description: Returns all network requests since loading the page

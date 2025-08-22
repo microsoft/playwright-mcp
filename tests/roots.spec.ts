@@ -68,12 +68,12 @@ test('check that trace is saved in workspace', async ({ startClient, server }, t
   expect(file).toContain('traces');
 });
 
-test('should list all tools when listRoots is slow', async ({ startClient, server }, testInfo) => {
+test('should list all tools when listRoots is slow', async ({ startClient }) => {
   const { client } = await startClient({
     clientName: 'Another custom client',
     roots: [],
     rootsResponseDelay: 1000,
   });
   const tools = await client.listTools();
-  expect(tools.tools.length).toBeGreaterThan(20);
+  expect(tools.tools.length).toBeGreaterThan(10);
 });

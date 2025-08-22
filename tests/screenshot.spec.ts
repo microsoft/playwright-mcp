@@ -300,7 +300,10 @@ test('browser_take_screenshot (viewport without snapshot)', async ({ startClient
 
   // Ensure we have a tab but don't navigate anywhere (no snapshot captured)
   expect(await client.callTool({
-    name: 'browser_tab_list',
+    name: 'browser_tabs',
+    arguments: {
+      action: 'list',
+    },
   })).toHaveResponse({
     tabs: `- 0: (current) [] (about:blank)`,
   });
