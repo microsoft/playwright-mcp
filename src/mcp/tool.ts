@@ -40,3 +40,7 @@ export function toMcpTool(tool: ToolSchema<any>): mcpServer.Tool {
     },
   };
 }
+
+export function defineToolSchema<Input extends z.Schema>(tool: ToolSchema<Input>): ToolSchema<Input> {
+  return tool;
+}

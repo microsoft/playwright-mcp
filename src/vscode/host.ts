@@ -52,7 +52,7 @@ class VSCodeProxyBackend implements ServerBackend {
     this._contextSwitchTool = this._defineContextSwitchTool();
   }
 
-  async initialize(clientVersion: ClientVersion, roots: Root[]): Promise<void> {
+  async initialize(server: mcpServer.Server, clientVersion: ClientVersion, roots: Root[]): Promise<void> {
     this._clientVersion = clientVersion;
     this._roots = roots;
     const transport = await this._defaultTransportFactory();
@@ -76,7 +76,7 @@ class VSCodeProxyBackend implements ServerBackend {
     }) as CallToolResult;
   }
 
-  serverClosed?(): void {
+  serverClosed?(server: mcpServer.Server): void {
     void this._currentClient?.close().catch(logUnhandledError);
   }
 

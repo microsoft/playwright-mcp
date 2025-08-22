@@ -21,7 +21,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { ListRootsRequestSchema, PingRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-import type { ServerBackend, ClientVersion, Root } from './server.js';
+import type { ServerBackend, ClientVersion, Root, Server } from './server.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 
@@ -44,7 +44,7 @@ export class ProxyBackend implements ServerBackend {
     this._contextSwitchTool = this._defineContextSwitchTool();
   }
 
-  async initialize(clientVersion: ClientVersion, roots: Root[]): Promise<void> {
+  async initialize(server: Server, clientVersion: ClientVersion, roots: Root[]): Promise<void> {
     this._roots = roots;
     await this._setCurrentClient(this._mcpProviders[0]);
   }

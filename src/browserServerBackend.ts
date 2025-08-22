@@ -41,7 +41,7 @@ export class BrowserServerBackend implements ServerBackend {
     this._tools = filteredTools(config);
   }
 
-  async initialize(clientVersion: mcpServer.ClientVersion, roots: mcpServer.Root[]): Promise<void> {
+  async initialize(server: mcpServer.Server, clientVersion: mcpServer.ClientVersion, roots: mcpServer.Root[]): Promise<void> {
     let rootPath: string | undefined;
     if (roots.length > 0) {
       const firstRootUri = roots[0]?.uri;
