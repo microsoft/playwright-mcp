@@ -23,8 +23,8 @@ type PageMessage = {
   type: 'getTabs';
 } | {
   type: 'connectToTab';
-  tabId: number;
-  windowId: number;
+  tabId?: number;
+  windowId?: number;
   mcpRelayUrl: string;
 } | {
   type: 'getConnectionStatus';
@@ -59,7 +59,9 @@ class TabShareExtension {
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true;
       case 'connectToTab':
-        this._connectTab(sender.tab!.id!, message.tabId, message.windowId, message.mcpRelayUrl!).then(
+        const tabId = message.tabId || sender.tab?.id!;
+        const windowId = message.windowId || sender.tab?.windowId!;
+        this._connectTab(sender.tab!.id!, tabId, windowId, message.mcpRelayUrl!).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true; // Return true to indicate that the response will be sent asynchronously

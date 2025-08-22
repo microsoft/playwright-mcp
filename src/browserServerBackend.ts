@@ -69,7 +69,7 @@ export class BrowserServerBackend implements ServerBackend {
     const parsedArguments = tool.schema.inputSchema.parse(rawArguments || {});
     const context = this._context!;
     const response = new Response(context, name, parsedArguments);
-    context.setRunningTool(true);
+    context.setRunningTool(name);
     try {
       await tool.handle(context, parsedArguments, response);
       await response.finish();
@@ -77,7 +77,7 @@ export class BrowserServerBackend implements ServerBackend {
     } catch (error: any) {
       response.addError(String(error));
     } finally {
-      context.setRunningTool(false);
+      context.setRunningTool(undefined);
     }
     return response.serialize();
   }

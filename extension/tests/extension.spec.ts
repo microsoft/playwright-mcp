@@ -152,7 +152,8 @@ for (const [mode, startClientMethod] of [
     });
 
     const selectorPage = await confirmationPagePromise;
-    await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP Extension' }).getByRole('button', { name: 'Connect' }).click();
+    // For browser_navigate command, the UI shows Allow/Reject buttons instead of tab selector
+    await selectorPage.getByRole('button', { name: 'Allow' }).click();
 
     expect(await navigateResponse).toHaveResponse({
       pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
