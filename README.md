@@ -494,6 +494,15 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_fill_form**
+  - Title: Fill form
+  - Description: Fill multiple form fields
+  - Parameters:
+    - `fields` (array): Fields to fill in
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_handle_dialog**
   - Title: Handle a dialog
   - Description: Handle a dialog

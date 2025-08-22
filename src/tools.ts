@@ -19,6 +19,7 @@ import console from './tools/console.js';
 import dialogs from './tools/dialogs.js';
 import evaluate from './tools/evaluate.js';
 import files from './tools/files.js';
+import form from './tools/form.js';
 import install from './tools/install.js';
 import keyboard from './tools/keyboard.js';
 import navigate from './tools/navigate.js';
@@ -39,6 +40,7 @@ export const allTools: Tool<any>[] = [
   ...dialogs,
   ...evaluate,
   ...files,
+  ...form,
   ...install,
   ...keyboard,
   ...navigate,
