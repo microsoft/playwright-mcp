@@ -193,3 +193,14 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Link-style button */
+.link-button {
+  background: none;
+  border: none;
+  color: #0066cc;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}

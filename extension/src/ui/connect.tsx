@@ -23,7 +23,7 @@ type Status =
   | { type: 'connecting'; message: string }
   | { type: 'connected'; message: string }
   | { type: 'error'; message: string }
-  | { type: 'error'; versionMismatch: { pwMcpVersion: string; extensionVersion: string } };
+  | { type: 'error'; versionMismatch: { pwMcpVersion: string; extensionVersion: string; downloadUrl: string } };
 
 const ConnectApp: React.FC = () => {
   const [tabs, setTabs] = useState<TabInfo[]>([]);
@@ -61,13 +61,15 @@ const ConnectApp: React.FC = () => {
     const pwMcpVersion = params.get('pwMcpVersion');
     const extensionVersion = chrome.runtime.getManifest().version;
     if (pwMcpVersion !== extensionVersion) {
+      const downloadUrl = params.get('downloadUrl') || `https://github.com/microsoft/playwright-mcp/releases/download/v${extensionVersion}/playwright-mcp-extension-v${extensionVersion}.zip`;
       setShowButtons(false);
       setShowTabList(false);
       setStatus({
         type: 'error',
         versionMismatch: {
           pwMcpVersion: pwMcpVersion || 'unknown',
-          extensionVersion
+          extensionVersion,
+          downloadUrl
         }
       });
       return;
@@ -176,13 +178,34 @@ const ConnectApp: React.FC = () => {
   );
 };
 
-const VersionMismatchError: React.FC<{ pwMcpVersion: string; extensionVersion: string }> = ({ pwMcpVersion, extensionVersion }) => {
+const VersionMismatchError: React.FC<{ pwMcpVersion: string; extensionVersion: string; downloadUrl: string }> = ({ pwMcpVersion, extensionVersion, downloadUrl }) => {
   const readmeUrl = 'https://github.com/microsoft/playwright-mcp/blob/main/extension/README.md';
+
+  const handleDownloadAndOpenExtensions = () => {
+    // Start download
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `playwright-mcp-extension-v${extensionVersion}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => {
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        if (tabs[0]?.id)
+          chrome.tabs.update(tabs[0].id, { url: 'chrome://extensions/' });
+      });
+    }, 1000); // Wait 1 second for download to initiate
+  };
+
   return (
     <div>
-      Incompatible Playwright MCP version: {pwMcpVersion} (extension version: {extensionVersion}).
-      Please install the latest version of the extension.{' '}
-      See <a href={readmeUrl} target='_blank' rel='noopener noreferrer'>installation instructions</a>.
+      Incompatible Playwright MCP version: {pwMcpVersion} (extension version: {extensionVersion}).{' '}
+      <button
+        onClick={handleDownloadAndOpenExtensions}
+        className='link-button'
+      >Click here</button> to download the matching extension, then drag and drop it into the Chrome Extensions page.{' '}
+      See <a href={readmeUrl} target='_blank' rel='noopener noreferrer'>installation instructions</a> for more details.
     </div>
   );
 };
@@ -191,7 +214,11 @@ const StatusBanner: React.FC<{ status: Status }> = ({ status }) => {
   return (
     <div className={`status-banner ${status.type}`}>
       {'versionMismatch' in status ? (
-        <VersionMismatchError pwMcpVersion={status.versionMismatch.pwMcpVersion} extensionVersion={status.versionMismatch.extensionVersion} />
+        <VersionMismatchError
+          pwMcpVersion={status.versionMismatch.pwMcpVersion}
+          extensionVersion={status.versionMismatch.extensionVersion}
+          downloadUrl={status.versionMismatch.downloadUrl}
+        />
       ) : (
         status.message
       )}
