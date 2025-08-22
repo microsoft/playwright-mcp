@@ -627,38 +627,13 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_tab_close**
-  - Title: Close a tab
-  - Description: Close a tab
+- **browser_tabs**
+  - Title: Manage tabs
+  - Description: List, create, close, or select a browser tab.
   - Parameters:
-    - `index` (number, optional): The index of the tab to close. Closes current tab if not provided.
+    - `action` (string): Operation to perform
+    - `index` (number, optional): Tab index, used for close/select. If omitted for close, current tab is closed.
   - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_list**
-  - Title: List tabs
-  - Description: List browser tabs
-  - Parameters: None
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_new**
-  - Title: Open a new tab
-  - Description: Open a new tab
-  - Parameters:
-    - `url` (string, optional): The URL to navigate to in the new tab. If not provided, the new tab will be blank.
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_tab_select**
-  - Title: Select a tab
-  - Description: Select a tab by index
-  - Parameters:
-    - `index` (number): The index of the tab to select
-  - Read-only: **true**
 
 </details>
 

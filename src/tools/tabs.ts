@@ -17,85 +17,48 @@
 import { z } from 'zod';
 import { defineTool } from './tool.js';
 
-const listTabs = defineTool({
+const browserTabs = defineTool({
   capability: 'core-tabs',
 
   schema: {
-    name: 'browser_tab_list',
-    title: 'List tabs',
-    description: 'List browser tabs',
-    inputSchema: z.object({}),
-    type: 'readOnly',
-  },
-
-  handle: async (context, params, response) => {
-    await context.ensureTab();
-    response.setIncludeTabs();
-  },
-});
-
-const selectTab = defineTool({
-  capability: 'core-tabs',
-
-  schema: {
-    name: 'browser_tab_select',
-    title: 'Select a tab',
-    description: 'Select a tab by index',
+    name: 'browser_tabs',
+    title: 'Manage tabs',
+    description: 'List, create, close, or select a browser tab.',
     inputSchema: z.object({
-      index: z.number().describe('The index of the tab to select'),
-    }),
-    type: 'readOnly',
-  },
-
-  handle: async (context, params, response) => {
-    await context.selectTab(params.index);
-    response.setIncludeSnapshot();
-  },
-});
-
-const newTab = defineTool({
-  capability: 'core-tabs',
-
-  schema: {
-    name: 'browser_tab_new',
-    title: 'Open a new tab',
-    description: 'Open a new tab',
-    inputSchema: z.object({
-      url: z.string().optional().describe('The URL to navigate to in the new tab. If not provided, the new tab will be blank.'),
-    }),
-    type: 'readOnly',
-  },
-
-  handle: async (context, params, response) => {
-    const tab = await context.newTab();
-    if (params.url)
-      await tab.navigate(params.url);
-    response.setIncludeSnapshot();
-  },
-});
-
-const closeTab = defineTool({
-  capability: 'core-tabs',
-
-  schema: {
-    name: 'browser_tab_close',
-    title: 'Close a tab',
-    description: 'Close a tab',
-    inputSchema: z.object({
-      index: z.number().optional().describe('The index of the tab to close. Closes current tab if not provided.'),
+      action: z.enum(['list', 'new', 'close', 'select']).describe('Operation to perform'),
+      index: z.number().optional().describe('Tab index, used for close/select. If omitted for close, current tab is closed.'),
     }),
     type: 'destructive',
   },
 
   handle: async (context, params, response) => {
-    await context.closeTab(params.index);
-    response.setIncludeSnapshot();
+    switch (params.action) {
+      case 'list': {
+        await context.ensureTab();
+        response.setIncludeTabs();
+        return;
+      }
+      case 'new': {
+        await context.newTab();
+        response.setIncludeTabs();
+        return;
+      }
+      case 'close': {
+        await context.closeTab(params.index);
+        response.setIncludeSnapshot();
+        return;
+      }
+      case 'select': {
+        if (!params.index)
+          throw new Error('Tab index is required');
+        await context.selectTab(params.index);
+        response.setIncludeSnapshot();
+        return;
+      }
+    }
   },
 });
 
 export default [
-  listTabs,
-  newTab,
-  selectTab,
-  closeTab,
+  browserTabs,
 ];

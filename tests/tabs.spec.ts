@@ -19,8 +19,14 @@ import { test, expect } from './fixtures.js';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 async function createTab(client: Client, title: string, body: string) {
+  await client.callTool({
+    name: 'browser_tabs',
+    arguments: {
+      action: 'new',
+    },
+  });
   return await client.callTool({
-    name: 'browser_tab_new',
+    name: 'browser_navigate',
     arguments: {
       url: `data:text/html,<title>${title}</title><body>${body}</body>`,
     },
@@ -29,7 +35,10 @@ async function createTab(client: Client, title: string, body: string) {
 
 test('list initial tabs', async ({ client }) => {
   expect(await client.callTool({
-    name: 'browser_tab_list',
+    name: 'browser_tabs',
+    arguments: {
+      action: 'list',
+    },
   })).toHaveResponse({
     tabs: `- 0: (current) [] (about:blank)`,
   });
@@ -38,7 +47,10 @@ test('list initial tabs', async ({ client }) => {
 test('list first tab', async ({ client }) => {
   await createTab(client, 'Tab one', 'Body one');
   expect(await client.callTool({
-    name: 'browser_tab_list',
+    name: 'browser_tabs',
+    arguments: {
+      action: 'list',
+    },
   })).toHaveResponse({
     tabs: `- 0: [] (about:blank)
 - 1: (current) [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)`,
@@ -75,8 +87,9 @@ test('select tab', async ({ client }) => {
   await createTab(client, 'Tab two', 'Body two');
 
   expect(await client.callTool({
-    name: 'browser_tab_select',
+    name: 'browser_tabs',
     arguments: {
+      action: 'select',
       index: 1,
     },
   })).toHaveResponse({
@@ -97,8 +110,9 @@ test('close tab', async ({ client }) => {
   await createTab(client, 'Tab two', 'Body two');
 
   expect(await client.callTool({
-    name: 'browser_tab_close',
+    name: 'browser_tabs',
     arguments: {
+      action: 'close',
       index: 2,
     },
   })).toHaveResponse({
