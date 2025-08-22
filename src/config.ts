@@ -49,6 +49,9 @@ export type CLIOptions = {
   userAgent?: string;
   userDataDir?: string;
   viewportSize?: string;
+  actionTimeout?: number;
+  navigationTimeout?: number;
+  loadTimeout?: number;
 };
 
 const defaultConfig: FullConfig = {
@@ -69,6 +72,11 @@ const defaultConfig: FullConfig = {
   },
   server: {},
   saveTrace: false,
+  timeouts: {
+    action: 5000,
+    navigation: 60000,
+    load: 5000,
+  },
 };
 
 type BrowserUserConfig = NonNullable<Config['browser']>;
@@ -82,6 +90,11 @@ export type FullConfig = Config & {
   network: NonNullable<Config['network']>,
   saveTrace: boolean;
   server: NonNullable<Config['server']>,
+  timeouts: {
+    action: number;
+    navigation: number;
+    load: number;
+  };
 };
 
 export async function resolveConfig(config: Config): Promise<FullConfig> {
@@ -192,6 +205,11 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
     saveTrace: cliOptions.saveTrace,
     outputDir: cliOptions.outputDir,
     imageResponses: cliOptions.imageResponses,
+    timeouts: {
+      action: cliOptions.actionTimeout,
+      navigation: cliOptions.navigationTimeout,
+      load: cliOptions.loadTimeout,
+    },
   };
 
   return result;
@@ -224,6 +242,9 @@ function configFromEnv(): Config {
   options.userAgent = envToString(process.env.PLAYWRIGHT_MCP_USER_AGENT);
   options.userDataDir = envToString(process.env.PLAYWRIGHT_MCP_USER_DATA_DIR);
   options.viewportSize = envToString(process.env.PLAYWRIGHT_MCP_VIEWPORT_SIZE);
+  options.actionTimeout = envToNumber(process.env.PLAYWRIGHT_MCP_ACTION_TIMEOUT);
+  options.navigationTimeout = envToNumber(process.env.PLAYWRIGHT_MCP_NAVIGATION_TIMEOUT);
+  options.loadTimeout = envToNumber(process.env.PLAYWRIGHT_MCP_LOAD_TIMEOUT);
   return configFromCLIOptions(options);
 }
 
@@ -285,6 +306,11 @@ function mergeConfig(base: FullConfig, overrides: Config): FullConfig {
     server: {
       ...pickDefined(base.server),
       ...pickDefined(overrides.server),
+    },
+    timeouts: {
+      action: overrides.timeouts?.action ?? base.timeouts?.action ?? 5000,
+      navigation: overrides.timeouts?.navigation ?? base.timeouts?.navigation ?? 60000,
+      load: overrides.timeouts?.load ?? base.timeouts?.load ?? 5000,
     },
   } as FullConfig;
 }
