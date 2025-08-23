@@ -1,6 +1,6 @@
 {
   "name": "@tontoko/fast-playwright-mcp",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "publishConfig": {
     "access": "public"
   },
@@ -10,7 +10,7 @@
     "type": "git",
     "url": "https://github.com/tontoko/fast-playwright-mcp"
   },
-  "homepage": "https://playwright.dev",
+  "homepage": "https://github.com/tontoko/fast-playwright-mcp",
   "engines": {
     "node": ">=18"
   },
