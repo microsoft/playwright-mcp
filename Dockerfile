@@ -5,7 +5,7 @@ ARG PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 # ------------------------------
 # Base stage: Contains only the minimal dependencies required for runtime
 # (node_modules and Playwright system dependencies)
-FROM node:22-bookworm-slim AS base
+FROM oven/bun:1.2.20-slim AS base
 
 ARG PLAYWRIGHT_BROWSERS_PATH
 ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
@@ -13,14 +13,18 @@ ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
 # Set the working directory
 WORKDIR /app
 
-# SonarQube Security Hotspot Fix: Using --ignore-scripts prevents malicious script execution
-# Package verification: This package.json contains no preinstall/postinstall scripts
-# Security measure: --ignore-scripts flag prevents potential code injection via npm scripts
-RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
-    --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-  npm ci --omit=dev --ignore-scripts && \
-  # Install system dependencies for playwright
+# Install Node.js (required for Playwright)
+RUN apt-get update && apt-get install -y curl && \
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+  apt-get install -y nodejs && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install production dependencies with bun
+RUN --mount=type=cache,target=/root/.bun/install/cache,sharing=locked,id=bun-cache \
+  --mount=type=bind,source=package.json,target=package.json \
+  --mount=type=bind,source=bun.lock,target=bun.lock \
+  bun install --frozen-lockfile --production && \
+  # Install system dependencies for playwright (using npx as Playwright requires Node.js)
   npx -y playwright-core install-deps chromium
 
 # ------------------------------
@@ -28,20 +32,18 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
 # ------------------------------
 FROM base AS builder
 
-# SonarQube Security Hotspot Fix: Using --ignore-scripts prevents malicious script execution
-# Package verification: This package.json contains no preinstall/postinstall scripts  
-# Security measure: --ignore-scripts flag prevents potential code injection via npm scripts
-RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
-    --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-  npm ci --ignore-scripts
+# Install all dependencies (including dev dependencies) with bun
+RUN --mount=type=cache,target=/root/.bun/install/cache,sharing=locked,id=bun-cache \
+  --mount=type=bind,source=package.json,target=package.json \
+  --mount=type=bind,source=bun.lock,target=bun.lock \
+  bun install --frozen-lockfile
 
 # Copy the rest of the app
 COPY --chmod=644 *.json *.js *.ts .
 COPY --chmod=644 src src/
 
 # Build the app
-RUN npm run build
+RUN bun run build
 
 # ------------------------------
 # Browser
@@ -65,7 +67,7 @@ ENV NODE_ENV=production
 # Set read-only permissions for node_modules to prevent unnecessary write access
 # Use 444 for files (read-only for all), 555 for directories (read+execute for all)
 RUN chmod -R 444 node_modules && \
-    find node_modules -type d -exec chmod 555 {} \;
+  find node_modules -type d -exec chmod 555 {} \;
 
 USER ${USERNAME}
 
@@ -74,4 +76,4 @@ COPY --chown=${USERNAME}:${USERNAME} --chmod=444 cli.js package.json ./
 COPY --from=builder --chown=${USERNAME}:${USERNAME} --chmod=444 /app/lib /app/lib
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
-ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]
+ENTRYPOINT ["bun", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]
