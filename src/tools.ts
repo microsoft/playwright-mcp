@@ -22,6 +22,7 @@ import files from './tools/files.js';
 import form from './tools/form.js';
 import install from './tools/install.js';
 import keyboard from './tools/keyboard.js';
+import mouse from './tools/mouse.js';
 import navigate from './tools/navigate.js';
 import network from './tools/network.js';
 import pdf from './tools/pdf.js';
@@ -29,7 +30,7 @@ import snapshot from './tools/snapshot.js';
 import tabs from './tools/tabs.js';
 import screenshot from './tools/screenshot.js';
 import wait from './tools/wait.js';
-import mouse from './tools/mouse.js';
+import verify from './tools/verify.js';
 
 import type { Tool } from './tools/tool.js';
 import type { FullConfig } from './config.js';
@@ -51,6 +52,7 @@ export const allTools: Tool<any>[] = [
   ...snapshot,
   ...tabs,
   ...wait,
+  ...verify,
 ];
 
 export function filteredTools(config: FullConfig) {
