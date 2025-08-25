@@ -18,6 +18,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { devices } from 'playwright';
+import { InvalidArgumentError } from 'commander';
 import { sanitizeForFilePath } from './utils/fileUtils.js';
 
 import type { Config, ToolCapability } from '../config.js';
@@ -30,6 +31,7 @@ export type CLIOptions = {
   browser?: string;
   caps?: string[];
   cdpEndpoint?: string;
+  cdpHeaders?: Record<string, string>;
   config?: string;
   device?: string;
   executablePath?: string;
@@ -178,6 +180,7 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
       launchOptions,
       contextOptions,
       cdpEndpoint: cliOptions.cdpEndpoint,
+      cdpHeaders: cliOptions.cdpHeaders,
     },
     server: {
       port: cliOptions.port,
@@ -205,6 +208,7 @@ function configFromEnv(): Config {
   options.browser = envToString(process.env.PLAYWRIGHT_MCP_BROWSER);
   options.caps = commaSeparatedList(process.env.PLAYWRIGHT_MCP_CAPS);
   options.cdpEndpoint = envToString(process.env.PLAYWRIGHT_MCP_CDP_ENDPOINT);
+  options.cdpHeaders = parseJsonObject(process.env.PLAYWRIGHT_MCP_CDP_HEADERS);
   options.config = envToString(process.env.PLAYWRIGHT_MCP_CONFIG);
   options.device = envToString(process.env.PLAYWRIGHT_MCP_DEVICE);
   options.executablePath = envToString(process.env.PLAYWRIGHT_MCP_EXECUTABLE_PATH);
@@ -293,6 +297,24 @@ export function semicolonSeparatedList(value: string | undefined): string[] | un
   if (!value)
     return undefined;
   return value.split(';').map(v => v.trim());
+}
+
+export function parseJsonObject(value: string | undefined): Record<string, string> | undefined {
+  if (!value)
+    return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+      throw new InvalidArgumentError('Expected JSON object');
+
+    return parsed;
+  } catch (error) {
+    if (error instanceof InvalidArgumentError)
+      throw error;
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new InvalidArgumentError(`Invalid JSON format: ${errorMessage}`);
+  }
 }
 
 export function commaSeparatedList(value: string | undefined): string[] | undefined {
