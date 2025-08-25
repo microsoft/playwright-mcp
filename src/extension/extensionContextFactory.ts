@@ -26,10 +26,12 @@ const debugLogger = debug('pw:mcp:relay');
 export class ExtensionContextFactory implements BrowserContextFactory {
   private _browserChannel: string;
   private _userDataDir?: string;
+  private _executablePath?: string;
 
-  constructor(browserChannel: string, userDataDir: string | undefined) {
+  constructor(browserChannel: string, userDataDir: string | undefined, executablePath: string | undefined) {
     this._browserChannel = browserChannel;
     this._userDataDir = userDataDir;
+    this._executablePath = executablePath;
   }
 
   async createContext(clientInfo: ClientInfo, abortSignal: AbortSignal, toolName: string | undefined): Promise<{ browserContext: playwright.BrowserContext, close: () => Promise<void> }> {
@@ -55,7 +57,7 @@ export class ExtensionContextFactory implements BrowserContextFactory {
       httpServer.close();
       throw new Error(abortSignal.reason);
     }
-    const cdpRelayServer = new CDPRelayServer(httpServer, this._browserChannel, this._userDataDir);
+    const cdpRelayServer = new CDPRelayServer(httpServer, this._browserChannel, this._userDataDir, this._executablePath);
     abortSignal.addEventListener('abort', () => cdpRelayServer.stop());
     debugLogger(`CDP relay server started, extension endpoint: ${cdpRelayServer.extensionEndpoint()}.`);
     return cdpRelayServer;

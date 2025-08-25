@@ -72,7 +72,7 @@ program
 
       const config = await resolveCLIConfig(options);
       const browserContextFactory = contextFactory(config);
-      const extensionContextFactory = new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir);
+      const extensionContextFactory = new ExtensionContextFactory(config.browser.launchOptions.channel || 'chrome', config.browser.userDataDir, config.browser.launchOptions.executablePath);
 
       if (options.extension) {
         const serverBackendFactory: mcpServer.ServerBackendFactory = {

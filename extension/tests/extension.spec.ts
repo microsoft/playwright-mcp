@@ -276,3 +276,32 @@ for (const [mode, startClientMethod] of [
   });
 
 }
+
+test(`custom executablePath`, async ({ startClient, server, useShortConnectionTimeout }) => {
+  useShortConnectionTimeout(1000);
+
+  const executablePath = test.info().outputPath('echo.sh');
+  await fs.promises.writeFile(executablePath, '#!/bin/bash\necho "Custom exec args: $@" > "$(dirname "$0")/output.txt"', { mode: 0o755 });
+
+  const { client } = await startClient({
+    args: [`--extension`],
+    config: {
+      browser: {
+        launchOptions: {
+          executablePath,
+        },
+      }
+    },
+  });
+
+  const navigateResponse = await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+    timeout: 1000,
+  });
+  expect(await navigateResponse).toHaveResponse({
+    result: expect.stringContaining('Extension connection timeout.'),
+    isError: true,
+  });
+  expect(await fs.promises.readFile(test.info().outputPath('output.txt'), 'utf8')).toContain('Custom exec args: chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html?');
+});

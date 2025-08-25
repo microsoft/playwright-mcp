@@ -60,6 +60,7 @@ export class CDPRelayServer {
   private _wsHost: string;
   private _browserChannel: string;
   private _userDataDir?: string;
+  private _executablePath?: string;
   private _cdpPath: string;
   private _extensionPath: string;
   private _wss: WebSocketServer;
@@ -73,10 +74,11 @@ export class CDPRelayServer {
   private _nextSessionId: number = 1;
   private _extensionConnectionPromise!: ManualPromise<void>;
 
-  constructor(server: http.Server, browserChannel: string, userDataDir?: string) {
+  constructor(server: http.Server, browserChannel: string, userDataDir?: string, executablePath?: string) {
     this._wsHost = httpAddressToString(server.address()).replace(/^http/, 'ws');
     this._browserChannel = browserChannel;
     this._userDataDir = userDataDir;
+    this._executablePath = executablePath;
 
     const uuid = crypto.randomUUID();
     this._cdpPath = `/cdp/${uuid}`;
@@ -125,12 +127,16 @@ export class CDPRelayServer {
     if (toolName)
       url.searchParams.set('newTab', String(toolName === 'browser_navigate'));
     const href = url.toString();
-    const executableInfo = registry.findExecutable(this._browserChannel);
-    if (!executableInfo)
-      throw new Error(`Unsupported channel: "${this._browserChannel}"`);
-    const executablePath = executableInfo.executablePath();
-    if (!executablePath)
-      throw new Error(`"${this._browserChannel}" executable not found. Make sure it is installed at a standard location.`);
+
+    let executablePath = this._executablePath;
+    if (!executablePath) {
+      const executableInfo = registry.findExecutable(this._browserChannel);
+      if (!executableInfo)
+        throw new Error(`Unsupported channel: "${this._browserChannel}"`);
+      executablePath = executableInfo.executablePath();
+      if (!executablePath)
+        throw new Error(`"${this._browserChannel}" executable not found. Make sure it is installed at a standard location.`);
+    }
 
     const args: string[] = [];
     if (this._userDataDir)
