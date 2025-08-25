@@ -87,7 +87,25 @@ Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, u
 <details>
 <summary>Gemini CLI</summary>
 
+Global setup:
 Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md#configure-the-mcp-server-in-settingsjson), use the standard config above.
+
+Project-enabled setup:
+- create a .gemini folder
+- create a settings.json file inside the folder with the standard setup:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
 
 </details>
 
