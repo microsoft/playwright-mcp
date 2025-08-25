@@ -29,9 +29,11 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { httpAddressToString } from '../mcp/http.js';
 import { logUnhandledError } from '../utils/log.js';
 import { ManualPromise } from '../mcp/manualPromise.js';
+import * as protocol from './protocol.js';
 
 import type websocket from 'ws';
 import type { ClientInfo } from '../browserContextFactory.js';
+import type { ExtensionCommand, ExtensionEvents } from './protocol.js';
 
 // @ts-ignore
 const { registry } = await import('playwright-core/lib/server/registry/index');
@@ -119,6 +121,7 @@ export class CDPRelayServer {
       version: clientInfo.version,
     };
     url.searchParams.set('client', JSON.stringify(client));
+    url.searchParams.set('protocolVersion', process.env.PWMCP_TEST_PROTOCOL_VERSION ?? protocol.VERSION.toString());
     if (toolName)
       url.searchParams.set('newTab', String(toolName === 'browser_navigate'));
     const href = url.toString();
@@ -229,7 +232,7 @@ export class CDPRelayServer {
     this._extensionConnectionPromise.resolve();
   }
 
-  private _handleExtensionMessage(method: string, params: any) {
+  private _handleExtensionMessage<M extends keyof ExtensionEvents>(method: M, params: ExtensionEvents[M]['params']) {
     switch (method) {
       case 'forwardCDPEvent':
         const sessionId = params.sessionId || this._connectedTabInfo?.sessionId;
@@ -238,10 +241,6 @@ export class CDPRelayServer {
           method: params.method,
           params: params.params
         });
-        break;
-      case 'detachedFromTab':
-        debugLogger('← Debugger detached from tab:', params);
-        this._connectedTabInfo = undefined;
         break;
     }
   }
@@ -279,7 +278,7 @@ export class CDPRelayServer {
         if (sessionId)
           break;
         // Simulate auto-attach behavior with real target info
-        const { targetInfo } = await this._extensionConnection!.send('attachToTab');
+        const { targetInfo } = await this._extensionConnection!.send('attachToTab', { });
         this._connectedTabInfo = {
           targetInfo,
           sessionId: `pw-tab-${this._nextSessionId++}`,
@@ -333,7 +332,7 @@ class ExtensionConnection {
   private readonly _callbacks = new Map<number, { resolve: (o: any) => void, reject: (e: Error) => void, error: Error }>();
   private _lastId = 0;
 
-  onmessage?: (method: string, params: any) => void;
+  onmessage?: <M extends keyof ExtensionEvents>(method: M, params: ExtensionEvents[M]['params']) => void;
   onclose?: (self: ExtensionConnection, reason: string) => void;
 
   constructor(ws: WebSocket) {
@@ -343,11 +342,11 @@ class ExtensionConnection {
     this._ws.on('error', this._onError.bind(this));
   }
 
-  async send(method: string, params?: any, sessionId?: string): Promise<any> {
+  async send<M extends keyof ExtensionCommand>(method: M, params: ExtensionCommand[M]['params']): Promise<any> {
     if (this._ws.readyState !== WebSocket.OPEN)
       throw new Error(`Unexpected WebSocket state: ${this._ws.readyState}`);
     const id = ++this._lastId;
-    this._ws.send(JSON.stringify({ id, method, params, sessionId }));
+    this._ws.send(JSON.stringify({ id, method, params }));
     const error = new Error(`Protocol error: ${method}`);
     return new Promise((resolve, reject) => {
       this._callbacks.set(id, { resolve, reject, error });
@@ -392,7 +391,7 @@ class ExtensionConnection {
     } else if (object.id) {
       debugLogger('← Extension: unexpected response', object);
     } else {
-      this.onmessage?.(object.method!, object.params);
+      this.onmessage?.(object.method! as keyof ExtensionEvents, object.params);
     }
   }
 

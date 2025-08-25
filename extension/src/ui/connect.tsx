@@ -22,7 +22,10 @@ import type { TabInfo } from './tabItem.js';
 type Status =
   | { type: 'connecting'; message: string }
   | { type: 'connected'; message: string }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: 'error'; versionMismatch: { extensionVersion: string; } };
+
+const SUPPORTED_PROTOCOL_VERSION = 1;
 
 const ConnectApp: React.FC = () => {
   const [tabs, setTabs] = useState<TabInfo[]>([]);
@@ -55,6 +58,21 @@ const ConnectApp: React.FC = () => {
       });
     } catch (e) {
       setStatus({ type: 'error', message: 'Failed to parse client version.' });
+      return;
+    }
+
+    const parsedVersion = parseInt(params.get('protocolVersion') ?? '', 10);
+    const requiredVersion = isNaN(parsedVersion) ? 1 : parsedVersion;
+    if (requiredVersion > SUPPORTED_PROTOCOL_VERSION) {
+      const extensionVersion = chrome.runtime.getManifest().version;
+      setShowButtons(false);
+      setShowTabList(false);
+      setStatus({
+        type: 'error',
+        versionMismatch: {
+          extensionVersion,
+        }
+      });
       return;
     }
 
@@ -181,11 +199,28 @@ const ConnectApp: React.FC = () => {
   );
 };
 
+const VersionMismatchError: React.FC<{ extensionVersion: string }> = ({ extensionVersion }) => {
+  const readmeUrl = 'https://github.com/microsoft/playwright-mcp/blob/main/extension/README.md';
+  const latestReleaseUrl = 'https://github.com/microsoft/playwright-mcp/releases/latest';
+  return (
+    <div>
+      Playwright MCP version trying to connect requires newer extension version (current version: {extensionVersion}).{' '}
+      <a href={latestReleaseUrl}>Click here</a> to download latest version of the extension, then drag and drop it into the Chrome Extensions page.{' '}
+      See <a href={readmeUrl} target='_blank' rel='noopener noreferrer'>installation instructions</a> for more details.
+    </div>
+  );
+};
 
 const StatusBanner: React.FC<{ status: Status }> = ({ status }) => {
   return (
     <div className={`status-banner ${status.type}`}>
-      {status.message}
+      {'versionMismatch' in status ? (
+        <VersionMismatchError
+          extensionVersion={status.versionMismatch.extensionVersion}
+        />
+      ) : (
+        status.message
+      )}
     </div>
   );
 };

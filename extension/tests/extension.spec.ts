@@ -33,6 +33,7 @@ type TestFixtures = {
   browserWithExtension: BrowserWithExtension,
   pathToExtension: string,
   useShortConnectionTimeout: (timeoutMs: number) => void
+  overrideProtocolVersion: (version: number) => void
 };
 
 const test = base.extend<TestFixtures>({
@@ -80,6 +81,12 @@ const test = base.extend<TestFixtures>({
     process.env.PWMCP_TEST_CONNECTION_TIMEOUT = undefined;
   },
 
+  overrideProtocolVersion: async ({}, use) => {
+    await use((version: number) => {
+      process.env.PWMCP_TEST_PROTOCOL_VERSION = version.toString();
+    });
+    process.env.PWMCP_TEST_PROTOCOL_VERSION = undefined;
+  }
 });
 
 async function startAndCallConnectTool(browserWithExtension: BrowserWithExtension, startClient: StartClient): Promise<Client> {
@@ -238,6 +245,33 @@ for (const [mode, startClientMethod] of [
 
     expect(await navigateResponse).toHaveResponse({
       pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+    });
+  });
+
+  test(`extension needs update (${mode})`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout, overrideProtocolVersion }) => {
+    useShortConnectionTimeout(500);
+    overrideProtocolVersion(1000);
+
+    // Prelaunch the browser, so that it is properly closed after the test.
+    const browserContext = await browserWithExtension.launch();
+
+    const client = await startClientMethod(browserWithExtension, startClient);
+
+    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+      return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
+    });
+
+    const navigateResponse = client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.HELLO_WORLD },
+    });
+
+    const confirmationPage = await confirmationPagePromise;
+    await expect(confirmationPage.locator('.status-banner')).toContainText(`Playwright MCP version trying to connect requires newer extension version`);
+
+    expect(await navigateResponse).toHaveResponse({
+      result: expect.stringContaining('Extension connection timeout.'),
+      isError: true,
     });
   });
 
