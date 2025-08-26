@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-import type * as playwright from "playwright";
+import type * as playwright from 'playwright';
 import type {
   ImageContent,
   TextContent,
-} from "@modelcontextprotocol/sdk/types.js";
-import type { Tab } from "./tab.js";
+} from '@modelcontextprotocol/sdk/types.js';
+import type { Tab } from './tab.js';
 
 /**
  * Tool capability types
  */
 export type ToolCapability =
-  | "core"
-  | "tabs"
-  | "pdf"
-  | "history"
-  | "wait"
-  | "files"
-  | "install"
-  | "testing";
+  | 'core'
+  | 'tabs'
+  | 'pdf'
+  | 'history'
+  | 'wait'
+  | 'files'
+  | 'install'
+  | 'testing';
 
 /**
  * Configuration for the MCP server
@@ -40,7 +40,7 @@ export type ToolCapability =
 export type FullConfig = {
   browser: {
     browserAgent?: string;
-    browserName: "chromium" | "firefox" | "webkit";
+    browserName: 'chromium' | 'firefox' | 'webkit';
     isolated?: boolean;
     userDataDir?: string;
     launchOptions?: playwright.LaunchOptions;
@@ -60,20 +60,20 @@ export type FullConfig = {
     allowedOrigins?: string[];
     blockedOrigins?: string[];
   };
-  imageResponses?: "allow" | "omit" | "auto";
+  imageResponses?: 'allow' | 'omit' | 'auto';
 };
 
 /**
  * Modal state types for handling dialogs and file choosers
  */
 export type FileUploadModalState = {
-  type: "fileChooser";
+  type: 'fileChooser';
   description: string;
   fileChooser: playwright.FileChooser;
 };
 
 export type DialogModalState = {
-  type: "dialog";
+  type: 'dialog';
   description: string;
   dialog: playwright.Dialog;
 };
@@ -107,7 +107,7 @@ export type ToolSchema<Input = any> = {
   title: string;
   description: string;
   inputSchema: Input;
-  type: "readOnly" | "destructive";
+  type: 'readOnly' | 'destructive';
 };
 
 /**
@@ -116,7 +116,7 @@ export type ToolSchema<Input = any> = {
 export type Tool<Input = any> = {
   capability: ToolCapability;
   schema: ToolSchema<Input>;
-  clearsModalState?: ModalState["type"];
+  clearsModalState?: ModalState['type'];
   handle: (context: Context, params: any) => Promise<ToolResult>;
 };
 

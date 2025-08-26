@@ -13,37 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import url from "url";
-import path from "path";
-import { spawnSync } from "child_process";
+import url from 'url';
+import path from 'path';
+import { spawnSync } from 'child_process';
 
-import { test, expect } from "./fixtures.js";
+import { test, expect } from './fixtures.js';
 
-import { createConnection } from "asteroid-playwright-mcp";
+import { createConnection } from 'asteroid-playwright-mcp';
 
-test.skip(({ mcpMode }) => mcpMode !== "extension");
+test.skip(({ mcpMode }) => mcpMode !== 'extension');
 
-test("does not allow --cdp-endpoint", async ({ startClient }) => {
+test('does not allow --cdp-endpoint', async ({ startClient }) => {
   await expect(
-    createConnection({
-      browser: { browserName: "firefox" },
-      ...{ extension: true },
-    })
+      createConnection({
+        browser: { browserName: 'firefox' },
+        ...{ extension: true },
+      })
   ).rejects.toThrow(/Extension mode is only supported for Chromium browsers/);
 });
 
 // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
 const __filename = url.fileURLToPath(import.meta.url);
 
-test("does not support --device", async () => {
-  const result = spawnSync("node", [
-    path.join(__filename, "../../cli.js"),
-    "--device=Pixel 5",
-    "--extension",
+test('does not support --device', async () => {
+  const result = spawnSync('node', [
+    path.join(__filename, '../../cli.js'),
+    '--device=Pixel 5',
+    '--extension',
   ]);
   expect(result.error).toBeUndefined();
   expect(result.status).toBe(1);
   expect(result.stderr.toString()).toContain(
-    "Device emulation is not supported with extension mode."
+      'Device emulation is not supported with extension mode.'
   );
 });
