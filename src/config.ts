@@ -302,19 +302,20 @@ export function semicolonSeparatedList(value: string | undefined): string[] | un
 export function parseJsonObject(value: string | undefined): Record<string, string> | undefined {
   if (!value)
     return undefined;
+
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(value);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
-      throw new InvalidArgumentError('Expected JSON object');
-
-    return parsed;
+    parsed = JSON.parse(value);
   } catch (error) {
-    if (error instanceof InvalidArgumentError)
-      throw error;
-
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new InvalidArgumentError(`Invalid JSON format: ${errorMessage}`);
   }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new InvalidArgumentError('Expected JSON object');
+  }
+
+  return parsed as Record<string, string>;
 }
 
 export function commaSeparatedList(value: string | undefined): string[] | undefined {
