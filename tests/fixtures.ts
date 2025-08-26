@@ -31,6 +31,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { Stream } from 'stream';
 
 export type TestOptions = {
+  mcpArgs: string[] | undefined;
   mcpBrowser: string | undefined;
   mcpMode: 'docker' | undefined;
 };
@@ -65,17 +66,19 @@ type WorkerFixtures = {
 
 export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>({
 
+  mcpArgs: [undefined, { option: true }],
+
   client: async ({ startClient }, use) => {
     const { client } = await startClient();
     await use(client);
   },
 
-  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode }, use, testInfo) => {
+  startClient: async ({ mcpHeadless, mcpBrowser, mcpMode, mcpArgs }, use, testInfo) => {
     const configDir = path.dirname(test.info().config.configFile!);
     const clients: Client[] = [];
 
     await use(async options => {
-      const args: string[] = [];
+      const args: string[] = mcpArgs ?? [];
       if (process.env.CI && process.platform === 'linux')
         args.push('--no-sandbox');
       if (mcpHeadless)
