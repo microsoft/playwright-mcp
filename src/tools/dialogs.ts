@@ -45,7 +45,7 @@ const handleDialog: ToolFactory = captureSnapshot => defineTool({
           await dialogState.dialog.dismiss();
         break;
       } catch (error) {
-        console.error(error);
+        // console.error(error);
         attempt++;
       }
     }

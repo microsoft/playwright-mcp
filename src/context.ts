@@ -319,14 +319,14 @@ ${code.join('\n')}
     try {
       await download.saveAs(entry.outputFile);
     } catch (error) {
-      console.warn('Error saving download:', error);
+      // console.warn('Error saving download:', error);
     } finally {
       entry.finished = true;
     }
   }
 
   private async _onPageCreated(page: playwright.Page) {
-    console.log('Page created, checking for popup');
+    // console.log('Page created, checking for popup');
 
     try {
       const isPopup = await this._handlePopup(page);
@@ -334,7 +334,7 @@ ${code.join('\n')}
       if (isPopup)
         return;
     } catch (error) {
-      console.error('Error handling popup:', error);
+      // console.error('Error handling popup:', error);
       // Continue with normal page creation even if popup handling fails
     }
 
@@ -356,13 +356,13 @@ ${code.join('\n')}
       // Check if this is actually a popup window (not just a new tab)
       const isPopupWindow = await this._isPopupWindow(popupPage);
       if (!isPopupWindow) {
-        console.log('Not a popup window');
+        // console.log('Not a popup window');
         // If it's not a popup window, we don't need to do anything, since
         // the context.on("page") event will handle it.
         return false;
       }
 
-      console.log('Is a popup window, getting URL');
+      // console.log('Is a popup window, getting URL');
 
       await popupPage.waitForLoadState('domcontentloaded');
 
@@ -380,7 +380,7 @@ ${code.join('\n')}
             popupUrl = undefined;
 
         } catch (error) {
-          console.log('Failed to get popup URL, retrying');
+          // console.log('Failed to get popup URL, retrying');
         }
 
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -388,7 +388,7 @@ ${code.join('\n')}
       }
 
       if (!popupUrl) {
-        console.log('Failed to get popup URL, closing popup');
+        // console.log('Failed to get popup URL, closing popup');
         await popupPage.close();
         return true;
       }
@@ -416,7 +416,7 @@ ${code.join('\n')}
       } catch (navigationError) {
         // If navigation fails, just close the popup and keep the new page
         // The new page will remain open but empty, which is better than losing it
-        console.warn('Navigation to popup URL failed:', navigationError);
+        // console.warn('Navigation to popup URL failed:', navigationError);
       }
 
       // Close the popup
@@ -427,7 +427,7 @@ ${code.join('\n')}
         await popupPage.close();
       } catch (closeError) {
         // Ignore close errors
-        console.warn('Error closing popup:', closeError);
+        // console.warn('Error closing popup:', closeError);
       }
     }
 
@@ -450,20 +450,20 @@ ${code.join('\n')}
         ),
       ]);
 
-      console.log('Popup analysis:', analysis);
+      // console.log('Popup analysis:', analysis);
 
       if (analysis.isPopup) {
-        console.log(`Popup detected with ${analysis.confidence}% confidence`);
-        console.log('Reasons:', analysis.reasons);
+        // console.log(`Popup detected with ${analysis.confidence}% confidence`);
+        // console.log('Reasons:', analysis.reasons);
       }
 
       return analysis.isPopup;
     } catch (error) {
       // Check if it's a navigation-related error
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      // const errorMessage =
+      //   error instanceof Error ? error.message : String(error);
 
-      console.error('Error checking if page is a popup window:', errorMessage);
+      // console.error('Error checking if page is a popup window:', errorMessage);
       // If we can't determine, assume it's not a popup window
       return false;
     }
@@ -479,12 +479,12 @@ ${code.join('\n')}
     if (this._currentTab === tab)
       this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
     if (!this._tabs.length) {
-      console.log('No tabs left, closing context');
+      // console.log('No tabs left, closing context');
 
       // Note that its likely here that the context is already dead :(
       // so we wrap this in a try catch
       this.close().catch(error => {
-        console.error('Error closing context:', error);
+        // console.error('Error closing context:', error);
       });
     }
   }
