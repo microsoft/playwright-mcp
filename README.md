@@ -336,6 +336,7 @@ npx @playwright/mcp@latest --config path/to/config.json
     'install' | // Browser installation
     'pdf' |     // PDF generation
     'vision' |  // Coordinate-based interactions
+    'headers' | // Custom HTTP headers for multi-tenant testing
   >;
 
   // Directory for output files
