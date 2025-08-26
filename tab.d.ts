@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type * as playwright from "playwright";
+import type * as playwright from 'playwright';
 
 /**
  * Page snapshot type definition
@@ -57,7 +57,7 @@ export type Tab = {
   page: playwright.Page;
   title(): Promise<string>;
   waitForLoadState(
-    state: "load",
+    state: 'load',
     options?: { timeout?: number }
   ): Promise<void>;
   navigate(url: string): Promise<void>;

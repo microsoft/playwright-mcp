@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-import debug from "debug";
-import * as playwright from "playwright";
+import debug from 'debug';
+import * as playwright from 'playwright';
 
-import { callOnPageNoTrace, waitForCompletion } from "./tools/utils.js";
-import { ManualPromise } from "./manualPromise.js";
-import { Tab } from "./tab.js";
-import { outputFile } from "./config.js";
+import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
+import { ManualPromise } from './manualPromise.js';
+import { Tab } from './tab.js';
+import { outputFile } from './config.js';
 
 import type {
   ImageContent,
   TextContent,
-} from "@modelcontextprotocol/sdk/types.js";
-import type { ModalState, Tool, ToolActionResult } from "./tools/tool.js";
-import type { FullConfig } from "./config.js";
-import type { BrowserContextFactory } from "./browserContextFactory.js";
-import { popupAnalysis } from "./detect-popups.js";
+} from '@modelcontextprotocol/sdk/types.js';
+import type { ModalState, Tool, ToolActionResult } from './tools/tool.js';
+import type { FullConfig } from './config.js';
+import type { BrowserContextFactory } from './browserContextFactory.js';
+import { popupAnalysis } from './detect-popups.js';
 
 type PendingAction = {
   dialogShown: ManualPromise<void>;
 };
 
-const testDebug = debug("pw:mcp:test");
+const testDebug = debug('pw:mcp:test');
 
 export class Context {
   readonly tools: Tool[];
@@ -66,13 +66,15 @@ export class Context {
     this.tools = tools;
     this.config = config;
     this._browserContextFactory = browserContextFactory;
-    testDebug("create context");
+    testDebug('create context');
   }
 
   clientSupportsImages(): boolean {
-    if (this.config.imageResponses === "allow") return true;
-    if (this.config.imageResponses === "omit") return false;
-    return !this.clientVersion?.name.includes("cursor");
+    if (this.config.imageResponses === 'allow')
+      return true;
+    if (this.config.imageResponses === 'omit')
+      return false;
+    return !this.clientVersion?.name.includes('cursor');
   }
 
   modalStates(): ModalState[] {
@@ -85,20 +87,20 @@ export class Context {
 
   clearModalState(modalState: ModalState) {
     this._modalStates = this._modalStates.filter(
-      (state) => state !== modalState
+        state => state !== modalState
     );
   }
 
   modalStatesMarkdown(): string[] {
-    const result: string[] = ["### Modal state"];
+    const result: string[] = ['### Modal state'];
     if (this._modalStates.length === 0)
-      result.push("- There is no modal state present");
+      result.push('- There is no modal state present');
     for (const state of this._modalStates) {
       const tool = this.tools.find(
-        (tool) => tool.clearsModalState === state.type
+          tool => tool.clearsModalState === state.type
       );
       result.push(
-        `- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`
+          `- [${state.description}]: can be handled by the "${tool?.schema.name}" tool`
       );
     }
     return result;
@@ -109,17 +111,18 @@ export class Context {
   }
 
   currentTabOrDie(): Tab {
-    if (!this._currentTab)
+    if (!this._currentTab) {
       throw new Error(
-        "No current snapshot available. Capture a snapshot or navigate to a new location first."
+          'No current snapshot available. Capture a snapshot or navigate to a new location first.'
       );
+    }
     return this._currentTab;
   }
 
   async newTab(): Promise<Tab> {
     const { browserContext } = await this._ensureBrowserContext();
     const page = await browserContext.newPage();
-    this._currentTab = this._tabs.find((t) => t.page === page)!;
+    this._currentTab = this._tabs.find(t => t.page === page)!;
     return this._currentTab;
   }
 
@@ -130,21 +133,23 @@ export class Context {
 
   async ensureTab(): Promise<Tab> {
     const { browserContext } = await this._ensureBrowserContext();
-    if (!this._currentTab) await browserContext.newPage();
+    if (!this._currentTab)
+      await browserContext.newPage();
     return this._currentTab!;
   }
 
   async listTabsMarkdown(): Promise<string> {
-    if (!this._tabs.length) return "### No tabs open";
-    const lines: string[] = ["### Open tabs"];
+    if (!this._tabs.length)
+      return '### No tabs open';
+    const lines: string[] = ['### Open tabs'];
     for (let i = 0; i < this._tabs.length; i++) {
       const tab = this._tabs[i];
       const title = await tab.title();
       const url = tab.page.url();
-      const current = tab === this._currentTab ? " (current)" : "";
+      const current = tab === this._currentTab ? ' (current)' : '';
       lines.push(`- ${i + 1}:${current} [${title}] (${url})`);
     }
-    return lines.join("\n");
+    return lines.join('\n');
   }
 
   async closeTab(index: number | undefined) {
@@ -156,8 +161,8 @@ export class Context {
   async run(tool: Tool, params: Record<string, unknown> | undefined) {
     // Tab management is done outside of the action() call.
     const toolResult = await tool.handle(
-      this,
-      tool.schema.inputSchema.parse(params || {})
+        this,
+        tool.schema.inputSchema.parse(params || {})
     );
     const { code, action, waitForNetwork, captureSnapshot, resultOverride } =
       toolResult;
@@ -165,13 +170,14 @@ export class Context {
       ? () => this._raceAgainstModalDialogs(action)
       : undefined;
 
-    if (resultOverride) return resultOverride;
+    if (resultOverride)
+      return resultOverride;
 
     if (!this._currentTab) {
       return {
         content: [
           {
-            type: "text",
+            type: 'text',
             text: 'No open pages available. Use the "browser_navigate" tool to navigate to a page first.',
           },
         ],
@@ -182,11 +188,11 @@ export class Context {
     // TODO: race against modal dialogs to resolve clicks.
     let actionResult: { content?: (ImageContent | TextContent)[] } | undefined;
     try {
-      if (waitForNetwork)
+      if (waitForNetwork) {
         actionResult =
           (await waitForCompletion(this, tab, async () => racingAction?.())) ??
           undefined;
-      else actionResult = (await racingAction?.()) ?? undefined;
+      } else {actionResult = (await racingAction?.()) ?? undefined;}
     } finally {
       if (captureSnapshot && !this._javaScriptBlocked())
         await tab.captureSnapshot();
@@ -195,7 +201,7 @@ export class Context {
     const result: string[] = [];
     result.push(`- Ran Playwright code:
 \`\`\`js
-${code.join("\n")}
+${code.join('\n')}
 \`\`\`
 `);
 
@@ -204,37 +210,40 @@ ${code.join("\n")}
       return {
         content: [
           {
-            type: "text",
-            text: result.join("\n"),
+            type: 'text',
+            text: result.join('\n'),
           },
         ],
       };
     }
 
     if (this._downloads.length) {
-      result.push("", "### Downloads");
+      result.push('', '### Downloads');
       for (const entry of this._downloads) {
-        if (entry.finished)
+        if (entry.finished) {
           result.push(
-            `- Downloaded file ${entry.download.suggestedFilename()} to ${
-              entry.outputFile
-            }`
+              `- Downloaded file ${entry.download.suggestedFilename()} to ${
+                entry.outputFile
+              }`
           );
-        else
+        } else {
           result.push(
-            `- Downloading file ${entry.download.suggestedFilename()} ...`
+              `- Downloading file ${entry.download.suggestedFilename()} ...`
           );
+        }
       }
-      result.push("");
+      result.push('');
     }
 
-    if (this.tabs().length > 1) result.push(await this.listTabsMarkdown(), "");
+    if (this.tabs().length > 1)
+      result.push(await this.listTabsMarkdown(), '');
 
-    if (this.tabs().length > 1) result.push("### Current tab");
+    if (this.tabs().length > 1)
+      result.push('### Current tab');
 
     result.push(
-      `- Page URL: ${tab.page.url()}`,
-      `- Page Title: ${await tab.title()}`
+        `- Page URL: ${tab.page.url()}`,
+        `- Page Title: ${await tab.title()}`
     );
 
     if (captureSnapshot && tab.hasSnapshot())
@@ -246,8 +255,8 @@ ${code.join("\n")}
       content: [
         ...content,
         {
-          type: "text",
-          text: result.join("\n"),
+          type: 'text',
+          text: result.join('\n'),
         },
       ],
     };
@@ -255,12 +264,12 @@ ${code.join("\n")}
 
   async waitForTimeout(time: number) {
     if (!this._currentTab || this._javaScriptBlocked()) {
-      await new Promise((f) => setTimeout(f, time));
+      await new Promise(f => setTimeout(f, time));
       return;
     }
 
-    await callOnPageNoTrace(this._currentTab.page, (page) => {
-      return page.evaluate(() => new Promise((f) => setTimeout(f, 1000)));
+    await callOnPageNoTrace(this._currentTab.page, page => {
+      return page.evaluate(() => new Promise(f => setTimeout(f, 1000)));
     });
   }
 
@@ -274,7 +283,7 @@ ${code.join("\n")}
     let result: ToolActionResult | undefined;
     try {
       await Promise.race([
-        action().then((r) => (result = r)),
+        action().then(r => (result = r)),
         this._pendingAction.dialogShown,
       ]);
     } finally {
@@ -284,17 +293,17 @@ ${code.join("\n")}
   }
 
   private _javaScriptBlocked(): boolean {
-    return this._modalStates.some((state) => state.type === "dialog");
+    return this._modalStates.some(state => state.type === 'dialog');
   }
 
   dialogShown(tab: Tab, dialog: playwright.Dialog) {
     this.setModalState(
-      {
-        type: "dialog",
-        description: `"${dialog.type()}" dialog with message "${dialog.message()}"`,
-        dialog,
-      },
-      tab
+        {
+          type: 'dialog',
+          description: `"${dialog.type()}" dialog with message "${dialog.message()}"`,
+          dialog,
+        },
+        tab
     );
     this._pendingAction?.dialogShown.resolve();
   }
@@ -310,25 +319,26 @@ ${code.join("\n")}
     try {
       await download.saveAs(entry.outputFile);
     } catch (error) {
-      console.warn("Error saving download:", error);
+      // console.warn('Error saving download:', error);
     } finally {
       entry.finished = true;
     }
   }
 
   private async _onPageCreated(page: playwright.Page) {
-    console.log("Page created, checking for popup");
+    // console.log('Page created, checking for popup');
 
     try {
       const isPopup = await this._handlePopup(page);
       // If it was a popup, we don't want to add it to the tabs list
-      if (isPopup) return;
+      if (isPopup)
+        return;
     } catch (error) {
-      console.error("Error handling popup:", error);
+      // console.error('Error handling popup:', error);
       // Continue with normal page creation even if popup handling fails
     }
 
-    const tab = new Tab(this, page, (tab) => this._onPageClosed(tab));
+    const tab = new Tab(this, page, tab => this._onPageClosed(tab));
     this._tabs.push(tab);
     // Always switch to the new tab
     this._currentTab = tab;
@@ -341,23 +351,23 @@ ${code.join("\n")}
   private async _handlePopup(popupPage: playwright.Page): Promise<boolean> {
     try {
       // Wait to ensure that the `context.on("page")` event has fired
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Check if this is actually a popup window (not just a new tab)
       const isPopupWindow = await this._isPopupWindow(popupPage);
       if (!isPopupWindow) {
-        console.log("Not a popup window");
+        // console.log('Not a popup window');
         // If it's not a popup window, we don't need to do anything, since
         // the context.on("page") event will handle it.
         return false;
       }
 
-      console.log("Is a popup window, getting URL");
+      // console.log('Is a popup window, getting URL');
 
-      await popupPage.waitForLoadState("domcontentloaded");
+      await popupPage.waitForLoadState('domcontentloaded');
 
       // Some popups take a while to fully resolve a URL
-      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await new Promise(resolve => setTimeout(resolve, 4000));
 
       let popupUrl: string | undefined;
       let attempts = 0;
@@ -366,19 +376,19 @@ ${code.join("\n")}
         try {
           popupUrl = popupPage.url();
 
-          if (popupUrl === "about:blank") {
+          if (popupUrl === 'about:blank')
             popupUrl = undefined;
-          }
+
         } catch (error) {
-          console.log("Failed to get popup URL, retrying");
+          // console.log('Failed to get popup URL, retrying');
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         attempts++;
       }
 
       if (!popupUrl) {
-        console.log("Failed to get popup URL, closing popup");
+        // console.log('Failed to get popup URL, closing popup');
         await popupPage.close();
         return true;
       }
@@ -386,8 +396,8 @@ ${code.join("\n")}
       // Only convert if we have a valid URL
       if (
         !popupUrl ||
-        popupUrl === "about:blank" ||
-        popupUrl.startsWith("data:")
+        popupUrl === 'about:blank' ||
+        popupUrl.startsWith('data:')
       ) {
         // For data URLs or blank pages, just close the popup
         await popupPage.close();
@@ -400,13 +410,13 @@ ${code.join("\n")}
 
       try {
         await newPage.goto(popupUrl, {
-          waitUntil: "domcontentloaded",
+          waitUntil: 'domcontentloaded',
           timeout: 10000,
         });
       } catch (navigationError) {
         // If navigation fails, just close the popup and keep the new page
         // The new page will remain open but empty, which is better than losing it
-        console.warn("Navigation to popup URL failed:", navigationError);
+        // console.warn('Navigation to popup URL failed:', navigationError);
       }
 
       // Close the popup
@@ -417,7 +427,7 @@ ${code.join("\n")}
         await popupPage.close();
       } catch (closeError) {
         // Ignore close errors
-        console.warn("Error closing popup:", closeError);
+        // console.warn('Error closing popup:', closeError);
       }
     }
 
@@ -430,81 +440,85 @@ ${code.join("\n")}
   private async _isPopupWindow(page: playwright.Page): Promise<boolean> {
     try {
       // Wait for the page to be ready, but with a timeout
-      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
 
       // Use a timeout for the popup analysis to prevent hanging
       const analysis = await Promise.race([
         popupAnalysis(page),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Popup analysis timeout")), 3000)
+          setTimeout(() => reject(new Error('Popup analysis timeout')), 3000)
         ),
       ]);
 
-      console.log("Popup analysis:", analysis);
+      // console.log('Popup analysis:', analysis);
 
       if (analysis.isPopup) {
-        console.log(`Popup detected with ${analysis.confidence}% confidence`);
-        console.log("Reasons:", analysis.reasons);
+        // console.log(`Popup detected with ${analysis.confidence}% confidence`);
+        // console.log('Reasons:', analysis.reasons);
       }
 
       return analysis.isPopup;
     } catch (error) {
       // Check if it's a navigation-related error
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      // const errorMessage =
+      //   error instanceof Error ? error.message : String(error);
 
-      console.error("Error checking if page is a popup window:", errorMessage);
+      // console.error('Error checking if page is a popup window:', errorMessage);
       // If we can't determine, assume it's not a popup window
       return false;
     }
   }
 
   private _onPageClosed(tab: Tab) {
-    this._modalStates = this._modalStates.filter((state) => state.tab !== tab);
+    this._modalStates = this._modalStates.filter(state => state.tab !== tab);
     const index = this._tabs.indexOf(tab);
-    if (index === -1) return;
+    if (index === -1)
+      return;
     this._tabs.splice(index, 1);
 
     if (this._currentTab === tab)
       this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
     if (!this._tabs.length) {
-      console.log("No tabs left, closing context");
+      // console.log('No tabs left, closing context');
 
       // Note that its likely here that the context is already dead :(
       // so we wrap this in a try catch
-      this.close().catch((error) => {
-        console.error("Error closing context:", error);
+      this.close().catch(error => {
+        // console.error('Error closing context:', error);
       });
     }
   }
 
   async close() {
-    if (!this._browserContextPromise) return;
+    if (!this._browserContextPromise)
+      return;
 
-    testDebug("close context");
+    testDebug('close context');
 
     const promise = this._browserContextPromise;
     this._browserContextPromise = undefined;
 
     await promise.then(async ({ browserContext, close }) => {
-      if (this.config.saveTrace) await browserContext.tracing.stop();
+      if (this.config.saveTrace)
+        await browserContext.tracing.stop();
       await close();
     });
   }
 
   private async _setupRequestInterception(context: playwright.BrowserContext) {
     if (this.config.network?.allowedOrigins?.length) {
-      await context.route("**", (route) => route.abort("blockedbyclient"));
+      await context.route('**', route => route.abort('blockedbyclient'));
 
       for (const origin of this.config.network.allowedOrigins)
-        await context.route(`*://${origin}/**`, (route) => route.continue());
+        await context.route(`*://${origin}/**`, route => route.continue());
     }
 
     if (this.config.network?.blockedOrigins?.length) {
-      for (const origin of this.config.network.blockedOrigins)
-        await context.route(`*://${origin}/**`, (route) =>
-          route.abort("blockedbyclient")
+      for (const origin of this.config.network.blockedOrigins) {
+        await context.route(`*://${origin}/**`, route =>
+          route.abort('blockedbyclient')
         );
+      }
     }
   }
 
@@ -528,17 +542,17 @@ ${code.join("\n")}
     await this._setupRequestInterception(browserContext);
 
     // Handle initial pages that exist when the context is created
-    for (const page of browserContext.pages()) {
+    for (const page of browserContext.pages())
       await this._onPageCreated(page);
-    }
 
-    browserContext.on("page", async (page) => {
+
+    browserContext.on('page', async page => {
       // All new pages should be handled normally
       await this._onPageCreated(page);
     });
     if (this.config.saveTrace) {
       await browserContext.tracing.start({
-        name: "trace",
+        name: 'trace',
         screenshots: false,
         snapshots: true,
         sources: false,

@@ -292,7 +292,7 @@ export async function startCDPRelayServer(httpServer: http.Server) {
   const wsAddress = httpAddressToString(httpServer.address()).replace(/^http/, 'ws');
   const cdpRelayServer = new CDPRelayServer(httpServer);
   process.on('exit', () => cdpRelayServer.stop());
-  // eslint-disable-next-line no-console
+
   console.error(`CDP relay server started on ${wsAddress}${EXTENSION_PATH} - Connect to it using the browser extension.`);
   const cdpEndpoint = `${wsAddress}${CDP_PATH}`;
   return cdpEndpoint;

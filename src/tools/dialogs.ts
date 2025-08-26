@@ -39,11 +39,13 @@ const handleDialog: ToolFactory = captureSnapshot => defineTool({
     let attempt = 0;
     while (attempt < 3) {
       try {
-        if (params.accept) await dialogState.dialog.accept(params.promptText);
-        else await dialogState.dialog.dismiss();
+        if (params.accept)
+          await dialogState.dialog.accept(params.promptText);
+        else
+          await dialogState.dialog.dismiss();
         break;
       } catch (error) {
-        console.error(error);
+        // console.error(error);
         attempt++;
       }
     }
