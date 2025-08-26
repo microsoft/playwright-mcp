@@ -57,6 +57,25 @@ test('browser_evaluate (element)', async ({ client, server }) => {
   });
 });
 
+test('browser_evaluate object', async ({ client, server }) => {
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- Page Title: Title`),
+  });
+
+  expect(await client.callTool({
+    name: 'browser_evaluate',
+    arguments: {
+      function: '() => ({ title: document.title, url: document.URL })',
+    },
+  })).toHaveResponse({
+    result: JSON.stringify({ title: 'Title', url: server.HELLO_WORLD }, null, 2),
+    code: `await page.evaluate('() => ({ title: document.title, url: document.URL })');`,
+  });
+});
+
 test('browser_evaluate (error)', async ({ client, server }) => {
   expect(await client.callTool({
     name: 'browser_navigate',
