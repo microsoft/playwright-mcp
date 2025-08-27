@@ -1,0 +1,48 @@
+name: Publish Canary
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  publish-canary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Needed for npm provenance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org/
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Get current version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Set canary version
+        id: canary-version
+        run: echo "version=${{ steps.version.outputs.version }}-alpha-${{ steps.date.outputs.date }}" >> $GITHUB_OUTPUT
+
+      - name: Update package.json version
+        run: |
+          npm version ${{ steps.canary-version.outputs.version }} --no-git-tag-version
+
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run build
+      - run: npm run lint
+      - run: npm run ctest
+
+      - name: Publish to npm with next tag
+        run: npm publish --tag next --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Reset package.json version
+        run: git checkout -- package.json
