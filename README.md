@@ -705,5 +705,52 @@ http.createServer(async (req, res) => {
 
 </details>
 
+<details>
+<summary><b>Verify (opt-in via --caps=verify)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_element_visible**
+  - Title: Verify element visible
+  - Description: Verify element is visible on the page
+  - Parameters:
+    - `role` (string): ROLE of the element. Can be found in the snapshot like this: `- {ROLE} "Accessible Name":`
+    - `accessibleName` (string): ACCESSIBLE_NAME of the element. Can be found in the snapshot like this: `- role "{ACCESSIBLE_NAME}"`
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_list_visible**
+  - Title: Verify list visible
+  - Description: Verify list is visible on the page
+  - Parameters:
+    - `element` (string): Human-readable list description
+    - `ref` (string): Exact target element reference that points to the list
+    - `items` (array): Items to verify
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_text_visible**
+  - Title: Verify text visible
+  - Description: Verify text is visible on the page. Prefer browser_verify_element_visible if possible.
+  - Parameters:
+    - `text` (string): TEXT to verify. Can be found in the snapshot like this: `- role "Accessible Name": {TEXT}` or like this: `- text: {TEXT}`
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_value**
+  - Title: Verify value
+  - Description: Verify element value
+  - Parameters:
+    - `type` (string): Type of the element
+    - `element` (string): Human-readable element description
+    - `ref` (string): Exact target element reference that points to the element
+    - `value` (string): Value to verify. For checkbox, use "true" or "false".
+  - Read-only: **true**
+
+</details>
+
 
 <!--- End of tools generated section -->

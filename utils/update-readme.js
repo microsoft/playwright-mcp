@@ -30,6 +30,7 @@ const capabilities = {
   'core-install': 'Browser installation',
   'vision': 'Coordinate-based (opt-in via --caps=vision)',
   'pdf': 'PDF generation (opt-in via --caps=pdf)',
+  'verify': 'Verify (opt-in via --caps=verify)',
 };
 
 const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, allTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
