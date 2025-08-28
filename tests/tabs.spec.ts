@@ -103,6 +103,19 @@ test('select tab', async ({ client }) => {
 - generic [active] [ref=e1]: Body one
 \`\`\``),
   });
+
+  expect(await client.callTool({
+    name: 'browser_tabs',
+    arguments: {
+      action: 'select',
+      index: 0,
+    },
+  })).toHaveResponse({
+    tabs: `- 0: (current) [] (about:blank)
+- 1: [Tab one] (data:text/html,<title>Tab one</title><body>Body one</body>)
+- 2: [Tab two] (data:text/html,<title>Tab two</title><body>Body two</body>)`,
+    pageState: expect.stringContaining(`- Page URL: about:blank`),
+  });
 });
 
 test('close tab', async ({ client }) => {
