@@ -33,10 +33,12 @@ import { contextFactory } from '../browserContextFactory.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { ClientVersion, ServerBackend } from '../mcp/server.js';
 import type { Root, Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
+import type { Browser, BrowserContext, BrowserServer } from 'playwright';
 
 const contextSwitchOptions = z.object({
   connectionString: z.string().optional().describe('The connection string to use to connect to the browser'),
   lib: z.string().optional().describe('The library to use for the connection'),
+  debugController: z.boolean().optional().describe('Enable the debug controller')
 });
 
 class VSCodeProxyBackend implements ServerBackend {
@@ -47,15 +49,18 @@ class VSCodeProxyBackend implements ServerBackend {
   private _contextSwitchTool: Tool;
   private _roots: Root[] = [];
   private _clientVersion?: ClientVersion;
+  private _context?: BrowserContext;
+  private _browser?: Browser;
+  private _browserServer?: BrowserServer;
 
-  constructor(private readonly _config: FullConfig, private readonly _defaultTransportFactory: () => Promise<Transport>) {
+  constructor(private readonly _config: FullConfig, private readonly _defaultTransportFactory: (delegate: VSCodeProxyBackend) => Promise<Transport>) {
     this._contextSwitchTool = this._defineContextSwitchTool();
   }
 
   async initialize(server: mcpServer.Server, clientVersion: ClientVersion, roots: Root[]): Promise<void> {
     this._clientVersion = clientVersion;
     this._roots = roots;
-    const transport = await this._defaultTransportFactory();
+    const transport = await this._defaultTransportFactory(this);
     await this._setCurrentClient(transport);
   }
 
@@ -80,9 +85,42 @@ class VSCodeProxyBackend implements ServerBackend {
     void this._currentClient?.close().catch(logUnhandledError);
   }
 
+  onContext(context: BrowserContext) {
+    this._context = context;
+  }
+
+  private async _getDebugControllerURL() {
+    if (!this._context)
+      return;
+
+    const browser = this._context.browser() as any;
+    if (!browser || !browser._launchServer)
+      return;
+
+    if (this._browser !== browser)
+      this._browserServer = undefined;
+
+    if (!this._browserServer)
+      this._browserServer = await browser._launchServer({ _debugController: true }) as BrowserServer;
+
+    const url = new URL(this._browserServer.wsEndpoint());
+    url.searchParams.set('debug-controller', '1');
+    return url.toString();
+  }
+
   private async _callContextSwitchTool(params: z.infer<typeof contextSwitchOptions>): Promise<CallToolResult> {
+    if (params.debugController) {
+      const url = await this._getDebugControllerURL();
+      const lines = [`### Result`];
+      if (url)
+        lines.push(`URL: ${url}`);
+      else
+        lines.push(`No open browsers.`);
+      return { content: [{ type: 'text', text: lines.join('\n') }] };
+    }
+
     if (!params.connectionString || !params.lib) {
-      const transport = await this._defaultTransportFactory();
+      const transport = await this._defaultTransportFactory(this);
       await this._setCurrentClient(transport);
       return {
         content: [{ type: 'text', text: '### Result\nSuccessfully disconnected.\n' }],
@@ -142,7 +180,20 @@ export async function runVSCodeTools(config: FullConfig) {
     name: 'Playwright w/ vscode',
     nameInConfig: 'playwright-vscode',
     version: packageJSON.version,
-    create: () => new VSCodeProxyBackend(config, () => mcpServer.wrapInProcess(new BrowserServerBackend(config, contextFactory(config))))
+    create: () => new VSCodeProxyBackend(
+        config,
+        delegate => mcpServer.wrapInProcess(
+            new BrowserServerBackend(config,
+                {
+                  async createContext(clientInfo, abortSignal, toolName) {
+                    const context = await contextFactory(config).createContext(clientInfo, abortSignal, toolName);
+                    delegate.onContext(context.browserContext);
+                    return context;
+                  },
+                }
+            )
+        )
+    )
   };
   await mcpServer.start(serverBackendFactory, config.server);
   return;

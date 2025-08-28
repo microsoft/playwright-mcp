@@ -52,3 +52,67 @@ test('browser_connect(vscode) works', async ({ startClient, playwright, browserN
     result: expect.stringContaining('ECONNREFUSED')
   });
 });
+
+test('browser_connect(debugController) works', async ({ startClient }) => {
+  test.skip(!globalThis.WebSocket, 'WebSocket is not supported in this environment');
+
+  const { client } = await startClient({
+    args: ['--vscode'],
+  });
+
+  expect(await client.callTool({
+    name: 'browser_connect',
+    arguments: {
+      debugController: true,
+    }
+  })).toHaveResponse({
+    result: 'No open browsers.'
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,foo'
+    }
+  })).toHaveResponse({
+    pageState: expect.stringContaining('foo'),
+  });
+
+  const response = await client.callTool({
+    name: 'browser_connect',
+    arguments: {
+      debugController: true,
+    }
+  });
+  const url = new URL(response.content?.[0].text.match(/URL: (.*)/)?.[1]);
+  const messages: unknown[] = [];
+  const socket = new WebSocket(url);
+  socket.onmessage = event => {
+    messages.push(JSON.parse(event.data));
+  };
+  await new Promise((resolve, reject) => {
+    socket.onopen = resolve;
+    socket.onerror = reject;
+  });
+
+  socket.send(JSON.stringify({
+    id: '1',
+    guid: 'DebugController',
+    method: 'setReportStateChanged',
+    params: {
+      enabled: true,
+    },
+    metadata: {},
+  }));
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: {
+      url: 'data:text/html,bar'
+    }
+  })).toHaveResponse({
+    pageState: expect.stringContaining('bar'),
+  });
+
+  await expect.poll(() => messages).toContainEqual(expect.objectContaining({ method: 'stateChanged' }));
+});
