@@ -15,15 +15,13 @@
  */
 
 import debug from 'debug';
-import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { ListRootsRequestSchema, PingRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import * as mcpBundle from './bundle.js';
 
 import type { ServerBackend, ClientVersion, Root, Server } from './server.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 export type MCPProvider = {
   name: string;
@@ -32,6 +30,7 @@ export type MCPProvider = {
 };
 
 const errorsDebug = debug('pw:mcp:errors');
+const { z, zodToJsonSchema } = mcpBundle;
 
 export class ProxyBackend implements ServerBackend {
   private _mcpProviders: MCPProvider[];
@@ -112,14 +111,14 @@ export class ProxyBackend implements ServerBackend {
     await this._currentClient?.close();
     this._currentClient = undefined;
 
-    const client = new Client({ name: 'Playwright MCP Proxy', version: '0.0.0' });
+    const client = new mcpBundle.Client({ name: 'Playwright MCP Proxy', version: '0.0.0' });
     client.registerCapabilities({
       roots: {
         listRoots: true,
       },
     });
-    client.setRequestHandler(ListRootsRequestSchema, () => ({ roots: this._roots }));
-    client.setRequestHandler(PingRequestSchema, () => ({}));
+    client.setRequestHandler(mcpBundle.ListRootsRequestSchema, () => ({ roots: this._roots }));
+    client.setRequestHandler(mcpBundle.PingRequestSchema, () => ({}));
 
     const transport = await factory.connect();
     await client.connect(transport);
