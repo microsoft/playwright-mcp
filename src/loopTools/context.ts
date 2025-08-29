@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { contextFactory } from '../browserContextFactory.js';
 import { BrowserServerBackend } from '../browserServerBackend.js';
 import { Context as BrowserContext } from '../context.js';
@@ -24,7 +23,9 @@ import { ClaudeDelegate } from '../loop/loopClaude.js';
 import { InProcessTransport } from '../mcp/inProcessTransport.js';
 import * as mcpServer from '../mcp/server.js';
 import { packageJSON } from '../utils/package.js';
+import * as mcpBundle from '../mcp/bundle.js';
 
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { LLMDelegate } from '../loop/loop.js';
 import type { FullConfig } from '../config.js';
 
@@ -45,7 +46,7 @@ export class Context {
   }
 
   static async create(config: FullConfig) {
-    const client = new Client({ name: 'Playwright Proxy', version: packageJSON.version });
+    const client = new mcpBundle.Client({ name: 'Playwright Proxy', version: packageJSON.version });
     const browserContextFactory = contextFactory(config);
     const server = mcpServer.createServer('Playwright Subagent', packageJSON.version, new BrowserServerBackend(config, browserContextFactory), false);
     await client.connect(new InProcessTransport(server));

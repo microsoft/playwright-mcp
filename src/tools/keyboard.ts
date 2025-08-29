@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import { z } from 'zod';
-
+import { z } from '../mcp/bundle.js';
 import { defineTabTool } from './tool.js';
 import { elementSchema } from './snapshot.js';
 import { generateLocator } from './utils.js';

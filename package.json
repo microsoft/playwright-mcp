@@ -38,7 +38,6 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.16.0",
     "commander": "^13.1.0",
     "debug": "^4.4.1",
     "dotenv": "^17.2.0",
@@ -53,6 +52,7 @@
     "@anthropic-ai/sdk": "^0.57.0",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.19.0",
+    "@modelcontextprotocol/sdk": "^1.16.0",
     "@playwright/test": "1.56.0-alpha-1756505518000",
     "@stylistic/eslint-plugin": "^3.0.1",
     "@types/debug": "^4.1.12",

@@ -21,8 +21,12 @@
 import fs from 'fs';
 import ts from 'typescript';
 import path from 'path';
+import Module from 'module';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const require = Module.createRequire(import.meta.url);
+
+const builtins = new Set(Module.builtinModules);
 
 const depsCache = {};
 const packageRoot = path.resolve(__dirname, '..');
@@ -30,6 +34,13 @@ const packageRoot = path.resolve(__dirname, '..');
 async function checkDeps() {
   const deps = new Set();
   const src = path.join(packageRoot, 'src');
+
+
+  let packageJSON;
+  try {
+    packageJSON = require(path.resolve(path.join(packageRoot, 'package.json')));
+  } catch {
+  }
 
   const program = ts.createProgram({
     options: {
@@ -52,6 +63,25 @@ async function checkDeps() {
     console.log(`--------------------------------------------------------`);
     process.exit(1);
   }
+
+  if (packageJSON) {
+    for (const dep of deps) {
+      const resolved = require.resolve(dep, { paths: [packageRoot] });
+      if (dep === resolved || !resolved.includes('node_modules'))
+        deps.delete(dep);
+    }
+    for (const dep of Object.keys(packageJSON.dependencies || {}))
+      deps.delete(dep);
+
+    if (deps.size) {
+      console.log('Dependencies are not declared in package.json:');
+      for (const dep of deps)
+        console.log(`  ${dep}`);
+      process.exit(1);
+    }
+  }
+
+  return packageJSON;
 
   function visit(node, fileName, text) {
     if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
@@ -94,10 +124,21 @@ async function checkDeps() {
             return;
       }
 
+      let depName;
       if (importName.startsWith('@'))
-        deps.add(importName.split('/').slice(0, 2).join('/'));
+        depName = importName.split('/').slice(0, 2).join('/');
       else
-        deps.add(importName.split('/')[0]);
+        depName = importName.split('/')[0];
+      deps.add(depName);
+      try {
+        require.resolve(depName, { paths: [packageRoot] })
+      } catch (e) {
+        console.log(`Invalid dependency ${depName} in ${fileName}`);
+        process.exit(1);
+      }
+
+      if (!allowExternalImport(importName, packageJSON))
+        errors.push(`Disallowed external dependency ${importName} from ${path.relative(packageRoot, fileName)}`);
     }
     ts.forEachChild(node, x => visit(x, fileName, text));
   }
@@ -153,6 +194,19 @@ async function checkDeps() {
       }
     }
     return false;
+  }
+
+  function allowExternalImport(importName, packageJSON) {
+    // Only external imports are relevant. Files in src/web are bundled via webpack.
+    if (importName.startsWith('.') || (importName.startsWith('@') && !importName.startsWith('@playwright/')))
+      return true;
+    if (!packageJSON)
+      return false;
+    const match = importName.match(/(@[\w-]+\/)?([^/]+)/);
+    const dependency = match[1] ? match[1] + match[2] : match[2];
+    if (builtins.has(dependency))
+      return true;
+    return !!(packageJSON.dependencies || {})[dependency];
   }
 }
 
