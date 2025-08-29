@@ -15,23 +15,20 @@
  */
 
 import debug from 'debug';
-import { z } from 'zod';
-
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { PingRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { defineToolSchema } from './tool.js';
+import * as mcpBundle from './bundle.js';
 import * as mcpServer from './server.js';
 import * as mcpHttp from './http.js';
 import { wrapInProcess } from './server.js';
 import { ManualPromise } from './manualPromise.js';
 
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 const mdbDebug = debug('pw:mcp:mdb');
 const errorsDebug = debug('pw:mcp:errors');
+const z = mcpBundle.z;
 
 export class MDBBackend implements mcpServer.ServerBackend {
   private _stack: { client: Client, toolNames: string[], resultPromise: ManualPromise<mcpServer.CallToolResult> | undefined }[] = [];
@@ -107,15 +104,15 @@ export class MDBBackend implements mcpServer.ServerBackend {
 
   private async _pushTools(params: { mcpUrl: string, introMessage?: string }): Promise<mcpServer.CallToolResult> {
     mdbDebug('pushing tools to the stack', params.mcpUrl);
-    const transport = new StreamableHTTPClientTransport(new URL(params.mcpUrl));
+    const transport = new mcpBundle.StreamableHTTPClientTransport(new URL(params.mcpUrl));
     await this._pushClient(transport, params.introMessage);
     return { content: [{ type: 'text', text: 'Tools pushed' }] };
   }
 
   private async _pushClient(transport: Transport, introMessage?: string): Promise<mcpServer.CallToolResult> {
     mdbDebug('pushing client to the stack');
-    const client = new Client({ name: 'Internal client', version: '0.0.0' });
-    client.setRequestHandler(PingRequestSchema, () => ({}));
+    const client = new mcpBundle.Client({ name: 'Internal client', version: '0.0.0' });
+    client.setRequestHandler(mcpBundle.PingRequestSchema, () => ({}));
     await client.connect(transport);
     mdbDebug('connected to the new client');
     const { tools } = await client.listTools();
@@ -162,7 +159,7 @@ export async function runMainBackend(backendFactory: mcpServer.ServerBackendFact
     return url;
 
   // Start stdio conditionally.
-  await mcpServer.connect(factory, new StdioServerTransport(), false);
+  await mcpServer.connect(factory, new mcpBundle.StdioServerTransport(), false);
 }
 
 export async function runOnPauseBackendLoop(mdbUrl: string, backend: ServerBackendOnPause, introMessage: string) {
@@ -179,9 +176,9 @@ export async function runOnPauseBackendLoop(mdbUrl: string, backend: ServerBacke
   await mcpHttp.installHttpTransport(httpServer, factory);
   const url = mcpHttp.httpAddressToString(httpServer.address());
 
-  const client = new Client({ name: 'Internal client', version: '0.0.0' });
-  client.setRequestHandler(PingRequestSchema, () => ({}));
-  const transport = new StreamableHTTPClientTransport(new URL(mdbUrl));
+  const client = new mcpBundle.Client({ name: 'Internal client', version: '0.0.0' });
+  client.setRequestHandler(mcpBundle.PingRequestSchema, () => ({}));
+  const transport = new mcpBundle.StreamableHTTPClientTransport(new URL(mdbUrl));
   await client.connect(transport);
 
   const pushToolsResult = await client.callTool({

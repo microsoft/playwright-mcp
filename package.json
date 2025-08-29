@@ -38,21 +38,19 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.16.0",
     "commander": "^13.1.0",
     "debug": "^4.4.1",
     "dotenv": "^17.2.0",
     "mime": "^4.0.7",
     "playwright": "1.56.0-alpha-1756505518000",
     "playwright-core": "1.56.0-alpha-1756505518000",
-    "ws": "^8.18.1",
-    "zod": "^3.24.1",
-    "zod-to-json-schema": "^3.24.4"
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.57.0",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.19.0",
+    "@modelcontextprotocol/sdk": "^1.16.0",
     "@playwright/test": "1.56.0-alpha-1756505518000",
     "@stylistic/eslint-plugin": "^3.0.1",
     "@types/debug": "^4.1.12",
@@ -66,7 +64,9 @@
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-notice": "^1.0.0",
     "openai": "^5.10.2",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.24.4"
   },
   "bin": {
     "mcp-server-playwright": "cli.js"

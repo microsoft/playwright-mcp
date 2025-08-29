@@ -21,11 +21,12 @@ import crypto from 'crypto';
 
 import debug from 'debug';
 
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import * as mcpBundle from './bundle.js';
 import * as mcpServer from './server.js';
 
 import type { ServerBackendFactory } from './server.js';
+import type { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import type { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
 const testDebug = debug('pw:mcp:test');
 
@@ -86,7 +87,7 @@ async function handleSSE(serverBackendFactory: ServerBackendFactory, req: http.I
 
     return await transport.handlePostMessage(req, res);
   } else if (req.method === 'GET') {
-    const transport = new SSEServerTransport('/sse', res);
+    const transport = new mcpBundle.SSEServerTransport('/sse', res);
     sessions.set(transport.sessionId, transport);
     testDebug(`create SSE session: ${transport.sessionId}`);
     await mcpServer.connect(serverBackendFactory, transport, false);
@@ -114,7 +115,7 @@ async function handleStreamable(serverBackendFactory: ServerBackendFactory, req:
   }
 
   if (req.method === 'POST') {
-    const transport = new StreamableHTTPServerTransport({
+    const transport = new mcpBundle.StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: async sessionId => {
         testDebug(`create http session: ${transport.sessionId}`);

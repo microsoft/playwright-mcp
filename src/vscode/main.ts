@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import * as mcpBundle from '../mcp/bundle.js';
 import * as mcpServer from '../mcp/server.js';
 import { BrowserServerBackend } from '../browserServerBackend.js';
 import { BrowserContextFactory, ClientInfo } from '../browserContextFactory.js';
+
 import type { FullConfig } from '../config.js';
 import type { BrowserContext } from 'playwright-core';
 
@@ -63,7 +64,7 @@ async function main(config: FullConfig, connectionString: string, lib: string) {
         create: () => new BrowserServerBackend(config, factory),
         version: 'unused'
       },
-      new StdioServerTransport(),
+      new mcpBundle.StdioServerTransport(),
       false
   );
 }

@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-import { fileURLToPath } from 'url';
+import url from 'url';
 import path from 'path';
-import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 
-
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { ListRootsRequestSchema, PingRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import * as mcpBundle from '../mcp/bundle.js';
 import * as mcpServer from '../mcp/server.js';
 import { logUnhandledError } from '../utils/log.js';
 import { packageJSON } from '../utils/package.js';
@@ -30,10 +25,15 @@ import { packageJSON } from '../utils/package.js';
 import { FullConfig } from '../config.js';
 import { BrowserServerBackend } from '../browserServerBackend.js';
 import { contextFactory } from '../browserContextFactory.js';
+
+import type { z as zod } from 'zod';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { ClientVersion, ServerBackend } from '../mcp/server.js';
 import type { Root, Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { Browser, BrowserContext, BrowserServer } from 'playwright';
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
+
+const { z, zodToJsonSchema } = mcpBundle;
 
 const contextSwitchOptions = z.object({
   connectionString: z.string().optional().describe('The connection string to use to connect to the browser'),
@@ -111,7 +111,7 @@ class VSCodeProxyBackend implements ServerBackend {
     return url.toString();
   }
 
-  private async _callContextSwitchTool(params: z.infer<typeof contextSwitchOptions>): Promise<CallToolResult> {
+  private async _callContextSwitchTool(params: zod.infer<typeof contextSwitchOptions>): Promise<CallToolResult> {
     if (params.debugController) {
       const url = await this._getDebugControllerURL();
       const lines = [`### Result`];
@@ -133,11 +133,11 @@ class VSCodeProxyBackend implements ServerBackend {
     }
 
     await this._setCurrentClient(
-        new StdioClientTransport({
+        new mcpBundle.StdioClientTransport({
           command: process.execPath,
           cwd: process.cwd(),
           args: [
-            path.join(fileURLToPath(import.meta.url), '..', 'main.js'),
+            path.join(url.fileURLToPath(import.meta.url), '..', 'main.js'),
             JSON.stringify(this._config),
             params.connectionString,
             params.lib,
@@ -166,14 +166,14 @@ class VSCodeProxyBackend implements ServerBackend {
     await this._currentClient?.close();
     this._currentClient = undefined;
 
-    const client = new Client(this._clientVersion!);
+    const client = new mcpBundle.Client(this._clientVersion!);
     client.registerCapabilities({
       roots: {
         listRoots: true,
       },
     });
-    client.setRequestHandler(ListRootsRequestSchema, () => ({ roots: this._roots }));
-    client.setRequestHandler(PingRequestSchema, () => ({}));
+    client.setRequestHandler(mcpBundle.ListRootsRequestSchema, () => ({ roots: this._roots }));
+    client.setRequestHandler(mcpBundle.PingRequestSchema, () => ({}));
 
     await client.connect(transport);
     this._currentClient = client;

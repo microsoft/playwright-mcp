@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { z } from 'zod';
+import { z } from  '../mcp/bundle.js';
 import { defineTool } from './tool.js';
 
 export const snapshot = defineTool({

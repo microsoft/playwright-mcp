@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { zodToJsonSchema } from  '../mcp/bundle.js';
 
 import type { z } from 'zod';
 import type * as mcpServer from './server.js';

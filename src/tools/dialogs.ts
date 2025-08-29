@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { z } from 'zod';
+import { z } from '../mcp/bundle.js';
 import { defineTabTool } from './tool.js';
 
 const handleDialog = defineTabTool({

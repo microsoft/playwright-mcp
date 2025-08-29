@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { z } from 'zod';
+import { z } from '../mcp/bundle.js';
 import { defineTool, defineTabTool } from './tool.js';
 
 const navigate = defineTool({

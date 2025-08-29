@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { z } from 'zod';
+import { z } from '../mcp/bundle.js';
 import { defineTool } from './tool.js';
 
 const performSchema = z.object({
