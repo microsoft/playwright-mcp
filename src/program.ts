@@ -15,18 +15,17 @@
  */
 
 import { program, Option } from 'commander';
-import * as mcpServer from './mcp/server';
-import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config';
-import { packageJSON } from './utils/package';
-import { Context } from './context';
-import { contextFactory } from './browserContextFactory';
-import { runLoopTools } from './loopTools/main';
-import { ProxyBackend } from './mcp/proxyBackend';
-import { BrowserServerBackend } from './browserServerBackend';
+import * as mcpServer from './sdk/server';
+import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './browser/config';
+import { packageJSON } from './package';
+import { Context } from './browser/context';
+import { contextFactory } from './browser/browserContextFactory';
+import { ProxyBackend } from './sdk/proxyBackend';
+import { BrowserServerBackend } from './browser/browserServerBackend';
 import { ExtensionContextFactory } from './extension/extensionContextFactory';
 
 import { runVSCodeTools } from './vscode/host';
-import type { MCPProvider } from './mcp/proxyBackend';
+import type { MCPProvider } from './sdk/proxyBackend';
 
 program
     .version('Version ' + packageJSON.version)
@@ -59,7 +58,6 @@ program
     .option('--viewport-size <size>', 'specify browser viewport size in pixels, for example "1280, 720"')
     .addOption(new Option('--connect-tool', 'Allow to switch between different browser connection methods.').hideHelp())
     .addOption(new Option('--vscode', 'VS Code tools.').hideHelp())
-    .addOption(new Option('--loop-tools', 'Run loop tools').hideHelp())
     .addOption(new Option('--vision', 'Legacy option, use --caps=vision instead').hideHelp())
     .action(async options => {
       setupExitWatchdog();
@@ -87,11 +85,6 @@ program
 
       if (options.vscode) {
         await runVSCodeTools(config);
-        return;
-      }
-
-      if (options.loopTools) {
-        await runLoopTools(config);
         return;
       }
 

@@ -21,7 +21,7 @@ const path = require('path')
 const { zodToJsonSchema } = require('zod-to-json-schema')
 const { execSync } = require('child_process');
 
-const { allTools } = require('../lib/tools.js');
+const { allTools } = require('../lib/browser/tools.js');
 
 const capabilities = {
   'core': 'Core automation',
@@ -35,7 +35,7 @@ const capabilities = {
 const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, allTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
 
 /**
- * @param {import('../src/mcp/tool.js').ToolSchema<any>} tool 
+ * @param {import('../src/sdk/tool.js').ToolSchema<any>} tool 
  * @returns {string[]}
  */
 function formatToolForReadme(tool) {

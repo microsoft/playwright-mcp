@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-import { defineConfig } from '@playwright/test';
+import { z } from '../../sdk/bundle';
+import { defineTabTool } from './tool';
 
-import type { TestOptions } from '../tests/fixtures';
-
-export default defineConfig<TestOptions>({
-  testDir: './tests',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'list',
-  projects: [
-    { name: 'chromium', use: { mcpBrowser: 'chromium' } },
-  ],
+const console = defineTabTool({
+  capability: 'core',
+  schema: {
+    name: 'browser_console_messages',
+    title: 'Get console messages',
+    description: 'Returns all console messages',
+    inputSchema: z.object({}),
+    type: 'readOnly',
+  },
+  handle: async (tab, params, response) => {
+    tab.consoleMessages().map(message => response.addResult(message.toString()));
+  },
 });
+
+export default [
+  console,
+];

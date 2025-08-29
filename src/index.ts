@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import { BrowserServerBackend } from './browserServerBackend';
-import { resolveConfig } from './config';
-import { contextFactory } from './browserContextFactory';
-import * as mcpServer from './mcp/server';
-import { packageJSON } from './utils/package';
+import { BrowserServerBackend } from './browser/browserServerBackend';
+import { resolveConfig } from './browser/config';
+import { contextFactory } from './browser/browserContextFactory';
+import * as mcpServer from './sdk/server';
+import { packageJSON } from './package';
 
-import type { Config } from '../config.js';
+import type { Config } from '../config';
 import type { BrowserContext } from 'playwright';
-import type { BrowserContextFactory } from './browserContextFactory';
+import type { BrowserContextFactory } from './browser/browserContextFactory';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 export async function createConnection(userConfig: Config = {}, contextGetter?: () => Promise<BrowserContext>): Promise<Server> {

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 
 import { test, expect } from './fixtures';
-import { createHash } from '../src/utils/guid.js';
 
 const p = process.platform === 'win32' ? 'c:\\non\\existent\\folder' : '/non/existent/folder';
 
@@ -77,3 +77,7 @@ test('should list all tools when listRoots is slow', async ({ startClient }) => 
   const tools = await client.listTools();
   expect(tools.tools.length).toBeGreaterThan(10);
 });
+
+function createHash(data: string): string {
+  return crypto.createHash('sha256').update(data).digest('hex').slice(0, 7);
+}

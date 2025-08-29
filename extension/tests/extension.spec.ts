@@ -17,11 +17,11 @@
 import fs from 'fs';
 import path from 'path';
 import { chromium } from 'playwright';
-import { test as base, expect } from '../../tests/fixtures.js';
+import { test as base, expect } from '../../tests/fixtures';
 
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { BrowserContext } from 'playwright';
-import type { StartClient } from '../../tests/fixtures.js';
+import type { StartClient } from '../../tests/fixtures';
 
 type BrowserWithExtension = {
   userDataDir: string;

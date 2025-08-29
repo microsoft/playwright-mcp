@@ -30,13 +30,13 @@ import { WebSocket, WebSocketServer } from 'ws';
 // @ts-ignore
 import { registry } from 'playwright-core/lib/server/registry/index';
 
-import { httpAddressToString } from '../mcp/http.js';
-import { logUnhandledError } from '../utils/log.js';
-import { ManualPromise } from '../mcp/manualPromise.js';
+import { httpAddressToString } from '../sdk/http';
+import { logUnhandledError } from '../log';
+import { ManualPromise } from '../sdk/manualPromise';
 import * as protocol from './protocol';
 
 import type websocket from 'ws';
-import type { ClientInfo } from '../browserContextFactory.js';
+import type { ClientInfo } from '../browser/browserContextFactory';
 import type { ExtensionCommand, ExtensionEvents } from './protocol';
 
 

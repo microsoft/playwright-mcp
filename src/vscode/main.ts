@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import * as mcpBundle from '../mcp/bundle.js';
-import * as mcpServer from '../mcp/server.js';
-import { BrowserServerBackend } from '../browserServerBackend.js';
-import { BrowserContextFactory, ClientInfo } from '../browserContextFactory.js';
+import * as mcpBundle from '../sdk/bundle';
+import * as mcpServer from '../sdk/server';
+import { BrowserServerBackend } from '../browser/browserServerBackend';
+import { BrowserContextFactory, ClientInfo } from '../browser/browserContextFactory';
 
-import type { FullConfig } from '../config.js';
+import type { FullConfig } from '../browser/config';
 import type { BrowserContext } from 'playwright-core';
 
 class VSCodeBrowserContextFactory implements BrowserContextFactory {

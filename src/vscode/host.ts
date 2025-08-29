@@ -16,18 +16,18 @@
 
 import path from 'path';
 
-import * as mcpBundle from '../mcp/bundle.js';
-import * as mcpServer from '../mcp/server.js';
-import { logUnhandledError } from '../utils/log.js';
-import { packageJSON } from '../utils/package.js';
+import * as mcpBundle from '../sdk/bundle';
+import * as mcpServer from '../sdk/server';
+import { logUnhandledError } from '../log';
+import { packageJSON } from '../package';
 
-import { FullConfig } from '../config.js';
-import { BrowserServerBackend } from '../browserServerBackend.js';
-import { contextFactory } from '../browserContextFactory.js';
+import { FullConfig } from '../browser/config';
+import { BrowserServerBackend } from '../browser/browserServerBackend';
+import { contextFactory } from '../browser/browserContextFactory';
 
 import type { z as zod } from 'zod';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type { ClientVersion, ServerBackend } from '../mcp/server.js';
+import type { ClientVersion, ServerBackend } from '../sdk/server';
 import type { Root, Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { Browser, BrowserContext, BrowserServer } from 'playwright';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';

@@ -1,7 +1,5 @@
-[*]
-./tools/
-./mcp/
-./utils/
-
 [program.ts]
+***
+
+[index.ts]
 ***

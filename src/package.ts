@@ -14,18 +14,7 @@
  * limitations under the License.
  */
 
-import { defineConfig } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
 
-import type { TestOptions } from '../tests/fixtures';
-
-export default defineConfig<TestOptions>({
-  testDir: './tests',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'list',
-  projects: [
-    { name: 'chromium', use: { mcpBrowser: 'chromium' } },
-  ],
-});
+export const packageJSON = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));

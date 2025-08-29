@@ -16,9 +16,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Button, TabItem  } from './tabItem.js';
+import { Button, TabItem  } from './tabItem';
 
-import type { TabInfo } from './tabItem.js';
+import type { TabInfo } from './tabItem';
 
 interface ConnectionStatus {
   isConnected: boolean;

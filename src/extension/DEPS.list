@@ -1,3 +1,4 @@
 [*]
-../mcp/
-../utils/
+../sdk/
+../browser/
+../log.ts

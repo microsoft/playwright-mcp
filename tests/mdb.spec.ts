@@ -19,12 +19,12 @@ import zodToJsonSchema from 'zod-to-json-schema';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
-import { runMainBackend, runOnPauseBackendLoop } from '../src/mcp/mdb.js';
+import { runMainBackend, runOnPauseBackendLoop } from '../src/sdk/mdb';
 
 import { test, expect } from './fixtures';
 
-import type * as mcpServer from '../src/mcp/server.js';
-import type { ServerBackendOnPause } from '../src/mcp/mdb.js';
+import type * as mcpServer from '../src/sdk/server';
+import type { ServerBackendOnPause } from '../src/sdk/mdb';
 
 test('call top level tool', async () => {
   const { mdbUrl } = await startMDBAndCLI();
