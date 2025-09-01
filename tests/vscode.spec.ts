@@ -84,6 +84,7 @@ test('browser_connect(debugController) works', async ({ startClient }) => {
       debugController: true,
     }
   });
+  expect(response.content?.[0].text).toMatch(/Version: \d+\.\d+\.\d+/);
   const url = new URL(response.content?.[0].text.match(/URL: (.*)/)?.[1]);
   const messages: unknown[] = [];
   const socket = new WebSocket(url);

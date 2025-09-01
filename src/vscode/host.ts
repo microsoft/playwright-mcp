@@ -112,10 +112,12 @@ class VSCodeProxyBackend implements ServerBackend {
     if (params.debugController) {
       const url = await this._getDebugControllerURL();
       const lines = [`### Result`];
-      if (url)
+      if (url) {
         lines.push(`URL: ${url}`);
-      else
+        lines.push(`Version: ${packageJSON.dependencies.playwright}`);
+      } else {
         lines.push(`No open browsers.`);
+      }
       return { content: [{ type: 'text', text: lines.join('\n') }] };
     }
 
