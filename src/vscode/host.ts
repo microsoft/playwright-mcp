@@ -87,6 +87,9 @@ class VSCodeProxyBackend implements ServerBackend {
 
   onContext(context: BrowserContext) {
     this._context = context;
+    context.on('close', () => {
+      this._context = undefined;
+    });
   }
 
   private async _getDebugControllerURL() {
