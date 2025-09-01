@@ -96,7 +96,7 @@ const verifyList = defineTabTool({
     }
     const ariaSnapshot = `\`
 - list:
-${itemTexts.map(t => `  - text: ${javascript.escapeWithQuotes(t, '"')}`).join('\n')}
+${itemTexts.map(t => `  - listitem: ${javascript.escapeWithQuotes(t, '"')}`).join('\n')}
 \``;
     response.addCode(`await expect(page.locator('body')).toMatchAriaSnapshot(${ariaSnapshot});`);
     response.addResult('Done');

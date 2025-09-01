@@ -213,9 +213,9 @@ test('browser_verify_list_visible', async ({ client, server }) => {
     result: 'Done',
     code: expect.stringContaining(`await expect(page.locator('body')).toMatchAriaSnapshot(\`
 - list:
-  - text: "Apple"
-  - text: "Banana"
-  - text: "Cherry"
+  - listitem: "Apple"
+  - listitem: "Banana"
+  - listitem: "Cherry"
 \`);`),
   });
 });
@@ -247,8 +247,8 @@ test('browser_verify_list_visible (partial items)', async ({ client, server }) =
     result: 'Done',
     code: expect.stringContaining(`await expect(page.locator('body')).toMatchAriaSnapshot(\`
 - list:
-  - text: "Apple"
-  - text: "Cherry"
+  - listitem: "Apple"
+  - listitem: "Cherry"
 \`);`),
   });
 });
@@ -453,7 +453,7 @@ test('browser_verify_value (radio checked)', async ({ client, server }) => {
     arguments: {
       type: 'radio',
       element: 'Color radio',
-      ref: 'e4',
+      ref: 'e3',
       value: 'true',
     },
   })).toHaveResponse({

@@ -49,7 +49,7 @@ const browserTabs = defineTool({
         return;
       }
       case 'select': {
-        if (!params.index)
+        if (params.index === undefined)
           throw new Error('Tab index is required');
         await context.selectTab(params.index);
         response.setIncludeSnapshot();

@@ -80,7 +80,7 @@ For more information, see the [Codex MCP documentation](https://github.com/opena
 
 #### Or install manually:
 
-Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, use `command` type with the command `npx @playwright/mcp`. You can also verify config or add command like arguments via clicking `Edit`.
+Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, use `command` type with the command `npx @playwright/mcp@latest`. You can also verify config or add command like arguments via clicking `Edit`.
 
 </details>
 
@@ -701,6 +701,53 @@ http.createServer(async (req, res) => {
   - Description: Save page as PDF
   - Parameters:
     - `filename` (string, optional): File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Verify (opt-in via --caps=verify)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_element_visible**
+  - Title: Verify element visible
+  - Description: Verify element is visible on the page
+  - Parameters:
+    - `role` (string): ROLE of the element. Can be found in the snapshot like this: `- {ROLE} "Accessible Name":`
+    - `accessibleName` (string): ACCESSIBLE_NAME of the element. Can be found in the snapshot like this: `- role "{ACCESSIBLE_NAME}"`
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_list_visible**
+  - Title: Verify list visible
+  - Description: Verify list is visible on the page
+  - Parameters:
+    - `element` (string): Human-readable list description
+    - `ref` (string): Exact target element reference that points to the list
+    - `items` (array): Items to verify
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_text_visible**
+  - Title: Verify text visible
+  - Description: Verify text is visible on the page. Prefer browser_verify_element_visible if possible.
+  - Parameters:
+    - `text` (string): TEXT to verify. Can be found in the snapshot like this: `- role "Accessible Name": {TEXT}` or like this: `- text: {TEXT}`
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_value**
+  - Title: Verify value
+  - Description: Verify element value
+  - Parameters:
+    - `type` (string): Type of the element
+    - `element` (string): Human-readable element description
+    - `ref` (string): Exact target element reference that points to the element
+    - `value` (string): Value to verify. For checkbox, use "true" or "false".
   - Read-only: **true**
 
 </details>
