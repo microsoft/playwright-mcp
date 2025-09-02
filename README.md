@@ -76,7 +76,7 @@ For more information, see the [Codex MCP documentation](https://github.com/opena
 
 #### Click the button to install:
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=Playwright&config=eyJjb21tYW5kIjoibnB4IEBwbGF5d3JpZ2h0L21jcEBsYXRlc3QifQ%3D%3D)
+[<img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Install in Cursor">](cursor://anysphere.cursor-deeplink/mcp/install?name=Playwright&config=eyJjb21tYW5kIjoibnB4IEBwbGF5d3JpZ2h0L21jcEBsYXRlc3QifQ%3D%3D)
 
 #### Or install manually:
 
