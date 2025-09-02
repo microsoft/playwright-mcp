@@ -132,7 +132,48 @@ class CdpContextFactory extends BaseContextFactory {
   }
 
   protected override async _doCreateContext(browser: playwright.Browser): Promise<playwright.BrowserContext> {
-    return this.config.browser.isolated ? await browser.newContext() : browser.contexts()[0];
+    if (this.config.browser.isolated)
+      return await browser.newContext(this.config.browser.contextOptions);
+
+
+    // For non-isolated mode, if storage-state is configured, we need to apply it to the existing context
+    const existingContext = browser.contexts()[0];
+    if (this.config.browser.contextOptions?.storageState && existingContext) {
+      // Apply storage state to existing context
+      // Note: This requires the context to have addInitScript capability
+      try {
+        const storageState = typeof this.config.browser.contextOptions.storageState === 'string'
+          ? JSON.parse(await fs.promises.readFile(this.config.browser.contextOptions.storageState, 'utf-8'))
+          : this.config.browser.contextOptions.storageState;
+
+        // Apply cookies if any
+        if (storageState.cookies)
+          await existingContext.addCookies(storageState.cookies);
+
+
+        // Apply localStorage/sessionStorage via script injection
+        if (storageState.origins && storageState.origins.length > 0) {
+          for (const origin of storageState.origins) {
+            await existingContext.addInitScript(originData => {
+              if (window.location.origin === originData.origin) {
+                // Apply localStorage
+                if (originData.localStorage) {
+                  for (const item of originData.localStorage)
+                    window.localStorage.setItem(item.name, item.value);
+
+                }
+                // Note: sessionStorage cannot be reliably set via script as it's per-tab
+              }
+            }, origin);
+          }
+        }
+      } catch (error) {
+        // If we can't apply storage state, log warning but continue
+        testDebug('Warning: Could not apply storage state to existing CDP context:', error);
+      }
+    }
+
+    return existingContext;
   }
 }
 
