@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('--device should work', async ({ startClient, server, mcpMode }) => {
   const { client } = await startClient({

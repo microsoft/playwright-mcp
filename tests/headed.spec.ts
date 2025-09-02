@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 for (const mcpHeadless of [false, true]) {
   test.describe(`mcpHeadless: ${mcpHeadless}`, () => {

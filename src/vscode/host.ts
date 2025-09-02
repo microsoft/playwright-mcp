@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import url from 'url';
 import path from 'path';
 
 import * as mcpBundle from '../mcp/bundle.js';
@@ -137,7 +136,7 @@ class VSCodeProxyBackend implements ServerBackend {
           command: process.execPath,
           cwd: process.cwd(),
           args: [
-            path.join(url.fileURLToPath(import.meta.url), '..', 'main.js'),
+            path.join(__dirname, 'main.js'),
             JSON.stringify(this._config),
             params.connectionString,
             params.lib,

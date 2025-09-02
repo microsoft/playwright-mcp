@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-import fs from 'node:fs';
-import url from 'node:url';
+import fs from 'fs';
 
-import { ChildProcess, spawn } from 'node:child_process';
-import path from 'node:path';
+import { ChildProcess, spawn } from 'child_process';
+import path from 'path';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
-import { test as baseTest, expect } from './fixtures.js';
+import { test as baseTest, expect } from './fixtures';
 import type { Config } from '../config.d.ts';
-
-// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-const __filename = url.fileURLToPath(import.meta.url);
 
 const test = baseTest.extend<{ serverEndpoint: (options?: { args?: string[], noPort?: boolean }) => Promise<{ url: URL, stderr: () => string }> }>({
   serverEndpoint: async ({ mcpHeadless }, use, testInfo) => {

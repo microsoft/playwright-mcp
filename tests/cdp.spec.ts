@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-import url from 'node:url';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('cdp server', async ({ cdpServer, startClient, server }) => {
   await cdpServer.start();
@@ -83,9 +82,6 @@ test('should throw connection error and allow re-connecting', async ({ cdpServer
     pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
 });
-
-// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-const __filename = url.fileURLToPath(import.meta.url);
 
 test('does not support --device', async () => {
   const result = spawnSync('node', [

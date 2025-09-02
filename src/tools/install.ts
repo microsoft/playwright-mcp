@@ -16,10 +16,9 @@
 
 import { fork } from 'child_process';
 import path from 'path';
-import url from 'url';
 
 import { z } from '../mcp/bundle.js';
-import { defineTool } from './tool.js';
+import { defineTool } from './tool';
 
 const install = defineTool({
   capability: 'core-install',
@@ -33,8 +32,7 @@ const install = defineTool({
 
   handle: async (context, params, response) => {
     const channel = context.config.browser?.launchOptions?.channel ?? context.config.browser?.browserName ?? 'chrome';
-    const cliUrl = import.meta.resolve('playwright/package.json');
-    const cliPath = path.join(url.fileURLToPath(cliUrl), '..', 'cli.js');
+    const cliPath = path.join(require.resolve('playwright/package.json'), '../cli.js');
     const child = fork(cliPath, ['install', channel], {
       stdio: 'pipe',
     });

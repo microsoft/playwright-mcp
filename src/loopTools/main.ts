@@ -18,14 +18,14 @@ import dotenv from 'dotenv';
 
 import * as mcpServer from '../mcp/server.js';
 import { packageJSON } from '../utils/package.js';
-import { Context } from './context.js';
-import { perform } from './perform.js';
-import { snapshot } from './snapshot.js';
+import { Context } from './context';
+import { perform } from './perform';
+import { snapshot } from './snapshot';
 import { toMcpTool } from '../mcp/tool.js';
 
 import type { FullConfig } from '../config.js';
 import type { ServerBackend } from '../mcp/server.js';
-import type { Tool } from './tool.js';
+import type { Tool } from './tool';
 
 export async function runLoopTools(config: FullConfig) {
   dotenv.config();

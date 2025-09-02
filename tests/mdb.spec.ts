@@ -21,7 +21,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 
 import { runMainBackend, runOnPauseBackendLoop } from '../src/mcp/mdb.js';
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 import type * as mcpServer from '../src/mcp/server.js';
 import type { ServerBackendOnPause } from '../src/mcp/mdb.js';

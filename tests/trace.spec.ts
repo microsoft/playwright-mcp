@@ -16,7 +16,7 @@
 
 import fs from 'fs';
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('check that trace is saved', async ({ startClient, server, mcpMode }, testInfo) => {
   const outputDir = testInfo.outputPath('output');

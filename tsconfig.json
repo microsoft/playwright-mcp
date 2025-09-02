@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2019",
     "esModuleInterop": true,
-    "moduleResolution": "nodenext",
     "strict": true,
-    "module": "NodeNext",
+    "module": "commonjs",
     "rootDir": "src",
     "outDir": "./lib",
     "resolveJsonModule": true

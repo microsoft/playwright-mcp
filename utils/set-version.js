@@ -22,8 +22,6 @@ import path from 'path';
 import child_process from 'child_process';
 import { argv } from 'process';
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
-
 const readJSON = async (filePath) => JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
 const writeJSON = async (filePath, json) => {
   await fs.promises.writeFile(filePath, JSON.stringify(json, null, 2) + '\n');

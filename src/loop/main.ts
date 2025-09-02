@@ -17,28 +17,25 @@
 /* eslint-disable no-console */
 
 import path from 'path';
-import url from 'url';
 import dotenv from 'dotenv';
 import { program } from 'commander';
 
 import * as mcpBundle from '../mcp/bundle.js';
-import { OpenAIDelegate } from './loopOpenAI.js';
-import { ClaudeDelegate } from './loopClaude.js';
-import { runTask } from './loop.js';
+import { OpenAIDelegate } from './loopOpenAI';
+import { ClaudeDelegate } from './loopClaude';
+import { runTask } from './loop';
 
-import type { LLMDelegate } from './loop.js';
+import type { LLMDelegate } from './loop';
 
 dotenv.config();
-
-const __filename = url.fileURLToPath(import.meta.url);
 
 async function run(delegate: LLMDelegate) {
   const transport = new mcpBundle.StdioClientTransport({
     command: 'node',
     args: [
-      path.resolve(__filename, '../../../cli.js'),
+      path.resolve(__dirname, '../../cli.js'),
       '--save-session',
-      '--output-dir', path.resolve(__filename, '../../../sessions')
+      '--output-dir', path.resolve(__dirname, '../../sessions')
     ],
     stderr: 'inherit',
     env: process.env as Record<string, string>,

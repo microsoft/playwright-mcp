@@ -16,7 +16,7 @@
 
 import type { z } from 'zod';
 import type * as mcpServer from '../mcp/server.js';
-import type { Context } from './context.js';
+import type { Context } from './context';
 import type { ToolSchema } from '../mcp/tool.js';
 
 

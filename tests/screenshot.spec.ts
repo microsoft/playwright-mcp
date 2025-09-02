@@ -16,7 +16,7 @@
 
 import fs from 'fs';
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('browser_take_screenshot (viewport)', async ({ startClient, server }, testInfo) => {
   const { client } = await startClient({

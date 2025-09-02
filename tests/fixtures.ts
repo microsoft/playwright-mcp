@@ -15,7 +15,6 @@
  */
 
 import fs from 'fs';
-import url from 'url';
 import path from 'path';
 import { chromium } from 'playwright';
 
@@ -23,7 +22,7 @@ import { test as baseTest, expect as baseExpect } from '@playwright/test';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { TestServer } from './testserver/index.ts';
+import { TestServer } from './testserver/index';
 
 import type { Config } from '../config';
 import type { BrowserContext } from 'playwright';
@@ -186,8 +185,6 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode'], 
   transport: Transport,
   stderr: Stream | null,
 }> {
-  // NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-  const __filename = url.fileURLToPath(import.meta.url);
   if (mcpMode === 'docker') {
     const dockerArgs = ['run', '--rm', '-i', '--network=host', '-v', `${test.info().project.outputDir}:/app/test-results`];
     const transport = new StdioClientTransport({
@@ -202,7 +199,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode'], 
 
   const transport = new StdioClientTransport({
     command: 'node',
-    args: [path.join(path.dirname(__filename), '../cli.js'), ...args],
+    args: [path.join(__dirname, '../cli.js'), ...args],
     cwd: path.dirname(test.info().config.configFile!),
     stderr: 'pipe',
     env: {

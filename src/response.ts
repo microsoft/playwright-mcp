@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import { renderModalStates } from './tab.js';
+import { renderModalStates } from './tab';
 
-import type { Tab, TabSnapshot } from './tab.js';
+import type { Tab, TabSnapshot } from './tab';
 import type { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
-import type { Context } from './context.js';
+import type { Context } from './context';
 
 export class Response {
   private _result: string[] = [];

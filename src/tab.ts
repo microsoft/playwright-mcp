@@ -16,12 +16,12 @@
 
 import { EventEmitter } from 'events';
 import * as playwright from 'playwright';
-import { callOnPageNoTrace, waitForCompletion } from './tools/utils.js';
-import { logUnhandledError } from './utils/log.js';
-import { ManualPromise } from './mcp/manualPromise.js';
-import { ModalState } from './tools/tool.js';
+import { callOnPageNoTrace, waitForCompletion } from './tools/utils';
+import { logUnhandledError } from './utils/log';
+import { ManualPromise } from './mcp/manualPromise';
+import { ModalState } from './tools/tool';
 
-import type { Context } from './context.js';
+import type { Context } from './context';
 
 type PageEx = playwright.Page & {
   _snapshotForAI: () => Promise<string>;

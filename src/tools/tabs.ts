@@ -15,7 +15,7 @@
  */
 
 import { z } from '../mcp/bundle.js';
-import { defineTool } from './tool.js';
+import { defineTool } from './tool';
 
 const browserTabs = defineTool({
   capability: 'core-tabs',

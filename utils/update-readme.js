@@ -16,13 +16,12 @@
  */
 // @ts-check
 
-import fs from 'node:fs'
-import path from 'node:path'
-import url from 'node:url'
-import zodToJsonSchema from 'zod-to-json-schema'
-import { execSync } from 'node:child_process';
+const fs = require('fs')
+const path = require('path')
+const { zodToJsonSchema } = require('zod-to-json-schema')
+const { execSync } = require('child_process');
 
-import { allTools } from '../lib/tools.js';
+const { allTools } = require('../lib/tools.js');
 
 const capabilities = {
   'core': 'Core automation',
@@ -35,11 +34,8 @@ const capabilities = {
 
 const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, allTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
 
-// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-const __filename = url.fileURLToPath(import.meta.url);
-
 /**
- * @param {import('../src/tools/tool.js').ToolSchema<any>} tool 
+ * @param {import('../src/mcp/tool.js').ToolSchema<any>} tool 
  * @returns {string[]}
  */
 function formatToolForReadme(tool) {

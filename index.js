@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-import { createConnection } from './lib/index.js';
-export { createConnection };
+const { createConnection } = require('./lib/index.js');
+module.exports = { createConnection };

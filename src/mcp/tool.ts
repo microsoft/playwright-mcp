@@ -17,7 +17,7 @@
 import { zodToJsonSchema } from  '../mcp/bundle.js';
 
 import type { z } from 'zod';
-import type * as mcpServer from './server.js';
+import type * as mcpServer from './server';
 
 export type ToolSchema<Input extends z.Schema> = {
   name: string;

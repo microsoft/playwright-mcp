@@ -15,18 +15,18 @@
  */
 
 import { program, Option } from 'commander';
-import * as mcpServer from './mcp/server.js';
-import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config.js';
-import { packageJSON } from './utils/package.js';
-import { Context } from './context.js';
-import { contextFactory } from './browserContextFactory.js';
-import { runLoopTools } from './loopTools/main.js';
-import { ProxyBackend } from './mcp/proxyBackend.js';
-import { BrowserServerBackend } from './browserServerBackend.js';
-import { ExtensionContextFactory } from './extension/extensionContextFactory.js';
+import * as mcpServer from './mcp/server';
+import { commaSeparatedList, resolveCLIConfig, semicolonSeparatedList } from './config';
+import { packageJSON } from './utils/package';
+import { Context } from './context';
+import { contextFactory } from './browserContextFactory';
+import { runLoopTools } from './loopTools/main';
+import { ProxyBackend } from './mcp/proxyBackend';
+import { BrowserServerBackend } from './browserServerBackend';
+import { ExtensionContextFactory } from './extension/extensionContextFactory';
 
-import { runVSCodeTools } from './vscode/host.js';
-import type { MCPProvider } from './mcp/proxyBackend.js';
+import { runVSCodeTools } from './vscode/host';
+import type { MCPProvider } from './mcp/proxyBackend';
 
 program
     .version('Version ' + packageJSON.version)

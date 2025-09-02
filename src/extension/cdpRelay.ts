@@ -26,17 +26,19 @@ import { spawn } from 'child_process';
 import http from 'http';
 import debug from 'debug';
 import { WebSocket, WebSocketServer } from 'ws';
+
+// @ts-ignore
+import { registry } from 'playwright-core/lib/server/registry/index';
+
 import { httpAddressToString } from '../mcp/http.js';
 import { logUnhandledError } from '../utils/log.js';
 import { ManualPromise } from '../mcp/manualPromise.js';
-import * as protocol from './protocol.js';
+import * as protocol from './protocol';
 
 import type websocket from 'ws';
 import type { ClientInfo } from '../browserContextFactory.js';
-import type { ExtensionCommand, ExtensionEvents } from './protocol.js';
+import type { ExtensionCommand, ExtensionEvents } from './protocol';
 
-// @ts-ignore
-const { registry } = await import('playwright-core/lib/server/registry/index');
 
 const debugLogger = debug('pw:mcp:relay');
 

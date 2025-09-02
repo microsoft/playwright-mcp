@@ -14,7 +14,18 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path from 'path';
+import { resolve } from 'path';
+import { defineConfig } from 'vite';
 
-export const packageJSON = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8'));
+export default defineConfig({
+  build: {
+    lib: {
+      entry: resolve(__dirname, 'src/background.ts'),
+      fileName: 'lib/background',
+      formats: ['es']
+    },
+    outDir: 'dist',
+    emptyOutDir: false,
+    minify: false
+  }
+});

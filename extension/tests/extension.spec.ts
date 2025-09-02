@@ -16,7 +16,6 @@
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { chromium } from 'playwright';
 import { test as base, expect } from '../../tests/fixtures.js';
 
@@ -38,7 +37,7 @@ type TestFixtures = {
 
 const test = base.extend<TestFixtures>({
   pathToExtension: async ({}, use) => {
-    await use(fileURLToPath(new URL('../dist', import.meta.url)));
+    await use(path.resolve(__dirname, '../dist'));
   },
 
   browserWithExtension: async ({ mcpBrowser, pathToExtension }, use, testInfo) => {
@@ -126,7 +125,7 @@ async function startWithExtensionFlag(browserWithExtension: BrowserWithExtension
 const testWithOldExtensionVersion = test.extend({
   pathToExtension: async ({}, use, testInfo) => {
     const extensionDir = testInfo.outputPath('extension');
-    const oldPath = fileURLToPath(new URL('../dist', import.meta.url));
+    const oldPath = path.resolve(__dirname, '../dist');
 
     await fs.promises.cp(oldPath, extensionDir, { recursive: true });
     const manifestPath = path.join(extensionDir, 'manifest.json');

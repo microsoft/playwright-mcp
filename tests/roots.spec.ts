@@ -18,7 +18,7 @@ import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 import { createHash } from '../src/utils/guid.js';
 
 const p = process.platform === 'win32' ? 'c:\\non\\existent\\folder' : '/non/existent/folder';

@@ -15,18 +15,18 @@
  */
 
 import { fileURLToPath } from 'url';
-import { FullConfig } from './config.js';
-import { Context } from './context.js';
-import { logUnhandledError } from './utils/log.js';
-import { Response } from './response.js';
-import { SessionLog } from './sessionLog.js';
-import { filteredTools } from './tools.js';
-import { toMcpTool } from './mcp/tool.js';
+import { FullConfig } from './config';
+import { Context } from './context';
+import { logUnhandledError } from './utils/log';
+import { Response } from './response';
+import { SessionLog } from './sessionLog';
+import { filteredTools } from './tools';
+import { toMcpTool } from './mcp/tool';
 
-import type { Tool } from './tools/tool.js';
-import type { BrowserContextFactory } from './browserContextFactory.js';
-import type * as mcpServer from './mcp/server.js';
-import type { ServerBackend } from './mcp/server.js';
+import type { Tool } from './tools/tool';
+import type { BrowserContextFactory } from './browserContextFactory';
+import type * as mcpServer from './mcp/server';
+import type { ServerBackend } from './mcp/server';
 
 export class BrowserServerBackend implements ServerBackend {
   private _tools: Tool[];

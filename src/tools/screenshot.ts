@@ -15,9 +15,9 @@
  */
 
 import { z } from '../mcp/bundle.js';
-import { defineTabTool } from './tool.js';
+import { defineTabTool } from './tool';
 import * as javascript from '../utils/codegen.js';
-import { generateLocator } from './utils.js';
+import { generateLocator } from './utils';
 
 import type * as playwright from 'playwright';
 

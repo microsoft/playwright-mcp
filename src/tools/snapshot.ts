@@ -15,9 +15,9 @@
  */
 
 import { z } from '../mcp/bundle.js';
-import { defineTabTool, defineTool } from './tool.js';
+import { defineTabTool, defineTool } from './tool';
 import * as javascript from '../utils/codegen.js';
-import { generateLocator } from './utils.js';
+import { generateLocator } from './utils';
 
 const snapshot = defineTool({
   capability: 'core',

@@ -21,10 +21,10 @@ import crypto from 'crypto';
 
 import debug from 'debug';
 
-import * as mcpBundle from './bundle.js';
-import * as mcpServer from './server.js';
+import * as mcpBundle from './bundle';
+import * as mcpServer from './server';
 
-import type { ServerBackendFactory } from './server.js';
+import type { ServerBackendFactory } from './server';
 import type { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import type { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 

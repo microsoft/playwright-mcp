@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
-import notice from "eslint-plugin-notice";
-import path from "path";
-import { fileURLToPath } from "url";
-import stylistic from "@stylistic/eslint-plugin";
-import importRules from "eslint-plugin-import";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const typescriptEslint = require("@typescript-eslint/eslint-plugin");
+const tsParser = require("@typescript-eslint/parser");
+const notice = require("eslint-plugin-notice");
+const path = require("path");
+const stylistic = require("@stylistic/eslint-plugin");
+const importRules = require("eslint-plugin-import");
 
 const plugins = {
   "@stylistic": stylistic,
@@ -32,8 +28,7 @@ const plugins = {
   import: importRules,
 };
 
-export const baseRules = {
-  "import/extensions": ["error", "ignorePackages", {ts: "always"}],
+const baseRules = {
   "@typescript-eslint/no-floating-promises": "error",
   "@typescript-eslint/no-unused-vars": [
     2,
@@ -188,7 +183,7 @@ const languageOptions = {
   ecmaVersion: 9,
   sourceType: "module",
   parserOptions: {
-    project: path.join(fileURLToPath(import.meta.url), "..", "tsconfig.all.json"),
+    project: path.join(__filename, "..", "tsconfig.all.json"),
   }
 };
 
@@ -217,7 +212,7 @@ const noBooleanCompareRules = {
   "@typescript-eslint/no-unnecessary-boolean-literal-compare": 2,
 };
 
-export default [
+module.exports = [
   {
     ignores: ["**/*.js"],
   },

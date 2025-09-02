@@ -15,7 +15,7 @@
  */
 
 import { z } from '../mcp/bundle.js';
-import { defineTabTool } from './tool.js';
+import { defineTabTool } from './tool';
 
 import type * as playwright from 'playwright';
 

@@ -16,9 +16,9 @@
 
 import debug from 'debug';
 
-import * as mcpBundle from './bundle.js';
-import { httpAddressToString, installHttpTransport, startHttpServer } from './http.js';
-import { InProcessTransport } from './inProcessTransport.js';
+import * as mcpBundle from './bundle';
+import { httpAddressToString, installHttpTransport, startHttpServer } from './http';
+import { InProcessTransport } from './inProcessTransport';
 
 import type { Tool, CallToolResult, CallToolRequest, Root } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';

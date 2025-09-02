@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 
 import { Config } from '../config.js';
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('config user data dir', async ({ startClient, server, mcpMode }, testInfo) => {
   server.setContent('/', `

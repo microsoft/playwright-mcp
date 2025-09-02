@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('stitched aria frames', async ({ client }) => {
   expect(await client.callTool({

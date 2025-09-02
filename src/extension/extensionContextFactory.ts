@@ -17,7 +17,7 @@
 import debug from 'debug';
 import * as playwright from 'playwright';
 import { startHttpServer } from '../mcp/http.js';
-import { CDPRelayServer } from './cdpRelay.js';
+import { CDPRelayServer } from './cdpRelay';
 
 import type { BrowserContextFactory, ClientInfo } from '../browserContextFactory.js';
 

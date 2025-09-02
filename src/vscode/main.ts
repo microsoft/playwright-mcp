@@ -69,8 +69,10 @@ async function main(config: FullConfig, connectionString: string, lib: string) {
   );
 }
 
-await main(
-    JSON.parse(process.argv[2]),
-    process.argv[3],
-    process.argv[4]
-);
+void (async () => {
+  await main(
+      JSON.parse(process.argv[2]),
+      process.argv[3],
+      process.argv[4]
+  );
+})();

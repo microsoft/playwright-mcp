@@ -15,7 +15,7 @@
  */
 
 import { z } from '../mcp/bundle.js';
-import { defineTabTool } from './tool.js';
+import { defineTabTool } from './tool';
 
 const elementSchema = z.object({
   element: z.string().describe('Human-readable element description used to obtain permission to interact with the element'),

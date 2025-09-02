@@ -15,7 +15,7 @@
  */
 
 import { z } from '../mcp/bundle.js';
-import { defineTabTool, defineTool } from './tool.js';
+import { defineTabTool, defineTool } from './tool';
 
 const close = defineTool({
   capability: 'core',

@@ -15,7 +15,7 @@
  */
 
 import type OpenAI from 'openai';
-import type { LLMDelegate, LLMConversation, LLMToolCall, LLMTool } from './loop.js';
+import type { LLMDelegate, LLMConversation, LLMToolCall, LLMTool } from './loop';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 const model = 'gpt-4.1';
@@ -26,7 +26,7 @@ export class OpenAIDelegate implements LLMDelegate {
   async openai(): Promise<OpenAI> {
     if (!this._openai) {
       const oai = await import('openai');
-      this._openai = new oai.OpenAI();
+      this._openai = new oai.OpenAI() as unknown as OpenAI;
     }
     return this._openai;
   }

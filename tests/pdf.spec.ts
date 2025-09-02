@@ -16,7 +16,7 @@
 
 import fs from 'fs';
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('save as pdf unavailable', async ({ startClient, server }) => {
   const { client } = await startClient();

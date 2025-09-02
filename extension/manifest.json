@@ -14,7 +14,7 @@
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "lib/background.js",
+    "service_worker": "lib/background.mjs",
     "type": "module"
   },
   "action": {

@@ -15,7 +15,7 @@
  */
 import child_process from 'child_process';
 import fs from 'fs/promises';
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('library can be used from CommonJS', { annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright-mcp/issues/456' } }, async ({}, testInfo) => {
   const file = testInfo.outputPath('main.cjs');

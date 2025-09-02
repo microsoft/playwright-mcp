@@ -16,7 +16,7 @@
 
 import fs from 'fs';
 
-import { test, expect, formatOutput } from './fixtures.js';
+import { test, expect, formatOutput } from './fixtures';
 
 test('test reopen browser', async ({ startClient, server, mcpMode }) => {
   const { client, stderr } = await startClient();

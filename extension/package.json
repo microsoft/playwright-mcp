@@ -2,7 +2,6 @@
   "name": "@playwright/mcp-extension",
   "version": "0.0.36",
   "description": "Playwright MCP Browser Extension",
-  "type": "module",
   "private": true,
   "repository": {
     "type": "git",
@@ -17,8 +16,8 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc --project . && tsc --project tsconfig.ui.json && vite build",
-    "watch": "tsc --watch --project . & tsc --watch --project tsconfig.ui.json & vite build --watch",
+    "build": "tsc --project . && tsc --project tsconfig.ui.json && vite build && vite build --config vite.sw.config.mts",
+    "watch": "tsc --watch --project . & tsc --watch --project tsconfig.ui.json & vite build --watch & vite build --watch --config vite.sw.config.mts",
     "test": "playwright test",
     "clean": "rm -rf dist"
   },

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('browser_connect(vscode) works', async ({ startClient, playwright, browserName }) => {
   const { client } = await startClient({
@@ -27,7 +27,7 @@ test('browser_connect(vscode) works', async ({ startClient, playwright, browserN
     name: 'browser_connect',
     arguments: {
       connectionString: server.wsEndpoint(),
-      lib: import.meta.resolve('playwright'),
+      lib: require.resolve('playwright'),
     }
   })).toHaveResponse({
     result: 'Successfully connected.'

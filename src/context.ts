@@ -17,15 +17,15 @@
 import debug from 'debug';
 import * as playwright from 'playwright';
 
-import { logUnhandledError } from './utils/log.js';
-import { Tab } from './tab.js';
-import { outputFile  } from './config.js';
+import { logUnhandledError } from './utils/log';
+import { Tab } from './tab';
+import { outputFile  } from './config';
 
-import type { FullConfig } from './config.js';
-import type { Tool } from './tools/tool.js';
-import type { BrowserContextFactory, ClientInfo } from './browserContextFactory.js';
-import type * as actions from './actions.js';
-import type { SessionLog } from './sessionLog.js';
+import type { FullConfig } from './config';
+import type { Tool } from './tools/tool';
+import type { BrowserContextFactory, ClientInfo } from './browserContextFactory';
+import type * as actions from './actions';
+import type { SessionLog } from './sessionLog';
 
 const testDebug = debug('pw:mcp:test');
 

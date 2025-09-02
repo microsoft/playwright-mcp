@@ -15,8 +15,8 @@
  */
 
 import { z } from '../mcp/bundle.js';
-import { defineTabTool } from './tool.js';
-import { generateLocator } from './utils.js';
+import { defineTabTool } from './tool';
+import { generateLocator } from './utils';
 import * as javascript from '../utils/codegen.js';
 
 const fillForm = defineTabTool({

@@ -15,7 +15,7 @@
  */
 
 import type Anthropic from '@anthropic-ai/sdk';
-import type { LLMDelegate, LLMConversation, LLMToolCall, LLMTool } from './loop.js';
+import type { LLMDelegate, LLMConversation, LLMToolCall, LLMTool } from './loop';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 const model = 'claude-sonnet-4-20250514';
@@ -26,7 +26,7 @@ export class ClaudeDelegate implements LLMDelegate {
   async anthropic(): Promise<Anthropic> {
     if (!this._anthropic) {
       const anthropic = await import('@anthropic-ai/sdk');
-      this._anthropic = new anthropic.Anthropic();
+      this._anthropic = new anthropic.Anthropic() as unknown as Anthropic;
     }
     return this._anthropic;
   }

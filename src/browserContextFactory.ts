@@ -23,11 +23,11 @@ import * as playwright from 'playwright';
 import { registryDirectory } from 'playwright-core/lib/server/registry/index';
 // @ts-ignore
 import { startTraceViewerServer } from 'playwright-core/lib/server';
-import { logUnhandledError, testDebug } from './utils/log.js';
-import { createHash } from './utils/guid.js';
-import { outputFile  } from './config.js';
+import { logUnhandledError, testDebug } from './utils/log';
+import { createHash } from './utils/guid';
+import { outputFile  } from './config';
 
-import type { FullConfig } from './config.js';
+import type { FullConfig } from './config';
 
 export function contextFactory(config: FullConfig): BrowserContextFactory {
   if (config.browser.remoteEndpoint)

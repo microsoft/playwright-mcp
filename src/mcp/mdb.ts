@@ -16,12 +16,12 @@
 
 import debug from 'debug';
 
-import { defineToolSchema } from './tool.js';
-import * as mcpBundle from './bundle.js';
-import * as mcpServer from './server.js';
-import * as mcpHttp from './http.js';
-import { wrapInProcess } from './server.js';
-import { ManualPromise } from './manualPromise.js';
+import { defineToolSchema } from './tool';
+import * as mcpBundle from './bundle';
+import * as mcpServer from './server';
+import * as mcpHttp from './http';
+import { wrapInProcess } from './server';
+import { ManualPromise } from './manualPromise';
 
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';

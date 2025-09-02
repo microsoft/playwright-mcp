@@ -15,7 +15,7 @@
  */
 
 import { z } from '../mcp/bundle.js';
-import { defineTabTool } from './tool.js';
+import { defineTabTool } from './tool';
 
 const handleDialog = defineTabTool({
   capability: 'core',

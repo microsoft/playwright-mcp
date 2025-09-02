@@ -16,9 +16,9 @@
 
 import debug from 'debug';
 
-import * as mcpBundle from './bundle.js';
+import * as mcpBundle from './bundle';
 
-import type { ServerBackend, ClientVersion, Root, Server } from './server.js';
+import type { ServerBackend, ClientVersion, Root, Server } from './server';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { Tool, CallToolResult, CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';

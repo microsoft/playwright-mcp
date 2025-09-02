@@ -17,7 +17,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('session log should record tool calls', async ({ startClient, server }, testInfo) => {
   const { client, stderr } = await startClient({

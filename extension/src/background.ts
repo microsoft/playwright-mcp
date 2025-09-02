@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { RelayConnection, debugLog } from './relayConnection.js';
+import { RelayConnection, debugLog } from './relayConnection';
 
 type PageMessage = {
   type: 'connectToMCPRelay';

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures.js';
+import { test, expect } from './fixtures';
 
 test('browser_install', async ({ client, mcpBrowser }) => {
   test.skip(mcpBrowser !== 'chromium', 'Test only chromium');

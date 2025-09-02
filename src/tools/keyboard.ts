@@ -15,9 +15,9 @@
  */
 
 import { z } from '../mcp/bundle.js';
-import { defineTabTool } from './tool.js';
-import { elementSchema } from './snapshot.js';
-import { generateLocator } from './utils.js';
+import { defineTabTool } from './tool';
+import { elementSchema } from './snapshot';
+import { generateLocator } from './utils';
 import * as javascript from '../utils/codegen.js';
 
 const pressKey = defineTabTool({

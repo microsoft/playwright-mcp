@@ -18,13 +18,10 @@
 
 // @ts-check
 
-import fs from 'fs';
-import ts from 'typescript';
-import path from 'path';
-import Module from 'module';
-
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
-const require = Module.createRequire(import.meta.url);
+const fs = require('fs');
+const ts = require('typescript');
+const path = require('path');
+const Module = require('module');
 
 const builtins = new Set(Module.builtinModules);
 
