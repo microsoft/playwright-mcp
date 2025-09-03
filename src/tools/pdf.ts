@@ -19,7 +19,7 @@ import { defineTabTool } from './tool';
 import * as javascript from '../utils/codegen.js';
 
 const pdfSchema = z.object({
-  filename: z.string().optional().describe('File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.'),
+  filename: z.string().optional().describe('File name only (not a full path) to save the PDF to. The file will be automatically saved to the MCP server\'s configured output directory for security. You cannot specify arbitrary paths. Defaults to `page-{timestamp}.pdf` if not specified.'),
 });
 
 const pdf = defineTabTool({
@@ -36,7 +36,7 @@ const pdf = defineTabTool({
   handle: async (tab, params, response) => {
     const fileName = await tab.context.outputFile(params.filename ?? `page-${new Date().toISOString()}.pdf`);
     response.addCode(`await page.pdf(${javascript.formatObject({ path: fileName })});`);
-    response.addResult(`Saved page as ${fileName}`);
+    response.addResult(`Saved page as PDF. Full path: ${fileName}`);
     await tab.page.pdf({ path: fileName });
   },
 });

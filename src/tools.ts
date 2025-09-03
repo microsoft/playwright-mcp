@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import blob from './tools/blob';
 import common from './tools/common';
 import console from './tools/console';
 import dialogs from './tools/dialogs';
@@ -36,6 +37,7 @@ import type { Tool } from './tools/tool';
 import type { FullConfig } from './config';
 
 export const allTools: Tool<any>[] = [
+  ...blob,
   ...common,
   ...console,
   ...dialogs,
