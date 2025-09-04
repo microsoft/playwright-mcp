@@ -18,7 +18,6 @@ jobs:
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
-    - run: npm run build
     - name: Run ESLint
       run: npm run lint
     - name: Ensure no changes
@@ -41,14 +40,8 @@ jobs:
       run: npm ci
     - name: Playwright install
       run: npx playwright install --with-deps
-    - name: Install MS Edge
-      # MS Edge is not preinstalled on macOS runners.
-      if: ${{ matrix.os == 'macos-latest' }}
-      run: npx playwright install msedge
-    - name: Build
-      run: npm run build
     - name: Run tests
-      run: npm test
+      run: npm run test
 
   test_docker:
     runs-on: ubuntu-latest
@@ -63,8 +56,6 @@ jobs:
       run: npm ci
     - name: Playwright install
       run: npx playwright install --with-deps chromium
-    - name: Build
-      run: npm run build
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
     - name: Build and push
@@ -82,42 +73,3 @@ jobs:
         npm run test -- --project=chromium-docker
       env:
         MCP_IN_DOCKER: 1
-
-  test_extension:
-    strategy:
-      fail-fast: false
-    runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: ./extension
-    steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js 20
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20' # crypto.randomUUID(); stalls in v18.20.8
-        cache: 'npm'
-    - name: Install dependencies
-      run: npm ci
-    - name: Build extension
-      run: npm run build
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: extension
-        path: ./extension/dist
-        retention-days: 7
-    - name: Install and build MCP server
-      run: |
-        cd ..
-        npm ci
-        npm run build
-        npx playwright install chromium
-    - name: Run tests
-      run: |
-        if [[ "$(uname)" == "Linux" ]]; then
-          xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test
-        else
-          npm run test
-        fi
-      shell: bash

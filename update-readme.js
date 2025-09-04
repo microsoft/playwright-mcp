@@ -21,7 +21,7 @@ const path = require('path')
 const { zodToJsonSchema } = require('zod-to-json-schema')
 const { execSync } = require('child_process');
 
-const { allTools } = require('../lib/browser/tools.js');
+const { allTools } = require('playwright/lib/mcp/browser/tools');
 
 const capabilities = {
   'core': 'Core automation',
@@ -34,10 +34,6 @@ const capabilities = {
 
 const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, allTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
 
-/**
- * @param {import('../src/sdk/tool.js').ToolSchema<any>} tool 
- * @returns {string[]}
- */
 function formatToolForReadme(tool) {
   const lines = /** @type {string[]} */ ([]);
   lines.push(`<!-- NOTE: This has been generated via ${path.basename(__filename)} -->`);
@@ -135,7 +131,7 @@ async function updateOptions(content) {
 }
 
 async function updateReadme() {
-  const readmePath = path.join(path.dirname(__filename), '..', 'README.md');
+  const readmePath = path.join(__dirname, 'README.md');
   const readmeContent = await fs.promises.readFile(readmePath, 'utf-8');
   const withTools = await updateTools(readmeContent);
   const withOptions = await updateOptions(withTools);
