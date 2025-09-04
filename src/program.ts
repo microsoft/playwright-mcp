@@ -37,6 +37,7 @@ program
     .option('--browser <browser>', 'browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.')
     .option('--caps <caps>', 'comma-separated list of additional capabilities to enable, possible values: vision, pdf.', commaSeparatedList)
     .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
+    .option('--cdp-headers <headers>', 'JSON string of headers for CDP authentication')
     .option('--config <path>', 'path to the configuration file.')
     .option('--device <device>', 'device to emulate, for example: "iPhone 15"')
     .option('--executable-path <path>', 'path to the browser executable.')
