@@ -85,14 +85,18 @@ jobs:
       - name: Build extension
         working-directory: ./extension
         run: npm run build
+      - name: Get extension version
+        id: get-version
+        working-directory: ./extension
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
       - name: Package extension
         working-directory: ./extension
         run: |
           cd dist
-          zip -r ../playwright-mcp-extension-${{ github.event.release.tag_name }}.zip .
+          zip -r ../playwright-mcp-extension-${{ steps.get-version.outputs.version }}.zip .
           cd ..
       - name: Upload extension to release
         env:
            GITHUB_TOKEN: ${{ github.token }}
         run: |
-            gh release upload ${{github.event.release.tag_name}} ./extension/playwright-mcp-extension-${{ github.event.release.tag_name }}.zip
+            gh release upload ${{github.event.release.tag_name}} ./extension/playwright-mcp-extension-${{ steps.get-version.outputs.version }}.zip
