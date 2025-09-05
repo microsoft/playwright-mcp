@@ -34,6 +34,10 @@ const capabilities = {
 
 const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, allTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
 
+/**
+ * @param {any} tool
+ * @returns {string[]}
+ */
 function formatToolForReadme(tool) {
   const lines = /** @type {string[]} */ ([]);
   lines.push(`<!-- NOTE: This has been generated via ${path.basename(__filename)} -->`);

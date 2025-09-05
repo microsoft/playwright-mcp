@@ -22,9 +22,12 @@ test('browser_click', async ({ client, server, mcpBrowser }) => {
     <button>Submit</button>
   `, 'text/html');
 
-  await client.callTool({
+  expect(await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.PREFIX },
+  })).toHaveResponse({
+    code: `await page.goto('${server.PREFIX}');`,
+    pageState: expect.stringContaining(`- button \"Submit\" [ref=e2]`),
   });
 
   expect(await client.callTool({

@@ -60,6 +60,11 @@ export type Config = {
     cdpEndpoint?: string;
 
     /**
+     * CDP headers to send with the connect request.
+     */
+    cdpHeaders?: Record<string, string>;
+
+    /**
      * Remote endpoint to connect to an existing Playwright server.
      */
     remoteEndpoint?: string;
@@ -96,6 +101,13 @@ export type Config = {
   saveTrace?: boolean;
 
   /**
+   * Secrets are used to prevent LLM from getting sensitive data while
+   * automating scenarios such as authentication.
+   * Prefer the browser.contextOptions.storageState over secrets file as a more secure alternative.
+   */
+  secrets?: Record<string, string>;
+
+  /**
    * The directory to save output files.
    */
   outputDir?: string;
@@ -110,6 +122,18 @@ export type Config = {
      * List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
      */
     blockedOrigins?: string[];
+  };
+
+  timeouts?: {
+    /*
+     * Configures default action timeout: https://playwright.dev/docs/api/class-page#page-set-default-timeout. Defaults to 5000ms.
+     */
+    action?: number;
+
+    /*
+     * Configures default navigation timeout: https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout. Defaults to 60000ms.
+     */
+    navigation?: number;
   };
 
   /**

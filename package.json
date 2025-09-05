@@ -17,10 +17,12 @@
   "scripts": {
     "lint": "npm run update-readme",
     "update-readme": "node update-readme.js",
+    "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
     "ftest": "playwright test --project=firefox",
     "wtest": "playwright test --project=webkit",
+    "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
     "npm-publish": "npm run clean && npm run build && npm run test && npm publish"
   },
   "exports": {
@@ -31,15 +33,16 @@
     }
   },
   "dependencies": {
-    "playwright": "1.56.0-alpha-1756945786000",
-    "zod-to-json-schema": "^3.24.6"
+    "playwright": "1.56.0-alpha-1757090131000",
+    "playwright-core": "1.56.0-alpha-1757090131000"
   },
   "bin": {
     "mcp-server-playwright": "cli.js"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",
-    "@playwright/test": "1.56.0-alpha-1756945786000",
-    "@types/node": "^24.3.0"
+    "@playwright/test": "1.56.0-alpha-1757090131000",
+    "@types/node": "^24.3.0",
+    "zod-to-json-schema": "^3.24.6"
   }
 }
