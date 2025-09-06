@@ -766,5 +766,26 @@ http.createServer(async (req, res) => {
 
 </details>
 
+<details>
+<summary><b>Tracing (opt-in via --caps=tracing)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_start_tracing**
+  - Title: Start tracing
+  - Description: Start trace recording
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_stop_tracing**
+  - Title: Stop tracing
+  - Description: Stop trace recording
+  - Parameters: None
+  - Read-only: **true**
+
+</details>
+
 
 <!--- End of tools generated section -->
