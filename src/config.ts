@@ -30,6 +30,7 @@ export type CLIOptions = {
   browser?: string;
   caps?: string[];
   cdpEndpoint?: string;
+  cdpHeaders?: Record<string, string> | string;
   config?: string;
   device?: string;
   executablePath?: string;
@@ -178,6 +179,7 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
       launchOptions,
       contextOptions,
       cdpEndpoint: cliOptions.cdpEndpoint,
+      cdpHeaders: cliOptions.cdpHeaders,
     },
     server: {
       port: cliOptions.port,
