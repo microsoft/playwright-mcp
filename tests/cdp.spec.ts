@@ -95,3 +95,41 @@ test('does not support --device', async () => {
   expect(result.status).toBe(1);
   expect(result.stderr.toString()).toContain('Device emulation is not supported with cdpEndpoint.');
 });
+
+// cdp-header test for auth 
+test('cdp headers requires cdp endpoint', async () => {
+  const result = spawnSync('node', [
+    path.join(__filename, '../../cli.js'), '--cdp-headers={"Authorization": "Bearer token"}'
+  ]);
+  expect(result.error).toBeUndefined();
+  expect(result.status).toBe(1);
+  expect(result.stderr.toString()).toContain('cdp-headers requires cdp-endpoint');
+});
+
+test('cdp headers with endpoint accepted', async ({ cdpServer }) => {
+  await cdpServer.start();
+  const result = spawnSync('node', [
+    path.join(__filename, '../../cli.js'), 
+    `--cdp-endpoint=${cdpServer.endpoint}`,
+    '--cdp-headers={"Authorization":"Bearer token123"}',
+    '--help'
+  ]);
+  expect(result.status).toBe(0);
+});
+
+test('cdp server with headers', async ({ cdpServer, startClient, server }) => {
+  await cdpServer.start();
+  const { client } = await startClient({ 
+    args: [
+      `--cdp-endpoint=${cdpServer.endpoint}`,
+      '--cdp-headers={"X-Custom-Header":"test-value"}'
+    ] 
+  });
+  
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
+});

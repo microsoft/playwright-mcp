@@ -146,6 +146,9 @@ export function configFromCLIOptions(cliOptions: CLIOptions): Config {
   if (cliOptions.device && cliOptions.cdpEndpoint)
     throw new Error('Device emulation is not supported with cdpEndpoint.');
 
+  if (cliOptions.cdpHeaders && !cliOptions.cdpEndpoint)
+    throw new Error('cdp-headers requires cdp-endpoint to be specified.');
+
   // Context options
   const contextOptions: BrowserContextOptions = cliOptions.device ? devices[cliOptions.device] : {};
   if (cliOptions.storageState)
