@@ -204,3 +204,59 @@ body {
   padding: 0;
   font: inherit;
 }
+
+/* Auth token section */
+.auth-token-section {
+  margin: 16px 0;
+  padding: 16px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+}
+
+.auth-token-description {
+  font-size: 12px;
+  color: #656d76;
+  margin-bottom: 12px;
+}
+
+.auth-token-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  padding: 8px;
+}
+
+.auth-token-code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  color: #1f2328;
+  border: none;
+  flex: 1;
+  padding: 0;
+  word-break: break-all;
+}
+
+.auth-token-refresh {
+  flex: none;
+  height: 24px;
+  width: 24px;
+  border: none;
+  outline: none;
+  color: var(--color-fg-muted);
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.auth-token-refresh svg {
+  margin: 0;
+}
+
+.auth-token-refresh:not(:disabled):hover {
+  background-color: var(--color-btn-selected-bg);
+}

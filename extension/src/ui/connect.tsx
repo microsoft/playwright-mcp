@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Button, TabItem  } from './tabItem';
+import { Button, TabItem } from './tabItem';
+import { AuthTokenSection, getOrCreateAuthToken } from './authToken';
+
 import type { TabInfo } from './tabItem';
 
 type Status =
@@ -37,54 +39,69 @@ const ConnectApp: React.FC = () => {
   const [newTab, setNewTab] = useState<boolean>(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const relayUrl = params.get('mcpRelayUrl');
+    const runAsync = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const relayUrl = params.get('mcpRelayUrl');
 
-    if (!relayUrl) {
-      setShowButtons(false);
-      setStatus({ type: 'error', message: 'Missing mcpRelayUrl parameter in URL.' });
-      return;
-    }
+      if (!relayUrl) {
+        setShowButtons(false);
+        setStatus({ type: 'error', message: 'Missing mcpRelayUrl parameter in URL.' });
+        return;
+      }
 
-    setMcpRelayUrl(relayUrl);
+      setMcpRelayUrl(relayUrl);
 
-    try {
-      const client = JSON.parse(params.get('client') || '{}');
-      const info = `${client.name}/${client.version}`;
-      setClientInfo(info);
-      setStatus({
-        type: 'connecting',
-        message: `🎭 Playwright MCP started from  "${info}" is trying to connect. Do you want to continue?`
-      });
-    } catch (e) {
-      setStatus({ type: 'error', message: 'Failed to parse client version.' });
-      return;
-    }
+      try {
+        const client = JSON.parse(params.get('client') || '{}');
+        const info = `${client.name}/${client.version}`;
+        setClientInfo(info);
+        setStatus({
+          type: 'connecting',
+          message: `🎭 Playwright MCP started from  "${info}" is trying to connect. Do you want to continue?`
+        });
+      } catch (e) {
+        setStatus({ type: 'error', message: 'Failed to parse client version.' });
+        return;
+      }
 
-    const parsedVersion = parseInt(params.get('protocolVersion') ?? '', 10);
-    const requiredVersion = isNaN(parsedVersion) ? 1 : parsedVersion;
-    if (requiredVersion > SUPPORTED_PROTOCOL_VERSION) {
-      const extensionVersion = chrome.runtime.getManifest().version;
-      setShowButtons(false);
-      setShowTabList(false);
-      setStatus({
-        type: 'error',
-        versionMismatch: {
-          extensionVersion,
-        }
-      });
-      return;
-    }
+      const parsedVersion = parseInt(params.get('protocolVersion') ?? '', 10);
+      const requiredVersion = isNaN(parsedVersion) ? 1 : parsedVersion;
+      if (requiredVersion > SUPPORTED_PROTOCOL_VERSION) {
+        const extensionVersion = chrome.runtime.getManifest().version;
+        setShowButtons(false);
+        setShowTabList(false);
+        setStatus({
+          type: 'error',
+          versionMismatch: {
+            extensionVersion,
+          }
+        });
+        return;
+      }
 
-    void connectToMCPRelay(relayUrl);
+      const expectedToken = getOrCreateAuthToken();
+      const token = params.get('token');
+      if (token === expectedToken) {
+        await connectToMCPRelay(relayUrl);
+        await handleConnectToTab();
+        return;
+      }
+      if (token) {
+        handleReject('Invalid token provided.');
+        return;
+      }
 
-    // If this is a browser_navigate command, hide the tab list and show simple allow/reject
-    if (params.get('newTab') === 'true') {
-      setNewTab(true);
-      setShowTabList(false);
-    } else {
-      void loadTabs();
-    }
+      await connectToMCPRelay(relayUrl);
+
+      // If this is a browser_navigate command, hide the tab list and show simple allow/reject
+      if (params.get('newTab') === 'true') {
+        setNewTab(true);
+        setShowTabList(false);
+      } else {
+        await loadTabs();
+      }
+    };
+    void runAsync();
   }, []);
 
   const handleReject = useCallback((message: string) => {
@@ -94,7 +111,6 @@ const ConnectApp: React.FC = () => {
   }, []);
 
   const connectToMCPRelay = useCallback(async (mcpRelayUrl: string) => {
-
     const response = await chrome.runtime.sendMessage({ type: 'connectToMCPRelay', mcpRelayUrl  });
     if (!response.success)
       handleReject(response.error);
@@ -172,6 +188,10 @@ const ConnectApp: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+
+        {status?.type === 'connecting' && (
+          <AuthTokenSection />
         )}
 
         {showTabList && (

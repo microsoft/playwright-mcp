@@ -19,6 +19,7 @@ import { createRoot } from 'react-dom/client';
 import { Button, TabItem  } from './tabItem';
 
 import type { TabInfo } from './tabItem';
+import { AuthTokenSection } from './authToken';
 
 interface ConnectionStatus {
   isConnected: boolean;
@@ -97,6 +98,7 @@ const StatusApp: React.FC = () => {
             No MCP clients are currently connected.
           </div>
         )}
+        <AuthTokenSection />
       </div>
     </div>
   );
