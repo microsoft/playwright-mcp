@@ -75,8 +75,6 @@ jobs:
         MCP_IN_DOCKER: 1
 
   test_extension:
-    strategy:
-      fail-fast: false
     runs-on: macos-latest
     defaults:
       run:
