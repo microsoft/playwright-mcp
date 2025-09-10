@@ -181,6 +181,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   },
 });
 
+
 async function createTransport(args: string[], mcpMode: TestOptions['mcpMode'], profilesDir: string): Promise<{
   transport: Transport,
   stderr: Stream | null,
