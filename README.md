@@ -381,13 +381,13 @@ run the MCP server from environment with the DISPLAY and pass the `--port` flag 
 npx @playwright/mcp@latest --port 8931
 ```
 
-And then in MCP client config, set the `url` to the HTTP endpoint:
+And then in MCP client config, set the `httpUrl` to the HTTP endpoint:
 
 ```js
 {
   "mcpServers": {
     "playwright": {
-      "url": "http://localhost:8931/mcp"
+      "httpUrl": "http://localhost:8931/mcp"
     }
   }
 }
