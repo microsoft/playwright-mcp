@@ -21,7 +21,7 @@ const path = require('path')
 const { zodToJsonSchema } = require('zod-to-json-schema')
 const { execSync } = require('child_process');
 
-const { allTools } = require('playwright/lib/mcp/browser/tools');
+const { browserTools } = require('playwright/lib/mcp/browser/tools');
 
 const capabilities = {
   'core': 'Core automation',
@@ -33,7 +33,7 @@ const capabilities = {
   'tracing': 'Tracing (opt-in via --caps=tracing)',
 };
 
-const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, allTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
+const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, browserTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
 
 /**
  * @param {any} tool
