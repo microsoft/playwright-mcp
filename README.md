@@ -52,7 +52,7 @@ claude mcp add playwright npx @playwright/mcp@latest
 <details>
 <summary>Claude Desktop</summary>
 
-Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user), use the standard config above.
+Follow the MCP install [guide](https://modelcontextprotocol.info/docs/quickstart/user/), use the standard config above.
 
 </details>
 
