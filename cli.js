@@ -18,6 +18,28 @@
 const { program } = require('playwright-core/lib/utilsBundle');
 const { decorateCommand } = require('playwright/lib/mcp/program');
 
+// Start health check server if running in Docker (production environment)
+if (process.env.NODE_ENV === 'production') {
+  const http = require('http');
+  const HEALTH_PORT = 3000;
+
+  const healthServer = http.createServer((req, res) => {
+    if (req.url === '/up' && req.method === 'GET') {
+      // Simple health check - just respond OK
+      // If the process is running and can handle HTTP requests, we're healthy
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('OK');
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not Found');
+    }
+  });
+
+  healthServer.listen(HEALTH_PORT, '0.0.0.0', () => {
+    console.error(`Health check server listening on port ${HEALTH_PORT}`);
+  });
+}
+
 const packageJSON = require('./package.json');
 const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
 decorateCommand(p, packageJSON.version)
