@@ -238,6 +238,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         the session into the output directory.
   --secrets <path>                      path to a file containing secrets in the
                                         dotenv format
+  --shared-browser-context              reuse the same browser context between
+                                        all connected HTTP clients.
   --storage-state <path>                path to the storage state file for
                                         isolated sessions.
   --timeout-action <timeout>            specify action timeout in milliseconds,
