@@ -74,7 +74,7 @@ export const AuthTokenSection: React.FC<{}> = ({}) => {
 };
 
 function authTokenCode(authToken: string) {
-  return `"PLAYWRIGHT_MCP_EXTENSION_TOKEN": "${authToken}"`;
+  return `PLAYWRIGHT_MCP_EXTENSION_TOKEN=${authToken}`;
 }
 
 function exampleConfig(authToken: string) {
