@@ -7,20 +7,21 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # Needed for npm provenance
+      id-token: write  # Required for OIDC
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org/
+      # Ensure npm 11.5.1 or later is installed (for OIDC npm publishing)
+      - name: Update npm
+        run: npm install -g npm@latest
       - run: npm ci
       - run: npx playwright install --with-deps
       - run: npm run lint
       - run: npm run ctest
-      - run: npm publish --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish
 
   publish-docker:
     runs-on: ubuntu-latest
