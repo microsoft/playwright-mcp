@@ -180,6 +180,10 @@ Playwright MCP server supports following arguments. They can be provided in the 
 
 ```
 > npx @playwright/mcp@latest --help
+  --allowed-hosts <hosts...>            comma-separated list of hosts this
+                                        server is allowed to serve from.
+                                        Defaults to the host the server is bound
+                                        to.
   --allowed-origins <origins>           semicolon-separated list of origins to
                                         allow the browser to request. Default is
                                         to allow all.
@@ -217,6 +221,11 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         localhost. Use 0.0.0.0 to bind to all
                                         interfaces.
   --ignore-https-errors                 ignore https errors
+  --init-script <path...>               path to JavaScript file to add as an
+                                        initialization script. The script will
+                                        be evaluated in every page before any of
+                                        the page's scripts. Can be specified
+                                        multiple times.
   --isolated                            keep the browser profile in memory, do
                                         not save it to disk.
   --image-responses <mode>              whether to send image responses to the
@@ -236,6 +245,9 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         session into the output directory.
   --save-trace                          Whether to save the Playwright Trace of
                                         the session into the output directory.
+  --save-video <size>                   Whether to save the video of the session
+                                        into the output directory. For example
+                                        "--save-video=800x600"
   --secrets <path>                      path to a file containing secrets in the
                                         dotenv format
   --shared-browser-context              reuse the same browser context between
@@ -251,7 +263,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         specified, a temporary directory will be
                                         created.
   --viewport-size <size>                specify browser viewport size in pixels,
-                                        for example "1280, 720"
+                                        for example "1280x720"
 ```
 
 <!--- End of options generated section -->

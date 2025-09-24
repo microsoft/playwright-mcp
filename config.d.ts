@@ -16,7 +16,7 @@
 
 import type * as playwright from 'playwright';
 
-export type ToolCapability = 'core' | 'core-tabs' | 'core-install' | 'vision' | 'pdf' | 'verify';
+export type ToolCapability = 'core' | 'core-tabs' | 'core-install' | 'vision' | 'pdf' | 'testing' | 'tracing';
 
 export type Config = {
   /**
@@ -68,6 +68,12 @@ export type Config = {
      * Remote endpoint to connect to an existing Playwright server.
      */
     remoteEndpoint?: string;
+
+    /**
+     * Paths to JavaScript files to add as initialization scripts.
+     * The scripts will be evaluated in every page before any of the page's scripts.
+     */
+    initScript?: string[];
   },
 
   server?: {
@@ -80,6 +86,12 @@ export type Config = {
      * The host to bind the server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
      */
     host?: string;
+
+    /**
+     * The hosts this server is allowed to serve from. Defaults to the host server is bound to.
+     * This is not for CORS, but rather for the DNS rebinding protection.
+     */
+    allowedHosts?: string[];
   },
 
   /**
@@ -99,6 +111,14 @@ export type Config = {
    * Whether to save the Playwright trace of the session into the output directory.
    */
   saveTrace?: boolean;
+
+  /**
+   * If specified, saves the Playwright video of the session into the output directory.
+   */
+  saveVideo?: {
+    width: number;
+    height: number;
+  };
 
   /**
    * Reuse the same browser context between all connected HTTP clients.
@@ -146,3 +166,4 @@ export type Config = {
    */
   imageResponses?: 'allow' | 'omit';
 };
+
