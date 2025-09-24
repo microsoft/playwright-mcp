@@ -422,6 +422,19 @@ And then in MCP client config, set the `url` to the HTTP endpoint:
 }
 ```
 
+Or If you prefer to run the container as a long-lived service instead of letting the MCP client spawn it, use:
+
+```
+docker run -d -i --rm --init --pull=always \
+  --entrypoint node \
+  --name playwright \
+  -p 8931:8931 \
+  mcr.microsoft.com/playwright/mcp \
+  cli.js --headless --browser chromium --no-sandbox --port 8931
+```
+
+The server will listen on host port **8931** and can be reached by any MCP client.  
+
 You can build the Docker image yourself.
 
 ```
