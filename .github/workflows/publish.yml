@@ -46,11 +46,6 @@ jobs:
 
       - name: Publish to npm with next tag
         run: npm publish --tag next
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Reset package.json version
-        run: git checkout -- package.json
 
   publish-release-npm:
     if: github.event_name == 'release'
