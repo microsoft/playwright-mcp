@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # Needed for npm provenance
+      id-token: write  # Required for OIDC npm publishing
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -45,7 +45,7 @@ jobs:
       - run: npm run ctest
 
       - name: Publish to npm with next tag
-        run: npm publish --tag next --provenance
+        run: npm publish --tag next
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # Required for OIDC
+      id-token: write  # Required for OIDC npm publishing
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
