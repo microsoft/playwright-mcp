@@ -15,10 +15,30 @@
  * limitations under the License.
  */
 
-const { program } = require('playwright-core/lib/utilsBundle');
-const { decorateCommand } = require('playwright/lib/mcp/program');
+const { spawn } = require('child_process');
+const path = require('path');
 
-const packageJSON = require('./package.json');
-const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
-decorateCommand(p, packageJSON.version)
-void program.parseAsync(process.argv);
+const projectPath = path.join(__dirname, 'dotnet', 'PlaywrightMcpServer', 'PlaywrightMcpServer.csproj');
+const args = ['run', '--project', projectPath, '--', ...process.argv.slice(2)];
+
+const child = spawn('dotnet', args, {
+  stdio: ['pipe', 'pipe', 'pipe'],
+  cwd: __dirname,
+  env: {
+    ...process.env,
+    PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(__dirname, 'node_modules', 'playwright', '.local-browsers'),
+  },
+});
+
+child.on('error', error => {
+  console.error(error.stack || String(error));
+  process.exit(1);
+});
+
+child.on('close', code => {
+  process.exit(code ?? 0);
+});
+
+process.stdin.pipe(child.stdin);
+child.stdout.pipe(process.stdout);
+child.stderr.pipe(process.stderr);

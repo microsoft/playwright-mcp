@@ -3,6 +3,9 @@ dist/
 node_modules/
 test-results/
 playwright-report/
+.dotnet/
+dotnet/**/bin/
+dotnet/**/obj/
 .vscode/mcp.json
 .idea
 .DS_Store
