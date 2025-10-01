@@ -1,3 +1,4 @@
+using System.Threading;
 using Microsoft.Playwright;
 
 namespace PlaywrightMcpServer.Browser;
@@ -12,7 +13,6 @@ internal sealed class BrowserManager : IAsyncDisposable
     private IPage? _page;
 
     private IReadOnlyList<ElementInfo> _orderedElements = Array.Empty<ElementInfo>();
-    private readonly Dictionary<string, ElementInfo> _elementsByRef = new(StringComparer.OrdinalIgnoreCase);
 
     private const string SnapshotScript = """
 (() => {
@@ -133,21 +133,16 @@ internal sealed class BrowserManager : IAsyncDisposable
         await WaitForSettledAsync(page);
     }
 
-    public async Task ClickAsync(ElementInfo element, CancellationToken cancellationToken = default)
+    public async Task<string> ClickAsync(string selector, CancellationToken cancellationToken = default)
     {
-        var page = await EnsurePageAsync(cancellationToken);
-        var locator = page.Locator($"[data-mcp-ref=\"{element.Ref}\"]");
-        await locator.ClickAsync(new LocatorClickOptions { Timeout = 10000 });
-        await WaitForSettledAsync(page);
-    }
+        if (string.IsNullOrWhiteSpace(selector))
+            throw new InvalidOperationException("Selector must not be empty.");
 
-    public string BuildClickSnippet(ElementInfo element)
-    {
-        if (element.Role == "button" && !string.IsNullOrEmpty(element.Name))
-            return $"await page.getByRole('button', {{ name: '{EscapeSingleQuoted(element.Name!)}' }}).click();";
-        if (element.Role == "link" && !string.IsNullOrEmpty(element.Name))
-            return $"await page.getByRole('link', {{ name: '{EscapeSingleQuoted(element.Name!)}' }}).click();";
-        return $"await page.locator('[data-mcp-ref=\"{element.Ref}\"]').click();";
+        var page = await EnsurePageAsync(cancellationToken);
+        var (locator, snippet) = CreateLocator(page, selector);
+        await locator.First.ClickAsync(new LocatorClickOptions { Timeout = 10000 });
+        await WaitForSettledAsync(page);
+        return snippet;
     }
 
     public async Task<PageSnapshot> CaptureSnapshotAsync(CancellationToken cancellationToken = default)
@@ -165,19 +160,10 @@ internal sealed class BrowserManager : IAsyncDisposable
 
         var elements = result?.Elements ?? Array.Empty<ElementInfo>();
         _orderedElements = elements;
-        _elementsByRef.Clear();
-        foreach (var element in elements)
-            _elementsByRef[element.Ref] = element;
-
         var yaml = SnapshotFormatter.BuildYaml(_orderedElements);
         var url = result?.Url ?? page.Url;
         var title = result?.Title ?? await page.TitleAsync();
         return new PageSnapshot(url, title, _orderedElements, yaml);
-    }
-
-    public bool TryGetElement(string refId, out ElementInfo element)
-    {
-        return _elementsByRef.TryGetValue(refId, out element!);
     }
 
     public async ValueTask DisposeAsync()
@@ -240,6 +226,28 @@ internal sealed class BrowserManager : IAsyncDisposable
             "webkit" => playwright.Webkit,
             _ => playwright.Chromium
         };
+    }
+
+    private static (ILocator Locator, string Snippet) CreateLocator(IPage page, string selector)
+    {
+        var trimmed = selector.Trim();
+        if (trimmed.StartsWith("xpath=", StringComparison.OrdinalIgnoreCase))
+        {
+            var expression = trimmed["xpath=".Length..];
+            var normalized = $"xpath={expression}";
+            var snippet = $"await page.locator('xpath={EscapeSingleQuoted(expression)}').click();";
+            return (page.Locator(normalized), snippet);
+        }
+
+        if (trimmed.StartsWith("text=", StringComparison.OrdinalIgnoreCase))
+        {
+            var text = trimmed["text=".Length..];
+            var snippet = $"await page.getByText('{EscapeSingleQuoted(text)}').click();";
+            return (page.GetByText(text), snippet);
+        }
+
+        var snippetDefault = $"await page.locator('{EscapeSingleQuoted(trimmed)}').click();";
+        return (page.Locator(trimmed), snippetDefault);
     }
 
     private static async Task WaitForSettledAsync(IPage page)
