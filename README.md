@@ -183,7 +183,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --allowed-hosts <hosts...>            comma-separated list of hosts this
                                         server is allowed to serve from.
                                         Defaults to the host the server is bound
-                                        to.
+                                        to. Pass '*' to disable the host check.
   --allowed-origins <origins>           semicolon-separated list of origins to
                                         allow the browser to request. Default is
                                         to allow all.
@@ -509,7 +509,8 @@ http.createServer(async (req, res) => {
 - **browser_console_messages**
   - Title: Get console messages
   - Description: Returns all console messages
-  - Parameters: None
+  - Parameters:
+    - `onlyErrors` (boolean, optional): Only return error messages
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
