@@ -801,3 +801,34 @@ http.createServer(async (req, res) => {
 
 
 <!--- End of tools generated section -->
+
+#### C# MCP server tools
+
+The .NET implementation bundled in `dotnet/PlaywrightMcpServer` exposes the following tools. Unless noted otherwise the tools do not currently accept arguments and surface a placeholder response until their behavior is implemented.
+
+- **browser_navigate** — Navigate the active page to a specific URL. Parameters: `url` (string, required).
+- **browser_click** — Click an element by CSS/XPath/text selector. Parameters: `selector` (string, required; CSS by default, prefix with `xpath=` for XPath, `text=` for text).
+- **browser_navigate_back** — Navigate to the previous page in the browser history.
+- **browser_console_messages** — Inspect console output.
+- **browser_drag** — Drag an element on the page.
+- **browser_evaluate** — Evaluate JavaScript in the page.
+- **browser_file_upload** — Upload a file to an input.
+- **browser_fill_form** — Fill a form field.
+- **browser_handle_dialog** — Handle browser dialogs.
+- **browser_hover** — Hover an element.
+- **browser_select_option** — Select option in a form control.
+- **browser_type** — Type into an element.
+- **browser_close** — Close the current tab.
+- **browser_install** — Install additional browser binaries.
+- **browser_network_requests** — Inspect network requests.
+- **browser_press_key** — Press a key in the page.
+- **browser_resize** — Resize the page viewport.
+- **browser_snapshot** — Capture a DOM snapshot.
+- **browser_tabs** — List open tabs.
+- **browser_take_screenshot** — Capture a screenshot.
+- **browser_wait_for** — Wait for a condition.
+- **browser_connect** — Connect to an existing browser (available when the server is launched with `--connect-tool`).
+- **browser_pdf_save** — Save the current page as PDF (requires the `pdf` capability).
+- **browser_mouse_move_xy** — Move the mouse using coordinates (requires the `vision` capability).
+- **browser_mouse_click_xy** — Click using page coordinates (requires the `vision` capability).
+- **browser_mouse_drag_xy** — Drag using page coordinates (requires the `vision` capability).
