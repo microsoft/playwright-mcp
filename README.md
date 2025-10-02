@@ -166,6 +166,13 @@ After installation, the Playwright MCP server will be available for use with you
 </details>
 
 <details>
+<summary>Warp</summary>
+
+Go to `Settings` -> `AI` -> `Manage MCP Servers` -> `+ Add` to [add an MCP Server](https://docs.warp.dev/knowledge-and-collaboration/mcp#adding-an-mcp-server). Use the standard config above.
+
+</details>
+
+<details>
 <summary>Windsurf</summary>
 
 Follow Windsurf MCP [documentation](https://docs.windsurf.com/windsurf/cascade/mcp). Use the standard config above.
