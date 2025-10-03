@@ -170,6 +170,20 @@ After installation, the Playwright MCP server will be available for use with you
 
 Go to `Settings` -> `AI` -> `Manage MCP Servers` -> `+ Add` to [add an MCP Server](https://docs.warp.dev/knowledge-and-collaboration/mcp#adding-an-mcp-server). Use the standard config above.
 
+Alternatively, use the slash command `/add-mcp` in the Warp prompt and paste the standard config from above:
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+
 </details>
 
 <details>
