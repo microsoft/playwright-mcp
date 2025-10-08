@@ -331,6 +331,51 @@ test(`bypass connection dialog with token`, async ({ browserWithExtension, start
   expect(await navigateResponse).toHaveResponse({
     pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
+});
 
+test(`token metadata displays correctly`, async ({ browserWithExtension }) => {
+  const browserContext = await browserWithExtension.launch();
 
+  const page = await browserContext.newPage();
+  await page.goto('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/status.html');
+
+  // Check token status badge exists and shows "Active"
+  await expect(page.locator('.auth-token-status-badge')).toContainText('Active');
+
+  // Check metadata section exists
+  await expect(page.locator('.auth-token-metadata')).toBeVisible();
+
+  // Check Created date is displayed
+  await expect(page.locator('.auth-token-metadata-row').filter({ hasText: 'Created:' })).toBeVisible();
+
+  // Check Expires date is displayed
+  await expect(page.locator('.auth-token-metadata-row').filter({ hasText: 'Expires:' })).toBeVisible();
+
+  // Check Usage count is displayed (should be 0 for new token)
+  await expect(page.locator('.auth-token-metadata-row').filter({ hasText: 'Usage:' })).toContainText('0 times');
+});
+
+test(`token regeneration creates new token`, async ({ browserWithExtension }) => {
+  const browserContext = await browserWithExtension.launch();
+
+  const page = await browserContext.newPage();
+  await page.goto('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/status.html');
+
+  // Get original token
+  const originalToken = await page.locator('.auth-token-code').textContent();
+
+  // Click regenerate button
+  await page.locator('.auth-token-refresh').click();
+
+  // Wait a bit for state update
+  await page.waitForTimeout(100);
+
+  // Get new token
+  const newToken = await page.locator('.auth-token-code').textContent();
+
+  // Tokens should be different
+  expect(originalToken).not.toBe(newToken);
+
+  // Usage count should reset to 0
+  await expect(page.locator('.auth-token-metadata-row').filter({ hasText: 'Usage:' })).toContainText('0 times');
 });
