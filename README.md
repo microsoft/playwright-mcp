@@ -300,6 +300,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         all connected HTTP clients.
   --storage-state <path>                path to the storage state file for
                                         isolated sessions.
+  --test-id-attribute <attribute>       specify the attribute to use for test
+                                        ids, defaults to "data-testid"
   --timeout-action <timeout>            specify action timeout in milliseconds,
                                         defaults to 5000ms
   --timeout-navigation <timeout>        specify navigation timeout in
@@ -548,7 +550,7 @@ http.createServer(async (req, res) => {
   - Title: Close browser
   - Description: Close the page
   - Parameters: None
-  - Read-only: **true**
+  - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
@@ -618,7 +620,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
-  - Read-only: **true**
+  - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
@@ -635,7 +637,7 @@ http.createServer(async (req, res) => {
   - Title: Go back
   - Description: Go back to the previous page
   - Parameters: None
-  - Read-only: **true**
+  - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
@@ -662,7 +664,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `width` (number): Width of the browser window
     - `height` (number): Height of the browser window
-  - Read-only: **true**
+  - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
@@ -718,7 +720,7 @@ http.createServer(async (req, res) => {
     - `time` (number, optional): The time to wait in seconds
     - `text` (string, optional): The text to wait for
     - `textGone` (string, optional): The text to wait for to disappear
-  - Read-only: **true**
+  - Read-only: **false**
 
 </details>
 
@@ -786,7 +788,7 @@ http.createServer(async (req, res) => {
     - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
     - `y` (number): Y coordinate
-  - Read-only: **true**
+  - Read-only: **false**
 
 </details>
 
