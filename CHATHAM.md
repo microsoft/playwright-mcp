@@ -70,28 +70,30 @@ To ensure you are using the reviewed and approved version of this tool, follow t
     ```
 
 5.  **Configure in VS Code (or other MCP client):**
-    When configuring this MCP server (e.g., in VS Code `settings.json`), ensure you point to the local `cli.js` file within your cloned and built repository.
+    When configuring this MCP server (e.g., in VS Code `mcp.json`), ensure you point to the local `cli.js` file within your cloned and built repository.
 
     Example VS Code `settings.json` configuration:
     ```json
     {
         // ... other settings ...
-        "mcp": {
-            "servers": {
-                // ... other mcp servers ...
-                "playwright": {
-                    "command": "npx",
-                    "args": [
-                        "[path_to_your_cloned_repo]/playwright-mcp/cli.js"
-                        // Add any other necessary arguments here, e.g., --port, --browser
-                    ]
-                }
-            }
-        }
+         "servers": {
+             // ... other mcp servers ...
+             "playwright": {
+                 "command": "npx", // needs to be "node" on Windows machines
+                 "args": [
+                     "[path_to_your_cloned_repo]/playwright-mcp/cli.js"
+                     // Add any other necessary arguments here, e.g., --port, --browser
+                 ]
+             }
+         }
         // ... other settings ...
     }
     ```
     Replace `[path_to_your_cloned_repo]` with the absolute path to where you cloned the `playwright-mcp` repository. For example, if you cloned it into `/Users/yourname/projects/`, the path would be `/Users/yourname/projects/playwright-mcp/cli.js`.
+
+ **Tips (last updated 10/14/2025):**
+ 1. To get to this file in VS Code, use the context menu command `> MCP: Open User Configuration`
+ 2. To get to this file in Cursor, use the context menu command `> View: Open MCP Settings`. Then click "New MCP Server". The top-level key is not `servers` in Cursor, but `mcpServers`.
 
 ## Notes and Considerations
 
