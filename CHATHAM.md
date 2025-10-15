@@ -5,43 +5,42 @@ This document outlines the security review and approval status for the `playwrig
 ## Review Details
 
 *   **Repository:** `Chatham/playwright-mcp`
-*   **Commit SHA at Review:** 0df6d7a441c8fedfe449c115f371e4edd411a865
-*   **Latest Review Date:** June 11, 2025
+*   **Commit SHA at Review:** 34f1ec9cea98b44ddc29fe2921c7907b91b8271d
+*   **Latest Review Date:** October 15, 2025
 *   **Reviewers/Approvers:**
-    *   Reviewer: Paul Hiatt
-    *   Approver: Jay Lenti
+    *   Reviewer: Ashley Bloxom
+    *   Approver: Paul Hiatt
 
-## Security Checks
+### Security Checks
 
-| Check                                                                 | Status      | Notes                                     |
-| :-------------------------------------------------------------------- | :---------- | :---------------------------------------- |
-| **SECURITY.md File**                                                  |             |                                           |
-|   - Existence of `SECURITY.md`                                        | [x] Done    | File exists with Microsoft security template |
-|   - `SECURITY.md` contains clear vulnerability reporting instructions | [x] Done    | Instructions to report to MSRC provided     |
-|   - `SECURITY.md` outlines supported versions & update policy         | [x] Done    | Added supported versions section            |
-| **Dependency Management**                                             |             |                                           |
-|   - No known critical vulnerabilities in direct dependencies          | [x] Done    | Checked via `npm audit`, found 0 vulnerabilities |
-|   - Dependencies are pinned to specific versions                      | [x] Done    | All dependencies use specific version numbers   |
-|   - Plan for monitoring and updating dependencies                     | [x] Done    | Created DEPENDENCIES.md with update policy      |
-| **Code Review**                                                       |             |                                           |
-|   - Sensitive data handling (no hardcoded secrets, PII, etc.)         | [x] Done    | No hardcoded secrets found in source code         |
-|   - Input validation and sanitization                                 | [x] Done    | Input validation present in config parsing        |
-|   - Secure use of external commands/processes                         | [x] Done    | No direct command execution from user input found |
-|   - Error handling and logging (no sensitive info in logs)            | [x] Done    | Error handling follows best practices            |
-| **Build & Release Process**                                           |             |                                           |
-|   - Build process is reproducible                                     | [x] Done    | Build process uses TypeScript compiler with clean step |
-|   - Release artifacts are securely stored                             | [x] N/A     | Primarily used via local clone         |
-| **Documentation**                                                     |             |                                           |
-|   - Clear installation and usage instructions                         | [x] Done    | README.md contains detailed installation steps |
-|   - Documentation on security features or considerations              | [x] Done    | Created SECURITY-FEATURES.md with detailed docs |
-| **Threat Modeling**                                                   |             |                                           |
-|   - Potential threats and attack vectors identified                   | [x] Done    | Input validation, sanitization, error handling |
-|   - Mitigations for identified threats in place                       | [x] Done    | Proper use of Zod for schema validation       |
-| **Licensing**                                                         |             |                                           |
-|   - `LICENSE` file exists                                             | [x] Done    | Apache License 2.0 included                   |
-|   - License is compatible with organizational policies                | [x] Done    | Apache 2.0 is business-friendly open source license |
+| Check                                                                 | Status   | Notes |
+| :-------------------------------------------------------------------- | :------- | :---- |
+| **SECURITY.md File**                                                  |         |       |
+|   - Existence of `SECURITY.md`                                        | [x] Done | Present and follows MSRC template |
+|   - `SECURITY.md` contains clear vulnerability reporting instructions | [x] Done | MSRC links and PGP details provided |
+|   - `SECURITY.md` outlines supported versions & update policy         | [x] Done | Present; consider updating supported version table to reflect 0.0.42 |
+| **Dependency Management**                                             |         |       |
+|   - No known critical vulnerabilities in direct dependencies          | [x] Done | `npm audit --omit=dev` shows 0 vulns at root and in `extension/` |
+|   - Dependencies are pinned to specific versions                      | [x] Done | Runtime deps pinned; some devDeps in extension use caret ranges (acceptable) |
+|   - Plan for monitoring and updating dependencies                     | [x] Done | `DEPENDENCIES.md` present; versions updated to Playwright 1.57.0-alpha |
+| **Code Review**                                                       |         |       |
+|   - Sensitive data handling (no hardcoded secrets, PII, etc.)         | [x] Done | No secrets found; extension token stored in `localStorage` only |
+|   - Input validation and sanitization                                 | [x] Done | Zod schemas for tool inputs; file path sanitization in `sanitizeForFilePath` |
+|   - Secure use of external commands/processes                         | [x] Done | Controlled fork of Playwright CLI for install; no user-controlled shell exec |
+|   - Error handling and logging (no sensitive info in logs)            | [x] Done | Errors generic; debug logging gated via `debug`/console in extension |
+| **Build & Release Process**                                           |         |       |
+|   - Build process is reproducible                                     | [x] Done | TypeScript + Vite builds; Dockerfile produces minimal runtime image |
+|   - Release artifacts are securely stored                             | [x] N/A  | Typically consumed from source/npm |
+| **Documentation**                                                     |         |       |
+|   - Clear installation and usage instructions                         | [x] Done | README documents usage; extension README referenced |
+|   - Documentation on security features or considerations              | [x] Done | `SECURITY-FEATURES.md` kept up to date |
+| **Threat Modeling**                                                   |         |       |
+|   - Potential threats and attack vectors identified                   | [x] Done | Origin allow/block lists; UI consent/token for extension bridging |
+|   - Mitigations for identified threats in place                       | [x] Done | Network interception enforces allow/deny lists; token-based bypass with CSPRNG |
+| **Licensing**                                                         |         |       |
+|   - `LICENSE` file exists                                             | [x] Done | Apache 2.0 |
+|   - License is compatible with organizational policies                | [x] Done | Apache 2.0 |
 
-*Mark `[x]` for completed items.*
 
 ## Installation and Usage of Approved Version
 
