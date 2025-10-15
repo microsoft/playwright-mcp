@@ -1,8 +1,7 @@
 {
   "name": "@playwright/mcp",
-  "version": "0.0.29",
+  "version": "0.0.42",
   "description": "Playwright Tools for MCP",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/microsoft/playwright-mcp.git"
@@ -16,17 +15,17 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc",
-    "lint": "npm run update-readme && eslint . && tsc --noEmit",
-    "update-readme": "node utils/update-readme.js",
-    "watch": "tsc --watch",
+    "lint": "npm run update-readme",
+    "update-readme": "node update-readme.js",
+    "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
     "ftest": "playwright test --project=firefox",
     "wtest": "playwright test --project=webkit",
-    "run-server": "node lib/browserServer.js",
-    "clean": "rm -rf lib",
-    "npm-publish": "npm run clean && npm run build && npm run test && npm publish"
+    "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
+    "npm-publish": "npm run clean && npm run test && npm publish",
+    "copy-config": "cp ../playwright/packages/playwright/src/mcp/config.d.ts . && perl -pi -e \"s|import type \\* as playwright from 'playwright-core';|import type * as playwright from 'playwright';|\" ./config.d.ts",
+    "roll": "npm run copy-config && npm run lint"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -36,29 +35,16 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.11.0",
-    "commander": "^13.1.0",
-    "debug": "^4.4.1",
-    "mime": "^4.0.7",
-    "playwright": "1.53.0",
-    "zod-to-json-schema": "^3.24.4"
-  },
-  "devDependencies": {
-    "@eslint/eslintrc": "^3.2.0",
-    "@eslint/js": "^9.19.0",
-    "@playwright/test": "1.53.0",
-    "@stylistic/eslint-plugin": "^3.0.1",
-    "@types/debug": "^4.1.12",
-    "@types/node": "^22.13.10",
-    "@typescript-eslint/eslint-plugin": "^8.26.1",
-    "@typescript-eslint/parser": "^8.26.1",
-    "@typescript-eslint/utils": "^8.26.1",
-    "eslint": "^9.19.0",
-    "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-notice": "^1.0.0",
-    "typescript": "^5.8.2"
+    "playwright": "1.57.0-alpha-2025-10-09",
+    "playwright-core": "1.57.0-alpha-2025-10-09"
   },
   "bin": {
     "mcp-server-playwright": "cli.js"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.5",
+    "@playwright/test": "1.57.0-alpha-2025-10-09",
+    "@types/node": "^24.3.0",
+    "zod-to-json-schema": "^3.24.6"
   }
 }

@@ -16,18 +16,13 @@
 
 import type * as playwright from 'playwright';
 
-export type ToolCapability = 'core' | 'tabs' | 'pdf' | 'history' | 'wait' | 'files' | 'install' | 'testing';
+export type ToolCapability = 'core' | 'core-tabs' | 'core-install' | 'vision' | 'pdf' | 'testing' | 'tracing';
 
 export type Config = {
   /**
    * The browser to use.
    */
   browser?: {
-    /**
-     * Use browser agent (experimental).
-     */
-    browserAgent?: string;
-
     /**
      * The type of browser to use.
      */
@@ -65,9 +60,20 @@ export type Config = {
     cdpEndpoint?: string;
 
     /**
+     * CDP headers to send with the connect request.
+     */
+    cdpHeaders?: Record<string, string>;
+
+    /**
      * Remote endpoint to connect to an existing Playwright server.
      */
     remoteEndpoint?: string;
+
+    /**
+     * Paths to JavaScript files to add as initialization scripts.
+     * The scripts will be evaluated in every page before any of the page's scripts.
+     */
+    initScript?: string[];
   },
 
   server?: {
@@ -80,29 +86,51 @@ export type Config = {
      * The host to bind the server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
      */
     host?: string;
+
+    /**
+     * The hosts this server is allowed to serve from. Defaults to the host server is bound to.
+     * This is not for CORS, but rather for the DNS rebinding protection.
+     */
+    allowedHosts?: string[];
   },
 
   /**
    * List of enabled tool capabilities. Possible values:
    *   - 'core': Core browser automation features.
-   *   - 'tabs': Tab management features.
    *   - 'pdf': PDF generation and manipulation.
-   *   - 'history': Browser history access.
-   *   - 'wait': Wait and timing utilities.
-   *   - 'files': File upload/download support.
-   *   - 'install': Browser installation utilities.
+   *   - 'vision': Coordinate-based interactions.
    */
   capabilities?: ToolCapability[];
 
   /**
-   * Run server that uses screenshots (Aria snapshots are used by default).
+   * Whether to save the Playwright session into the output directory.
    */
-  vision?: boolean;
+  saveSession?: boolean;
 
   /**
    * Whether to save the Playwright trace of the session into the output directory.
    */
   saveTrace?: boolean;
+
+  /**
+   * If specified, saves the Playwright video of the session into the output directory.
+   */
+  saveVideo?: {
+    width: number;
+    height: number;
+  };
+
+  /**
+   * Reuse the same browser context between all connected HTTP clients.
+   */
+  sharedBrowserContext?: boolean;
+
+  /**
+   * Secrets are used to prevent LLM from getting sensitive data while
+   * automating scenarios such as authentication.
+   * Prefer the browser.contextOptions.storageState over secrets file as a more secure alternative.
+   */
+  secrets?: Record<string, string>;
 
   /**
    * The directory to save output files.
@@ -122,7 +150,25 @@ export type Config = {
   };
 
   /**
+   * Specify the attribute to use for test ids, defaults to "data-testid".
+   */
+  testIdAttribute?: string;
+
+  timeouts?: {
+    /*
+     * Configures default action timeout: https://playwright.dev/docs/api/class-page#page-set-default-timeout. Defaults to 5000ms.
+     */
+    action?: number;
+
+    /*
+     * Configures default navigation timeout: https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout. Defaults to 60000ms.
+     */
+    navigation?: number;
+  };
+
+  /**
    * Whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.
    */
-  imageResponses?: 'allow' | 'omit' | 'auto';
+  imageResponses?: 'allow' | 'omit';
 };
+

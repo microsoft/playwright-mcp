@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-import { createConnection } from './lib/index.js';
-export { createConnection };
+const { createConnection } = require('playwright/lib/mcp/index');
+module.exports = { createConnection };

@@ -1,36 +1,82 @@
 name: Publish
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * *'
   release:
     types: [published]
+
 jobs:
-  publish-npm:
+  publish-canary-npm:
+    if: github.event.schedule || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # Needed for npm provenance
+      id-token: write  # Required for OIDC npm publishing
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 18
+          node-version: 20
           registry-url: https://registry.npmjs.org/
+      # Ensure npm 11.5.1 or later is installed (for OIDC npm publishing)
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Get current version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Set canary version
+        id: canary-version
+        run: echo "version=${{ steps.version.outputs.version }}-alpha-${{ steps.date.outputs.date }}" >> $GITHUB_OUTPUT
+
+      - name: Update package.json version
+        run: |
+          npm version ${{ steps.canary-version.outputs.version }} --no-git-tag-version
+
       - run: npm ci
       - run: npx playwright install --with-deps
-      - run: npm run build
       - run: npm run lint
       - run: npm run ctest
-      - run: npm publish --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  publish-docker:
+      - name: Publish to npm with next tag
+        run: npm publish --tag next
+
+  publish-release-npm:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC npm publishing
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+      # Ensure npm 11.5.1 or later is installed (for OIDC npm publishing)
+      - name: Update npm
+        run: npm install -g npm@latest
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run lint
+      - run: npm run ctest
+      - run: npm publish
+
+  publish-release-docker:
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write # Needed for OIDC login to Azure
     environment: allow-publishing-docker-to-acr
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up QEMU # Needed for multi-platform builds (e.g., arm64 on amd64 runner)
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx # Needed for multi-platform builds
@@ -44,6 +90,7 @@ jobs:
       - name: Login to ACR
         run: az acr login --name playwright
       - name: Build and push Docker image
+        id: build-push
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -53,3 +100,50 @@ jobs:
           tags: |
             playwright.azurecr.io/public/playwright/mcp:${{ github.event.release.tag_name }}
             playwright.azurecr.io/public/playwright/mcp:latest
+      - uses: oras-project/setup-oras@v1
+      - name: Set oras tags
+        run: |
+          attach_eol_manifest() {
+            local image="$1"
+            local today=$(date -u +'%Y-%m-%d')
+            # oras is re-using Docker credentials, so we don't need to login.
+            # Following the advice in https://portal.microsofticm.com/imp/v3/incidents/incident/476783820/summary
+            oras attach --artifact-type application/vnd.microsoft.artifact.lifecycle --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$today" $image
+          }
+          # for each tag, attach the eol manifest
+          for tag in $(echo ${{ steps.build-push.outputs.metadata['image.name'] }} | tr ',' '\n'); do
+            attach_eol_manifest $tag
+          done
+
+  package-release-extension:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to upload release assets
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install extension dependencies
+        working-directory: ./extension
+        run: npm ci
+      - name: Build extension
+        working-directory: ./extension
+        run: npm run build
+      - name: Get extension version
+        id: get-version
+        working-directory: ./extension
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      - name: Package extension
+        working-directory: ./extension
+        run: |
+          cd dist
+          zip -r ../playwright-mcp-extension-${{ steps.get-version.outputs.version }}.zip .
+          cd ..
+      - name: Upload extension to release
+        env:
+           GITHUB_TOKEN: ${{ github.token }}
+        run: |
+            gh release upload ${{github.event.release.tag_name}} ./extension/playwright-mcp-extension-${{ steps.get-version.outputs.version }}.zip

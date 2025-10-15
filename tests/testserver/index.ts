@@ -16,7 +16,6 @@
  */
 
 import fs from 'fs';
-import url from 'node:url';
 import http from 'http';
 import https from 'https';
 import path from 'path';
@@ -24,9 +23,6 @@ import debug from 'debug';
 
 const fulfillSymbol = Symbol('fulfil callback');
 const rejectSymbol = Symbol('reject callback');
-
-// NOTE: Can be removed when we drop Node.js 18 support and changed to import.meta.filename.
-const __filename = url.fileURLToPath(import.meta.url);
 
 export class TestServer {
   private _server: http.Server;

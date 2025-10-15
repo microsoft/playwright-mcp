@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { resolve } from 'path';
+import { defineConfig } from 'vite';
 
-test('browser_navigate', async ({ client, server }) => {
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
-    code: `await page.goto('${server.HELLO_WORLD}');`,
-    pageState: `- Page URL: ${server.HELLO_WORLD}
-- Page Title: Title
-- Page Snapshot:
-\`\`\`yaml
-- generic [active] [ref=e1]: Hello, world!
-\`\`\``,
-  });
+export default defineConfig({
+  build: {
+    lib: {
+      entry: resolve(__dirname, 'src/background.ts'),
+      fileName: 'lib/background',
+      formats: ['es']
+    },
+    outDir: 'dist',
+    emptyOutDir: false,
+    minify: false
+  }
 });

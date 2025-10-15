@@ -16,17 +16,28 @@
 
 import { test, expect } from './fixtures';
 
-test('browser_navigate', async ({ client, server }) => {
+test('browser_click', async ({ client, server, mcpBrowser }) => {
+  server.setContent('/', `
+    <title>Title</title>
+    <button>Submit</button>
+  `, 'text/html');
+
   expect(await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
+    arguments: { url: server.PREFIX },
   })).toHaveResponse({
-    code: `await page.goto('${server.HELLO_WORLD}');`,
-    pageState: `- Page URL: ${server.HELLO_WORLD}
-- Page Title: Title
-- Page Snapshot:
-\`\`\`yaml
-- generic [active] [ref=e1]: Hello, world!
-\`\`\``,
+    code: `await page.goto('${server.PREFIX}');`,
+    pageState: expect.stringContaining(`- button \"Submit\" [ref=e2]`),
+  });
+
+  expect(await client.callTool({
+    name: 'browser_click',
+    arguments: {
+      element: 'Submit button',
+      ref: 'e2',
+    },
+  })).toHaveResponse({
+    code: `await page.getByRole('button', { name: 'Submit' }).click();`,
+    pageState: expect.stringContaining(`- button "Submit" ${mcpBrowser !== 'webkit' || process.platform === 'linux' ? '[active] ' : ''}[ref=e2]`),
   });
 });

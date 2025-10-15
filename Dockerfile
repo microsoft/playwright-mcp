@@ -32,10 +32,6 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
 
 # Copy the rest of the app
 COPY *.json *.js *.ts .
-COPY src src/
-
-# Build the app
-RUN npm run build
 
 # ------------------------------
 # Browser
@@ -55,6 +51,7 @@ FROM base
 ARG PLAYWRIGHT_BROWSERS_PATH
 ARG USERNAME=node
 ENV NODE_ENV=production
+ENV PLAYWRIGHT_MCP_OUTPUT_DIR=/tmp/playwright-output
 
 # Set the correct ownership for the runtime user on production `node_modules`
 RUN chown -R ${USERNAME}:${USERNAME} node_modules
@@ -63,7 +60,6 @@ USER ${USERNAME}
 
 COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
 COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
-COPY --from=builder --chown=${USERNAME}:${USERNAME} /app/lib /app/lib
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
 ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]
