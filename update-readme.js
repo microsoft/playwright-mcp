@@ -29,7 +29,7 @@ const capabilities = {
   'core-install': 'Browser installation',
   'vision': 'Coordinate-based (opt-in via --caps=vision)',
   'pdf': 'PDF generation (opt-in via --caps=pdf)',
-  'verify': 'Verify (opt-in via --caps=verify)',
+  'testing': 'Test assertions (opt-in via --caps=testing)',
   'tracing': 'Tracing (opt-in via --caps=tracing)',
 };
 
