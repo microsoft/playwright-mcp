@@ -18,6 +18,8 @@
     "lint": "npm run update-readme",
     "update-readme": "node update-readme.js",
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
+    "docker-rm": "docker rm playwright-mcp-dev",
+    "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
     "ftest": "playwright test --project=firefox",
