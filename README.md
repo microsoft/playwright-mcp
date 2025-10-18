@@ -129,6 +129,25 @@ Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to you
 </details>
 
 <details>
+<summary>Kiro</summary>
+
+Follow the MCP Servers [documentation](https://kiro.dev/docs/mcp/). For example in `.kiro/settings/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+</details>
+
+<details>
 <summary>LM Studio</summary>
 
 #### Click the button to install:
@@ -216,25 +235,6 @@ Alternatively, use the slash command `/add-mcp` in the Warp prompt and paste the
 
 Follow Windsurf MCP [documentation](https://docs.windsurf.com/windsurf/cascade/mcp). Use the standard config above.
 
-</details>
-
-<details>
-<summary>Kiro</summary>
-
-Follow the MCP Servers [documentation](https://kiro.dev/docs/mcp/). For example in `.kiro/settings/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ]
-    }
-  }
-}
-```
 </details>
 
 ### Configuration
