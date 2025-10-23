@@ -32,6 +32,14 @@ type PageMessage = {
   type: 'disconnect';
 };
 
+type MessageResponse = {
+  success: boolean;
+  error?: string;
+  tabs?: chrome.tabs.Tab[];
+  currentTabId?: number;
+  connectedTabId?: number | null;
+};
+
 class TabShareExtension {
   private _activeConnection: RelayConnection | undefined;
   private _connectedTabId: number | null = null;
@@ -46,34 +54,47 @@ class TabShareExtension {
   }
 
   // Promise-based message handling is not supported in Chrome: https://issues.chromium.org/issues/40753031
-  private _onMessage(message: PageMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
+  private _onMessage(message: PageMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: MessageResponse) => void) {
     switch (message.type) {
       case 'connectToMCPRelay':
         this._connectToRelay(sender.tab!.id!, message.mcpRelayUrl).then(
             () => sendResponse({ success: true }),
-            (error: any) => sendResponse({ success: false, error: error.message }));
+            (error: unknown) => {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              sendResponse({ success: false, error: errorMessage });
+            });
         return true;
       case 'getTabs':
         this._getTabs().then(
             tabs => sendResponse({ success: true, tabs, currentTabId: sender.tab?.id }),
-            (error: any) => sendResponse({ success: false, error: error.message }));
+            (error: unknown) => {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              sendResponse({ success: false, error: errorMessage });
+            });
         return true;
       case 'connectToTab':
         const tabId = message.tabId || sender.tab?.id!;
         const windowId = message.windowId || sender.tab?.windowId!;
         this._connectTab(sender.tab!.id!, tabId, windowId, message.mcpRelayUrl!).then(
             () => sendResponse({ success: true }),
-            (error: any) => sendResponse({ success: false, error: error.message }));
+            (error: unknown) => {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              sendResponse({ success: false, error: errorMessage });
+            });
         return true; // Return true to indicate that the response will be sent asynchronously
       case 'getConnectionStatus':
         sendResponse({
+          success: true,
           connectedTabId: this._connectedTabId
         });
         return false;
       case 'disconnect':
         this._disconnect().then(
             () => sendResponse({ success: true }),
-            (error: any) => sendResponse({ success: false, error: error.message }));
+            (error: unknown) => {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              sendResponse({ success: false, error: errorMessage });
+            });
         return true;
     }
     return false;
@@ -97,8 +118,9 @@ class TabShareExtension {
       };
       this._pendingTabSelection.set(selectorTabId, { connection });
       debugLog(`Connected to MCP relay`);
-    } catch (error: any) {
-      const message = `Failed to connect to MCP relay: ${error.message}`;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const message = `Failed to connect to MCP relay: ${errorMessage}`;
       debugLog(message);
       throw new Error(message);
     }
@@ -109,7 +131,7 @@ class TabShareExtension {
       debugLog(`Connecting tab ${tabId} to relay at ${mcpRelayUrl}`);
       try {
         this._activeConnection?.close('Another connection is requested');
-      } catch (error: any) {
+      } catch (error: unknown) {
         debugLog(`Error closing active connection:`, error);
       }
       await this._setConnectedTabId(null);
@@ -132,9 +154,10 @@ class TabShareExtension {
         chrome.windows.update(windowId, { focused: true }),
       ]);
       debugLog(`Connected to MCP bridge`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       await this._setConnectedTabId(null);
-      debugLog(`Failed to connect tab ${tabId}:`, error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      debugLog(`Failed to connect tab ${tabId}:`, errorMessage);
       throw error;
     }
   }
@@ -154,7 +177,7 @@ class TabShareExtension {
       await chrome.action.setTitle({ tabId, title: title || '' });
       if (color)
         await chrome.action.setBadgeBackgroundColor({ tabId, color });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Ignore errors as the tab may be closed already.
     }
   }

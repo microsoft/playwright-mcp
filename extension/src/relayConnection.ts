@@ -25,21 +25,30 @@ export function debugLog(...args: unknown[]): void {
 type ProtocolCommand = {
   id: number;
   method: string;
-  params?: any;
+  params?: Record<string, unknown>;
 };
 
 type ProtocolResponse = {
   id?: number;
   method?: string;
-  params?: any;
-  result?: any;
-  error?: string;
+  params?: Record<string, unknown>;
+  result?: unknown;
+  error?: string | { code: number; message: string };
 };
+
+interface TargetInfo {
+  targetInfo?: {
+    targetId: string;
+    type: string;
+    title: string;
+    url: string;
+  };
+}
 
 export class RelayConnection {
   private _debuggee: chrome.debugger.Debuggee;
   private _ws: WebSocket;
-  private _eventListener: (source: chrome.debugger.DebuggerSession, method: string, params: any) => void;
+  private _eventListener: (source: chrome.debugger.DebuggerSession, method: string, params?: object) => void;
   private _detachListener: (source: chrome.debugger.Debuggee, reason: string) => void;
   private _tabPromise: Promise<void>;
   private _tabPromiseResolve!: () => void;
@@ -83,7 +92,7 @@ export class RelayConnection {
     this.onclose?.();
   }
 
-  private _onDebuggerEvent(source: chrome.debugger.DebuggerSession, method: string, params: any): void {
+  private _onDebuggerEvent(source: chrome.debugger.DebuggerSession, method: string, params?: object): void {
     if (source.tabId !== this._debuggee.tabId)
       return;
     debugLog('Forwarding CDP event:', method, params);
@@ -113,9 +122,10 @@ export class RelayConnection {
     let message: ProtocolCommand;
     try {
       message = JSON.parse(event.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugLog('Error parsing message:', error);
-      this._sendError(-32700, `Error parsing message: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this._sendError(-32700, `Error parsing message: ${errorMessage}`);
       return;
     }
 
@@ -126,20 +136,21 @@ export class RelayConnection {
     };
     try {
       response.result = await this._handleCommand(message);
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugLog('Error handling command:', error);
-      response.error = error.message;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      response.error = errorMessage;
     }
     debugLog('Sending response:', response);
     this._sendMessage(response);
   }
 
-  private async _handleCommand(message: ProtocolCommand): Promise<any> {
+  private async _handleCommand(message: ProtocolCommand): Promise<unknown> {
     if (message.method === 'attachToTab') {
       await this._tabPromise;
       debugLog('Attaching debugger to tab:', this._debuggee);
       await chrome.debugger.attach(this._debuggee, '1.3');
-      const result: any = await chrome.debugger.sendCommand(this._debuggee, 'Target.getTargetInfo');
+      const result = await chrome.debugger.sendCommand(this._debuggee, 'Target.getTargetInfo') as TargetInfo;
       return {
         targetInfo: result?.targetInfo,
       };
@@ -147,7 +158,10 @@ export class RelayConnection {
     if (!this._debuggee.tabId)
       throw new Error('No tab is connected. Please go to the Playwright MCP extension and select the tab you want to connect to.');
     if (message.method === 'forwardCDPCommand') {
-      const { sessionId, method, params } = message.params;
+      if (!message.params || typeof message.params !== 'object') {
+        throw new Error('Invalid params for forwardCDPCommand');
+      }
+      const { sessionId, method, params } = message.params as { sessionId: string; method: string; params: object };
       debugLog('CDP command:', method, params);
       const debuggerSession: chrome.debugger.DebuggerSession = {
         ...this._debuggee,
@@ -171,7 +185,7 @@ export class RelayConnection {
     });
   }
 
-  private _sendMessage(message: any): void {
+  private _sendMessage(message: ProtocolResponse | { method: string; params: Record<string, unknown> } | { error: { code: number; message: string } }): void {
     if (this._ws.readyState === WebSocket.OPEN)
       this._ws.send(JSON.stringify(message));
   }

@@ -27,6 +27,10 @@ type Status =
   | { type: 'error'; message: string }
   | { type: 'error'; versionMismatch: { extensionVersion: string; } };
 
+type ExtensionMessage = {
+  type: 'connectionTimeout';
+};
+
 const SUPPORTED_PROTOCOL_VERSION = 1;
 
 const ConnectApp: React.FC = () => {
@@ -153,7 +157,7 @@ const ConnectApp: React.FC = () => {
   }, [clientInfo, mcpRelayUrl]);
 
   useEffect(() => {
-    const listener = (message: any) => {
+    const listener = (message: ExtensionMessage) => {
       if (message.type === 'connectionTimeout')
         handleReject('Connection timed out.');
     };
