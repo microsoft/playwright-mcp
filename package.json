@@ -37,15 +37,15 @@
     }
   },
   "dependencies": {
-    "playwright": "1.57.0-alpha-2025-10-16",
-    "playwright-core": "1.57.0-alpha-2025-10-16"
+    "playwright": "1.57.0-alpha-2025-10-24",
+    "playwright-core": "1.57.0-alpha-2025-10-24"
   },
   "bin": {
     "mcp-server-playwright": "cli.js"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",
-    "@playwright/test": "1.57.0-alpha-2025-10-16",
+    "@playwright/test": "1.57.0-alpha-2025-10-24",
     "@types/node": "^24.3.0",
     "zod-to-json-schema": "^3.24.6"
   }
