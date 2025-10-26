@@ -84,7 +84,13 @@ Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user),
 <details>
 <summary>Codex</summary>
 
-Create or edit the configuration file `~/.codex/config.toml` and add:
+Use the Codex CLI to add the Playwright MCP server:
+
+```bash
+codex mcp add playwright npx "@playwright/mcp@latest"
+```
+
+Alternatively, create or edit the configuration file `~/.codex/config.toml` and add:
 
 ```toml
 [mcp_servers.playwright]
