@@ -116,6 +116,21 @@ Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, u
 </details>
 
 <details>
+<summary>Factory</summary>
+
+Use the Factory CLI to add the Playwright MCP server:
+
+```bash
+droid mcp add playwright "npx @playwright/mcp@latest"
+```
+
+Alternatively, type `/mcp` within Factory droid to open an interactive UI for managing MCP servers.
+
+For more information, see the [Factory MCP documentation](https://docs.factory.ai/cli/configuration/mcp).
+
+</details>
+
+<details>
 <summary>Gemini CLI</summary>
 
 Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md#configure-the-mcp-server-in-settingsjson), use the standard config above.
