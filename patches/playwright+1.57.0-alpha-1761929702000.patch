@@ -1,0 +1,117 @@
+diff --git a/node_modules/playwright/lib/mcp/browser/tools/network.js b/node_modules/playwright/lib/mcp/browser/tools/network.js
+index a8ff17b..eac2c16 100644
+--- a/node_modules/playwright/lib/mcp/browser/tools/network.js
++++ b/node_modules/playwright/lib/mcp/browser/tools/network.js
+@@ -38,9 +38,17 @@ const requests = (0, import_tool.defineTabTool)({
+       response.addResult(await renderRequest(request));
+   }
+ });
++function getRequestId(request) {
++  // GUID format: request@a780f6a928c416b9f5db06d6252eb84b
++  // Extract just the hash part and truncate to 8 chars for readability
++  const guid = request._guid;
++  const hash = guid.includes('@') ? guid.split('@')[1] : guid;
++  return hash.slice(0, 8);
++}
+ async function renderRequest(request) {
+   const result = [];
+-  result.push(`[${request.method().toUpperCase()}] ${request.url()}`);
++  const requestId = getRequestId(request);
++  result.push(`[${requestId}] [${request.method().toUpperCase()}] ${request.url()}`);
+   const hasResponse = request._hasResponse;
+   if (hasResponse) {
+     const response = await request.response();
+@@ -49,6 +57,92 @@ async function renderRequest(request) {
+   }
+   return result.join(" ");
+ }
++const requestDetails = (0, import_tool.defineTabTool)({
++  capability: "core",
++  schema: {
++    name: "browser_network_request_details",
++    title: "Get network request details",
++    description: "Returns detailed information about a specific network request including headers, body, timing, and response data. Use the request ID from browser_network_requests.",
++    inputSchema: import_bundle.z.object({
++      requestId: import_bundle.z.string().describe("Request ID from browser_network_requests (8-character hash)")
++    }),
++    type: "readOnly"
++  },
++  handle: async (tab, params, response) => {
++    const requests2 = await tab.requests();
++    const request = Array.from(requests2).find((r) => getRequestId(r) === params.requestId);
++    if (!request) {
++      response.addError(`Request with ID ${params.requestId} not found. Use browser_network_requests to see available requests.`);
++      return;
++    }
++    response.addResult(await renderRequestDetails(request));
++  }
++});
++async function renderRequestDetails(request) {
++  const details = {
++    request: {
++      id: getRequestId(request),
++      url: request.url(),
++      method: request.method(),
++      headers: request.headers(),
++      postData: request.postData(),
++      resourceType: request.resourceType()
++    }
++  };
++  const hasResponse = request._hasResponse;
++  if (hasResponse) {
++    const resp = await request.response();
++    if (resp) {
++      let body = null;
++      let bodySize = 0;
++      try {
++        const bodyBuffer = await resp.body();
++        bodySize = bodyBuffer.length;
++        if (bodySize > 0 && bodySize < 1e5) {
++          const contentType = resp.headers()["content-type"] || "";
++          if (contentType.includes("text/") || contentType.includes("application/json") || contentType.includes("application/xml")) {
++            body = bodyBuffer.toString("utf-8");
++          } else {
++            body = `<binary data, ${bodySize} bytes>`;
++          }
++        } else if (bodySize >= 1e5) {
++          body = `<large response, ${bodySize} bytes - truncated>`;
++        }
++      } catch (e) {
++        body = `<unable to fetch body: ${e.message}>`;
++      }
++      details.response = {
++        url: resp.url(),
++        status: resp.status(),
++        statusText: resp.statusText(),
++        headers: resp.headers(),
++        body,
++        bodySize
++      };
++      const timing = request._timing;
++      if (timing) {
++        details.timing = {
++          startTime: timing.startTime,
++          domainLookupStart: timing.domainLookupStart,
++          domainLookupEnd: timing.domainLookupEnd,
++          connectStart: timing.connectStart,
++          connectEnd: timing.connectEnd,
++          requestStart: timing.requestStart,
++          responseStart: timing.responseStart,
++          responseEnd: timing.responseEnd
++        };
++      }
++    }
++  }
++  const failure = await request.failure();
++  if (failure) {
++    details.failure = {
++      errorText: failure.errorText
++    };
++  }
++  return JSON.stringify(details, null, 2);
++}
+ var network_default = [
+-  requests
++  requests,
++  requestDetails
+ ];
