@@ -147,3 +147,60 @@ jobs:
            GITHUB_TOKEN: ${{ github.token }}
         run: |
             gh release upload ${{github.event.release.tag_name}} ./extension/playwright-mcp-extension-${{ steps.get-version.outputs.version }}.zip
+
+  publish-release-mcp-registry:
+    if: github.event_name == 'release'
+    needs: publish-release-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Needed for GitHub OIDC authentication
+    steps:
+      - uses: actions/checkout@v5
+      - name: Clone MCP Registry and build publisher tool
+        shell: pwsh
+        run: |
+          cd ${{ runner.temp }}
+
+          # Install Microsoft Go
+          & ${{ github.workspace }}/.mcp/go-install.ps1
+
+          # Enable compliant crypto
+          $env:GOEXPERIMENT = "systemcrypto"
+
+          # Clone and build the publisher tool
+          git clone --branch "v1.3.7" https://github.com/modelcontextprotocol/registry
+          cd registry
+          go build -o ${{ runner.temp }}/mcp-publisher ./cmd/publisher
+
+          # show help for the tool to ensure it's working
+          ${{ runner.temp }}/mcp-publisher --help
+      - name: Update server.json version
+        shell: pwsh
+        run: |
+          $packageJson = Get-Content ./package.json | ConvertFrom-Json
+          $version = $packageJson.version
+          Write-Host "Updating server.json with version: $version"
+          $serverJson = Get-Content ./.mcp/server.json | ConvertFrom-Json
+          $serverJson.version = $version
+          foreach ($package in $serverJson.packages) {
+            $package.version = $version
+          }
+          $serverJson | ConvertTo-Json -Depth 10 | Set-Content ./.mcp/server.json
+      - name: Azure Login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.KV_CLIENT_ID }}
+          tenant-id: ${{ secrets.KV_TENANT_ID }}
+          subscription-id: ${{ secrets.KV_SUBSCRIPTION_ID }}
+      - name: Publish to the MCP Registry
+        shell: pwsh
+        run: |
+          # log in using Key Vault
+          ${{ runner.temp }}/mcp-publisher `
+              login dns azure-key-vault `
+              -vault "${{ secrets.KV_NAME }}" -key "${{ secrets.KV_KEY_NAME }}" `
+              -domain microsoft.com
+
+          # publish the server.json
+          ${{ runner.temp }}/mcp-publisher publish ./.mcp/server.json

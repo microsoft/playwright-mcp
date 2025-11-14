@@ -2,6 +2,7 @@
   "name": "@playwright/mcp",
   "version": "0.0.46",
   "description": "Playwright Tools for MCP",
+  "mcpName": "com.microsoft/playwright",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/microsoft/playwright-mcp.git"
