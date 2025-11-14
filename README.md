@@ -270,15 +270,6 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         server is allowed to serve from.
                                         Defaults to the host the server is bound
                                         to. Pass '*' to disable the host check.
-  --allowed-origins <origins>           semicolon-separated list of origins to
-                                        allow the browser to request. Default is
-                                        to allow all.
-  --blocked-origins <origins>           semicolon-separated list of origins to
-                                        block the browser from requesting.
-                                        Blocklist is evaluated before allowlist.
-                                        If used without the allowlist, requests
-                                        not matching the blocklist are still
-                                        allowed.
   --block-service-workers               block service workers
   --browser <browser>                   browser or chrome channel to use,
                                         possible values: chrome, firefox,
@@ -307,6 +298,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         localhost. Use 0.0.0.0 to bind to all
                                         interfaces.
   --ignore-https-errors                 ignore https errors
+  --init-page <path...>                 path to TypeScript file to evaluate on
+                                        Playwright page object
   --init-script <path...>               path to JavaScript file to add as an
                                         initialization script. The script will
                                         be evaluated in every page before any of
@@ -401,6 +394,35 @@ state [here](https://playwright.dev/docs/auth).
 **Browser Extension**
 
 The Playwright MCP Chrome Extension allows you to connect to existing browser tabs and leverage your logged-in sessions and browser state. See [extension/README.md](extension/README.md) for installation and setup instructions.
+
+### Initial state
+
+There are multiple ways to provide the initial state to the browser context or a page.
+
+For the storage state, you can either:
+- Start with a user data directory using the `--user-data-dir` argument. This will persist all browser data between the sessions.
+- Start with a storage state file using the `--storage-state` argument. This will load cookies and local storage from the file into an isolated browser context.
+
+For the page state, you can use:
+
+- `--init-page` to point to a TypeScript file that will be evaluated on the Playwright page object. This allows you to run arbitrary code to set up the page.
+
+```ts
+// init-page.ts
+export default async ({ page }) => {
+  await page.context().grantPermissions(['geolocation']);
+  await page.context().setGeolocation({ latitude: 37.7749, longitude: -122.4194 });
+  await page.setViewportSize({ width: 1280, height: 720 });
+};
+```
+
+- `--init-script` to point to a JavaScript file that will be added as an initialization script. The script will be evaluated in every page before any of the page's scripts.
+This is useful for overriding browser APIs or setting up the environment.
+
+```js
+// init-script.js
+window.isPlaywrightMCP = true;
+```
 
 ### Configuration file
 
@@ -704,6 +726,15 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `width` (number): Width of the browser window
     - `height` (number): Height of the browser window
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_run_code**
+  - Title: Run Playwright code
+  - Description: Run Playwright code snippet
+  - Parameters:
+    - `code` (string): Playwright code snippet to run. The snippet should access the `page` object to interact with the page. Can make multiple statements. For example: `await page.getByRole('button', { name: 'Submit' }).click();`
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
