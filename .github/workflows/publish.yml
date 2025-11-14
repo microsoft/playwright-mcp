@@ -152,6 +152,7 @@ jobs:
     if: github.event_name == 'release'
     needs: publish-release-npm
     runs-on: ubuntu-latest
+    environment: allow-mcp-registry-publishing
     permissions:
       contents: read
       id-token: write # Needed for GitHub OIDC authentication
@@ -163,7 +164,8 @@ jobs:
           cd ${{ runner.temp }}
 
           # Install Microsoft Go
-          & ${{ github.workspace }}/.mcp/go-install.ps1
+          go run github.com/microsoft/go-infra/goinstallscript@v1.1.0
+          ./go-install.ps1 -GitHubActionsPath
 
           # Enable compliant crypto
           $env:GOEXPERIMENT = "systemcrypto"
@@ -190,9 +192,9 @@ jobs:
       - name: Azure Login via OIDC
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.KV_CLIENT_ID }}
-          tenant-id: ${{ secrets.KV_TENANT_ID }}
-          subscription-id: ${{ secrets.KV_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.AZURE_MCP_REGISTRY_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_MCP_REGISTRY_SUBSCRIPTION_ID }}
+          subscription-id: ${{ secrets.AZURE_MCP_REGISTRY_TENANT_ID }}
       - name: Publish to the MCP Registry
         shell: pwsh
         run: |
