@@ -149,8 +149,7 @@ jobs:
             gh release upload ${{github.event.release.tag_name}} ./extension/playwright-mcp-extension-${{ steps.get-version.outputs.version }}.zip
 
   publish-release-mcp-registry:
-    if: github.event_name == 'release'
-    needs: publish-release-npm
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: allow-mcp-registry-publishing
     permissions:
