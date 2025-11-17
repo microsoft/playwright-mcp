@@ -7,6 +7,7 @@
     "url": "https://github.com/microsoft/playwright-mcp",
     "source": "github"
   },
+  "websiteUrl": "https://github.com/microsoft/playwright-mcp",
   "version": "<version is replaced in the publish pipeline>",
   "packages": [
     {
