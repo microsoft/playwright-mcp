@@ -8,12 +8,12 @@
     "source": "github"
   },
   "websiteUrl": "https://github.com/microsoft/playwright-mcp",
-  "version": "<version is replaced in the publish pipeline>",
+  "version": "0.0.46",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@playwright/mcp",
-      "version": "<version is replaced in the publish pipeline>",
+      "version": "0.0.46",
       "transport": {
         "type": "stdio"
       }

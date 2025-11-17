@@ -177,18 +177,6 @@ jobs:
 
           # show help for the tool to ensure it's working
           ${{ runner.temp }}/mcp-publisher --help
-      - name: Update server.json version
-        shell: pwsh
-        run: |
-          $packageJson = Get-Content ./package.json | ConvertFrom-Json
-          $version = $packageJson.version
-          Write-Host "Updating server.json with version: $version"
-          $serverJson = Get-Content ./.mcp/server.json | ConvertFrom-Json
-          $serverJson.version = $version
-          foreach ($package in $serverJson.packages) {
-            $package.version = $version
-          }
-          $serverJson | ConvertTo-Json -Depth 10 | Set-Content ./.mcp/server.json
       - name: Azure Login via OIDC
         uses: azure/login@v2
         with:
