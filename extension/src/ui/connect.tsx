@@ -81,7 +81,8 @@ const ConnectApp: React.FC = () => {
 
       const expectedToken = getOrCreateAuthToken();
       const token = params.get('token');
-      if (token === expectedToken) {
+      // Support "always-allow" as a special token value to bypass approval
+      if (token === 'always-allow' || token === expectedToken) {
         await connectToMCPRelay(relayUrl);
         await handleConnectToTab();
         return;

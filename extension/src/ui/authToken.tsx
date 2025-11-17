@@ -43,6 +43,9 @@ export const AuthTokenSection: React.FC<{}> = ({}) => {
         <button className='auth-token-refresh' title='Generate new token' aria-label='Generate new token'onClick={onRegenerateToken}>{icons.refresh()}</button>
         <CopyToClipboard value={authTokenCode(authToken)} />
       </div>
+      <div className='auth-token-description' style={{ marginTop: '8px', fontSize: '11px' }}>
+        Or use the <code style={{ padding: '2px 4px', backgroundColor: '#e1e4e8', borderRadius: '3px' }}>--always-allow</code> flag to always approve connections without a token.
+      </div>
 
       <div className='auth-token-example-section'>
         <button

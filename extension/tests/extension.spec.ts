@@ -331,6 +331,26 @@ test(`bypass connection dialog with token`, async ({ browserWithExtension, start
   expect(await navigateResponse).toHaveResponse({
     pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
+});
 
+test(`bypass connection dialog with always-allow flag`, async ({ browserWithExtension, startClient, server }) => {
+  await browserWithExtension.launch();
 
+  const { client } = await startClient({
+    args: [`--extension`, `--always-allow`],
+    config: {
+      browser: {
+        userDataDir: browserWithExtension.userDataDir,
+      }
+    },
+  });
+
+  const navigateResponse = await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  });
+
+  expect(await navigateResponse).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
 });

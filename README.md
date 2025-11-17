@@ -395,6 +395,21 @@ state [here](https://playwright.dev/docs/auth).
 
 The Playwright MCP Chrome Extension allows you to connect to existing browser tabs and leverage your logged-in sessions and browser state. See [extension/README.md](extension/README.md) for installation and setup instructions.
 
+To bypass the connection approval dialog on each session, you can use the `--always-allow` flag:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--extension", "--always-allow"]
+    }
+  }
+}
+```
+
+For better security, you can use a unique token from the extension instead of `--always-allow`. See the [extension README](extension/README.md) for details.
+
 ### Initial state
 
 There are multiple ways to provide the initial state to the browser context or a page.

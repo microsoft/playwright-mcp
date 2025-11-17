@@ -15,6 +15,17 @@
  * limitations under the License.
  */
 
+// Check for --always-allow flag and set the environment variable
+const args = process.argv.slice(2);
+const alwaysAllowIndex = args.indexOf('--always-allow');
+if (alwaysAllowIndex !== -1) {
+  // Set the environment variable to bypass extension approval
+  process.env.PLAYWRIGHT_MCP_EXTENSION_TOKEN = 'always-allow';
+  // Remove the flag from args so it doesn't cause an error in the main program
+  args.splice(alwaysAllowIndex, 1);
+  process.argv = [process.argv[0], process.argv[1], ...args];
+}
+
 const { program } = require('playwright-core/lib/utilsBundle');
 const { decorateCommand } = require('playwright/lib/mcp/program');
 
