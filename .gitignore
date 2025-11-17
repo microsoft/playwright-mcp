@@ -8,3 +8,96 @@ playwright-report/
 .DS_Store
 .env
 sessions/
+
+# Security: Environment and secrets files
+.env
+.env.*
+!.env.example
+*.env
+.envrc
+secrets.json
+secrets.yaml
+secrets.yml
+config.local.*
+.secrets/
+
+# Security: Credentials and keys
+*.key
+*.pem
+*.cert
+*.p12
+*.pfx
+*.jks
+*.keystore
+!tests/testserver/*.pem
+!tests/testserver/*.key
+
+# Security: Authentication tokens
+.npmrc
+.yarnrc
+.token
+*.token
+auth.json
+credentials.json
+service-account*.json
+
+# Security: SSH and GPG keys
+id_rsa
+id_rsa.pub
+id_dsa
+id_dsa.pub
+*.asc
+
+# Security: Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Security: Log files that may contain sensitive data
+*.log
+logs/
+*.stackdump
+
+# Security: Backup files
+*.backup
+*.bak
+*.swp
+*.swo
+*~
+
+# Security: IDE and editor settings with potential secrets
+.vscode/settings.json
+.vscode/launch.json
+.vscode/*.json
+!.vscode/extensions.json
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# Security: OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Security: Temporary and cache files
+.cache/
+tmp/
+temp/
+*.tmp
+
+# Security: Archive files that might contain backups
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Security: MCP specific sensitive data
+user-data-dir/
+storage-state.json
+playwright-state.json
+trace.zip
