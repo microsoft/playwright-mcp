@@ -438,72 +438,151 @@ npx @playwright/mcp@latest --config path/to/config.json
 
 ```typescript
 {
-  // Browser configuration
+  /**
+   * The browser to use.
+   */
   browser?: {
-    // Browser type to use (chromium, firefox, or webkit)
+    /**
+     * The type of browser to use.
+     */
     browserName?: 'chromium' | 'firefox' | 'webkit';
 
-    // Keep the browser profile in memory, do not save it to disk.
+    /**
+     * Keep the browser profile in memory, do not save it to disk.
+     */
     isolated?: boolean;
 
-    // Path to user data directory for browser profile persistence
+    /**
+     * Path to a user data directory for browser profile persistence.
+     * Temporary directory is created by default.
+     */
     userDataDir?: string;
 
-    // Browser launch options (see Playwright docs)
-    // @see https://playwright.dev/docs/api/class-browsertype#browser-type-launch
-    launchOptions?: {
-      channel?: string;        // Browser channel (e.g. 'chrome')
-      headless?: boolean;      // Run in headless mode
-      executablePath?: string; // Path to browser executable
-      // ... other Playwright launch options
-    };
+    /**
+     * Launch options passed to
+     * @see https://playwright.dev/docs/api/class-browsertype#browser-type-launch-persistent-context
+     *
+     * This is useful for settings options like `channel`, `headless`, `executablePath`, etc.
+     */
+    launchOptions?: playwright.LaunchOptions;
 
-    // Browser context options
-    // @see https://playwright.dev/docs/api/class-browser#browser-new-context
-    contextOptions?: {
-      viewport?: { width: number, height: number };
-      // ... other Playwright context options
-    };
+    /**
+     * Context options for the browser context.
+     *
+     * This is useful for settings options like `viewport`.
+     */
+    contextOptions?: playwright.BrowserContextOptions;
 
-    // CDP endpoint for connecting to existing browser
+    /**
+     * Chrome DevTools Protocol endpoint to connect to an existing browser instance in case of Chromium family browsers.
+     */
     cdpEndpoint?: string;
 
-    // Remote Playwright server endpoint
+    /**
+     * CDP headers to send with the connect request.
+     */
+    cdpHeaders?: Record<string, string>;
+
+    /**
+     * Remote endpoint to connect to an existing Playwright server.
+     */
     remoteEndpoint?: string;
+
+    /**
+     * Paths to TypeScript files to add as initialization scripts for Playwright page.
+     */
+    initPage?: string[];
+
+    /**
+     * Paths to JavaScript files to add as initialization scripts.
+     * The scripts will be evaluated in every page before any of the page's scripts.
+     */
+    initScript?: string[];
   },
 
-  // Server configuration
   server?: {
-    port?: number;  // Port to listen on
-    host?: string;  // Host to bind to (default: localhost)
+    /**
+     * The port to listen on for SSE or MCP transport.
+     */
+    port?: number;
+
+    /**
+     * The host to bind the server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
+     */
+    host?: string;
+
+    /**
+     * The hosts this server is allowed to serve from. Defaults to the host server is bound to.
+     * This is not for CORS, but rather for the DNS rebinding protection.
+     */
+    allowedHosts?: string[];
   },
 
-  // List of additional capabilities
-  capabilities?: Array<
-    'tabs' |    // Tab management
-    'install' | // Browser installation
-    'pdf' |     // PDF generation
-    'vision' |  // Coordinate-based interactions
-  >;
+  /**
+   * List of enabled tool capabilities. Possible values:
+   *   - 'core': Core browser automation features.
+   *   - 'pdf': PDF generation and manipulation.
+   *   - 'vision': Coordinate-based interactions.
+   */
+  capabilities?: ToolCapability[];
 
-  // Directory for output files
+  /**
+   * Whether to save the Playwright session into the output directory.
+   */
+  saveSession?: boolean;
+
+  /**
+   * Whether to save the Playwright trace of the session into the output directory.
+   */
+  saveTrace?: boolean;
+
+  /**
+   * If specified, saves the Playwright video of the session into the output directory.
+   */
+  saveVideo?: {
+    width: number;
+    height: number;
+  };
+
+  /**
+   * Reuse the same browser context between all connected HTTP clients.
+   */
+  sharedBrowserContext?: boolean;
+
+  /**
+   * Secrets are used to prevent LLM from getting sensitive data while
+   * automating scenarios such as authentication.
+   * Prefer the browser.contextOptions.storageState over secrets file as a more secure alternative.
+   */
+  secrets?: Record<string, string>;
+
+  /**
+   * The directory to save output files.
+   */
   outputDir?: string;
 
-  // Network configuration
-  network?: {
-    // List of origins to allow the browser to request. Default is to allow all. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
-    allowedOrigins?: string[];
-
-    // List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
-    blockedOrigins?: string[];
-  };
- 
   /**
-   * Whether to send image responses to the client. Can be "allow" or "omit". 
-   * Defaults to "allow".
+   * Specify the attribute to use for test ids, defaults to "data-testid".
+   */
+  testIdAttribute?: string;
+
+  timeouts?: {
+    /*
+     * Configures default action timeout: https://playwright.dev/docs/api/class-page#page-set-default-timeout. Defaults to 5000ms.
+     */
+    action?: number;
+
+    /*
+     * Configures default navigation timeout: https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout. Defaults to 60000ms.
+     */
+    navigation?: number;
+  };
+
+  /**
+   * Whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.
    */
   imageResponses?: 'allow' | 'omit';
-}
+};
 ```
 </details>
 
