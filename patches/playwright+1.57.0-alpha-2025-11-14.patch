@@ -1,0 +1,33 @@
+diff --git a/node_modules/playwright/lib/mcp/browser/tools/screenshot.js b/node_modules/playwright/lib/mcp/browser/tools/screenshot.js
+index 2ffed9c..114f084 100644
+--- a/node_modules/playwright/lib/mcp/browser/tools/screenshot.js
++++ b/node_modules/playwright/lib/mcp/browser/tools/screenshot.js
+@@ -40,7 +40,7 @@ var import_tool = require("./tool");
+ var javascript = __toESM(require("../codegen"));
+ var import_utils2 = require("./utils");
+ const screenshotSchema = import_bundle.z.object({
+-  type: import_bundle.z.enum(["png", "jpeg"]).default("png").describe("Image format for the screenshot. Default is png."),
++  type: import_bundle.z.enum(["png", "jpeg"]).optional().default("png").describe("Image format for the screenshot. Default is png."),
+   filename: import_bundle.z.string().optional().describe("File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified. Prefer relative file names to stay within the output directory."),
+   element: import_bundle.z.string().optional().describe("Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too."),
+   ref: import_bundle.z.string().optional().describe("Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too."),
+@@ -60,7 +60,7 @@ const screenshot = (0, import_tool.defineTabTool)({
+       throw new Error("Both element and ref must be provided or neither.");
+     if (params.fullPage && params.ref)
+       throw new Error("fullPage cannot be used with element screenshots.");
+-    const fileType = params.type || "png";
++    const fileType = (!params.type || params.type === "") ? "png" : params.type;
+     const fileName = await tab.context.outputFile(params.filename || (0, import_utils2.dateAsFileName)(fileType), { origin: "llm", reason: "Saving screenshot" });
+     const options = {
+       type: fileType,
+@@ -80,8 +80,9 @@ const screenshot = (0, import_tool.defineTabTool)({
+     await (0, import_utils.mkdirIfNeeded)(fileName);
+     await import_fs.default.promises.writeFile(fileName, buffer);
+     response.addResult(`Took the ${screenshotTarget} screenshot and saved it as ${fileName}`);
++    const contentType = fileType === "png" ? "image/png" : "image/jpeg";
+     response.addImage({
+-      contentType: fileType === "png" ? "image/png" : "image/jpeg",
++      contentType,
+       data: scaleImageToFitMessage(buffer, fileType)
+     });
+   }

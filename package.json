@@ -16,6 +16,7 @@
   },
   "license": "Apache-2.0",
   "scripts": {
+    "postinstall": "patch-package",
     "lint": "npm run update-readme",
     "update-readme": "node update-readme.js",
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
@@ -48,6 +49,7 @@
     "@modelcontextprotocol/sdk": "^1.17.5",
     "@playwright/test": "1.57.0-alpha-2025-11-14",
     "@types/node": "^24.3.0",
+    "patch-package": "^8.0.1",
     "zod-to-json-schema": "^3.24.6"
   }
 }
