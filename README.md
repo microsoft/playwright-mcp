@@ -270,6 +270,21 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         server is allowed to serve from.
                                         Defaults to the host the server is bound
                                         to. Pass '*' to disable the host check.
+  --allowed-origins <origins>           semicolon-separated list of TRUSTED
+                                        origins to allow the browser to request.
+                                        Default is to allow all.
+                                        Important: *does not* serve as a
+                                        security boundary and *does not* affect
+                                        redirects.
+  --blocked-origins <origins>           semicolon-separated list of origins to
+                                        block the browser from requesting.
+                                        Blocklist is evaluated before allowlist.
+                                        If used without the allowlist, requests
+                                        not matching the blocklist are still
+                                        allowed.
+                                        Important: *does not* serve as a
+                                        security boundary and *does not* affect
+                                        redirects.
   --block-service-workers               block service workers
   --browser <browser>                   browser or chrome channel to use,
                                         possible values: chrome, firefox,

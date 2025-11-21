@@ -1,6 +1,6 @@
 {
   "name": "@playwright/mcp",
-  "version": "0.0.47",
+  "version": "0.0.48",
   "description": "Playwright Tools for MCP",
   "mcpName": "com.microsoft/playwright-mcp",
   "repository": {
@@ -38,15 +38,15 @@
     }
   },
   "dependencies": {
-    "playwright": "1.57.0-alpha-2025-11-14",
-    "playwright-core": "1.57.0-alpha-2025-11-14"
+    "playwright": "1.58.0-alpha-1763757971000",
+    "playwright-core": "1.58.0-alpha-1763757971000"
   },
   "bin": {
     "mcp-server-playwright": "cli.js"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",
-    "@playwright/test": "1.57.0-alpha-2025-11-14",
+    "@playwright/test": "1.58.0-alpha-1763757971000",
     "@types/node": "^24.3.0",
     "zod-to-json-schema": "^3.24.6"
   }
