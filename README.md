@@ -103,6 +103,38 @@ For more information, see the [Codex MCP documentation](https://github.com/opena
 </details>
 
 <details>
+<summary>Copilot</summary>
+
+Use the Copilot CLI to interactively add the Playwright MCP server:
+
+```bash
+/mcp add
+```
+
+Alternatively, create or edit the configuration file `~/.copilot/mcp-config.json` and add:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "local",
+      "command": "npx",
+      "tools": [
+        "*"
+      ],
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+
+For more information, see the [Copilot CLI documentation](https://docs.github.com/en/copilot/concepts/agents/about-copilot-cli).
+
+</details>
+
+<details>
 <summary>Cursor</summary>
 
 #### Click the button to install:
