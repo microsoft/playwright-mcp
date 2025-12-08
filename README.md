@@ -328,6 +328,10 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --cdp-header <headers...>             CDP headers to send with the connect
                                         request, multiple can be specified.
   --config <path>                       path to the configuration file.
+  --console-level <level>               level of console messages to return:
+                                        "error", "warning", "info", "debug".
+                                        Each level includes the messages of more
+                                        severe levels.
   --device <device>                     device to emulate, for example: "iPhone
                                         15"
   --executable-path <path>              path to the browser executable.
@@ -378,6 +382,10 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         dotenv format
   --shared-browser-context              reuse the same browser context between
                                         all connected HTTP clients.
+  --snapshot-mode <mode>                when taking snapshots for responses,
+                                        specifies the mode to use. Can be
+                                        "incremental", "full", or "none".
+                                        Default is incremental.
   --storage-state <path>                path to the storage state file for
                                         isolated sessions.
   --test-id-attribute <attribute>       specify the attribute to use for test
@@ -777,7 +785,7 @@ http.createServer(async (req, res) => {
   - Title: Get console messages
   - Description: Returns all console messages
   - Parameters:
-    - `onlyErrors` (boolean, optional): Only return error messages
+    - `level` (string, optional): Level of the console messages to return. Each level includes the messages of more severe levels. Defaults to "info".
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -863,7 +871,8 @@ http.createServer(async (req, res) => {
 - **browser_network_requests**
   - Title: List network requests
   - Description: Returns all network requests since loading the page
-  - Parameters: None
+  - Parameters:
+    - `includeStatic` (boolean, optional): Whether to include successful static resources like images, fonts, scripts, etc. Defaults to false.
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
