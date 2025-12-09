@@ -1,0 +1,5 @@
+{
+    "recommendations": [
+        "johnsoncodehk.vscode-typescript-web"
+    ]
+}
