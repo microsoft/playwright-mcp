@@ -900,7 +900,7 @@ http.createServer(async (req, res) => {
   - Title: Run Playwright code
   - Description: Run Playwright code snippet
   - Parameters:
-    - `code` (string): Playwright code snippet to run. The snippet should access the `page` object to interact with the page. Can make multiple statements. For example: `await page.getByRole('button', { name: 'Submit' }).click();`
+    - `code` (string): A JavaScript function containing Playwright code to execute. It will be invoked with a single argument, page, which you can use for any page interaction. For example: `async (page) => { await page.getByRole('button', { name: 'Submit' }).click(); return await page.title(); }`
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -919,7 +919,8 @@ http.createServer(async (req, res) => {
 - **browser_snapshot**
   - Title: Page snapshot
   - Description: Capture accessibility snapshot of the current page, this is better than screenshot
-  - Parameters: None
+  - Parameters:
+    - `filename` (string, optional): Save snapshot to markdown file instead of returning it in the response.
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->

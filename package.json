@@ -38,16 +38,15 @@
     }
   },
   "dependencies": {
-    "playwright": "1.58.0-alpha-2025-12-05",
-    "playwright-core": "1.58.0-alpha-2025-12-05"
+    "playwright": "1.58.0-alpha-2025-12-11",
+    "playwright-core": "1.58.0-alpha-2025-12-11"
   },
   "bin": {
     "mcp-server-playwright": "cli.js"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.5",
-    "@playwright/test": "1.58.0-alpha-2025-12-05",
-    "@types/node": "^24.3.0",
-    "zod-to-json-schema": "^3.24.6"
+    "@modelcontextprotocol/sdk": "^1.24.0",
+    "@playwright/test": "1.58.0-alpha-2025-12-11",
+    "@types/node": "^24.3.0"
   }
 }
