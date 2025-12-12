@@ -404,6 +404,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
 
 <!--- End of options generated section -->
 
+> **Note:** The `--executable-path` option only works with Chromium-family browsers (Chromium, Chrome, Edge). For Firefox and WebKit, Playwright will use its bundled browser versions regardless of this option.
+
 ### User profile
 
 You can run Playwright MCP with persistent profile like a regular browser (default), in isolated contexts for testing sessions, or connect to your existing browser using the browser extension.
