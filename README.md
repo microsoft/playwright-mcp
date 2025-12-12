@@ -334,7 +334,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         severe levels.
   --device <device>                     device to emulate, for example: "iPhone
                                         15"
-  --executable-path <path>              path to the browser executable.
+  --executable-path <path>              path to the browser executable
+                                        (Edge/Chrome only).
   --extension                           Connect to a running browser instance
                                         (Edge/Chrome only). Requires the
                                         "Playwright MCP Bridge" browser
