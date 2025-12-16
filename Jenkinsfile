@@ -15,8 +15,8 @@ pipeline {
         stage('Install Node & Playwright deps') {
             steps {
                 dir('tests/pumb-registration-tests') {
-                    sh 'npm ci'
-                    sh 'npx playwright install --with-deps'
+                    bat 'npm ci'
+                    bat 'npx playwright install --with-deps'
                 }
             }
         }
@@ -24,7 +24,7 @@ pipeline {
         stage('Run Playwright tests') {
             steps {
                 dir('tests/pumb-registration-tests') {
-                    sh 'npm run test'
+                    bat 'npm run test'
                 }
             }
             post {
