@@ -1,0 +1,155 @@
+# Continue Plugin Configuration
+name: QA Testing Assistant
+version: 1.0.0
+schema: v1
+
+# Models/Agents Configuration
+models:
+  # OpenAI GPT Models
+  - name: GPT-4
+    provider: openai
+    model: gpt-4
+    apiKey: your-openai-api-key-here
+    
+  - name: GPT-5
+    provider: openai
+    model: gpt-5
+    apiKey: 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
+
+  # Anthropic Claude
+  - name: Claude-3
+    provider: anthropic
+    model: claude-3-opus-20240229
+    apiKey: your-anthropic-api-key-here
+
+  # Perplexity AI
+  - name: Perplexity AI
+    provider: perplexity
+    model: llama-3.1-sonar-large-128k-online
+    apiKey: QmbcU9RrtJi4vWts3aE9-WzBeX1rr0Yq/qzP9x0rZ
+
+  # Google Gemini
+  - name: Gemini Pro
+    provider: google
+    model: gemini-1.5-pro
+    apiKey: your-google-api-key-here
+
+  # Local Agent
+  - name: Local Agent
+    provider: local
+    model: local-agent
+    apiKey: ""
+
+# MCP Servers Configuration
+mcpServers:
+  # TestRail MCP Server
+  - name: TestRail Server
+    command: npx
+    args:
+      - -y
+      - testrail-mcp
+      - -d
+      - https://trainingt88.testrail.io/
+      - -u
+      - taras.oliiarchuk@gmail.com
+      - -k
+      - QmbcU9RrtJi4vWts3aE9-WzBeX1rr0Yq/qzP9x0rZ
+    env: {}
+
+  # GitHub Integration
+  - name: GitHub Server
+    command: npx
+    args:
+      - -y
+      - @modelcontextprotocol/server-github
+    env:
+      GITHUB_PERSONAL_ACCESS_TOKEN: your-github-token
+
+  # Slack Integration
+  - name: Slack Server
+    command: npx
+    args:
+      - -y
+      - @modelcontextprotocol/server-slack
+    env:
+      SLACK_BOT_TOKEN: your-slack-bot-token
+
+  # File System Access
+  - name: File System Server
+    command: npx
+    args:
+      - -y
+      - @modelcontextprotocol/server-filesystem
+      - /path/to/your/project
+    env: {}
+
+  # Web Search
+  - name: Web Search Server
+    command: npx
+    args:
+      - -y
+      - @modelcontextprotocol/server-brave-search
+    env:
+      BRAVE_API_KEY: your-brave-search-api-key
+
+# Custom Tools Configuration
+tools:
+  - name: test_case_generator
+    description: Generate test cases for TestRail import
+    parameters:
+      - name: requirements
+        type: string
+        description: Requirements or user stories to generate tests from
+      - name: format
+        type: string
+        description: Output format (csv, xml, json)
+        default: csv
+
+  - name: bug_reporter
+    description: Create bug report template
+    parameters:
+      - name: severity
+        type: string
+        description: Bug severity level
+        enum: [critical, high, medium, low]
+      - name: component
+        type: string
+        description: Affected component or module
+
+  - name: api_tester
+    description: Generate API test scenarios
+    parameters:
+      - name: endpoint
+        type: string
+        description: API endpoint to test
+      - name: method
+        type: string
+        description: HTTP method
+        enum: [GET, POST, PUT, DELETE, PATCH]
+
+# Environment Variables
+env:
+  # Global environment variables
+  NODE_ENV: development
+  LOG_LEVEL: info
+  
+# Settings
+settings:
+  maxTokens: 4096
+  temperature: 0.7
+  timeout: 30000
+  retryAttempts: 3
+  
+# Custom Commands
+customCommands:
+  - name: "Generate Test Suite"
+    description: "Generate comprehensive test suite for a feature"
+    prompt: "Generate a comprehensive test suite including positive, negative, and edge case scenarios for: {selection}"
+    
+  - name: "Create API Tests"
+    description: "Generate API test cases"
+    prompt: "Create detailed API test cases with request/response validation for: {selection}"
+    
+  - name: "Bug Analysis"
+    description: "Analyze bug report and suggest test cases"
+    prompt: "Analyze this bug report and suggest additional test cases to prevent similar issues: {selection}"

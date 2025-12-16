@@ -1,0 +1,35 @@
+{
+  "name": "pumb-company-registration-tests",
+  "version": "1.0.0",
+  "description": "Автотести для сторінки реєстрації юридичної особи ПУМБ Бізнес",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:install": "playwright install",
+    "test:chromium": "playwright test --project=chromium"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "automation",
+    "pumb",
+    "registration",
+    "company"
+  ],
+  "author": "QA Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
+
+
