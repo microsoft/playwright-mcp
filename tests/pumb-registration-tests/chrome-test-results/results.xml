@@ -1,0 +1,431 @@
+<testsuites id="" name="" tests="15" failures="9" skipped="0" errors="0" time="201.41135400000002">
+<testsuite name="pumb-check-information-chrome.spec.ts" timestamp="2025-12-16T12:01:59.427Z" hostname="Google Chrome" tests="15" failures="9" skipped="0" time="178.756" errors="0">
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_001: Відображення сторінки ознайомлення з інформацією" classname="pumb-check-information-chrome.spec.ts" time="3.392">
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_002: Перевірка відображення вимог до ФОП" classname="pumb-check-information-chrome.spec.ts" time="3.07">
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_003: Перевірка відображення тарифного пакету" classname="pumb-check-information-chrome.spec.ts" time="2.92">
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_004: Перевірка функціональності кнопки &quot;Повернутись&quot;" classname="pumb-check-information-chrome.spec.ts" time="34.62">
+<failure message="pumb-check-information-chrome.spec.ts:91:7 TC_PUMB_INFO_004: Перевірка функціональності кнопки &quot;Повернутись&quot;" type="FAILURE">
+<![CDATA[  [Google Chrome] › pumb-check-information-chrome.spec.ts:91:7 › ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_004: Перевірка функціональності кнопки "Повернутись" 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('text=Повернутись')
+        - locator resolved to <div class="contents">…</div>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div role="dialog" aria-modal="true" id="cookie-banner" class="cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186="" class="ng-tns-c1654968186-0">…</shared-cookies-banner> subtree intercepts pointer events
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div role="dialog" aria-modal="true" id="cookie-banner" class="cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186="" class="ng-tns-c1654968186-0">…</shared-cookies-banner> subtree intercepts pointer events
+        - retrying click action
+          - waiting 100ms
+        55 × waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div role="dialog" aria-modal="true" id="cookie-banner" class="cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186="" class="ng-tns-c1654968186-0">…</shared-cookies-banner> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+
+
+      101 |     
+      102 |     // Крок 3: Натиснути на кнопку "Повернутись"
+    > 103 |     await backButton.click();
+          |                      ^
+      104 |     
+      105 |     // Крок 4: Перевірити результат натискання
+      106 |     await page.waitForTimeout(1000);
+        at C:\playwright-mcp\tests\pumb-registration-tests\pumb-check-information-chrome.spec.ts:103:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-bc66a-льності-кнопки-Повернутись--Google-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-bc66a-льності-кнопки-Повернутись--Google-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: chrome-test-results\pumb-check-information-chr-bc66a-льності-кнопки-Повернутись--Google-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|pumb-check-information-chr-bc66a-льності-кнопки-Повернутись--Google-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|pumb-check-information-chr-bc66a-льності-кнопки-Повернутись--Google-Chrome\video.webm]]
+
+[[ATTACHMENT|pumb-check-information-chr-bc66a-льності-кнопки-Повернутись--Google-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_005: Перевірка функціональності кнопки &quot;Продовжити&quot;" classname="pumb-check-information-chrome.spec.ts" time="34.593">
+<failure message="pumb-check-information-chrome.spec.ts:113:7 TC_PUMB_INFO_005: Перевірка функціональності кнопки &quot;Продовжити&quot;" type="FAILURE">
+<![CDATA[  [Google Chrome] › pumb-check-information-chrome.spec.ts:113:7 › ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_005: Перевірка функціональності кнопки "Продовжити" 
+
+    TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.
+
+      113 |   test('TC_PUMB_INFO_005: Перевірка функціональності кнопки "Продовжити"', async () => {
+      114 |     await page.goto(PUMB_CHECK_INFO_URL);
+    > 115 |     await page.waitForLoadState('networkidle');
+          |                ^
+      116 |     
+      117 |     // Крок 1: Знайти кнопку "Продовжити" на сторінці
+      118 |     const continueButton = page.locator('text=Продовжити');
+        at C:\playwright-mcp\tests\pumb-registration-tests\pumb-check-information-chrome.spec.ts:115:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-758e3-альності-кнопки-Продовжити--Google-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-758e3-альності-кнопки-Продовжити--Google-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: chrome-test-results\pumb-check-information-chr-758e3-альності-кнопки-Продовжити--Google-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|pumb-check-information-chr-758e3-альності-кнопки-Продовжити--Google-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|pumb-check-information-chr-758e3-альності-кнопки-Продовжити--Google-Chrome\video.webm]]
+
+[[ATTACHMENT|pumb-check-information-chr-758e3-альності-кнопки-Продовжити--Google-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_006: Перевірка посилання на деталі тарифного пакету" classname="pumb-check-information-chrome.spec.ts" time="4.517">
+<system-out>
+<![CDATA[Поточний URL після кліку: https://www.digital.pumb.ua/registration/fop/choose/check-information
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_007: Перевірка посилань на альтернативні способи реєстрації" classname="pumb-check-information-chrome.spec.ts" time="2.993">
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_008: Перевірка відображення промо-банера" classname="pumb-check-information-chrome.spec.ts" time="13.6">
+<failure message="pumb-check-information-chrome.spec.ts:180:7 TC_PUMB_INFO_008: Перевірка відображення промо-банера" type="FAILURE">
+<![CDATA[  [Google Chrome] › pumb-check-information-chrome.spec.ts:180:7 › ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_008: Перевірка відображення промо-банера 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('text=Гарантовані 100 грн та шанс виграти iPhone 16')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=Гарантовані 100 грн та шанс виграти iPhone 16')
+
+
+      184 |     // Крок 1: Знайти промо-банер на сторінці
+      185 |     const promoBanner = page.locator('text=Гарантовані 100 грн та шанс виграти iPhone 16');
+    > 186 |     await expect(promoBanner).toBeVisible();
+          |                               ^
+      187 |     
+      188 |     // Крок 2: Перевірити відображення тексту з емодзі
+      189 |     const promoText = page.locator('text=💳 Гарантовані 100 грн та шанс виграти iPhone 16');
+        at C:\playwright-mcp\tests\pumb-registration-tests\pumb-check-information-chrome.spec.ts:186:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-6d113-а-відображення-промо-банера-Google-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-6d113-а-відображення-промо-банера-Google-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: chrome-test-results\pumb-check-information-chr-6d113-а-відображення-промо-банера-Google-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|pumb-check-information-chr-6d113-а-відображення-промо-банера-Google-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|pumb-check-information-chr-6d113-а-відображення-промо-банера-Google-Chrome\video.webm]]
+
+[[ATTACHMENT|pumb-check-information-chr-6d113-а-відображення-промо-банера-Google-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_009: Перевірка відображення контактної інформації" classname="pumb-check-information-chrome.spec.ts" time="13.789">
+<failure message="pumb-check-information-chrome.spec.ts:203:7 TC_PUMB_INFO_009: Перевірка відображення контактної інформації" type="FAILURE">
+<![CDATA[  [Google Chrome] › pumb-check-information-chrome.spec.ts:203:7 › ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_009: Перевірка відображення контактної інформації 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('text=Мобільний застосунок')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=Мобільний застосунок')
+        13 × locator resolved to <div _ngcontent-ng-c3600152131="" class="text-xs text-gray-500 m-0">Мобільний застосунок</div>
+           - unexpected value "hidden"
+
+
+      215 |     // Крок 3: Перевірити наявність посилання на мобільний застосунок
+      216 |     const mobileAppLink = page.locator('text=Мобільний застосунок');
+    > 217 |     await expect(mobileAppLink).toBeVisible();
+          |                                 ^
+      218 |   });
+      219 |
+      220 |   test('TC_PUMB_INFO_010: Адаптивність сторінки на різних розмірах екрану', async () => {
+        at C:\playwright-mcp\tests\pumb-registration-tests\pumb-check-information-chrome.spec.ts:217:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-e4566-ження-контактної-інформації-Google-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-e4566-ження-контактної-інформації-Google-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: chrome-test-results\pumb-check-information-chr-e4566-ження-контактної-інформації-Google-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|pumb-check-information-chr-e4566-ження-контактної-інформації-Google-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|pumb-check-information-chr-e4566-ження-контактної-інформації-Google-Chrome\video.webm]]
+
+[[ATTACHMENT|pumb-check-information-chr-e4566-ження-контактної-інформації-Google-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_010: Адаптивність сторінки на різних розмірах екрану" classname="pumb-check-information-chrome.spec.ts" time="6.993">
+<system-out>
+<![CDATA[✅ Desktop (1920x1080): Тест пройшов успішно
+✅ Tablet (768x1024): Тест пройшов успішно
+✅ Mobile (375x667): Тест пройшов успішно
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_011: Перевірка доступності (accessibility)" classname="pumb-check-information-chrome.spec.ts" time="3.151">
+<failure message="pumb-check-information-chrome.spec.ts:247:7 TC_PUMB_INFO_011: Перевірка доступності (accessibility)" type="FAILURE">
+<![CDATA[  [Google Chrome] › pumb-check-information-chrome.spec.ts:247:7 › ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_011: Перевірка доступності (accessibility) 
+
+    Error: expect(received).not.toBeNull()
+
+    Received: null
+
+      265 |       const alt = await img.getAttribute('alt');
+      266 |       // Альтернативний текст повинен бути присутнім або зображення повинно бути декоративним
+    > 267 |       expect(alt).not.toBeNull();
+          |                       ^
+      268 |     }
+      269 |     
+      270 |     // Крок 4: Перевірити навігацію за допомогою клавіатури
+        at C:\playwright-mcp\tests\pumb-registration-tests\pumb-check-information-chrome.spec.ts:267:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-013b4--доступності-accessibility--Google-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-013b4--доступності-accessibility--Google-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: chrome-test-results\pumb-check-information-chr-013b4--доступності-accessibility--Google-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|pumb-check-information-chr-013b4--доступності-accessibility--Google-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|pumb-check-information-chr-013b4--доступності-accessibility--Google-Chrome\video.webm]]
+
+[[ATTACHMENT|pumb-check-information-chr-013b4--доступності-accessibility--Google-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_012: Валідація HTML структури сторінки" classname="pumb-check-information-chrome.spec.ts" time="13.891">
+<failure message="pumb-check-information-chrome.spec.ts:276:7 TC_PUMB_INFO_012: Валідація HTML структури сторінки" type="FAILURE">
+<![CDATA[  [Google Chrome] › pumb-check-information-chrome.spec.ts:276:7 › ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_012: Валідація HTML структури сторінки 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('link[rel*="icon"]')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('link[rel*="icon"]')
+        13 × locator resolved to <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+           - unexpected value "hidden"
+
+
+      291 |     // Крок 3: Перевірити наявність favicon
+      292 |     const favicon = page.locator('link[rel*="icon"]');
+    > 293 |     await expect(favicon).toBeVisible();
+          |                           ^
+      294 |     
+      295 |     // Крок 4: Перевірити валідність HTML коду (базова перевірка)
+      296 |     const body = page.locator('body');
+        at C:\playwright-mcp\tests\pumb-registration-tests\pumb-check-information-chrome.spec.ts:293:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-8fbe5-ція-HTML-структури-сторінки-Google-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-8fbe5-ція-HTML-структури-сторінки-Google-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: chrome-test-results\pumb-check-information-chr-8fbe5-ція-HTML-структури-сторінки-Google-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|pumb-check-information-chr-8fbe5-ція-HTML-структури-сторінки-Google-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|pumb-check-information-chr-8fbe5-ція-HTML-структури-сторінки-Google-Chrome\video.webm]]
+
+[[ATTACHMENT|pumb-check-information-chr-8fbe5-ція-HTML-структури-сторінки-Google-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_013: Перевірка мета-тегів та SEO" classname="pumb-check-information-chrome.spec.ts" time="14.59">
+<failure message="pumb-check-information-chrome.spec.ts:300:7 TC_PUMB_INFO_013: Перевірка мета-тегів та SEO" type="FAILURE">
+<![CDATA[  [Google Chrome] › pumb-check-information-chrome.spec.ts:300:7 › ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_013: Перевірка мета-тегів та SEO 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('meta[property="og:title"]')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('meta[property="og:title"]')
+        13 × locator resolved to <meta content="" property="og:title"/>
+           - unexpected value "hidden"
+
+
+      317 |     
+      318 |     if (await ogTitle.count() > 0) {
+    > 319 |       await expect(ogTitle).toBeVisible();
+          |                             ^
+      320 |     }
+      321 |     
+      322 |     if (await ogDescription.count() > 0) {
+        at C:\playwright-mcp\tests\pumb-registration-tests\pumb-check-information-chrome.spec.ts:319:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-76a73-Перевірка-мета-тегів-та-SEO-Google-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-76a73-Перевірка-мета-тегів-та-SEO-Google-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: chrome-test-results\pumb-check-information-chr-76a73-Перевірка-мета-тегів-та-SEO-Google-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|pumb-check-information-chr-76a73-Перевірка-мета-тегів-та-SEO-Google-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|pumb-check-information-chr-76a73-Перевірка-мета-тегів-та-SEO-Google-Chrome\video.webm]]
+
+[[ATTACHMENT|pumb-check-information-chr-76a73-Перевірка-мета-тегів-та-SEO-Google-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_014: Перевірка поведінки при відсутності JavaScript" classname="pumb-check-information-chrome.spec.ts" time="0.496">
+<failure message="pumb-check-information-chrome.spec.ts:333:7 TC_PUMB_INFO_014: Перевірка поведінки при відсутності JavaScript" type="FAILURE">
+<![CDATA[  [Google Chrome] › pumb-check-information-chrome.spec.ts:333:7 › ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_014: Перевірка поведінки при відсутності JavaScript 
+
+    TypeError: page.setJavaScriptEnabled is not a function
+
+      333 |   test('TC_PUMB_INFO_014: Перевірка поведінки при відсутності JavaScript', async () => {
+      334 |     // Крок 1: Відключити JavaScript
+    > 335 |     await page.setJavaScriptEnabled(false);
+          |                ^
+      336 |     
+      337 |     await page.goto(PUMB_CHECK_INFO_URL);
+      338 |     
+        at C:\playwright-mcp\tests\pumb-registration-tests\pumb-check-information-chrome.spec.ts:335:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-0357d--при-відсутності-JavaScript-Google-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-0357d--при-відсутності-JavaScript-Google-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|pumb-check-information-chr-0357d--при-відсутності-JavaScript-Google-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|pumb-check-information-chr-0357d--при-відсутності-JavaScript-Google-Chrome\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_015: Перевірка поведінки при медленному інтернет-з&apos;єднанні" classname="pumb-check-information-chrome.spec.ts" time="26.141">
+<failure message="pumb-check-information-chrome.spec.ts:358:7 TC_PUMB_INFO_015: Перевірка поведінки при медленному інтернет-з&apos;єднанні" type="FAILURE">
+<![CDATA[  [Google Chrome] › pumb-check-information-chrome.spec.ts:358:7 › ПУМБ Ознайомлення з інформацією - Google Chrome › TC_PUMB_INFO_015: Перевірка поведінки при медленному інтернет-з'єднанні 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП')
+
+
+      376 |     // Крок 4: Перевірити відображення контенту після завантаження
+      377 |     const mainTitle = page.locator('text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП');
+    > 378 |     await expect(mainTitle).toBeVisible();
+          |                             ^
+      379 |     
+      380 |     const requirementsSection = page.locator('text=Вимоги до ФОП');
+      381 |     await expect(requirementsSection).toBeVisible();
+        at C:\playwright-mcp\tests\pumb-registration-tests\pumb-check-information-chrome.spec.ts:378:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-8d5fc-дленному-інтернет-з-єднанні-Google-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    chrome-test-results\pumb-check-information-chr-8d5fc-дленному-інтернет-з-єднанні-Google-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: chrome-test-results\pumb-check-information-chr-8d5fc-дленному-інтернет-з-єднанні-Google-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[Сторінка завантажилася за 7913ms
+
+[[ATTACHMENT|pumb-check-information-chr-8d5fc-дленному-інтернет-з-єднанні-Google-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|pumb-check-information-chr-8d5fc-дленному-інтернет-з-єднанні-Google-Chrome\video.webm]]
+
+[[ATTACHMENT|pumb-check-information-chr-8d5fc-дленному-інтернет-з-єднанні-Google-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

@@ -1,0 +1,982 @@
+{
+  "config": {
+    "configFile": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\playwright-chrome.config.ts",
+    "rootDir": "C:/playwright-mcp/tests/pumb-registration-tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\global-setup-chrome.ts",
+    "globalTeardown": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\global-teardown-chrome.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "chrome-test-results/html-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "chrome-test-results/results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "chrome-test-results/results.xml"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "C:/playwright-mcp/tests/pumb-registration-tests/chrome-test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Google Chrome",
+        "name": "Google Chrome",
+        "testDir": "C:/playwright-mcp/tests/pumb-registration-tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "pumb-check-information-chrome.spec.ts",
+      "file": "pumb-check-information-chrome.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "ПУМБ Ознайомлення з інформацією - Google Chrome",
+          "file": "pumb-check-information-chrome.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC_PUMB_INFO_001: Відображення сторінки ознайомлення з інформацією",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3392,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:02:00.611Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-62302ebf6fd58f0548c1",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 19,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_002: Перевірка відображення вимог до ФОП",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3070,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:02:04.326Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-5f24455c1e00de656032",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 42,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_003: Перевірка відображення тарифного пакету",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2920,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:02:07.433Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-8ee52375d6f053e34f05",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 70,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_004: Перевірка функціональності кнопки \"Повернутись\"",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 34620,
+                      "error": {
+                        "message": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=Повернутись')\u001b[22m\n\u001b[2m    - locator resolved to <div class=\"contents\">…</div>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" aria-modal=\"true\" id=\"cookie-banner\" class=\"cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col\">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186=\"\" class=\"ng-tns-c1654968186-0\">…</shared-cookies-banner> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" aria-modal=\"true\" id=\"cookie-banner\" class=\"cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col\">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186=\"\" class=\"ng-tns-c1654968186-0\">…</shared-cookies-banner> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    55 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" aria-modal=\"true\" id=\"cookie-banner\" class=\"cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col\">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186=\"\" class=\"ng-tns-c1654968186-0\">…</shared-cookies-banner> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+                        "stack": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=Повернутись')\u001b[22m\n\u001b[2m    - locator resolved to <div class=\"contents\">…</div>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" aria-modal=\"true\" id=\"cookie-banner\" class=\"cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col\">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186=\"\" class=\"ng-tns-c1654968186-0\">…</shared-cookies-banner> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" aria-modal=\"true\" id=\"cookie-banner\" class=\"cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col\">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186=\"\" class=\"ng-tns-c1654968186-0\">…</shared-cookies-banner> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    55 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" aria-modal=\"true\" id=\"cookie-banner\" class=\"cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col\">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186=\"\" class=\"ng-tns-c1654968186-0\">…</shared-cookies-banner> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:103:22",
+                        "location": {
+                          "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                          "column": 22,
+                          "line": 103
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 101 |\u001b[39m     \n \u001b[90m 102 |\u001b[39m     \u001b[90m// Крок 3: Натиснути на кнопку \"Повернутись\"\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 103 |\u001b[39m     \u001b[36mawait\u001b[39m backButton\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 104 |\u001b[39m     \n \u001b[90m 105 |\u001b[39m     \u001b[90m// Крок 4: Перевірити результат натискання\u001b[39m\n \u001b[90m 106 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m1000\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                            "column": 22,
+                            "line": 103
+                          },
+                          "message": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=Повернутись')\u001b[22m\n\u001b[2m    - locator resolved to <div class=\"contents\">…</div>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" aria-modal=\"true\" id=\"cookie-banner\" class=\"cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col\">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186=\"\" class=\"ng-tns-c1654968186-0\">…</shared-cookies-banner> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" aria-modal=\"true\" id=\"cookie-banner\" class=\"cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col\">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186=\"\" class=\"ng-tns-c1654968186-0\">…</shared-cookies-banner> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    55 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" aria-modal=\"true\" id=\"cookie-banner\" class=\"cookie-banner__content w-full surface surface_neutral flex gap-6 p-6 rounded-6 s:flex-col\">…</div> from <shared-cookies-banner _ngcontent-ng-c1654968186=\"\" class=\"ng-tns-c1654968186-0\">…</shared-cookies-banner> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n\n\u001b[0m \u001b[90m 101 |\u001b[39m     \n \u001b[90m 102 |\u001b[39m     \u001b[90m// Крок 3: Натиснути на кнопку \"Повернутись\"\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 103 |\u001b[39m     \u001b[36mawait\u001b[39m backButton\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 104 |\u001b[39m     \n \u001b[90m 105 |\u001b[39m     \u001b[90m// Крок 4: Перевірити результат натискання\u001b[39m\n \u001b[90m 106 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m1000\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:103:22\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:02:10.371Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-bc66a-льності-кнопки-Повернутись--Google-Chrome\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-bc66a-льності-кнопки-Повернутись--Google-Chrome\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-bc66a-льності-кнопки-Повернутись--Google-Chrome\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                        "column": 22,
+                        "line": 103
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-3f83827e8168758b8f53",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 91,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_005: Перевірка функціональності кнопки \"Продовжити\"",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 34593,
+                      "error": {
+                        "message": "TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.",
+                        "stack": "TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.\n    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:115:16",
+                        "location": {
+                          "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                          "column": 16,
+                          "line": 115
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 113 |\u001b[39m   test(\u001b[32m'TC_PUMB_INFO_005: Перевірка функціональності кнопки \"Продовжити\"'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 114 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[33mPUMB_CHECK_INFO_URL\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 115 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForLoadState(\u001b[32m'networkidle'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 116 |\u001b[39m     \n \u001b[90m 117 |\u001b[39m     \u001b[90m// Крок 1: Знайти кнопку \"Продовжити\" на сторінці\u001b[39m\n \u001b[90m 118 |\u001b[39m     \u001b[36mconst\u001b[39m continueButton \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Продовжити'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                            "column": 16,
+                            "line": 115
+                          },
+                          "message": "TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.\n\n\u001b[0m \u001b[90m 113 |\u001b[39m   test(\u001b[32m'TC_PUMB_INFO_005: Перевірка функціональності кнопки \"Продовжити\"'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 114 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[33mPUMB_CHECK_INFO_URL\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 115 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForLoadState(\u001b[32m'networkidle'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 116 |\u001b[39m     \n \u001b[90m 117 |\u001b[39m     \u001b[90m// Крок 1: Знайти кнопку \"Продовжити\" на сторінці\u001b[39m\n \u001b[90m 118 |\u001b[39m     \u001b[36mconst\u001b[39m continueButton \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Продовжити'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:115:16\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:02:46.553Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-758e3-альності-кнопки-Продовжити--Google-Chrome\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-758e3-альності-кнопки-Продовжити--Google-Chrome\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-758e3-альності-кнопки-Продовжити--Google-Chrome\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                        "column": 16,
+                        "line": 115
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-19e7bb74db0b15e5ea5e",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 113,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_006: Перевірка посилання на деталі тарифного пакету",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4517,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Поточний URL після кліку: https://www.digital.pumb.ua/registration/fop/choose/check-information\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:03:23.000Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-2b1056a4f96d8685d7df",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 135,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_007: Перевірка посилань на альтернативні способи реєстрації",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2993,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:03:27.858Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-1d9c328dfb35d84deedd",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 159,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_008: Перевірка відображення промо-банера",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 13600,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('text=Гарантовані 100 грн та шанс виграти iPhone 16')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Гарантовані 100 грн та шанс виграти iPhone 16')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('text=Гарантовані 100 грн та шанс виграти iPhone 16')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Гарантовані 100 грн та шанс виграти iPhone 16')\u001b[22m\n\n    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:186:31",
+                        "location": {
+                          "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                          "column": 31,
+                          "line": 186
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 184 |\u001b[39m     \u001b[90m// Крок 1: Знайти промо-банер на сторінці\u001b[39m\n \u001b[90m 185 |\u001b[39m     \u001b[36mconst\u001b[39m promoBanner \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Гарантовані 100 грн та шанс виграти iPhone 16'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 186 |\u001b[39m     \u001b[36mawait\u001b[39m expect(promoBanner)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 187 |\u001b[39m     \n \u001b[90m 188 |\u001b[39m     \u001b[90m// Крок 2: Перевірити відображення тексту з емодзі\u001b[39m\n \u001b[90m 189 |\u001b[39m     \u001b[36mconst\u001b[39m promoText \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=💳 Гарантовані 100 грн та шанс виграти iPhone 16'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                            "column": 31,
+                            "line": 186
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('text=Гарантовані 100 грн та шанс виграти iPhone 16')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Гарантовані 100 грн та шанс виграти iPhone 16')\u001b[22m\n\n\n\u001b[0m \u001b[90m 184 |\u001b[39m     \u001b[90m// Крок 1: Знайти промо-банер на сторінці\u001b[39m\n \u001b[90m 185 |\u001b[39m     \u001b[36mconst\u001b[39m promoBanner \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Гарантовані 100 грн та шанс виграти iPhone 16'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 186 |\u001b[39m     \u001b[36mawait\u001b[39m expect(promoBanner)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 187 |\u001b[39m     \n \u001b[90m 188 |\u001b[39m     \u001b[90m// Крок 2: Перевірити відображення тексту з емодзі\u001b[39m\n \u001b[90m 189 |\u001b[39m     \u001b[36mconst\u001b[39m promoText \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=💳 Гарантовані 100 грн та шанс виграти iPhone 16'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:186:31\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:03:30.871Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-6d113-а-відображення-промо-банера-Google-Chrome\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-6d113-а-відображення-промо-банера-Google-Chrome\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-6d113-а-відображення-промо-банера-Google-Chrome\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                        "column": 31,
+                        "line": 186
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-5c0a65d161ead2fbed83",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 180,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_009: Перевірка відображення контактної інформації",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 13789,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('text=Мобільний застосунок')\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Мобільний застосунок')\u001b[22m\n\u001b[2m    13 × locator resolved to <div _ngcontent-ng-c3600152131=\"\" class=\"text-xs text-gray-500 m-0\">Мобільний застосунок</div>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('text=Мобільний застосунок')\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Мобільний застосунок')\u001b[22m\n\u001b[2m    13 × locator resolved to <div _ngcontent-ng-c3600152131=\"\" class=\"text-xs text-gray-500 m-0\">Мобільний застосунок</div>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n\n    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:217:33",
+                        "location": {
+                          "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                          "column": 33,
+                          "line": 217
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 215 |\u001b[39m     \u001b[90m// Крок 3: Перевірити наявність посилання на мобільний застосунок\u001b[39m\n \u001b[90m 216 |\u001b[39m     \u001b[36mconst\u001b[39m mobileAppLink \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Мобільний застосунок'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 217 |\u001b[39m     \u001b[36mawait\u001b[39m expect(mobileAppLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 218 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 219 |\u001b[39m\n \u001b[90m 220 |\u001b[39m   test(\u001b[32m'TC_PUMB_INFO_010: Адаптивність сторінки на різних розмірах екрану'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                            "column": 33,
+                            "line": 217
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('text=Мобільний застосунок')\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Мобільний застосунок')\u001b[22m\n\u001b[2m    13 × locator resolved to <div _ngcontent-ng-c3600152131=\"\" class=\"text-xs text-gray-500 m-0\">Мобільний застосунок</div>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 215 |\u001b[39m     \u001b[90m// Крок 3: Перевірити наявність посилання на мобільний застосунок\u001b[39m\n \u001b[90m 216 |\u001b[39m     \u001b[36mconst\u001b[39m mobileAppLink \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Мобільний застосунок'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 217 |\u001b[39m     \u001b[36mawait\u001b[39m expect(mobileAppLink)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 218 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 219 |\u001b[39m\n \u001b[90m 220 |\u001b[39m   test(\u001b[32m'TC_PUMB_INFO_010: Адаптивність сторінки на різних розмірах екрану'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:217:33\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:03:49.030Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-e4566-ження-контактної-інформації-Google-Chrome\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-e4566-ження-контактної-інформації-Google-Chrome\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-e4566-ження-контактної-інформації-Google-Chrome\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                        "column": 33,
+                        "line": 217
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-aa1fffa972afa4996d9d",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 203,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_010: Адаптивність сторінки на різних розмірах екрану",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6993,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Desktop (1920x1080): Тест пройшов успішно\n"
+                        },
+                        {
+                          "text": "✅ Tablet (768x1024): Тест пройшов успішно\n"
+                        },
+                        {
+                          "text": "✅ Mobile (375x667): Тест пройшов успішно\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:04:04.621Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-560c9b6b3ccc1d3ceb30",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 220,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_011: Перевірка доступності (accessibility)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 3151,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBeNull\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mnull\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBeNull\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mnull\u001b[39m\n    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:267:23",
+                        "location": {
+                          "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                          "column": 23,
+                          "line": 267
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 265 |\u001b[39m       \u001b[36mconst\u001b[39m alt \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m img\u001b[33m.\u001b[39mgetAttribute(\u001b[32m'alt'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 266 |\u001b[39m       \u001b[90m// Альтернативний текст повинен бути присутнім або зображення повинно бути декоративним\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 267 |\u001b[39m       expect(alt)\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoBeNull()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 268 |\u001b[39m     }\n \u001b[90m 269 |\u001b[39m     \n \u001b[90m 270 |\u001b[39m     \u001b[90m// Крок 4: Перевірити навігацію за допомогою клавіатури\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                            "column": 23,
+                            "line": 267
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBeNull\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mnull\u001b[39m\n\n\u001b[0m \u001b[90m 265 |\u001b[39m       \u001b[36mconst\u001b[39m alt \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m img\u001b[33m.\u001b[39mgetAttribute(\u001b[32m'alt'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 266 |\u001b[39m       \u001b[90m// Альтернативний текст повинен бути присутнім або зображення повинно бути декоративним\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 267 |\u001b[39m       expect(alt)\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoBeNull()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 268 |\u001b[39m     }\n \u001b[90m 269 |\u001b[39m     \n \u001b[90m 270 |\u001b[39m     \u001b[90m// Крок 4: Перевірити навігацію за допомогою клавіатури\u001b[39m\u001b[0m\n\u001b[2m    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:267:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:04:11.964Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-013b4--доступності-accessibility--Google-Chrome\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-013b4--доступності-accessibility--Google-Chrome\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-013b4--доступності-accessibility--Google-Chrome\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                        "column": 23,
+                        "line": 267
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-3301cdbf3549aafcf7f6",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 247,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_012: Валідація HTML структури сторінки",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 13891,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('link[rel*=\"icon\"]')\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('link[rel*=\"icon\"]')\u001b[22m\n\u001b[2m    13 × locator resolved to <link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\"/>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('link[rel*=\"icon\"]')\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('link[rel*=\"icon\"]')\u001b[22m\n\u001b[2m    13 × locator resolved to <link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\"/>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n\n    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:293:27",
+                        "location": {
+                          "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                          "column": 27,
+                          "line": 293
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 291 |\u001b[39m     \u001b[90m// Крок 3: Перевірити наявність favicon\u001b[39m\n \u001b[90m 292 |\u001b[39m     \u001b[36mconst\u001b[39m favicon \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'link[rel*=\"icon\"]'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 293 |\u001b[39m     \u001b[36mawait\u001b[39m expect(favicon)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 294 |\u001b[39m     \n \u001b[90m 295 |\u001b[39m     \u001b[90m// Крок 4: Перевірити валідність HTML коду (базова перевірка)\u001b[39m\n \u001b[90m 296 |\u001b[39m     \u001b[36mconst\u001b[39m body \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'body'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                            "column": 27,
+                            "line": 293
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('link[rel*=\"icon\"]')\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('link[rel*=\"icon\"]')\u001b[22m\n\u001b[2m    13 × locator resolved to <link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\"/>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 291 |\u001b[39m     \u001b[90m// Крок 3: Перевірити наявність favicon\u001b[39m\n \u001b[90m 292 |\u001b[39m     \u001b[36mconst\u001b[39m favicon \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'link[rel*=\"icon\"]'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 293 |\u001b[39m     \u001b[36mawait\u001b[39m expect(favicon)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 294 |\u001b[39m     \n \u001b[90m 295 |\u001b[39m     \u001b[90m// Крок 4: Перевірити валідність HTML коду (базова перевірка)\u001b[39m\n \u001b[90m 296 |\u001b[39m     \u001b[36mconst\u001b[39m body \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'body'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:293:27\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:04:16.592Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-8fbe5-ція-HTML-структури-сторінки-Google-Chrome\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-8fbe5-ція-HTML-структури-сторінки-Google-Chrome\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-8fbe5-ція-HTML-структури-сторінки-Google-Chrome\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                        "column": 27,
+                        "line": 293
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-09cea95ca2a10daa7921",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 276,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_013: Перевірка мета-тегів та SEO",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 14590,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('meta[property=\"og:title\"]')\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('meta[property=\"og:title\"]')\u001b[22m\n\u001b[2m    13 × locator resolved to <meta content=\"\" property=\"og:title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('meta[property=\"og:title\"]')\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('meta[property=\"og:title\"]')\u001b[22m\n\u001b[2m    13 × locator resolved to <meta content=\"\" property=\"og:title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n\n    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:319:29",
+                        "location": {
+                          "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                          "column": 29,
+                          "line": 319
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 317 |\u001b[39m     \n \u001b[90m 318 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[36mawait\u001b[39m ogTitle\u001b[33m.\u001b[39mcount() \u001b[33m>\u001b[39m \u001b[35m0\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 319 |\u001b[39m       \u001b[36mawait\u001b[39m expect(ogTitle)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 320 |\u001b[39m     }\n \u001b[90m 321 |\u001b[39m     \n \u001b[90m 322 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[36mawait\u001b[39m ogDescription\u001b[33m.\u001b[39mcount() \u001b[33m>\u001b[39m \u001b[35m0\u001b[39m) {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                            "column": 29,
+                            "line": 319
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('meta[property=\"og:title\"]')\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('meta[property=\"og:title\"]')\u001b[22m\n\u001b[2m    13 × locator resolved to <meta content=\"\" property=\"og:title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 317 |\u001b[39m     \n \u001b[90m 318 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[36mawait\u001b[39m ogTitle\u001b[33m.\u001b[39mcount() \u001b[33m>\u001b[39m \u001b[35m0\u001b[39m) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 319 |\u001b[39m       \u001b[36mawait\u001b[39m expect(ogTitle)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 320 |\u001b[39m     }\n \u001b[90m 321 |\u001b[39m     \n \u001b[90m 322 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[36mawait\u001b[39m ogDescription\u001b[33m.\u001b[39mcount() \u001b[33m>\u001b[39m \u001b[35m0\u001b[39m) {\u001b[0m\n\u001b[2m    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:319:29\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:04:32.280Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-76a73-Перевірка-мета-тегів-та-SEO-Google-Chrome\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-76a73-Перевірка-мета-тегів-та-SEO-Google-Chrome\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-76a73-Перевірка-мета-тегів-та-SEO-Google-Chrome\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                        "column": 29,
+                        "line": 319
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-672c86ab5d3147c1b120",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 300,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_014: Перевірка поведінки при відсутності JavaScript",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 496,
+                      "error": {
+                        "message": "TypeError: page.setJavaScriptEnabled is not a function",
+                        "stack": "TypeError: page.setJavaScriptEnabled is not a function\n    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:335:16",
+                        "location": {
+                          "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                          "column": 16,
+                          "line": 335
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 333 |\u001b[39m   test(\u001b[32m'TC_PUMB_INFO_014: Перевірка поведінки при відсутності JavaScript'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 334 |\u001b[39m     \u001b[90m// Крок 1: Відключити JavaScript\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 335 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39msetJavaScriptEnabled(\u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 336 |\u001b[39m     \n \u001b[90m 337 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[33mPUMB_CHECK_INFO_URL\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 338 |\u001b[39m     \u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                            "column": 16,
+                            "line": 335
+                          },
+                          "message": "TypeError: page.setJavaScriptEnabled is not a function\n\n\u001b[0m \u001b[90m 333 |\u001b[39m   test(\u001b[32m'TC_PUMB_INFO_014: Перевірка поведінки при відсутності JavaScript'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 334 |\u001b[39m     \u001b[90m// Крок 1: Відключити JavaScript\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 335 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39msetJavaScriptEnabled(\u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 336 |\u001b[39m     \n \u001b[90m 337 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[33mPUMB_CHECK_INFO_URL\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 338 |\u001b[39m     \u001b[0m\n\u001b[2m    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:335:16\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:04:48.653Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-0357d--при-відсутності-JavaScript-Google-Chrome\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-0357d--при-відсутності-JavaScript-Google-Chrome\\video.webm"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                        "column": 16,
+                        "line": 335
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-4523f70a2fe29d63b8ef",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 333,
+              "column": 7
+            },
+            {
+              "title": "TC_PUMB_INFO_015: Перевірка поведінки при медленному інтернет-з'єднанні",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Google Chrome",
+                  "projectName": "Google Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 26141,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП')\u001b[22m\n\n    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:378:29",
+                        "location": {
+                          "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                          "column": 29,
+                          "line": 378
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 376 |\u001b[39m     \u001b[90m// Крок 4: Перевірити відображення контенту після завантаження\u001b[39m\n \u001b[90m 377 |\u001b[39m     \u001b[36mconst\u001b[39m mainTitle \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 378 |\u001b[39m     \u001b[36mawait\u001b[39m expect(mainTitle)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 379 |\u001b[39m     \n \u001b[90m 380 |\u001b[39m     \u001b[36mconst\u001b[39m requirementsSection \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Вимоги до ФОП'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 381 |\u001b[39m     \u001b[36mawait\u001b[39m expect(requirementsSection)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                            "column": 29,
+                            "line": 378
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП')\u001b[22m\n\n\n\u001b[0m \u001b[90m 376 |\u001b[39m     \u001b[90m// Крок 4: Перевірити відображення контенту після завантаження\u001b[39m\n \u001b[90m 377 |\u001b[39m     \u001b[36mconst\u001b[39m mainTitle \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=ВІДКРИВАЄМО РАХУНОК ДЛЯ ФОП'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 378 |\u001b[39m     \u001b[36mawait\u001b[39m expect(mainTitle)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 379 |\u001b[39m     \n \u001b[90m 380 |\u001b[39m     \u001b[36mconst\u001b[39m requirementsSection \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Вимоги до ФОП'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 381 |\u001b[39m     \u001b[36mawait\u001b[39m expect(requirementsSection)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts:378:29\u001b[22m"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "Сторінка завантажилася за 7913ms\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-16T12:04:50.915Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-8d5fc-дленному-інтернет-з-єднанні-Google-Chrome\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-8d5fc-дленному-інтернет-з-єднанні-Google-Chrome\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\chrome-test-results\\pumb-check-information-chr-8d5fc-дленному-інтернет-з-єднанні-Google-Chrome\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\playwright-mcp\\tests\\pumb-registration-tests\\pumb-check-information-chrome.spec.ts",
+                        "column": 29,
+                        "line": 378
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56cae94d140ba4b6f19a-f12381ce1f78755aa52a",
+              "file": "pumb-check-information-chrome.spec.ts",
+              "line": 358,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-12-16T12:01:56.240Z",
+    "duration": 201411.35400000002,
+    "expected": 6,
+    "skipped": 0,
+    "unexpected": 9,
+    "flaky": 0
+  }
+}

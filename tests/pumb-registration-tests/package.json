@@ -1,0 +1,44 @@
+{
+  "name": "pumb-registration-tests",
+  "version": "1.0.0",
+  "description": "Автотести для сторінки реєстрації ФОП ПУМБ Бізнес",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:install": "playwright install",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'",
+    "test:all-browsers": "playwright test --project=chromium --project=firefox --project=webkit",
+    "test:chrome": "playwright test --config=playwright-chrome.config.ts",
+    "test:chrome:headed": "playwright test --config=playwright-chrome.config.ts --headed",
+    "test:chrome:debug": "playwright test --config=playwright-chrome.config.ts --debug",
+    "test:chrome:ui": "playwright test --config=playwright-chrome.config.ts --ui",
+    "test:chrome:report": "playwright show-report chrome-test-results/html-report",
+    "test:check-info": "playwright test pumb-check-information-chrome.spec.ts --config=playwright-chrome.config.ts",
+    "test:check-info:headed": "playwright test pumb-check-information-chrome.spec.ts --config=playwright-chrome.config.ts --headed"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "automation",
+    "pumb",
+    "registration",
+    "fop"
+  ],
+  "author": "QA Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
