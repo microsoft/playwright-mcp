@@ -17,6 +17,9 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 node utils/generate-links.js
 -->
 
+### Security Considerations
+The Playwright MCP Server enables powerful browser automation and AI-driven workflows, but its capabilities such as network communication, code execution, and file access can significantly expand the attack surface of your service. Any service hosting the MCP server should review the risks listed in [security-considerations.md](https://github.com/microsoft/playwright-mcp/blob/main/security-considerations.md) and apply compensating controls before deployment.
+
 ### Getting started
 
 First, install the Playwright MCP server with your client.
