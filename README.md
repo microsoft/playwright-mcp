@@ -18,11 +18,8 @@ node utils/generate-links.js
 -->
 
 ### Security Considerations
-When hosting the Playwright MCP Server locally:
-- Ensure that it is not accessible from the public internet.
 - Do not rely on the --allowed-origins or --blocked-origins configurations as security boundaries, as these settings can be bypassed through techniques such as DNS rebinding or HTTP redirects.
-  - If network access restrictions are required, implement compensating controls such as network isolation using firewalls or local proxies to limit exposure.
-- Treat all data and resources loaded in the browser as untrusted, because neither Playwright nor the browser provides a security boundary against attacks originating from web content.
+- If network access restrictions are required, implement compensating controls such as network isolation using firewalls or local proxies to limit exposure.
 
 ### Getting started
 
@@ -699,6 +696,8 @@ And then in MCP client config, set the `url` to the HTTP endpoint:
   }
 }
 ```
+
+**Security Considerations:** When exposing the MCP server as a streaming HTTP server, ensure that access is restricted to authorized clients and limit network exposure to trusted environments.
 
 <details>
 <summary><b>Docker</b></summary>
