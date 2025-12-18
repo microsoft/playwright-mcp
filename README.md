@@ -22,7 +22,7 @@ When hosting the Playwright MCP Server locally:
 - Ensure that it is not accessible from the public internet.
 - Do not rely on the --allowed-origins or --blocked-origins configurations as security boundaries, as these settings can be bypassed through techniques such as DNS rebinding or HTTP redirects.
   - If network access restrictions are required, implement compensating controls such as network isolation using firewalls or local proxies to limit exposure.
-- Treat all web content as untrusted, as neither Playwright nor the browser provides a security boundary against attacks originating from it.
+- Treat all data and resources loaded in the browser as untrusted, because neither Playwright nor the browser provides a security boundary against attacks originating from web content.
 
 ### Getting started
 
