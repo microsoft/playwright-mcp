@@ -18,7 +18,11 @@ node utils/generate-links.js
 -->
 
 ### Security Considerations
-The Playwright MCP Server enables powerful browser automation and AI-driven workflows, but its capabilities such as network communication, code execution, and file access can significantly expand the attack surface of your service. Any service hosting the MCP server should review the risks listed in [security-considerations.md](https://github.com/microsoft/playwright-mcp/blob/main/security-considerations.md) and apply compensating controls before deployment.
+When hosting the Playwright MCP Server locally:
+- Ensure that it is not accessible from the public internet.
+- Do not rely on the --allowed-origins or --blocked-origins configurations as security boundaries, as these settings can be bypassed through techniques such as DNS rebinding or HTTP redirects.
+  - If network access restrictions are required, implement compensating controls such as network isolation using firewalls or local proxies to limit exposure.
+- Treat all web content as untrusted, as neither Playwright nor the browser provides a security boundary against attacks originating from it.
 
 ### Getting started
 
