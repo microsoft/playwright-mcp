@@ -88,28 +88,6 @@ const test = base.extend<TestFixtures>({
   }
 });
 
-async function startAndCallConnectTool(browserWithExtension: BrowserWithExtension, startClient: StartClient): Promise<Client> {
-  const { client } = await startClient({
-    args: [`--connect-tool`],
-    config: {
-      browser: {
-        userDataDir: browserWithExtension.userDataDir,
-      }
-    },
-  });
-
-  expect(await client.callTool({
-    name: 'browser_connect',
-    arguments: {
-      name: 'extension'
-    }
-  })).toHaveResponse({
-    result: 'Successfully changed connection method.',
-  });
-
-  return client;
-}
-
 async function startWithExtensionFlag(browserWithExtension: BrowserWithExtension, startClient: StartClient): Promise<Client> {
   const { client } = await startClient({
     args: [`--extension`],
@@ -137,144 +115,137 @@ const testWithOldExtensionVersion = test.extend({
   },
 });
 
-for (const [mode, startClientMethod] of [
-  ['connect-tool', startAndCallConnectTool],
-  ['extension-flag', startWithExtensionFlag],
-] as const) {
+test(`navigate with extension`, async ({ browserWithExtension, startClient, server }) => {
+  const browserContext = await browserWithExtension.launch();
 
-  test(`navigate with extension (${mode})`, async ({ browserWithExtension, startClient, server }) => {
-    const browserContext = await browserWithExtension.launch();
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
 
-    const client = await startClientMethod(browserWithExtension, startClient);
-
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
-    });
-
-    const navigateResponse = client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.HELLO_WORLD },
-    });
-
-    const selectorPage = await confirmationPagePromise;
-    // For browser_navigate command, the UI shows Allow/Reject buttons instead of tab selector
-    await selectorPage.getByRole('button', { name: 'Allow' }).click();
-
-    expect(await navigateResponse).toHaveResponse({
-      pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
-    });
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
   });
 
-  test(`snapshot of an existing page (${mode})`, async ({ browserWithExtension, startClient, server }) => {
-    const browserContext = await browserWithExtension.launch();
-
-    const page = await browserContext.newPage();
-    await page.goto(server.HELLO_WORLD);
-
-    // Another empty page.
-    await browserContext.newPage();
-    expect(browserContext.pages()).toHaveLength(3);
-
-    const client = await startClientMethod(browserWithExtension, startClient);
-    expect(browserContext.pages()).toHaveLength(3);
-
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
-    });
-
-    const navigateResponse = client.callTool({
-      name: 'browser_snapshot',
-      arguments: { },
-    });
-
-    const selectorPage = await confirmationPagePromise;
-    expect(browserContext.pages()).toHaveLength(4);
-
-    await selectorPage.locator('.tab-item', { hasText: 'Title' }).getByRole('button', { name: 'Connect' }).click();
-
-    expect(await navigateResponse).toHaveResponse({
-      pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
-    });
-
-    expect(browserContext.pages()).toHaveLength(4);
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
   });
 
-  test(`extension not installed timeout (${mode})`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout }) => {
-    useShortConnectionTimeout(100);
+  const selectorPage = await confirmationPagePromise;
+  // For browser_navigate command, the UI shows Allow/Reject buttons instead of tab selector
+  await selectorPage.getByRole('button', { name: 'Allow' }).click();
 
-    const browserContext = await browserWithExtension.launch();
+  expect(await navigateResponse).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
+});
 
-    const client = await startClientMethod(browserWithExtension, startClient);
+test(`snapshot of an existing page`, async ({ browserWithExtension, startClient, server }) => {
+  const browserContext = await browserWithExtension.launch();
 
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
-    });
+  const page = await browserContext.newPage();
+  await page.goto(server.HELLO_WORLD);
 
-    expect(await client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.HELLO_WORLD },
-    })).toHaveResponse({
-      result: expect.stringContaining('Extension connection timeout. Make sure the "Playwright MCP Bridge" extension is installed.'),
-      isError: true,
-    });
+  // Another empty page.
+  await browserContext.newPage();
+  expect(browserContext.pages()).toHaveLength(3);
 
-    await confirmationPagePromise;
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+  expect(browserContext.pages()).toHaveLength(3);
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
   });
 
-  testWithOldExtensionVersion(`works with old extension version (${mode})`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout }) => {
-    useShortConnectionTimeout(500);
-
-    // Prelaunch the browser, so that it is properly closed after the test.
-    const browserContext = await browserWithExtension.launch();
-
-    const client = await startClientMethod(browserWithExtension, startClient);
-
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
-    });
-
-    const navigateResponse = client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.HELLO_WORLD },
-    });
-
-    const selectorPage = await confirmationPagePromise;
-    // For browser_navigate command, the UI shows Allow/Reject buttons instead of tab selector
-    await selectorPage.getByRole('button', { name: 'Allow' }).click();
-
-    expect(await navigateResponse).toHaveResponse({
-      pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
-    });
+  const navigateResponse = client.callTool({
+    name: 'browser_snapshot',
+    arguments: { },
   });
 
-  test(`extension needs update (${mode})`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout, overrideProtocolVersion }) => {
-    useShortConnectionTimeout(500);
-    overrideProtocolVersion(1000);
+  const selectorPage = await confirmationPagePromise;
+  expect(browserContext.pages()).toHaveLength(4);
 
-    // Prelaunch the browser, so that it is properly closed after the test.
-    const browserContext = await browserWithExtension.launch();
+  await selectorPage.locator('.tab-item', { hasText: 'Title' }).getByRole('button', { name: 'Connect' }).click();
 
-    const client = await startClientMethod(browserWithExtension, startClient);
-
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
-    });
-
-    const navigateResponse = client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.HELLO_WORLD },
-    });
-
-    const confirmationPage = await confirmationPagePromise;
-    await expect(confirmationPage.locator('.status-banner')).toContainText(`Playwright MCP version trying to connect requires newer extension version`);
-
-    expect(await navigateResponse).toHaveResponse({
-      result: expect.stringContaining('Extension connection timeout.'),
-      isError: true,
-    });
+  expect(await navigateResponse).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
 
-}
+  expect(browserContext.pages()).toHaveLength(4);
+});
+
+test(`extension not installed timeout`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout }) => {
+  useShortConnectionTimeout(100);
+
+  const browserContext = await browserWithExtension.launch();
+
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toHaveResponse({
+    result: expect.stringContaining('Extension connection timeout. Make sure the "Playwright MCP Bridge" extension is installed.'),
+    isError: true,
+  });
+
+  await confirmationPagePromise;
+});
+
+testWithOldExtensionVersion(`works with old extension version`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout }) => {
+  useShortConnectionTimeout(500);
+
+  // Prelaunch the browser, so that it is properly closed after the test.
+  const browserContext = await browserWithExtension.launch();
+
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
+  });
+
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  });
+
+  const selectorPage = await confirmationPagePromise;
+  // For browser_navigate command, the UI shows Allow/Reject buttons instead of tab selector
+  await selectorPage.getByRole('button', { name: 'Allow' }).click();
+
+  expect(await navigateResponse).toHaveResponse({
+    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
+});
+
+test(`extension needs update`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout, overrideProtocolVersion }) => {
+  useShortConnectionTimeout(500);
+  overrideProtocolVersion(1000);
+
+  // Prelaunch the browser, so that it is properly closed after the test.
+  const browserContext = await browserWithExtension.launch();
+
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
+  });
+
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  });
+
+  const confirmationPage = await confirmationPagePromise;
+  await expect(confirmationPage.locator('.status-banner')).toContainText(`Playwright MCP version trying to connect requires newer extension version`);
+
+  expect(await navigateResponse).toHaveResponse({
+    result: expect.stringContaining('Extension connection timeout.'),
+    isError: true,
+  });
+});
 
 test(`custom executablePath`, async ({ startClient, server, useShortConnectionTimeout }) => {
   useShortConnectionTimeout(1000);
@@ -331,6 +302,4 @@ test(`bypass connection dialog with token`, async ({ browserWithExtension, start
   expect(await navigateResponse).toHaveResponse({
     pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
-
-
 });
