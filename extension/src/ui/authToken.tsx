@@ -19,19 +19,49 @@ import { CopyToClipboard } from './copyToClipboard';
 import * as icons from './icons';
 import './authToken.css';
 
-export const AuthTokenSection: React.FC<{}> = ({}) => {
+export const AuthTokenSection: React.FC<{}> = ({ }) => {
   const [authToken, setAuthToken] = useState<string>(getOrCreateAuthToken);
   const [isExampleExpanded, setIsExampleExpanded] = useState<boolean>(false);
+  const [isCustomTokenMode, setIsCustomTokenMode] = useState<boolean>(false);
+  const [customTokenInput, setCustomTokenInput] = useState<string>('');
+  const [customTokenError, setCustomTokenError] = useState<string>('');
 
   const onRegenerateToken = useCallback(() => {
     const newToken = generateAuthToken();
-    localStorage.setItem('auth-token', newToken);
+    saveAuthToken(newToken);
     setAuthToken(newToken);
+    setIsCustomTokenMode(false);
+    setCustomTokenError('');
   }, []);
+
+  const onSetCustomToken = useCallback(() => {
+    // Validate: must be at least 16 characters for security
+    if (customTokenInput.length < 16) {
+      setCustomTokenError('Token must be at least 16 characters');
+      return;
+    }
+    // Validate: only alphanumeric and URL-safe characters
+    if (!/^[a-zA-Z0-9_-]+$/.test(customTokenInput)) {
+      setCustomTokenError('Token can only contain letters, numbers, - and _');
+      return;
+    }
+
+    setCustomTokenError('');
+    saveAuthToken(customTokenInput);
+    setAuthToken(customTokenInput);
+    setIsCustomTokenMode(false);
+    setCustomTokenInput('');
+  }, [customTokenInput]);
 
   const toggleExample = useCallback(() => {
     setIsExampleExpanded(!isExampleExpanded);
   }, [isExampleExpanded]);
+
+  const toggleCustomTokenMode = useCallback(() => {
+    setIsCustomTokenMode(!isCustomTokenMode);
+    setCustomTokenInput('');
+    setCustomTokenError('');
+  }, [isCustomTokenMode]);
 
   return (
     <div className='auth-token-section'>
@@ -40,10 +70,68 @@ export const AuthTokenSection: React.FC<{}> = ({}) => {
       </div>
       <div className='auth-token-container'>
         <code className='auth-token-code'>{authTokenCode(authToken)}</code>
-        <button className='auth-token-refresh' title='Generate new token' aria-label='Generate new token'onClick={onRegenerateToken}>{icons.refresh()}</button>
+        <button
+          className='auth-token-refresh'
+          title='Generate new random token'
+          aria-label='Generate new random token'
+          onClick={onRegenerateToken}
+        >
+          {icons.refresh()}
+        </button>
         <CopyToClipboard value={authTokenCode(authToken)} />
       </div>
 
+      {/* Custom Token Section */}
+      <div className='auth-token-custom-section'>
+        <button
+          className='auth-token-custom-toggle'
+          onClick={toggleCustomTokenMode}
+          aria-expanded={isCustomTokenMode}
+          title={isCustomTokenMode ? 'Hide custom token input' : 'Set a custom token'}
+        >
+          <span className={`auth-token-chevron ${isCustomTokenMode ? 'expanded' : ''}`}>
+            {icons.chevronDown()}
+          </span>
+          Set custom token (for automation)
+        </button>
+
+        {isCustomTokenMode && (
+          <div className='auth-token-custom-content'>
+            <div className='auth-token-custom-description'>
+              Set a constant token for automated pipelines. Token must be at least 16 characters
+              and contain only letters, numbers, hyphens, and underscores.
+            </div>
+            <div className='auth-token-custom-input-container'>
+              <input
+                type='text'
+                className='auth-token-custom-input'
+                placeholder='Enter custom token...'
+                value={customTokenInput}
+                onChange={(e) => {
+                  setCustomTokenInput(e.target.value);
+                  setCustomTokenError('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter')
+                    onSetCustomToken();
+                }}
+                aria-label='Custom token input'
+              />
+              <button
+                className='auth-token-custom-save'
+                onClick={onSetCustomToken}
+              >
+                Save
+              </button>
+            </div>
+            {customTokenError && (
+              <div className='auth-token-custom-error'>{customTokenError}</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Example Config Section */}
       <div className='auth-token-example-section'>
         <button
           className='auth-token-example-toggle'
@@ -98,14 +186,18 @@ function generateAuthToken(): string {
   crypto.getRandomValues(array);
   // Convert to base64 and make it URL-safe
   return btoa(String.fromCharCode.apply(null, Array.from(array)))
-      .replace(/[+/=]/g, match => {
-        switch (match) {
-          case '+': return '-';
-          case '/': return '_';
-          case '=': return '';
-          default: return match;
-        }
-      });
+    .replace(/[+/=]/g, match => {
+      switch (match) {
+        case '+': return '-';
+        case '/': return '_';
+        case '=': return '';
+        default: return match;
+      }
+    });
+}
+
+function saveAuthToken(token: string): void {
+  localStorage.setItem('auth-token', token);
 }
 
 export const getOrCreateAuthToken = (): string => {
