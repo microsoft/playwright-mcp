@@ -1,0 +1,12 @@
+{
+  "name": "playwright-mcp-electron-test-app",
+  "version": "1.0.0",
+  "description": "Test Electron app for Playwright MCP Electron support testing",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^28.0.0"
+  }
+}

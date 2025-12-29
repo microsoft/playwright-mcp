@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--
+  Copyright (c) Microsoft Corporation.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'">
+  <title>Secondary Window</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #e3f2fd;
+    }
+    h1 { color: #1565c0; }
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #output {
+      margin-top: 20px;
+      padding: 10px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="heading">Secondary Window</h1>
+  <p>This is a secondary Electron window for multi-window testing.</p>
+
+  <button id="action-btn" data-testid="secondary-action">Perform Action</button>
+
+  <div id="output" data-testid="output">Waiting for action...</div>
+
+  <script>
+    document.getElementById('action-btn').onclick = () => {
+      document.getElementById('output').textContent = 'Action performed in secondary window!';
+    };
+  </script>
+</body>
+</html>

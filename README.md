@@ -450,6 +450,91 @@ state [here](https://playwright.dev/docs/auth).
 
 The Playwright MCP Chrome Extension allows you to connect to existing browser tabs and leverage your logged-in sessions and browser state. See [extension/README.md](extension/README.md) for installation and setup instructions.
 
+### Electron Application Support (Experimental)
+
+Playwright MCP supports automating Electron desktop applications through Playwright's experimental Electron API. This allows you to use the same accessibility-first automation approach with Electron apps.
+
+**Requirements:**
+- Electron app must have `nodeCliInspect` fuse enabled (this is the default)
+- Node.js 18 or newer
+- App source directory or executable path
+
+**Basic usage:**
+
+```js
+{
+  "mcpServers": {
+    "playwright-electron": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--browser=electron",
+        "--electron-app=/path/to/your/app"
+      ]
+    }
+  }
+}
+```
+
+**Configuration file:**
+
+```json
+{
+  "browser": {
+    "browserName": "electron",
+    "electron": {
+      "args": ["."],
+      "cwd": "/path/to/app",
+      "executablePath": "/path/to/electron"
+    }
+  },
+  "capabilities": ["electron"]
+}
+```
+
+**Electron-specific tools** (require `--caps=electron`):
+
+<details>
+<summary><b>Electron automation</b></summary>
+
+- **electron_evaluate**
+  - Title: Evaluate in main process
+  - Description: Execute JavaScript in the Electron main process
+  - Parameters:
+    - `function` (string): JavaScript function to execute, e.g., `"() => require('electron').app.getPath('userData')"`
+  - Read-only: **false**
+
+- **electron_windows**
+  - Title: List Electron windows
+  - Description: List all open Electron BrowserWindows with their titles and indices
+  - Parameters: None
+  - Read-only: **true**
+
+- **electron_select_window**
+  - Title: Select Electron window
+  - Description: Switch to a different Electron window by index
+  - Parameters:
+    - `index` (number): Window index (0-based)
+  - Read-only: **false**
+
+- **electron_app_info**
+  - Title: Get Electron app info
+  - Description: Get information about the Electron application (name, version, paths)
+  - Parameters: None
+  - Read-only: **true**
+
+- **electron_ipc_send**
+  - Title: Send IPC message
+  - Description: Send an IPC message from main process to renderer
+  - Parameters:
+    - `channel` (string): IPC channel name
+    - `args` (array, optional): Arguments to send
+  - Read-only: **false**
+
+</details>
+
+**Note:** All standard browser tools (`browser_click`, `browser_type`, `browser_snapshot`, etc.) work with Electron windows just like they do with browser pages.
+
 ### Initial state
 
 There are multiple ways to provide the initial state to the browser context or a page.
@@ -501,8 +586,9 @@ npx @playwright/mcp@latest --config path/to/config.json
   browser?: {
     /**
      * The type of browser to use.
+     * Use 'electron' to automate Electron desktop applications.
      */
-    browserName?: 'chromium' | 'firefox' | 'webkit';
+    browserName?: 'chromium' | 'firefox' | 'webkit' | 'electron';
 
     /**
      * Keep the browser profile in memory, do not save it to disk.
@@ -555,6 +641,40 @@ npx @playwright/mcp@latest --config path/to/config.json
      * The scripts will be evaluated in every page before any of the page's scripts.
      */
     initScript?: string[];
+
+    /**
+     * Electron-specific configuration options.
+     * Only used when browserName is 'electron'.
+     */
+    electron?: {
+      /**
+       * Path to the Electron executable.
+       * If not specified, uses the electron package from node_modules.
+       */
+      executablePath?: string;
+
+      /**
+       * Arguments to pass to the Electron application.
+       * Typically includes the path to the main script (e.g., ['.'] or ['main.js']).
+       */
+      args?: string[];
+
+      /**
+       * Working directory for the Electron application.
+       */
+      cwd?: string;
+
+      /**
+       * Environment variables to set for the Electron process.
+       */
+      env?: Record<string, string>;
+
+      /**
+       * Timeout in milliseconds for launching the Electron app.
+       * Default is 30000 (30 seconds).
+       */
+      timeout?: number;
+    };
   },
 
   server?: {
