@@ -84,9 +84,15 @@ Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user),
 <details>
 <summary>Cline</summary>
 
-Follow the instruction [Adding MCP from GitHub](https://docs.cline.bot/mcp/adding-mcp-servers-from-github)
+Follow the instruction in the section [MCP Integration](https://docs.cline.bot/mcp/mcp-overview)
 
-Alternatively, update cline MCP configuration json [guide](https://docs.cline.bot/mcp/connecting-to-a-remote-server#advanced-configuration).
+Connection Types
+Local (stdio): Cline runs the server as a local process.
+Remote (streamableHttp): hosted/cloud environments.
+Legacy (sse): Only use if the host doesn't support the modern streamableHttp protocol.
+
+Example: Local Setup
+Add the following to your cline_mcp_settings.json file:
 
 ```json
 {
