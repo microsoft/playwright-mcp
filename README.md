@@ -308,6 +308,14 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         Important: *does not* serve as a
                                         security boundary and *does not* affect
                                         redirects.
+  --allow-unrestricted-file-access      allow access to files outside of the
+                                        workspace roots. Also allows
+                                        unrestricted access to file:// URLs. By
+                                        default access to file system is
+                                        restricted to workspace root directories
+                                        (or cwd if no roots are configured)
+                                        only, and navigation to file:// URLs is
+                                        blocked.
   --blocked-origins <origins>           semicolon-separated list of origins to
                                         block the browser from requesting.
                                         Blocklist is evaluated before allowlist.
@@ -665,6 +673,12 @@ npx @playwright/mcp@latest --config path/to/config.json
      */
     mode?: 'incremental' | 'full' | 'none';
   }
+
+  /**
+   * Whether to allow file uploads from anywhere on the file system.
+   * By default (false), file uploads are restricted to paths within the MCP roots only.
+   */
+  allowUnrestrictedFileAccess?: boolean;
 }
 ```
 
