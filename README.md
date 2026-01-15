@@ -577,6 +577,11 @@ npx @playwright/mcp@latest --config path/to/config.json
     cdpHeaders?: Record<string, string>;
 
     /**
+     * Timeout in milliseconds for connecting to CDP endpoint. Defaults to 30000 (30 seconds). Pass 0 to disable timeout.
+     */
+    cdpTimeout?: number;
+
+    /**
      * Remote endpoint to connect to an existing Playwright server.
      */
     remoteEndpoint?: string;
