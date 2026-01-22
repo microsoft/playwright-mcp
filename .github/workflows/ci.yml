@@ -22,6 +22,11 @@ jobs:
       run: npm run lint
     - name: Ensure no changes
       run: git diff --exit-code
+    - name: Run cli lint
+      run: |
+        npm ci
+        npm run lint
+      working-directory: ./cli
 
   test:
     strategy:
