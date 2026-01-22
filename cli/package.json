@@ -26,7 +26,7 @@
     "@types/debug": "^4.1.12",
     "@types/minimist": "^1.2.5",
     "debug": "^4.4.3",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.25.0",
     "minimist": "^1.2.8",
     "typescript": "^5.8.2"
   }
