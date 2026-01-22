@@ -1,7 +1,7 @@
 {
   "name": "@playwright/cli",
   "version": "0.0.56",
-  "description": "Playwright CLI",
+  "description": "playwright-cli browser automation tool",
   "private": true,
   "repository": {
     "type": "git",
@@ -15,12 +15,16 @@
     "name": "Microsoft Corporation"
   },
   "license": "Apache-2.0",
+  "bin": {
+    "playwright-cli": "./cli.js"
+  },
   "scripts": {
     "lint": "tsc --project .",
     "build": "esbuild src/cli.ts --bundle --platform=node --target=node18 --format=cjs --outfile=lib/cli.js",
     "watch": "esbuild src/cli.ts --bundle --platform=node --target=node18 --format=cjs --outfile=lib/cli.js --watch",
     "test": "playwright test",
-    "clean": "rm -rf lib"
+    "clean": "rm -rf lib",
+    "npm-publish": "cp ../LICENSE . && npm run clean && npm run build && npm run test && npm publish"
   },
   "devDependencies": {
     "@types/debug": "^4.1.12",

@@ -1,6 +1,6 @@
 **/*
 !README.md
 !LICENSE
+!lib/**/*
+!SKILL.md
 !cli.js
-!index.*
-!config.d.ts
