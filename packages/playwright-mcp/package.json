@@ -15,14 +15,13 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "lint": "npm run update-readme",
-    "update-readme": "node update-readme.js",
+    "lint": "node update-readme.js",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
     "ftest": "playwright test --project=firefox",
     "wtest": "playwright test --project=webkit",
     "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
-    "npm-publish": "npm run clean && npm run lint && npm run test && npm publish",
+    "npm-publish": "npm run lint && npm run test && npm publish",
     "copy-config": "cp ../../../playwright/packages/playwright/src/mcp/config.d.ts . && perl -pi -e \"s|import type \\* as playwright from 'playwright-core';|import type * as playwright from 'playwright';|\" ./config.d.ts",
     "roll": "npm run copy-config && npm run lint"
   },
@@ -34,10 +33,12 @@
     }
   },
   "dependencies": {
+    "minimist": "^1.2.5",
     "playwright": "1.59.0-alpha-1769176698000",
     "playwright-core": "1.59.0-alpha-1769176698000"
   },
   "bin": {
-    "mcp-server-playwright": "cli.js"
+    "mcp": "cli.js",
+    "playwright-cli": "./playwright-cli.js"
   }
 }

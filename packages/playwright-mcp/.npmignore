@@ -2,5 +2,6 @@
 !README.md
 !LICENSE
 !cli.js
+!playwright-cli.js
 !index.*
 !config.d.ts
