@@ -15,14 +15,16 @@
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",
     "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
-    "lint": "npm run lint --workspaces"
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "build": "npm run build --workspaces"
   },
   "workspaces": [
     "packages/*"
   ],
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
-    "@playwright/test": "1.59.0-alpha-1769176698000",
+    "@playwright/test": "1.59.0-alpha-1769191051000",
     "@types/node": "^24.3.0"
   }
 }
