@@ -190,6 +190,7 @@ async function updateReadme() {
   await copyToPackage('LICENSE');
 }
 
+
 updateReadme().catch(err => {
   console.error('Error updating README:', err);
   process.exit(1);
