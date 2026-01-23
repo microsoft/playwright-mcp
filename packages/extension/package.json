@@ -1,6 +1,6 @@
 {
   "name": "@playwright/mcp-extension",
-  "version": "0.0.56",
+  "version": "0.0.57",
   "description": "Playwright MCP Browser Extension",
   "private": true,
   "repository": {
