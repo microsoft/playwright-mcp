@@ -16,19 +16,12 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-    - name: Install dependencies
-      run: npm ci
-    - name: Run ESLint
-      run: npm run lint
+    - run: npm ci
+    - run: npm run lint
     - name: Ensure no changes
       run: git diff --exit-code
-    - name: Run cli lint
-      run: |
-        npm ci
-        npm run lint
-      working-directory: ./cli
 
-  test:
+  test_mcp:
     strategy:
       fail-fast: false
       matrix:
@@ -47,8 +40,9 @@ jobs:
       run: npx playwright install --with-deps
     - name: Run tests
       run: npm run test
+      working-directory: ./packages/playwright-mcp
 
-  test_docker:
+  test_mcp_docker:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -76,14 +70,12 @@ jobs:
         # Used for the Docker tests to share the test-results folder with the container.
         umask 0000
         npm run test -- --project=chromium-docker
+      working-directory: ./packages/playwright-mcp
       env:
         MCP_IN_DOCKER: 1
 
   test_extension:
     runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: ./extension
     steps:
     - uses: actions/checkout@v4
     - name: Use Node.js 20
@@ -93,19 +85,17 @@ jobs:
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
+    - name: Playwright install
+      run: npx playwright install --with-deps
     - name: Build extension
       run: npm run build
+      working-directory: ./packages/extension
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: extension
         path: ./extension/dist
         retention-days: 7
-    - name: Install MCP server
-      run: |
-        cd ..
-        npm ci
-        npx playwright install chromium
     - name: Run tests
       run: |
         if [[ "$(uname)" == "Linux" ]]; then
@@ -114,3 +104,4 @@ jobs:
           npm run test
         fi
       shell: bash
+      working-directory: ./packages/extension

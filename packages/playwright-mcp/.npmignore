@@ -1,6 +1,6 @@
 **/*
-README.md
-LICENSE
+!README.md
+!LICENSE
 !cli.js
 !index.*
 !config.d.ts

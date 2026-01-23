@@ -16,7 +16,7 @@
 
 import { defineConfig } from '@playwright/test';
 
-import type { TestOptions } from '../tests/fixtures';
+import type { TestOptions } from '../playwright-mcp/tests/fixtures';
 
 export default defineConfig<TestOptions>({
   testDir: './tests',

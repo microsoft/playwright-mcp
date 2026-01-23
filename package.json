@@ -1,48 +1,25 @@
 {
-  "name": "@playwright/mcp",
-  "version": "0.0.56",
-  "description": "Playwright Tools for MCP",
+  "name": "playwright-mcp-internal",
+  "version": "0.0.1",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/microsoft/playwright-mcp.git"
   },
   "homepage": "https://playwright.dev",
-  "engines": {
-    "node": ">=18"
-  },
   "author": {
     "name": "Microsoft Corporation"
   },
   "license": "Apache-2.0",
   "scripts": {
-    "lint": "npm run update-readme",
-    "update-readme": "node update-readme.js",
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",
     "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
-    "test": "playwright test",
-    "ctest": "playwright test --project=chrome",
-    "ftest": "playwright test --project=firefox",
-    "wtest": "playwright test --project=webkit",
-    "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
-    "npm-publish": "npm run clean && npm run test && npm publish",
-    "copy-config": "cp ../playwright/packages/playwright/src/mcp/config.d.ts . && perl -pi -e \"s|import type \\* as playwright from 'playwright-core';|import type * as playwright from 'playwright';|\" ./config.d.ts",
-    "roll": "npm run copy-config && npm run lint"
+    "lint": "npm run lint --workspaces"
   },
-  "exports": {
-    "./package.json": "./package.json",
-    ".": {
-      "types": "./index.d.ts",
-      "default": "./index.js"
-    }
-  },
-  "dependencies": {
-    "playwright": "1.58.0-alpha-2026-01-16",
-    "playwright-core": "1.58.0-alpha-2026-01-16"
-  },
-  "bin": {
-    "mcp-server-playwright": "cli.js"
-  },
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.24.0",
     "@playwright/test": "1.58.0-alpha-2026-01-16",

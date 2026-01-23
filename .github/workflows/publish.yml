@@ -7,7 +7,7 @@ on:
     types: [published]
 
 jobs:
-  publish-canary-npm:
+  publish-mcp-canary-npm:
     if: github.event.schedule || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
@@ -38,16 +38,19 @@ jobs:
       - name: Update package.json version
         run: |
           npm version ${{ steps.canary-version.outputs.version }} --no-git-tag-version
+        working-directory: ./packages/playwright-mcp
 
       - run: npm ci
       - run: npx playwright install --with-deps
       - run: npm run lint
       - run: npm run ctest
+        working-directory: ./packages/playwright-mcp
 
       - name: Publish to npm with next tag
         run: npm publish --tag next
+        working-directory: ./packages/playwright-mcp
 
-  publish-release-npm:
+  publish-mcp-release-npm:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
@@ -66,9 +69,11 @@ jobs:
       - run: npx playwright install --with-deps
       - run: npm run lint
       - run: npm run ctest
+        working-directory: ./packages/playwright-mcp
       - run: npm publish
+        working-directory: ./packages/playwright-mcp
 
-  publish-release-docker:
+  publish-mcp-release-docker:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
@@ -93,8 +98,7 @@ jobs:
         id: build-push
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile # Adjust path if your Dockerfile is elsewhere
+          file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -127,17 +131,16 @@ jobs:
           node-version: 20
           cache: 'npm'
       - name: Install extension dependencies
-        working-directory: ./extension
         run: npm ci
       - name: Build extension
-        working-directory: ./extension
+        working-directory: ./packages/extension
         run: npm run build
       - name: Get extension version
         id: get-version
-        working-directory: ./extension
+        working-directory: ./packages/extension
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
       - name: Package extension
-        working-directory: ./extension
+        working-directory: ./packages/extension
         run: |
           cd dist
           zip -r ../playwright-mcp-extension-${{ steps.get-version.outputs.version }}.zip .
@@ -146,4 +149,4 @@ jobs:
         env:
            GITHUB_TOKEN: ${{ github.token }}
         run: |
-            gh release upload ${{github.event.release.tag_name}} ./extension/playwright-mcp-extension-${{ steps.get-version.outputs.version }}.zip
+            gh release upload ${{github.event.release.tag_name}} ./packages/extension/playwright-mcp-extension-${{ steps.get-version.outputs.version }}.zip

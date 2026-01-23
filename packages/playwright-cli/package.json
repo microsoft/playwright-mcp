@@ -19,7 +19,6 @@
     "lint": "tsc --project .",
     "build": "esbuild src/cli.ts --bundle --platform=node --target=node18 --format=cjs --outfile=lib/cli.js",
     "watch": "esbuild src/cli.ts --bundle --platform=node --target=node18 --format=cjs --outfile=lib/cli.js --watch",
-    "test": "playwright test",
     "clean": "rm -rf lib"
   },
   "devDependencies": {
