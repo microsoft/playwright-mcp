@@ -16,7 +16,17 @@
 
 import type * as playwright from 'playwright';
 
-export type ToolCapability = 'core' | 'core-tabs' | 'core-install' | 'vision' | 'pdf' | 'testing' | 'tracing';
+export type ToolCapability =
+  'core' |
+  'core-input' |
+  'core-navigation' |
+  'core-tabs' |
+  'core-install' |
+  'core-input' |
+  'vision' |
+  'pdf' |
+  'testing' |
+  'tracing';
 
 export type Config = {
   /**
@@ -147,6 +157,11 @@ export type Config = {
    */
   outputDir?: string;
 
+  /**
+   * Whether to save snapshots, console messages, network logs and other session logs to a file or to the standard output. Defaults to "stdout".
+   */
+  outputMode?: 'file' | 'stdout';
+
   console?: {
     /**
      * The level of console messages to return. Each level includes the messages of more severe levels. Defaults to "info".
@@ -193,11 +208,16 @@ export type Config = {
      * When taking snapshots for responses, specifies the mode to use.
      */
     mode?: 'incremental' | 'full' | 'none';
-  }
+  };
 
   /**
    * Whether to allow file uploads from anywhere on the file system.
    * By default (false), file uploads are restricted to paths within the MCP roots only.
    */
   allowUnrestrictedFileAccess?: boolean;
+
+  /**
+   * Specify the language to use for code generation.
+   */
+  codegen?: 'typescript' | 'none';
 };

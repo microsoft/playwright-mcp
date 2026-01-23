@@ -400,6 +400,10 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --no-sandbox                          disable the sandbox for all process
                                         types that are normally sandboxed.
   --output-dir <path>                   path to the directory for output files.
+  --output-mode <mode>                  whether to save snapshots, console
+                                        messages, network logs to a file or to
+                                        the standard output. Can be "file" or
+                                        "stdout". Default is "stdout".
   --port <port>                         port to listen on for SSE transport.
   --proxy-bypass <bypass>               comma-separated domains to bypass proxy,
                                         for example
@@ -436,6 +440,10 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         created.
   --viewport-size <size>                specify browser viewport size in pixels,
                                         for example "1280x720"
+  --codegen <lang>                      specify the language to use for code
+                                        generation, possible values:
+                                        "typescript", "none". Default is
+                                        "typescript".
 ```
 
 <!--- End of options generated section -->
@@ -659,6 +667,11 @@ npx @playwright/mcp@latest --config path/to/config.json
    */
   outputDir?: string;
 
+  /**
+   * Whether to save snapshots, console messages, network logs and other session logs to a file or to the standard output. Defaults to "stdout".
+   */
+  outputMode?: 'file' | 'stdout';
+
   console?: {
     /**
      * The level of console messages to return. Each level includes the messages of more severe levels. Defaults to "info".
@@ -705,13 +718,18 @@ npx @playwright/mcp@latest --config path/to/config.json
      * When taking snapshots for responses, specifies the mode to use.
      */
     mode?: 'incremental' | 'full' | 'none';
-  }
+  };
 
   /**
    * Whether to allow file uploads from anywhere on the file system.
    * By default (false), file uploads are restricted to paths within the MCP roots only.
    */
   allowUnrestrictedFileAccess?: boolean;
+
+  /**
+   * Specify the language to use for code generation.
+   */
+  codegen?: 'typescript' | 'none';
 }
 ```
 
@@ -811,7 +829,7 @@ http.createServer(async (req, res) => {
   - Title: Click
   - Description: Perform click on a web page
   - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
     - `doubleClick` (boolean, optional): Whether to perform a double click instead of a single click
     - `button` (string, optional): Button to click, defaults to left
@@ -832,7 +850,8 @@ http.createServer(async (req, res) => {
   - Title: Get console messages
   - Description: Returns all console messages
   - Parameters:
-    - `level` (string, optional): Level of the console messages to return. Each level includes the messages of more severe levels. Defaults to "info".
+    - `level` (string): Level of the console messages to return. Each level includes the messages of more severe levels. Defaults to "info".
+    - `filename` (string, optional): Filename to save the console messages to. If not provided, messages are returned as text.
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -892,7 +911,7 @@ http.createServer(async (req, res) => {
   - Title: Hover mouse
   - Description: Hover over element on page
   - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
   - Read-only: **false**
 
@@ -909,7 +928,7 @@ http.createServer(async (req, res) => {
 
 - **browser_navigate_back**
   - Title: Go back
-  - Description: Go back to the previous page
+  - Description: Go back to the previous page in the history
   - Parameters: None
   - Read-only: **false**
 
@@ -919,7 +938,8 @@ http.createServer(async (req, res) => {
   - Title: List network requests
   - Description: Returns all network requests since loading the page
   - Parameters:
-    - `includeStatic` (boolean, optional): Whether to include successful static resources like images, fonts, scripts, etc. Defaults to false.
+    - `includeStatic` (boolean): Whether to include successful static resources like images, fonts, scripts, etc. Defaults to false.
+    - `filename` (string, optional): Filename to save the network requests to. If not provided, requests are returned as text.
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -956,7 +976,7 @@ http.createServer(async (req, res) => {
   - Title: Select option
   - Description: Select an option in a dropdown
   - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
     - `values` (array): Array of values to select in the dropdown. This can be a single value or multiple values.
   - Read-only: **false**
@@ -976,7 +996,7 @@ http.createServer(async (req, res) => {
   - Title: Take a screenshot
   - Description: Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.
   - Parameters:
-    - `type` (string, optional): Image format for the screenshot. Default is png.
+    - `type` (string): Image format for the screenshot. Default is png.
     - `filename` (string, optional): File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified. Prefer relative file names to stay within the output directory.
     - `element` (string, optional): Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.
     - `ref` (string, optional): Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.
@@ -989,7 +1009,7 @@ http.createServer(async (req, res) => {
   - Title: Type text
   - Description: Type text into editable element
   - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
     - `text` (string): Text to type into the element
     - `submit` (boolean, optional): Whether to submit entered text (press Enter after)
@@ -1046,9 +1066,17 @@ http.createServer(async (req, res) => {
   - Title: Click
   - Description: Click left mouse button at a given position
   - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
     - `y` (number): Y coordinate
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_mouse_down**
+  - Title: Press mouse down
+  - Description: Press mouse down
+  - Parameters:
+    - `button` (string, optional): Button to press, defaults to left
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -1057,7 +1085,6 @@ http.createServer(async (req, res) => {
   - Title: Drag mouse
   - Description: Drag left mouse button to a given position
   - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `startX` (number): Start X coordinate
     - `startY` (number): Start Y coordinate
     - `endX` (number): End X coordinate
@@ -1070,9 +1097,27 @@ http.createServer(async (req, res) => {
   - Title: Move mouse
   - Description: Move mouse to a given position
   - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
     - `x` (number): X coordinate
     - `y` (number): Y coordinate
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_mouse_up**
+  - Title: Press mouse up
+  - Description: Press mouse up
+  - Parameters:
+    - `button` (string, optional): Button to press, defaults to left
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_mouse_wheel**
+  - Title: Scroll mouse wheel
+  - Description: Scroll mouse wheel
+  - Parameters:
+    - `deltaX` (number): X delta
+    - `deltaY` (number): Y delta
   - Read-only: **false**
 
 </details>
@@ -1100,7 +1145,7 @@ http.createServer(async (req, res) => {
   - Title: Create locator for element
   - Description: Generate locator for the given element to use in tests
   - Parameters:
-    - `element` (string): Human-readable element description used to obtain permission to interact with the element
+    - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
   - Read-only: **true**
 

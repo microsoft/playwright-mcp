@@ -18,14 +18,15 @@
 
 const fs = require('fs')
 const path = require('path')
-const { zodToJsonSchema } = require('zod-to-json-schema')
 const { execSync } = require('child_process');
 
 const { browserTools } = require('playwright/lib/mcp/browser/tools');
 
 const capabilities = {
+  'core-navigation': 'Core automation',
   'core': 'Core automation',
   'core-tabs': 'Tab management',
+  'core-input': 'Core automation',
   'core-install': 'Browser installation',
   'vision': 'Coordinate-based (opt-in via --caps=vision)',
   'pdf': 'PDF generation (opt-in via --caps=pdf)',
@@ -33,7 +34,15 @@ const capabilities = {
   'tracing': 'Tracing (opt-in via --caps=tracing)',
 };
 
-const toolsByCapability = Object.fromEntries(Object.entries(capabilities).map(([capability, title]) => [title, browserTools.filter(tool => tool.capability === capability).sort((a, b) => a.schema.name.localeCompare(b.schema.name))]));
+/** @type {Record<string, any[]>} */
+const toolsByCapability = {};
+for (const [capability, title] of Object.entries(capabilities)) {
+  let tools = browserTools.filter(tool => tool.capability === capability && !tool.skillOnly);
+  tools = (toolsByCapability[title] || []).concat(tools);
+  toolsByCapability[title] = tools;
+}
+for (const [, tools] of Object.entries(toolsByCapability))
+  tools.sort((a, b) => a.schema.name.localeCompare(b.schema.name));
 
 /**
  * @param {any} tool
@@ -47,7 +56,7 @@ function formatToolForReadme(tool) {
   lines.push(`  - Title: ${tool.title}`);
   lines.push(`  - Description: ${tool.description}`);
 
-  const inputSchema = /** @type {any} */ (zodToJsonSchema(tool.inputSchema || {}));
+  const inputSchema = /** @type {any} */ (tool.inputSchema ? tool.inputSchema.toJSONSchema() : {});
   const requiredParams = inputSchema.required || [];
   if (inputSchema.properties && Object.keys(inputSchema.properties).length) {
     lines.push(`  - Parameters:`);

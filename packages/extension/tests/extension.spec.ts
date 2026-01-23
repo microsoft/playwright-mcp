@@ -134,7 +134,7 @@ test(`navigate with extension`, async ({ browserWithExtension, startClient, serv
   await selectorPage.getByRole('button', { name: 'Allow' }).click();
 
   expect(await navigateResponse).toHaveResponse({
-    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+    snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
 });
 
@@ -166,7 +166,7 @@ test(`snapshot of an existing page`, async ({ browserWithExtension, startClient,
   await selectorPage.locator('.tab-item', { hasText: 'Title' }).getByRole('button', { name: 'Connect' }).click();
 
   expect(await navigateResponse).toHaveResponse({
-    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+    snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
 
   expect(browserContext.pages()).toHaveLength(4);
@@ -187,7 +187,7 @@ test(`extension not installed timeout`, async ({ browserWithExtension, startClie
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   })).toHaveResponse({
-    result: expect.stringContaining('Extension connection timeout. Make sure the "Playwright MCP Bridge" extension is installed.'),
+    error: expect.stringContaining('Extension connection timeout. Make sure the "Playwright MCP Bridge" extension is installed.'),
     isError: true,
   });
 
@@ -216,7 +216,7 @@ testWithOldExtensionVersion(`works with old extension version`, async ({ browser
   await selectorPage.getByRole('button', { name: 'Allow' }).click();
 
   expect(await navigateResponse).toHaveResponse({
-    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+    snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
 });
 
@@ -242,7 +242,7 @@ test(`extension needs update`, async ({ browserWithExtension, startClient, serve
   await expect(confirmationPage.locator('.status-banner')).toContainText(`Playwright MCP version trying to connect requires newer extension version`);
 
   expect(await navigateResponse).toHaveResponse({
-    result: expect.stringContaining('Extension connection timeout.'),
+    error: expect.stringContaining('Extension connection timeout.'),
     isError: true,
   });
 });
@@ -267,10 +267,9 @@ test(`custom executablePath`, async ({ startClient, server, useShortConnectionTi
   const navigateResponse = await client.callTool({
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
-    timeout: 1000,
   });
   expect(await navigateResponse).toHaveResponse({
-    result: expect.stringContaining('Extension connection timeout.'),
+    error: expect.stringContaining('Extension connection timeout.'),
     isError: true,
   });
   expect(await fs.promises.readFile(test.info().outputPath('output.txt'), 'utf8')).toContain('Custom exec args: chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html?');
@@ -300,6 +299,6 @@ test(`bypass connection dialog with token`, async ({ browserWithExtension, start
   });
 
   expect(await navigateResponse).toHaveResponse({
-    pageState: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+    snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
 });

@@ -229,7 +229,7 @@ export const expect = baseExpect.extend({
         expect(parsed).not.toEqual(expect.objectContaining(object));
       else
         expect(parsed).toEqual(expect.objectContaining(object));
-    } catch (e) {
+    } catch (e: any) {
       return {
         pass: isNot,
         message: () => e.message,
@@ -250,10 +250,12 @@ function parseResponse(response: any) {
   const text = response.content[0].text;
   const sections = parseSections(text);
 
+  const error = sections.get('Error');
   const result = sections.get('Result');
   const code = sections.get('Ran Playwright code');
   const tabs = sections.get('Open tabs');
   const pageState = sections.get('Page state');
+  const snapshot = sections.get('Snapshot');
   const consoleMessages = sections.get('New console messages');
   const modalState = sections.get('Modal state');
   const downloads = sections.get('Downloads');
@@ -262,10 +264,12 @@ function parseResponse(response: any) {
   const attachments = response.content.slice(1);
 
   return {
+    error,
     result,
     code: codeNoFrame,
     tabs,
     pageState,
+    snapshot,
     consoleMessages,
     modalState,
     downloads,

@@ -22,11 +22,6 @@ test('browser_navigate', async ({ client, server }) => {
     arguments: { url: server.HELLO_WORLD },
   })).toHaveResponse({
     code: `await page.goto('${server.HELLO_WORLD}');`,
-    pageState: `- Page URL: ${server.HELLO_WORLD}
-- Page Title: Title
-- Page Snapshot:
-\`\`\`yaml
-- generic [active] [ref=e1]: Hello, world!
-\`\`\``,
+    snapshot: expect.stringContaining(`generic [active] [ref=e1]: Hello, world!`),
   });
 });
