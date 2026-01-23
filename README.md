@@ -363,6 +363,10 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --cdp-endpoint <endpoint>             CDP endpoint to connect to.
   --cdp-header <headers...>             CDP headers to send with the connect
                                         request, multiple can be specified.
+  --codegen <lang>                      specify the language to use for code
+                                        generation, possible values:
+                                        "typescript", "none". Default is
+                                        "typescript".
   --config <path>                       path to the configuration file.
   --console-level <level>               level of console messages to return:
                                         "error", "warning", "info", "debug".
@@ -440,10 +444,6 @@ Playwright MCP server supports following arguments. They can be provided in the 
                                         created.
   --viewport-size <size>                specify browser viewport size in pixels,
                                         for example "1280x720"
-  --codegen <lang>                      specify the language to use for code
-                                        generation, possible values:
-                                        "typescript", "none". Default is
-                                        "typescript".
 ```
 
 <!--- End of options generated section -->
