@@ -128,7 +128,9 @@ async function updateTools(content) {
  */
 async function updateOptions(content) {
   console.log('Listing options...');
-  const output = execSync('node cli.js --help');
+  execSync('node cli.js --help > help.txt');
+  const output = fs.readFileSync('help.txt');
+  fs.unlinkSync('help.txt');
   const lines = output.toString().split('\n');
   const firstLine = lines.findIndex(line => line.includes('--version'));
   lines.splice(0, firstLine + 1);

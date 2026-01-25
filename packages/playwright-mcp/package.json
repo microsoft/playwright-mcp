@@ -35,8 +35,8 @@
   },
   "dependencies": {
     "minimist": "^1.2.5",
-    "playwright": "1.59.0-alpha-1769217009000",
-    "playwright-core": "1.59.0-alpha-1769217009000"
+    "playwright": "1.59.0-alpha-1769364499000",
+    "playwright-core": "1.59.0-alpha-1769364499000"
   },
   "bin": {
     "mcp": "cli.js",
