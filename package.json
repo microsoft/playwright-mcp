@@ -1,6 +1,6 @@
 {
   "name": "playwright-mcp-internal",
-  "version": "0.0.60",
+  "version": "0.0.61",
   "private": true,
   "repository": {
     "type": "git",
