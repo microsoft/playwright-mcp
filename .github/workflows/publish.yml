@@ -73,6 +73,27 @@ jobs:
       - run: npm publish
         working-directory: ./packages/playwright-mcp
 
+  publish-cli-release-npm:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC npm publishing
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+      # Ensure npm 11.5.1 or later is installed (for OIDC npm publishing)
+      - name: Update npm
+        run: npm install -g npm@latest
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run lint
+      - run: npm publish
+        working-directory: ./packages/playwright-cli
+
   publish-mcp-release-docker:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest

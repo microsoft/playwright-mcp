@@ -1,0 +1,30 @@
+{
+  "name": "@playwright/cli",
+  "version": "0.0.60",
+  "description": "Playwright CLI",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/microsoft/playwright-cli.git"
+  },
+  "homepage": "https://playwright.dev",
+  "engines": {
+    "node": ">=18"
+  },
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "license": "Apache-2.0",
+  "scripts": {
+    "lint": "echo OK",
+    "build": "echo OK",
+    "test": "echo OK"
+  },
+  "dependencies": {
+    "minimist": "^1.2.5",
+    "playwright": "1.59.0-alpha-1769452054000",
+    "playwright-core": "1.59.0-alpha-1769452054000"
+  },
+  "bin": {
+    "playwright-cli": "./playwright-cli.js"
+  }
+}
