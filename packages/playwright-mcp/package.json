@@ -1,6 +1,6 @@
 {
   "name": "@playwright/mcp",
-  "version": "0.0.59",
+  "version": "0.0.60",
   "description": "Playwright Tools for MCP",
   "repository": {
     "type": "git",
@@ -35,8 +35,8 @@
   },
   "dependencies": {
     "minimist": "^1.2.5",
-    "playwright": "1.59.0-alpha-1769364499000",
-    "playwright-core": "1.59.0-alpha-1769364499000"
+    "playwright": "1.59.0-alpha-1769452054000",
+    "playwright-core": "1.59.0-alpha-1769452054000"
   },
   "bin": {
     "mcp": "cli.js",
