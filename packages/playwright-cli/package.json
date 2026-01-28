@@ -21,8 +21,8 @@
   },
   "dependencies": {
     "minimist": "^1.2.5",
-    "playwright": "1.59.0-alpha-1769452054000",
-    "playwright-core": "1.59.0-alpha-1769452054000"
+    "playwright": "1.59.0-alpha-1769561805000",
+    "playwright-core": "1.59.0-alpha-1769561805000"
   },
   "bin": {
     "playwright-cli": "playwright-cli.js"

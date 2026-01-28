@@ -17,15 +17,24 @@
 import fs from 'fs';
 import path from 'path';
 import { chromium } from 'playwright';
+import { spawn } from 'child_process';
 import { test as base, expect } from '../../playwright-mcp/tests/fixtures';
 
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { BrowserContext } from 'playwright';
 import type { StartClient } from '../../playwright-mcp/tests/fixtures';
+import type { ChildProcess } from 'child_process';
 
 type BrowserWithExtension = {
   userDataDir: string;
   launch: (mode?: 'disable-extension') => Promise<BrowserContext>;
+};
+
+type CliResult = {
+  output: string;
+  error: string;
+  snapshot?: string;
+  attachments?: { name: string, data: Buffer | null }[];
 };
 
 type TestFixtures = {
@@ -33,6 +42,7 @@ type TestFixtures = {
   pathToExtension: string,
   useShortConnectionTimeout: (timeoutMs: number) => void
   overrideProtocolVersion: (version: number) => void
+  cli: (...args: string[]) => Promise<CliResult>;
 };
 
 const test = base.extend<TestFixtures>({
@@ -85,8 +95,126 @@ const test = base.extend<TestFixtures>({
       process.env.PWMCP_TEST_PROTOCOL_VERSION = version.toString();
     });
     process.env.PWMCP_TEST_PROTOCOL_VERSION = undefined;
-  }
+  },
+
+  cli: async ({ mcpBrowser }, use, testInfo) => {
+    const activeSessions: { name: string, process: ChildProcess }[] = [];
+
+    await use(async (...args: string[]) => {
+      return await runCli(args, { mcpBrowser, testInfo }, activeSessions);
+    });
+
+    // Cleanup sessions
+    for (const session of activeSessions) {
+      await runCli(['session-stop', session.name], { mcpBrowser, testInfo }, []).catch(() => {});
+      try {
+        if (session.process.pid)
+          process.kill(-session.process.pid);
+      } catch (e) {
+        if (e.code !== 'ESRCH')
+          console.error('error killing session', e);
+      }
+    }
+
+    const daemonDir = path.join(testInfo.outputDir, 'daemon');
+    const userDataDirs = await fs.promises.readdir(daemonDir).catch(() => []);
+    for (const dir of userDataDirs.filter(f => f.startsWith('ud-')))
+      await fs.promises.rm(path.join(daemonDir, dir), { recursive: true, force: true }).catch(() => {});
+  },
 });
+
+async function runCli(
+  args: string[],
+  options: { mcpBrowser?: string, testInfo: any },
+  activeSessions: { name: string, process: ChildProcess }[]
+): Promise<CliResult> {
+  const stepTitle = `cli ${args.join(' ')}`;
+
+  return await test.step(stepTitle, async () => {
+    const testInfo = options.testInfo;
+
+    // Path to the terminal CLI
+    const cliPath = path.join(__dirname, '../../../node_modules/playwright/lib/mcp/terminal/cli.js');
+
+    console.error('cliPath', cliPath);
+
+    return new Promise<CliResult>((resolve, reject) => {
+      let stdout = '';
+      let stderr = '';
+
+      const childProcess = spawn(process.execPath, [cliPath, ...args], {
+        cwd: testInfo.outputPath(),
+        env: {
+          ...process.env,
+          PLAYWRIGHT_DAEMON_INSTALL_DIR: testInfo.outputPath(),
+          PLAYWRIGHT_DAEMON_SESSION_DIR: testInfo.outputPath('daemon'),
+          PLAYWRIGHT_DAEMON_SOCKETS_DIR: path.join(testInfo.project.outputDir, 'daemon-sockets'),
+          PLAYWRIGHT_MCP_BROWSER: options.mcpBrowser,
+          PLAYWRIGHT_MCP_HEADLESS: 'false',
+        },
+        detached: true,
+      });
+
+      childProcess.stdout?.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      childProcess.stderr?.on('data', (data) => {
+        if (process.env.PWMCP_DEBUG)
+          process.stderr.write(data);
+        stderr += data.toString();
+      });
+
+      childProcess.on('close', async (code) => {
+        await testInfo.attach(stepTitle, { body: stdout, contentType: 'text/plain' });
+
+        let snapshot: string | undefined;
+        if (stdout.includes('### Snapshot'))
+          snapshot = await loadSnapshot(stdout, testInfo);
+        const attachments = loadAttachments(stdout, testInfo);
+
+        const matches = stdout.includes('Daemon for') ? stdout.match(/Daemon for `(.+)` session started with pid (\d+)\./) : undefined;
+        const [, sessionName, pid] = matches ?? [];
+        if (sessionName && pid)
+          activeSessions.push({ name: sessionName, process: childProcess });
+
+        resolve({
+          output: stdout.trim(),
+          error: stderr.trim(),
+          snapshot,
+          attachments
+        });
+      });
+
+      childProcess.on('error', reject);
+    });
+  });
+}
+
+function loadAttachments(output: string, testInfo: any) {
+  const match = output.match(/- \[(.+)\]\((.+)\)/g);
+  if (!match)
+    return [];
+
+  return match.map(m => {
+    const [, name, filePath] = m.match(/- \[(.+)\]\((.+)\)/)!;
+    try {
+      const data = fs.readFileSync(testInfo.outputPath(filePath));
+      return { name, data };
+    } catch (e) {
+      return { name, data: null };
+    }
+  });
+}
+
+async function loadSnapshot(output: string, testInfo: any) {
+  const lines = output.split('\n');
+  if (!lines.includes('### Snapshot'))
+    throw new Error('Snapshot file not found');
+  const fileLine = lines[lines.indexOf('### Snapshot') + 1];
+  const fileName = fileLine.match(/- \[(.+)\]\((.+)\)/)![2];
+  return await fs.promises.readFile(testInfo.outputPath(fileName), 'utf8');
+}
 
 async function startWithExtensionFlag(browserWithExtension: BrowserWithExtension, startClient: StartClient): Promise<Client> {
   const { client } = await startClient({
@@ -300,5 +428,43 @@ test(`bypass connection dialog with token`, async ({ browserWithExtension, start
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
+});
+
+test.describe('CLI with extension', () => {
+  test('open <url> --extension', async ({ browserWithExtension, cli, server }, testInfo) => {
+    const browserContext = await browserWithExtension.launch();
+
+    // Write config file with userDataDir
+    const configPath = testInfo.outputPath('cli-config.json');
+    await fs.promises.writeFile(configPath, JSON.stringify({
+      browser: {
+        userDataDir: browserWithExtension.userDataDir,
+      }
+    }, null, 2));
+
+    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+      return page.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html');
+    });
+
+    // Start the CLI command in the background
+    const cliPromise = cli('open', server.HELLO_WORLD, '--extension', `--config=cli-config.json`);
+
+    // Wait for the confirmation page to appear
+    const confirmationPage = await confirmationPagePromise;
+
+    // Click the Allow button
+    await confirmationPage.getByRole('button', { name: 'Allow' }).click();
+
+    // Wait for the CLI command to complete
+    const { output, snapshot } = await cliPromise;
+
+    // Verify the output
+    expect(output).toContain(`### Page`);
+    expect(output).toContain(`- Page URL: ${server.HELLO_WORLD}`);
+    expect(output).toContain(`- Page Title: Title`);
+
+    // Verify the snapshot
+    expect(snapshot).toContain(`- generic [active] [ref=e1]: Hello, world!`);
   });
 });
