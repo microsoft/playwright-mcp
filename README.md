@@ -363,6 +363,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --port <port> | port to listen on for SSE transport.<br>*env* `PLAYWRIGHT_MCP_PORT` |
 | --proxy-bypass <bypass> | comma-separated domains to bypass proxy, for example ".com,chromium.org,.domain.com"<br>*env* `PLAYWRIGHT_MCP_PROXY_BYPASS` |
 | --proxy-server <proxy> | specify proxy server, for example "http://myproxy:3128" or "socks5://myproxy:8080"<br>*env* `PLAYWRIGHT_MCP_PROXY_SERVER` |
+| --sandbox | enable the sandbox for all process types that are normally not sandboxed.<br>*env* `PLAYWRIGHT_MCP_SANDBOX` |
 | --save-session | Whether to save the Playwright MCP session into the output directory.<br>*env* `PLAYWRIGHT_MCP_SAVE_SESSION` |
 | --save-trace | Whether to save the Playwright Trace of the session into the output directory.<br>*env* `PLAYWRIGHT_MCP_SAVE_TRACE` |
 | --save-video <size> | Whether to save the video of the session into the output directory. For example "--save-video=800x600"<br>*env* `PLAYWRIGHT_MCP_SAVE_VIDEO` |
