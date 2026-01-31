@@ -1,6 +1,6 @@
 {
   "name": "playwright-mcp-internal",
-  "version": "0.0.61",
+  "version": "0.0.62",
   "private": true,
   "repository": {
     "type": "git",
@@ -17,14 +17,15 @@
     "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces",
-    "build": "npm run build --workspaces"
+    "build": "npm run build --workspaces",
+    "bump": "npm version --workspaces --no-git-tag-version"
   },
   "workspaces": [
     "packages/*"
   ],
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
-    "@playwright/test": "1.59.0-alpha-1769561805000",
+    "@playwright/test": "1.59.0-alpha-1769819922000",
     "@types/node": "^24.3.0"
   }
 }

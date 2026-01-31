@@ -1,6 +1,6 @@
 {
   "name": "playwright-cli",
-  "version": "0.261.0",
+  "version": "0.0.62",
   "description": "Playwright CLI",
   "repository": "github:Microsoft/playwright-cli",
   "homepage": "https://playwright.dev",

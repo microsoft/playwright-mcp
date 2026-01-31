@@ -340,7 +340,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --blocked-origins <origins> | semicolon-separated list of origins to block the browser from requesting. Blocklist is evaluated before allowlist. If used without the allowlist, requests not matching the blocklist are still allowed. Important: *does not* serve as a security boundary and *does not* affect redirects.<br>*env* `PLAYWRIGHT_MCP_BLOCKED_ORIGINS` |
 | --block-service-workers | block service workers<br>*env* `PLAYWRIGHT_MCP_BLOCK_SERVICE_WORKERS` |
 | --browser <browser> | browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.<br>*env* `PLAYWRIGHT_MCP_BROWSER` |
-| --caps <caps> | comma-separated list of additional capabilities to enable, possible values: vision, pdf.<br>*env* `PLAYWRIGHT_MCP_CAPS` |
+| --caps <caps> | comma-separated list of additional capabilities to enable, possible values: vision, pdf, devtools.<br>*env* `PLAYWRIGHT_MCP_CAPS` |
 | --cdp-endpoint <endpoint> | CDP endpoint to connect to.<br>*env* `PLAYWRIGHT_MCP_CDP_ENDPOINT` |
 | --cdp-header <headers...> | CDP headers to send with the connect request, multiple can be specified.<br>*env* `PLAYWRIGHT_MCP_CDP_HEADER` |
 | --codegen <lang> | specify the language to use for code generation, possible values: "typescript", "none". Default is "typescript".<br>*env* `PLAYWRIGHT_MCP_CODEGEN` |
@@ -1127,22 +1127,6 @@ http.createServer(async (req, res) => {
 
 <details>
 <summary><b>Tracing (opt-in via --caps=tracing)</b></summary>
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_start_tracing**
-  - Title: Start tracing
-  - Description: Start trace recording
-  - Parameters: None
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_stop_tracing**
-  - Title: Stop tracing
-  - Description: Stop trace recording
-  - Parameters: None
-  - Read-only: **true**
 
 </details>
 

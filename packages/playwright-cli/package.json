@@ -1,6 +1,6 @@
 {
   "name": "@playwright/cli",
-  "version": "0.0.61",
+  "version": "0.0.62",
   "description": "Playwright CLI",
   "repository": {
     "type": "git",
@@ -21,8 +21,8 @@
   },
   "dependencies": {
     "minimist": "^1.2.5",
-    "playwright": "1.59.0-alpha-1769561805000",
-    "playwright-core": "1.59.0-alpha-1769561805000"
+    "playwright": "1.59.0-alpha-1769819922000",
+    "playwright-core": "1.59.0-alpha-1769819922000"
   },
   "bin": {
     "playwright-cli": "playwright-cli.js"
