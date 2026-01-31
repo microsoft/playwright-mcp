@@ -4,7 +4,7 @@
   "description": "Playwright CLI",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright-cli.git"
+    "url": "git+https://github.com/microsoft/playwright-mcp.git"
   },
   "homepage": "https://playwright.dev",
   "engines": {
