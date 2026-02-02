@@ -18,7 +18,7 @@ This package provides MCP interface into Playwright. If you are using a **coding
 
 ### Requirements
 - Node.js 18 or newer
-- VS Code, Cursor, Windsurf, Claude Desktop, Goose or any other MCP client
+- VS Code, Cursor, Windsurf, Claude Desktop, Goose, AdaL, or any other MCP client
 
 <!--
 // Generate using:
