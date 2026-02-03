@@ -1,6 +1,6 @@
 {
   "name": "playwright-mcp-internal",
-  "version": "0.0.62",
+  "version": "0.0.63",
   "private": true,
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
   ],
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
-    "@playwright/test": "1.59.0-alpha-1769819922000",
+    "@playwright/test": "1.59.0-alpha-1770157258000",
     "@types/node": "^24.3.0"
   }
 }

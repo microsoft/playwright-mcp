@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -15,9 +14,12 @@
  * limitations under the License.
  */
 
-const { program } = require('playwright/lib/mcp/terminal/program');
-const packageLocation = require.resolve('./package.json');
-program(packageLocation).catch(e => {
-  console.error(e.message);
-  process.exit(1);
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  workers: process.env.CI ? 2 : undefined,
+  reporter: 'list',
 });

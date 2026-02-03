@@ -21,7 +21,7 @@ jobs:
     - name: Ensure no changes
       run: git diff --exit-code
 
-  test_mcp:
+  test:
     strategy:
       fail-fast: false
       matrix:
@@ -38,9 +38,24 @@ jobs:
       run: npm ci
     - name: Playwright install
       run: npx playwright install --with-deps
-    - name: Run tests
-      run: npm run test
-      working-directory: ./packages/playwright-mcp
+    - name: Build
+      run: npm run build
+    - name: Run playwright-mcp tests
+      id: test-mcp
+      run: npm run test --workspace=packages/playwright-mcp
+      continue-on-error: true
+    - name: Run playwright-cli tests
+      id: test-cli
+      run: npm run test --workspace=packages/playwright-cli
+      continue-on-error: true
+    - name: Run extension tests
+      id: test-extension
+      if: matrix.os == 'macos-15'
+      run: npm run test --workspace=packages/extension
+      continue-on-error: true
+    - name: Check test results
+      if: steps.test-mcp.outcome == 'failure' || steps.test-cli.outcome == 'failure' || steps.test-extension.outcome == 'failure'
+      run: exit 1
 
   test_mcp_docker:
     runs-on: ubuntu-latest
@@ -73,35 +88,3 @@ jobs:
       working-directory: ./packages/playwright-mcp
       env:
         MCP_IN_DOCKER: 1
-
-  test_extension:
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js 20
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20' # crypto.randomUUID(); stalls in v18.20.8
-        cache: 'npm'
-    - name: Install dependencies
-      run: npm ci
-    - name: Playwright install
-      run: npx playwright install --with-deps
-    - name: Build extension
-      run: npm run build
-      working-directory: ./packages/extension
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: extension
-        path: ./extension/dist
-        retention-days: 7
-    - name: Run tests
-      run: |
-        if [[ "$(uname)" == "Linux" ]]; then
-          xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test
-        else
-          npm run test
-        fi
-      shell: bash
-      working-directory: ./packages/extension
