@@ -24,7 +24,7 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@playwright/test": "1.59.0-alpha-1770157258000",
     "@types/node": "^24.3.0"
   }
