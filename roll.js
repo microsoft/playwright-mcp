@@ -15,11 +15,13 @@ function copyConfig() {
 }
 
 function updatePlaywrightVersion(version) {
-  const files = [
-    path.join(__dirname, 'package.json'),
-    path.join(__dirname, 'packages', 'playwright-mcp', 'package.json'),
-    path.join(__dirname, 'packages', 'playwright-cli', 'package.json'),
-  ];
+  const packagesDir = path.join(__dirname, 'packages');
+  const files = [path.join(__dirname, 'package.json')];
+  for (const entry of fs.readdirSync(packagesDir, { withFileTypes: true })) {
+    const pkgJson = path.join(packagesDir, entry.name, 'package.json');
+    if (fs.existsSync(pkgJson))
+      files.push(pkgJson);
+  }
 
   for (const file of files) {
     const json = JSON.parse(fs.readFileSync(file, 'utf-8'));
