@@ -22,9 +22,7 @@
     "wtest": "playwright test --project=webkit",
     "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
     "build": "echo OK",
-    "npm-publish": "npm run lint && npm run test && npm publish",
-    "copy-config": "cp ../../../playwright/packages/playwright/src/mcp/config.d.ts . && perl -pi -e \"s|import type \\* as playwright from 'playwright-core';|import type * as playwright from 'playwright';|\" ./config.d.ts",
-    "roll": "npm run copy-config && npm run lint"
+    "npm-publish": "npm run lint && npm run test && npm publish"
   },
   "exports": {
     "./package.json": "./package.json",

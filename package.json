@@ -18,7 +18,8 @@
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces",
     "build": "npm run build --workspaces",
-    "bump": "npm version --workspaces --no-git-tag-version"
+    "bump": "npm version --workspaces --no-git-tag-version",
+    "roll": "node roll.js"
   },
   "workspaces": [
     "packages/*"
