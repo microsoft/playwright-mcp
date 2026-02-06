@@ -30,7 +30,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.8.2",
-    "vite": "^5.4.21",
+    "vite": "^7.3.1",
     "vite-plugin-static-copy": "^3.1.1"
   }
 }
