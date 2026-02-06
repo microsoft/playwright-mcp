@@ -22,15 +22,12 @@ import type { TabInfo } from './tabItem';
 import { AuthTokenSection } from './authToken';
 
 interface ConnectionStatus {
-  isConnected: boolean;
-  connectedTabId: number | null;
-  connectedTab?: TabInfo;
+  connectedTabs: TabInfo[];
 }
 
 const StatusApp: React.FC = () => {
   const [status, setStatus] = useState<ConnectionStatus>({
-    isConnected: false,
-    connectedTabId: null
+    connectedTabs: []
   });
 
   useEffect(() => {
@@ -39,58 +36,63 @@ const StatusApp: React.FC = () => {
 
   const loadStatus = async () => {
     // Get current connection status from background script
-    const { connectedTabId } = await chrome.runtime.sendMessage({ type: 'getConnectionStatus' });
-    if (connectedTabId) {
-      const tab = await chrome.tabs.get(connectedTabId);
-      setStatus({
-        isConnected: true,
-        connectedTabId,
-        connectedTab: {
+    const response = await chrome.runtime.sendMessage({ type: 'getConnectionStatus' });
+    const connectedTabIds: number[] = Array.isArray(response?.connectedTabIds)
+      ? response.connectedTabIds
+      : (response?.connectedTabId ? [response.connectedTabId] : []);
+
+    const tabs = await Promise.all(connectedTabIds.map(async tabId => {
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        const tabInfo: TabInfo = {
           id: tab.id!,
           windowId: tab.windowId!,
           title: tab.title!,
           url: tab.url!,
-          favIconUrl: tab.favIconUrl
-        }
-      });
-    } else {
-      setStatus({
-        isConnected: false,
-        connectedTabId: null
-      });
-    }
+          ...(tab.favIconUrl ? { favIconUrl: tab.favIconUrl } : {}),
+        };
+        return tabInfo;
+      } catch {
+        return null;
+      }
+    }));
+
+    setStatus({
+      connectedTabs: tabs.filter((t): t is TabInfo => t !== null)
+    });
   };
 
-  const openConnectedTab = async () => {
-    if (!status.connectedTabId)
-      return;
-    await chrome.tabs.update(status.connectedTabId, { active: true });
+  const openConnectedTab = async (tabId: number) => {
+    await chrome.tabs.update(tabId, { active: true });
     window.close();
   };
 
-  const disconnect = async () => {
-    await chrome.runtime.sendMessage({ type: 'disconnect' });
+  const disconnect = async (tabId: number) => {
+    await chrome.runtime.sendMessage({ type: 'disconnect', tabId });
     window.close();
   };
 
   return (
     <div className='app-container'>
       <div className='content-wrapper'>
-        {status.isConnected && status.connectedTab ? (
+        {status.connectedTabs.length ? (
           <div>
             <div className='tab-section-title'>
-              Page with connected MCP client:
+              Pages with connected MCP clients:
             </div>
             <div>
-              <TabItem
-                tab={status.connectedTab}
-                button={
-                  <Button variant='primary' onClick={disconnect}>
-                    Disconnect
-                  </Button>
-                }
-                onClick={openConnectedTab}
-              />
+              {status.connectedTabs.map(tab => (
+                <TabItem
+                  key={tab.id}
+                  tab={tab}
+                  button={
+                    <Button variant='primary' onClick={() => disconnect(tab.id)}>
+                      Disconnect
+                    </Button>
+                  }
+                  onClick={() => openConnectedTab(tab.id)}
+                />
+              ))}
             </div>
           </div>
         ) : (
