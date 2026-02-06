@@ -105,13 +105,13 @@ Playwright CLI will use a dedicated persistent profile by default. It means that
 your cookies and other storage state will be preserved between the calls. You can use different
 instances of the browser for different projects with sessions.
 
-Following will result in two browsers with separate profiles being available. Pass `--session` to
+Following will result in two browsers with separate profiles being available. Pass `-s=` to
 the invocation to talk to a specific browser.
 
 ```bash
 playwright-cli open https://playwright.dev
-playwright-cli --session=example open https://example.com
-playwright-cli session-list
+playwright-cli -s=example open https://example.com
+playwright-cli list
 ```
 
 You can run your coding agent with the `PLAYWRIGHT_CLI_SESSION` environment variable:
@@ -120,16 +120,14 @@ You can run your coding agent with the `PLAYWRIGHT_CLI_SESSION` environment vari
 PLAYWRIGHT_CLI_SESSION=todo-app claude .
 ```
 
-Or instruct it to prepend `--session` to the calls.
+Or instruct it to prepend `-s=` to the calls.
 
 Manage your sessions as follows:
 
 ```bash
-playwright-cli session-list             # list all sessions
-playwright-cli session-stop [name]      # stop session
-playwright-cli session-restart [name]   # restart session
-playwright-cli session-stop-all         # stop all sessions
-playwright-cli session-delete [name]    # delete session data along with the profiles
+playwright-cli list                     # list all sessions
+playwright-cli close-all                # close all browsers
+playwright-cli kill-all                 # forcefully kill all browser processes
 ```
 
 <!-- BEGIN GENERATED CLI HELP -->
@@ -152,6 +150,7 @@ playwright-cli upload <file>            # upload one or multiple files
 playwright-cli check <ref>              # check a checkbox or radio button
 playwright-cli uncheck <ref>            # uncheck a checkbox or radio button
 playwright-cli snapshot                 # capture page snapshot to obtain element ref
+playwright-cli snapshot --filename=f    # save snapshot to specific file
 playwright-cli eval <func> [ref]        # evaluate javascript expression on page or element
 playwright-cli dialog-accept [prompt]   # accept a dialog
 playwright-cli dialog-dismiss           # dismiss a dialog
@@ -187,7 +186,9 @@ playwright-cli mousewheel <dx> <dy>     # scroll mouse wheel
 
 ```bash
 playwright-cli screenshot [ref]         # screenshot of the current page or element
+playwright-cli screenshot --filename=f  # save screenshot with specific filename
 playwright-cli pdf                      # save page as pdf
+playwright-cli pdf --filename=page.pdf  # save pdf with specific filename
 ```
 
 ### Tabs
@@ -260,18 +261,22 @@ playwright-cli install-skills           # install skills
 playwright-cli config [options]         # configure session settings
 playwright-cli open --browser=chrome    # use specific browser
 playwright-cli open --extension         # connect via browser extension
+playwright-cli open --persistent        # use persistent profile
+playwright-cli open --profile=<path>    # use custom profile directory
 playwright-cli open --config=file.json  # use config file
+playwright-cli close                    # close the browser
+playwright-cli delete-data              # delete user data for default session
 ```
 
 ### Sessions
 
 ```bash
-playwright-cli --session=name <cmd>     # run command in named session
-playwright-cli session-list             # list all sessions
-playwright-cli session-stop [name]      # stop session
-playwright-cli session-restart [name]   # restart session
-playwright-cli session-stop-all         # stop all sessions
-playwright-cli session-delete [name]    # delete session data and profiles
+playwright-cli -s=name <cmd>            # run command in named session
+playwright-cli -s=name close            # stop a named browser
+playwright-cli -s=name delete-data      # delete user data for named browser
+playwright-cli list                     # list all sessions
+playwright-cli close-all                # close all browsers
+playwright-cli kill-all                 # forcefully kill all browser processes
 ```
 <!-- END GENERATED CLI HELP -->
 
@@ -426,7 +431,8 @@ Playwright CLI will load config from `playwright-cli.json` by default so that yo
 
 </details>
 
-## Environment
+<details>
+<summary>Configuration via env</summary>
 
 | Environment |
 |-------------|
@@ -472,3 +478,4 @@ Playwright CLI will load config from `playwright-cli.json` by default so that yo
 | `PLAYWRIGHT_MCP_USER_AGENT` specify user agent string |
 | `PLAYWRIGHT_MCP_USER_DATA_DIR` path to the user data directory. If not specified, a temporary directory will be created. |
 | `PLAYWRIGHT_MCP_VIEWPORT_SIZE` specify browser viewport size in pixels, for example "1280x720" |
+</details>

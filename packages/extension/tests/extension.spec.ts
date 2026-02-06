@@ -400,7 +400,7 @@ test.describe('CLI with extension', () => {
     const confirmationPage = await confirmationPagePromise;
 
     // Click the Allow button
-    await confirmationPage.getByRole('button', { name: 'Allow' }).click();
+    await confirmationPage.getByRole('button', { name: 'Connect' }).first().click();
 
     // Wait for the CLI command to complete
     const { output } = await cliPromise;

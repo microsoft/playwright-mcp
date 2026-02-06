@@ -60,13 +60,13 @@ async function runCli(...args: string[]): Promise<CliResult> {
 }
 
 test('open data URL', async ({}) => {
-  expect(await runCli('open', 'data:text/html,hello')).toEqual(expect.objectContaining({
+  expect(await runCli('open', 'data:text/html,hello', '--persistent')).toEqual(expect.objectContaining({
     output: expect.stringContaining('hello'),
     exitCode: 0,
   }));
 
-  expect(await runCli('session-delete')).toEqual(expect.objectContaining({
-    output: expect.stringContaining('Deleted user data for session'),
+  expect(await runCli('delete-data')).toEqual(expect.objectContaining({
+    output: expect.stringContaining('Deleted user data for'),
     exitCode: 0,
   }));
 });

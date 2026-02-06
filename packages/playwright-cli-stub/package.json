@@ -1,6 +1,6 @@
 {
   "name": "playwright-cli",
-  "version": "0.0.63",
+  "version": "0.0.64",
   "description": "Playwright CLI",
   "repository": "github:Microsoft/playwright-cli",
   "homepage": "https://playwright.dev",
@@ -14,7 +14,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@playwright/cli": "0.0.63"
+    "@playwright/cli": "0.0.64"
   },
   "devDependencies": {}
 }
