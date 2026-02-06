@@ -32,7 +32,7 @@ playwright-cli --help
 Claude Code, GitHub Copilot and others will use the locally installed skills.
 
 ```bash
-playwright-cli install-skills
+playwright-cli install --skills
 ```
 
 ### Skills-less operation
@@ -251,8 +251,8 @@ playwright-cli video-stop [filename]    # stop video recording
 ### Install
 
 ```bash
+playwright-cli install --skills         # install skills
 playwright-cli install-browser          # install browser
-playwright-cli install-skills           # install skills
 ```
 
 ### Configuration
