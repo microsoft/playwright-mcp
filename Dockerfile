@@ -66,4 +66,5 @@ COPY --chown=${USERNAME}:${USERNAME} packages/playwright-mcp/cli.js packages/pla
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image).
 # --port: listen for HTTP/SSE MCP transport (required for deployment; without it the process uses stdio and exits when stdin closes).
 # --host 0.0.0.0: bind on all interfaces so the server is reachable from outside the container.
-ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox", "--port", "8000", "--host", "0.0.0.0"]
+# --allowed-hosts *: accept requests when behind an ingress/proxy (Host header will be the external URL, not localhost:8000).
+ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox", "--port", "8000", "--host", "0.0.0.0", "--allowed-hosts", "*"]
