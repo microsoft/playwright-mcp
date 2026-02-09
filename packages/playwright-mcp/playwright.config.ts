@@ -26,13 +26,23 @@ export default defineConfig<TestOptions>({
   reporter: 'list',
   projects: [
     { name: 'chrome' },
-    ...process.env.MCP_IN_DOCKER ? [{
-      name: 'chromium-docker',
-      grep: /browser_navigate|browser_click/,
-      use: {
-        mcpBrowser: 'chromium',
-        mcpMode: 'docker' as const
+    ...process.env.MCP_IN_DOCKER ? [
+      {
+        name: 'chromium-docker',
+        grep: /browser_navigate|browser_click/,
+        use: {
+          mcpBrowser: 'chromium',
+          mcpMode: 'docker' as const
+        }
+      },
+      {
+        name: 'chromium-docker-endpoints',
+        testMatch: '**/docker-endpoints.spec.ts',
+        use: {
+          mcpBrowser: 'chromium',
+          mcpMode: 'docker' as const
+        }
       }
-    }] : [],
+    ] : [],
   ],
 });
