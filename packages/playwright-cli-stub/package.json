@@ -1,8 +1,8 @@
 {
   "name": "playwright-cli",
-  "version": "0.0.66",
-  "description": "Playwright CLI",
-  "repository": "github:Microsoft/playwright-cli",
+  "version": "0.262.0",
+  "description": "Deprecated package, use @playwright/cli instead.",
+  "repository": "github:microsoft/playwright-cli",
   "homepage": "https://playwright.dev",
   "scripts": {
     "lint": "echo OK",
@@ -12,9 +12,5 @@
   "author": {
     "name": "Microsoft Corporation"
   },
-  "license": "Apache-2.0",
-  "dependencies": {
-    "@playwright/cli": "0.0.66"
-  },
-  "devDependencies": {}
+  "license": "Apache-2.0"
 }
