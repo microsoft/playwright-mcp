@@ -80,7 +80,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
     await use(async options => {
       const args: string[] = mcpArgs ?? [];
       if (process.env.CI && process.platform === 'linux')
-        args.push('--no-sandbox');
+        args.push('--no-chromium-sandbox');
       if (mcpHeadless)
         args.push('--headless');
       if (mcpBrowser)
