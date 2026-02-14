@@ -420,3 +420,91 @@ test.describe('CLI with extension', () => {
     expect(output).toContain(`- Page Title: Title`);
   });
 });
+
+test('parallel sessions spike (two clients, two tabs)', async ({ browserWithExtension, startClient, server }) => {
+  test.skip(process.env.PWMCP_SPIKE_PARALLEL_SESSIONS !== '1', 'Set PWMCP_SPIKE_PARALLEL_SESSIONS=1 to run the spike locally.');
+  test.setTimeout(120000);
+
+  const browserContext = await browserWithExtension.launch();
+
+  server.setContent('/hello-world-2', `
+    <title>Two</title>
+    <body>Two</body>
+  `, 'text/html');
+
+  // Create two target pages (tabs) we can disambiguate by title/content.
+  const pageA = await browserContext.newPage();
+  await pageA.goto(server.HELLO_WORLD);
+  const pageB = await browserContext.newPage();
+  await pageB.goto(`${server.PREFIX}hello-world-2`);
+
+  const waitForConnectPageForClient = async (expectedClientName: string) => {
+    while (true) {
+      const page = await browserContext.waitForEvent('page', p =>
+        p.url().startsWith('chrome-extension://jakfalbnbhgkpmoaakfflhflbfpkailf/connect.html')
+      );
+      const params = new URL(page.url()).searchParams;
+      const clientParam = params.get('client');
+      if (!clientParam)
+        continue;
+      try {
+        const client = JSON.parse(clientParam);
+        if (client?.name === expectedClientName)
+          return page;
+      } catch {
+        // Ignore parse failures and keep waiting.
+      }
+    }
+  };
+
+  // Start MCP client A and attach it to the "Title" tab.
+  const { client: clientA } = await startClient({
+    clientName: 'parallel-A',
+    args: [`--extension`],
+    config: {
+      browser: {
+        userDataDir: browserWithExtension.userDataDir,
+      }
+    },
+  });
+
+  const connectPageAPromise = waitForConnectPageForClient('parallel-A');
+  const firstSnapshotA = clientA.callTool({ name: 'browser_snapshot', arguments: { } });
+  const connectPageA = await connectPageAPromise;
+  await connectPageA.locator('.tab-item', { hasText: 'Title' }).getByRole('button', { name: 'Connect' }).click();
+  expect(await firstSnapshotA).toHaveResponse({
+    snapshot: expect.stringContaining(`Hello, world!`),
+  });
+
+  // Start MCP client B and attach it to the "Two" tab.
+  const { client: clientB } = await startClient({
+    clientName: 'parallel-B',
+    args: [`--extension`],
+    config: {
+      browser: {
+        userDataDir: browserWithExtension.userDataDir,
+      }
+    },
+  });
+  const connectPageBPromise = waitForConnectPageForClient('parallel-B');
+  const firstSnapshotB = clientB.callTool({ name: 'browser_snapshot', arguments: { } });
+  const connectPageB = await connectPageBPromise;
+  await connectPageB.locator('.tab-item', { hasText: 'Two' }).getByRole('button', { name: 'Connect' }).click();
+  expect(await firstSnapshotB).toHaveResponse({
+    snapshot: expect.stringContaining(`Two`),
+  });
+
+  // Run snapshots again now that each session is attached.
+  const [respA, respB] = await Promise.all([
+    clientA.callTool({ name: 'browser_snapshot', arguments: { } }),
+    clientB.callTool({ name: 'browser_snapshot', arguments: { } }),
+  ]);
+
+  // Expected end-state after multi-session support: both snapshots are stable and isolated.
+  expect(respA).toHaveResponse({
+    snapshot: expect.stringContaining(`Hello, world!`),
+  });
+  expect(respB).toHaveResponse({
+    snapshot: expect.stringContaining(`Two`),
+  });
+});
