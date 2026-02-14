@@ -25,6 +25,10 @@ This package provides MCP interface into Playwright. If you are using a **coding
 node utils/generate-links.js
 -->
 
+### Security Considerations
+- Do not rely on the --allowed-origins or --blocked-origins configurations as security boundaries, as these settings can be bypassed through techniques such as DNS rebinding or HTTP redirects.
+- If network access restrictions are required, implement compensating controls such as network isolation using firewalls or local proxies to limit exposure.
+
 ### Getting started
 
 First, install the Playwright MCP server with your client.
@@ -706,6 +710,8 @@ And then in MCP client config, set the `url` to the HTTP endpoint:
   }
 }
 ```
+
+**Security Considerations:** When exposing the MCP server as a streaming HTTP server, ensure that access is restricted to authorized clients and limit network exposure to trusted environments.
 
 <details>
 <summary><b>Docker</b></summary>
