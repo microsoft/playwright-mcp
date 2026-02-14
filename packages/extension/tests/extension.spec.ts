@@ -42,8 +42,8 @@ type TestFixtures = {
   cli: (...args: string[]) => Promise<CliResult>;
 };
 
-const extensionPublicKey = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9nMS2b0WCohjVHPGb8D9qAdkbIngDqoAjTeSccHJijgcONejge+OJxOQOMLu7b0ovt1c9BiEJa5JcpM+EHFVGL1vluBxK71zmBy1m2f9vZF3HG0LSCp7YRkum9rAIEthDwbkxx6XTvpmAY5rjFa/NON6b9Hlbo+8peUSkoOK7HTwYnnI36asZ9eUTiveIf+DMPLojW2UX33vDWG2UKvMVDewzclb4+uLxAYshY7Mx8we/b44xu+Anb/EBLKjOPk9Yh541xJ5Ozc8EiP/5yxOp9c/lRiYUHaRW+4r0HKZyFt0eZ52ti2iM4Nfk7jRXR7an3JPsUIf5deC/1cVM/+1ZQIDAQAB';
-const extensionId = 'jakfalbnbhgkpmoaakfflhflbfpkailf';
+const extensionPublicKey = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwRsUUO4mmbCi4JpmrIoIw31iVW9+xUJRZ6nSzya17PQkaUPDxe1IpgM+vpd/xB6mJWlJSyE1Lj95c0sbomGfVY1M0zUeKbaRVcAb+/a6m59gNR+ubFlmTX0nK9/8fE2FpRB9D+4N5jyeIPQuASW/0oswI2/ijK7hH5NTRX8gWc/ROMSgUj7rKhTAgBrICt/NsStgDPsxRTPPJnhJ/ViJtM1P5KsSYswE987DPoFnpmkFpq8g1ae0eYbQfXy55ieaacC4QWyJPj3daU2kMfBQw7MXnnk0H/WDxouMOIHnd8MlQxpEMqAihj7KpuONH+MUhuj9HEQo4df6bSaIuQ0b4QIDAQAB';
+const extensionId = 'mmlmfjhmonkocbjadbfplnigmagldckm';
 
 const test = base.extend<TestFixtures>({
   pathToExtension: async ({}, use, testInfo) => {
@@ -52,6 +52,9 @@ const test = base.extend<TestFixtures>({
     await fs.cp(srcDir, extensionDir, { recursive: true });
     const manifestPath = path.join(extensionDir, 'manifest.json');
     const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+    // We don't hardcode the key in manifest, but for the tests we set the key field
+    // to ensure that locally installed extension has the same id as the one published
+    // in the store.
     manifest.key = extensionPublicKey;
     await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
     await use(extensionDir);
@@ -113,7 +116,7 @@ const test = base.extend<TestFixtures>({
     });
 
     // Cleanup sessions
-    await runCli(['session-stop-all'], { mcpBrowser, testInfo }).catch(() => {});
+    await runCli(['close-all'], { mcpBrowser, testInfo }).catch(() => {});
 
     const daemonDir = path.join(testInfo.outputDir, 'daemon');
     await fs.rm(daemonDir, { recursive: true, force: true }).catch(() => {});
@@ -130,7 +133,7 @@ async function runCli(
     const testInfo = options.testInfo;
 
     // Path to the terminal CLI
-    const cliPath = path.join(__dirname, '../../../node_modules/playwright/lib/mcp/terminal/cli.js');
+    const cliPath = path.join(__dirname, '../../../node_modules/playwright/lib/cli/client/program.js');
 
     return new Promise<CliResult>((resolve, reject) => {
       let stdout = '';
@@ -405,8 +408,8 @@ test.describe('CLI with extension', () => {
     // Wait for the confirmation page to appear
     const confirmationPage = await confirmationPagePromise;
 
-    // Click the Allow button
-    await confirmationPage.getByRole('button', { name: 'Allow' }).click();
+    // Click the Connect button
+    await confirmationPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
 
     // Wait for the CLI command to complete
     const { output } = await cliPromise;
