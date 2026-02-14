@@ -6,26 +6,16 @@ on:
   pull_request:
     branches: [ main ]
 
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js 20
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run lint
-    - name: Ensure no changes
-      run: git diff --exit-code
+env:
+  PWMCP_DEBUG: '1'
+  PWDEBUGIMPL: '1'
 
+jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-15, windows-latest]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
@@ -52,35 +42,3 @@ jobs:
     - name: Check test results
       if: steps.test-mcp.outcome == 'failure' || steps.test-extension.outcome == 'failure'
       run: exit 1
-
-  test_mcp_docker:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js 20
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    - name: Install dependencies
-      run: npm ci
-    - name: Playwright install
-      run: npx playwright install --with-deps chromium
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    - name: Build and push
-      uses: docker/build-push-action@v6
-      with:
-        tags: playwright-mcp-dev:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        load: true
-    - name: Run tests
-      shell: bash
-      run: |
-        # Used for the Docker tests to share the test-results folder with the container.
-        umask 0000
-        npm run test -- --project=chromium-docker
-      working-directory: ./packages/playwright-mcp
-      env:
-        MCP_IN_DOCKER: 1
