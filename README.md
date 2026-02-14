@@ -731,7 +731,7 @@ docker run -d -i --rm --init --pull=always \
   --name playwright \
   -p 8931:8931 \
   mcr.microsoft.com/playwright/mcp \
-  cli.js --headless --browser chromium --no-sandbox --port 8931
+  cli.js --headless --browser chromium --no-chromium-sandbox --port 8931
 ```
 
 The server will listen on host port **8931** and can be reached by any MCP client.  
