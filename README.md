@@ -344,8 +344,6 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --cdp-endpoint <endpoint> | CDP endpoint to connect to.<br>*env* `PLAYWRIGHT_MCP_CDP_ENDPOINT` |
 | --cdp-header <headers...> | CDP headers to send with the connect request, multiple can be specified.<br>*env* `PLAYWRIGHT_MCP_CDP_HEADER` |
 | --cdp-timeout <timeout> | timeout in milliseconds for connecting to CDP endpoint, defaults to 30000ms<br>*env* `PLAYWRIGHT_MCP_CDP_TIMEOUT` |
-| --chromium-sandbox | enable the chromium sandbox. disable with --no-chromium-sandbox.<br>*env* `PLAYWRIGHT_MCP_CHROMIUM_SANDBOX` |
-| --no-chromium-sandbox | disable the chromium sandbox.<br>*env* `PLAYWRIGHT_MCP_NO_CHROMIUM_SANDBOX` |
 | --codegen <lang> | specify the language to use for code generation, possible values: "typescript", "none". Default is "typescript".<br>*env* `PLAYWRIGHT_MCP_CODEGEN` |
 | --config <path> | path to the configuration file.<br>*env* `PLAYWRIGHT_MCP_CONFIG` |
 | --console-level <level> | level of console messages to return: "error", "warning", "info", "debug". Each level includes the messages of more severe levels.<br>*env* `PLAYWRIGHT_MCP_CONSOLE_LEVEL` |
@@ -360,11 +358,13 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --init-script <path...> | path to JavaScript file to add as an initialization script. The script will be evaluated in every page before any of the page's scripts. Can be specified multiple times.<br>*env* `PLAYWRIGHT_MCP_INIT_SCRIPT` |
 | --isolated | keep the browser profile in memory, do not save it to disk.<br>*env* `PLAYWRIGHT_MCP_ISOLATED` |
 | --image-responses <mode> | whether to send image responses to the client. Can be "allow" or "omit", Defaults to "allow".<br>*env* `PLAYWRIGHT_MCP_IMAGE_RESPONSES` |
+| --no-sandbox | disable the sandbox for all process types that are normally sandboxed.<br>*env* `PLAYWRIGHT_MCP_NO_SANDBOX` |
 | --output-dir <path> | path to the directory for output files.<br>*env* `PLAYWRIGHT_MCP_OUTPUT_DIR` |
 | --output-mode <mode> | whether to save snapshots, console messages, network logs to a file or to the standard output. Can be "file" or "stdout". Default is "stdout".<br>*env* `PLAYWRIGHT_MCP_OUTPUT_MODE` |
 | --port <port> | port to listen on for SSE transport.<br>*env* `PLAYWRIGHT_MCP_PORT` |
 | --proxy-bypass <bypass> | comma-separated domains to bypass proxy, for example ".com,chromium.org,.domain.com"<br>*env* `PLAYWRIGHT_MCP_PROXY_BYPASS` |
 | --proxy-server <proxy> | specify proxy server, for example "http://myproxy:3128" or "socks5://myproxy:8080"<br>*env* `PLAYWRIGHT_MCP_PROXY_SERVER` |
+| --sandbox | enable the sandbox for all process types that are normally not sandboxed.<br>*env* `PLAYWRIGHT_MCP_SANDBOX` |
 | --save-session | Whether to save the Playwright MCP session into the output directory.<br>*env* `PLAYWRIGHT_MCP_SAVE_SESSION` |
 | --save-trace | Whether to save the Playwright Trace of the session into the output directory.<br>*env* `PLAYWRIGHT_MCP_SAVE_TRACE` |
 | --save-video <size> | Whether to save the video of the session into the output directory. For example "--save-video=800x600"<br>*env* `PLAYWRIGHT_MCP_SAVE_VIDEO` |
@@ -731,7 +731,7 @@ docker run -d -i --rm --init --pull=always \
   --name playwright \
   -p 8931:8931 \
   mcr.microsoft.com/playwright/mcp \
-  cli.js --headless --browser chromium --no-chromium-sandbox --port 8931
+  cli.js --headless --browser chromium --no-sandbox --port 8931
 ```
 
 The server will listen on host port **8931** and can be reached by any MCP client.  
