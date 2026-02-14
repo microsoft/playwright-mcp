@@ -10,16 +10,9 @@ The Playwright MCP Chrome Extension allows you to connect to pages in your exist
 
 ## Installation Steps
 
-### Download the Extension
+### Install the Extension
 
-Download the latest Chrome extension from GitHub:
-- **Download link**: https://github.com/microsoft/playwright-mcp/releases
-
-### Load Chrome Extension
-
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in the top right corner)
-3. Click "Load unpacked" and select the extension directory
+Install [Playwright MCP Bridge](https://chromewebstore.google.com/detail/playwright-mcp-bridge/mmlmfjhmonkocbjadbfplnigmagldckm) from the Chrome Web Store.
 
 ### Configure Playwright MCP server
 
