@@ -1,0 +1,53 @@
+services:
+  playwright-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.cdp
+    container_name: playwright-mcp
+    hostname: playwright-mcp
+    networks:
+      - services-net
+    ports:
+      - "3000:3000"
+    environment:
+      - ALLOWED_DOMAINS=${ALLOWED_DOMAINS:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # CDP endpoint passed as CLI arg; ALLOWED_DOMAINS read from env var
+    command:
+      - "--cdp-endpoint"
+      - "${CDP_ENDPOINT:-http://host.docker.internal:9222}"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: playwright-mcp-tailscale
+    hostname: playwright-mcp-ts
+    networks:
+      - services-net
+    environment:
+      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/config/serve.json
+      - TS_USERSPACE=true
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+      - ./docker/tailscale:/config:ro
+    depends_on:
+      - playwright-mcp
+    restart: unless-stopped
+    profiles:
+      - tailscale
+
+networks:
+  services-net:
+    external: true
+
+volumes:
+  tailscale-state:

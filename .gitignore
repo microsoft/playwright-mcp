@@ -6,3 +6,5 @@ playwright-report/
 .DS_Store
 .env
 sessions/
+
+.claude

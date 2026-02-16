@@ -15,10 +15,36 @@
  * limitations under the License.
  */
 
+const path = require('path');
 const { program } = require('playwright-core/lib/utilsBundle');
 const { decorateMCPCommand } = require('playwright/lib/mcp/program');
+const playwrightDir = path.dirname(require.resolve('playwright/package.json'));
+const { commaSeparatedList } = require(path.join(playwrightDir, 'lib/mcp/browser/config'));
+const { startCustomServer } = require('./src/custom-server');
 
 const packageJSON = require('./package.json');
 const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
-decorateMCPCommand(p, packageJSON.version)
+
+// Register all standard Playwright MCP options via decorateMCPCommand
+decorateMCPCommand(p, packageJSON.version);
+
+// Add custom options
+p.option('--allowed-domains <domains>', 'Comma-separated list of allowed domains. Navigation and actions on other domains will be blocked.', commaSeparatedList);
+
+// Override the action handler to use our custom server
+p.action(async (options) => {
+  options.sandbox = options.sandbox === true ? undefined : false;
+
+  // Resolve allowed domains from CLI option or ALLOWED_DOMAINS env var
+  let allowedDomains = options.allowedDomains || null;
+  if (!allowedDomains && process.env.ALLOWED_DOMAINS) {
+    allowedDomains = process.env.ALLOWED_DOMAINS.split(',').map(d => d.trim()).filter(Boolean);
+  }
+  if (allowedDomains && allowedDomains.length > 0) {
+    console.error(`Domain enforcement enabled. Allowed domains: ${allowedDomains.join(', ')}`);
+  }
+
+  await startCustomServer(options, packageJSON.version, allowedDomains);
+});
+
 void program.parseAsync(process.argv);

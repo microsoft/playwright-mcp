@@ -20,13 +20,17 @@ test('test snapshot tool list', async ({ client }) => {
   const { tools } = await client.listTools();
   expect(new Set(tools.map(t => t.name))).toEqual(new Set([
     'browser_click',
+    'browser_clipboard_read',
+    'browser_clipboard_write',
     'browser_console_messages',
     'browser_drag',
     'browser_evaluate',
     'browser_file_upload',
     'browser_fill_form',
+    'browser_find_text',
     'browser_handle_dialog',
     'browser_hover',
+    'browser_paste',
     'browser_select_option',
     'browser_type',
     'browser_close',
@@ -41,6 +45,7 @@ test('test snapshot tool list', async ({ client }) => {
     'browser_tabs',
     'browser_take_screenshot',
     'browser_wait_for',
+    'browser_wait_for_element',
   ]));
 });
 
