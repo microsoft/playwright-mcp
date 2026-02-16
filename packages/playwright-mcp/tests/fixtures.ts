@@ -157,7 +157,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   mcpMode: [undefined, { option: true }],
 
   _workerServers: [async ({ }, use, workerInfo) => {
-    const port = 8907 + workerInfo.workerIndex * 4;
+    const port = 9100 + workerInfo.workerIndex * 4;
     const server = await TestServer.create(port);
 
     const httpsPort = port + 1;
