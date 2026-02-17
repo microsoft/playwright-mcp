@@ -19,11 +19,15 @@
     "test": "npm run test --workspaces",
     "build": "npm run build --workspaces",
     "bump": "npm version --workspaces --no-git-tag-version",
-    "roll": "node roll.js"
+    "roll": "node roll.js",
+    "postinstall": "patch-package"
   },
   "workspaces": [
     "packages/*"
   ],
+  "dependencies": {
+    "patch-package": "^8.0.0"
+  },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@playwright/test": "1.59.0-alpha-1771104257000",
