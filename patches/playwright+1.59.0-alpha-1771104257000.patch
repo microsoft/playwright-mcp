@@ -1,0 +1,13 @@
+diff --git a/node_modules/playwright/lib/mcp/browser/response.js b/node_modules/playwright/lib/mcp/browser/response.js
+--- a/node_modules/playwright/lib/mcp/browser/response.js
++++ b/node_modules/playwright/lib/mcp/browser/response.js
+@@ -166,7 +166,13 @@ class Response {
+     if (tabSnapshot && this._includeSnapshot !== "none") {
+-      const snapshot = this._includeSnapshot === "full" ? tabSnapshot.ariaSnapshot : tabSnapshot.ariaSnapshotDiff ?? tabSnapshot.ariaSnapshot;
++      const rawSnapshot = this._includeSnapshot === "full" ? tabSnapshot.ariaSnapshot : tabSnapshot.ariaSnapshotDiff ?? tabSnapshot.ariaSnapshot;
++      // Strip unpaired Unicode surrogates (valid in JS strings, invalid in JSON per RFC 8259).
++      // Lone surrogates in DOM textContent cause "no low surrogate in string" JSON parse errors.
++      // See: https://github.com/microsoft/playwright-mcp/issues/1410
++      const snapshot = rawSnapshot
++        ? rawSnapshot.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '\uFFFD').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '\uFFFD')
++        : rawSnapshot;
