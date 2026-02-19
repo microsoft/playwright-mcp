@@ -17,6 +17,8 @@ services:
     command:
       - "--cdp-endpoint"
       - "${CDP_ENDPOINT:-http://host.docker.internal:9222}"
+      - "--allowed-hosts"
+      - "*"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:3000/"]
       interval: 30s
