@@ -13,12 +13,15 @@ services:
       - ALLOWED_DOMAINS=${ALLOWED_DOMAINS:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    # CDP endpoint passed as CLI arg; ALLOWED_DOMAINS read from env var
+    # Resolve host.docker.internal to IP so Chrome accepts the Host header
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - "--cdp-endpoint"
-      - "${CDP_ENDPOINT:-http://host.docker.internal:9222}"
-      - "--allowed-hosts"
-      - "*"
+      - |
+        HOST_IP=$$(getent hosts host.docker.internal | awk '{print $$1}')
+        CDP=$${CDP_ENDPOINT:-http://$$HOST_IP:9222}
+        exec node cli.js --port 3000 --host 0.0.0.0 \
+          --cdp-endpoint "$$CDP" \
+          --allowed-hosts '*'
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:3000/"]
       interval: 30s
