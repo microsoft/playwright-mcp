@@ -18,7 +18,7 @@ This package provides MCP interface into Playwright. If you are using a **coding
 
 ### Requirements
 - Node.js 18 or newer
-- VS Code, Cursor, Windsurf, Claude Desktop, Goose or any other MCP client
+- VS Code, Cursor, Windsurf, Claude Desktop, Goose, AdaL CLI or any other MCP client
 
 <!--
 // Generate using:
@@ -323,6 +323,25 @@ Alternatively, use the slash command `/add-mcp` in the Warp prompt and paste the
 <summary>Windsurf</summary>
 
 Follow Windsurf MCP [documentation](https://docs.windsurf.com/windsurf/cascade/mcp). Use the standard config above.
+
+</details>
+
+<details>
+<summary>AdaL CLI</summary>
+
+Use the AdaL CLI to add the Playwright MCP server:
+
+```bash
+/mcp add playwright --command npx --args "-y,@playwright/mcp@latest"
+```
+
+For the standalone HTTP server:
+
+```bash
+/mcp add playwright --transport http --url http://localhost:8931/mcp
+```
+
+For more information, see the [AdaL CLI documentation](https://github.com/SylphAI-Inc/adal-cli).
 
 </details>
 
