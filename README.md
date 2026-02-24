@@ -73,6 +73,26 @@ amp mcp add playwright -- npx @playwright/mcp@latest
 </details>
 
 <details>
+<summary>Antigravity</summary>
+
+Add via the Antigravity settings or by updating your configuration file:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
 <summary>Claude Code</summary>
 
 Use the Claude Code CLI to add the Playwright MCP server:
