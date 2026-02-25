@@ -69,8 +69,4 @@ This token is unique to your browser profile and provides secure authentication 
 
 ## Suppressing the Debugger Infobar
 
-When the extension connects to a tab, Chrome displays an infobar saying `"Playwright MCP Bridge" started debugging this browser`. If you'd like to suppress this infobar, launch Chrome with the `--silent-debugger-extension-api` flag:
-
-```
-chrome --silent-debugger-extension-api
-```
+When the extension connects to a tab, Chrome displays an infobar saying `"Playwright MCP Bridge" started debugging this browser`. If you'd like to suppress this infobar, launch Chrome with the `--silent-debugger-extension-api` flag.
