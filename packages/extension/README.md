@@ -67,4 +67,10 @@ By default, you'll need to approve each connection when the MCP server tries to 
 
 This token is unique to your browser profile and provides secure authentication between the MCP server and the extension. Once configured, you won't need to manually approve connections each time.
 
+## Suppressing the Debugger Infobar
 
+When the extension connects to a tab, Chrome displays an infobar saying `"Playwright MCP Bridge" started debugging this browser`. If you'd like to suppress this infobar, launch Chrome with the `--silent-debugger-extension-api` flag:
+
+```
+chrome --silent-debugger-extension-api
+```
