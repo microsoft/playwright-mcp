@@ -727,6 +727,21 @@ And then in MCP client config, set the `url` to the HTTP endpoint:
 }
 ```
 
+## Security (not a security boundary)
+
+Playwright MCP is **not** a security boundary.
+
+In particular, MCP clients can execute **arbitrary JavaScript in the Node.js process** hosting the server (for example via the `browser_run_code` command). This means a connected client effectively has the same privileges as the Playwright MCP server process.
+
+Because of this, **clients and operators must implement their own security controls**, for example:
+- Require explicit user consent before enabling or connecting a server or executing high-impact actions.
+- Treat the server (especially when installed/configured from third parties) as untrusted code and **sandbox it** (container, restricted OS user, locked-down environment).
+- Limit blast radius: run with least privilege, restrict filesystem/network access, and consider allowlisting destinations.
+- Prefer transports and setups that reduce unauthorized access (for example `stdio` when running locally), and add authentication/authorization when exposing an HTTP endpoint.
+
+See MCP Security Best Practices, especially Mitigation: https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices#mitigation-5
+
+
 <details>
 <summary><b>Docker</b></summary>
 
