@@ -35,6 +35,7 @@ type PageMessage = {
 class TabShareExtension {
   private _activeConnection: RelayConnection | undefined;
   private _connectedTabId: number | null = null;
+  private _connectedGroupId: number | null = null;
   private _pendingTabSelection = new Map<number, { connection: RelayConnection, timerId?: number }>();
 
   constructor() {
@@ -126,11 +127,28 @@ class TabShareExtension {
         void this._setConnectedTabId(null);
       };
 
+      // Move the tab to its own window if it shares one with other tabs.
+      const tabsInWindow = await chrome.tabs.query({ windowId });
+      if (tabsInWindow.length > 1) {
+        const newWindow = await chrome.windows.create({ tabId, focused: true });
+        windowId = newWindow.id!;
+      }
+
       await Promise.all([
         this._setConnectedTabId(tabId),
         chrome.tabs.update(tabId, { active: true }),
         chrome.windows.update(windowId, { focused: true }),
       ]);
+
+      // Add the tab to an orange tab group for visual identification.
+      try {
+        const groupId = await chrome.tabs.group({ tabIds: [tabId] });
+        await chrome.tabGroups.update(groupId, { color: 'orange', title: 'Playwright MCP' });
+        this._connectedGroupId = groupId;
+      } catch (error: any) {
+        debugLog('Failed to create tab group:', error.message);
+      }
+
       debugLog(`Connected to MCP bridge`);
     } catch (error: any) {
       await this._setConnectedTabId(null);
@@ -142,8 +160,10 @@ class TabShareExtension {
   private async _setConnectedTabId(tabId: number | null): Promise<void> {
     const oldTabId = this._connectedTabId;
     this._connectedTabId = tabId;
-    if (oldTabId && oldTabId !== tabId)
+    if (oldTabId && oldTabId !== tabId) {
       await this._updateBadge(oldTabId, { text: '' });
+      await this._ungroupTab(oldTabId);
+    }
     if (tabId)
       await this._updateBadge(tabId, { text: '✓', color: '#4CAF50', title: 'Connected to MCP client' });
   }
@@ -159,6 +179,17 @@ class TabShareExtension {
     }
   }
 
+  private async _ungroupTab(tabId: number): Promise<void> {
+    if (!this._connectedGroupId)
+      return;
+    try {
+      await chrome.tabs.ungroup(tabId);
+    } catch (error: any) {
+      // Ignore errors as the tab may be closed already.
+    }
+    this._connectedGroupId = null;
+  }
+
   private async _onTabRemoved(tabId: number): Promise<void> {
     const pendingConnection = this._pendingTabSelection.get(tabId)?.connection;
     if (pendingConnection) {
@@ -171,6 +202,7 @@ class TabShareExtension {
     this._activeConnection?.close('Browser tab closed');
     this._activeConnection = undefined;
     this._connectedTabId = null;
+    this._connectedGroupId = null;
   }
 
   private _onTabActivated(activeInfo: chrome.tabs.TabActiveInfo) {
