@@ -190,7 +190,6 @@ class TabShareExtension {
             chrome.tabs.sendMessage(tabId, { type: 'connectionTimeout' });
           }
         }, 5000);
-        return;
       }
     }
   }
