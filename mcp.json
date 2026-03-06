@@ -1,0 +1,10 @@
+{
+  "short_name": "playwright",
+  "description": "Microsoft Playwright MCP server (npm package)",
+  "command": "npx",
+  "args": [
+    "-y",
+    "@playwright/mcp@latest"
+  ],
+  "env": {}
+}
