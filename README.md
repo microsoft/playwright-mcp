@@ -16,6 +16,41 @@ This package provides MCP interface into Playwright. If you are using a **coding
 - **LLM-friendly**. No vision models needed, operates purely on structured data.
 - **Deterministic tool application**. Avoids ambiguity common with screenshot-based approaches.
 
+## 🇨🇳 中文说明
+
+Playwright MCP 是一个基于 [Playwright](https://playwright.dev) 提供浏览器自动化能力的 Model Context Protocol (MCP) 服务器。该服务器使 LLMs 能够通过结构化的可访问性快照与网页交互，无需截图或视觉模型。
+
+### 主要特性
+
+- **快速轻量**: 使用 Playwright 的可访问性树，而非基于像素的输入
+- **LLM 友好**: 无需视觉模型，纯结构化数据操作
+- **确定性工具应用**: 避免基于截图方法常见的歧义
+
+### 快速开始
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
+```
+
+### 支持的客户端
+
+- VS Code / Cursor / Windsurf
+- Claude Desktop
+- Goose
+- Amp
+- 以及其他 MCP 客户端
+
+详见 [官方文档](https://microsoft.github.io/playwright-mcp/)。
+
 ### Requirements
 - Node.js 18 or newer
 - VS Code, Cursor, Windsurf, Claude Desktop, Goose or any other MCP client
