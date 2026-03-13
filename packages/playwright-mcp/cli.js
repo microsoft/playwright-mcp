@@ -16,9 +16,17 @@
  */
 
 const { program } = require('playwright-core/lib/utilsBundle');
-const { decorateMCPCommand } = require('playwright/lib/mcp/program');
+const { decorateMCPCommand } = require('playwright-core/lib/tools/mcp/program');
+
+if (process.argv.includes('install-browser')) {
+  const argv = process.argv.map(arg => arg === 'install-browser' ? 'install' : arg);
+  const { program: mainProgram } = require('playwright-core/lib/cli/program');
+  mainProgram.parse(argv);
+  return;
+}
 
 const packageJSON = require('./package.json');
 const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
 decorateMCPCommand(p, packageJSON.version)
+
 void program.parseAsync(process.argv);
