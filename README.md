@@ -1031,6 +1031,257 @@ http.createServer(async (req, res) => {
 </details>
 
 <details>
+<summary><b>Configuration (opt-in via --caps=config)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_get_config**
+  - Title: Get config
+  - Description: Get the final resolved config after merging CLI options, environment variables and config file.
+  - Parameters: None
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>Network (opt-in via --caps=network)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_route**
+  - Title: Mock network requests
+  - Description: Set up a route to mock network requests matching a URL pattern
+  - Parameters:
+    - `pattern` (string): URL pattern to match (e.g., "**/api/users", "**/*.{png,jpg}")
+    - `status` (number, optional): HTTP status code to return (default: 200)
+    - `body` (string, optional): Response body (text or JSON string)
+    - `contentType` (string, optional): Content-Type header (e.g., "application/json", "text/html")
+    - `headers` (array, optional): Headers to add in "Name: Value" format
+    - `removeHeaders` (string, optional): Comma-separated list of header names to remove from request
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_route_list**
+  - Title: List network routes
+  - Description: List all active network routes
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_unroute**
+  - Title: Remove network routes
+  - Description: Remove network routes matching a pattern (or all routes if no pattern specified)
+  - Parameters:
+    - `pattern` (string, optional): URL pattern to unroute (omit to remove all routes)
+  - Read-only: **false**
+
+</details>
+
+<details>
+<summary><b>Storage (opt-in via --caps=storage)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_clear**
+  - Title: Clear cookies
+  - Description: Clear all cookies
+  - Parameters: None
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_delete**
+  - Title: Delete cookie
+  - Description: Delete a specific cookie
+  - Parameters:
+    - `name` (string): Cookie name to delete
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_get**
+  - Title: Get cookie
+  - Description: Get a specific cookie by name
+  - Parameters:
+    - `name` (string): Cookie name to get
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_list**
+  - Title: List cookies
+  - Description: List all cookies (optionally filtered by domain/path)
+  - Parameters:
+    - `domain` (string, optional): Filter cookies by domain
+    - `path` (string, optional): Filter cookies by path
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_set**
+  - Title: Set cookie
+  - Description: Set a cookie with optional flags (domain, path, expires, httpOnly, secure, sameSite)
+  - Parameters:
+    - `name` (string): Cookie name
+    - `value` (string): Cookie value
+    - `domain` (string, optional): Cookie domain
+    - `path` (string, optional): Cookie path
+    - `expires` (number, optional): Cookie expiration as Unix timestamp
+    - `httpOnly` (boolean, optional): Whether the cookie is HTTP only
+    - `secure` (boolean, optional): Whether the cookie is secure
+    - `sameSite` (string, optional): Cookie SameSite attribute
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_clear**
+  - Title: Clear localStorage
+  - Description: Clear all localStorage
+  - Parameters: None
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_delete**
+  - Title: Delete localStorage item
+  - Description: Delete a localStorage item
+  - Parameters:
+    - `key` (string): Key to delete
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_get**
+  - Title: Get localStorage item
+  - Description: Get a localStorage item by key
+  - Parameters:
+    - `key` (string): Key to get
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_list**
+  - Title: List localStorage
+  - Description: List all localStorage key-value pairs
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_set**
+  - Title: Set localStorage item
+  - Description: Set a localStorage item
+  - Parameters:
+    - `key` (string): Key to set
+    - `value` (string): Value to set
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_clear**
+  - Title: Clear sessionStorage
+  - Description: Clear all sessionStorage
+  - Parameters: None
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_delete**
+  - Title: Delete sessionStorage item
+  - Description: Delete a sessionStorage item
+  - Parameters:
+    - `key` (string): Key to delete
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_get**
+  - Title: Get sessionStorage item
+  - Description: Get a sessionStorage item by key
+  - Parameters:
+    - `key` (string): Key to get
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_list**
+  - Title: List sessionStorage
+  - Description: List all sessionStorage key-value pairs
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_set**
+  - Title: Set sessionStorage item
+  - Description: Set a sessionStorage item
+  - Parameters:
+    - `key` (string): Key to set
+    - `value` (string): Value to set
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_set_storage_state**
+  - Title: Restore storage state
+  - Description: Restore storage state (cookies, local storage) from a file. This clears existing cookies and local storage before restoring.
+  - Parameters:
+    - `filename` (string): Path to the storage state file to restore from
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_storage_state**
+  - Title: Save storage state
+  - Description: Save storage state (cookies, local storage) to a file for later reuse
+  - Parameters:
+    - `filename` (string, optional): File name to save the storage state to. Defaults to `storage-state-{timestamp}.json` if not specified.
+  - Read-only: **true**
+
+</details>
+
+<details>
+<summary><b>DevTools (opt-in via --caps=devtools)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_start_tracing**
+  - Title: Start tracing
+  - Description: Start trace recording
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_start_video**
+  - Title: Start video
+  - Description: Start video recording
+  - Parameters:
+    - `size` (object, optional): Video size
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_stop_tracing**
+  - Title: Stop tracing
+  - Description: Stop trace recording
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_stop_video**
+  - Title: Stop video
+  - Description: Stop video recording
+  - Parameters:
+    - `filename` (string, optional): Filename to save the video
+  - Read-only: **true**
+
+</details>
+
+<details>
 <summary><b>Coordinate-based (opt-in via --caps=vision)</b></summary>
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -1163,11 +1414,6 @@ http.createServer(async (req, res) => {
     - `ref` (string): Exact target element reference that points to the element
     - `value` (string): Value to verify. For checkbox, use "true" or "false".
   - Read-only: **false**
-
-</details>
-
-<details>
-<summary><b>Tracing (opt-in via --caps=tracing)</b></summary>
 
 </details>
 
