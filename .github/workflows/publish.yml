@@ -135,6 +135,8 @@ jobs:
       - name: Build extension
         working-directory: ./packages/extension
         run: npm run build
+        env:
+          SET_EXTENSION_PUBLIC_KEY_IN_MANIFEST: 1
       - name: Get extension version
         id: get-version
         working-directory: ./packages/extension
