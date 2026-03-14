@@ -6,7 +6,8 @@
   "permissions": [
     "debugger",
     "activeTab",
-    "tabs"
+    "tabs",
+    "tabGroups"
   ],
   "host_permissions": [
     "<all_urls>"

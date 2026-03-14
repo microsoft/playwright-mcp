@@ -187,6 +187,13 @@ async function startWithExtensionFlag(browserWithExtension: BrowserWithExtension
   return client;
 }
 
+async function getServiceWorker(context: BrowserContext) {
+  let [sw] = context.serviceWorkers();
+  if (!sw)
+    sw = await context.waitForEvent('serviceworker');
+  return sw;
+}
+
 const testWithOldExtensionVersion = test.extend({
   pathToExtension: async ({ pathToExtension }, use, testInfo) => {
     const manifestPath = path.join(pathToExtension, 'manifest.json');
@@ -383,6 +390,127 @@ test(`bypass connection dialog with token`, async ({ browserWithExtension, start
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
+});
+
+test.describe('tab group and window isolation', () => {
+  test('connected tab is placed in orange tab group', async ({ browserWithExtension, startClient, server }) => {
+    const browserContext = await browserWithExtension.launch();
+
+    const page = await browserContext.newPage();
+    await page.goto(server.HELLO_WORLD);
+
+    const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+      return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+    });
+
+    const snapshotResponse = client.callTool({
+      name: 'browser_snapshot',
+      arguments: {},
+    });
+
+    const selectorPage = await confirmationPagePromise;
+    await selectorPage.locator('.tab-item', { hasText: 'Title' }).getByRole('button', { name: 'Connect' }).click();
+    await snapshotResponse;
+
+    const sw = await getServiceWorker(browserContext);
+    const groups = await sw.evaluate(async () => {
+      return await (globalThis as any).chrome.tabGroups.query({});
+    });
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].color).toBe('orange');
+    expect(groups[0].title).toBe('Playwright MCP');
+  });
+
+  test('connected tab is moved to its own window', async ({ browserWithExtension, startClient, server }) => {
+    const browserContext = await browserWithExtension.launch();
+
+    // Create two pages in the same window so there are multiple tabs.
+    const page1 = await browserContext.newPage();
+    await page1.goto(server.HELLO_WORLD);
+    await browserContext.newPage();
+
+    const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+      return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+    });
+
+    const snapshotResponse = client.callTool({
+      name: 'browser_snapshot',
+      arguments: {},
+    });
+
+    const selectorPage = await confirmationPagePromise;
+    await selectorPage.locator('.tab-item', { hasText: 'Title' }).getByRole('button', { name: 'Connect' }).click();
+    await snapshotResponse;
+
+    const sw = await getServiceWorker(browserContext);
+    const connectedTab = await sw.evaluate(async () => {
+      const ext = (globalThis as any).__tabShareExtension;
+      // Fall back to querying grouped tabs to find the connected one.
+      const groups = await (globalThis as any).chrome.tabGroups.query({});
+      if (groups.length === 0)
+        throw new Error('No tab groups found');
+      const groupId = groups[0].id;
+      const tabs = await (globalThis as any).chrome.tabs.query({ groupId });
+      return tabs[0];
+    });
+
+    // Verify the connected tab's window has exactly 1 tab.
+    const tabsInWindow = await sw.evaluate(async (windowId: number) => {
+      return await (globalThis as any).chrome.tabs.query({ windowId });
+    }, connectedTab.windowId);
+
+    expect(tabsInWindow).toHaveLength(1);
+  });
+
+  test('tab group is removed on disconnect', async ({ browserWithExtension, startClient, server }) => {
+    const browserContext = await browserWithExtension.launch();
+
+    const page = await browserContext.newPage();
+    await page.goto(server.HELLO_WORLD);
+
+    const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+      return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+    });
+
+    const snapshotResponse = client.callTool({
+      name: 'browser_snapshot',
+      arguments: {},
+    });
+
+    const selectorPage = await confirmationPagePromise;
+    await selectorPage.locator('.tab-item', { hasText: 'Title' }).getByRole('button', { name: 'Connect' }).click();
+    await snapshotResponse;
+
+    // Verify group exists before disconnect (re-acquire SW in case it recycled).
+    await expect.poll(async () => {
+      const sw = await getServiceWorker(browserContext);
+      const groups = await sw.evaluate(async () => {
+        return await (globalThis as any).chrome.tabGroups.query({});
+      });
+      return groups.length;
+    }, { timeout: 5000 }).toBe(1);
+
+    // Open the status page and click Disconnect.
+    const statusPage = await browserContext.newPage();
+    await statusPage.goto(`chrome-extension://${extensionId}/status.html`);
+    await statusPage.getByRole('button', { name: 'Disconnect' }).click();
+
+    // Wait for the tab group to be removed.
+    await expect.poll(async () => {
+      const sw = await getServiceWorker(browserContext);
+      const groups = await sw.evaluate(async () => {
+        return await (globalThis as any).chrome.tabGroups.query({});
+      });
+      return groups.length;
+    }, { timeout: 5000 }).toBe(0);
   });
 });
 
