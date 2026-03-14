@@ -386,8 +386,6 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --proxy-server <proxy> | specify proxy server, for example "http://myproxy:3128" or "socks5://myproxy:8080"<br>*env* `PLAYWRIGHT_MCP_PROXY_SERVER` |
 | --sandbox | enable the sandbox for all process types that are normally not sandboxed.<br>*env* `PLAYWRIGHT_MCP_SANDBOX` |
 | --save-session | Whether to save the Playwright MCP session into the output directory.<br>*env* `PLAYWRIGHT_MCP_SAVE_SESSION` |
-| --save-trace | Whether to save the Playwright Trace of the session into the output directory.<br>*env* `PLAYWRIGHT_MCP_SAVE_TRACE` |
-| --save-video <size> | Whether to save the video of the session into the output directory. For example "--save-video=800x600"<br>*env* `PLAYWRIGHT_MCP_SAVE_VIDEO` |
 | --secrets <path> | path to a file containing secrets in the dotenv format<br>*env* `PLAYWRIGHT_MCP_SECRETS` |
 | --shared-browser-context | reuse the same browser context between all connected HTTP clients.<br>*env* `PLAYWRIGHT_MCP_SHARED_BROWSER_CONTEXT` |
 | --snapshot-mode <mode> | when taking snapshots for responses, specifies the mode to use. Can be "incremental", "full", or "none". Default is incremental.<br>*env* `PLAYWRIGHT_MCP_SNAPSHOT_MODE` |
@@ -599,19 +597,6 @@ npx @playwright/mcp@latest --config path/to/config.json
   saveSession?: boolean;
 
   /**
-   * Whether to save the Playwright trace of the session into the output directory.
-   */
-  saveTrace?: boolean;
-
-  /**
-   * If specified, saves the Playwright video of the session into the output directory.
-   */
-  saveVideo?: {
-    width: number;
-    height: number;
-  };
-
-  /**
    * Reuse the same browser context between all connected HTTP clients.
    */
   sharedBrowserContext?: boolean;
@@ -675,6 +660,11 @@ npx @playwright/mcp@latest --config path/to/config.json
      * Configures default navigation timeout: https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout. Defaults to 60000ms.
      */
     navigation?: number;
+
+    /**
+     * Configures default expect timeout: https://playwright.dev/docs/test-timeouts#expect-timeout. Defaults to 5000ms.
+     */
+    expect?: number;
   };
 
   /**
@@ -804,6 +794,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
+    - `selector` (string, optional): CSS or role selector for the target element, when "ref" is not available
     - `doubleClick` (boolean, optional): Whether to perform a double click instead of a single click
     - `button` (string, optional): Button to click, defaults to left
     - `modifiers` (array, optional): Modifier keys to press
@@ -824,6 +815,7 @@ http.createServer(async (req, res) => {
   - Description: Returns all console messages
   - Parameters:
     - `level` (string): Level of the console messages to return. Each level includes the messages of more severe levels. Defaults to "info".
+    - `all` (boolean, optional): Return all console messages since the beginning of the session, not just since the last navigation. Defaults to false.
     - `filename` (string, optional): Filename to save the console messages to. If not provided, messages are returned as text.
   - Read-only: **true**
 
@@ -835,8 +827,10 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `startElement` (string): Human-readable source element description used to obtain the permission to interact with the element
     - `startRef` (string): Exact source element reference from the page snapshot
+    - `startSelector` (string, optional): CSS or role selector for the source element, when ref is not available
     - `endElement` (string): Human-readable target element description used to obtain the permission to interact with the element
     - `endRef` (string): Exact target element reference from the page snapshot
+    - `endSelector` (string, optional): CSS or role selector for the target element, when ref is not available
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -848,6 +842,7 @@ http.createServer(async (req, res) => {
     - `function` (string): () => { /* code */ } or (element) => { /* code */ } when element is provided
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string, optional): Exact target element reference from the page snapshot
+    - `selector` (string, optional): CSS or role selector for the target element, when "ref" is not available.
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -886,6 +881,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
+    - `selector` (string, optional): CSS or role selector for the target element, when "ref" is not available
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -951,6 +947,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
+    - `selector` (string, optional): CSS or role selector for the target element, when "ref" is not available
     - `values` (array): Array of values to select in the dropdown. This can be a single value or multiple values.
   - Read-only: **false**
 
@@ -961,6 +958,7 @@ http.createServer(async (req, res) => {
   - Description: Capture accessibility snapshot of the current page, this is better than screenshot
   - Parameters:
     - `filename` (string, optional): Save snapshot to markdown file instead of returning it in the response.
+    - `selector` (string, optional): Element selector of the root element to capture a partial snapshot instead of the whole page
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -973,6 +971,7 @@ http.createServer(async (req, res) => {
     - `filename` (string, optional): File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified. Prefer relative file names to stay within the output directory.
     - `element` (string, optional): Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.
     - `ref` (string, optional): Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.
+    - `selector` (string, optional): CSS or role selector for the target element, when "ref" is not available.
     - `fullPage` (boolean, optional): When true, takes a screenshot of the full scrollable page, instead of the currently visible viewport. Cannot be used with element screenshots.
   - Read-only: **true**
 
@@ -984,6 +983,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
+    - `selector` (string, optional): CSS or role selector for the target element, when "ref" is not available
     - `text` (string): Text to type into the element
     - `submit` (boolean, optional): Whether to submit entered text (press Enter after)
     - `slowly` (boolean, optional): Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.
@@ -1020,14 +1020,6 @@ http.createServer(async (req, res) => {
 <details>
 <summary><b>Browser installation</b></summary>
 
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_install**
-  - Title: Install the browser specified in the config
-  - Description: Install the browser specified in the config. Call this if you get an error about the browser not being installed.
-  - Parameters: None
-  - Read-only: **false**
-
 </details>
 
 <details>
@@ -1045,6 +1037,15 @@ http.createServer(async (req, res) => {
 
 <details>
 <summary><b>Network (opt-in via --caps=network)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_network_state_set**
+  - Title: Set network state
+  - Description: Sets the browser network state to online or offline. When offline, all network requests will fail.
+  - Parameters:
+    - `state` (string): Set to "offline" to simulate offline mode, "online" to restore network connectivity
+  - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
@@ -1288,10 +1289,13 @@ http.createServer(async (req, res) => {
 
 - **browser_mouse_click_xy**
   - Title: Click
-  - Description: Click left mouse button at a given position
+  - Description: Click mouse button at a given position
   - Parameters:
     - `x` (number): X coordinate
     - `y` (number): Y coordinate
+    - `button` (string, optional): Button to click, defaults to left
+    - `clickCount` (number, optional): Number of clicks, defaults to 1
+    - `delay` (number, optional): Time to wait between mouse down and mouse up in milliseconds, defaults to 0
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -1371,6 +1375,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `ref` (string): Exact target element reference from the page snapshot
+    - `selector` (string, optional): CSS or role selector for the target element, when "ref" is not available
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -1391,6 +1396,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `element` (string): Human-readable list description
     - `ref` (string): Exact target element reference that points to the list
+    - `selector` (string, optional): CSS or role selector for the target list, when "ref" is not available.
     - `items` (array): Items to verify
   - Read-only: **false**
 
@@ -1411,7 +1417,8 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `type` (string): Type of the element
     - `element` (string): Human-readable element description
-    - `ref` (string): Exact target element reference that points to the element
+    - `ref` (string): Exact target element reference from the page snapshot
+    - `selector` (string, optional): CSS or role selector for the target element, when "ref" is not available
     - `value` (string): Value to verify. For checkbox, use "true" or "false".
   - Read-only: **false**
 

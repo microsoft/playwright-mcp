@@ -16,9 +16,11 @@
  */
 
 const { program } = require('playwright-core/lib/utilsBundle');
-const { decorateMCPCommand } = require('playwright/lib/mcp/program');
+const { decorateMCPCommand, decorateMCPInstallBrowserCommand } = require('playwright-core/lib/tools/mcp/program');
 
 const packageJSON = require('./package.json');
 const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
 decorateMCPCommand(p, packageJSON.version)
+decorateMCPInstallBrowserCommand(p.command('install-browser'), packageJSON.version)
+
 void program.parseAsync(process.argv);
