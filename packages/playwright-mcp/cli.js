@@ -21,7 +21,6 @@ const { decorateMCPCommand, decorateMCPInstallBrowserCommand } = require('playwr
 const packageJSON = require('./package.json');
 const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
 decorateMCPCommand(p, packageJSON.version)
-void program.parseAsync(process.argv);
+decorateMCPInstallBrowserCommand(p.command('install-browser'), packageJSON.version)
 
-decorateMCPInstallBrowserCommand(p, packageJSON.version)
 void program.parseAsync(process.argv);

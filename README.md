@@ -958,6 +958,7 @@ http.createServer(async (req, res) => {
   - Description: Capture accessibility snapshot of the current page, this is better than screenshot
   - Parameters:
     - `filename` (string, optional): Save snapshot to markdown file instead of returning it in the response.
+    - `selector` (string, optional): Element selector of the root element to capture a partial snapshot instead of the whole page
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
