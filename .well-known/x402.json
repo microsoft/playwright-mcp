@@ -1,0 +1,53 @@
+{
+  "name": "microsoft/playwright-mcp",
+  "description": "Official Microsoft Playwright MCP server, enabling LLMs to interact with web pages through structured accessibility snapshots",
+  "accepts": [
+    {
+      "network": "eip155:8453",
+      "asset": "USDC",
+      "address": "YOUR_WALLET_ADDRESS"
+    }
+  ],
+  "resources": [
+    {
+      "path": "/navigate",
+      "price": "0.01",
+      "description": "Pay-per-call access to navigate"
+    },
+    {
+      "path": "/click",
+      "price": "0.01",
+      "description": "Pay-per-call access to click"
+    },
+    {
+      "path": "/fill",
+      "price": "0.01",
+      "description": "Pay-per-call access to fill"
+    },
+    {
+      "path": "/press",
+      "price": "0.01",
+      "description": "Pay-per-call access to press"
+    },
+    {
+      "path": "/scroll",
+      "price": "0.01",
+      "description": "Pay-per-call access to scroll"
+    },
+    {
+      "path": "/screenshot",
+      "price": "0.01",
+      "description": "Pay-per-call access to screenshot"
+    },
+    {
+      "path": "/get_accessibility_tree",
+      "price": "0.01",
+      "description": "Pay-per-call access to get_accessibility_tree"
+    },
+    {
+      "path": "/wait_for_load_state",
+      "price": "0.01",
+      "description": "Pay-per-call access to wait_for_load_state"
+    }
+  ]
+}
