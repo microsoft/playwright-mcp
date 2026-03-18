@@ -37,6 +37,7 @@ const ConnectApp: React.FC = () => {
   const [clientInfo, setClientInfo] = useState('unknown');
   const [mcpRelayUrl, setMcpRelayUrl] = useState('');
   const [newTab, setNewTab] = useState<boolean>(false);
+  const [focusTab, setFocusTab] = useState<boolean>(true);
 
   useEffect(() => {
     const runAsync = async () => {
@@ -103,6 +104,9 @@ const ConnectApp: React.FC = () => {
 
       await connectToMCPRelay(relayUrl);
 
+      if (params.get('focusTab') === 'false')
+        setFocusTab(false);
+
       // If this is a browser_navigate command, hide the tab list and show simple allow/reject
       if (params.get('newTab') === 'true') {
         setNewTab(true);
@@ -144,6 +148,7 @@ const ConnectApp: React.FC = () => {
         mcpRelayUrl,
         tabId: tab?.id,
         windowId: tab?.windowId,
+        focusTab,
       });
 
       if (response?.success) {
@@ -160,7 +165,7 @@ const ConnectApp: React.FC = () => {
         message: `MCP client "${clientInfo}" failed to connect: ${e}`
       });
     }
-  }, [clientInfo, mcpRelayUrl]);
+  }, [clientInfo, mcpRelayUrl, focusTab]);
 
   useEffect(() => {
     const listener = (message: any) => {

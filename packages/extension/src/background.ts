@@ -26,6 +26,7 @@ type PageMessage = {
   tabId?: number;
   windowId?: number;
   mcpRelayUrl: string;
+  focusTab?: boolean;
 } | {
   type: 'getConnectionStatus';
 } | {
@@ -61,7 +62,7 @@ class TabShareExtension {
       case 'connectToTab':
         const tabId = message.tabId || sender.tab?.id!;
         const windowId = message.windowId || sender.tab?.windowId!;
-        this._connectTab(sender.tab!.id!, tabId, windowId, message.mcpRelayUrl!).then(
+        this._connectTab(sender.tab!.id!, tabId, windowId, message.mcpRelayUrl!, message.focusTab).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true; // Return true to indicate that the response will be sent asynchronously
@@ -104,7 +105,7 @@ class TabShareExtension {
     }
   }
 
-  private async _connectTab(selectorTabId: number, tabId: number, windowId: number, mcpRelayUrl: string): Promise<void> {
+  private async _connectTab(selectorTabId: number, tabId: number, windowId: number, mcpRelayUrl: string, focusTab?: boolean): Promise<void> {
     try {
       debugLog(`Connecting tab ${tabId} to relay at ${mcpRelayUrl}`);
       try {
@@ -126,11 +127,13 @@ class TabShareExtension {
         void this._setConnectedTabId(null);
       };
 
-      await Promise.all([
-        this._setConnectedTabId(tabId),
-        chrome.tabs.update(tabId, { active: true }),
-        chrome.windows.update(windowId, { focused: true }),
-      ]);
+      await this._setConnectedTabId(tabId);
+      if (focusTab !== false) {
+        await Promise.all([
+          chrome.tabs.update(tabId, { active: true }),
+          chrome.windows.update(windowId, { focused: true }),
+        ]);
+      }
       debugLog(`Connected to MCP bridge`);
     } catch (error: any) {
       await this._setConnectedTabId(null);
