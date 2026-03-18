@@ -240,6 +240,8 @@ Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to you
 <details>
 <summary>Kiro</summary>
 
+[![Add to Kiro](https://kiro.dev/images/add-to-kiro.svg)](https://kiro.dev/launch/mcp/add?name=playwright&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22%40playwright%2Fmcp%40latest%22%5D%7D)
+
 Follow the MCP Servers [documentation](https://kiro.dev/docs/mcp/). For example in `.kiro/settings/mcp.json`:
 
 ```json
