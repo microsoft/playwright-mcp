@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "Playwright",
+  "image": "mcr.microsoft.com/playwright:v1.58.2-noble",
+  "privileged": true,
+  "init": true,
+  "remoteUser": "pwuser",
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "forwardPorts": [
+    6080
+  ],
+  "portsAttributes": {
+    "6080": {
+      "label": "noVNC"
+    }
+  }
+}
