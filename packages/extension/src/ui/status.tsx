@@ -21,26 +21,23 @@ import { Button, TabItem } from './tabItem';
 import type { TabInfo } from './tabItem';
 import { AuthTokenSection } from './authToken';
 
-interface ConnectionStatus {
-  isConnected: boolean;
-  connectedTabId: number | null;
+type ConnectionInfo = {
+  mcpRelayUrl: string;
+  connectedTabId: number;
+  playwrightTabIds: number[];
   connectedTab?: TabInfo;
   playwrightTabs: TabInfo[];
-}
+};
 
 const StatusApp: React.FC = () => {
-  const [status, setStatus] = useState<ConnectionStatus>({
-    isConnected: false,
-    connectedTabId: null,
-    playwrightTabs: [],
-  });
+  const [connections, setConnections] = useState<ConnectionInfo[]>([]);
 
   useEffect(() => {
     void loadStatus();
   }, []);
 
   const loadStatus = async () => {
-    const { connectedTabId, playwrightTabIds = [] } = await chrome.runtime.sendMessage({ type: 'getConnectionStatus' });
+    const { connections: rawConnections = [] } = await chrome.runtime.sendMessage({ type: 'getConnectionStatus' });
 
     const fetchTab = async (id: number): Promise<TabInfo | null> => {
       try {
@@ -51,15 +48,14 @@ const StatusApp: React.FC = () => {
       }
     };
 
-    const connectedTab = connectedTabId ? await fetchTab(connectedTabId) ?? undefined : undefined;
-    const playwrightTabs = (await Promise.all((playwrightTabIds as number[]).map(fetchTab))).filter((t): t is TabInfo => t !== null);
-
-    setStatus({
-      isConnected: !!connectedTabId,
-      connectedTabId,
-      connectedTab,
-      playwrightTabs,
-    });
+    const resolved: ConnectionInfo[] = await Promise.all(
+        rawConnections.map(async (c: { mcpRelayUrl: string, connectedTabId: number, playwrightTabIds: number[] }) => {
+          const connectedTab = await fetchTab(c.connectedTabId) ?? undefined;
+          const playwrightTabs = (await Promise.all(c.playwrightTabIds.map(fetchTab))).filter((t): t is TabInfo => t !== null);
+          return { ...c, connectedTab, playwrightTabs };
+        })
+    );
+    setConnections(resolved);
   };
 
   const openTab = async (tabId: number) => {
@@ -67,52 +63,57 @@ const StatusApp: React.FC = () => {
     window.close();
   };
 
-  const disconnect = async () => {
-    await chrome.runtime.sendMessage({ type: 'disconnect' });
-    window.close();
+  const disconnect = async (mcpRelayUrl: string) => {
+    await chrome.runtime.sendMessage({ type: 'disconnect', mcpRelayUrl });
+    void loadStatus();
   };
 
   return (
     <div className='app-container'>
       <div className='content-wrapper'>
-        {status.isConnected && status.connectedTab ? (
-          <div>
-            <div className='tab-section-title'>
-              Page with connected MCP client:
-            </div>
-            <div>
-              <TabItem
-                tab={status.connectedTab}
-                button={
-                  <Button variant='primary' onClick={disconnect}>
-                    Disconnect
-                  </Button>
-                }
-                onClick={() => openTab(status.connectedTabId!)}
-              />
-            </div>
-          </div>
-        ) : (
+        {connections.length === 0 ? (
           <div className='status-banner'>
             No MCP clients are currently connected.
           </div>
-        )}
-        {status.playwrightTabs.length > 0 && (
-          <div>
-            <div className='tab-section-title'>
-              Playwright managed tabs:
-            </div>
-            <div>
-              {status.playwrightTabs.map(tab => (
+        ) : connections.map((c, i) => (
+          <div key={c.mcpRelayUrl}>
+            {connections.length > 1 && (
+              <div className='tab-section-title'>
+                Instance {i + 1}:
+              </div>
+            )}
+            {c.connectedTab && (
+              <div>
+                <div className='tab-section-title'>
+                  Page with connected MCP client:
+                </div>
                 <TabItem
-                  key={tab.id}
-                  tab={tab}
-                  onClick={() => openTab(tab.id)}
+                  tab={c.connectedTab}
+                  button={
+                    <Button variant='primary' onClick={() => disconnect(c.mcpRelayUrl)}>
+                      Disconnect
+                    </Button>
+                  }
+                  onClick={() => openTab(c.connectedTabId)}
                 />
-              ))}
-            </div>
+              </div>
+            )}
+            {c.playwrightTabs.length > 0 && (
+              <div>
+                <div className='tab-section-title'>
+                  Playwright managed tabs:
+                </div>
+                {c.playwrightTabs.map(tab => (
+                  <TabItem
+                    key={tab.id}
+                    tab={tab}
+                    onClick={() => openTab(tab.id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        ))}
         <AuthTokenSection />
       </div>
     </div>

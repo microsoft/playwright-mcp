@@ -16,6 +16,13 @@
 
 import { RelayConnection, debugLog } from './relayConnection';
 
+type ConnectionState = {
+  connection: RelayConnection;
+  connectedTabId: number;
+  playwrightTabIds: Set<number>;
+  mcpRelayUrl: string;
+};
+
 type PageMessage = {
   type: 'connectToMCPRelay';
   mcpRelayUrl: string;
@@ -30,13 +37,12 @@ type PageMessage = {
   type: 'getConnectionStatus';
 } | {
   type: 'disconnect';
+  mcpRelayUrl?: string;
 };
 
 class TabShareExtension {
-  private _activeConnection: RelayConnection | undefined;
-  private _connectedTabId: number | null = null;
-  private _playwrightTabIds = new Set<number>();
-  private _pendingTabSelection = new Map<number, { connection: RelayConnection, timerId?: number }>();
+  private _connections = new Map<string, ConnectionState>();
+  private _pendingTabSelection = new Map<number, { connection: RelayConnection, mcpRelayUrl: string, timerId?: number }>();
 
   constructor() {
     chrome.tabs.onRemoved.addListener(this._onTabRemoved.bind(this));
@@ -68,12 +74,18 @@ class TabShareExtension {
         return true; // Return true to indicate that the response will be sent asynchronously
       case 'getConnectionStatus':
         sendResponse({
-          connectedTabId: this._connectedTabId,
-          playwrightTabIds: [...this._playwrightTabIds],
+          connections: [...this._connections.values()].map(s => ({
+            mcpRelayUrl: s.mcpRelayUrl,
+            connectedTabId: s.connectedTabId,
+            playwrightTabIds: [...s.playwrightTabIds],
+          })),
+          // Legacy fields for backward compat: first connection's tabId
+          connectedTabId: [...this._connections.values()][0]?.connectedTabId ?? null,
+          playwrightTabIds: [...this._connections.values()].flatMap(s => [...s.playwrightTabIds]),
         });
         return false;
       case 'disconnect':
-        this._disconnect().then(
+        this._disconnect(message.mcpRelayUrl).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true;
@@ -97,7 +109,7 @@ class TabShareExtension {
         this._pendingTabSelection.delete(selectorTabId);
         // TODO: show error in the selector tab?
       };
-      this._pendingTabSelection.set(selectorTabId, { connection });
+      this._pendingTabSelection.set(selectorTabId, { connection, mcpRelayUrl });
       debugLog(`Connected to MCP relay`);
     } catch (error: any) {
       const message = `Failed to connect to MCP relay: ${error.message}`;
@@ -109,56 +121,59 @@ class TabShareExtension {
   private async _connectTab(selectorTabId: number, tabId: number, windowId: number, mcpRelayUrl: string): Promise<void> {
     try {
       debugLog(`Connecting tab ${tabId} to relay at ${mcpRelayUrl}`);
-      try {
-        this._activeConnection?.close('Another connection is requested');
-      } catch (error: any) {
-        debugLog(`Error closing active connection:`, error);
-      }
-      await this._setConnectedTabId(null);
 
-      this._activeConnection = this._pendingTabSelection.get(selectorTabId)?.connection;
-      if (!this._activeConnection)
+      const pending = this._pendingTabSelection.get(selectorTabId);
+      if (!pending)
         throw new Error('No active MCP relay connection');
       this._pendingTabSelection.delete(selectorTabId);
 
-      this._activeConnection.setTabId(tabId);
-      this._activeConnection.onclose = () => {
-        debugLog('MCP connection closed');
-        this._activeConnection = undefined;
-        void this._setConnectedTabId(null);
-        for (const pwTabId of this._playwrightTabIds)
-          void this._updateBadge(pwTabId, { text: '' });
-        this._playwrightTabIds.clear();
+      const connection = pending.connection;
+      const relayUrl = pending.mcpRelayUrl;
+
+      // Close any existing connection on the same relay URL.
+      const existing = this._connections.get(relayUrl);
+      if (existing) {
+        existing.connection.close('Another connection is requested');
+        this._connections.delete(relayUrl);
+      }
+
+      const state: ConnectionState = {
+        connection,
+        connectedTabId: tabId,
+        playwrightTabIds: new Set(),
+        mcpRelayUrl: relayUrl,
       };
-      this._activeConnection.onPlaywrightTabCreated = (pwTabId: number) => {
-        this._playwrightTabIds.add(pwTabId);
+      this._connections.set(relayUrl, state);
+
+      connection.setTabId(tabId);
+      connection.onclose = () => {
+        debugLog('MCP connection closed');
+        if (this._connections.get(relayUrl)?.connection === connection)
+          this._connections.delete(relayUrl);
+        void this._updateBadge(state.connectedTabId, { text: '' });
+        for (const pwTabId of state.playwrightTabIds)
+          void this._updateBadge(pwTabId, { text: '' });
+        state.playwrightTabIds.clear();
+      };
+      connection.onPlaywrightTabCreated = (pwTabId: number) => {
+        state.playwrightTabIds.add(pwTabId);
         void this._updateBadge(pwTabId, { text: '✓', color: '#1976D2', title: 'Playwright managed tab' });
       };
-      this._activeConnection.onPlaywrightTabRemoved = (pwTabId: number) => {
-        this._playwrightTabIds.delete(pwTabId);
+      connection.onPlaywrightTabRemoved = (pwTabId: number) => {
+        state.playwrightTabIds.delete(pwTabId);
         void this._updateBadge(pwTabId, { text: '' });
       };
 
       await Promise.all([
-        this._setConnectedTabId(tabId),
+        this._updateBadge(tabId, { text: '✓', color: '#4CAF50', title: 'Connected to MCP client' }),
         chrome.tabs.update(tabId, { active: true }),
         chrome.windows.update(windowId, { focused: true }),
       ]);
       debugLog(`Connected to MCP bridge`);
     } catch (error: any) {
-      await this._setConnectedTabId(null);
       debugLog(`Failed to connect tab ${tabId}:`, error.message);
       throw error;
     }
-  }
-
-  private async _setConnectedTabId(tabId: number | null): Promise<void> {
-    const oldTabId = this._connectedTabId;
-    this._connectedTabId = tabId;
-    if (oldTabId && oldTabId !== tabId)
-      await this._updateBadge(oldTabId, { text: '' });
-    if (tabId)
-      await this._updateBadge(tabId, { text: '✓', color: '#4CAF50', title: 'Connected to MCP client' });
   }
 
   private async _updateBadge(tabId: number, { text, color, title }: { text: string; color?: string, title?: string }): Promise<void> {
@@ -173,21 +188,23 @@ class TabShareExtension {
   }
 
   private async _onTabRemoved(tabId: number): Promise<void> {
-    const pendingConnection = this._pendingTabSelection.get(tabId)?.connection;
+    const pendingConnection = [...this._pendingTabSelection.entries()].find(([k]) => k === tabId)?.[1];
     if (pendingConnection) {
       this._pendingTabSelection.delete(tabId);
-      pendingConnection.close('Browser tab closed');
+      pendingConnection.connection.close('Browser tab closed');
       return;
     }
-    if (this._playwrightTabIds.has(tabId)) {
-      this._playwrightTabIds.delete(tabId);
-      return;
+    for (const [relayUrl, state] of this._connections) {
+      if (state.playwrightTabIds.has(tabId)) {
+        state.playwrightTabIds.delete(tabId);
+        return;
+      }
+      if (state.connectedTabId === tabId) {
+        state.connection.close('Browser tab closed');
+        this._connections.delete(relayUrl);
+        return;
+      }
     }
-    if (this._connectedTabId !== tabId)
-      return;
-    this._activeConnection?.close('Browser tab closed');
-    this._activeConnection = undefined;
-    this._connectedTabId = null;
   }
 
   private _onTabActivated(activeInfo: chrome.tabs.TabActiveInfo) {
@@ -212,10 +229,12 @@ class TabShareExtension {
   }
 
   private _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {
-    if (this._connectedTabId === tabId)
-      void this._setConnectedTabId(tabId);
-    if (this._playwrightTabIds.has(tabId))
-      void this._updateBadge(tabId, { text: '✓', color: '#1976D2', title: 'Playwright managed tab' });
+    for (const state of this._connections.values()) {
+      if (state.connectedTabId === tabId)
+        void this._updateBadge(tabId, { text: '✓', color: '#4CAF50', title: 'Connected to MCP client' });
+      if (state.playwrightTabIds.has(tabId))
+        void this._updateBadge(tabId, { text: '✓', color: '#1976D2', title: 'Playwright managed tab' });
+    }
   }
 
   private async _getTabs(): Promise<chrome.tabs.Tab[]> {
@@ -230,10 +249,18 @@ class TabShareExtension {
     });
   }
 
-  private async _disconnect(): Promise<void> {
-    this._activeConnection?.close('User disconnected');
-    this._activeConnection = undefined;
-    await this._setConnectedTabId(null);
+  private async _disconnect(mcpRelayUrl?: string): Promise<void> {
+    if (mcpRelayUrl) {
+      const state = this._connections.get(mcpRelayUrl);
+      if (state) {
+        state.connection.close('User disconnected');
+        this._connections.delete(mcpRelayUrl);
+      }
+    } else {
+      for (const state of this._connections.values())
+        state.connection.close('User disconnected');
+      this._connections.clear();
+    }
   }
 }
 
