@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Button, TabItem  } from './tabItem';
+import { Button, TabItem } from './tabItem';
 
 import type { TabInfo } from './tabItem';
 import { AuthTokenSection } from './authToken';

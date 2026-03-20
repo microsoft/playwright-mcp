@@ -35,7 +35,7 @@ type PageMessage = {
 class TabShareExtension {
   private _activeConnection: RelayConnection | undefined;
   private _connectedTabId: number | null = null;
-  private _playwrightTabIds: Set<number> = new Set();
+  private _playwrightTabIds = new Set<number>();
   private _pendingTabSelection = new Map<number, { connection: RelayConnection, timerId?: number }>();
 
   constructor() {

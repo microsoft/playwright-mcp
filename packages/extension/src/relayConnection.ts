@@ -44,7 +44,7 @@ export class RelayConnection {
   private _tabPromise: Promise<void>;
   private _tabPromiseResolve!: () => void;
   private _closed = false;
-  private _playwrightTabIds: Set<number> = new Set();
+  private _playwrightTabIds = new Set<number>();
 
   onclose?: () => void;
   onPlaywrightTabCreated?: (tabId: number) => void;
@@ -162,7 +162,7 @@ export class RelayConnection {
       };
     }
     if (message.method === 'createTab') {
-      const url: string = message.params?.url || 'about:blank';
+      const url = message.params?.url ?? 'about:blank';
       debugLog('Creating new tab:', url);
       const tab = await chrome.tabs.create({ url, active: true });
       const tabId = tab.id!;
@@ -189,9 +189,8 @@ export class RelayConnection {
       const { sessionId, method, params, tabId } = message.params;
       debugLog('CDP command:', method, params, 'tabId:', tabId);
       const debuggee: chrome.debugger.DebuggerSession = tabId !== undefined
-        ? { tabId, sessionId }
-        : { ...this._debuggee, sessionId };
-      // Forward CDP command to chrome.debugger
+          ? { tabId, sessionId }
+          : { ...this._debuggee, sessionId };
       return await chrome.debugger.sendCommand(debuggee, method, params);
     }
   }
