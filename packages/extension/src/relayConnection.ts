@@ -44,6 +44,7 @@ export class RelayConnection {
   private _tabPromise: Promise<void>;
   private _tabPromiseResolve!: () => void;
   private _closed = false;
+  private _playwrightTabIds: Set<number> = new Set();
 
   onclose?: () => void;
 
@@ -80,25 +81,37 @@ export class RelayConnection {
     chrome.debugger.onEvent.removeListener(this._eventListener);
     chrome.debugger.onDetach.removeListener(this._detachListener);
     chrome.debugger.detach(this._debuggee).catch(() => {});
+    for (const tabId of this._playwrightTabIds)
+      chrome.debugger.detach({ tabId }).catch(() => {});
+    this._playwrightTabIds.clear();
     this.onclose?.();
   }
 
   private _onDebuggerEvent(source: chrome.debugger.DebuggerSession, method: string, params: any): void {
-    if (source.tabId !== this._debuggee.tabId)
+    const isInitialTab = source.tabId === this._debuggee.tabId;
+    const isPlaywrightTab = source.tabId !== undefined && this._playwrightTabIds.has(source.tabId);
+    if (!isInitialTab && !isPlaywrightTab)
       return;
     debugLog('Forwarding CDP event:', method, params);
     const sessionId = source.sessionId;
+    const tabId = isPlaywrightTab ? source.tabId : undefined;
     this._sendMessage({
       method: 'forwardCDPEvent',
       params: {
         sessionId,
         method,
         params,
+        tabId,
       },
     });
   }
 
   private _onDebuggerDetach(source: chrome.debugger.Debuggee, reason: string): void {
+    if (source.tabId !== undefined && this._playwrightTabIds.has(source.tabId)) {
+      debugLog('Playwright tab detached:', source.tabId, reason);
+      this._playwrightTabIds.delete(source.tabId);
+      return;
+    }
     if (source.tabId !== this._debuggee.tabId)
       return;
     this.close(`Debugger detached: ${reason}`);
@@ -142,23 +155,40 @@ export class RelayConnection {
       const result: any = await chrome.debugger.sendCommand(this._debuggee, 'Target.getTargetInfo');
       return {
         targetInfo: result?.targetInfo,
+        tabId: this._debuggee.tabId,
       };
+    }
+    if (message.method === 'createTab') {
+      const url: string = message.params?.url || 'about:blank';
+      debugLog('Creating new tab:', url);
+      const tab = await chrome.tabs.create({ url, active: true });
+      const tabId = tab.id!;
+      // Wait briefly for the tab to load enough for the debugger to attach
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await chrome.debugger.attach({ tabId }, '1.3');
+      const result: any = await chrome.debugger.sendCommand({ tabId }, 'Target.getTargetInfo');
+      const targetInfo = result?.targetInfo || {
+        targetId: String(tabId),
+        type: 'page',
+        title: '',
+        url: tab.url || url,
+        attached: false,
+        canAccessOpener: false,
+      };
+      this._playwrightTabIds.add(tabId);
+      debugLog('Created playwright tab:', tabId, targetInfo);
+      return { tabId, targetInfo };
     }
     if (!this._debuggee.tabId)
       throw new Error('No tab is connected. Please go to the Playwright MCP extension and select the tab you want to connect to.');
     if (message.method === 'forwardCDPCommand') {
-      const { sessionId, method, params } = message.params;
-      debugLog('CDP command:', method, params);
-      const debuggerSession: chrome.debugger.DebuggerSession = {
-        ...this._debuggee,
-        sessionId,
-      };
+      const { sessionId, method, params, tabId } = message.params;
+      debugLog('CDP command:', method, params, 'tabId:', tabId);
+      const debuggee: chrome.debugger.DebuggerSession = tabId !== undefined
+        ? { tabId, sessionId }
+        : { ...this._debuggee, sessionId };
       // Forward CDP command to chrome.debugger
-      return await chrome.debugger.sendCommand(
-          debuggerSession,
-          method,
-          params
-      );
+      return await chrome.debugger.sendCommand(debuggee, method, params);
     }
   }
 
