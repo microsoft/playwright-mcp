@@ -47,6 +47,8 @@ export class RelayConnection {
   private _playwrightTabIds: Set<number> = new Set();
 
   onclose?: () => void;
+  onPlaywrightTabCreated?: (tabId: number) => void;
+  onPlaywrightTabRemoved?: (tabId: number) => void;
 
   constructor(ws: WebSocket) {
     this._debuggee = { };
@@ -110,6 +112,7 @@ export class RelayConnection {
     if (source.tabId !== undefined && this._playwrightTabIds.has(source.tabId)) {
       debugLog('Playwright tab detached:', source.tabId, reason);
       this._playwrightTabIds.delete(source.tabId);
+      this.onPlaywrightTabRemoved?.(source.tabId);
       return;
     }
     if (source.tabId !== this._debuggee.tabId)
@@ -176,6 +179,7 @@ export class RelayConnection {
         canAccessOpener: false,
       };
       this._playwrightTabIds.add(tabId);
+      this.onPlaywrightTabCreated?.(tabId);
       debugLog('Created playwright tab:', tabId, targetInfo);
       return { tabId, targetInfo };
     }

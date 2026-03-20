@@ -25,12 +25,14 @@ interface ConnectionStatus {
   isConnected: boolean;
   connectedTabId: number | null;
   connectedTab?: TabInfo;
+  playwrightTabs: TabInfo[];
 }
 
 const StatusApp: React.FC = () => {
   const [status, setStatus] = useState<ConnectionStatus>({
     isConnected: false,
-    connectedTabId: null
+    connectedTabId: null,
+    playwrightTabs: [],
   });
 
   useEffect(() => {
@@ -38,33 +40,30 @@ const StatusApp: React.FC = () => {
   }, []);
 
   const loadStatus = async () => {
-    // Get current connection status from background script
-    const { connectedTabId } = await chrome.runtime.sendMessage({ type: 'getConnectionStatus' });
-    if (connectedTabId) {
-      const tab = await chrome.tabs.get(connectedTabId);
-      setStatus({
-        isConnected: true,
-        connectedTabId,
-        connectedTab: {
-          id: tab.id!,
-          windowId: tab.windowId!,
-          title: tab.title!,
-          url: tab.url!,
-          favIconUrl: tab.favIconUrl
-        }
-      });
-    } else {
-      setStatus({
-        isConnected: false,
-        connectedTabId: null
-      });
-    }
+    const { connectedTabId, playwrightTabIds = [] } = await chrome.runtime.sendMessage({ type: 'getConnectionStatus' });
+
+    const fetchTab = async (id: number): Promise<TabInfo | null> => {
+      try {
+        const tab = await chrome.tabs.get(id);
+        return { id: tab.id!, windowId: tab.windowId!, title: tab.title!, url: tab.url!, favIconUrl: tab.favIconUrl };
+      } catch {
+        return null;
+      }
+    };
+
+    const connectedTab = connectedTabId ? await fetchTab(connectedTabId) ?? undefined : undefined;
+    const playwrightTabs = (await Promise.all((playwrightTabIds as number[]).map(fetchTab))).filter((t): t is TabInfo => t !== null);
+
+    setStatus({
+      isConnected: !!connectedTabId,
+      connectedTabId,
+      connectedTab,
+      playwrightTabs,
+    });
   };
 
-  const openConnectedTab = async () => {
-    if (!status.connectedTabId)
-      return;
-    await chrome.tabs.update(status.connectedTabId, { active: true });
+  const openTab = async (tabId: number) => {
+    await chrome.tabs.update(tabId, { active: true });
     window.close();
   };
 
@@ -89,13 +88,29 @@ const StatusApp: React.FC = () => {
                     Disconnect
                   </Button>
                 }
-                onClick={openConnectedTab}
+                onClick={() => openTab(status.connectedTabId!)}
               />
             </div>
           </div>
         ) : (
           <div className='status-banner'>
             No MCP clients are currently connected.
+          </div>
+        )}
+        {status.playwrightTabs.length > 0 && (
+          <div>
+            <div className='tab-section-title'>
+              Playwright managed tabs:
+            </div>
+            <div>
+              {status.playwrightTabs.map(tab => (
+                <TabItem
+                  key={tab.id}
+                  tab={tab}
+                  onClick={() => openTab(tab.id)}
+                />
+              ))}
+            </div>
           </div>
         )}
         <AuthTokenSection />

@@ -35,6 +35,7 @@ type PageMessage = {
 class TabShareExtension {
   private _activeConnection: RelayConnection | undefined;
   private _connectedTabId: number | null = null;
+  private _playwrightTabIds: Set<number> = new Set();
   private _pendingTabSelection = new Map<number, { connection: RelayConnection, timerId?: number }>();
 
   constructor() {
@@ -67,7 +68,8 @@ class TabShareExtension {
         return true; // Return true to indicate that the response will be sent asynchronously
       case 'getConnectionStatus':
         sendResponse({
-          connectedTabId: this._connectedTabId
+          connectedTabId: this._connectedTabId,
+          playwrightTabIds: [...this._playwrightTabIds],
         });
         return false;
       case 'disconnect':
@@ -124,6 +126,17 @@ class TabShareExtension {
         debugLog('MCP connection closed');
         this._activeConnection = undefined;
         void this._setConnectedTabId(null);
+        for (const pwTabId of this._playwrightTabIds)
+          void this._updateBadge(pwTabId, { text: '' });
+        this._playwrightTabIds.clear();
+      };
+      this._activeConnection.onPlaywrightTabCreated = (pwTabId: number) => {
+        this._playwrightTabIds.add(pwTabId);
+        void this._updateBadge(pwTabId, { text: '✓', color: '#1976D2', title: 'Playwright managed tab' });
+      };
+      this._activeConnection.onPlaywrightTabRemoved = (pwTabId: number) => {
+        this._playwrightTabIds.delete(pwTabId);
+        void this._updateBadge(pwTabId, { text: '' });
       };
 
       await Promise.all([
@@ -166,6 +179,10 @@ class TabShareExtension {
       pendingConnection.close('Browser tab closed');
       return;
     }
+    if (this._playwrightTabIds.has(tabId)) {
+      this._playwrightTabIds.delete(tabId);
+      return;
+    }
     if (this._connectedTabId !== tabId)
       return;
     this._activeConnection?.close('Browser tab closed');
@@ -197,6 +214,8 @@ class TabShareExtension {
   private _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {
     if (this._connectedTabId === tabId)
       void this._setConnectedTabId(tabId);
+    if (this._playwrightTabIds.has(tabId))
+      void this._updateBadge(tabId, { text: '✓', color: '#1976D2', title: 'Playwright managed tab' });
   }
 
   private async _getTabs(): Promise<chrome.tabs.Tab[]> {
