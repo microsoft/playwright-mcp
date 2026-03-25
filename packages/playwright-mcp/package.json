@@ -18,6 +18,8 @@
   "scripts": {
     "lint": "node update-readme.js",
     "test": "playwright test",
+    "test-fast": "playwright test tests/cli.spec.ts tests/library.spec.ts --project=chrome",
+    "test-browser": "playwright test tests/capabilities.spec.ts tests/click.spec.ts tests/core.spec.ts tests/screenshot.spec.ts",
     "ctest": "playwright test --project=chrome",
     "ftest": "playwright test --project=firefox",
     "wtest": "playwright test --project=webkit",

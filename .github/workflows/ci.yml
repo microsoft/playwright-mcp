@@ -26,7 +26,29 @@ jobs:
     - name: Ensure no changes
       run: git diff --exit-code
 
-  test:
+  # Fast non-browser tests: cli.spec.ts and library.spec.ts exercise the CLI
+  # binary and the Node.js library import without launching any browser.
+  # Running Ubuntu-only with no `playwright install` step keeps this job < 2 min.
+  test-fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    - name: Install dependencies
+      run: npm ci
+    - name: Build
+      run: npm run build
+    - name: Run fast (non-browser) tests
+      run: npm run test-fast --workspace=packages/playwright-mcp
+
+  # Browser tests: all specs that launch a real browser via the MCP server.
+  # Runs across all three OS targets to catch platform-specific regressions.
+  test-browser:
     strategy:
       fail-fast: false
       matrix:
@@ -46,9 +68,9 @@ jobs:
       run: npx playwright install --with-deps
     - name: Build
       run: npm run build
-    - name: Run playwright-mcp tests
-      id: test-mcp
-      run: npm run test --workspace=packages/playwright-mcp
+    - name: Run browser tests
+      id: test-browser
+      run: npm run test-browser --workspace=packages/playwright-mcp
       continue-on-error: true
     - name: Run extension tests
       id: test-extension
@@ -64,7 +86,7 @@ jobs:
         retention-days: 14
         if-no-files-found: ignore
     - name: Check test results
-      if: steps.test-mcp.outcome == 'failure' || steps.test-extension.outcome == 'failure'
+      if: steps.test-browser.outcome == 'failure' || steps.test-extension.outcome == 'failure'
       run: exit 1
 
   test_mcp_docker:
