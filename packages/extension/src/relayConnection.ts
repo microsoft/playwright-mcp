@@ -80,7 +80,9 @@ export class RelayConnection {
     this._closed = true;
     chrome.debugger.onEvent.removeListener(this._eventListener);
     chrome.debugger.onDetach.removeListener(this._detachListener);
-    chrome.debugger.detach(this._debuggee).catch(() => {});
+    // Only detach if a tab was actually attached; avoids calling detach with an empty debuggee.
+    if (this._debuggee.tabId)
+      chrome.debugger.detach(this._debuggee).catch(() => {});
     this.onclose?.();
   }
 
@@ -102,8 +104,9 @@ export class RelayConnection {
   private _onDebuggerDetach(source: chrome.debugger.Debuggee, reason: string): void {
     if (source.tabId !== this._debuggee.tabId)
       return;
-    this.close(`Debugger detached: ${reason}`);
+    // Clear before close() so _onClose does not attempt to re-detach an already-detached debuggee.
     this._debuggee = { };
+    this.close(`Debugger detached: ${reason}`);
   }
 
   private _onMessage(event: MessageEvent): void {

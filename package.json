@@ -4,7 +4,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+    "url": "git+https://github.com/MrGDCrazy/playwright-mcp.git"
   },
   "homepage": "https://playwright.dev",
   "author": {
