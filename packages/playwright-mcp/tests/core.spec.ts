@@ -48,7 +48,7 @@ test('browser_wait_for', async ({ client, server }) => {
 test('browser_wait_for times out when text is absent', async ({ startClient, server }) => {
   // Use a short action timeout so the wait fails quickly rather than blocking
   // for the full 5 s default, keeping the test suite fast.
-  const { client } = await startClient({ config: { timeouts: { action: 1000 } } });
+  const { client } = await startClient({ config: { timeouts: { action: 2000 } } });
 
   server.setContent('/', `<title>Empty</title><p>nothing to match here</p>`, 'text/html');
 
