@@ -7,6 +7,9 @@
   // Official Playwright image ships with all browser system dependencies and
   // the `pwuser` non-root account pre-configured, eliminating the need for a
   // custom Dockerfile and keeping startup fast.
+  // NOTE: Keep this version in sync with the `playwright` dependency in
+  // packages/playwright-mcp/package.json. When it's behind (e.g. on an alpha),
+  // postCreateCommand re-installs the exact browsers needed.
   "image": "mcr.microsoft.com/playwright:v1.58.2-noble",
 
   // Required so Chromium's sandbox can open /dev/shm and use user namespaces
@@ -57,7 +60,12 @@
 
         // Docker extension for inspecting images and containers built via the
         // repo's npm run docker-build / docker-run scripts.
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+
+        // GitHub Actions extension: syntax highlighting, schema validation,
+        // and inline linting for .github/workflows/*.yml files. Catches errors
+        // like wrong action versions or missing required inputs before pushing.
+        "github.vscode-github-actions"
       ],
       "settings": {
         // Format on save keeps code tidy without requiring a manual step.
@@ -79,12 +87,29 @@
     }
   },
 
+  // ─── Environment Variables ───────────────────────────────────────────────
+  // NODE_ENV=development disables any production-only code paths.
+  // PWMCP_DEBUG=1 enables the pw:mcp:* debug namespace so MCP protocol
+  // traffic is visible in the terminal without a separate DEBUG= prefix.
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "PWMCP_DEBUG": "1"
+  },
+
   // ─── Lifecycle Commands ──────────────────────────────────────────────────
-  // Install all npm workspace dependencies once the container is created.
-  // `npm ci` is preferred for reproducible, lock-file-based installs; the
-  // fallback to `npm install` handles edge cases where the lock file is absent
-  // or the network drops mid-install so the terminal is never left silently broken.
-  "postCreateCommand": "npm ci || npm install",
+  // postCreateCommand: runs once when the container is first created.
+  //   1. Install all npm workspace dependencies (npm ci preferred; npm install
+  //      as fallback for absent/corrupt lock file).
+  //   2. Install the exact browser binaries required by the package.json version
+  //      of Playwright. --with-deps ensures OS-level libraries are also present.
+  //      This step is necessary when the image's bundled browsers lag behind the
+  //      package version (e.g. alpha builds).
+  "postCreateCommand": "(npm ci || npm install) && npx playwright install --with-deps chromium firefox webkit",
+
+  // postStartCommand: runs every time the container starts (including restarts).
+  //   Rebuilds all workspace packages so compiled output (dist/) stays in sync
+  //   with any source changes that landed while the container was stopped.
+  "postStartCommand": "npm run build",
 
   // ─── Forwarded Ports ─────────────────────────────────────────────────────
   "forwardPorts": [

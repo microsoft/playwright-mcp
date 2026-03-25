@@ -22,13 +22,24 @@ test('browser_take_screenshot', async ({ client, server }) => {
     arguments: { url: server.HELLO_WORLD },
   });
 
-  const response = await client.callTool({ name: 'browser_take_screenshot' });
+  expect(await client.callTool({ name: 'browser_take_screenshot' })).toHaveResponse({
+    result: expect.stringContaining('Screenshot'),
+    attachments: expect.arrayContaining([
+      expect.objectContaining({ type: 'image' }),
+    ]),
+  });
+});
 
-  // The first content item is the text with result and code sections.
-  expect(response.content[0].type).toBe('text');
-  expect((response.content[0] as { type: string; text: string }).text).toContain('Screenshot');
+test('browser_take_screenshot with imageResponses omit', async ({ startClient, server }) => {
+  const { client } = await startClient({ config: { imageResponses: 'omit' } });
 
-  // The second content item is the image attachment.
-  expect(response.content).toHaveLength(2);
-  expect(response.content[1].type).toBe('image');
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  });
+
+  expect(await client.callTool({ name: 'browser_take_screenshot' })).toHaveResponse({
+    result: expect.stringContaining('Screenshot'),
+    attachments: [],
+  });
 });

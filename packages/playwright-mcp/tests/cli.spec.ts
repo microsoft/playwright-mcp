@@ -20,6 +20,6 @@ import { test, expect } from './fixtures';
 const cliPath = path.resolve(__dirname, '..', 'cli.js');
 
 test('install-browser --help', async () => {
-  const output = child_process.execSync(`node ${cliPath} install-browser --help`, { encoding: 'utf-8' });
+  const output = child_process.execSync(`node ${cliPath} install-browser --help`, { encoding: 'utf-8', timeout: 30_000 });
   expect(output).toContain('install');
 });

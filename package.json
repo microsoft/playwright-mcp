@@ -4,7 +4,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+    "url": "git+https://github.com/MrGDCrazy/playwright-mcp.git"
   },
   "homepage": "https://playwright.dev",
   "author": {
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@playwright/test": "1.59.0-alpha-1773608981000",
-    "@types/node": "^24.3.0"
+    "@types/node": "^24.3.0",
+    "ajv": "^8.18.0"
   }
 }

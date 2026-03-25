@@ -25,7 +25,7 @@ export default defineConfig<TestOptions>({
   retries: process.env.CI ? 2 : 0,
   timeout: 60_000,
   workers: process.env.CI ? 2 : undefined,
-  reporter: 'list',
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   projects: [
     { name: 'chrome' },
     { name: 'firefox', use: { mcpBrowser: 'firefox' } },

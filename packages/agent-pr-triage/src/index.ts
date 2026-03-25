@@ -5,17 +5,26 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ToolArgs = Record<string, unknown>;
+type ToolResult = { content: Array<{ type: string; text: string }> };
+
+/**
+ * A handler receives the validated arguments for one tool and returns a
+ * content array. Adding a new tool means adding a new entry here — the
+ * dispatch logic does not need to change (Open/Closed Principle).
+ */
+type ToolHandler = (args: ToolArgs) => ToolResult;
+
+// ─── Server ──────────────────────────────────────────────────────────────────
+
 const server = new Server(
-  {
-    name: "agent-pr-triage",
-    version: "0.0.1",
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
+  { name: "agent-pr-triage", version: "0.0.1" },
+  { capabilities: { tools: {} } }
 );
+
+// ─── Tool definitions ─────────────────────────────────────────────────────────
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
@@ -47,40 +56,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   ],
 }));
 
+// ─── Tool handlers ────────────────────────────────────────────────────────────
+
+const toolHandlers: Record<string, ToolHandler> = {
+  triage_pr: (_args) => {
+    throw new Error("Not implemented: triage_pr requires a real GitHub integration");
+  },
+
+  handoff_to_browser: (_args) => {
+    throw new Error("Not implemented: handoff_to_browser requires a real agent runtime");
+  },
+};
+
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-
-  switch (name) {
-    case "triage_pr": {
-      const pr_id = args?.pr_id;
-      return {
-        content: [
-          {
-            type: "text",
-            text: `PR #${pr_id} triaged. Confidence: 0.95. Recommended action: Auto-merge after CI passes.`,
-          },
-        ],
-      };
-    }
-    case "handoff_to_browser": {
-      const { pr_id, task, context } = args as any;
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({
-              target: "agent-browser",
-              task,
-              context: { ...context, pr_id },
-            }),
-          },
-        ],
-      };
-    }
-    default:
-      throw new Error(`Unknown tool: ${name}`);
-  }
+  const handler = toolHandlers[name];
+  if (!handler)
+    throw new Error(`Unknown tool: ${name}`);
+  return handler((args ?? {}) as ToolArgs);
 });
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
 
 async function main() {
   const transport = new StdioServerTransport();

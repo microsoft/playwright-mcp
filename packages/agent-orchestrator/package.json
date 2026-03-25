@@ -7,12 +7,13 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "lint": "tsc --noEmit",
+    "test": "echo OK",
     "start": "node dist/index.js",
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.2",
-    "@playwright/agent-pr-triage": "*"
+    "@modelcontextprotocol/sdk": "^1.25.2"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

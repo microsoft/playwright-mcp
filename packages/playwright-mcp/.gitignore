@@ -1,3 +1,5 @@
 README.md
 LICENSE
 .playwright-mcp/
+# Screenshots produced by browser_take_screenshot during development/testing
+page-*.png

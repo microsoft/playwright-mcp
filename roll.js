@@ -3,7 +3,8 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 function copyConfig() {
-  const src = path.join(__dirname, '..', 'playwright', 'packages', 'playwright-core', 'src', 'tools', 'mcp', 'config.d.ts');
+  const playwrightSrc = process.env.PLAYWRIGHT_SRC_DIR || path.join(__dirname, '..', 'playwright');
+  const src = path.join(playwrightSrc, 'packages', 'playwright-core', 'src', 'tools', 'mcp', 'config.d.ts');
   const dst = path.join(__dirname, 'packages', 'playwright-mcp', 'config.d.ts');
   let content = fs.readFileSync(src, 'utf-8');
   content = content.replace(
