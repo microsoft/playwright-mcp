@@ -31,6 +31,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-15, windows-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
     - uses: actions/checkout@v4
     - name: Use Node.js 20
@@ -59,6 +60,7 @@ jobs:
 
   test_mcp_docker:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
     - uses: actions/checkout@v4
     - name: Use Node.js 20

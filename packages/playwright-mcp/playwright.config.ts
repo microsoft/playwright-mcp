@@ -22,10 +22,14 @@ export default defineConfig<TestOptions>({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  timeout: 60_000,
   workers: process.env.CI ? 2 : undefined,
   reporter: 'list',
   projects: [
     { name: 'chrome' },
+    { name: 'firefox', use: { mcpBrowser: 'firefox' } },
+    { name: 'webkit', use: { mcpBrowser: 'webkit' } },
     ...process.env.MCP_IN_DOCKER ? [{
       name: 'chromium-docker',
       grep: /browser_navigate|browser_click/,

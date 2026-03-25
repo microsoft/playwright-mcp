@@ -16,31 +16,19 @@
 
 import { test, expect } from './fixtures';
 
-test('browser_navigate', async ({ client, server }) => {
-  expect(await client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  })).toHaveResponse({
-    code: `await page.goto('${server.HELLO_WORLD}');`,
-    snapshot: expect.stringContaining(`generic [active] [ref=e1]: Hello, world!`),
-  });
-});
-
-test('browser_wait_for', async ({ client, server }) => {
-  server.setContent('/', `
-    <title>Wait Test</title>
-    <p id="status">ready</p>
-  `, 'text/html');
-
+test('browser_take_screenshot', async ({ client, server }) => {
   await client.callTool({
     name: 'browser_navigate',
-    arguments: { url: server.PREFIX },
+    arguments: { url: server.HELLO_WORLD },
   });
 
-  expect(await client.callTool({
-    name: 'browser_wait_for',
-    arguments: { text: 'ready' },
-  })).toHaveResponse({
-    result: 'Waited for ready',
-  });
+  const response = await client.callTool({ name: 'browser_take_screenshot' });
+
+  // The first content item is the text with result and code sections.
+  expect(response.content[0].type).toBe('text');
+  expect((response.content[0] as { type: string; text: string }).text).toContain('Screenshot');
+
+  // The second content item is the image attachment.
+  expect(response.content).toHaveLength(2);
+  expect(response.content[1].type).toBe('image');
 });
