@@ -1,0 +1,21 @@
+{
+  "name": "@playwright/mcp-orchestration-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Production-grade MCP orchestration engine for multi-agent routing and task lifecycle management",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "tsc --noEmit",
+    "test": "node -e \"console.log('No tests wired yet for @playwright/mcp-orchestration-engine')\"",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
