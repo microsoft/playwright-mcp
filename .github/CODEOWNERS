@@ -1,0 +1,21 @@
+# Default owners
+* @MrGDCrazy
+
+# CI/CD and release automation
+/.github/ @MrGDCrazy
+
+# Core MCP server
+/packages/playwright-mcp/ @MrGDCrazy
+
+# Extension bridge
+/packages/extension/ @MrGDCrazy
+
+# Custom agent packages
+/packages/agent-orchestrator/ @MrGDCrazy
+/packages/agent-pr-triage/ @MrGDCrazy
+
+# Runtime and workspace infra
+/Dockerfile @MrGDCrazy
+/.devcontainer/ @MrGDCrazy
+/package.json @MrGDCrazy
+/package-lock.json @MrGDCrazy
