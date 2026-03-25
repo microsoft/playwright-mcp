@@ -1,0 +1,19 @@
+{
+  "name": "@playwright/agent-pr-triage",
+  "version": "0.0.1",
+  "private": true,
+  "description": "PR Triage Patch Agent for multi-agent system",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
