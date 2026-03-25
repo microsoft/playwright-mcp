@@ -1,21 +1,110 @@
 {
   "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
-  "name": "Playwright",
+
+  // Human-readable name shown in VS Code / Codespaces UI
+  "name": "Playwright MCP",
+
+  // Official Playwright image ships with all browser system dependencies and
+  // the `pwuser` non-root account pre-configured, eliminating the need for a
+  // custom Dockerfile and keeping startup fast.
   "image": "mcr.microsoft.com/playwright:v1.58.2-noble",
+
+  // Required so Chromium's sandbox can open /dev/shm and use user namespaces
+  // inside the container – without this Playwright tests fail to launch.
   "privileged": true,
+
+  // Ensures a proper PID 1 (tini) so signals and child process reaping work
+  // correctly, which matters when running long-lived playwright-mcp processes.
   "init": true,
+
+  // Run as the least-privileged user that the Playwright image provides.
   "remoteUser": "pwuser",
+
+  // ─── Dev Container Features ─────────────────────────────────────────────
+  // Only features that add genuine value beyond what the base image already
+  // provides are included here.
   "features": {
+    // Provides a lightweight XFCE desktop streamed via noVNC on port 6080 so
+    // you can watch headed Playwright runs without a local display.
     "ghcr.io/devcontainers/features/desktop-lite:1": {},
+
+    // Adds `gh` CLI for branch/PR/issue workflows directly from the terminal.
     "ghcr.io/devcontainers/features/github-cli:1": {},
+
+    // Mounts the host Docker socket so you can build/run the repo's Docker
+    // image (npm run docker-build / docker-run) without Docker-in-Docker overhead.
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
   },
+
+  // ─── VS Code Customisations ──────────────────────────────────────────────
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // First-class Playwright support: test explorer, run/debug individual
+        // tests, trace viewer integration – essential for this repo.
+        "ms-playwright.playwright",
+
+        // TypeScript language service; the repo is a TypeScript monorepo and
+        // the Playwright image may not ship the exact TS version needed.
+        "ms-vscode.vscode-typescript-next",
+
+        // ESLint in-editor feedback (config can be added later; extension is
+        // harmless without one and saves a reinstall when config lands).
+        "dbaeumer.vscode-eslint",
+
+        // Prettier for consistent formatting across TS/JSON/Markdown files.
+        "esbenp.prettier-vscode",
+
+        // Docker extension for inspecting images and containers built via the
+        // repo's npm run docker-build / docker-run scripts.
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        // Format on save keeps code tidy without requiring a manual step.
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+        // Use the workspace's own TypeScript installation rather than VS Code's
+        // bundled one, ensuring consistent type-checking with `npm run lint`.
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true,
+
+        // Always launch a fresh browser per test run so tests stay isolated.
+        "playwright.reuseBrowser": false,
+
+        // Surface the trace viewer automatically on failure – very useful for
+        // debugging flaky or failing Playwright tests in Codespaces.
+        "playwright.showTrace": true
+      }
+    }
+  },
+
+  // ─── Lifecycle Commands ──────────────────────────────────────────────────
+  // Install all npm workspace dependencies once the container is created.
+  // `npm ci` is preferred for reproducible, lock-file-based installs; the
+  // fallback to `npm install` handles edge cases where the lock file is absent
+  // or the network drops mid-install so the terminal is never left silently broken.
+  "postCreateCommand": "npm ci || npm install",
+
+  // ─── Forwarded Ports ─────────────────────────────────────────────────────
   "forwardPorts": [
-    6080
+    // noVNC web desktop – watch headed browser runs in your local browser.
+    6080,
+    // HTTP transport port for the playwright-mcp server
+    // (npm run docker-run maps this same port from the production container).
+    8080
   ],
   "portsAttributes": {
     "6080": {
-      "label": "noVNC"
+      "label": "noVNC Desktop",
+      // Notify rather than open automatically; the desktop is only useful when
+      // you explicitly want to watch a headed run.
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "MCP Server (HTTP)",
+      // Notify so the port is visible in the Ports panel without hijacking focus.
+      "onAutoForward": "notify"
     }
   }
 }
