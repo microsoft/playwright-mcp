@@ -1,0 +1,20 @@
+{
+  "name": "@playwright/agent-orchestrator",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Agent Orchestrator & Routing Manager for multi-agent system",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@playwright/agent-pr-triage": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
