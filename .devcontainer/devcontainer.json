@@ -7,6 +7,9 @@
   // Official Playwright image ships with all browser system dependencies and
   // the `pwuser` non-root account pre-configured, eliminating the need for a
   // custom Dockerfile and keeping startup fast.
+  // NOTE: Keep this version in sync with the `playwright` dependency in
+  // packages/playwright-mcp/package.json. When it's behind (e.g. on an alpha),
+  // postCreateCommand re-installs the exact browsers needed.
   "image": "mcr.microsoft.com/playwright:v1.58.2-noble",
 
   // Required so Chromium's sandbox can open /dev/shm and use user namespaces
@@ -80,11 +83,13 @@
   },
 
   // ─── Lifecycle Commands ──────────────────────────────────────────────────
-  // Install all npm workspace dependencies once the container is created.
-  // `npm ci` is preferred for reproducible, lock-file-based installs; the
-  // fallback to `npm install` handles edge cases where the lock file is absent
-  // or the network drops mid-install so the terminal is never left silently broken.
-  "postCreateCommand": "npm ci || npm install",
+  // 1. Install all npm workspace dependencies (npm ci preferred; npm install as
+  //    fallback for absent/corrupt lock file).
+  // 2. Install the exact browser binaries required by the package.json version of
+  //    Playwright. This is necessary when the image's bundled browsers are older
+  //    than what the code expects (e.g. alpha builds). --with-deps ensures system
+  //    libraries (libnss, libgbm, etc.) are also present.
+  "postCreateCommand": "(npm ci || npm install) && npx playwright install --with-deps chromium firefox webkit",
 
   // ─── Forwarded Ports ─────────────────────────────────────────────────────
   "forwardPorts": [
