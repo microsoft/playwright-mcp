@@ -82,14 +82,29 @@
     }
   },
 
+  // ─── Environment Variables ───────────────────────────────────────────────
+  // NODE_ENV=development disables any production-only code paths.
+  // PWMCP_DEBUG=1 enables the pw:mcp:* debug namespace so MCP protocol
+  // traffic is visible in the terminal without a separate DEBUG= prefix.
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "PWMCP_DEBUG": "1"
+  },
+
   // ─── Lifecycle Commands ──────────────────────────────────────────────────
-  // 1. Install all npm workspace dependencies (npm ci preferred; npm install as
-  //    fallback for absent/corrupt lock file).
-  // 2. Install the exact browser binaries required by the package.json version of
-  //    Playwright. This is necessary when the image's bundled browsers are older
-  //    than what the code expects (e.g. alpha builds). --with-deps ensures system
-  //    libraries (libnss, libgbm, etc.) are also present.
+  // postCreateCommand: runs once when the container is first created.
+  //   1. Install all npm workspace dependencies (npm ci preferred; npm install
+  //      as fallback for absent/corrupt lock file).
+  //   2. Install the exact browser binaries required by the package.json version
+  //      of Playwright. --with-deps ensures OS-level libraries are also present.
+  //      This step is necessary when the image's bundled browsers lag behind the
+  //      package version (e.g. alpha builds).
   "postCreateCommand": "(npm ci || npm install) && npx playwright install --with-deps chromium firefox webkit",
+
+  // postStartCommand: runs every time the container starts (including restarts).
+  //   Rebuilds all workspace packages so compiled output (dist/) stays in sync
+  //   with any source changes that landed while the container was stopped.
+  "postStartCommand": "npm run build",
 
   // ─── Forwarded Ports ─────────────────────────────────────────────────────
   "forwardPorts": [

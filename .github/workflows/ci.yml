@@ -54,6 +54,14 @@ jobs:
       if: matrix.os == 'macos-15'
       run: npm run test --workspace=packages/extension
       continue-on-error: true
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report-${{ matrix.os }}
+        path: packages/playwright-mcp/playwright-report/
+        retention-days: 14
+        if-no-files-found: ignore
     - name: Check test results
       if: steps.test-mcp.outcome == 'failure' || steps.test-extension.outcome == 'failure'
       run: exit 1
@@ -90,3 +98,11 @@ jobs:
       working-directory: ./packages/playwright-mcp
       env:
         MCP_IN_DOCKER: 1
+    - name: Upload Docker test report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report-docker
+        path: packages/playwright-mcp/playwright-report/
+        retention-days: 14
+        if-no-files-found: ignore
