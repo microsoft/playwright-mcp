@@ -44,3 +44,23 @@ test('browser_wait_for', async ({ client, server }) => {
     result: 'Waited for ready',
   });
 });
+
+test('browser_wait_for times out when text is absent', async ({ startClient, server }) => {
+  // Use a short action timeout so the wait fails quickly rather than blocking
+  // for the full 5 s default, keeping the test suite fast.
+  const { client } = await startClient({ config: { timeouts: { action: 1000 } } });
+
+  server.setContent('/', `<title>Empty</title><p>nothing to match here</p>`, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_wait_for',
+    arguments: { text: 'text-that-will-never-appear' },
+  })).toHaveResponse({
+    isError: true,
+  });
+});

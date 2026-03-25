@@ -60,7 +60,12 @@
 
         // Docker extension for inspecting images and containers built via the
         // repo's npm run docker-build / docker-run scripts.
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+
+        // GitHub Actions extension: syntax highlighting, schema validation,
+        // and inline linting for .github/workflows/*.yml files. Catches errors
+        // like wrong action versions or missing required inputs before pushing.
+        "github.vscode-github-actions"
       ],
       "settings": {
         // Format on save keeps code tidy without requiring a manual step.
