@@ -60,32 +60,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 // ─── Tool handlers ────────────────────────────────────────────────────────────
 
 const toolHandlers: Record<string, ToolHandler> = {
-  route_task: (args) => {
-    const agent = args["agent"] as string;
-    const task = args["task"] as string;
-    const payload = args["payload"] as Record<string, unknown> | undefined;
-    const detail = payload ? ` Payload keys: ${Object.keys(payload).join(", ")}.` : "";
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Task successfully routed to ${agent}: "${task}". Status: PENDING.${detail}`,
-        },
-      ],
-    };
+  route_task: (_args) => {
+    throw new Error("Not implemented: route_task requires a real agent dispatch runtime");
   },
 
-  request_human_review: (args) => {
-    const task_id = args["task_id"] as string;
-    const reason = args["reason"] as string;
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Human review requested for task ${task_id}. Reason: ${reason}. Gate: LOCKED.`,
-        },
-      ],
-    };
+  request_human_review: (_args) => {
+    throw new Error("Not implemented: request_human_review requires a real review queue integration");
   },
 };
 

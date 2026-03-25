@@ -15,7 +15,8 @@
  */
 
 export function debugLog(...args: unknown[]): void {
-  const enabled = true;
+  // Only emit logs for unpacked (developer) extensions; packed extensions have update_url set.
+  const enabled = !chrome.runtime.getManifest().update_url;
   if (enabled) {
     // eslint-disable-next-line no-console
     console.log('[Extension]', ...args);
@@ -33,7 +34,7 @@ type ProtocolResponse = {
   method?: string;
   params?: any;
   result?: any;
-  error?: string;
+  error?: { code: number; message: string } | string;
 };
 
 export class RelayConnection {
@@ -160,6 +161,7 @@ export class RelayConnection {
           params
       );
     }
+    throw new Error(`Unknown method: ${message.method}`);
   }
 
   private _sendError(code: number, message: string): void {

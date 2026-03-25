@@ -59,34 +59,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 // ─── Tool handlers ────────────────────────────────────────────────────────────
 
 const toolHandlers: Record<string, ToolHandler> = {
-  triage_pr: (args) => {
-    const pr_id = args["pr_id"] as number;
-    return {
-      content: [
-        {
-          type: "text",
-          text: `PR #${pr_id} triaged. Confidence: 0.95. Recommended action: Auto-merge after CI passes.`,
-        },
-      ],
-    };
+  triage_pr: (_args) => {
+    throw new Error("Not implemented: triage_pr requires a real GitHub integration");
   },
 
-  handoff_to_browser: (args) => {
-    const pr_id = args["pr_id"] as number;
-    const task = args["task"] as string;
-    const context = (args["context"] ?? {}) as Record<string, unknown>;
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify({
-            target: "agent-browser",
-            task,
-            context: { ...context, pr_id },
-          }),
-        },
-      ],
-    };
+  handoff_to_browser: (_args) => {
+    throw new Error("Not implemented: handoff_to_browser requires a real agent runtime");
   },
 };
 

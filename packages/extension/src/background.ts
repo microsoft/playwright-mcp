@@ -48,23 +48,39 @@ class TabShareExtension {
   // Promise-based message handling is not supported in Chrome: https://issues.chromium.org/issues/40753031
   private _onMessage(message: PageMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
     switch (message.type) {
-      case 'connectToMCPRelay':
-        this._connectToRelay(sender.tab!.id!, message.mcpRelayUrl).then(
+      case 'connectToMCPRelay': {
+        const selectorTabId = sender.tab?.id;
+        if (selectorTabId == null) {
+          sendResponse({ success: false, error: 'Message received outside a tab context' });
+          return false;
+        }
+        this._connectToRelay(selectorTabId, message.mcpRelayUrl).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true;
+      }
       case 'getTabs':
         this._getTabs().then(
             tabs => sendResponse({ success: true, tabs, currentTabId: sender.tab?.id }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true;
-      case 'connectToTab':
-        const tabId = message.tabId || sender.tab?.id!;
-        const windowId = message.windowId || sender.tab?.windowId!;
-        this._connectTab(sender.tab!.id!, tabId, windowId, message.mcpRelayUrl!).then(
+      case 'connectToTab': {
+        const selectorId = sender.tab?.id;
+        if (selectorId == null) {
+          sendResponse({ success: false, error: 'Message received outside a tab context' });
+          return false;
+        }
+        const tabId = message.tabId ?? sender.tab?.id;
+        const windowId = message.windowId ?? sender.tab?.windowId;
+        if (tabId == null || windowId == null) {
+          sendResponse({ success: false, error: 'Unable to determine target tab or window' });
+          return false;
+        }
+        this._connectTab(selectorId, tabId, windowId).then(
             () => sendResponse({ success: true }),
             (error: any) => sendResponse({ success: false, error: error.message }));
         return true; // Return true to indicate that the response will be sent asynchronously
+      }
       case 'getConnectionStatus':
         sendResponse({
           connectedTabId: this._connectedTabId
@@ -84,9 +100,9 @@ class TabShareExtension {
       debugLog(`Connecting to relay at ${mcpRelayUrl}`);
       const socket = new WebSocket(mcpRelayUrl);
       await new Promise<void>((resolve, reject) => {
-        socket.onopen = () => resolve();
-        socket.onerror = () => reject(new Error('WebSocket error'));
-        setTimeout(() => reject(new Error('Connection timeout')), 5000);
+        const timer = setTimeout(() => reject(new Error('Connection timeout')), 5000);
+        socket.onopen = () => { clearTimeout(timer); resolve(); };
+        socket.onerror = () => { clearTimeout(timer); reject(new Error('WebSocket error')); };
       });
 
       const connection = new RelayConnection(socket);
@@ -104,9 +120,9 @@ class TabShareExtension {
     }
   }
 
-  private async _connectTab(selectorTabId: number, tabId: number, windowId: number, mcpRelayUrl: string): Promise<void> {
+  private async _connectTab(selectorTabId: number, tabId: number, windowId: number): Promise<void> {
     try {
-      debugLog(`Connecting tab ${tabId} to relay at ${mcpRelayUrl}`);
+      debugLog(`Connecting tab ${tabId} to relay`);
       try {
         this._activeConnection?.close('Another connection is requested');
       } catch (error: any) {
@@ -170,7 +186,7 @@ class TabShareExtension {
       return;
     this._activeConnection?.close('Browser tab closed');
     this._activeConnection = undefined;
-    this._connectedTabId = null;
+    void this._setConnectedTabId(null);
   }
 
   private _onTabActivated(activeInfo: chrome.tabs.TabActiveInfo) {
@@ -194,8 +210,9 @@ class TabShareExtension {
     }
   }
 
-  private _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {
-    if (this._connectedTabId === tabId)
+  private _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, _tab: chrome.tabs.Tab) {
+    // Only restore the badge after navigation completes, not on every favicon/title change.
+    if (this._connectedTabId === tabId && changeInfo.status === 'complete')
       void this._setConnectedTabId(tabId);
   }
 
