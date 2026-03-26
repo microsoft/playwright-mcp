@@ -719,6 +719,75 @@ And then in MCP client config, set the `url` to the HTTP endpoint:
 }
 ```
 
+## Copilot CLI Extension (experimental)
+
+This repo ships `.github/extensions/playwright-mcp/extension.mjs` which registers Playwright browser automation tools directly into the running Copilot CLI session. Extensions are an experimental feature introduced in Copilot CLI v1.0.3.
+
+### Prerequisites
+
+- Node.js 18+
+- Copilot CLI v1.0.3+ with experimental mode enabled (`/experimental on`)
+- The repo must be cloned locally
+
+---
+
+### Project-level install (automatic — works when you `cd` into this repo)
+
+The extension is already at `.github/extensions/playwright-mcp/extension.mjs`. Copilot CLI discovers it automatically when you launch `copilot` from this directory. No extra steps needed.
+
+---
+
+### User-level install (works from any directory)
+
+A user-level extension lives in `~/.copilot/extensions/` and loads regardless of your working directory.
+
+**1. Create the extensions directory and copy the extension:**
+
+```bash
+mkdir -p ~/.copilot/extensions/playwright-mcp
+cp .github/extensions/playwright-mcp/extension.mjs ~/.copilot/extensions/playwright-mcp/extension.mjs
+```
+
+**2. Set the `PLAYWRIGHT_MCP_DIR` environment variable** so the extension can find the local project:
+
+```bash
+# Add to your shell profile (~/.zshrc, ~/.bashrc, etc.)
+export PLAYWRIGHT_MCP_DIR="/absolute/path/to/playwright-mcp"
+```
+
+> If this variable is not set, the extension falls back to the project-level path (only works when running Copilot CLI from inside this repo).
+
+**3. Enable extensions in Copilot CLI** (one-time):
+
+```
+/experimental on
+/extension mode augment
+```
+
+**4. Restart Copilot CLI** — the extension loads automatically. You should see:
+
+```
+● Environment loaded: ... — 1/1 extensions running
+```
+
+---
+
+### Browser modes
+
+By default the extension launches a **headless browser**. To connect to your real Chrome browser instead (preserving your logged-in sessions and cookies), install the [Playwright MCP Bridge](packages/extension/README.md) Chrome extension and set the extension token:
+
+```bash
+export PLAYWRIGHT_MCP_EXTENSION_TOKEN="<token-from-the-bridge-extension>"
+```
+
+When `PLAYWRIGHT_MCP_EXTENSION_TOKEN` is set, the Playwright MCP server will automatically use `--extension` mode to connect to your running Chrome instance via the Bridge.
+
+---
+
+### Available tools
+
+All 21 default core browser automation tools are exposed. See the [Tools](#tools) section for the full list and parameter reference.
+
 ## Security
 
 Playwright MCP is **not** a security boundary. See [MCP Security Best Practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices) for guidance on securing your deployment.
