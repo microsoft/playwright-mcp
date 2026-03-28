@@ -123,6 +123,14 @@ const test = base.extend<TestFixtures>({
   },
 });
 
+function cliEnv() {
+  return {
+    PLAYWRIGHT_SERVER_REGISTRY: test.info().outputPath('registry'),
+    PLAYWRIGHT_DAEMON_SESSION_DIR: test.info().outputPath('daemon'),
+    PLAYWRIGHT_SOCKETS_DIR: path.join(test.info().project.outputDir, 'ds', String(test.info().parallelIndex)),
+  };
+}
+
 async function runCli(
   args: string[],
   options: { mcpBrowser?: string, testInfo: any },
@@ -133,7 +141,7 @@ async function runCli(
     const testInfo = options.testInfo;
 
     // Path to the terminal CLI
-    const cliPath = path.join(__dirname, '../../../node_modules/playwright/lib/cli/client/program.js');
+    const cliPath = path.join(__dirname, '../../../node_modules/playwright-core/lib/tools/cli-client/cli.js');
 
     return new Promise<CliResult>((resolve, reject) => {
       let stdout = '';
@@ -143,9 +151,7 @@ async function runCli(
         cwd: testInfo.outputPath(),
         env: {
           ...process.env,
-          PLAYWRIGHT_DAEMON_INSTALL_DIR: testInfo.outputPath(),
-          PLAYWRIGHT_DAEMON_SESSION_DIR: testInfo.outputPath('daemon'),
-          PLAYWRIGHT_DAEMON_SOCKETS_DIR: path.join(testInfo.project.outputDir, 'daemon-sockets'),
+          ...cliEnv(),
           PLAYWRIGHT_MCP_BROWSER: options.mcpBrowser,
           PLAYWRIGHT_MCP_HEADLESS: 'false',
         },
@@ -213,8 +219,7 @@ test(`navigate with extension`, async ({ browserWithExtension, startClient, serv
   });
 
   const selectorPage = await confirmationPagePromise;
-  // For browser_navigate command, the UI shows Allow/Reject buttons instead of tab selector
-  await selectorPage.getByRole('button', { name: 'Allow' }).click();
+  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
@@ -295,8 +300,7 @@ testWithOldExtensionVersion(`works with old extension version`, async ({ browser
   });
 
   const selectorPage = await confirmationPagePromise;
-  // For browser_navigate command, the UI shows Allow/Reject buttons instead of tab selector
-  await selectorPage.getByRole('button', { name: 'Allow' }).click();
+  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
