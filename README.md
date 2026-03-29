@@ -1428,3 +1428,8 @@ http.createServer(async (req, res) => {
 
 
 <!--- End of tools generated section -->
+
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/microsoft-playwright-mcp).
+
