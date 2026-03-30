@@ -187,7 +187,9 @@ async function createTransport(args: string[], cwd: string, mcpMode: TestOptions
   stderr: Stream | null,
 }> {
   if (mcpMode === 'docker') {
-    const dockerArgs = ['run', '--rm', '-i', '--network=host', '-v', `${test.info().project.outputDir}:/app/test-results`];
+    const relCwd = path.relative(test.info().project.outputDir, cwd);
+    const dockerCwd = path.posix.join('/app/test-results', relCwd.split(path.sep).join('/'));
+    const dockerArgs = ['run', '--rm', '-i', '--network=host', '-v', `${test.info().project.outputDir}:/app/test-results`, '-w', dockerCwd];
     const transport = new StdioClientTransport({
       command: 'docker',
       args: [...dockerArgs, 'playwright-mcp-dev:latest', ...args],
