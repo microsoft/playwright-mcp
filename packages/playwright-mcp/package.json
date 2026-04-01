@@ -33,8 +33,8 @@
     }
   },
   "dependencies": {
-    "playwright": "1.59.0-alpha-1774912654000",
-    "playwright-core": "1.59.0-alpha-1774912654000"
+    "playwright": "1.60.0-alpha-1774999321000",
+    "playwright-core": "1.60.0-alpha-1774999321000"
   },
   "bin": {
     "playwright-mcp": "cli.js"
