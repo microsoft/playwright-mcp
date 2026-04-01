@@ -74,10 +74,10 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   },
 
   startClient: async ({ mcpHeadless, mcpBrowser, mcpMode, mcpArgs }, use, testInfo) => {
-    const configDir = path.dirname(test.info().config.configFile!);
     const clients: Client[] = [];
 
     await use(async options => {
+      const cwd = testInfo.outputPath();
       const args: string[] = mcpArgs ?? [];
       if (process.env.CI && process.platform === 'linux')
         args.push('--no-sandbox');
@@ -90,7 +90,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
       if (options?.config) {
         const configFile = testInfo.outputPath('config.json');
         await fs.promises.writeFile(configFile, JSON.stringify(options.config, null, 2));
-        args.push(`--config=${path.relative(configDir, configFile)}`);
+        args.push(`--config=${path.relative(cwd, configFile)}`);
       }
 
       const client = new Client({ name: options?.clientName ?? 'test', version: '1.0.0' }, options?.roots ? { capabilities: { roots: {} } } : undefined);
@@ -103,7 +103,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
           };
         });
       }
-      const { transport, stderr } = await createTransport(args, mcpMode, testInfo.outputPath('ms-playwright'), options?.extensionToken);
+      const { transport, stderr } = await createTransport(args, cwd, mcpMode, testInfo.outputPath('ms-playwright'), options?.extensionToken);
       let stderrBuffer = '';
       stderr?.on('data', data => {
         if (process.env.PWMCP_DEBUG)
@@ -182,12 +182,14 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   },
 });
 
-async function createTransport(args: string[], mcpMode: TestOptions['mcpMode'], profilesDir: string, extensionToken?: string): Promise<{
+async function createTransport(args: string[], cwd: string, mcpMode: TestOptions['mcpMode'], profilesDir: string, extensionToken?: string): Promise<{
   transport: Transport,
   stderr: Stream | null,
 }> {
   if (mcpMode === 'docker') {
-    const dockerArgs = ['run', '--rm', '-i', '--network=host', '-v', `${test.info().project.outputDir}:/app/test-results`];
+    const relCwd = path.relative(test.info().project.outputDir, cwd);
+    const dockerCwd = path.posix.join('/app/test-results', relCwd.split(path.sep).join('/'));
+    const dockerArgs = ['run', '--rm', '-i', '--network=host', '-v', `${test.info().project.outputDir}:/app/test-results`, '-w', dockerCwd];
     const transport = new StdioClientTransport({
       command: 'docker',
       args: [...dockerArgs, 'playwright-mcp-dev:latest', ...args],
@@ -201,7 +203,7 @@ async function createTransport(args: string[], mcpMode: TestOptions['mcpMode'], 
   const transport = new StdioClientTransport({
     command: 'node',
     args: [path.join(__dirname, '../cli.js'), ...args],
-    cwd: path.dirname(test.info().config.configFile!),
+    cwd,
     stderr: 'pipe',
     env: {
       ...process.env,
@@ -222,7 +224,7 @@ type Response = Awaited<ReturnType<Client['callTool']>>;
 
 export const expect = baseExpect.extend({
   toHaveResponse(response: Response, object: any) {
-    const parsed = parseResponse(response);
+    const parsed = parseResponse(response, test.info().outputPath());
     const isNot = this.isNot;
     try {
       if (isNot)
@@ -246,7 +248,7 @@ export function formatOutput(output: string): string[] {
   return output.split('\n').map(line => line.replace(/^pw:mcp:test /, '').replace(/user data dir.*/, 'user data dir').trim()).filter(Boolean);
 }
 
-function parseResponse(response: any) {
+function parseResponse(response: any, cwd: string) {
   const text = response.content[0].text;
   const sections = parseSections(text);
 
@@ -255,13 +257,26 @@ function parseResponse(response: any) {
   const code = sections.get('Ran Playwright code');
   const tabs = sections.get('Open tabs');
   const pageState = sections.get('Page state');
-  const snapshot = sections.get('Snapshot');
+  const snapshotSection = sections.get('Snapshot');
   const consoleMessages = sections.get('New console messages');
   const modalState = sections.get('Modal state');
   const downloads = sections.get('Downloads');
   const codeNoFrame = code?.replace(/^```js\n/, '').replace(/\n```$/, '');
   const isError = response.isError;
   const attachments = response.content.slice(1);
+
+  let snapshot: string | undefined;
+  if (snapshotSection) {
+    const match = snapshotSection.match(/\[Snapshot\]\(([^)]+)\)/);
+    if (match) {
+      try {
+        snapshot = fs.readFileSync(path.resolve(cwd, match[1]), 'utf-8');
+      } catch {
+      }
+    } else {
+      snapshot = snapshotSection.replace(/^```yaml\n?/, '').replace(/\n?```$/, '');
+    }
+  }
 
   return {
     error,
