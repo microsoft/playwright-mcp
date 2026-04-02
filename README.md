@@ -413,14 +413,16 @@ Persistent profile is located at the following locations and you can override it
 
 ```bash
 # Windows
-%USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-profile
+%USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-{workspace-hash}
 
 # macOS
-- ~/Library/Caches/ms-playwright/mcp-{channel}-profile
+- ~/Library/Caches/ms-playwright/mcp-{channel}-{workspace-hash}
 
 # Linux
-- ~/.cache/ms-playwright/mcp-{channel}-profile
+- ~/.cache/ms-playwright/mcp-{channel}-{workspace-hash}
 ```
+
+`{workspace-hash}` is derived from the MCP client's workspace root, so different projects get separate profiles automatically.
 
 **Isolated**
 
