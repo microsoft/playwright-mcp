@@ -3,15 +3,23 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 function copyConfig() {
-  const src = path.join(__dirname, '..', 'playwright', 'packages', 'playwright-core', 'src', 'tools', 'mcp', 'config.d.ts');
-  const dst = path.join(__dirname, 'packages', 'playwright-mcp', 'config.d.ts');
-  let content = fs.readFileSync(src, 'utf-8');
+  const mcpDir = path.join(__dirname, '..', 'playwright', 'packages', 'playwright-core', 'src', 'tools', 'mcp');
+  const dstDir = path.join(__dirname, 'packages', 'playwright-mcp');
+
+  const configSrc = path.join(mcpDir, 'config.d.ts');
+  let content = fs.readFileSync(configSrc, 'utf-8');
   content = content.replace(
     "import type * as playwright from 'playwright-core';",
     "import type * as playwright from 'playwright';"
   );
-  fs.writeFileSync(dst, content);
-  console.log(`Copied config.d.ts from ${src} to ${dst}`);
+  fs.writeFileSync(path.join(dstDir, 'config.d.ts'), content);
+  console.log(`Copied config.d.ts`);
+
+  const schemaSrc = path.join(mcpDir, 'mcp-config.schema.json');
+  if (fs.existsSync(schemaSrc)) {
+    fs.copyFileSync(schemaSrc, path.join(dstDir, 'mcp-config.schema.json'));
+    console.log(`Copied mcp-config.schema.json`);
+  }
 }
 
 function updatePlaywrightVersion(version) {

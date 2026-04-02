@@ -486,6 +486,17 @@ using the `--config` command line option:
 npx @playwright/mcp@latest --config path/to/config.json
 ```
 
+Add `$schema` to your config file for IDE autocompletion and validation:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/playwright/main/packages/playwright-core/src/tools/mcp/mcp-config.schema.json",
+  "browser": {
+    "browserName": "chromium"
+  }
+}
+```
+
 <details>
 <summary>Configuration file schema</summary>
 
