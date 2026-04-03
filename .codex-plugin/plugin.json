@@ -1,0 +1,24 @@
+{
+  "name": "playwright",
+  "version": "0.1.0",
+  "description": "Browser automation with Playwright from Codex via MCP",
+  "author": {
+    "name": "microsoft",
+    "url": "https://github.com/microsoft/playwright-mcp"
+  },
+  "homepage": "https://github.com/microsoft/playwright-mcp",
+  "repository": "https://github.com/microsoft/playwright-mcp",
+  "keywords": [
+    "mcp",
+    "codex"
+  ],
+  "mcpServers": "./.mcp.json",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Playwright MCP",
+    "shortDescription": "Browser automation with Playwright from Codex via MCP",
+    "longDescription": "Playwright MCP server. Automate Chromium, Firefox, and WebKit browsers for testing and scraping from Codex.",
+    "category": "Browser",
+    "websiteURL": "https://github.com/microsoft/playwright-mcp"
+  }
+}
