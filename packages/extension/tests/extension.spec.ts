@@ -391,10 +391,10 @@ test(`bypass connection dialog with token`, async ({ browserWithExtension, start
 });
 
 test.describe('CLI with extension', () => {
-  test('open <url> --extension', async ({ browserWithExtension, cli, server }, testInfo) => {
+  test('attach <url> --extension', async ({ browserWithExtension, cli, server }, testInfo) => {
     const browserContext = await browserWithExtension.launch();
 
-    // Write config file with userDataDir 
+    // Write config file with userDataDir
     const configPath = testInfo.outputPath('cli-config.json');
     await fs.writeFile(configPath, JSON.stringify({
       browser: {
@@ -407,7 +407,7 @@ test.describe('CLI with extension', () => {
     });
 
     // Start the CLI command in the background
-    const cliPromise = cli('open', server.HELLO_WORLD, '--extension', `--config=cli-config.json`);
+    const cliPromise = cli('attach', '--extension', `--config=cli-config.json`);
 
     // Wait for the confirmation page to appear
     const confirmationPage = await confirmationPagePromise;
@@ -415,12 +415,21 @@ test.describe('CLI with extension', () => {
     // Click the Connect button
     await confirmationPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
 
-    // Wait for the CLI command to complete
-    const { output } = await cliPromise;
+    {
+      // Wait for the CLI command to complete
+      const { output } = await cliPromise;
+      // Verify the output
+      expect(output).toContain(`### Page`);
+      expect(output).toContain(`- Page URL: chrome-extension://mmlmfjhmonkocbjadbfplnigmagldckm/connect.html?`);
+      expect(output).toContain(`- Page Title: Playwright MCP extension`);
+    }
 
-    // Verify the output
-    expect(output).toContain(`### Page`);
-    expect(output).toContain(`- Page URL: ${server.HELLO_WORLD}`);
-    expect(output).toContain(`- Page Title: Title`);
+    {
+      const { output } = await cli('goto', server.HELLO_WORLD);
+      // Verify the output
+      expect(output).toContain(`### Page`);
+      expect(output).toContain(`- Page URL: ${server.HELLO_WORLD}`);
+      expect(output).toContain(`- Page Title: Title`);
+    }
   });
 });
