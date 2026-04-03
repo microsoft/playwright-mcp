@@ -1021,6 +1021,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `action` (string): Operation to perform
     - `index` (number, optional): Tab index, used for close/select. If omitted for close, current tab is closed.
+    - `url` (string, optional): URL to navigate to in the new tab, used for new.
   - Read-only: **false**
 
 </details>
