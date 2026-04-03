@@ -420,7 +420,7 @@ test.describe('CLI with extension', () => {
       const { output } = await cliPromise;
       // Verify the output
       expect(output).toContain(`### Page`);
-      expect(output).toContain(`- Page URL: chrome-extension://mmlmfjhmonkocbjadbfplnigmagldckm/connect.html?`);
+      expect(output).toContain(`- Page URL: chrome-extension://${extensionId}/connect.html?`);
       expect(output).toContain(`- Page Title: Playwright MCP extension`);
     }
 
