@@ -35,6 +35,7 @@ type PageMessage = {
 class TabShareExtension {
   private _activeConnection: RelayConnection | undefined;
   private _connectedTabId: number | null = null;
+  private _groupId: number | null = null;
   private _pendingTabSelection = new Map<number, { connection: RelayConnection, timerId?: number }>();
 
   constructor() {
@@ -96,6 +97,7 @@ class TabShareExtension {
         // TODO: show error in the selector tab?
       };
       this._pendingTabSelection.set(selectorTabId, { connection });
+      await this._addTabToGroup(selectorTabId);
       debugLog(`Connected to MCP relay`);
     } catch (error: any) {
       const message = `Failed to connect to MCP relay: ${error.message}`;
@@ -124,10 +126,12 @@ class TabShareExtension {
         debugLog('MCP connection closed');
         this._activeConnection = undefined;
         void this._setConnectedTabId(null);
+        chrome.tabs.ungroup([tabId]).catch(() => {});
       };
 
       await Promise.all([
         this._setConnectedTabId(tabId),
+        this._addTabToGroup(tabId),
         chrome.tabs.update(tabId, { active: true }),
         chrome.windows.update(windowId, { focused: true }),
       ]);
@@ -204,11 +208,31 @@ class TabShareExtension {
     return tabs.filter(tab => tab.url && !['chrome:', 'edge:', 'devtools:'].some(scheme => tab.url!.startsWith(scheme)));
   }
 
+  private async _addTabToGroup(tabId: number): Promise<void> {
+    try {
+      if (this._groupId !== null) {
+        try {
+          await chrome.tabs.group({ groupId: this._groupId, tabIds: [tabId] });
+          await chrome.tabGroups.update(this._groupId, { color: 'green', title: 'Playwright' });
+          return;
+        } catch {
+          this._groupId = null;
+        }
+      }
+      this._groupId = await chrome.tabs.group({ tabIds: [tabId] });
+      await chrome.tabGroups.update(this._groupId, { color: 'green', title: 'Playwright' });
+    } catch (error: any) {
+      debugLog('Error adding tab to group:', error);
+    }
+  }
+
   private async _onActionClicked(): Promise<void> {
-    await chrome.tabs.create({
+    const tab = await chrome.tabs.create({
       url: chrome.runtime.getURL('status.html'),
       active: true
     });
+    if (tab.id)
+      await this._addTabToGroup(tab.id);
   }
 
   private async _disconnect(): Promise<void> {
