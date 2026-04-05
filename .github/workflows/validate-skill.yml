@@ -1,0 +1,32 @@
+name: Validate Skill
+
+on:
+  pull_request:
+    paths:
+      - 'SKILL.md'
+      - 'skill.json'
+  push:
+    branches:
+      - main
+    paths:
+      - 'SKILL.md'
+      - 'skill.json'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate skill definition
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Validate skill
+        uses: hashgraph-online/skill-publish@v1
+        with:
+          mode: validate
+          skill-dir: .
