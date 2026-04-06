@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Playwright MCP Bridge",
-  "version": "0.0.70",
+  "version": "0.1.0",
   "description": "Share browser tabs with Playwright MCP server",
   "permissions": [
     "debugger",
