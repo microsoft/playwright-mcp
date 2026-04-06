@@ -230,12 +230,12 @@ const ConnectApp: React.FC = () => {
 };
 
 const VersionMismatchError: React.FC<{ extensionVersion: string }> = ({ extensionVersion }) => {
-  const readmeUrl = 'https://github.com/microsoft/playwright-mcp/blob/main/extension/README.md';
-  const latestReleaseUrl = 'https://github.com/microsoft/playwright-mcp/releases/latest';
+  const readmeUrl = 'https://github.com/microsoft/playwright-mcp/blob/main/packages/extension/README.md';
+  const chromeWebStoreUrl = 'https://chromewebstore.google.com/detail/playwright-mcp-bridge/mmlmfjhmonkocbjadbfplnigmagldckm';
   return (
     <div>
       Playwright MCP version trying to connect requires newer extension version (current version: {extensionVersion}).{' '}
-      <a href={latestReleaseUrl}>Click here</a> to download latest version of the extension, then drag and drop it into the Chrome Extensions page.{' '}
+      Update <a href={chromeWebStoreUrl} target='_blank' rel='noopener noreferrer'>Playwright MCP Bridge</a> from the Chrome Web Store to the latest version.{' '}
       See <a href={readmeUrl} target='_blank' rel='noopener noreferrer'>installation instructions</a> for more details.
     </div>
   );
