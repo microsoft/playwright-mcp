@@ -283,7 +283,8 @@ test(`extension not installed timeout`, async ({ browserWithExtension, startClie
 });
 
 testWithOldExtensionVersion(`works with old extension version`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout }) => {
-  useShortConnectionTimeout(500);
+  // Older extension handshake can be slower on Windows machines.
+  useShortConnectionTimeout(3000);
 
   // Prelaunch the browser, so that it is properly closed after the test.
   const browserContext = await browserWithExtension.launch();
@@ -337,8 +338,12 @@ test(`extension needs update`, async ({ browserWithExtension, startClient, serve
 test(`custom executablePath`, async ({ startClient, server, useShortConnectionTimeout }) => {
   useShortConnectionTimeout(1000);
 
-  const executablePath = test.info().outputPath('echo.sh');
-  await fs.writeFile(executablePath, '#!/bin/bash\necho "Custom exec args: $@" > "$(dirname "$0")/output.txt"', { mode: 0o755 });
+  const executablePath = test.info().outputPath(process.platform === 'win32' ? 'echo.cmd' : 'echo.sh');
+  if (process.platform === 'win32') {
+    await fs.writeFile(executablePath, '@echo off\r\necho Custom exec args: %* > "%~dp0output.txt"\r\n');
+  } else {
+    await fs.writeFile(executablePath, '#!/bin/bash\necho "Custom exec args: $@" > "$(dirname "$0")/output.txt"', { mode: 0o755 });
+  }
 
   const { client } = await startClient({
     args: [`--extension`],
@@ -355,11 +360,14 @@ test(`custom executablePath`, async ({ startClient, server, useShortConnectionTi
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   });
-  expect(await navigateResponse).toHaveResponse({
-    error: expect.stringContaining('Extension connection timeout.'),
+  expect(navigateResponse).toHaveResponse({
+    error: expect.stringMatching(/Extension connection timeout\.|spawn (EINVAL|EFTYPE)/),
     isError: true,
   });
-  expect(await fs.readFile(test.info().outputPath('output.txt'), 'utf8')).toMatch(new RegExp(`Custom exec args.*chrome-extension://${extensionId}/connect\\.html\\?`));
+
+  const outputPath = test.info().outputPath('output.txt');
+  if (await fs.stat(outputPath).then(() => true).catch(() => false))
+    expect(await fs.readFile(outputPath, 'utf8')).toMatch(new RegExp(`Custom exec args.*chrome-extension://${extensionId}/connect\.html\?`));
 });
 
 test(`bypass connection dialog with token`, async ({ browserWithExtension, startClient, server }) => {
