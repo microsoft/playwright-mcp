@@ -19,7 +19,8 @@
     "test": "playwright test"
   },
   "devDependencies": {
-    "@playwright/mcp": "0.0.70"
+    "@playwright/mcp": "0.0.70",
+    "@playwright/cli": "0.1.6"
   },
   "dependencies": {
     "@playwright/test": "^1.59.1"

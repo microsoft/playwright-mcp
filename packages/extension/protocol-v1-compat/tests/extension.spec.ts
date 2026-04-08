@@ -15,6 +15,8 @@
  */
 
 import fs from 'fs/promises';
+import fsSync from 'fs';
+import os from 'os';
 import path from 'path';
 import { chromium } from 'playwright';
 import { spawn } from 'child_process';
@@ -57,7 +59,6 @@ const test = base.extend<TestFixtures>({
     // in the store.
     manifest.key = extensionPublicKey;
     await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
-    console.log(`Extension path: ${extensionDir}`);
     await use(extensionDir);
   },
 
@@ -125,10 +126,11 @@ const test = base.extend<TestFixtures>({
 });
 
 function cliEnv() {
+  const shortTmp = fsSync.mkdtempSync(path.join(os.tmpdir(), 'pw-mcp-v1-compat-'));
   return {
     PLAYWRIGHT_SERVER_REGISTRY: test.info().outputPath('registry'),
     PLAYWRIGHT_DAEMON_SESSION_DIR: test.info().outputPath('daemon'),
-    PLAYWRIGHT_SOCKETS_DIR: path.join(test.info().project.outputDir, 'ds', String(test.info().parallelIndex)),
+    PLAYWRIGHT_SOCKETS_DIR: path.join(shortTmp, 'ds', String(test.info().parallelIndex)),
   };
 }
 
@@ -142,8 +144,7 @@ async function runCli(
     const testInfo = options.testInfo;
 
     // Path to the terminal CLI
-    const cliPath = path.join(__dirname, '../../../node_modules/playwright-core/lib/tools/cli-client/cli.js');
-
+    const cliPath = path.join(__dirname, '../node_modules/@playwright/cli/playwright-cli.js');
     return new Promise<CliResult>((resolve, reject) => {
       let stdout = '';
       let stderr = '';
