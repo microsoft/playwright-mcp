@@ -100,14 +100,14 @@ const test = base.extend<TestFixtures>({
     await use((timeoutMs: number) => {
       process.env.PWMCP_TEST_CONNECTION_TIMEOUT = timeoutMs.toString();
     });
-    process.env.PWMCP_TEST_CONNECTION_TIMEOUT = undefined;
+    delete process.env.PWMCP_TEST_CONNECTION_TIMEOUT;
   },
 
   overrideProtocolVersion: async ({}, use) => {
     await use((version: number) => {
       process.env.PWMCP_TEST_PROTOCOL_VERSION = version.toString();
     });
-    process.env.PWMCP_TEST_PROTOCOL_VERSION = undefined;
+    delete process.env.PWMCP_TEST_PROTOCOL_VERSION;
   },
 
   cli: async ({ mcpBrowser }, use, testInfo) => {
