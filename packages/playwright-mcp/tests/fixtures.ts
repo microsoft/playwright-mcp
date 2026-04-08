@@ -207,7 +207,7 @@ async function createTransport(args: string[], cwd: string, mcpMode: TestOptions
     stderr: 'pipe',
     env: {
       ...process.env,
-      DEBUG: 'pw:mcp:test',
+      DEBUG: process.env.PWMCP_DEBUG ? 'pw:mcp*' : 'pw:mcp:test',
       DEBUG_COLORS: '0',
       DEBUG_HIDE_DATE: '1',
       PWMCP_PROFILES_DIR_FOR_TEST: profilesDir,

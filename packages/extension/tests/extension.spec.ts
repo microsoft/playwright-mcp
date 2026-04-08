@@ -226,6 +226,227 @@ test(`navigate with extension`, async ({ browserWithExtension, startClient, serv
   });
 });
 
+test(`browser_tabs new creates a new tab`, async ({ browserWithExtension, startClient, server }) => {
+  server.setContent('/second.html', '<title>Second</title><body>Second page<body>', 'text/html');
+  const browserContext = await browserWithExtension.launch();
+
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+  });
+
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  });
+
+  const selectorPage = await confirmationPagePromise;
+  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+
+  expect(await navigateResponse).toHaveResponse({
+    snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
+
+  // Now create a new tab via browser_tabs tool.
+  const newTabResponse = await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'new', url: server.PREFIX + 'second.html' },
+  });
+
+  expect(newTabResponse).toHaveResponse({
+    snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Second page`),
+  });
+
+  // Verify we have two tabs by listing.
+  const listResponse = await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'list' },
+  });
+
+  expect(listResponse).toHaveResponse({
+    result: expect.stringMatching(/- 0: \[Title\]\(.*\/hello-world\)\n- 1: \(current\) \[Second\]\(.*\/second\.html\)/),
+  });
+});
+
+test(`cmd+click opens new tab visible in tab list`, async ({ browserWithExtension, startClient, server }) => {
+  server.setContent('/link-page', '<title>LinkPage</title><body><a href="/target-page">click me</a></body>', 'text/html');
+  server.setContent('/target-page', '<title>TargetPage</title><body>Target content</body>', 'text/html');
+  const browserContext = await browserWithExtension.launch();
+
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+  });
+
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX + 'link-page' },
+  });
+
+  const selectorPage = await confirmationPagePromise;
+  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+
+  expect(await navigateResponse).toHaveResponse({
+    snapshot: expect.stringContaining(`click me`),
+  });
+
+  // Cmd+click (Meta+click) to open link in a new tab.
+  await client.callTool({
+    name: 'browser_click',
+    arguments: { element: 'click me', ref: 'e2', modifiers: ['Meta'] },
+  });
+
+  // Wait for the new tab to appear in the list.
+  await expect.poll(async () => {
+    const listResponse = await client.callTool({
+      name: 'browser_tabs',
+      arguments: { action: 'list' },
+    });
+    return (listResponse as any).content?.[0]?.text ?? '';
+  }).toContain('TargetPage');
+
+  const listResponse = await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'list' },
+  });
+
+  expect(listResponse).toHaveResponse({
+    result: expect.stringMatching(/- 0:.*\[LinkPage\].*\n- 1:.*\[TargetPage\]/),
+  });
+});
+
+test(`window.open from tracked tab auto-attaches new tab`, async ({ browserWithExtension, startClient, server }) => {
+  server.setContent('/opener-page', `<title>Opener</title><body><button onclick="window.open('${server.PREFIX}opened-page', '_blank', 'noopener')">open</button></body>`, 'text/html');
+  server.setContent('/opened-page', '<title>Opened</title><body>Opened content</body>', 'text/html');
+  const browserContext = await browserWithExtension.launch();
+
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+  });
+
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX + 'opener-page' },
+  });
+
+  const selectorPage = await confirmationPagePromise;
+  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+
+  expect(await navigateResponse).toHaveResponse({
+    snapshot: expect.stringContaining('open'),
+  });
+
+  // Click the button that calls window.open.
+  await client.callTool({
+    name: 'browser_click',
+    arguments: { element: 'open', ref: 'e2' },
+  });
+
+  // Wait for the new tab to appear in the list.
+  await expect.poll(async () => {
+    const listResponse = await client.callTool({
+      name: 'browser_tabs',
+      arguments: { action: 'list' },
+    });
+    return (listResponse as any).content?.[0]?.text ?? '';
+  }).toContain('Opened');
+
+  const listResponse = await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'list' },
+  });
+
+  expect(listResponse).toHaveResponse({
+    result: expect.stringMatching(/- 0:.*\[Opener\].*\n- 1:.*\[Opened\]/),
+  });
+});
+
+test(`browser_run_code can evaluate in a web worker`, async ({ browserWithExtension, startClient, server }) => {
+  server.setContent('/worker.js', `
+    self.onmessage = (e) => self.postMessage('echo:' + e.data);
+    self.workerName = 'mcp-worker';
+  `, 'application/javascript');
+  server.setContent('/worker-page', `
+    <title>WorkerPage</title>
+    <body>
+      <script>
+        window.__worker = new Worker('/worker.js');
+      </script>
+    </body>
+  `, 'text/html');
+
+  const browserContext = await browserWithExtension.launch();
+
+  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+  });
+
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX + 'worker-page' },
+  });
+
+  const selectorPage = await confirmationPagePromise;
+  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+
+  await navigateResponse;
+
+  const runCodeResponse = await client.callTool({
+    name: 'browser_run_code',
+    arguments: {
+      code: `async (page) => {
+        const worker = page.workers().length ? page.workers()[0] : await page.waitForEvent('worker');
+        return await worker.evaluate(() => self.workerName);
+      }`,
+    },
+  });
+
+  expect(runCodeResponse).toHaveResponse({
+    result: expect.stringContaining('mcp-worker'),
+  });
+
+  // Open a second page with its own worker via browser_tabs new and verify
+  // that worker eval works in that tab too. This exercises child CDP sessions
+  // (the worker session) on a non-first tab — the relay must route them to
+  // the correct tab rather than always falling back to the first one.
+  server.setContent('/worker2.js', `
+    self.workerName = 'mcp-worker-2';
+  `, 'application/javascript');
+  server.setContent('/worker-page-2', `
+    <title>WorkerPage2</title>
+    <body>
+      <script>
+        window.__worker = new Worker('/worker2.js');
+      </script>
+    </body>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'new', url: server.PREFIX + 'worker-page-2' },
+  });
+
+  const runCodeResponse2 = await client.callTool({
+    name: 'browser_run_code',
+    arguments: {
+      code: `async (page) => {
+        const worker = page.workers().length ? page.workers()[0] : await page.waitForEvent('worker');
+        return await worker.evaluate(() => self.workerName);
+      }`,
+    },
+  });
+
+  expect(runCodeResponse2).toHaveResponse({
+    result: expect.stringContaining('mcp-worker-2'),
+  });
+});
+
 test(`snapshot of an existing page`, async ({ browserWithExtension, startClient, server }) => {
   const browserContext = await browserWithExtension.launch();
 

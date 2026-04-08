@@ -27,7 +27,7 @@ type Status =
   | { type: 'error'; message: string }
   | { type: 'error'; versionMismatch: { extensionVersion: string; } };
 
-const SUPPORTED_PROTOCOL_VERSION = 1;
+const SUPPORTED_PROTOCOL_VERSION = 2;
 
 const ConnectApp: React.FC = () => {
   const [tabs, setTabs] = useState<TabInfo[]>([]);
@@ -36,6 +36,7 @@ const ConnectApp: React.FC = () => {
   const [showTabList, setShowTabList] = useState(true);
   const [clientInfo, setClientInfo] = useState('unknown');
   const [mcpRelayUrl, setMcpRelayUrl] = useState('');
+  const [protocolVersion, setProtocolVersion] = useState<number>(SUPPORTED_PROTOCOL_VERSION);
   const [newTab, setNewTab] = useState<boolean>(false);
 
   useEffect(() => {
@@ -76,6 +77,7 @@ const ConnectApp: React.FC = () => {
 
       const parsedVersion = parseInt(params.get('protocolVersion') ?? '', 10);
       const requiredVersion = isNaN(parsedVersion) ? 1 : parsedVersion;
+      setProtocolVersion(requiredVersion);
       if (requiredVersion > SUPPORTED_PROTOCOL_VERSION) {
         const extensionVersion = chrome.runtime.getManifest().version;
         setShowButtons(false);
@@ -121,10 +123,10 @@ const ConnectApp: React.FC = () => {
   }, []);
 
   const connectToMCPRelay = useCallback(async (mcpRelayUrl: string) => {
-    const response = await chrome.runtime.sendMessage({ type: 'connectToMCPRelay', mcpRelayUrl  });
+    const response = await chrome.runtime.sendMessage({ type: 'connectToMCPRelay', mcpRelayUrl, protocolVersion });
     if (!response.success)
       handleReject(response.error);
-  }, [handleReject]);
+  }, [handleReject, protocolVersion]);
 
   const loadTabs = useCallback(async () => {
     const response = await chrome.runtime.sendMessage({ type: 'getTabs' });
