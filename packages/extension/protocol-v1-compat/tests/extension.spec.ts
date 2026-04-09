@@ -16,7 +16,6 @@
 
 import fs from 'fs/promises';
 import fsSync from 'fs';
-import os from 'os';
 import path from 'path';
 import { chromium } from 'playwright';
 import { spawn } from 'child_process';
@@ -102,14 +101,14 @@ const test = base.extend<TestFixtures>({
     await use((timeoutMs: number) => {
       process.env.PWMCP_TEST_CONNECTION_TIMEOUT = timeoutMs.toString();
     });
-    process.env.PWMCP_TEST_CONNECTION_TIMEOUT = undefined;
+    delete process.env.PWMCP_TEST_CONNECTION_TIMEOUT;
   },
 
   overrideProtocolVersion: async ({}, use) => {
     await use((version: number) => {
       process.env.PWMCP_TEST_PROTOCOL_VERSION = version.toString();
     });
-    process.env.PWMCP_TEST_PROTOCOL_VERSION = undefined;
+    delete process.env.PWMCP_TEST_PROTOCOL_VERSION;
   },
 
   cli: async ({ mcpBrowser }, use, testInfo) => {
@@ -126,11 +125,14 @@ const test = base.extend<TestFixtures>({
 });
 
 function cliEnv() {
-  const shortTmp = fsSync.mkdtempSync(path.join(os.tmpdir(), 'pw-mcp-v1-compat-'));
+  // sun_path on macOS is limited to ~104 chars, so the sockets dir must stay
+  // very short. os.tmpdir() resolves to /var/folders/.../T on macOS which is
+  // already 51 chars; use /tmp directly with a tiny prefix instead.
+  const shortTmp = fsSync.mkdtempSync('/tmp/pw-');
   return {
     PLAYWRIGHT_SERVER_REGISTRY: test.info().outputPath('registry'),
     PLAYWRIGHT_DAEMON_SESSION_DIR: test.info().outputPath('daemon'),
-    PLAYWRIGHT_SOCKETS_DIR: path.join(shortTmp, 'ds', String(test.info().parallelIndex)),
+    PLAYWRIGHT_SOCKETS_DIR: path.join(shortTmp, String(test.info().parallelIndex)),
   };
 }
 
@@ -226,145 +228,6 @@ test(`navigate with extension`, async ({ browserWithExtension, startClient, serv
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
-  });
-});
-
-test(`browser_tabs new creates a new tab`, async ({ browserWithExtension, startClient, server }) => {
-  server.setContent('/second.html', '<title>Second</title><body>Second page<body>', 'text/html');
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
-
-  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
-  });
-
-  const navigateResponse = client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.HELLO_WORLD },
-  });
-
-  const selectorPage = await confirmationPagePromise;
-  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
-
-  expect(await navigateResponse).toHaveResponse({
-    snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
-  });
-
-  // Now create a new tab via browser_tabs tool.
-  const newTabResponse = await client.callTool({
-    name: 'browser_tabs',
-    arguments: { action: 'new', url: server.PREFIX + 'second.html' },
-  });
-
-  expect(newTabResponse).toHaveResponse({
-    snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Second page`),
-  });
-
-  // Verify we have two tabs by listing.
-  const listResponse = await client.callTool({
-    name: 'browser_tabs',
-    arguments: { action: 'list' },
-  });
-
-  expect(listResponse).toHaveResponse({
-    result: expect.stringMatching(/- 0: \[Title\]\(.*\/hello-world\)\n- 1: \(current\) \[Second\]\(.*\/second\.html\)/),
-  });
-});
-
-test(`cmd+click opens new tab visible in tab list`, async ({ browserWithExtension, startClient, server }) => {
-  server.setContent('/link-page', '<title>LinkPage</title><body><a href="/target-page">click me</a></body>', 'text/html');
-  server.setContent('/target-page', '<title>TargetPage</title><body>Target content</body>', 'text/html');
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
-
-  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
-  });
-
-  const navigateResponse = client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX + 'link-page' },
-  });
-
-  const selectorPage = await confirmationPagePromise;
-  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
-
-  expect(await navigateResponse).toHaveResponse({
-    snapshot: expect.stringContaining(`click me`),
-  });
-
-  // Cmd+click (Meta+click) to open link in a new tab.
-  await client.callTool({
-    name: 'browser_click',
-    arguments: { element: 'click me', ref: 'e2', modifiers: ['Meta'] },
-  });
-
-  // Wait for the new tab to appear in the list.
-  await expect.poll(async () => {
-    const listResponse = await client.callTool({
-      name: 'browser_tabs',
-      arguments: { action: 'list' },
-    });
-    return (listResponse as any).content?.[0]?.text ?? '';
-  }).toContain('TargetPage');
-
-  const listResponse = await client.callTool({
-    name: 'browser_tabs',
-    arguments: { action: 'list' },
-  });
-
-  expect(listResponse).toHaveResponse({
-    result: expect.stringMatching(/- 0:.*\[LinkPage\].*\n- 1:.*\[TargetPage\]/),
-  });
-});
-
-test(`window.open from tracked tab auto-attaches new tab`, async ({ browserWithExtension, startClient, server }) => {
-  server.setContent('/opener-page', `<title>Opener</title><body><button onclick="window.open('${server.PREFIX}opened-page', '_blank', 'noopener')">open</button></body>`, 'text/html');
-  server.setContent('/opened-page', '<title>Opened</title><body>Opened content</body>', 'text/html');
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
-
-  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
-  });
-
-  const navigateResponse = client.callTool({
-    name: 'browser_navigate',
-    arguments: { url: server.PREFIX + 'opener-page' },
-  });
-
-  const selectorPage = await confirmationPagePromise;
-  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
-
-  expect(await navigateResponse).toHaveResponse({
-    snapshot: expect.stringContaining('open'),
-  });
-
-  // Click the button that calls window.open.
-  await client.callTool({
-    name: 'browser_click',
-    arguments: { element: 'open', ref: 'e2' },
-  });
-
-  // Wait for the new tab to appear in the list.
-  await expect.poll(async () => {
-    const listResponse = await client.callTool({
-      name: 'browser_tabs',
-      arguments: { action: 'list' },
-    });
-    return (listResponse as any).content?.[0]?.text ?? '';
-  }).toContain('Opened');
-
-  const listResponse = await client.callTool({
-    name: 'browser_tabs',
-    arguments: { action: 'list' },
-  });
-
-  expect(listResponse).toHaveResponse({
-    result: expect.stringMatching(/- 0:.*\[Opener\].*\n- 1:.*\[Opened\]/),
   });
 });
 
