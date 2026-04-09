@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import fs from 'node:fs';
 import url from 'node:url';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -57,6 +58,40 @@ test('cdp server reuse tab', async ({ cdpServer, startClient, server }) => {
 \`\`\`yaml
 - generic [active] [ref=e1]: Hello, world!
 \`\`\``),
+  });
+});
+
+test('cdp server honors storage state for isolated contexts', async ({ cdpServer, startClient, server }, testInfo) => {
+  const storageStatePath = testInfo.outputPath('cdp-storage-state.json');
+  await fs.promises.writeFile(storageStatePath, JSON.stringify({
+    origins: [
+      {
+        origin: server.PREFIX,
+        localStorage: [{ name: 'test', value: 'session-value' }],
+      },
+    ],
+  }));
+
+  server.setContent('/', `
+    <body>
+    </body>
+    <script>
+      document.body.textContent = 'Storage: ' + localStorage.getItem('test');
+    </script>
+  `, 'text/html');
+
+  await cdpServer.start();
+  const { client } = await startClient({ args: [
+    `--cdp-endpoint=${cdpServer.endpoint}`,
+    '--isolated',
+    `--storage-state=${storageStatePath}`,
+  ] });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  })).toHaveResponse({
+    pageState: expect.stringContaining(`Storage: session-value`),
   });
 });
 
