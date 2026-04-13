@@ -856,10 +856,10 @@ http.createServer(async (req, res) => {
   - Title: Drag mouse
   - Description: Perform drag and drop between two elements
   - Parameters:
-    - `startElement` (string): Human-readable source element description used to obtain the permission to interact with the element
+    - `startElement` (string, optional): Human-readable source element description used to obtain the permission to interact with the element
     - `startRef` (string): Exact source element reference from the page snapshot
     - `startSelector` (string, optional): CSS or role selector for the source element, when ref is not available
-    - `endElement` (string): Human-readable target element description used to obtain the permission to interact with the element
+    - `endElement` (string, optional): Human-readable target element description used to obtain the permission to interact with the element
     - `endRef` (string): Exact target element reference from the page snapshot
     - `endSelector` (string, optional): CSS or role selector for the target element, when ref is not available
   - Read-only: **false**
