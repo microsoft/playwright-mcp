@@ -37,8 +37,7 @@ type CliResult = {
 type TestFixtures = {
   browserWithExtension: BrowserWithExtension,
   pathToExtension: string,
-  useShortConnectionTimeout: (timeoutMs: number) => void
-  overrideProtocolVersion: (version: number) => void
+  startExtensionClient: (env?: Record<string, string>) => Promise<{ browserContext: BrowserContext, client: Client }>,
   cli: (...args: string[]) => Promise<CliResult>;
 };
 
@@ -96,18 +95,12 @@ const test = base.extend<TestFixtures>({
     await fs.rm(userDataDir, { recursive: true, force: true }).catch(() => {});
   },
 
-  useShortConnectionTimeout: async ({}, use) => {
-    await use((timeoutMs: number) => {
-      process.env.PWMCP_TEST_CONNECTION_TIMEOUT = timeoutMs.toString();
+  startExtensionClient: async ({ browserWithExtension, startClient }, use) => {
+    await use(async (env?: Record<string, string>) => {
+      const browserContext = await browserWithExtension.launch();
+      const client = await startWithExtensionFlag(browserWithExtension, startClient, env);
+      return { browserContext, client };
     });
-    delete process.env.PWMCP_TEST_CONNECTION_TIMEOUT;
-  },
-
-  overrideProtocolVersion: async ({}, use) => {
-    await use((version: number) => {
-      process.env.PWMCP_TEST_PROTOCOL_VERSION = version.toString();
-    });
-    delete process.env.PWMCP_TEST_PROTOCOL_VERSION;
   },
 
   cli: async ({ mcpBrowser }, use, testInfo) => {
@@ -181,9 +174,10 @@ async function runCli(
   });
 }
 
-async function startWithExtensionFlag(browserWithExtension: BrowserWithExtension, startClient: StartClient): Promise<Client> {
+async function startWithExtensionFlag(browserWithExtension: BrowserWithExtension, startClient: StartClient, env?: Record<string, string>): Promise<Client> {
   const { client } = await startClient({
     args: [`--extension`],
+    env,
     config: {
       browser: {
         userDataDir: browserWithExtension.userDataDir,
@@ -204,10 +198,8 @@ const testWithOldExtensionVersion = test.extend({
   },
 });
 
-test(`navigate with extension`, async ({ browserWithExtension, startClient, server }) => {
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+test(`navigate with extension`, async ({ startExtensionClient, server }) => {
+  const { browserContext, client } = await startExtensionClient();
 
   const confirmationPagePromise = browserContext.waitForEvent('page', page => {
     return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
@@ -226,11 +218,9 @@ test(`navigate with extension`, async ({ browserWithExtension, startClient, serv
   });
 });
 
-test(`browser_tabs new creates a new tab`, async ({ browserWithExtension, startClient, server }) => {
+test(`browser_tabs new creates a new tab`, async ({ startExtensionClient, server }) => {
   server.setContent('/second.html', '<title>Second</title><body>Second page<body>', 'text/html');
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+  const { browserContext, client } = await startExtensionClient();
 
   const confirmationPagePromise = browserContext.waitForEvent('page', page => {
     return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
@@ -269,12 +259,10 @@ test(`browser_tabs new creates a new tab`, async ({ browserWithExtension, startC
   });
 });
 
-test(`cmd+click opens new tab visible in tab list`, async ({ browserWithExtension, startClient, server }) => {
+test(`cmd+click opens new tab visible in tab list`, async ({ startExtensionClient, server }) => {
   server.setContent('/link-page', '<title>LinkPage</title><body><a href="/target-page">click me</a></body>', 'text/html');
   server.setContent('/target-page', '<title>TargetPage</title><body>Target content</body>', 'text/html');
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+  const { browserContext, client } = await startExtensionClient();
 
   const confirmationPagePromise = browserContext.waitForEvent('page', page => {
     return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
@@ -317,12 +305,10 @@ test(`cmd+click opens new tab visible in tab list`, async ({ browserWithExtensio
   });
 });
 
-test(`window.open from tracked tab auto-attaches new tab`, async ({ browserWithExtension, startClient, server }) => {
+test(`window.open from tracked tab auto-attaches new tab`, async ({ startExtensionClient, server }) => {
   server.setContent('/opener-page', `<title>Opener</title><body><button onclick="window.open('${server.PREFIX}opened-page', '_blank', 'noopener')">open</button></body>`, 'text/html');
   server.setContent('/opened-page', '<title>Opened</title><body>Opened content</body>', 'text/html');
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+  const { browserContext, client } = await startExtensionClient();
 
   const confirmationPagePromise = browserContext.waitForEvent('page', page => {
     return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
@@ -365,7 +351,7 @@ test(`window.open from tracked tab auto-attaches new tab`, async ({ browserWithE
   });
 });
 
-test(`browser_run_code can evaluate in a web worker`, async ({ browserWithExtension, startClient, server }) => {
+test(`browser_run_code can evaluate in a web worker`, async ({ startExtensionClient, server }) => {
   server.setContent('/worker.js', `
     self.onmessage = (e) => self.postMessage('echo:' + e.data);
     self.workerName = 'mcp-worker';
@@ -379,9 +365,7 @@ test(`browser_run_code can evaluate in a web worker`, async ({ browserWithExtens
     </body>
   `, 'text/html');
 
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+  const { browserContext, client } = await startExtensionClient();
 
   const confirmationPagePromise = browserContext.waitForEvent('page', page => {
     return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
@@ -481,12 +465,8 @@ test(`snapshot of an existing page`, async ({ browserWithExtension, startClient,
   expect(browserContext.pages()).toHaveLength(4);
 });
 
-test(`extension not installed timeout`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout }) => {
-  useShortConnectionTimeout(100);
-
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+test(`extension not installed timeout`, async ({ startExtensionClient, server }) => {
+  const { browserContext, client } = await startExtensionClient({ PWMCP_TEST_CONNECTION_TIMEOUT: '100' });
 
   const confirmationPagePromise = browserContext.waitForEvent('page', page => {
     return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
@@ -503,13 +483,9 @@ test(`extension not installed timeout`, async ({ browserWithExtension, startClie
   await confirmationPagePromise;
 });
 
-testWithOldExtensionVersion(`works with old extension version`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout }) => {
-  useShortConnectionTimeout(500);
-
+testWithOldExtensionVersion(`works with old extension version`, async ({ startExtensionClient, server }) => {
   // Prelaunch the browser, so that it is properly closed after the test.
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+  const { browserContext, client } = await startExtensionClient({ PWMCP_TEST_CONNECTION_TIMEOUT: '500' });
 
   const confirmationPagePromise = browserContext.waitForEvent('page', page => {
     return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
@@ -528,14 +504,9 @@ testWithOldExtensionVersion(`works with old extension version`, async ({ browser
   });
 });
 
-test(`extension needs update`, async ({ browserWithExtension, startClient, server, useShortConnectionTimeout, overrideProtocolVersion }) => {
-  useShortConnectionTimeout(500);
-  overrideProtocolVersion(1000);
-
+test(`extension needs update`, async ({ startExtensionClient, server }) => {
   // Prelaunch the browser, so that it is properly closed after the test.
-  const browserContext = await browserWithExtension.launch();
-
-  const client = await startWithExtensionFlag(browserWithExtension, startClient);
+  const { browserContext, client } = await startExtensionClient({ PWMCP_TEST_CONNECTION_TIMEOUT: '500', PLAYWRIGHT_EXTENSION_PROTOCOL: '1000' });
 
   const confirmationPagePromise = browserContext.waitForEvent('page', page => {
     return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
@@ -555,14 +526,13 @@ test(`extension needs update`, async ({ browserWithExtension, startClient, serve
   });
 });
 
-test(`custom executablePath`, async ({ startClient, server, useShortConnectionTimeout }) => {
-  useShortConnectionTimeout(1000);
-
+test(`custom executablePath`, async ({ startClient, server }) => {
   const executablePath = test.info().outputPath('echo.sh');
   await fs.writeFile(executablePath, '#!/bin/bash\necho "Custom exec args: $@" > "$(dirname "$0")/output.txt"', { mode: 0o755 });
 
   const { client } = await startClient({
     args: [`--extension`],
+    env: { PWMCP_TEST_CONNECTION_TIMEOUT: '1000' },
     config: {
       browser: {
         launchOptions: {
@@ -593,11 +563,13 @@ test(`bypass connection dialog with token`, async ({ browserWithExtension, start
 
   const { client } = await startClient({
     args: [`--extension`],
-    extensionToken: value,
     config: {
       browser: {
         userDataDir: browserWithExtension.userDataDir,
       }
+    },
+    env: {
+      PLAYWRIGHT_MCP_EXTENSION_TOKEN: value,
     },
   });
 
@@ -612,9 +584,8 @@ test(`bypass connection dialog with token`, async ({ browserWithExtension, start
 });
 
 test.describe('tab grouping', () => {
-  test('connect page is added to green Playwright group on relay connect', async ({ browserWithExtension, startClient, server }) => {
-    const browserContext = await browserWithExtension.launch();
-    const client = await startWithExtensionFlag(browserWithExtension, startClient);
+  test('connect page is added to green Playwright group on relay connect', async ({ startExtensionClient, server }) => {
+    const { browserContext, client } = await startExtensionClient();
 
     const connectPagePromise = browserContext.waitForEvent('page', page =>
       page.url().startsWith(`chrome-extension://${extensionId}/connect.html`)

@@ -47,7 +47,7 @@ export type StartClient = (options?: {
   config?: Config,
   roots?: { name: string, uri: string }[],
   rootsResponseDelay?: number,
-  extensionToken?: string,
+  env?: Record<string, string>;
 }) => Promise<{ client: Client, stderr: () => string }>;
 
 
@@ -104,7 +104,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
           };
         });
       }
-      const { transport, stderr } = await createTransport(args, cwd, mcpMode, testInfo.outputPath('ms-playwright'), options?.extensionToken);
+      const { transport, stderr } = await createTransport(args, cwd, mcpMode, testInfo.outputPath('ms-playwright'), options?.env ?? {});
       let stderrBuffer = '';
       stderr?.on('data', data => {
         if (process.env.PWMCP_DEBUG)
@@ -183,7 +183,7 @@ export const test = baseTest.extend<TestFixtures & TestOptions, WorkerFixtures>(
   },
 });
 
-async function createTransport(args: string[], cwd: string, mcpMode: TestOptions['mcpMode'], profilesDir: string, extensionToken?: string): Promise<{
+async function createTransport(args: string[], cwd: string, mcpMode: TestOptions['mcpMode'], profilesDir: string, env: Record<string, string>): Promise<{
   transport: Transport,
   stderr: Stream | null,
 }> {
@@ -202,7 +202,7 @@ async function createTransport(args: string[], cwd: string, mcpMode: TestOptions
       DEBUG_COLORS: '0',
       DEBUG_HIDE_DATE: '1',
       PWMCP_PROFILES_DIR_FOR_TEST: profilesDir,
-      ...(extensionToken ? { PLAYWRIGHT_MCP_EXTENSION_TOKEN: extensionToken } : {}),
+      ...env,
     },
   });
   return {
