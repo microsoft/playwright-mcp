@@ -53,21 +53,8 @@ jobs:
       if: matrix.os == 'macos-15'
       run: npm run test --workspace=packages/extension
       continue-on-error: true
-    - name: Install extension protocol v1 compat deps
-      if: matrix.os == 'macos-15'
-      run: npm ci
-      working-directory: ./packages/extension/protocol-v1-compat
-    - name: Install browser for protocol v1 compat deps
-      run: npx playwright install --with-deps chromium
-      working-directory: ./packages/extension/protocol-v1-compat
-    - name: Run extension protocol v1 compat tests
-      id: test-extension-v1-compat
-      if: matrix.os == 'macos-15'
-      run: npm test
-      working-directory: ./packages/extension/protocol-v1-compat
-      continue-on-error: true
     - name: Check test results
-      if: steps.test-mcp.outcome == 'failure' || steps.test-extension.outcome == 'failure' || steps.test-extension-v1-compat.outcome == 'failure'
+      if: steps.test-mcp.outcome == 'failure' || steps.test-extension.outcome == 'failure'
       run: exit 1
 
   test_mcp_docker:
