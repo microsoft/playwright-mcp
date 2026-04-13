@@ -17,8 +17,9 @@
 import { defineConfig } from '@playwright/test';
 
 import type { TestOptions } from '../playwright-mcp/tests/fixtures';
+import type { ExtensionTestOptions } from './tests/extension-fixtures';
 
-export default defineConfig<TestOptions>({
+export default defineConfig<TestOptions & ExtensionTestOptions>({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -26,6 +27,7 @@ export default defineConfig<TestOptions>({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   projects: [
-    { name: 'chromium', use: { mcpBrowser: 'chromium' } },
+    { name: 'chromium', use: { mcpBrowser: 'chromium', protocolVersion: 2 } },
+    { name: 'chromium (legacy v1)', use: { mcpBrowser: 'chromium', protocolVersion: 1 } },
   ],
 });

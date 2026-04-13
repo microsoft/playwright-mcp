@@ -37,7 +37,25 @@ test(`navigate with extension`, async ({ startExtensionClient, server }) => {
   });
 });
 
-test(`browser_tabs new creates a new tab`, async ({ startExtensionClient, server }) => {
+test(`connect.html protocolVersion search param matches fixture option`, async ({ startExtensionClient, server, protocolVersion }) => {
+  const { browserContext, client } = await startExtensionClient();
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+  });
+
+  client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  }).catch(() => {});
+
+  const selectorPage = await confirmationPagePromise;
+  const url = new URL(selectorPage.url());
+  expect(url.searchParams.get('protocolVersion')).toBe(String(protocolVersion));
+});
+
+test(`browser_tabs new creates a new tab`, async ({ startExtensionClient, server, protocolVersion }) => {
+  test.skip(protocolVersion === 1, 'Multi-tab not supported in protocol v1');
   server.setContent('/second.html', '<title>Second</title><body>Second page<body>', 'text/html');
   const { browserContext, client } = await startExtensionClient();
 
@@ -78,7 +96,8 @@ test(`browser_tabs new creates a new tab`, async ({ startExtensionClient, server
   });
 });
 
-test(`cmd+click opens new tab visible in tab list`, async ({ startExtensionClient, server }) => {
+test(`cmd+click opens new tab visible in tab list`, async ({ startExtensionClient, server, protocolVersion }) => {
+  test.skip(protocolVersion === 1, 'Multi-tab not supported in protocol v1');
   server.setContent('/link-page', '<title>LinkPage</title><body><a href="/target-page">click me</a></body>', 'text/html');
   server.setContent('/target-page', '<title>TargetPage</title><body>Target content</body>', 'text/html');
   const { browserContext, client } = await startExtensionClient();
@@ -124,7 +143,8 @@ test(`cmd+click opens new tab visible in tab list`, async ({ startExtensionClien
   });
 });
 
-test(`window.open from tracked tab auto-attaches new tab`, async ({ startExtensionClient, server }) => {
+test(`window.open from tracked tab auto-attaches new tab`, async ({ startExtensionClient, server, protocolVersion }) => {
+  test.skip(protocolVersion === 1, 'Multi-tab not supported in protocol v1');
   server.setContent('/opener-page', `<title>Opener</title><body><button onclick="window.open('${server.PREFIX}opened-page', '_blank', 'noopener')">open</button></body>`, 'text/html');
   server.setContent('/opened-page', '<title>Opened</title><body>Opened content</body>', 'text/html');
   const { browserContext, client } = await startExtensionClient();
@@ -170,7 +190,8 @@ test(`window.open from tracked tab auto-attaches new tab`, async ({ startExtensi
   });
 });
 
-test(`browser_run_code can evaluate in a web worker`, async ({ startExtensionClient, server }) => {
+test(`browser_run_code can evaluate in a web worker`, async ({ startExtensionClient, server, protocolVersion }) => {
+  test.skip(protocolVersion === 1, 'Multi-tab not supported in protocol v1');
   server.setContent('/worker.js', `
     self.onmessage = (e) => self.postMessage('echo:' + e.data);
     self.workerName = 'mcp-worker';
