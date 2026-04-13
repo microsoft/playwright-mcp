@@ -25,6 +25,8 @@ if (process.argv.includes('install-browser')) {
   return;
 }
 
+process.env.PLAYWRIGHT_EXTENSION_PROTOCOL = process.env.PLAYWRIGHT_EXTENSION_PROTOCOL || '1';
+
 const packageJSON = require('./package.json');
 const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
 tools.decorateMCPCommand(p, packageJSON.version);

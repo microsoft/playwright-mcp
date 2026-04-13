@@ -54,6 +54,29 @@ test(`connect.html protocolVersion search param matches fixture option`, async (
   expect(url.searchParams.get('protocolVersion')).toBe(String(protocolVersion));
 });
 
+test(`protocolVersion defaults to 1`, async ({ startExtensionClient, server, protocolVersion }) => {
+  // test.fail(true, 'Server default is currently 2; this test guards the expected default of 1');
+  const saved = process.env.PLAYWRIGHT_EXTENSION_PROTOCOL;
+  delete process.env.PLAYWRIGHT_EXTENSION_PROTOCOL;
+
+  const { browserContext, client } = await startExtensionClient();
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+  });
+
+  client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  }).catch(() => {});
+
+  const selectorPage = await confirmationPagePromise;
+  const url = new URL(selectorPage.url());
+  expect(url.searchParams.get('protocolVersion')).toBe('1');
+
+  process.env.PLAYWRIGHT_EXTENSION_PROTOCOL = saved;
+});
+
 test(`browser_tabs new creates a new tab`, async ({ startExtensionClient, server, protocolVersion }) => {
   test.skip(protocolVersion === 1, 'Multi-tab not supported in protocol v1');
   server.setContent('/second.html', '<title>Second</title><body>Second page<body>', 'text/html');
