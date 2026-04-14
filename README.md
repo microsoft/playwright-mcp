@@ -442,6 +442,37 @@ Persistent profile is located at the following locations and you can override it
 
 ```bash
 # Windows
+
+## Windows Installation
+
+> **Note for Claude Code and AI coding agents on Windows**
+
+On Windows, `npx` is actually `npx.cmd` (a batch file wrapper). When spawned by AI coding agents via `cmd.exe /c npx ...`, the stdin/stdout pipes used by MCP's stdio transport may not connect properly, causing the server to appear disconnected.
+
+**Workaround:** Use `node` directly with the path to `cli.js` instead of `npx`:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "node",
+      "args": [
+        "C:/path/to/project/node_modules/@playwright/mcp/cli.js",
+        "--cdp-endpoint",
+        "http://127.0.0.1:9222"
+      ]
+    }
+  }
+}
+```
+
+1. Install the package in your project: `npm add -D @playwright/mcp`
+2. Find the path to `cli.js` in your project's `node_modules/@playwright/mcp/cli.js`
+3. Add the config above to your Claude Code `mcpServers` config, replacing the path
+4. Restart Claude Code
+
+This bypasses the `.cmd` batch wrapper and ensures stdin/stdout connect correctly for MCP stdio transport.
+
 %USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-{workspace-hash}
 
 # macOS
