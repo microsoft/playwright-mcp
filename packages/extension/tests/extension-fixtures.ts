@@ -56,8 +56,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures & ExtensionTestOpti
   protocolVersion: [2, { option: true, scope: 'worker' }],
 
   _protocolEnv: [async ({ protocolVersion }, use) => {
-    if (protocolVersion === 1)
-      process.env.PLAYWRIGHT_EXTENSION_PROTOCOL = '1';
+    // Default is 1.
+    if (protocolVersion === 2)
+      process.env.PLAYWRIGHT_EXTENSION_PROTOCOL = '2';
     await use();
   }, { auto: true, scope: 'worker' }],
 
