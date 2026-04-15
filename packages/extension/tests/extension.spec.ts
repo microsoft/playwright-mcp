@@ -30,7 +30,7 @@ test(`navigate with extension`, async ({ startExtensionClient, server }) => {
   });
 
   const selectorPage = await confirmationPagePromise;
-  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+  await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
@@ -92,7 +92,7 @@ test(`browser_tabs new creates a new tab`, async ({ startExtensionClient, server
   });
 
   const selectorPage = await confirmationPagePromise;
-  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+  await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
@@ -135,7 +135,7 @@ test(`cmd+click opens new tab visible in tab list`, async ({ startExtensionClien
   });
 
   const selectorPage = await confirmationPagePromise;
-  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+  await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining(`click me`),
@@ -182,7 +182,7 @@ test(`window.open from tracked tab auto-attaches new tab`, async ({ startExtensi
   });
 
   const selectorPage = await confirmationPagePromise;
-  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+  await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining('open'),
@@ -240,7 +240,7 @@ test(`browser_run_code can evaluate in a web worker`, async ({ startExtensionCli
   });
 
   const selectorPage = await confirmationPagePromise;
-  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+  await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
 
   await navigateResponse;
 
@@ -360,7 +360,7 @@ testWithOldExtensionVersion(`works with old extension version`, async ({ startEx
   });
 
   const selectorPage = await confirmationPagePromise;
-  await selectorPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+  await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
 
   expect(await navigateResponse).toHaveResponse({
     snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
@@ -472,7 +472,7 @@ test.describe('tab grouping', () => {
 
     expect(group).toEqual({ color: 'green', title: 'Playwright' });
 
-    await connectPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+    await connectPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
     await navigatePromise;
   });
 
@@ -561,7 +561,7 @@ test.describe('CLI with extension', () => {
     const confirmationPage = await confirmationPagePromise;
 
     // Click the Connect button
-    await confirmationPage.locator('.tab-item', { hasText: 'Playwright MCP extension' }).getByRole('button', { name: 'Connect' }).click();
+    await confirmationPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
 
     {
       // Wait for the CLI command to complete
@@ -569,7 +569,7 @@ test.describe('CLI with extension', () => {
       // Verify the output
       expect(output).toContain(`### Page`);
       expect(output).toContain(`- Page URL: chrome-extension://${extensionId}/connect.html?`);
-      expect(output).toContain(`- Page Title: Playwright MCP extension`);
+      expect(output).toContain(`- Page Title: Welcome`);
     }
 
     {
