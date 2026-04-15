@@ -72,6 +72,22 @@ body {
   margin-right: 8px;
 }
 
+/* Warning banner */
+.warning-banner {
+  margin: 0 12px 16px 12px;
+  padding: 12px;
+  background-color: #fff8e1;
+  border: 1px solid #f0c674;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5c4408;
+}
+
+.warning-banner strong {
+  color: #1f2328;
+}
+
 /* Buttons */
 .button-container {
   margin-bottom: 16px;

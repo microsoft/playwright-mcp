@@ -63,11 +63,11 @@ const ConnectApp: React.FC = () => {
 
       try {
         const client = JSON.parse(params.get('client') || '{}');
-        const info = `${client.name}/${client.version}`;
+        const info = `${client.name || 'unknown'}`;
         setClientInfo(info);
         setStatus({
           type: 'connecting',
-          message: `🎭 Playwright MCP started from  "${info}" is trying to connect. Do you want to continue?`
+          message: `"${info}" is trying to connect to the Playwright extension.`
         });
       } catch (e) {
         setStatus({ type: 'error', message: 'Failed to parse client version.' });
@@ -197,6 +197,15 @@ const ConnectApp: React.FC = () => {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {status?.type === 'connecting' && (
+          <div className='warning-banner'>
+            <strong>⚠️ Warning:</strong> Allowing this connection exposes the entire browser to the client,
+            including any signed-in sessions, cookies, and content in other tabs and windows.
+            Once approved, the client may also be able to reconnect later without showing this dialog again,
+            unless you regenerate the token below and then restart the browser.
           </div>
         )}
 
