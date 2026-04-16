@@ -117,7 +117,7 @@ test(`cmd+click opens new tab visible in tab list`, async ({ startExtensionClien
 
   await client.callTool({
     name: 'browser_click',
-    arguments: { element: 'click me', ref: 'e2', modifiers: ['Meta'] },
+    arguments: { element: 'click me', target: 'e2', modifiers: ['Meta'] },
   });
 
   await expect.poll(async () => {
@@ -149,7 +149,7 @@ test(`window.open from tracked tab auto-attaches new tab`, async ({ startExtensi
 
   await client.callTool({
     name: 'browser_click',
-    arguments: { element: 'open', ref: 'e2' },
+    arguments: { element: 'open', target: 'e2' },
   });
 
   await expect.poll(async () => {

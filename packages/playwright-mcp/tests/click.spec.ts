@@ -40,7 +40,7 @@ test('browser_click', async ({ client, server }) => {
     name: 'browser_click',
     arguments: {
       element: 'Submit button',
-      ref: 'e2',
+      target: 'e2',
     },
   })).toHaveResponse({
     code: `await page.getByRole('button', { name: 'Submit' }).click();`,
