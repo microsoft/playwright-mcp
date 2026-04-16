@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect, extensionId } from './extension-fixtures';
+import { test, expect, connectAndNavigate } from './extension-fixtures';
 
 test.describe('tab management', () => {
   test.skip(({ protocolVersion }) => protocolVersion === 1, 'Multi-tab not supported in protocol v1');
@@ -23,38 +23,23 @@ test.describe('tab management', () => {
     server.setContent('/second.html', '<title>Second</title><body>Second page<body>', 'text/html');
     const { browserContext, client } = await startExtensionClient();
 
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
-    });
-
-    const navigateResponse = client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.HELLO_WORLD },
-    });
-
-    const selectorPage = await confirmationPagePromise;
-    await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
-
-    expect(await navigateResponse).toHaveResponse({
+    const navigateResponse = await connectAndNavigate(browserContext, client, server.HELLO_WORLD);
+    expect(navigateResponse).toHaveResponse({
       snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
     });
 
-    // Now create a new tab via browser_tabs tool.
     const newTabResponse = await client.callTool({
       name: 'browser_tabs',
       arguments: { action: 'new', url: server.PREFIX + 'second.html' },
     });
-
     expect(newTabResponse).toHaveResponse({
       snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Second page`),
     });
 
-    // Verify we have two tabs by listing.
     const listResponse = await client.callTool({
       name: 'browser_tabs',
       arguments: { action: 'list' },
     });
-
     expect(listResponse).toHaveResponse({
       result: expect.stringMatching(/- 0: \[Title\]\(.*\/hello-world\)\n- 1: \(current\) \[Second\]\(.*\/second\.html\)/),
     });
@@ -65,36 +50,21 @@ test.describe('tab management', () => {
     server.setContent('/second.html', '<title>Second</title><body>Second page</body>', 'text/html');
     const { browserContext, client } = await startExtensionClient();
 
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
-    });
+    await connectAndNavigate(browserContext, client, server.PREFIX + 'first.html');
 
-    const navigateResponse = client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX + 'first.html' },
-    });
-
-    const selectorPage = await confirmationPagePromise;
-    await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
-    await navigateResponse;
-
-    // Create a second tab — it becomes the current tab.
     await client.callTool({
       name: 'browser_tabs',
       arguments: { action: 'new', url: server.PREFIX + 'second.html' },
     });
 
-    // Switch back to the first tab via select.
     const selectResponse = await client.callTool({
       name: 'browser_tabs',
       arguments: { action: 'select', index: 0 },
     });
-
     expect(selectResponse).toHaveResponse({
       result: expect.stringMatching(/- 0: \(current\) \[First\]\(.*\/first\.html\)\n- 1: \[Second\]\(.*\/second\.html\)/),
     });
 
-    // A subsequent snapshot should reflect the newly selected tab's content.
     const snapshotResponse = await client.callTool({
       name: 'browser_snapshot',
       arguments: {},
@@ -109,36 +79,21 @@ test.describe('tab management', () => {
     server.setContent('/second.html', '<title>Second</title><body>Second page</body>', 'text/html');
     const { browserContext, client } = await startExtensionClient();
 
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
-    });
+    await connectAndNavigate(browserContext, client, server.PREFIX + 'first.html');
 
-    const navigateResponse = client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX + 'first.html' },
-    });
-
-    const selectorPage = await confirmationPagePromise;
-    await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
-    await navigateResponse;
-
-    // Create a second tab — it becomes the current tab.
     await client.callTool({
       name: 'browser_tabs',
       arguments: { action: 'new', url: server.PREFIX + 'second.html' },
     });
 
-    // Close the first tab by index.
     const closeResponse = await client.callTool({
       name: 'browser_tabs',
       arguments: { action: 'close', index: 0 },
     });
-
     expect(closeResponse).toHaveResponse({
       result: expect.stringMatching(/^- 0: \(current\) \[Second\]\(.*\/second\.html\)$/m),
     });
 
-    // Only the Second tab should remain.
     const listResponse = await client.callTool({
       name: 'browser_tabs',
       arguments: { action: 'list' },
@@ -156,29 +111,16 @@ test.describe('tab management', () => {
     server.setContent('/target-page', '<title>TargetPage</title><body>Target content</body>', 'text/html');
     const { browserContext, client } = await startExtensionClient();
 
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
-    });
-
-    const navigateResponse = client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX + 'link-page' },
-    });
-
-    const selectorPage = await confirmationPagePromise;
-    await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
-
-    expect(await navigateResponse).toHaveResponse({
+    const navigateResponse = await connectAndNavigate(browserContext, client, server.PREFIX + 'link-page');
+    expect(navigateResponse).toHaveResponse({
       snapshot: expect.stringContaining(`click me`),
     });
 
-    // Cmd+click (Meta+click) to open link in a new tab.
     await client.callTool({
       name: 'browser_click',
       arguments: { element: 'click me', ref: 'e2', modifiers: ['Meta'] },
     });
 
-    // Wait for the new tab to appear in the list.
     await expect.poll(async () => {
       const listResponse = await client.callTool({
         name: 'browser_tabs',
@@ -191,7 +133,6 @@ test.describe('tab management', () => {
       name: 'browser_tabs',
       arguments: { action: 'list' },
     });
-
     expect(listResponse).toHaveResponse({
       result: expect.stringMatching(/- 0:.*\[LinkPage\].*\n- 1:.*\[TargetPage\]/),
     });
@@ -202,29 +143,16 @@ test.describe('tab management', () => {
     server.setContent('/opened-page', '<title>Opened</title><body>Opened content</body>', 'text/html');
     const { browserContext, client } = await startExtensionClient();
 
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
-    });
-
-    const navigateResponse = client.callTool({
-      name: 'browser_navigate',
-      arguments: { url: server.PREFIX + 'opener-page' },
-    });
-
-    const selectorPage = await confirmationPagePromise;
-    await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
-
-    expect(await navigateResponse).toHaveResponse({
+    const navigateResponse = await connectAndNavigate(browserContext, client, server.PREFIX + 'opener-page');
+    expect(navigateResponse).toHaveResponse({
       snapshot: expect.stringContaining('open'),
     });
 
-    // Click the button that calls window.open.
     await client.callTool({
       name: 'browser_click',
       arguments: { element: 'open', ref: 'e2' },
     });
 
-    // Wait for the new tab to appear in the list.
     await expect.poll(async () => {
       const listResponse = await client.callTool({
         name: 'browser_tabs',
@@ -237,7 +165,6 @@ test.describe('tab management', () => {
       name: 'browser_tabs',
       arguments: { action: 'list' },
     });
-
     expect(listResponse).toHaveResponse({
       result: expect.stringMatching(/- 0:.*\[Opener\].*\n- 1:.*\[Opened\]/),
     });

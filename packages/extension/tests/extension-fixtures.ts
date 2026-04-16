@@ -219,3 +219,18 @@ export async function startWithExtensionFlag(browserWithExtension: BrowserWithEx
   });
   return client;
 }
+
+export async function connectAndNavigate(
+  browserContext: BrowserContext,
+  client: Client,
+  url: string,
+  tabTitle: RegExp | string = 'Welcome',
+): Promise<Awaited<ReturnType<Client['callTool']>>> {
+  const confirmationPagePromise = browserContext.waitForEvent('page', page =>
+    page.url().startsWith(`chrome-extension://${extensionId}/connect.html`)
+  );
+  const navigatePromise = client.callTool({ name: 'browser_navigate', arguments: { url } });
+  const selectorPage = await confirmationPagePromise;
+  await selectorPage.locator('.tab-item', { hasText: tabTitle }).getByRole('button', { name: 'Connect' }).click();
+  return await navigatePromise;
+}
