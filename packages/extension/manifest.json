@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Playwright MCP Bridge",
+  "name": "Playwright Extension",
   "version": "0.1.0",
-  "description": "Share browser tabs with Playwright MCP server",
+  "description": "Connect your browser to AI agents through Playwright MCP server and CLI. Enables AI-driven web testing, debugging, and automation.",
   "permissions": [
     "debugger",
     "activeTab",
@@ -17,7 +17,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "Playwright MCP Bridge",
+    "default_title": "Playwright Extension",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",

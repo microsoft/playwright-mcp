@@ -20,7 +20,7 @@
     "watch": "tsc --watch --project . & tsc --watch --project tsconfig.ui.json & vite build --watch & vite build --watch --config vite.sw.config.mts",
     "test": "playwright test",
     "lint": "tsc --project .",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist test-results"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.315",

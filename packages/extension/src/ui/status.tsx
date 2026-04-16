@@ -64,7 +64,7 @@ const StatusApp: React.FC = () => {
         {connectedTabs.length > 0 ? (
           <div>
             <div className='tab-section-title'>
-              {connectedTabs.length === 1 ? 'Page connected to MCP client:' : 'Pages connected to MCP client:'}
+              {connectedTabs.length === 1 ? 'Page connected to Playwright client:' : 'Pages connected to Playwright client:'}
             </div>
             <div>
               {connectedTabs.map((tab, index) => (

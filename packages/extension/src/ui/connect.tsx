@@ -67,7 +67,7 @@ const ConnectApp: React.FC = () => {
         setClientInfo(info);
         setStatus({
           type: 'connecting',
-          message: `"${info}" is trying to connect to the Playwright extension.`
+          message: `"${info}" is trying to connect to the Playwright Extension.`
         });
       } catch (e) {
         setStatus({ type: 'error', message: 'Failed to parse client version.' });
@@ -216,7 +216,7 @@ const ConnectApp: React.FC = () => {
         {showTabList && (
           <div>
             <div className='tab-section-title'>
-              Select page to expose to MCP server:
+              Select the default tab for this connection:
             </div>
             <div>
               {tabs.map(tab => (
@@ -244,7 +244,7 @@ const VersionMismatchError: React.FC<{ extensionVersion: string }> = ({ extensio
   return (
     <div>
       Playwright MCP version trying to connect requires newer extension version (current version: {extensionVersion}).{' '}
-      Update <a href={chromeWebStoreUrl} target='_blank' rel='noopener noreferrer'>Playwright MCP Bridge</a> from the Chrome Web Store to the latest version.{' '}
+      Update <a href={chromeWebStoreUrl} target='_blank' rel='noopener noreferrer'>Playwright Extension</a> from the Chrome Web Store to the latest version.{' '}
       See <a href={readmeUrl} target='_blank' rel='noopener noreferrer'>installation instructions</a> for more details.
     </div>
   );

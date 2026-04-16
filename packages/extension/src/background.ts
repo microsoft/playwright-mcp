@@ -134,7 +134,7 @@ class TabShareExtension {
       };
       this._activeConnection.ontabattached = (newTabId: number) => {
         this._connectedTabIds.add(newTabId);
-        void this._updateBadge(newTabId, { text: '✓', color: '#4CAF50', title: 'Connected to MCP client' });
+        void this._updateBadge(newTabId, { text: '✓', color: '#4CAF50', title: 'Connected to Playwright client' });
         void this._addTabToGroup(newTabId);
       };
       this._activeConnection.ontabdetached = (removedTabId: number) => {
@@ -147,7 +147,7 @@ class TabShareExtension {
         chrome.tabs.update(tabId, { active: true }),
         chrome.windows.update(windowId, { focused: true }),
       ]);
-      debugLog(`Connected to MCP bridge`);
+      debugLog(`Connected to Playwright client`);
     } catch (error: any) {
       this._connectedTabIds.clear();
       debugLog(`Failed to connect tab ${tabId}:`, error.message);

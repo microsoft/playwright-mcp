@@ -21,17 +21,12 @@ import './authToken.css';
 
 export const AuthTokenSection: React.FC<{}> = ({}) => {
   const [authToken, setAuthToken] = useState<string>(getOrCreateAuthToken);
-  const [isExampleExpanded, setIsExampleExpanded] = useState<boolean>(false);
 
   const onRegenerateToken = useCallback(() => {
     const newToken = generateAuthToken();
     localStorage.setItem('auth-token', newToken);
     setAuthToken(newToken);
   }, []);
-
-  const toggleExample = useCallback(() => {
-    setIsExampleExpanded(!isExampleExpanded);
-  }, [isExampleExpanded]);
 
   return (
     <div className='auth-token-section'>
@@ -43,53 +38,12 @@ export const AuthTokenSection: React.FC<{}> = ({}) => {
         <button className='auth-token-refresh' title='Generate new token' aria-label='Generate new token'onClick={onRegenerateToken}>{icons.refresh()}</button>
         <CopyToClipboard value={authTokenCode(authToken)} />
       </div>
-
-      <div className='auth-token-example-section'>
-        <button
-          className='auth-token-example-toggle'
-          onClick={toggleExample}
-          aria-expanded={isExampleExpanded}
-          title={isExampleExpanded ? 'Hide example config' : 'Show example config'}
-        >
-          <span className={`auth-token-chevron ${isExampleExpanded ? 'expanded' : ''}`}>
-            {icons.chevronDown()}
-          </span>
-          Example MCP server configuration
-        </button>
-
-        {isExampleExpanded && (
-          <div className='auth-token-example-content'>
-            <div className='auth-token-example-description'>
-              Add this configuration to your MCP client (e.g., VS Code) to connect to the Playwright MCP Bridge:
-            </div>
-            <div className='auth-token-example-config'>
-              <code className='auth-token-example-code'>{exampleConfig(authToken)}</code>
-              <CopyToClipboard value={exampleConfig(authToken)} />
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
 
 function authTokenCode(authToken: string) {
   return `PLAYWRIGHT_MCP_EXTENSION_TOKEN=${authToken}`;
-}
-
-function exampleConfig(authToken: string) {
-  return `{
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest", "--extension"],
-      "env": {
-        "PLAYWRIGHT_MCP_EXTENSION_TOKEN":
-          "${authToken}"
-      }
-    }
-  }
-}`;
 }
 
 function generateAuthToken(): string {

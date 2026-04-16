@@ -203,7 +203,7 @@ test(`extension not installed timeout`, async ({ startExtensionClient, server })
     name: 'browser_navigate',
     arguments: { url: server.HELLO_WORLD },
   })).toHaveResponse({
-    error: expect.stringContaining('Extension connection timeout. Make sure the "Playwright MCP Bridge" extension is installed.'),
+    error: expect.stringMatching(/Extension connection timeout. Make sure the "Playwright.* is installed\./),
     isError: true,
   });
 
