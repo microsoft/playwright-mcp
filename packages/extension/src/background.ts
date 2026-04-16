@@ -202,6 +202,19 @@ class TabShareExtension {
   private _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {
     if (this._connectedTabIds.has(tabId))
       void this._updateBadge(tabId, { text: '✓', color: '#4CAF50', title: 'Connected to MCP client' });
+
+    if (!this._activeConnection || changeInfo.groupId === undefined)
+      return;
+    // Ignore the extension's own UI tabs (connect/status pages) — those get added
+    // to the group for visual grouping, not because they should be controlled.
+    if (tab.url?.startsWith(chrome.runtime.getURL('')))
+      return;
+    const inOurGroup = this._groupId !== null && changeInfo.groupId === this._groupId;
+    const isConnected = this._connectedTabIds.has(tabId);
+    if (inOurGroup && !isConnected)
+      void this._activeConnection.attachTab(tabId);
+    else if (!inOurGroup && isConnected)
+      void this._activeConnection.detachTab(tabId);
   }
 
   private async _getTabs(): Promise<chrome.tabs.Tab[]> {
