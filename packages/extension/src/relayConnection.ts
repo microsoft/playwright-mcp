@@ -43,6 +43,7 @@ const ALLOWED_CHROME_COMMANDS = new Set([
   'chrome.debugger.detach',
   'chrome.debugger.sendCommand',
   'chrome.tabs.create',
+  'chrome.tabs.remove',
 ]);
 
 // chrome.* events the extension forwards to the relay (positional params).

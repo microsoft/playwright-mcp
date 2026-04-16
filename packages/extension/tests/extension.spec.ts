@@ -119,6 +119,99 @@ test(`browser_tabs new creates a new tab`, async ({ startExtensionClient, server
   });
 });
 
+test(`browser_tabs select switches the active tab`, async ({ startExtensionClient, server, protocolVersion }) => {
+  test.skip(protocolVersion === 1, 'Multi-tab not supported in protocol v1');
+  server.setContent('/first.html', '<title>First</title><body>First page</body>', 'text/html');
+  server.setContent('/second.html', '<title>Second</title><body>Second page</body>', 'text/html');
+  const { browserContext, client } = await startExtensionClient();
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+  });
+
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX + 'first.html' },
+  });
+
+  const selectorPage = await confirmationPagePromise;
+  await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
+  await navigateResponse;
+
+  // Create a second tab — it becomes the current tab.
+  await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'new', url: server.PREFIX + 'second.html' },
+  });
+
+  // Switch back to the first tab via select.
+  const selectResponse = await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'select', index: 0 },
+  });
+
+  expect(selectResponse).toHaveResponse({
+    result: expect.stringMatching(/- 0: \(current\) \[First\]\(.*\/first\.html\)\n- 1: \[Second\]\(.*\/second\.html\)/),
+  });
+
+  // A subsequent snapshot should reflect the newly selected tab's content.
+  const snapshotResponse = await client.callTool({
+    name: 'browser_snapshot',
+    arguments: {},
+  });
+  expect(snapshotResponse).toHaveResponse({
+    snapshot: expect.stringContaining('First page'),
+  });
+});
+
+test(`browser_tabs close removes a tab`, async ({ startExtensionClient, server, protocolVersion }) => {
+  test.skip(protocolVersion === 1, 'Multi-tab not supported in protocol v1');
+  server.setContent('/first.html', '<title>First</title><body>First page</body>', 'text/html');
+  server.setContent('/second.html', '<title>Second</title><body>Second page</body>', 'text/html');
+  const { browserContext, client } = await startExtensionClient();
+
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
+  });
+
+  const navigateResponse = client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX + 'first.html' },
+  });
+
+  const selectorPage = await confirmationPagePromise;
+  await selectorPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
+  await navigateResponse;
+
+  // Create a second tab — it becomes the current tab.
+  await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'new', url: server.PREFIX + 'second.html' },
+  });
+
+  // Close the first tab by index.
+  const closeResponse = await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'close', index: 0 },
+  });
+
+  expect(closeResponse).toHaveResponse({
+    result: expect.stringMatching(/^- 0: \(current\) \[Second\]\(.*\/second\.html\)$/m),
+  });
+
+  // Only the Second tab should remain.
+  const listResponse = await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'list' },
+  });
+  expect(listResponse).toHaveResponse({
+    result: expect.not.stringContaining('First'),
+  });
+  expect(listResponse).toHaveResponse({
+    result: expect.stringContaining('Second'),
+  });
+});
+
 test(`cmd+click opens new tab visible in tab list`, async ({ startExtensionClient, server, protocolVersion }) => {
   test.skip(protocolVersion === 1, 'Multi-tab not supported in protocol v1');
   server.setContent('/link-page', '<title>LinkPage</title><body><a href="/target-page">click me</a></body>', 'text/html');
