@@ -17,46 +17,44 @@
 import fs from 'fs/promises';
 import { test, expect, extensionId } from './extension-fixtures';
 
-test.describe('CLI with extension', () => {
-  test('attach <url> --extension', async ({ browserWithExtension, cli, server }, testInfo) => {
-    const browserContext = await browserWithExtension.launch();
+test('attach <url> --extension', async ({ browserWithExtension, cli, server }, testInfo) => {
+  const browserContext = await browserWithExtension.launch();
 
-    // Write config file with userDataDir
-    const configPath = testInfo.outputPath('cli-config.json');
-    await fs.writeFile(configPath, JSON.stringify({
-      browser: {
-        userDataDir: browserWithExtension.userDataDir,
-      }
-    }, null, 2));
-
-    const confirmationPagePromise = browserContext.waitForEvent('page', page => {
-      return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
-    });
-
-    // Start the CLI command in the background
-    const cliPromise = cli('attach', '--extension', `--config=cli-config.json`);
-
-    // Wait for the confirmation page to appear
-    const confirmationPage = await confirmationPagePromise;
-
-    // Click the Connect button
-    await confirmationPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
-
-    {
-      // Wait for the CLI command to complete
-      const { output } = await cliPromise;
-      // Verify the output
-      expect(output).toContain(`### Page`);
-      expect(output).toContain(`- Page URL: chrome-extension://${extensionId}/connect.html?`);
-      expect(output).toContain(`- Page Title: Welcome`);
+  // Write config file with userDataDir
+  const configPath = testInfo.outputPath('cli-config.json');
+  await fs.writeFile(configPath, JSON.stringify({
+    browser: {
+      userDataDir: browserWithExtension.userDataDir,
     }
+  }, null, 2));
 
-    {
-      const { output } = await cli('goto', server.HELLO_WORLD);
-      // Verify the output
-      expect(output).toContain(`### Page`);
-      expect(output).toContain(`- Page URL: ${server.HELLO_WORLD}`);
-      expect(output).toContain(`- Page Title: Title`);
-    }
+  const confirmationPagePromise = browserContext.waitForEvent('page', page => {
+    return page.url().startsWith(`chrome-extension://${extensionId}/connect.html`);
   });
+
+  // Start the CLI command in the background
+  const cliPromise = cli('attach', '--extension', `--config=cli-config.json`);
+
+  // Wait for the confirmation page to appear
+  const confirmationPage = await confirmationPagePromise;
+
+  // Click the Connect button
+  await confirmationPage.locator('.tab-item', { hasText: 'Welcome' }).getByRole('button', { name: 'Connect' }).click();
+
+  {
+    // Wait for the CLI command to complete
+    const { output } = await cliPromise;
+    // Verify the output
+    expect(output).toContain(`### Page`);
+    expect(output).toContain(`- Page URL: chrome-extension://${extensionId}/connect.html?`);
+    expect(output).toContain(`- Page Title: Welcome`);
+  }
+
+  {
+    const { output } = await cli('goto', server.HELLO_WORLD);
+    // Verify the output
+    expect(output).toContain(`### Page`);
+    expect(output).toContain(`- Page URL: ${server.HELLO_WORLD}`);
+    expect(output).toContain(`- Page Title: Title`);
+  }
 });
