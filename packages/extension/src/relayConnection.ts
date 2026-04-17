@@ -274,6 +274,8 @@ export class RelayConnection {
     }
     if (message.method === 'forwardCDPCommand') {
       const { sessionId, method, params } = message.params;
+      if (method === 'Target.createTarget')
+        throw new Error('Tab creation is not supported yet. Update Playwright MCP or CLI to the latest version.');
       const tabId = [...this._attachedTabs][0];
       if (tabId === undefined)
         throw new Error('No tab is connected');
