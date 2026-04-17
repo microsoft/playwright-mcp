@@ -37,12 +37,11 @@ class TabShareExtension {
   private _activeConnection: RelayConnection | undefined;
   private _connectedTabIds: Set<number> = new Set();
   private _groupId: number | null = null;
-  private _pendingTabSelection = new Map<number, { connection: RelayConnection, timerId?: number }>();
+  private _pendingTabSelection = new Map<number, RelayConnection>();
 
   constructor() {
     chrome.tabs.onRemoved.addListener(this._onTabRemoved.bind(this));
     chrome.tabs.onUpdated.addListener(this._onTabUpdated.bind(this));
-    chrome.tabs.onActivated.addListener(this._onTabActivated.bind(this));
     chrome.runtime.onMessage.addListener(this._onMessage.bind(this));
     chrome.action.onClicked.addListener(this._onActionClicked.bind(this));
   }
@@ -93,11 +92,14 @@ class TabShareExtension {
 
       const connection = new RelayConnection(socket, protocolVersion);
       connection.onclose = () => {
-        debugLog('Connection closed');
-        this._pendingTabSelection.delete(selectorTabId);
-        // TODO: show error in the selector tab?
+        debugLog('Pending connection closed');
+        const existed = this._pendingTabSelection.delete(selectorTabId);
+        if (existed) {
+          chrome.tabs.sendMessage(selectorTabId, { type: 'pendingConnectionClosed' }).catch(() => {});
+          chrome.tabs.ungroup(selectorTabId).catch(() => {});
+        }
       };
-      this._pendingTabSelection.set(selectorTabId, { connection });
+      this._pendingTabSelection.set(selectorTabId, connection);
       await this._addTabToGroup(selectorTabId);
       debugLog(`Connected to MCP relay`);
     } catch (error: any) {
@@ -118,9 +120,9 @@ class TabShareExtension {
       await Promise.all([...this._connectedTabIds].map(id => this._updateBadge(id, { text: '' })));
       this._connectedTabIds.clear();
 
-      this._activeConnection = this._pendingTabSelection.get(selectorTabId)?.connection;
+      this._activeConnection = this._pendingTabSelection.get(selectorTabId);
       if (!this._activeConnection)
-        throw new Error('No active MCP relay connection');
+        throw new Error('Pending client connection closed');
       this._pendingTabSelection.delete(selectorTabId);
 
       this._activeConnection.setSelectedTab(tabId);
@@ -167,7 +169,7 @@ class TabShareExtension {
   }
 
   private async _onTabRemoved(tabId: number): Promise<void> {
-    const pendingConnection = this._pendingTabSelection.get(tabId)?.connection;
+    const pendingConnection = this._pendingTabSelection.get(tabId);
     if (pendingConnection) {
       this._pendingTabSelection.delete(tabId);
       pendingConnection.close('Browser tab closed');
@@ -176,27 +178,6 @@ class TabShareExtension {
     // Tab removal is handled by RelayConnection (ontabdetached / onclose).
     // No action needed here — the relay detects it via chrome.tabs.onRemoved
     // and chrome.debugger.onDetach listeners.
-  }
-
-  private _onTabActivated(activeInfo: chrome.tabs.TabActiveInfo) {
-    for (const [tabId, pending] of this._pendingTabSelection) {
-      if (tabId === activeInfo.tabId) {
-        if (pending.timerId) {
-          clearTimeout(pending.timerId);
-          pending.timerId = undefined;
-        }
-        continue;
-      }
-      if (!pending.timerId) {
-        pending.timerId = setTimeout(() => {
-          const existed = this._pendingTabSelection.delete(tabId);
-          if (existed) {
-            pending.connection.close('Tab has been inactive for 5 seconds');
-            chrome.tabs.sendMessage(tabId, { type: 'connectionTimeout' });
-          }
-        }, 5000);
-      }
-    }
   }
 
   private _onTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {

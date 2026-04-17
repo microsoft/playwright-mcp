@@ -147,25 +147,27 @@ const ConnectApp: React.FC = () => {
       });
 
       if (response?.success) {
-        setStatus({ type: 'connected', message: `MCP client "${clientInfo}" connected.` });
+        setStatus({ type: 'connected', message: `"${clientInfo}" connected.` });
       } else {
         setStatus({
           type: 'error',
-          message: response?.error || `MCP client "${clientInfo}" failed to connect.`
+          message: response?.error || `"${clientInfo}" failed to connect.`
         });
       }
     } catch (e) {
       setStatus({
         type: 'error',
-        message: `MCP client "${clientInfo}" failed to connect: ${e}`
+        message: `"${clientInfo}" failed to connect: ${e}`
       });
     }
   }, [clientInfo, mcpRelayUrl]);
 
   useEffect(() => {
     const listener = (message: any) => {
-      if (message.type === 'connectionTimeout')
-        handleReject('Connection timed out.');
+      if (message.type === 'pendingConnectionClosed') {
+        handleReject('Pending client connection closed.');
+        document.title = 'Playwright Extension';
+      }
     };
     chrome.runtime.onMessage.addListener(listener);
     return () => {
