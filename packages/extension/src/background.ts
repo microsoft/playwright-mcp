@@ -241,12 +241,10 @@ class TabShareExtension {
   }
 
   private async _onActionClicked(): Promise<void> {
-    const tab = await chrome.tabs.create({
+    await chrome.tabs.create({
       url: chrome.runtime.getURL('status.html'),
       active: true
     });
-    if (tab.id)
-      await this._addTabToGroup(tab.id);
   }
 
   private async _disconnect(): Promise<void> {
