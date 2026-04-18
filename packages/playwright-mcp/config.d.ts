@@ -96,6 +96,13 @@ export type Config = {
      * The scripts will be evaluated in every page before any of the page's scripts.
      */
     initScript?: string[];
+
+    /**
+     * Directory to save video recordings to. When set, video recording is
+     * automatically enabled for every browser context. Use the
+     * `browser_save_recording` tool to retrieve the recorded file path.
+     */
+    recordVideo?: string;
   },
 
   /**
