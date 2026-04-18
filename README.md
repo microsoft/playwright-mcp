@@ -100,6 +100,24 @@ Use the Claude Code CLI to add the Playwright MCP server:
 ```bash
 claude mcp add playwright npx @playwright/mcp@latest
 ```
+
+On Windows, Claude Code may fail to connect to the MCP stdio transport when the server is launched through `npx` / `npx.cmd`, especially when you need extra arguments like `--cdp-endpoint`. In that case, install `@playwright/mcp` locally and point Claude Code at the package entrypoint with `node` instead of the batch wrapper:
+
+```json
+{
+  "playwright": {
+    "type": "stdio",
+    "command": "node",
+    "args": [
+      "C:\\path\\to\\your\\project\\node_modules\\@playwright\\mcp\\cli.js",
+      "--cdp-endpoint",
+      "http://127.0.0.1:9222"
+    ]
+  }
+}
+```
+
+This avoids the Windows `npx.cmd` wrapper and lets Claude Code attach cleanly over stdio.
 </details>
 
 <details>
