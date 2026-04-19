@@ -36,7 +36,15 @@ Configure Playwright MCP server to connect to the browser using the extension by
 
 ### Browser Tab Selection
 
-When the LLM interacts with the browser for the first time, it will load a page where you can select which browser tab the LLM will connect to. This allows you to control which specific page the AI assistant will interact with during the session.
+When the LLM interacts with the browser for the first time, it opens the
+extension's connection page (`chrome-extension://.../connect.html`) so you can
+approve the session and choose which existing browser tab to connect to. Seeing
+that page first is expected.
+
+After the connection is approved, the MCP server can inspect and switch tabs
+using the `browser_tabs` tool. If you want the assistant to work with a tab
+that is already open, approve the connection first and then ask it to list or
+select the target tab.
 
 ### Bypassing the Connection Approval Dialog
 
@@ -66,5 +74,4 @@ By default, you'll need to approve each connection when the MCP server tries to 
 ```
 
 This token is unique to your browser profile and provides secure authentication between the MCP server and the extension. Once configured, you won't need to manually approve connections each time.
-
 
