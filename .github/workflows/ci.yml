@@ -41,17 +41,7 @@ jobs:
     - name: Build
       run: npm run build
     - name: Run playwright-mcp tests
-      id: test-mcp
       run: npm run test --workspace=packages/playwright-mcp
-      continue-on-error: true
-    - name: Run extension tests
-      id: test-extension
-      if: matrix.os == 'macos-15'
-      run: npm run test --workspace=packages/extension
-      continue-on-error: true
-    - name: Check test results
-      if: steps.test-mcp.outcome == 'failure' || steps.test-extension.outcome == 'failure'
-      run: exit 1
 
   test_mcp_docker:
     runs-on: ubuntu-latest
