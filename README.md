@@ -477,7 +477,7 @@ state [here](https://playwright.dev/docs/auth).
 
 **Browser Extension**
 
-The Playwright MCP Chrome Extension allows you to connect to existing browser tabs and leverage your logged-in sessions and browser state. See [microsoft/playwright › packages/extension](https://github.com/microsoft/playwright/tree/main/packages/extension) for installation and setup instructions.
+The Playwright MCP Chrome Extension allows you to connect to existing browser tabs and leverage your logged-in sessions and browser state. See [microsoft/playwright › packages/extension](https://github.com/microsoft/playwright/tree/main/packages/extension#readme) for installation and setup instructions.
 
 ### Initial state
 
