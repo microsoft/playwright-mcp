@@ -41,7 +41,7 @@ jobs:
     - name: Build
       run: npm run build
     - name: Run playwright-mcp tests
-      run: npm run test --workspace=packages/playwright-mcp
+      run: npm test
 
   test_mcp_docker:
     runs-on: ubuntu-latest
@@ -71,6 +71,5 @@ jobs:
         # Used for the Docker tests to share the test-results folder with the container.
         umask 0000
         npm run test -- --project=chromium-docker
-      working-directory: ./packages/playwright-mcp
       env:
         MCP_IN_DOCKER: 1

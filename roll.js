@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 
 function copyConfig() {
   const src = path.join(__dirname, '..', 'playwright', 'packages', 'playwright-core', 'src', 'tools', 'mcp', 'config.d.ts');
-  const dst = path.join(__dirname, 'packages', 'playwright-mcp', 'config.d.ts');
+  const dst = path.join(__dirname, 'config.d.ts');
   let content = fs.readFileSync(src, 'utf-8');
   content = content.replace(
     "import type * as playwright from 'playwright-core';",
@@ -15,29 +15,20 @@ function copyConfig() {
 }
 
 function updatePlaywrightVersion(version) {
-  const packagesDir = path.join(__dirname, 'packages');
-  const files = [path.join(__dirname, 'package.json')];
-  for (const entry of fs.readdirSync(packagesDir, { withFileTypes: true })) {
-    const pkgJson = path.join(packagesDir, entry.name, 'package.json');
-    if (fs.existsSync(pkgJson))
-      files.push(pkgJson);
-  }
-
-  for (const file of files) {
-    const json = JSON.parse(fs.readFileSync(file, 'utf-8'));
-    let updated = false;
-    for (const section of ['dependencies', 'devDependencies']) {
-      for (const pkg of ['@playwright/test', 'playwright', 'playwright-core']) {
-        if (json[section]?.[pkg]) {
-          json[section][pkg] = version;
-          updated = true;
-        }
+  const file = path.join(__dirname, 'package.json');
+  const json = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  let updated = false;
+  for (const section of ['dependencies', 'devDependencies']) {
+    for (const pkg of ['@playwright/test', 'playwright', 'playwright-core']) {
+      if (json[section]?.[pkg]) {
+        json[section][pkg] = version;
+        updated = true;
       }
     }
-    if (updated) {
-      fs.writeFileSync(file, JSON.stringify(json, null, 2) + '\n');
-      console.log(`Updated ${file}`);
-    }
+  }
+  if (updated) {
+    fs.writeFileSync(file, JSON.stringify(json, null, 2) + '\n');
+    console.log(`Updated ${file}`);
   }
 
   execSync('npm install', { cwd: __dirname, stdio: 'inherit' });

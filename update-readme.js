@@ -223,25 +223,14 @@ async function updateConfig(content) {
   ]);
 }
 
-/**
- * @param {string} filePath
- */
-async function copyToPackage(filePath) {
-  await fs.promises.copyFile(path.join(__dirname, '../../', filePath), path.join(__dirname, filePath));
-  console.log(`${filePath} copied successfully`);
-}
-
 async function updateReadme() {
-  const readmePath = path.join(__dirname, '../../README.md');
+  const readmePath = path.join(__dirname, 'README.md');
   const readmeContent = await fs.promises.readFile(readmePath, 'utf-8');
   const withTools = await updateTools(readmeContent);
   const withOptions = await updateOptions(withTools);
   const withConfig = await updateConfig(withOptions);
   await fs.promises.writeFile(readmePath, withConfig, 'utf-8');
   console.log('README updated successfully');
-
-  await copyToPackage('README.md');
-  await copyToPackage('LICENSE');
 }
 
 updateReadme().catch(err => {

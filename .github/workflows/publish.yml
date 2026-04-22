@@ -36,19 +36,15 @@ jobs:
         run: echo "version=${{ steps.version.outputs.version }}-alpha-${{ steps.date.outputs.date }}" >> $GITHUB_OUTPUT
 
       - name: Update package.json version
-        run: |
-          npm version ${{ steps.canary-version.outputs.version }} --no-git-tag-version
-        working-directory: ./packages/playwright-mcp
+        run: npm version ${{ steps.canary-version.outputs.version }} --no-git-tag-version
 
       - run: npm ci
       - run: npx playwright install --with-deps
       - run: npm run lint
       - run: npm run ctest
-        working-directory: ./packages/playwright-mcp
 
       - name: Publish to npm with next tag
         run: npm publish --tag next
-        working-directory: ./packages/playwright-mcp
 
   publish-mcp-release-npm:
     if: github.event_name == 'release'
@@ -69,9 +65,7 @@ jobs:
       - run: npx playwright install --with-deps
       - run: npm run lint
       - run: npm run ctest
-        working-directory: ./packages/playwright-mcp
       - run: npm publish
-        working-directory: ./packages/playwright-mcp
 
   publish-mcp-release-docker:
     if: github.event_name == 'release'

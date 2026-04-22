@@ -1,32 +1,51 @@
 {
-  "name": "playwright-mcp-internal",
+  "name": "@playwright/mcp",
   "version": "0.0.70",
-  "private": true,
+  "description": "Playwright Tools for MCP",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/microsoft/playwright-mcp.git"
   },
   "homepage": "https://playwright.dev",
+  "engines": {
+    "node": ">=18"
+  },
   "author": {
     "name": "Microsoft Corporation"
   },
   "license": "Apache-2.0",
+  "mcpName": "io.github.microsoft/playwright-mcp",
   "scripts": {
+    "lint": "node update-readme.js",
+    "test": "playwright test",
+    "ctest": "playwright test --project=chrome",
+    "ftest": "playwright test --project=firefox",
+    "wtest": "playwright test --project=webkit",
+    "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
+    "build": "echo OK",
+    "npm-publish": "npm run lint && npm run test && npm publish",
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",
     "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
-    "lint": "npm run lint --workspaces",
-    "test": "npm run test --workspaces",
-    "build": "npm run build --workspaces",
-    "bump": "npm version --workspaces --no-git-tag-version",
     "roll": "node roll.js"
   },
-  "workspaces": [
-    "packages/*"
-  ],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "dependencies": {
+    "playwright": "1.60.0-alpha-1776382637000",
+    "playwright-core": "1.60.0-alpha-1776382637000"
+  },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@playwright/test": "1.60.0-alpha-1776382637000",
     "@types/node": "^24.3.0"
+  },
+  "bin": {
+    "playwright-mcp": "cli.js"
   }
 }
