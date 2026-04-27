@@ -863,6 +863,18 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_drop**
+  - Title: Drop files or data onto an element
+  - Description: Drop files or MIME-typed data onto an element, as if dragged from outside the page. At least one of "paths" or "data" must be provided.
+  - Parameters:
+    - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
+    - `target` (string): Exact target element reference from the page snapshot, or a unique element selector
+    - `paths` (array, optional): Absolute paths to files to drop onto the element.
+    - `data` (object, optional): Data to drop, as a map of MIME type to string value (e.g. {"text/plain": "hello", "text/uri-list": "https://example.com"}).
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_evaluate**
   - Title: Evaluate JavaScript
   - Description: Evaluate JavaScript expression on page or element
@@ -990,6 +1002,7 @@ http.createServer(async (req, res) => {
     - `target` (string, optional): Exact target element reference from the page snapshot, or a unique element selector
     - `filename` (string, optional): Save snapshot to markdown file instead of returning it in the response.
     - `depth` (number, optional): Limit the depth of the snapshot tree
+    - `boxes` (boolean, optional): Include each element's bounding box as [box=x,y,width,height] in the snapshot
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -1295,14 +1308,6 @@ http.createServer(async (req, res) => {
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `target` (string): Exact target element reference from the page snapshot, or a unique element selector
     - `style` (string, optional): Additional inline CSS applied to the highlight overlay, e.g. "outline: 2px dashed red".
-  - Read-only: **true**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_pick_locator**
-  - Title: Pick element locator
-  - Description: Wait for the user to pick an element in the browser and return its ref and locator.
-  - Parameters: None
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
