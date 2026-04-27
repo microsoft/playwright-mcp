@@ -29,3 +29,6 @@ EOF
 Never add Co-Authored-By agents in commit message.
 Branch naming for issue fixes: `fix-<issue-number>`
 
+## Preparing Release Notes
+
+See [.claude/skills/release-notes.md](.claude/skills/release-notes.md).
