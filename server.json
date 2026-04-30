@@ -1,0 +1,29 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.microsoft/playwright-mcp",
+  "description": "Playwright Tools for MCP",
+  "repository": {
+    "url": "https://github.com/microsoft/playwright-mcp",
+    "source": "github"
+  },
+  "version": "0.0.72",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@playwright/mcp",
+      "version": "0.0.72",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "oci",
+      "registryBaseUrl": "https://playwright.azurecr.io",
+      "identifier": "public/playwright/mcp",
+      "version": "0.0.72",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

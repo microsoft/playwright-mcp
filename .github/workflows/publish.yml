@@ -67,6 +67,39 @@ jobs:
       - run: npm run ctest
       - run: npm publish
 
+  publish-mcp-release-registry:
+    if: github.event_name == 'release'
+    needs: publish-mcp-release-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for GitHub OIDC auth to the MCP Registry
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Sync server.json version with package.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = require('./package.json');
+            const server = require('./server.json');
+            server.version = pkg.version;
+            for (const p of server.packages) p.version = pkg.version;
+            fs.writeFileSync('./server.json', JSON.stringify(server, null, 2) + '\n');
+          "
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
+            | tar xz mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+
+      - name: Authenticate with MCP Registry (GitHub OIDC)
+        run: mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: mcp-publisher publish
+
   publish-mcp-release-docker:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
