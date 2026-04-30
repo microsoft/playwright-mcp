@@ -37,12 +37,12 @@
     }
   },
   "dependencies": {
-    "playwright": "1.60.0-alpha-2026-04-27",
-    "playwright-core": "1.60.0-alpha-2026-04-27"
+    "playwright": "1.60.0-alpha-1777566615000",
+    "playwright-core": "1.60.0-alpha-1777566615000"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
-    "@playwright/test": "1.60.0-alpha-2026-04-27",
+    "@playwright/test": "1.60.0-alpha-1777566615000",
     "@types/node": "^24.3.0"
   },
   "bin": {

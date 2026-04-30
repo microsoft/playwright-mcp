@@ -942,13 +942,22 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_network_request**
+  - Title: Show network request details
+  - Description: Returns full details (headers and body) of a single network request, or a single part if `part` is set. Use the number from browser_network_requests.
+  - Parameters:
+    - `index` (integer): 1-based index of the request, as printed by browser_network_requests.
+    - `part` (string, optional): Return only this part of the request. Omit to return full details.
+    - `filename` (string, optional): Filename to save the result to. If not provided, output is returned as text.
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_network_requests**
   - Title: List network requests
-  - Description: Returns all network requests since loading the page
+  - Description: Returns a numbered list of network requests since loading the page. Use browser_network_request with the number to get full details.
   - Parameters:
     - `static` (boolean): Whether to include successful static resources like images, fonts, scripts, etc. Defaults to false.
-    - `requestBody` (boolean): Whether to include request body. Defaults to false.
-    - `requestHeaders` (boolean): Whether to include request headers. Defaults to false.
     - `filter` (string, optional): Only return requests whose URL matches this regexp (e.g. "/api/.*user").
     - `filename` (string, optional): Filename to save the network requests to. If not provided, requests are returned as text.
   - Read-only: **true**
@@ -974,9 +983,9 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
-- **browser_run_code**
-  - Title: Run Playwright code
-  - Description: Run Playwright code snippet
+- **browser_run_code_unsafe**
+  - Title: Run Playwright code (unsafe)
+  - Description: Run a Playwright code snippet. Unsafe: executes arbitrary JavaScript in the Playwright server process and is RCE-equivalent.
   - Parameters:
     - `code` (string, optional): A JavaScript function containing Playwright code to execute. It will be invoked with a single argument, page, which you can use for any page interaction. For example: `async (page) => { await page.getByRole('button', { name: 'Submit' }).click(); return await page.title(); }`
     - `filename` (string, optional): Load code from the specified file. If both code and filename are provided, code will be ignored.
@@ -1288,6 +1297,14 @@ http.createServer(async (req, res) => {
 
 <details>
 <summary><b>DevTools (opt-in via --caps=devtools)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_annotate**
+  - Title: Annotate the current page
+  - Description: Open the Playwright Dashboard in annotation mode for the current page and wait for the user to draw annotations. Returns the annotated screenshot, ARIA snapshot, and the list of annotations.
+  - Parameters: None
+  - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
