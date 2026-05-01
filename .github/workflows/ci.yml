@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
-    - name: Use Node.js 24
+    - name: Use Node.js 22
       uses: actions/setup-node@v5
       with:
-        node-version: '24'
+        node-version: '22'
         cache: 'npm'
     - run: npm ci
     - run: npm run lint
@@ -29,10 +29,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v5
-    - name: Use Node.js 24
+    - name: Use Node.js 22
       uses: actions/setup-node@v5
       with:
-        node-version: '24'
+        node-version: '22'
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
@@ -47,10 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
-    - name: Use Node.js 24
+    - name: Use Node.js 22
       uses: actions/setup-node@v5
       with:
-        node-version: '24'
+        node-version: '22'
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
