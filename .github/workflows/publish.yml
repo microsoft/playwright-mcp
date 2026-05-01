@@ -17,11 +17,8 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org/
-      # Ensure npm 11.5.1 or later is installed (for OIDC npm publishing)
-      - name: Update npm
-        run: npm install -g npm@latest
 
       - name: Get current date
         id: date
@@ -56,11 +53,8 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org/
-      # Ensure npm 11.5.1 or later is installed (for OIDC npm publishing)
-      - name: Update npm
-        run: npm install -g npm@latest
       - run: npm ci
       - run: npx playwright install --with-deps
       - run: npm run lint
