@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org/
       # Ensure npm 11.5.1 or later is installed (for OIDC npm publishing)
       - name: Update npm
@@ -56,7 +56,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org/
       # Ensure npm 11.5.1 or later is installed (for OIDC npm publishing)
       - name: Update npm
@@ -124,11 +124,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Set up QEMU # Needed for multi-platform builds (e.g., arm64 on amd64 runner)
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx # Needed for multi-platform builds
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Azure Login via OIDC
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_DOCKER_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_DOCKER_TENANT_ID }}
@@ -137,7 +137,7 @@ jobs:
         run: az acr login --name playwright
       - name: Build and push Docker image
         id: build-push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
@@ -145,7 +145,7 @@ jobs:
           tags: |
             playwright.azurecr.io/public/playwright/mcp:${{ github.event.release.tag_name }}
             playwright.azurecr.io/public/playwright/mcp:latest
-      - uses: oras-project/setup-oras@v1
+      - uses: oras-project/setup-oras@v2
       - name: Set oras tags
         run: |
           attach_eol_manifest() {

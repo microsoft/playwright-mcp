@@ -10,11 +10,11 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js 20
-      uses: actions/setup-node@v4
+    - uses: actions/checkout@v5
+    - name: Use Node.js 22
+      uses: actions/setup-node@v5
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
     - run: npm ci
     - run: npm run lint
@@ -28,11 +28,11 @@ jobs:
         os: [ubuntu-latest, macos-15, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js 20
-      uses: actions/setup-node@v4
+    - uses: actions/checkout@v5
+    - name: Use Node.js 22
+      uses: actions/setup-node@v5
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
@@ -46,20 +46,20 @@ jobs:
   test_mcp_docker:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js 20
-      uses: actions/setup-node@v4
+    - uses: actions/checkout@v5
+    - name: Use Node.js 22
+      uses: actions/setup-node@v5
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
     - name: Playwright install
       run: npx playwright install --with-deps chromium
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
     - name: Build and push
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         tags: playwright-mcp-dev:latest
         cache-from: type=gha
