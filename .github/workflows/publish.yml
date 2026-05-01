@@ -68,7 +68,14 @@ jobs:
       - run: npm publish
 
   publish-mcp-release-registry:
-    if: github.event_name == 'release'
+    # Runs on release (after npm publish succeeds) or via manual workflow_dispatch
+    # (e.g. to retroactively publish a version, in which case publish-mcp-release-npm
+    # is skipped — the always() + result check lets this job still run).
+    if: |
+      always() &&
+      (github.event_name == 'release' || github.event_name == 'workflow_dispatch') &&
+      needs.publish-mcp-release-npm.result != 'failure' &&
+      needs.publish-mcp-release-npm.result != 'cancelled'
     needs: publish-mcp-release-npm
     runs-on: ubuntu-latest
     permissions:

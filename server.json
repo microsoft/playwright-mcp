@@ -6,12 +6,12 @@
     "url": "https://github.com/microsoft/playwright-mcp",
     "source": "github"
   },
-  "version": "0.0.71",
+  "version": "0.0.72",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@playwright/mcp",
-      "version": "0.0.71",
+      "version": "0.0.72",
       "transport": {
         "type": "stdio"
       }
@@ -20,7 +20,7 @@
       "registryType": "oci",
       "registryBaseUrl": "https://playwright.azurecr.io",
       "identifier": "public/playwright/mcp",
-      "version": "0.0.71",
+      "version": "0.0.72",
       "transport": {
         "type": "stdio"
       }
