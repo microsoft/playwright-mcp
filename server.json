@@ -15,15 +15,6 @@
       "transport": {
         "type": "stdio"
       }
-    },
-    {
-      "registryType": "oci",
-      "registryBaseUrl": "https://playwright.azurecr.io",
-      "identifier": "public/playwright/mcp",
-      "version": "0.0.72",
-      "transport": {
-        "type": "stdio"
-      }
     }
   ]
 }
