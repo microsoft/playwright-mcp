@@ -453,6 +453,9 @@ Persistent profile is located at the following locations and you can override it
 
 `{workspace-hash}` is derived from the MCP client's workspace root, so different projects get separate profiles automatically.
 
+> [!IMPORTANT]
+> A persistent profile can only be used by one browser instance at a time, so concurrent MCP clients sharing the same workspace will conflict. To run several clients in parallel, start each additional client with `--isolated` or point it at a distinct `--user-data-dir`.
+
 **Isolated**
 
 In the isolated mode, each session is started in the isolated profile. Every time you ask MCP to close the browser,
