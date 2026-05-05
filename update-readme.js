@@ -177,7 +177,9 @@ async function updateOptions(content) {
   table.push(`|--------|-------------|`);
   for (const option of options) {
     const prefix = option.name.split(' ')[0];
-    const envName = `PLAYWRIGHT_MCP_` + prefix.toUpperCase().replace(/-/g, '_');
+    const envName = prefix === 'secrets'
+      ? 'PLAYWRIGHT_MCP_SECRETS_FILE'
+      : `PLAYWRIGHT_MCP_` + prefix.toUpperCase().replace(/-/g, '_');
     table.push(`| --${option.name} | ${option.value}<br>*env* \`${envName}\` |`);
   }
 
