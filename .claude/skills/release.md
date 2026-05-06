@@ -1,5 +1,5 @@
 ---
-name: release-notes
+name: release
 description: Prepare a playwright-mcp release — roll Playwright, bump the version, and write GitHub release notes that combine changes from this repo and upstream microsoft/playwright since the last release.
 ---
 

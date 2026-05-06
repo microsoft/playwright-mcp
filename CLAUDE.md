@@ -38,4 +38,4 @@ Branch naming for issue fixes: `fix-<issue-number>`
 
 ## Preparing Release Notes
 
-See [.claude/skills/release-notes.md](.claude/skills/release-notes.md).
+See [.claude/skills/release.md](.claude/skills/release.md).
