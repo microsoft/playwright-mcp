@@ -1014,7 +1014,7 @@ http.createServer(async (req, res) => {
     - `target` (string, optional): Exact target element reference from the page snapshot, or a unique element selector
     - `filename` (string, optional): Save snapshot to markdown file instead of returning it in the response.
     - `depth` (number, optional): Limit the depth of the snapshot tree
-    - `boxes` (boolean, optional): Include each element's bounding box as [box=x,y,width,height] in the snapshot
+    - `boxes` (boolean, optional): Include each element's bounding box as [box=x,y,width,height] in the snapshot. Coordinates are viewport-relative, in CSS pixels (Element.getBoundingClientRect)
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
