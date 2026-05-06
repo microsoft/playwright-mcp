@@ -36,6 +36,6 @@ Branch naming for issue fixes: `fix-<issue-number>`
 3. Run `npm test`. Only proceed if all tests pass.
 4. Commit with `chore: roll Playwright to <version>`, push, and open a PR against `microsoft/playwright-mcp` with the same title.
 
-## Preparing Release Notes
+## Preparing a Release
 
 See [.claude/skills/release.md](.claude/skills/release.md).
