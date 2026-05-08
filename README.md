@@ -1528,3 +1528,55 @@ http.createServer(async (req, res) => {
 
 
 <!--- End of tools generated section -->
+## Memory Management
+
+Chromium processes consume significant memory (~100-200MB per browser instance). On resource-constrained environments (small VPS, CI runners, containers with <4GB RAM), multiple browser sessions or zombie processes can cause OOM kills.
+
+### Recommendations for Small Machines
+
+1. **Use `--headless` mode** on servers without a display:
+```bash
+npx @playwright/mcp --headless
+```
+
+2. **Use `--isolated` to avoid profile disk I/O overhead**:
+```bash
+npx @playwright/mcp --headless --isolated
+```
+
+3. **Set Node.js memory limit** to prevent unbounded heap growth:
+```bash
+NODE_OPTIONS='--max-old-space-size=512' npx @playwright/mcp --headless
+```
+
+4. **Limit concurrent pages** — avoid opening many tabs simultaneously in a single session
+
+5. **Monitor for zombie processes** if MCP client disconnects unexpectedly:
+```bash
+# Check for orphaned chrome processes
+ps aux | grep chromium | grep -v grep
+# Clean up if needed
+pkill -f 'chromium.*headless'
+```
+
+6. **Docker environments** — set appropriate memory limits:
+```bash
+docker run --memory=2g --memory-swap=2g ...
+```
+
+### Why This Matters
+
+- Each Chromium renderer process uses ~100-200MB
+- GPU process, network service, and utility processes add another 50-100MB
+- On a 2GB machine, 2-3 concurrent browser sessions can exhaust available RAM
+- MCP clients may not always cleanly disconnect, leaving browser processes running
+
+### Related Options
+
+| Option | Effect |
+|---|---|
+| `--headless` | No display needed, slightly lower memory |
+| `--isolated` | In-memory profile, no disk I/O overhead |
+| `--no-sandbox` | Lower overhead (use only in trusted environments) |
+| `--viewport-size` | Smaller viewports use less memory for rendering |
+
