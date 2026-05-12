@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-import type * as playwright from '../../..';
+import type * as playwright from "playwright";
 
 export type ToolCapability =
-  'config' |
-  'core' |
-  'core-navigation' |
-  'core-tabs' |
-  'core-input' |
-  'core-install' |
-  'network' |
-  'pdf' |
-  'storage' |
-  'testing' |
-  'vision' |
-  'devtools';
+  | "config"
+  | "core"
+  | "core-navigation"
+  | "core-tabs"
+  | "core-input"
+  | "core-install"
+  | "network"
+  | "pdf"
+  | "storage"
+  | "testing"
+  | "vision"
+  | "devtools";
 
 export type Config = {
   /**
@@ -38,7 +38,7 @@ export type Config = {
     /**
      * The type of browser to use.
      */
-    browserName?: 'chromium' | 'firefox' | 'webkit';
+    browserName?: "chromium" | "firefox" | "webkit";
 
     /**
      * Keep the browser profile in memory, do not save it to disk.
@@ -96,7 +96,7 @@ export type Config = {
      * The scripts will be evaluated in every page before any of the page's scripts.
      */
     initScript?: string[];
-  },
+  };
 
   /**
    * Connect to a running browser instance (Edge/Chrome only). If specified, `browser`
@@ -121,7 +121,19 @@ export type Config = {
      * This is not for CORS, but rather for the DNS rebinding protection.
      */
     allowedHosts?: string[];
-  },
+
+    /**
+     * Logging level: debug, info, warn, or error. Default is "info".
+     * Controls verbosity of structured logs.
+     */
+    logLevel?: "debug" | "info" | "warn" | "error";
+
+    /**
+     * Log output format: "json" for JSON lines, "text" for human-readable. Default is "text".
+     * Can also be set via LOG_FORMAT environment variable.
+     */
+    logFormat?: "json" | "text";
+  };
 
   /**
    * List of enabled tool capabilities. Possible values:
@@ -158,8 +170,8 @@ export type Config = {
     /**
      * The level of console messages to return. Each level includes the messages of more severe levels. Defaults to "info".
      */
-    level?: 'error' | 'warning' | 'info' | 'debug';
-  },
+    level?: "error" | "warning" | "info" | "debug";
+  };
 
   network?: {
     /**
@@ -206,13 +218,39 @@ export type Config = {
   /**
    * Whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.
    */
-  imageResponses?: 'allow' | 'omit';
+  imageResponses?: "allow" | "omit";
 
   snapshot?: {
     /**
-     * When taking snapshots for responses, specifies the mode to use.
+     * When taking snapshots for responses, specifies the mode to use:
+     * - "full": Return the complete accessibility tree (default)
+     * - "none": Don't return snapshots
+     * - "pruned": Remove decorative nodes (no accessible name, no children)
+     * - "focused": Only return interactive elements and text content
      */
-    mode?: 'full' | 'none';
+    mode?: "full" | "none" | "pruned" | "focused";
+
+    /**
+     * Limit the depth of the accessibility tree in snapshots to reduce token consumption.
+     * Default is unlimited. Set to a number like 3-5 for high-throughput agentic workflows.
+     * Shallow trees (depth 2-3) significantly reduce tokens while maintaining actionable elements.
+     */
+    depth?: number;
+
+    /**
+     * Exclude node types from snapshots to reduce verbosity. Useful for filtering out rarely-useful nodes.
+     * Comma-separated list of node types to exclude (e.g. "generic,none,paragraph,text").
+     * Default includes all nodes. Common nodes to exclude: "generic" (generic divs), "none" (unmapped roles).
+     */
+    filter?: string;
+
+    /**
+     * Whether to prune invisible/decorative nodes automatically.
+     * When enabled, nodes with no accessible name and no children are removed.
+     * Ignored if mode is "none" or "focused".
+     * @deprecated Use mode: "pruned" or mode: "focused" instead.
+     */
+    prune?: boolean;
   };
 
   /**
@@ -226,5 +264,5 @@ export type Config = {
   /**
    * Specify the language to use for code generation.
    */
-  codegen?: 'typescript' | 'none';
+  codegen?: "typescript" | "none";
 };

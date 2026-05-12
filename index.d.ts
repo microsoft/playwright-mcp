@@ -15,9 +15,50 @@
  * limitations under the License.
  */
 
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import type { Config } from './config';
-import type { BrowserContext } from 'playwright';
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import type { Config } from "./config";
+import type { BrowserContext } from "playwright";
 
-export declare function createConnection(config?: Config, contextGetter?: () => Promise<BrowserContext>): Promise<Server>;
-export {};
+export declare function createConnection(
+  config?: Config,
+  contextGetter?: () => Promise<BrowserContext>,
+): Promise<Server>;
+
+export type { AuthenticatedServerOptions } from "./src/server";
+export type { HealthMetrics, HealthStatus, LogTailEntry } from "./src/server";
+export declare function createAuthenticatedHandler(
+  connection: Server,
+  options?: {
+    authToken?: string;
+    messagePath?: string;
+    logger?: (message: string) => void;
+    version?: string;
+    capabilities?: Record<string, boolean>;
+    browsers?: Record<string, "ready" | "unavailable">;
+    config?: Record<string, any>;
+    enableDashboard?: boolean;
+  },
+): (
+  req: import("http").IncomingMessage,
+  res: import("http").ServerResponse,
+) => void;
+export declare function validateServerConfiguration(
+  port: number | undefined,
+  authToken: string | undefined,
+  logger?: (message: string) => void,
+  host?: string,
+): void;
+
+export type {
+  LogLevel,
+  LogContext,
+  LogEntry,
+  LoggerOptions,
+} from "./src/logger";
+export {
+  Logger,
+  getLogger,
+  setGlobalLogger,
+  resetGlobalLogger,
+  PerformanceTimer,
+} from "./src/logger";
