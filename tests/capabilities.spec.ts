@@ -14,64 +14,77 @@
  * limitations under the License.
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from "./fixtures";
 
-test('test snapshot tool list', async ({ client }) => {
+test("test snapshot tool list", async ({ client }) => {
   const { tools } = await client.listTools();
-  expect(new Set(tools.map(t => t.name))).toEqual(new Set([
-    'browser_click',
-    'browser_console_messages',
-    'browser_drag',
-    'browser_drop',
-    'browser_evaluate',
-    'browser_file_upload',
-    'browser_fill_form',
-    'browser_handle_dialog',
-    'browser_hover',
-    'browser_select_option',
-    'browser_type',
-    'browser_close',
-    'browser_navigate_back',
-    'browser_navigate',
-    'browser_network_request',
-    'browser_network_requests',
-    'browser_press_key',
-    'browser_resize',
-    'browser_run_code_unsafe',
-    'browser_snapshot',
-    'browser_tabs',
-    'browser_take_screenshot',
-    'browser_wait_for',
-  ]));
+  expect(new Set(tools.map((t) => t.name))).toEqual(
+    new Set([
+      "browser_click",
+      "browser_console_messages",
+      "browser_drag",
+      "browser_drop",
+      "browser_evaluate",
+      "browser_file_upload",
+      "browser_fill_form",
+      "browser_handle_dialog",
+      "browser_hover",
+      "browser_select_option",
+      "browser_type",
+      "browser_close",
+      "browser_navigate_back",
+      "browser_navigate",
+      "browser_network_request",
+      "browser_network_requests",
+      "browser_press_key",
+      "browser_resize",
+      "browser_run_code_unsafe",
+      "browser_snapshot",
+      "browser_tabs",
+      "browser_take_screenshot",
+      "browser_wait_for",
+    ]),
+  );
 });
 
-test('test capabilities (pdf)', async ({ startClient }) => {
-  const { client } = await startClient({
-    args: ['--caps=pdf'],
-  });
+test("opt-in tools are not in default snapshot list", async ({ client }) => {
   const { tools } = await client.listTools();
-  const toolNames = tools.map(t => t.name);
-  expect(toolNames).toContain('browser_pdf_save');
+  const toolNames = tools.map((t) => t.name);
+  // pdf cap
+  expect(toolNames).not.toContain("browser_pdf_save");
+  // vision/coordinate cap
+  expect(toolNames).not.toContain("browser_mouse_move_xy");
+  expect(toolNames).not.toContain("browser_mouse_click_xy");
+  expect(toolNames).not.toContain("browser_mouse_drag_xy");
 });
 
-test('test capabilities (vision)', async ({ startClient }) => {
+test("test capabilities (pdf)", async ({ startClient }) => {
   const { client } = await startClient({
-    args: ['--caps=vision'],
+    args: ["--caps=pdf"],
   });
   const { tools } = await client.listTools();
-  const toolNames = tools.map(t => t.name);
-  expect(toolNames).toContain('browser_mouse_move_xy');
-  expect(toolNames).toContain('browser_mouse_click_xy');
-  expect(toolNames).toContain('browser_mouse_drag_xy');
+  const toolNames = tools.map((t) => t.name);
+  expect(toolNames).toContain("browser_pdf_save");
 });
 
-test('support for legacy --vision option', async ({ startClient }) => {
+test("test capabilities (vision)", async ({ startClient }) => {
   const { client } = await startClient({
-    args: ['--vision'],
+    args: ["--caps=vision"],
   });
   const { tools } = await client.listTools();
-  const toolNames = tools.map(t => t.name);
-  expect(toolNames).toContain('browser_mouse_move_xy');
-  expect(toolNames).toContain('browser_mouse_click_xy');
-  expect(toolNames).toContain('browser_mouse_drag_xy');
+  const toolNames = tools.map((t) => t.name);
+  expect(toolNames).toContain("browser_mouse_move_xy");
+  expect(toolNames).toContain("browser_mouse_click_xy");
+  expect(toolNames).toContain("browser_mouse_drag_xy");
+});
+
+test("support for legacy --vision option", async ({ startClient }) => {
+  const { client } = await startClient({
+    args: ["--vision"],
+  });
+  const { tools } = await client.listTools();
+  const toolNames = tools.map((t) => t.name);
+  expect(toolNames).toContain("browser_mouse_move_xy");
+  expect(toolNames).toContain("browser_mouse_click_xy");
+  expect(toolNames).toContain("browser_mouse_drag_xy");
 });
