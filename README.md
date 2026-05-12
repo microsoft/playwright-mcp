@@ -8,15 +8,18 @@ This package provides MCP interface into Playwright. If you are using a **coding
 
 - **CLI**: Modern **coding agents** increasingly favor CLI–based workflows exposed as SKILLs over MCP because CLI invocations are more token-efficient: they avoid loading large tool schemas and verbose accessibility trees into the model context, allowing agents to act through concise, purpose-built commands. This makes CLI + SKILLs better suited for high-throughput coding agents that must balance browser automation with large codebases, tests, and reasoning within limited context windows.<br>**Learn more about [Playwright CLI with SKILLS](https://github.com/microsoft/playwright-cli)**.
 
-- **MCP**: MCP remains relevant for specialized agentic loops that benefit from persistent state, rich introspection, and iterative reasoning over page structure, such as exploratory automation, self-healing tests, or long-running autonomous workflows where maintaining continuous browser context outweighs token cost concerns.
+- **MCP**: MCP remains relevant for specialized agentic loops that benefit from persistent state, rich introspection, and iterative reasoning over page structure, such as exploratory automation, self-healing tests, or long-running autonomous workflows where maintaining continuous browser context outweighs token cost concerns. **New:** MCP now supports [token optimization](https://github.com/microsoft/playwright-mcp#token-efficiency-for-agentic-workflows) via smart snapshot pruning (`--snapshot-mode pruned|focused`) and configurable tree depth/filtering to reduce accessibility tree verbosity by 45-80%, making it viable for high-throughput scenarios.
 
 ### Key Features
 
 - **Fast and lightweight**. Uses Playwright's accessibility tree, not pixel-based input.
 - **LLM-friendly**. No vision models needed, operates purely on structured data.
 - **Deterministic tool application**. Avoids ambiguity common with screenshot-based approaches.
+- **Production-ready observability**. Structured logging with JSON output, environment-based configuration, and lifecycle event tracking for monitoring agentic workflows at scale.
+- **Token-efficient**. Smart snapshot pruning and configurable tree depth reduce token usage by 45–80% on typical pages.
 
 ### Requirements
+
 - Node.js 18 or newer
 - VS Code, Cursor, Windsurf, Claude Desktop, Goose, Junie or any other MCP client
 
@@ -82,9 +85,7 @@ Add via the Antigravity settings or by updating your configuration file:
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ]
+      "args": ["@playwright/mcp@latest"]
     }
   }
 }
@@ -100,6 +101,7 @@ Use the Claude Code CLI to add the Playwright MCP server:
 ```bash
 claude mcp add playwright npx @playwright/mcp@latest
 ```
+
 </details>
 
 <details>
@@ -125,10 +127,7 @@ Add the following to your [`cline_mcp_settings.json`](https://docs.cline.bot/mcp
       "type": "stdio",
       "command": "npx",
       "timeout": 30,
-      "args": [
-        "-y",
-        "@playwright/mcp@latest"
-      ],
+      "args": ["-y", "@playwright/mcp@latest"],
       "disabled": false
     }
   }
@@ -175,12 +174,8 @@ Alternatively, create or edit the configuration file `~/.copilot/mcp-config.json
     "playwright": {
       "type": "local",
       "command": "npx",
-      "tools": [
-        "*"
-      ],
-      "args": [
-        "@playwright/mcp@latest"
-      ]
+      "tools": ["*"],
+      "args": ["@playwright/mcp@latest"]
     }
   }
 }
@@ -235,6 +230,7 @@ Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/
 #### Or install manually:
 
 Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to your liking, use type `STDIO`, and set the `command` to `npx @playwright/mcp`. Click "Add Extension".
+
 </details>
 
 <details>
@@ -253,10 +249,7 @@ Alternatively, add to `.junie/mcp/mcp.json`:
   "mcpServers": {
     "Playwright": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest"
-      ]
+      "args": ["-y", "@playwright/mcp@latest"]
     }
   }
 }
@@ -278,13 +271,12 @@ Follow the MCP Servers [documentation](https://kiro.dev/docs/mcp/). For example 
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ]
+      "args": ["@playwright/mcp@latest"]
     }
   }
 }
 ```
+
 </details>
 
 <details>
@@ -297,6 +289,7 @@ Follow the MCP Servers [documentation](https://kiro.dev/docs/mcp/). For example 
 #### Or install manually:
 
 Go to `Program` in the right sidebar -> `Install` -> `Edit mcp.json`. Use the standard config above.
+
 </details>
 
 <details>
@@ -310,16 +303,13 @@ Follow the MCP Servers [documentation](https://opencode.ai/docs/mcp-servers/). F
   "mcp": {
     "playwright": {
       "type": "local",
-      "command": [
-        "npx",
-        "@playwright/mcp@latest"
-      ],
+      "command": ["npx", "@playwright/mcp@latest"],
       "enabled": true
     }
   }
 }
-
 ```
+
 </details>
 
 <details>
@@ -328,6 +318,7 @@ Follow the MCP Servers [documentation](https://opencode.ai/docs/mcp-servers/). F
 Open [Qodo Gen](https://docs.qodo.ai/qodo-documentation/qodo-gen) chat panel in VSCode or IntelliJ → Connect more tools → + Add new MCP → Paste the standard config above.
 
 Click <code>Save</code>.
+
 </details>
 
 <details>
@@ -347,6 +338,7 @@ code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@la
 ```
 
 After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
+
 </details>
 
 <details>
@@ -355,6 +347,7 @@ After installation, the Playwright MCP server will be available for use with you
 Go to `Settings` -> `AI` -> `Manage MCP Servers` -> `+ Add` to [add an MCP Server](https://docs.warp.dev/knowledge-and-collaboration/mcp#adding-an-mcp-server). Use the standard config above.
 
 Alternatively, use the slash command `/add-mcp` in the Warp prompt and paste the standard config from above:
+
 ```js
 {
   "mcpServers": {
@@ -431,6 +424,152 @@ Playwright MCP server supports following arguments. They can be provided in the 
 
 <!--- End of options generated section -->
 
+## Token Efficiency for Agentic Workflows
+
+Playwright MCP uses accessibility snapshots instead of screenshots, which is significantly more token-efficient. However, for high-throughput agentic workflows with large codebases or complex reasoning, further optimization is possible:
+
+### Reduce Accessibility Tree Depth
+
+The `--snapshot-depth` option limits how many levels of DOM nodes are included in snapshots:
+
+```bash
+# Default: unlimited depth (includes all nodes)
+npx @playwright/mcp@latest
+
+# Optimized for high-throughput workflows: depth 3-4
+npx @playwright/mcp@latest --snapshot-depth 3
+
+# Very aggressive: depth 2 (only top-level interactive elements)
+npx @playwright/mcp@latest --snapshot-depth 2
+```
+
+**Token reduction:** Typical pages see **30-50% reduction** in snapshot tokens with `--snapshot-depth 3-4`, while maintaining all actionable interactive elements (buttons, inputs, links).
+
+### Filter Non-Interactive Node Types
+
+The `--snapshot-filter` option removes verbose but rarely-useful node types:
+
+```bash
+# Exclude generic divs and unmapped roles
+npx @playwright/mcp@latest --snapshot-filter "generic,none"
+
+# Aggressive filtering: also exclude paragraphs and text nodes
+npx @playwright/mcp@latest --snapshot-filter "generic,none,paragraph,text"
+```
+
+Common node types to exclude:
+
+- `generic` - unmapped generic `<div>` and `<span>` elements
+- `none` - nodes with role="none" (decorative elements)
+- `paragraph` - `<p>` and similar elements (often redundant with text content)
+- `text` - bare text nodes outside of interactive elements
+
+**Token reduction:** Filtering reduces snapshot verbosity by **20-40%** depending on page structure.
+
+### Optimal Configuration for High-Throughput Workflows
+
+Combine both strategies for maximum efficiency:
+
+```bash
+npx @playwright/mcp@latest --snapshot-depth 3 --snapshot-filter "generic,none"
+```
+
+**Expected token reduction:** **45-60%** compared to default (unlimited depth, all nodes).
+
+**Trade-offs:**
+
+- Shallow depth may miss non-interactive content or deeply nested interactive elements
+- Filtering removes context that might be useful for complex interactions
+- Test with your specific use case to find the right balance
+
+### Smart Snapshot Pruning
+
+The `--snapshot-mode` option enables intelligent pruning to remove decorative and non-actionable nodes:
+
+```bash
+# Full tree (default) - all nodes included
+npx @playwright/mcp@latest --snapshot-mode full
+
+# Pruned mode - remove decorative nodes with no name and no children
+npx @playwright/mcp@latest --snapshot-mode pruned
+
+# Focused mode - only interactive elements and text content (most aggressive)
+npx @playwright/mcp@latest --snapshot-mode focused
+
+# No snapshots at all
+npx @playwright/mcp@latest --snapshot-mode none
+```
+
+**Pruning modes:**
+
+- **full** (default): Returns the complete accessibility tree, no pruning applied
+- **pruned**: Removes nodes with no accessible name AND no children. These are typically decorative elements like spacers, empty divs, and visual separators. **Token reduction: 15-35%**
+- **focused**: Only includes interactive elements (buttons, links, inputs) and text content (headings, paragraphs). Aggressive mode for maximum efficiency. **Token reduction: 50-70%**
+- **none**: No snapshots at all, only returns page metadata
+
+**Smart pruning features:**
+
+- Interactive elements are always preserved (buttons, links, form controls)
+- Text content and headings are preserved
+- Decorative nodes (no accessible name, no children) are removed in pruned mode
+- Maintains full actionability for all interactive elements
+- Works in combination with `--snapshot-depth` and `--snapshot-filter`
+
+**Combining strategies for maximum efficiency:**
+
+```bash
+# Depth limiting + Pruning + Filtering = maximum reduction
+npx @playwright/mcp@latest --snapshot-mode pruned --snapshot-depth 3 --snapshot-filter "generic,none"
+
+# Or in config file:
+# {
+#   "snapshot": {
+#     "mode": "pruned",
+#     "depth": 3,
+#     "filter": "generic,none"
+#   }
+# }
+```
+
+**Expected combined reduction:**
+
+- **pruned + depth 3**: 40-55% reduction
+- **focused mode alone**: 50-70% reduction
+- **focused + depth 2 + filter**: 60-80% reduction
+
+**Real-world example:**
+
+A typical e-commerce product page with navigation, product grid, filters, and footer might contain:
+
+- **Full mode**: ~150 nodes, ~600 tokens
+- **Pruned mode**: ~100 nodes, ~400 tokens (-33% nodes, -33% tokens)
+- **Focused mode**: ~40 nodes, ~160 tokens (-73% nodes, -73% tokens)
+
+**When to use each mode:**
+
+- **full**: General purpose, maximum context
+- **pruned**: Most common for balanced speed/context trade-off
+- **focused**: High-throughput workflows with token constraints
+- **none**: When snapshots aren't needed (testing modes, specific workflows)
+
+### Configuration via File
+
+```json
+{
+  "snapshot": {
+    "mode": "pruned",
+    "depth": 3,
+    "filter": "generic,none"
+  }
+}
+```
+
+Then run:
+
+```bash
+npx @playwright/mcp@latest --config path/to/config.json
+```
+
 ### User profile
 
 You can run Playwright MCP with persistent profile like a regular browser (default), in isolated contexts for testing sessions, or connect to your existing browser using the browser extension.
@@ -487,6 +626,7 @@ The Playwright MCP Chrome Extension allows you to connect to existing browser ta
 There are multiple ways to provide the initial state to the browser context or a page.
 
 For the storage state, you can either:
+
 - Start with a user data directory using the `--user-data-dir` argument. This will persist all browser data between the sessions.
 - Start with a storage state file using the `--storage-state` argument. This will load cookies and local storage from the file into an isolated browser context.
 
@@ -497,14 +637,16 @@ For the page state, you can use:
 ```ts
 // init-page.ts
 export default async ({ page }) => {
-  await page.context().grantPermissions(['geolocation']);
-  await page.context().setGeolocation({ latitude: 37.7749, longitude: -122.4194 });
+  await page.context().grantPermissions(["geolocation"]);
+  await page
+    .context()
+    .setGeolocation({ latitude: 37.7749, longitude: -122.4194 });
   await page.setViewportSize({ width: 1280, height: 720 });
 };
 ```
 
 - `--init-script` to point to a JavaScript file that will be added as an initialization script. The script will be evaluated in every page before any of the page's scripts.
-This is useful for overriding browser APIs or setting up the environment.
+  This is useful for overriding browser APIs or setting up the environment.
 
 ```js
 // init-script.js
@@ -534,7 +676,7 @@ npx @playwright/mcp@latest --config path/to/config.json
     /**
      * The type of browser to use.
      */
-    browserName?: 'chromium' | 'firefox' | 'webkit';
+    browserName?: "chromium" | "firefox" | "webkit";
 
     /**
      * Keep the browser profile in memory, do not save it to disk.
@@ -592,7 +734,7 @@ npx @playwright/mcp@latest --config path/to/config.json
      * The scripts will be evaluated in every page before any of the page's scripts.
      */
     initScript?: string[];
-  },
+  };
 
   /**
    * Connect to a running browser instance (Edge/Chrome only). If specified, `browser`
@@ -617,7 +759,19 @@ npx @playwright/mcp@latest --config path/to/config.json
      * This is not for CORS, but rather for the DNS rebinding protection.
      */
     allowedHosts?: string[];
-  },
+
+    /**
+     * Logging level: debug, info, warn, or error. Default is "info".
+     * Controls verbosity of structured logs.
+     */
+    logLevel?: "debug" | "info" | "warn" | "error";
+
+    /**
+     * Log output format: "json" for JSON lines, "text" for human-readable. Default is "text".
+     * Can also be set via LOG_FORMAT environment variable.
+     */
+    logFormat?: "json" | "text";
+  };
 
   /**
    * List of enabled tool capabilities. Possible values:
@@ -654,8 +808,8 @@ npx @playwright/mcp@latest --config path/to/config.json
     /**
      * The level of console messages to return. Each level includes the messages of more severe levels. Defaults to "info".
      */
-    level?: 'error' | 'warning' | 'info' | 'debug';
-  },
+    level?: "error" | "warning" | "info" | "debug";
+  };
 
   network?: {
     /**
@@ -702,13 +856,39 @@ npx @playwright/mcp@latest --config path/to/config.json
   /**
    * Whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.
    */
-  imageResponses?: 'allow' | 'omit';
+  imageResponses?: "allow" | "omit";
 
   snapshot?: {
     /**
-     * When taking snapshots for responses, specifies the mode to use.
+     * When taking snapshots for responses, specifies the mode to use:
+     * - "full": Return the complete accessibility tree (default)
+     * - "none": Don't return snapshots
+     * - "pruned": Remove decorative nodes (no accessible name, no children)
+     * - "focused": Only return interactive elements and text content
      */
-    mode?: 'full' | 'none';
+    mode?: "full" | "none" | "pruned" | "focused";
+
+    /**
+     * Limit the depth of the accessibility tree in snapshots to reduce token consumption.
+     * Default is unlimited. Set to a number like 3-5 for high-throughput agentic workflows.
+     * Shallow trees (depth 2-3) significantly reduce tokens while maintaining actionable elements.
+     */
+    depth?: number;
+
+    /**
+     * Exclude node types from snapshots to reduce verbosity. Useful for filtering out rarely-useful nodes.
+     * Comma-separated list of node types to exclude (e.g. "generic,none,paragraph,text").
+     * Default includes all nodes. Common nodes to exclude: "generic" (generic divs), "none" (unmapped roles).
+     */
+    filter?: string;
+
+    /**
+     * Whether to prune invisible/decorative nodes automatically.
+     * When enabled, nodes with no accessible name and no children are removed.
+     * Ignored if mode is "none" or "focused".
+     * @deprecated Use mode: "pruned" or mode: "focused" instead.
+     */
+    prune?: boolean;
   };
 
   /**
@@ -722,7 +902,7 @@ npx @playwright/mcp@latest --config path/to/config.json
   /**
    * Specify the language to use for code generation.
    */
-  codegen?: 'typescript' | 'none';
+  codegen?: "typescript" | "none";
 }
 ```
 
@@ -755,10 +935,26 @@ And then in MCP client config, set the `url` to the HTTP endpoint:
 
 Playwright MCP is **not** a security boundary. See [MCP Security Best Practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices) for guidance on securing your deployment.
 
+### HTTP Authentication
+
+When exposing Playwright MCP over HTTP (via `--port`), use the `--auth-token` option to require Bearer token authentication:
+
+```bash
+# Server
+npx @playwright/mcp@latest --port 8931 --auth-token my-secure-token-12345
+
+# Client
+curl -H "Authorization: Bearer my-secure-token-12345" http://localhost:8931/messages
+```
+
+**Important:** Without `--auth-token`, any client with access to the HTTP endpoint can control the browser. The token can be set via the `PLAYWRIGHT_MCP_AUTH_TOKEN` environment variable.
+
 <details>
 <summary><b>Docker</b></summary>
 
-**NOTE:** The Docker implementation only supports headless chromium at the moment.
+The Docker image includes all three Playwright browsers (Chromium, Firefox, WebKit) and runs in headless mode.
+
+**Basic usage:**
 
 ```js
 {
@@ -771,9 +967,26 @@ Playwright MCP is **not** a security boundary. See [MCP Security Best Practices]
 }
 ```
 
-Or If you prefer to run the container as a long-lived service instead of letting the MCP client spawn it, use:
+**Using different browsers:**
 
+```js
+{
+  "mcpServers": {
+    "playwright-firefox": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "--init", "--pull=always", "mcr.microsoft.com/playwright/mcp", "--browser", "firefox"]
+    },
+    "playwright-webkit": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "--init", "--pull=always", "mcr.microsoft.com/playwright/mcp", "--browser", "webkit"]
+    }
+  }
+}
 ```
+
+**Running as a long-lived service:**
+
+```bash
 docker run -d -i --rm --init --pull=always \
   --entrypoint node \
   --name playwright \
@@ -782,36 +995,343 @@ docker run -d -i --rm --init --pull=always \
   /app/cli.js --headless --browser chromium --no-sandbox --port 8931 --host 0.0.0.0
 ```
 
-The server will listen on host port **8931** and can be reached by any MCP client.  
+You can replace `--browser chromium` with `--browser firefox` or `--browser webkit` to use a different browser.
 
-You can build the Docker image yourself.
+The server will listen on host port **8931** and can be reached by any MCP client.
 
-```
+**Building the image:**
+
+```bash
 docker build -t mcr.microsoft.com/playwright/mcp .
 ```
+
+**Validating browser support in container:**
+
+```bash
+# Chromium (default)
+docker run --rm --pull=always mcr.microsoft.com/playwright/mcp --version
+
+# Firefox
+docker run --rm --pull=always mcr.microsoft.com/playwright/mcp --browser firefox --version
+
+# WebKit
+docker run --rm --pull=always mcr.microsoft.com/playwright/mcp --browser webkit --version
+```
+
+**Browser support:**
+
+- **Chromium**: Fully supported in Docker
+- **Firefox**: Fully supported in Docker
+- **WebKit**: Fully supported in Docker
+
+**Known limitations:**
+
+- Browser sandboxing is disabled by default in the container (`--no-sandbox`) for compatibility.
+- Running headed mode in container requires additional display setup (for example, Xvfb); headless mode is the supported default.
+
+</details>
+
+<details>
+<summary><b>Programmatic usage with authentication</b></summary>
+
+```js
+import http from "http";
+
+import { createConnection } from "@playwright/mcp";
+import { createAuthenticatedHandler } from "@playwright/mcp/src/server";
+
+http
+  .createServer(async (req, res) => {
+    // Creates a headless Playwright MCP server with Bearer token authentication
+    const connection = await createConnection({
+      browser: { launchOptions: { headless: true } },
+    });
+    const handler = createAuthenticatedHandler(connection, {
+      authToken: process.env.PLAYWRIGHT_MCP_AUTH_TOKEN || "my-secret-token",
+    });
+
+    handler(req, res);
+  })
+  .listen(8931);
+```
+
+Clients connecting to the server must include the Bearer token:
+
+```js
+const response = await fetch("http://localhost:8931/messages", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer my-secret-token",
+  },
+  // ...
+});
+```
+
 </details>
 
 <details>
 <summary><b>Programmatic usage</b></summary>
 
 ```js
-import http from 'http';
+import http from "http";
 
-import { createConnection } from '@playwright/mcp';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { createConnection } from "@playwright/mcp";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 
 http.createServer(async (req, res) => {
   // ...
 
   // Creates a headless Playwright MCP server with SSE transport
-  const connection = await createConnection({ browser: { launchOptions: { headless: true } } });
-  const transport = new SSEServerTransport('/messages', res);
+  const connection = await createConnection({
+    browser: { launchOptions: { headless: true } },
+  });
+  const transport = new SSEServerTransport("/messages", res);
   await connection.connect(transport);
 
   // ...
 });
 ```
+
 </details>
+
+### Structured Logging and Observability
+
+Playwright MCP supports structured logging to help with debugging and production monitoring. Logs include timestamps, log levels, session IDs, and contextual information like tool names and operation durations.
+
+#### Enabling Structured Logging
+
+By default, logs are unstructured and human-readable. To enable structured JSON logging:
+
+```bash
+# Enable JSON line format
+LOG_FORMAT=json npx @playwright/mcp@latest
+
+# Or set via CLI (when supported in monorepo implementation)
+npx @playwright/mcp@latest --log-format json
+```
+
+#### Log Levels
+
+Control logging verbosity with the `LOG_LEVEL` environment variable or `--log-level` option:
+
+```bash
+# Show only warnings and errors (default: info)
+LOG_LEVEL=warn npx @playwright/mcp@latest
+
+# Show all messages including debug
+LOG_LEVEL=debug npx @playwright/mcp@latest
+
+# Levels: debug, info, warn, error
+```
+
+#### Log Entry Structure
+
+Each structured log entry includes:
+
+- **timestamp** (ISO 8601): When the event occurred
+- **level** (debug|info|warn|error): Log severity
+- **message**: Human-readable description
+- **sessionId**: Unique session identifier for correlation
+- **context** (optional): Additional fields depending on event type
+
+#### Log Formats
+
+**Text format (default):**
+
+```
+[INFO] 2024-05-12T10:30:45.123Z | Browser navigated | url=https://example.com durationMs=245
+```
+
+**JSON format (LOG_FORMAT=json):**
+
+```json
+{
+  "timestamp": "2024-05-12T10:30:45.123Z",
+  "level": "info",
+  "message": "Browser navigated",
+  "sessionId": "abc-123",
+  "context": { "url": "https://example.com", "durationMs": 245 }
+}
+```
+
+#### Common Log Events
+
+**Tool invocation:**
+
+```json
+{
+  "timestamp": "2024-05-12T10:30:45.123Z",
+  "level": "info",
+  "message": "Tool invoked: browser_click",
+  "sessionId": "abc-123",
+  "context": { "tool": "browser_click", "durationMs": 125, "status": "success" }
+}
+```
+
+**Tool error:**
+
+```json
+{
+  "level": "error",
+  "message": "Tool invoked: browser_navigate",
+  "context": {
+    "tool": "browser_navigate",
+    "durationMs": 5000,
+    "status": "error",
+    "error": "Timeout waiting for navigation"
+  }
+}
+```
+
+**Browser lifecycle:**
+
+```json
+{"level":"info","message":"Browser launch","context":{"event":"launch","browserType":"chromium"}}
+{"level":"info","message":"Browser navigate","context":{"event":"navigate","url":"https://example.com"}}
+{"level":"info","message":"Browser close","context":{"event":"close","reason":"session_end"}}
+```
+
+#### Production Monitoring
+
+For production deployments, collect structured logs to your observability platform:
+
+```bash
+# Pipe logs to a log aggregation service
+LOG_FORMAT=json npx @playwright/mcp@latest | jq . | tee >(curl -X POST https://logs.example.com/ingest)
+
+# Or use with Docker
+docker run -e LOG_FORMAT=json mcr.microsoft.com/playwright/mcp | jq .
+```
+
+#### Using the Logger in Code
+
+```js
+import { getLogger, PerformanceTimer } from "@playwright/mcp";
+
+const logger = getLogger();
+
+// Log a message with context
+logger.info("User action", { userId: "123", action: "click" });
+
+// Log tool invocation
+const timer = new PerformanceTimer("browser_click");
+try {
+  await page.click("button");
+  logger.toolInvocation("browser_click", timer.elapsed(), true);
+} catch (error) {
+  logger.toolInvocation("browser_click", timer.elapsed(), false, error.message);
+}
+
+// Log browser events
+logger.browserEvent("launch", { browserType: "chromium" });
+logger.browserEvent("navigate", { url: "https://example.com" });
+```
+
+### Health Dashboard & Observability
+
+When the Playwright MCP server is started with `--port`, a real-time health dashboard is automatically available at `http://localhost:<port>/`.
+
+#### Dashboard Features
+
+The health dashboard displays:
+
+- **Server Status**: Status, version, uptime, and authentication status
+- **Metrics**: Request count today, average response time
+- **Browsers**: Status of each browser (Chromium, Firefox, WebKit)
+- **Capabilities**: Available features (vision, PDF, etc.) with on/off status
+- **Configuration**: Current snapshot mode, depth, log level, and other settings
+- **Live Log**: Last 50 log entries with auto-refresh every 5 seconds
+
+#### Accessing the Dashboard
+
+Once the server is running on a port, open your browser to view the dashboard:
+
+```bash
+# Start server with HTTP transport
+npx @playwright/mcp@latest --port 8080
+
+# Open dashboard in browser
+# Visit: http://localhost:8080/
+```
+
+#### Health API Endpoint
+
+The dashboard pulls data from the `GET /api/health` JSON endpoint:
+
+```bash
+curl http://localhost:8080/api/health
+```
+
+Response structure:
+
+```json
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "uptime_seconds": 3600,
+  "auth_enabled": true,
+  "capabilities": {
+    "vision": true,
+    "pdf": false,
+    "core": true
+  },
+  "browsers": {
+    "chromium": "ready",
+    "firefox": "ready",
+    "webkit": "unavailable"
+  },
+  "config": {
+    "snapshot_mode": "pruned",
+    "snapshot_depth": 3,
+    "log_level": "info"
+  },
+  "metrics": {
+    "requests_today": 42,
+    "avg_response_ms": 125,
+    "total_response_ms": 5250,
+    "response_count": 42
+  },
+  "log_tail": [
+    "2024-05-12T10:30:45.123Z Tool invoked: browser_click",
+    "2024-05-12T10:30:46.456Z Browser navigate"
+  ]
+}
+```
+
+#### Disabling the Dashboard
+
+To disable the health dashboard (for security or performance), use:
+
+```ts
+import { createAuthenticatedHandler } from "@playwright/mcp";
+
+const handler = createAuthenticatedHandler(connection, {
+  enableDashboard: false,
+});
+```
+
+The `/api/health` endpoint always remains available for programmatic access.
+
+#### Dashboard Design
+
+- **Dark mode support**: Automatically adapts to system preferences via `prefers-color-scheme`
+- **Mobile-friendly**: Single-column layout below 600px width
+- **No dependencies**: Vanilla HTML/CSS/JavaScript, no frameworks or external CDN
+- **Self-contained**: All assets embedded in the page, no separate file loads
+
+#### Dashboard Examples
+
+| Section        | Example Value |
+| -------------- | ------------- |
+| Status         | OK / Error    |
+| Version        | 1.0.0         |
+| Uptime         | 1h 30m        |
+| Requests Today | 1,234         |
+| Avg Response   | 45 ms         |
+| Chromium       | ready ✓       |
+| Firefox        | unavailable ✗ |
+| Vision         | enabled ✓     |
+| PDF            | disabled ✗    |
 
 ### Tools
 

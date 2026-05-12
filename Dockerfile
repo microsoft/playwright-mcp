@@ -17,8 +17,8 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
   npm ci --omit=dev && \
-  # Install system dependencies for playwright
-  npx -y playwright-core install-deps chromium
+  # Install system dependencies for all Playwright browsers (chromium, firefox, webkit)
+  npx -y playwright-core install-deps chromium firefox webkit
 
 # ------------------------------
 # Builder
@@ -37,11 +37,11 @@ COPY *.json *.js *.ts .
 # Browser
 # ------------------------------
 # Cache optimization:
-# - Browser is downloaded only when node_modules or Playwright system dependencies change
+# - Browsers are downloaded only when node_modules or Playwright system dependencies change
 # - Cache is reused when only source code changes
 FROM base AS browser
 
-RUN npx -y playwright-core install --no-shell chromium
+RUN npx -y playwright-core install --no-shell chromium firefox webkit
 
 # ------------------------------
 # Runtime
@@ -63,5 +63,7 @@ COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
 # Current working directory must be writable as MCP may need to create default output dir in it.
 WORKDIR /home/${USERNAME}
 
-# Run in headless and only with chromium (other browsers need more dependencies not included in this image)
-ENTRYPOINT ["node", "/app/cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]
+# Run in headless mode with --no-sandbox, defaulting to chromium
+# Users can override the browser by passing --browser <browser> as container args
+ENTRYPOINT ["node", "/app/cli.js", "--headless", "--no-sandbox"]
+CMD ["--browser", "chromium"]
