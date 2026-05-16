@@ -482,6 +482,50 @@ state [here](https://playwright.dev/docs/auth).
 
 The Playwright MCP Chrome Extension allows you to connect to existing browser tabs and leverage your logged-in sessions and browser state. See [microsoft/playwright › packages/extension](https://github.com/microsoft/playwright/tree/main/packages/extension#readme) for installation and setup instructions.
 
+**Connect to your own Chrome via CDP**
+
+If you'd rather not install an extension and want Playwright MCP to drive a real Chrome that you launched yourself — with your cookies, extensions, and any extra flags — start a dedicated Chrome instance with the remote debugging port enabled and then point MCP at it via [`--cdp-endpoint`](#configuration).
+
+Launch Chrome with a **dedicated user-data-dir** (Chrome refuses CDP attach on your default profile for security, so a separate profile dir is required):
+
+```bash
+# macOS
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --remote-debugging-port=9222 \
+  --user-data-dir="$HOME/.playwright-mcp-chrome"
+
+# Linux
+google-chrome \
+  --remote-debugging-port=9222 \
+  --user-data-dir="$HOME/.playwright-mcp-chrome"
+
+# Windows (PowerShell)
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" `
+  --remote-debugging-port=9222 `
+  --user-data-dir="$env:USERPROFILE\.playwright-mcp-chrome"
+```
+
+Log in once in that window; the cookies are written to the `--user-data-dir` and persist across launches. Then configure Playwright MCP to attach over CDP instead of launching its own browser:
+
+```js
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--cdp-endpoint=http://localhost:9222"
+      ]
+    }
+  }
+}
+```
+
+This is useful when you want the AI assistant to drive the *same* browser you have open — for example, to inspect requests made by an SaaS you're already authenticated into without re-logging-in inside the MCP-managed profile.
+
+> [!IMPORTANT]
+> The `--user-data-dir` you pass to Chrome must **not** be your default profile (`~/Library/Application Support/Google/Chrome/Default` on macOS, etc.). Chrome blocks CDP attach on the default profile for security; you must use a dedicated directory.
+
 ### Initial state
 
 There are multiple ways to provide the initial state to the browser context or a page.
