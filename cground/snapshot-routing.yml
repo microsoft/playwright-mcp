@@ -1,0 +1,91 @@
+# Playwright MCP snapshot routing config (CannonGround Layer 2)
+#
+# Maps URL patterns to recommended `target` values for browser_snapshot.
+# When a full-page snapshot is near/over Read's 25k-token cap, the model
+# runs `python cground/scripts/snapshot-route.py <url>` to get the
+# recommended target for a SECOND scoped snapshot.
+#
+# Pattern matching: each route has a `match` field using fnmatch syntax
+# (shell glob: *, ?, []). Rules are evaluated TOP-TO-BOTTOM; first match
+# wins. The catch-all "*" route must live last.
+#
+# CRITICAL: fnmatch's `*` matches across slashes greedily (unlike POSIX
+# shell glob). So "https://github.com/*/*" ALSO matches deeper URLs like
+# "https://github.com/a/b/c/d". Put MORE-SPECIFIC rules ABOVE less-specific
+# ones. Smoke-tested by snapshot-route.py against URLs in the comments.
+#
+# `target` can be either:
+#   - A CSS selector (e.g. "article", "main", "[role=main]")
+#   - A snapshot ref (e.g. "e62") if you already have a recent snapshot
+# CSS selectors are more portable since refs change across snapshots.
+#
+# Validation history lives next to each route in the `why` field — keep
+# it concrete: cite which milestone/date validated the rule + the size
+# delta. If a route turns out wrong, edit the rule rather than working
+# around it in the script.
+
+routes:
+  # --- GitHub (MORE-SPECIFIC RULES FIRST — fnmatch `*` matches across slashes) ---
+  - name: github-pull-request
+    match: "https://github.com/*/*/pull/*"
+    target: "main"
+    why: PR pages keep most content in main; `<article>` element absent.
+
+  - name: github-issue
+    match: "https://github.com/*/*/issues/*"
+    target: "main"
+    why: Same as PR.
+
+  - name: github-search
+    match: "https://github.com/search*"
+    target: "main"
+    why: Search results land in main; article element absent.
+
+  - name: github-gist
+    match: "https://gist.github.com/*"
+    target: "main"
+    why: Gists keep main lean (no file-tree-app shell).
+
+  - name: github-repo-readme
+    match: "https://github.com/*/*"
+    target: "article"
+    why: |
+      Repo homepage stuffs file tree + sidebar inside `main`, README in `<article>`.
+      M1c 2026-05-24: main = 23k tokens, article = 10k tokens. 60% smaller.
+      MUST appear AFTER the more-specific github-* rules — see ordering note above.
+
+  # --- Article-style content sites ---
+  - name: medium-article
+    match: "https://*.medium.com/*"
+    target: "article"
+    why: Medium uses standard semantic `<article>`.
+
+  - name: substack-post
+    match: "https://*.substack.com/p/*"
+    target: "article"
+    why: Substack post page is canonical `<article>`.
+
+  - name: nyt-article
+    match: "https://www.nytimes.com/*/*/*/*"
+    target: "article"
+    why: NYT articles use semantic `<article>`. Year/month/day in path is the article pattern.
+
+  # --- Q&A / docs ---
+  - name: stackoverflow-question
+    match: "https://stackoverflow.com/questions/*"
+    target: "main"
+    why: SO uses main for the question+answers stack.
+
+  - name: mdn-docs
+    match: "https://developer.mozilla.org/*"
+    target: "main"
+    why: MDN puts doc content in main; sidebar TOC is outside.
+
+  # --- Default fallback ---
+  - name: default
+    match: "*"
+    target: "main"
+    why: |
+      Most content-rich pages have a `main` landmark. If `main` turns out
+      over-broad on a specific site, add a more specific route ABOVE this one.
+      If a site has no `main`, fall back to `article` manually in the call.

@@ -54,7 +54,7 @@ git merge main   # bring upstream changes into integration branch
 - **M1a — wire** (shipped 2026-05-23): registered `playwright` at user scope via `claude mcp add --scope user`. Connection health-check passed.
 - **M1b — first MCP-driven smoke** (shipped 2026-05-24): drove `github.com/microsoft/playwright-mcp` head-to-head with Claude-in-Chrome. Tool surface works end-to-end. Findings below + in [cground/migration-targets.md](cground/migration-targets.md).
 - **M1c — depth-routing pattern demo (Layer 1)** (shipped 2026-05-24): proved Playwright MCP's built-in `depth` + `target` flags enable a navigate-then-scope pattern with zero extra tooling. Same GitHub page, 4-tier ladder: skeleton (322 B) → article (40 KB) → main (93 KB) → full (99 KB). Pattern works; routing intelligence (which landmark to scope to) is per-page. Evidence YAMLs in [cground/m1c-evidence/](cground/m1c-evidence/).
-- **M1d — Layer 2 routing tooling** (queued, next): write `cground/scripts/snapshot-route.py` + `cground/snapshot-routing.yml` that post-processes a snapshot into a manifest + per-zone splits. Bootup-pattern parallel.
+- **M1d — Layer 2 routing tooling** (shipped 2026-05-24): [`cground/snapshot-routing.yml`](cground/snapshot-routing.yml) (URL-pattern → target rules, 10 routes covering GitHub, Medium, Substack, NYT, MDN, SO + default) and [`cground/scripts/snapshot-route.py`](cground/scripts/snapshot-route.py) (CLI that prints the recommended target for a URL). Smoke-tested: GitHub repo→article, GitHub PR→main, GitHub issue→main, example.com→main, Medium→article. Bug surfaced during testing (fnmatch's `*` matches across slashes, broad rules shadowed specific ones) and fixed by reordering + documenting in the config header.
 - **M2+ — head-to-heads on real "middling" flows** (queued): pick specific Claude-in-Chrome use cases that have been rough, rerun under Playwright MCP, document verdicts.
 
 ## M1b head-to-head: Playwright MCP vs Claude-in-Chrome
@@ -78,6 +78,19 @@ Same URL (`github.com/microsoft/playwright-mcp`), same task (capture a11y tree o
 **When to reach for each**:
 - **Playwright MCP** when: the task doesn't need logged-in Chrome, you want token-efficient multi-step navigation, you need deterministic reproducibility, you're driving the model through a sequence of pages
 - **Claude-in-Chrome** when: you need Cannon's real browser session (logged in, real cookies), the page is small and inline read is fine, you want to see Cannon's actual visible tab
+
+## Layer 2 usage: `snapshot-route.py` (M1d)
+
+When a `browser_snapshot` YAML is over Read's 25k-token cap, get the recommended scope target before calling browser_snapshot a second time:
+
+```bash
+target=$(python cground/playwright-connector/cground/scripts/snapshot-route.py "$URL")
+# then: browser_snapshot(target="$target", filename=".playwright-mcp/scoped.yml")
+```
+
+The script reads [`cground/snapshot-routing.yml`](cground/snapshot-routing.yml) — pre-encoded URL-pattern → target rules. Edit the YAML to extend; smoke-test by re-running the script against representative URLs.
+
+Bootup-pattern parallel: [`bootup.py`](../c-ground-code/scripts/bootup.py) pre-encodes `TARGET_MEMORY_MAP` so each session doesn't reinvent which memory file goes with which target; `snapshot-routing.yml` pre-encodes which landmark goes with which URL pattern so each session doesn't reinvent that either. Both move the routing decision from agent willpower to environment.
 
 ## M1c depth-routing pattern (Layer 1, built-in)
 
@@ -118,3 +131,4 @@ Cannon's question after M1b: "if you didn't even need to read the full YAML — 
 - **2026-05-23 — M1a**: Verified `npx -y @playwright/mcp@latest --help` runs natively on Windows (Node v24.13.0, npm/npx 11.15.0). Located Microsoft's recommended install path in upstream README. Registered MCP server at user scope: `claude mcp add --scope user playwright npx -- -y @playwright/mcp@latest`. `claude mcp list` health-check returned `playwright: npx -y @playwright/mcp@latest - ✓ Connected`. Tool surface gated on next Claude Code session restart (M1b).
 - **2026-05-24 — M1b**: Cannon restarted Claude Code; 23 `mcp__playwright__browser_*` tools surfaced as expected. Side-by-side vs Claude-in-Chrome on `github.com/microsoft/playwright-mcp` (appropriately recursive target): both produced usable a11y trees with stable refs. Playwright MCP snapshot landed as `1,384 lines / 99,420 bytes` (~25k tokens) but in a YAML file at `.playwright-mcp/page-2026-05-24T21-50-41-872Z.yml` (already gitignored via `/.playwright-mcp` in CG root). Tool response was ~200 tokens. Claude-in-Chrome's `read_page` at `depth=3 max_chars=15000` returned 12,500 chars inline. File-based-snapshot design is the major differentiator — full table in head-to-head section above.
 - **2026-05-24 — M1c**: Demo'd Layer 1 of the routing pattern Cannon proposed in reaction to M1b: use built-in `depth` + `target` flags to navigate-then-scope. Same URL, 4-tier ladder captured as evidence: skeleton (322 B) → article (40 KB) → main (93 KB) → full (99 KB). The article-scoped snapshot is the right hop for GitHub repo pages (40 KB / ~10k tokens, comfortably under Read cap). Main is over-broad because GitHub's main element is the whole app. Lesson: routing intelligence (which landmark to scope per-page-type) IS the load-bearing piece; Layer 1 only exposes the lever. Layer 2 (M1d) pre-encodes the routing decision per domain.
+- **2026-05-24 — M1d**: Shipped Layer 2 tooling. `cground/snapshot-routing.yml` holds the URL-pattern → target rules (10 routes: GitHub repo/PR/issue/gist/search, Medium, Substack, NYT, MDN, SO, plus default `main`). `cground/scripts/snapshot-route.py` is the CLI lookup. Bug surfaced during smoke testing: fnmatch's `*` matches across slashes, so broad rules shadowed specific ones — reordered + documented in config header. Smoke-tested against 5 URLs (GitHub repo→article ✓, PR→main ✓, issue→main ✓, example.com→main ✓, Medium→article ✓). Bootup-pattern parallel: routing decision moves from agent willpower to environment, same shape as `TARGET_MEMORY_MAP` in bootup.py.
