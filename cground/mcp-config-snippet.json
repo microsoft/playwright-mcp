@@ -1,0 +1,7 @@
+{
+  "_comment_M0": "PLACEHOLDER. Drop into ~/.claude/settings.json mcpServers block. NOT YET VALIDATED — M1 will smoke-test on Windows and may need to adjust command/args (e.g. PLAYWRIGHT_BROWSERS_PATH env var for browser-cache sharing with the Python install).",
+  "playwright": {
+    "command": "npx",
+    "args": ["-y", "@playwright/mcp@latest"]
+  }
+}
