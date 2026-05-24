@@ -53,6 +53,8 @@ git merge main   # bring upstream changes into integration branch
 - **M0 — substrate** (shipped 2026-05-23): fork + clone + scaffolding. Commit on `cground` branch, pushed to origin.
 - **M1a — wire** (shipped 2026-05-23): registered `playwright` at user scope via `claude mcp add --scope user`. Connection health-check passed.
 - **M1b — first MCP-driven smoke** (shipped 2026-05-24): drove `github.com/microsoft/playwright-mcp` head-to-head with Claude-in-Chrome. Tool surface works end-to-end. Findings below + in [cground/migration-targets.md](cground/migration-targets.md).
+- **M1c — depth-routing pattern demo (Layer 1)** (shipped 2026-05-24): proved Playwright MCP's built-in `depth` + `target` flags enable a navigate-then-scope pattern with zero extra tooling. Same GitHub page, 4-tier ladder: skeleton (322 B) → article (40 KB) → main (93 KB) → full (99 KB). Pattern works; routing intelligence (which landmark to scope to) is per-page. Evidence YAMLs in [cground/m1c-evidence/](cground/m1c-evidence/).
+- **M1d — Layer 2 routing tooling** (queued, next): write `cground/scripts/snapshot-route.py` + `cground/snapshot-routing.yml` that post-processes a snapshot into a manifest + per-zone splits. Bootup-pattern parallel.
 - **M2+ — head-to-heads on real "middling" flows** (queued): pick specific Claude-in-Chrome use cases that have been rough, rerun under Playwright MCP, document verdicts.
 
 ## M1b head-to-head: Playwright MCP vs Claude-in-Chrome
@@ -77,6 +79,31 @@ Same URL (`github.com/microsoft/playwright-mcp`), same task (capture a11y tree o
 - **Playwright MCP** when: the task doesn't need logged-in Chrome, you want token-efficient multi-step navigation, you need deterministic reproducibility, you're driving the model through a sequence of pages
 - **Claude-in-Chrome** when: you need Cannon's real browser session (logged in, real cookies), the page is small and inline read is fine, you want to see Cannon's actual visible tab
 
+## M1c depth-routing pattern (Layer 1, built-in)
+
+Cannon's question after M1b: "if you didn't even need to read the full YAML — if you knew where the content is and where the fluff is — could we skip even that 25k Read cap?" Same problem [bootup.md solves](../c-ground-code/references/bootup/bootup.md) for tier-2 walk dumps via chunk-with-manifest. Playwright MCP has two built-in flags that get us Layer 1 of the answer without any new tooling.
+
+**Pattern**: navigate, then scope.
+
+1. **Call A — skeleton**: `browser_snapshot(depth=2)` → tiny landmark map.
+2. **Pick a ref** from the skeleton (`main`, `article`, etc.).
+3. **Call B — scoped**: `browser_snapshot(target=<ref>)` → just that zone.
+
+**Live demo on `github.com/microsoft/playwright-mcp`** (evidence: [cground/m1c-evidence/](cground/m1c-evidence/)):
+
+| Approach | Filename | Lines | Bytes | ≈ Tokens | Notes |
+|---|---|---|---|---|---|
+| Skeleton (`depth=2`) | `m1c-skeleton.yml` | 10 | 322 | ~80 | Surfaces `banner [ref=e6]` / `main [ref=e62]` / `contentinfo [ref=e1287]` |
+| Article (`target=article` CSS) | `m1c-article.yml` | 570 | 40,215 | ~10k | README content only — comfortably under Read's 25k-token cap |
+| Main scoped (`target=e62`) | `m1c-main.yml` | 1,302 | 92,924 | ~23k | GitHub stuffs file tree + sidebar inside `main`, so main is over-broad here |
+| Full unfiltered (default) | `page-<ts>.yml` | 1,384 | 99,420 | ~25k | M1b baseline |
+
+**Headline finding**: routing to the **right** landmark is the win. On GitHub, `article` cuts to ~10k tokens (60% smaller, well under Read cap). On `main` it only shaved ~6KB because GitHub's main contains the whole app. So Layer 1 works but agent intelligence about WHICH landmark to scope per-page-type is the real load-bearing piece. That's what Layer 2 (M1d) pre-encodes.
+
+**Layer 1 gotchas surfaced**:
+- The `filename` param resolves **cwd-relative**, not snapshot-dir-relative. `filename="foo.yml"` lands in CG root, NOT `.playwright-mcp/`. To keep ephemeral artifacts gitignored, either prefix with `.playwright-mcp/` or accept they'll need moving/cleaning.
+- `target` accepts both `[ref=eN]` references AND CSS selectors (`article`, `[role=main]`, etc.). CSS is the more portable default; refs change across snapshots.
+
 ## Upstream info
 
 - Package: `@playwright/mcp` v0.0.75 (npm)
@@ -90,3 +117,4 @@ Same URL (`github.com/microsoft/playwright-mcp`), same task (capture a11y tree o
 - **2026-05-23 — M0**: Forked microsoft/playwright-mcp → CannonWest/playwright-connector. Cloned to `~/CannonGround/playwright-connector/`. `cground` branch created. CANNONGROUND.md + `cground/` scaffolding written. Upstream push disabled as safety latch. Pushed to `origin/cground` (commit `a7c5d14`).
 - **2026-05-23 — M1a**: Verified `npx -y @playwright/mcp@latest --help` runs natively on Windows (Node v24.13.0, npm/npx 11.15.0). Located Microsoft's recommended install path in upstream README. Registered MCP server at user scope: `claude mcp add --scope user playwright npx -- -y @playwright/mcp@latest`. `claude mcp list` health-check returned `playwright: npx -y @playwright/mcp@latest - ✓ Connected`. Tool surface gated on next Claude Code session restart (M1b).
 - **2026-05-24 — M1b**: Cannon restarted Claude Code; 23 `mcp__playwright__browser_*` tools surfaced as expected. Side-by-side vs Claude-in-Chrome on `github.com/microsoft/playwright-mcp` (appropriately recursive target): both produced usable a11y trees with stable refs. Playwright MCP snapshot landed as `1,384 lines / 99,420 bytes` (~25k tokens) but in a YAML file at `.playwright-mcp/page-2026-05-24T21-50-41-872Z.yml` (already gitignored via `/.playwright-mcp` in CG root). Tool response was ~200 tokens. Claude-in-Chrome's `read_page` at `depth=3 max_chars=15000` returned 12,500 chars inline. File-based-snapshot design is the major differentiator — full table in head-to-head section above.
+- **2026-05-24 — M1c**: Demo'd Layer 1 of the routing pattern Cannon proposed in reaction to M1b: use built-in `depth` + `target` flags to navigate-then-scope. Same URL, 4-tier ladder captured as evidence: skeleton (322 B) → article (40 KB) → main (93 KB) → full (99 KB). The article-scoped snapshot is the right hop for GitHub repo pages (40 KB / ~10k tokens, comfortably under Read cap). Main is over-broad because GitHub's main element is the whole app. Lesson: routing intelligence (which landmark to scope per-page-type) IS the load-bearing piece; Layer 1 only exposes the lever. Layer 2 (M1d) pre-encodes the routing decision per domain.

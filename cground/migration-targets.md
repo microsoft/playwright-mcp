@@ -23,3 +23,22 @@ Running list of Claude-in-Chrome / Claude-Preview / other browser-surface use ca
 ## Token-economy note (from M1b)
 
 For a GitHub-scale page, Playwright MCP's tool response is ~200 tokens (file path) vs Claude-in-Chrome's ~12,500 chars inline (at `depth=3 max_chars=15000`). The Playwright snapshot YAML itself is ~25k tokens — but it lives on disk and you only spend the context when you `Read` it. For multi-page flows, this difference compounds significantly. Plan migrations accordingly: if a Claude-in-Chrome flow is filling up context with `read_page` results, that's a strong Playwright MCP migration signal.
+
+## Depth-routing pattern (from M1c)
+
+When the snapshot YAML approaches Read's 25k-token cap (which it routinely does on content-rich pages), use Playwright MCP's built-in `depth` + `target` flags to navigate-then-scope:
+
+1. `browser_snapshot(depth=2, filename=".playwright-mcp/skeleton.yml")` → tiny landmark map (~10 lines on GitHub).
+2. Read the skeleton, pick the right landmark for the page type.
+3. `browser_snapshot(target=<ref-or-css>, filename=".playwright-mcp/scoped.yml")` → just that zone.
+
+**Routing rule of thumb (working list, extend as we hit new sites)**:
+
+| Site type | Recommended scope | Why |
+|---|---|---|
+| GitHub repo pages | `target=article` (CSS) | Main is whole app; article is the README |
+| News articles / blogs | `target=article` (CSS) | Standard semantic element |
+| Most landing pages | `target=main` (CSS or ref) | Standard primary content landmark |
+| Web apps (Gmail, Notion) | Per-app investigation needed | Landmarks often unreliable; may need deeper navigation |
+
+Layer 2 (M1d) will pre-encode these rules in `cground/snapshot-routing.yml` so the routing decision isn't reinvented per session.

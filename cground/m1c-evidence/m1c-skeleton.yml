@@ -1,0 +1,11 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]
+  - main [ref=e62]:
+    - generic [ref=e63]
+    - generic [ref=e143]
+  - contentinfo [ref=e1287]:
+    - heading "Footer" [level=2] [ref=e1288]
+    - generic [ref=e1289]
