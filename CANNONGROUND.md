@@ -34,8 +34,9 @@ git merge main   # bring upstream changes into integration branch
 
 ## Install state in CannonGround
 
-- **Not yet wired into MCP config.** M0 = substrate only. M1 will wire + smoke-test.
-- **Playwright already installed on this machine** for the Python-driven scrapers ([portfolio-mgmt/scripts/pm-ap-scrape.py](../portfolio-mgmt/scripts/pm-ap-scrape.py), [pm-mccracken-scrape.py](../portfolio-mgmt/scripts/pm-mccracken-scrape.py), [api-oracle/scripts/run_pipeline.py](../api-oracle/scripts/run_pipeline.py)). The MCP server uses the same engine — see [cground/windows-notes.md](cground/windows-notes.md) for browser-cache sharing notes.
+- **Wired into MCP config 2026-05-23 (M1a).** Registered at user scope in `~/.claude.json` via `claude mcp add --scope user playwright npx -- -y @playwright/mcp@latest`. Connection verified — health check returned `✓ Connected` on first call. Tools become callable in the next Claude Code session (MCP servers register at session-start, not hot-reload).
+- **Runtime versions on this machine**: Node v24.13.0, npm/npx 11.15.0, `@playwright/mcp@0.0.75` (= upstream latest = our fork pin — no drift).
+- **Playwright already installed** for the Python-driven scrapers ([portfolio-mgmt/scripts/pm-ap-scrape.py](../portfolio-mgmt/scripts/pm-ap-scrape.py), [pm-mccracken-scrape.py](../portfolio-mgmt/scripts/pm-mccracken-scrape.py), [api-oracle/scripts/run_pipeline.py](../api-oracle/scripts/run_pipeline.py)). The MCP uses the same Playwright engine but maintains its own profile at `%USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-{workspace-hash}` (separate from the Python install's browser cache at `C:\Users\Canno\AppData\Local\ms-playwright\chromium-1217\` et al). No cache-sharing config needed in M1a — see [cground/windows-notes.md](cground/windows-notes.md).
 
 ## Existing surfaces this coexists with
 
@@ -49,8 +50,9 @@ git merge main   # bring upstream changes into integration branch
 
 ## Milestones
 
-- **M0 — substrate** (shipped 2026-05-23): fork + clone + scaffolding. Local-only commit on `cground` branch pending Cannon-eyes push approval. No MCP wiring.
-- **M1 — wire + smoke** (queued): add to Claude Code MCP config, smoke-test one page, document side-by-side vs Claude-in-Chrome on the same page.
+- **M0 — substrate** (shipped 2026-05-23): fork + clone + scaffolding. Commit on `cground` branch, pushed to origin.
+- **M1a — wire** (shipped 2026-05-23): registered `playwright` at user scope via `claude mcp add --scope user`. Connection health-check passed. Tool surface unavailable in current session until restart (MCP loads at session-start).
+- **M1b — first MCP-driven smoke** (queued, requires Cannon to restart Claude Code): use Playwright MCP tools on one page, document the call shape + initial impressions vs Claude-in-Chrome.
 - **M2+ — head-to-heads** (queued): rerun real "middling" Claude-in-Chrome moments under Playwright MCP, document verdicts in [cground/migration-targets.md](cground/migration-targets.md).
 
 ## Upstream info
@@ -63,4 +65,5 @@ git merge main   # bring upstream changes into integration branch
 
 ## History
 
-- **2026-05-23 — M0**: Forked microsoft/playwright-mcp → CannonWest/playwright-connector. Cloned to `~/CannonGround/playwright-connector/`. `cground` branch created. CANNONGROUND.md + `cground/` scaffolding written. Upstream push disabled as safety latch. Awaiting push authorization.
+- **2026-05-23 — M0**: Forked microsoft/playwright-mcp → CannonWest/playwright-connector. Cloned to `~/CannonGround/playwright-connector/`. `cground` branch created. CANNONGROUND.md + `cground/` scaffolding written. Upstream push disabled as safety latch. Pushed to `origin/cground` (commit `a7c5d14`).
+- **2026-05-23 — M1a**: Verified `npx -y @playwright/mcp@latest --help` runs natively on Windows (Node v24.13.0, npm/npx 11.15.0). Located Microsoft's recommended install path in upstream README. Registered MCP server at user scope: `claude mcp add --scope user playwright npx -- -y @playwright/mcp@latest`. `claude mcp list` health-check returned `playwright: npx -y @playwright/mcp@latest - ✓ Connected`. Tool surface gated on next Claude Code session restart (M1b).
