@@ -32,6 +32,15 @@ Output (stdout JSON):
       # Close-type / lifecycle-event fields (null when not applicable):
       "close_price":   float | null,
       "entry_date":    "YYYY-MM-DD" | null,
+
+      # Event-type fields — M3.5 unified schema for profit-booking,
+      # exposure-increase, exposure-reduce (action field disambiguates
+      # what event_price means). Null when not applicable.
+      "event_price":   float | null,
+      "weight_before": int   | null,
+      "weight_after":  int   | null,
+      "add_price":     float | null,  # if a prior add-event is referenced
+      "add_date":      "YYYY-MM-DD" | null,
     },
     "raw_body_text": "...",   # full_text minus the comment thread + footer
   }
@@ -51,20 +60,28 @@ fires 3/3) decides whether to keep agent-distillation or accept raw
 text as the body. Parity comparison should focus on FRONTMATTER fields,
 not body prose.
 
-Action coverage (PBPM-M3 fire 1/3):
+Action coverage (PBPM-M3 fire 1/3 + M3.5):
   - **Initiating Long / Short** — entry_price, take_profit, stop_loss,
     weight populated. Validated against XLF (truth 10/10 parity).
   - **Closing** — close_price, entry_price, entry_date populated.
     Validated against DE (truth 8/8 parity).
-  - **Booking Partial Profits / Increasing Exposure / Reducing
-    Exposure** — action detected, but event-specific fields
-    (exit_price, add_price, weight_before/after, add_date) NOT yet
-    extracted. M3.5 queued. The existing routine's truth-set for
-    these uses richer-but-inconsistent field names (e.g. profit-
-    booking posts carry `exit_price` / `add_price` / `weight_before` /
-    `weight_after` / `subtype: Profit Booking` per CPER 2026-05-14;
-    field names + casing drift across truth atoms). M3.5 settles
-    the canonical schema before extending the extractor.
+  - **Booking Partial Profits** (profit-booking action) — event_price,
+    weight_before, weight_after, entry_price, entry_date populated.
+    Optional add_price + add_date if a prior add event is referenced.
+    Validated against MU + CPER (M3.5).
+  - **Increasing Exposure** (exposure-increase action) — event_price,
+    weight_before, weight_after, entry_price, entry_date populated.
+    Validated against LIN + EXEL (M3.5).
+  - **Reducing Exposure** (exposure-reduce action) — event_price,
+    weight_before, weight_after, entry_price, entry_date, add_price,
+    add_date populated. Validated against DE-reduce (M3.5).
+
+Unified schema for event-action types (vs the truth-set's drift across
+8+ different per-action field names like `exit_price` / `add_price` /
+`trim_price` / `reduce_price`): one `event_price` field, with the
+action field disambiguating what it means. M-integrate (post fires
+3/3) decides whether to alias to action-specific names when writing
+the final artifact.
 
 Convention normalization vs existing truth-set:
   - `type` always emitted as kebab-case ("trade-alert"); truth mixes
@@ -157,8 +174,13 @@ def extract_h1_meta(h1: str) -> dict[str, Any]:
     cleaned = re.sub(r"\s*\(\$?[A-Z0-9.\-]+\).*$", "", h1).strip()
     for pat, _ in ACTION_PATTERNS:
         cleaned = pat.sub("", cleaned).strip()
-    # Drop leading "on " (e.g., "on Financial Select Sector ...")
-    cleaned = re.sub(r"^on\s+", "", cleaned, flags=re.I).strip()
+    # Drop leading connectors that survive the action-strip:
+    # - "on " for "Initiating Long on X" / "Booking Partial Profits on X"
+    # - "to " for "Increasing Exposure to X" / "Reducing Exposure to X"
+    # - "Exposure to " / "Profits on " when ACTION_PATTERNS only matched the
+    #   first word (e.g., "Increasing" without trailing "Exposure")
+    cleaned = re.sub(r"^(?:Exposure\s+to|Partial\s+Profits\s+(?:on|in))\s+", "", cleaned, flags=re.I).strip()
+    cleaned = re.sub(r"^(?:on|to|in)\s+", "", cleaned, flags=re.I).strip()
     if cleaned:
         out["company"] = cleaned
 
@@ -234,6 +256,82 @@ def extract_initiate_fields(full_text: str) -> dict[str, Any]:
         m = re.search(r"weight\s+allocation\s+of\s+(\d+)", full_text, re.I)
     if m:
         out["weight"] = int(m.group(1))
+
+    return out
+
+
+def extract_event_fields(full_text: str) -> dict[str, Any]:
+    """Pull event_price / weight_before+after / entry / add fields from a
+    profit-booking, exposure-increase, or exposure-reduce post body.
+
+    Common body pattern across all three event types:
+      "We are (trimming|increasing) our position in <NAME> (<TICKER>) at
+       $<EVENT_PRICE>, and (reducing|increasing) (our|the) weight
+       allocation from <WB> to <WA>"
+
+    Optional entry-reference: "This trade was entered on <DATE> at $<PRICE>"
+    Optional add-reference:   "we increased our exposure on <DATE> at $<PRICE>"
+    """
+    out: dict[str, Any] = {
+        "event_price": None,
+        "weight_before": None,
+        "weight_after": None,
+        "entry_price": None,
+        "entry_date": None,
+        "add_price": None,
+        "add_date": None,
+    }
+
+    # Event price + weight change — flexible verb pattern
+    # Variants seen in the wild:
+    # - "trimming our position in X (TICKER) at $589.75, and reducing the weight allocation from 3 to 2" (MU)
+    # - "increasing our position in X ($LIN) at $517.35, and increasing our weight allocation from 5 to 8" (LIN)
+    # - "trimming our position in X (CPER) at $40.08, reducing the position from a weight of 8 to 7" (CPER)
+    # Weight clause may use "weight allocation" OR "position from a weight of".
+    m = re.search(
+        r"(?:trimming|increasing)\s+our\s+position\s+in[^\n]+?\sat\s\$?([\d,]+\.?\d*)"
+        r"[^\n]*?(?:weight\s+allocation|position\s+from\s+a\s+weight(?:\s+of)?)"
+        r"\s+(?:from\s+)?(?:a\s+)?(\d+)\s+to\s+(\d+)",
+        full_text,
+        re.IGNORECASE,
+    )
+    if m:
+        out["event_price"] = float(m.group(1).replace(",", ""))
+        out["weight_before"] = int(m.group(2))
+        out["weight_after"] = int(m.group(3))
+    else:
+        # Fallback: try event_price alone if weight-change pattern didn't fit
+        m = re.search(
+            r"(?:trimming|increasing)\s+our\s+position\s+in[^\n]+?\sat\s\$?([\d,]+\.?\d*)",
+            full_text,
+            re.IGNORECASE,
+        )
+        if m:
+            out["event_price"] = float(m.group(1).replace(",", ""))
+
+    # Entry reference (same shape as close-type)
+    m = re.search(
+        r"(?:This\s+trade\s+was\s+entered|This\s+position\s+was\s+entered|trade\s+was\s+initially\s+entered)"
+        r"\s+on\s+([A-Z][a-z]+\s+\d{1,2},\s+\d{4})"
+        r"\s*,?\s+at\s+\$?([\d,]+\.?\d*)",
+        full_text,
+        re.I,
+    )
+    if m:
+        out["entry_date"] = parse_us_date(m.group(1))
+        out["entry_price"] = float(m.group(2).replace(",", ""))
+
+    # Add-event reference: "we increased our exposure on DATE at $PRICE"
+    m = re.search(
+        r"(?:we\s+)?increased\s+(?:our\s+)?exposure\s+on\s+"
+        r"([A-Z][a-z]+\s+\d{1,2},\s+\d{4})"
+        r"\s*,?\s+at\s+\$?([\d,]+\.?\d*)",
+        full_text,
+        re.I,
+    )
+    if m:
+        out["add_date"] = parse_us_date(m.group(1))
+        out["add_price"] = float(m.group(2).replace(",", ""))
 
     return out
 
@@ -337,17 +435,23 @@ def main() -> int:
         # Close-type:
         "close_price": None,
         "entry_date": None,
+        # Event-type (M3.5 unified schema for profit-booking,
+        # exposure-increase, exposure-reduce):
+        "event_price": None,
+        "weight_before": None,
+        "weight_after": None,
+        "add_price": None,
+        "add_date": None,
     }
 
-    # Branch on action: initiate vs close
-    if h1_meta["action"] in ("LONG", "SHORT"):
+    # Branch on action: initiate / close / event
+    action = h1_meta["action"]
+    if action in ("LONG", "SHORT"):
         frontmatter.update(extract_initiate_fields(full_text))
-    elif h1_meta["action"] == "closing":
+    elif action == "closing":
         frontmatter.update(extract_close_fields(full_text))
-    # exposure-increase / profit-booking / exposure-reduce: per-event fields
-    # could be added later if the routine cares — they're a mix of close-like
-    # (mention an entry-date for history) and initiate-like (new price level
-    # for the action).
+    elif action in ("profit-booking", "exposure-increase", "exposure-reduce"):
+        frontmatter.update(extract_event_fields(full_text))
 
     raw_body = strip_footer(full_text)
 
