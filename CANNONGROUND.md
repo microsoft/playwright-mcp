@@ -274,6 +274,32 @@ Migration surfaces convention drift in the existing Sonnet-written archives:
 
 Parser produces a more consistent and complete frontmatter than the Claude-in-Chrome era atoms.
 
+## PBPM atom 9 macro-reports: `bravos_macro_report_parse.py`
+
+Sibling parser to the news-feed extractor — covers atom 9 (`/the-macro-report/{slug}/`). Shipped **PBPM-M3.6 fire 1/3** (2026-05-25). Page shape distinct enough from `/news-feed/` (no Trade Alert / Premium Video type label, no ticker/action metadata, different date format "Mar 13, 2026") that a separate parser is cleaner than branching the news-feed parser by URL pattern.
+
+```bash
+python cground/scripts/bravos_macro_report_parse.py \
+  --extract-path .playwright-mcp/macro-report-extract.json
+```
+
+Emits `{frontmatter, raw_body_text}` — frontmatter carries:
+- `type: "macro-report"`
+- `date` (Bravos pub date, parsed from "Mon DD, YYYY" first line of body)
+- `slug` (from URL)
+- `title` (H1 minus " - Bravos Research" suffix)
+- `source_url`
+
+`captured` (routine-side timestamp present in existing truth-set artifacts) stays a routine-flow concern — parser correctly skips it; M-integrate adds at write-time.
+
+Footer-strip cuts at the earliest of `"Subscribing gives you ACCESS to:"`, `"Newsletter Sign Up"`, `"Popular Posts"`, plus the standard comment-thread markers. The first three markers are specific to macro-report subscription-pitch + sidebar boilerplate not present on news-feed posts.
+
+Parity vs 2026-05-07 BBK-M0 truth-set:
+- `commodities-have-come-roaring-back-...` (pub 2026-03-13): **3/3** truth-keyed fields exact match
+- `the-energy-shock-that-changes-everything` (pub 2026-03-09): **3/3** truth-keyed fields exact match
+
+Plus parser adds `type` + `source_url` consistency wins (truth-set used `**Date:**` / `**Slug:**` / `**Captured:**` bold-key prose without an explicit type tag).
+
 Full PBPM arc + per-milestone status lives at [`c-ground-code/runway/pm-bravos-playwright-migration.md`](../c-ground-code/runway/pm-bravos-playwright-migration.md).
 
 ## M1c depth-routing pattern (Layer 1, built-in)
@@ -323,3 +349,4 @@ Cannon's question after M1b: "if you didn't even need to read the full YAML — 
 - **2026-05-24 — PBPM-M2.5 (downstream)**: extended `bravos_ideas_archive_parse.py` with `related_post_ids` + `related_posts` per active position. The extract step's `browser_evaluate` JS now identifies the Active Trade Ideas section (via "Closed Trades 2026" boundary), iterates each `.idea-click` row, captures the `data-posts` attribute (always — zero browser cost) AND clicks-to-expand + polls for the sibling `<ul.content>` to populate `related_posts: [{date_iso, slug, href}, ...]` (the rich clicked-resolution data). 18/18 active positions captured on 2026-05-24; counts matched between attribute and clicked state for every position. Newer May picks have 1 related post (initiation only); older picks have 2-3. Cost: ~18 clicks × ~100ms-1s settle = ~5-10s per fire. Backward compatible: parser writes null for both fields if extract has no `active_lineages` (pre-M2.5 extract step). Cannon's "you can click to expand too" hint during M2-fire-1/3 spike was the design driver — the click-affordance was sitting on the page the whole time but the existing routine never used it.
 - **2026-05-25 — PBPM-M3 fire 1/3 (downstream)**: shipped `cground/scripts/bravos_news_feed_post_parse.py` — slug-agnostic parser for `/news-feed/{slug}/` pages covering atoms 4 (trade-alerts), 5 (premium-videos), 6 (special-reports). Pure extractor — emits `{frontmatter, raw_body_text}`; body distillation stays a routine-flow concern. Initiate-type + closing-type actions fully covered (action-specific structured fields like entry_price, take_profit, stop_loss, weight, close_price, entry_date). Profit-booking + exposure-increase/reduce actions are partially covered (action detected, event-specific fields queued for M3.5). Parity validated against existing trade-alerts archive: **XLF initiate 10/10 truth-keyed fields exact match** + **DE closing 8/8 truth-keyed fields exact match**. CPER profit-booking action detected; M3.5 will extend extraction to cover exit_price / add_price / weight_before+after. Convention normalization surfaced: existing Sonnet-written truth-set has drift between atoms (`type` mixes kebab-case + Title Case, `company` sometimes `name` sometimes omitted, `source_url` sometimes omitted); parser emits a consistent shape. Mid-PR fix: take_profit regex was bleeding the prose-form stop_loss into the take_profit list; restructured to prefer the structured "Take Profit (TP):" bottom-of-post line + sentence-bound the prose fallback. Mixed int/float preservation in take_profit list values (59 + 62 ints; 67.5 float) matches truth's YAML conventions.
 - **2026-05-25 — PBPM-M3.5 (downstream)**: extended `bravos_news_feed_post_parse.py` with `extract_event_fields()` — unified extractor for profit-booking + exposure-increase + exposure-reduce action types. Schema expansion: each event-action atom now emits `event_price` + `weight_before` + `weight_after` + (optional) `entry_price`/`entry_date` + (optional) `add_price`/`add_date`. Single `event_price` field replaces the truth-set's drift across 8+ per-action price field names — the `action` field disambiguates what `event_price` means. Validated 24/24 expected fields across 4 examples: MU profit-booking (5/5), CPER profit-booking with add event (7/7), LIN exposure-increase (5/5), DE-reduce exposure-reduce with add event (7/7). Body-pattern variants accommodated: "trimming our position in X at $P, and reducing the weight allocation from WB to WA" (MU/DE), "increasing our position in X at $P, and increasing our weight allocation from WB to WA" (LIN), "trimming our position in X at $P, reducing the position from a weight of WB to WA" (CPER). Also tightened the company-name H1 strip to handle "Increasing Exposure to X" / "Reducing Exposure to X" / "Booking Partial Profits on X" prefix patterns that survive the action-keyword strip. And tightened the entry-reference regex to tolerate the optional comma between year and "at" ("April 22, 2026, at $461.59").
+- **2026-05-25 — PBPM-M3.6 fire 1/3 (downstream)**: shipped `cground/scripts/bravos_macro_report_parse.py` — sibling parser for atom 9 (`/the-macro-report/{slug}/`). Page shape distinct enough from `/news-feed/` (no Trade Alert / Premium Video type label, no ticker/action metadata, different date format "Mar 13, 2026") that a separate parser is cleaner than branching the news-feed parser by URL pattern. Emits `{frontmatter, raw_body_text}` with frontmatter: `type=macro-report` + `date` (parsed from "Mon DD, YYYY" first line) + `slug` + `title` + `source_url`. Footer-strip cuts at earliest of "Subscribing gives you ACCESS to:" / "Newsletter Sign Up" / "Popular Posts" / standard comment-thread markers — first three are macro-report-specific subscription-pitch + sidebar boilerplate. Parity vs 2026-05-07 BBK-M0 truth-set: 3/3 truth-keyed fields exact on `commodities-have-come-roaring-back-...` + 3/3 exact on `the-energy-shock-that-changes-everything`. Parser adds `type` + `source_url` (consistency wins over truth's `**Date:**`/`**Slug:**`/`**Captured:**` bold-key prose). `captured` field correctly skipped — routine-side timestamp added at M-integrate write-time.
