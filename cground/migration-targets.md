@@ -5,6 +5,8 @@ Running list of Claude-in-Chrome / Claude-Preview / other browser-surface use ca
 | Use case | Current surface | Verdict | Notes |
 |---|---|---|---|
 | Read a GitHub repo README (smoke test) | both | Playwright MCP wins on token economy (200-token response vs 12.5k inline) | M1b 2026-05-24. Both produced usable a11y trees; the file-based snapshot is the differentiator. See [`../CANNONGROUND.md` head-to-head table](../CANNONGROUND.md). |
+| `pm-bravos-sync` daily research crawl | migrating Claude-in-Chrome → Playwright MCP | Playwright MCP wins; auth bridge via persistent profile | **PBPM arc** — M0 ratified 2026-05-24; M1+M1.5+M2+M2.5+M3+M3.5+M3.6+M3.7 fire-1/3s shipped 5/24-5/25 (parsers for atoms 1+2+3, 4, 5, 6, 9, 10, 11). Fires 2/3+3/3 + M4 + M5 + M-integrate queued. Driving briefing: [`c-ground-code/runway/pm-bravos-playwright-migration.md`](../../c-ground-code/runway/pm-bravos-playwright-migration.md). |
+| `koyfin-midday-snapshot` + `market-snapshot` browser dance | migrating Claude-in-Chrome → Playwright MCP | Playwright MCP wins; fix-of-broken (Edge background-throttle stalls Claude-in-Chrome scrape during EOD) | **KPW arc** — M0 auth bridge ratified 2026-05-25 (this entry). M1 NDV extractor parser + M2 CSV download via Playwright + M3 routine docs rewrite (v1.10→v1.11 midday, v1.0→v1.1 market-snapshot) + M4 retirement queued. Auth-probe heartbeat: `koyfin-watchlist/scripts/koyfin_auth_probe.py`. Driving briefing: [`c-ground-code/runway/koyfin-playwright-migration.md`](../../c-ground-code/runway/koyfin-playwright-migration.md). |
 
 ## What we WON'T migrate (already decided in M0)
 
