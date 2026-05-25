@@ -138,6 +138,31 @@ End-to-end pipeline parity (parse + enrich vs 2026-05-24 truth): aggregate 8/8 �
 
 Enricher is source-agnostic — works against Claude-in-Chrome's existing ideas-archive output today, drops in seamlessly once M2 lands the Playwright-MCP atom-11 extractor.
 
+## PBPM atom 11: `bravos_ideas_archive_parse.py`
+
+Sibling parser to `bravos_research_parse.py` — covers atom 11 (`/ideas/`). Same shape: takes a Playwright MCP `browser_evaluate(filename=...)` extract of `document.body.innerText` and parses into the canonical ideas-archive shape (`{snapshot_date_et, active_count, active: [{name,symbol,direction,picked}], closed_by_year: {YYYY: int}}`). Shipped **PBPM-M2 fire 1/3** (2026-05-24).
+
+```bash
+python cground/scripts/bravos_ideas_archive_parse.py \
+  --extract-path .playwright-mcp/bravos-ideas-extract.json \
+  --snapshot-date-et 2026-05-24
+```
+
+Parity vs 2026-05-24 truth-set: **18/18 active list exact match** (symbol/direction/picked/company-name all clean — atom 11 doesn't have the ALUM ETF-suffix issue because /ideas/ also renders "Aluminum" with no suffix; the canonicalization Sonnet did was ATI-only).
+
+**Closed-count correction**: parser counts diverge significantly from the existing truth-set's `closed_by_year`:
+
+| Year | Parser (page reality) | Truth (routine seen-set) | Ratio |
+|---|---|---|---|
+| 2023 | 4 | 3 | dedupe — page has 2 identical `Long Turkish stocks - $TUR - [11/08/2023]` lines |
+| 2024 | 100 | 72 | routine seen-set under-count |
+| 2025 | 157 | 79 | routine seen-set under-count |
+| 2026 | 61 | 19 | routine only saw 19 close-events via news-feed crawl since install |
+
+The page is the authoritative source — Bravos's /ideas/ section literally lists every closed trade. The prior truth-set was a routine-side view ("closures the daily news-feed crawl observed") which under-counts everything that closed before the routine was watching. **Parser SUPERSEDES the previous truth-set on closed_by_year** going forward. Historical pre-migration `closed_by_year` entries should be treated as under-counts of unknown completeness.
+
+**Click-to-expand affordance (M2.5 substrate)**: each closed-trade row carries `class="title idea-click" data-posts="475453,472447,470623,466678,466217"` — clicking AJAX-loads a sibling `<ul.content>` with the full chronological lineage of related posts (initiating → exposure increases → profit-bookings → close). Example NYT expansion (5 posts spanning 2025-11-06 → 2026-02-04) demonstrates the close-date determines the `closed_by_year` bucket, not the picked-date. M2.5 wires this in for ACTIVE trade lineages (~18 clicks per fire, ~36s overhead); closed-trade lineages stay one-time backfill.
+
 Full PBPM arc + per-milestone status lives at [`c-ground-code/runway/pm-bravos-playwright-migration.md`](../c-ground-code/runway/pm-bravos-playwright-migration.md).
 
 ## M1c depth-routing pattern (Layer 1, built-in)
@@ -183,3 +208,4 @@ Cannon's question after M1b: "if you didn't even need to read the full YAML — 
 - **2026-05-24 — PBPM-M0 (downstream)**: pm-bravos-sync routine ratified Candidate A (Playwright MCP's persistent profile) as the auth bridge. Both A and the C alternative (`--cdp-endpoint` + dedicated Edge with `--user-data-dir`) verified empirically — both persisted Bravos auth across browser close + relaunch when the user-data-dir was stable. A wins on operational simplicity (zero launch ceremony for autonomous fires). C kept as ad-hoc debug tool (launch dedicated Edge + drive via Python `connect_over_cdp` from a scratch script, no MCP-config thrash). Full ratification + spike evidence: [`cground-skills#562`](https://github.com/CannonWest/cground-skills/pull/562). Persistent-profile auth-persistence finding is now in `project_playwright_connector` memory as a generic substrate fact.
 - **2026-05-24 — PBPM-M1 fire 1/3 (downstream)**: shipped `cground/scripts/bravos_research_parse.py` — the first downstream consumer script. Parses Bravos `/research/` (atoms 1+2+3 of `pm-bravos-sync`) from a Playwright MCP `browser_evaluate` extract; emits the canonical v1.6 `ati-snapshot` body + tactical-signal snapshot + latest-posts slug list. Parallel-run validation against 2026-05-24 Claude-in-Chrome truth-set: structural parity 100% on all load-bearing fields (signal/positions/weights/asset_class/slugs); 17/18 company-name exact match after tightening the `_company_titlecase` heuristic with explicit KEEP_UPPER + BRAND_CASE_MAP (ProShares/iShares/VanEck etc.). Two by-design divergences (`picked` date enrichment + ALUM "ETF" suffix) are agent-inference, not parser concerns. Used `browser_evaluate(filename=...)` to skip `browser_snapshot` entirely; no Bravos rule needed in `snapshot-routing.yml` yet (deferred to M2 when atom 11 `/ideas/` gets snapshot-scoping). Fires 2/3 and 3/3 happen on subsequent pm-bravos-sync runs; on 3/3 clean, M2 lifts the parser into the routine's daily flow.
 - **2026-05-24 — PBPM-M1.5 (downstream)**: shipped `cground/scripts/bravos_enrich_ati_picked.py` — closes the picked-date divergence from M1 fire 1/3. Joins parser-emitted ATI on same-day ideas-archive by ticker symbol. Empirical: 18/18 picked dates match between truth-set ATI and truth-set ideas-archive on 2026-05-24 — including ALUM (picked 2025-12-19, pre-routine-archive). Option (d) chosen empirically over (a)/(b)/(c) without firing an AskUserQuestion (rubber-stamp — empirical proof made the OQ trivial; per `feedback_runway_use_ask_user_question.md` "default-don't-ask exceptions"). Enricher is source-agnostic — joins on canonical ideas-archive shape regardless of upstream provenance, so it works against Claude-in-Chrome's atom-11 output today AND M2's eventual Playwright-MCP atom-11 extractor. End-to-end pipeline parity (parse + enrich vs truth): 8/8 aggregate · 18/18 load-bearing+picked · 17/18 EXACT-ALL incl. company (ALUM ETF-suffix remains, agent-canonicalization not on the page).
+- **2026-05-24 — PBPM-M2 fire 1/3 (downstream)**: shipped `cground/scripts/bravos_ideas_archive_parse.py` — atom 11 (`/ideas/`) Playwright-MCP extractor. Active list 18/18 exact match (incl. company-name — atom 11 doesn't have the ALUM ETF-suffix issue ATI did). **Closed-count CORRECTION**: parser counts (2023=4, 2024=100, 2025=157, 2026=61) supersede truth-set counts (3, 72, 79, 19) — page is the authoritative source; prior truth was a routine-side view that under-counted closures predating the routine's install. Click-to-expand spike confirmed: each closed-trade row has `class="title idea-click" data-posts="..."`; clicking AJAX-loads a sibling `<ul.content>` with the full chronological lineage of related posts (NYT example: 5 posts 2025-11-06 → 2026-02-04, demonstrates close-date determines the closed_by_year bucket not picked-date). The data-posts attribute alone (no click needed) exposes related-post IDs as comma-separated. M2.5 wires click-expand into the routine for active-trade lineages.
