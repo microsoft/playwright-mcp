@@ -228,6 +228,45 @@ EWJ (picked 2026-05-08): 1 post
 
 Backward compatible: downstream consumers ignore the new fields if unrecognized. If extract has no `active_lineages` (pre-M2.5 extract step), parser writes `null` for both fields. Closed-trade lineages stay one-time backfill — daily routine fires only click-expand the 18 active rows.
 
+## PBPM per-post-drill atoms: `bravos_news_feed_post_parse.py`
+
+Slug-agnostic parser for `/news-feed/{slug}/` pages — covers atoms 4 (trade-alerts), 5 (premium-videos), 6 (special-reports). Same page shell, different content classes. Shipped **PBPM-M3 fire 1/3** (2026-05-25).
+
+```bash
+python cground/scripts/bravos_news_feed_post_parse.py \
+  --extract-path .playwright-mcp/news-feed-extract.json
+```
+
+Emits `{frontmatter, raw_body_text}` — frontmatter carries deterministic structured fields (type, date, slug, ticker, action, company, title, source_url + action-specific fields), raw_body_text carries footer-stripped page prose. The existing Claude-in-Chrome routine emits an AGENT-DISTILLED body (Sonnet reads page + rewrites polished thesis); this parser is a pure extractor — body distillation stays as a routine-flow concern decided at M3-integrate.
+
+### Action coverage (M3 fire 1/3)
+
+| Action | Status | Fields populated |
+|---|---|---|
+| Initiating Long / Short | ✅ fully covered | entry_price, take_profit, stop_loss, weight |
+| Closing | ✅ fully covered | close_price, entry_price, entry_date |
+| Booking Partial Profits | partial — action detected | M3.5 adds: exit_price, weight_before/after |
+| Increasing Exposure | partial — action detected | M3.5 adds: add_price, add_date |
+| Reducing Exposure | partial — action detected | M3.5 adds: reduced_price, weight_before/after |
+
+Validated parity against existing artifacts:
+- XLF (initiate, 2026-05-22): **10/10 truth-keyed fields exact match**
+- DE (closing, 2026-05-21): **8/8 truth-keyed fields exact match**
+- CPER (profit-booking, 2026-05-14): action + ticker + date + company detected; event-specific fields null (M3.5)
+
+### Convention normalization vs existing truth-set
+
+Migration surfaces convention drift in the existing Sonnet-written archives:
+
+| Field | Parser | Truth-set variance |
+|---|---|---|
+| `type` | always `trade-alert` (kebab-case) | mix: `trade-alert` (XLF) vs `Trade Alert` (CPER) |
+| `company` | always emitted from H1 parse | sometimes `name`, sometimes omitted |
+| `title` | always emitted | omitted in older atoms |
+| `source_url` | always emitted | sometimes omitted (e.g. DE 2026-05-21) |
+
+Parser produces a more consistent and complete frontmatter than the Claude-in-Chrome era atoms.
+
 Full PBPM arc + per-milestone status lives at [`c-ground-code/runway/pm-bravos-playwright-migration.md`](../c-ground-code/runway/pm-bravos-playwright-migration.md).
 
 ## M1c depth-routing pattern (Layer 1, built-in)
@@ -275,3 +314,4 @@ Cannon's question after M1b: "if you didn't even need to read the full YAML — 
 - **2026-05-24 — PBPM-M1.5 (downstream)**: shipped `cground/scripts/bravos_enrich_ati_picked.py` — closes the picked-date divergence from M1 fire 1/3. Joins parser-emitted ATI on same-day ideas-archive by ticker symbol. Empirical: 18/18 picked dates match between truth-set ATI and truth-set ideas-archive on 2026-05-24 — including ALUM (picked 2025-12-19, pre-routine-archive). Option (d) chosen empirically over (a)/(b)/(c) without firing an AskUserQuestion (rubber-stamp — empirical proof made the OQ trivial; per `feedback_runway_use_ask_user_question.md` "default-don't-ask exceptions"). Enricher is source-agnostic — joins on canonical ideas-archive shape regardless of upstream provenance, so it works against Claude-in-Chrome's atom-11 output today AND M2's eventual Playwright-MCP atom-11 extractor. End-to-end pipeline parity (parse + enrich vs truth): 8/8 aggregate · 18/18 load-bearing+picked · 17/18 EXACT-ALL incl. company (ALUM ETF-suffix remains, agent-canonicalization not on the page).
 - **2026-05-24 — PBPM-M2 fire 1/3 (downstream)**: shipped `cground/scripts/bravos_ideas_archive_parse.py` — atom 11 (`/ideas/`) Playwright-MCP extractor. Active list 18/18 exact match (incl. company-name — atom 11 doesn't have the ALUM ETF-suffix issue ATI did). **Closed-count CORRECTION**: parser counts (2023=4, 2024=100, 2025=157, 2026=61) supersede truth-set counts (3, 72, 79, 19) — page is the authoritative source; prior truth was a routine-side view that under-counted closures predating the routine's install. Click-to-expand spike confirmed: each closed-trade row has `class="title idea-click" data-posts="..."`; clicking AJAX-loads a sibling `<ul.content>` with the full chronological lineage of related posts (NYT example: 5 posts 2025-11-06 → 2026-02-04, demonstrates close-date determines the closed_by_year bucket not picked-date). The data-posts attribute alone (no click needed) exposes related-post IDs as comma-separated. M2.5 wires click-expand into the routine for active-trade lineages.
 - **2026-05-24 — PBPM-M2.5 (downstream)**: extended `bravos_ideas_archive_parse.py` with `related_post_ids` + `related_posts` per active position. The extract step's `browser_evaluate` JS now identifies the Active Trade Ideas section (via "Closed Trades 2026" boundary), iterates each `.idea-click` row, captures the `data-posts` attribute (always — zero browser cost) AND clicks-to-expand + polls for the sibling `<ul.content>` to populate `related_posts: [{date_iso, slug, href}, ...]` (the rich clicked-resolution data). 18/18 active positions captured on 2026-05-24; counts matched between attribute and clicked state for every position. Newer May picks have 1 related post (initiation only); older picks have 2-3. Cost: ~18 clicks × ~100ms-1s settle = ~5-10s per fire. Backward compatible: parser writes null for both fields if extract has no `active_lineages` (pre-M2.5 extract step). Cannon's "you can click to expand too" hint during M2-fire-1/3 spike was the design driver — the click-affordance was sitting on the page the whole time but the existing routine never used it.
+- **2026-05-25 — PBPM-M3 fire 1/3 (downstream)**: shipped `cground/scripts/bravos_news_feed_post_parse.py` — slug-agnostic parser for `/news-feed/{slug}/` pages covering atoms 4 (trade-alerts), 5 (premium-videos), 6 (special-reports). Pure extractor — emits `{frontmatter, raw_body_text}`; body distillation stays a routine-flow concern. Initiate-type + closing-type actions fully covered (action-specific structured fields like entry_price, take_profit, stop_loss, weight, close_price, entry_date). Profit-booking + exposure-increase/reduce actions are partially covered (action detected, event-specific fields queued for M3.5). Parity validated against existing trade-alerts archive: **XLF initiate 10/10 truth-keyed fields exact match** + **DE closing 8/8 truth-keyed fields exact match**. CPER profit-booking action detected; M3.5 will extend extraction to cover exit_price / add_price / weight_before+after. Convention normalization surfaced: existing Sonnet-written truth-set has drift between atoms (`type` mixes kebab-case + Title Case, `company` sometimes `name` sometimes omitted, `source_url` sometimes omitted); parser emits a consistent shape. Mid-PR fix: take_profit regex was bleeding the prose-form stop_loss into the take_profit list; restructured to prefer the structured "Take Profit (TP):" bottom-of-post line + sentence-bound the prose fallback. Mixed int/float preservation in take_profit list values (59 + 62 ints; 67.5 float) matches truth's YAML conventions.
