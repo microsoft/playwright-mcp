@@ -5,17 +5,38 @@ Input:  a JSON file written by `mcp__playwright__browser_evaluate(filename=…)`
           - full_text  : str (document.body.innerText of bravosresearch.com/ideas/)
           - auth_state : object with logged_in:bool
 
-Output (stdout JSON, matches the v1.6 truth-set shape used by
-pm-bravos-sync's existing Claude_in_Chrome flow):
+Output (stdout JSON, extends the v1.6 truth-set shape used by
+pm-bravos-sync's existing Claude_in_Chrome flow with optional
+related-post lineage data per active position):
   {
     "snapshot_date_et":  "YYYY-MM-DD",
     "active_count":      int,
     "active": [
-      {"name": "...", "symbol": "...", "direction": "Long|Short", "picked": "YYYY-MM-DD"},
+      {
+        "name":             "...",
+        "symbol":           "...",
+        "direction":        "Long|Short",
+        "picked":           "YYYY-MM-DD",
+        # M2.5 schema extensions (populated only if extract includes
+        # active_lineages — i.e., the browser_evaluate ran click-to-
+        # expand for active rows). Backward-compatible: downstream
+        # consumers that don't recognize these fields ignore them.
+        "related_post_ids": [int, ...] or null,
+        "related_posts":    [{"date_iso": "...", "slug": "...", "href": "..."}, ...] or null,
+      },
       ...
     ],
     "closed_by_year": {"2026": int, "2025": int, ...}   # COUNT per year, NOT lists
   }
+
+PBPM-M2.5 lineage schema (2026-05-24): each closed-trade row in the
+Bravos /ideas/ DOM carries `class="title idea-click"
+data-posts="475453,472447,..."` — clicking AJAX-loads a sibling
+`<ul.content>` with the full chronological lineage of related news-feed
+posts (initiating → exposure increases → profit-bookings → close).
+`related_post_ids` always populates from the data-posts attribute (no
+click); `related_posts` populates from the clicked expansion (date +
+slug + href per item). The two are joined by position via `symbol`.
 
 Schema note: the routine doc § "Ideas archive (Atom 11)" says
 closed_by_year should be lists, but the actual truth-set today carries
@@ -174,6 +195,39 @@ def main() -> int:
         print(
             f"WARN: {len(active_without_symbol)} active entries had no symbol "
             f"and were dropped: {[e['name'] for e in active_without_symbol]}",
+            file=sys.stderr,
+        )
+
+    # M2.5 lineage attachment: if extract carries active_lineages (the
+    # browser_evaluate ran click-to-expand for active rows), attach
+    # related_post_ids + related_posts to each position by symbol.
+    lineage_by_symbol: dict[str, dict[str, Any]] = {}
+    for lin in extract.get("active_lineages", []) or []:
+        sym = lin.get("symbol")
+        if sym:
+            lineage_by_symbol[sym] = lin
+    lineage_attached = 0
+    for pos in active:
+        lin = lineage_by_symbol.get(pos["symbol"])
+        if lin is not None:
+            pos["related_post_ids"] = lin.get("related_post_ids", [])
+            pos["related_posts"] = lin.get("related_posts", [])
+            lineage_attached += 1
+        else:
+            pos["related_post_ids"] = None
+            pos["related_posts"] = None
+    if extract.get("active_lineages") and lineage_attached < len(active):
+        missing = [p["symbol"] for p in active if p["related_post_ids"] is None]
+        print(
+            f"WARN: extract had active_lineages but {len(missing)} active "
+            f"positions had no matching lineage entry: {missing}",
+            file=sys.stderr,
+        )
+    elif not extract.get("active_lineages"):
+        print(
+            "INFO: extract has no active_lineages — emitting null for "
+            "related_post_ids/related_posts. Re-run browser_evaluate with "
+            "click-to-expand to populate them (M2.5 enrichment).",
             file=sys.stderr,
         )
 

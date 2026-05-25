@@ -161,7 +161,72 @@ Parity vs 2026-05-24 truth-set: **18/18 active list exact match** (symbol/direct
 
 The page is the authoritative source — Bravos's /ideas/ section literally lists every closed trade. The prior truth-set was a routine-side view ("closures the daily news-feed crawl observed") which under-counts everything that closed before the routine was watching. **Parser SUPERSEDES the previous truth-set on closed_by_year** going forward. Historical pre-migration `closed_by_year` entries should be treated as under-counts of unknown completeness.
 
-**Click-to-expand affordance (M2.5 substrate)**: each closed-trade row carries `class="title idea-click" data-posts="475453,472447,470623,466678,466217"` — clicking AJAX-loads a sibling `<ul.content>` with the full chronological lineage of related posts (initiating → exposure increases → profit-bookings → close). Example NYT expansion (5 posts spanning 2025-11-06 → 2026-02-04) demonstrates the close-date determines the `closed_by_year` bucket, not the picked-date. M2.5 wires this in for ACTIVE trade lineages (~18 clicks per fire, ~36s overhead); closed-trade lineages stay one-time backfill.
+**Click-to-expand affordance (used by M2.5)**: each closed-trade row carries `class="title idea-click" data-posts="475453,472447,470623,466678,466217"` — clicking AJAX-loads a sibling `<ul.content>` with the full chronological lineage of related posts (initiating → exposure increases → profit-bookings → close). Example NYT expansion (5 posts spanning 2025-11-06 → 2026-02-04) demonstrates the close-date determines the `closed_by_year` bucket, not the picked-date.
+
+## PBPM atom 11 M2.5 enrichment: active-trade lineages
+
+`bravos_ideas_archive_parse.py` was extended in **PBPM-M2.5** (2026-05-24) to attach related-post lineages per active position. Two new fields per `active[i]`:
+
+| Field | Source | Populated when |
+|---|---|---|
+| `related_post_ids` | `data-posts` attribute on each `.idea-click` row — comma-separated WordPress post IDs | Always (zero browser cost, just DOM read) |
+| `related_posts` | Clicked-state `<ul.content>` sibling — `{date_iso, date_raw, slug, href}` per related post | Only if the extract step ran click-to-expand for active rows |
+
+The extract step's `browser_evaluate` JS is now:
+
+```js
+async () => {
+  // ... grab full_text + auth_state ...
+
+  // Identify active section via "Closed Trades 2026" boundary (document position)
+  const closedHeader = [...document.body.querySelectorAll('*')]
+    .find(el => el.children.length === 0 && /^Closed Trades 2026$/.test(el.innerText?.trim()));
+  const allIdeaPosts = [...document.querySelectorAll('div.idea_posts')];
+  const activePostsDivs = allIdeaPosts.filter(d => elPos(d) < closedHeaderPos);
+
+  const lineages = [];
+  for (const div of activePostsDivs) {
+    const p = div.querySelector('p.idea-click');
+    const titleText = p.innerText;
+    const dataPosts = p.getAttribute('data-posts') || '';
+    const symbol = titleText.match(/\(\$?([A-Z0-9.\-]+)\)/)?.[1];
+
+    p.click();
+    let related_posts = [];
+    for (let i = 0; i < 40; i++) {                  // poll ≤4s
+      await new Promise(r => setTimeout(r, 100));
+      const ul = div.querySelector('ul.content');
+      if (ul && ul.querySelectorAll('li').length > 0) {
+        related_posts = [...ul.querySelectorAll('li')].map(li => ({
+          date_iso: parseISO(li.querySelector('span')?.innerText),
+          slug:     li.querySelector('a')?.href.match(/\/news-feed\/([^/?#]+)/)?.[1],
+          href:     li.querySelector('a')?.href,
+        }));
+        break;
+      }
+    }
+    lineages.push({ symbol, related_post_ids: dataPosts.split(',').map(Number), related_posts });
+  }
+  return { ...basics, full_text: ..., active_lineages: lineages };
+}
+```
+
+Cost: 18 clicks per fire × ~100ms-1s settle = roughly 5-10s overhead. Acceptable for daily routine.
+
+Validation on 2026-05-24 fire: 18/18 active positions got `related_post_ids` populated AND clicked-resolution `related_posts` populated (counts matched between attribute and clicked state for every position). Newer May 2026 picks have 1 related post (initiation only); older picks have 2-3 (initiation + exposure-increase + profit-booking).
+
+```
+ALUM (picked 2025-12-19): 2 posts
+  2025-12-19 initiating-long-on-aluminum-alum-breakout
+  2026-03-30 booking-partial-profits-on-aluminum-alum-profit-booking
+LIN (picked 2026-03-12): 2 posts
+  2026-03-12 initiating-long-on-linde-plc-lin-breakout
+  2026-05-01 increasing-exposure-to-linde-plc-lin-technical-strength
+EWJ (picked 2026-05-08): 1 post
+  2026-05-08 initiating-long-on-ishares-msci-japan-etf-ewj-breakout
+```
+
+Backward compatible: downstream consumers ignore the new fields if unrecognized. If extract has no `active_lineages` (pre-M2.5 extract step), parser writes `null` for both fields. Closed-trade lineages stay one-time backfill — daily routine fires only click-expand the 18 active rows.
 
 Full PBPM arc + per-milestone status lives at [`c-ground-code/runway/pm-bravos-playwright-migration.md`](../c-ground-code/runway/pm-bravos-playwright-migration.md).
 
@@ -209,3 +274,4 @@ Cannon's question after M1b: "if you didn't even need to read the full YAML — 
 - **2026-05-24 — PBPM-M1 fire 1/3 (downstream)**: shipped `cground/scripts/bravos_research_parse.py` — the first downstream consumer script. Parses Bravos `/research/` (atoms 1+2+3 of `pm-bravos-sync`) from a Playwright MCP `browser_evaluate` extract; emits the canonical v1.6 `ati-snapshot` body + tactical-signal snapshot + latest-posts slug list. Parallel-run validation against 2026-05-24 Claude-in-Chrome truth-set: structural parity 100% on all load-bearing fields (signal/positions/weights/asset_class/slugs); 17/18 company-name exact match after tightening the `_company_titlecase` heuristic with explicit KEEP_UPPER + BRAND_CASE_MAP (ProShares/iShares/VanEck etc.). Two by-design divergences (`picked` date enrichment + ALUM "ETF" suffix) are agent-inference, not parser concerns. Used `browser_evaluate(filename=...)` to skip `browser_snapshot` entirely; no Bravos rule needed in `snapshot-routing.yml` yet (deferred to M2 when atom 11 `/ideas/` gets snapshot-scoping). Fires 2/3 and 3/3 happen on subsequent pm-bravos-sync runs; on 3/3 clean, M2 lifts the parser into the routine's daily flow.
 - **2026-05-24 — PBPM-M1.5 (downstream)**: shipped `cground/scripts/bravos_enrich_ati_picked.py` — closes the picked-date divergence from M1 fire 1/3. Joins parser-emitted ATI on same-day ideas-archive by ticker symbol. Empirical: 18/18 picked dates match between truth-set ATI and truth-set ideas-archive on 2026-05-24 — including ALUM (picked 2025-12-19, pre-routine-archive). Option (d) chosen empirically over (a)/(b)/(c) without firing an AskUserQuestion (rubber-stamp — empirical proof made the OQ trivial; per `feedback_runway_use_ask_user_question.md` "default-don't-ask exceptions"). Enricher is source-agnostic — joins on canonical ideas-archive shape regardless of upstream provenance, so it works against Claude-in-Chrome's atom-11 output today AND M2's eventual Playwright-MCP atom-11 extractor. End-to-end pipeline parity (parse + enrich vs truth): 8/8 aggregate · 18/18 load-bearing+picked · 17/18 EXACT-ALL incl. company (ALUM ETF-suffix remains, agent-canonicalization not on the page).
 - **2026-05-24 — PBPM-M2 fire 1/3 (downstream)**: shipped `cground/scripts/bravos_ideas_archive_parse.py` — atom 11 (`/ideas/`) Playwright-MCP extractor. Active list 18/18 exact match (incl. company-name — atom 11 doesn't have the ALUM ETF-suffix issue ATI did). **Closed-count CORRECTION**: parser counts (2023=4, 2024=100, 2025=157, 2026=61) supersede truth-set counts (3, 72, 79, 19) — page is the authoritative source; prior truth was a routine-side view that under-counted closures predating the routine's install. Click-to-expand spike confirmed: each closed-trade row has `class="title idea-click" data-posts="..."`; clicking AJAX-loads a sibling `<ul.content>` with the full chronological lineage of related posts (NYT example: 5 posts 2025-11-06 → 2026-02-04, demonstrates close-date determines the closed_by_year bucket not picked-date). The data-posts attribute alone (no click needed) exposes related-post IDs as comma-separated. M2.5 wires click-expand into the routine for active-trade lineages.
+- **2026-05-24 — PBPM-M2.5 (downstream)**: extended `bravos_ideas_archive_parse.py` with `related_post_ids` + `related_posts` per active position. The extract step's `browser_evaluate` JS now identifies the Active Trade Ideas section (via "Closed Trades 2026" boundary), iterates each `.idea-click` row, captures the `data-posts` attribute (always — zero browser cost) AND clicks-to-expand + polls for the sibling `<ul.content>` to populate `related_posts: [{date_iso, slug, href}, ...]` (the rich clicked-resolution data). 18/18 active positions captured on 2026-05-24; counts matched between attribute and clicked state for every position. Newer May picks have 1 related post (initiation only); older picks have 2-3. Cost: ~18 clicks × ~100ms-1s settle = ~5-10s per fire. Backward compatible: parser writes null for both fields if extract has no `active_lineages` (pre-M2.5 extract step). Cannon's "you can click to expand too" hint during M2-fire-1/3 spike was the design driver — the click-affordance was sitting on the page the whole time but the existing routine never used it.
