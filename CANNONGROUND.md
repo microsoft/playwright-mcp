@@ -92,6 +92,29 @@ The script reads [`cground/snapshot-routing.yml`](cground/snapshot-routing.yml) 
 
 Bootup-pattern parallel: [`bootup.py`](../c-ground-code/scripts/bootup.py) pre-encodes `TARGET_MEMORY_MAP` so each session doesn't reinvent which memory file goes with which target; `snapshot-routing.yml` pre-encodes which landmark goes with which URL pattern so each session doesn't reinvent that either. Both move the routing decision from agent willpower to environment.
 
+## PBPM consumer: `bravos_research_parse.py`
+
+`cground/scripts/bravos_research_parse.py` is the first downstream consumer script — parses Bravos `/research/` page output (atoms 1+2+3 of the `pm-bravos-sync` routine) from a Playwright MCP `browser_evaluate(filename=...)` extract. Emits the canonical v1.6 `ati-snapshot` body + tactical-signal snapshot + latest-posts slug list. Shipped during **PBPM-M1** (2026-05-24) as part of the routine's migration from Claude-in-Chrome MCP.
+
+Usage:
+
+```bash
+# Step 1 in routine (browser_evaluate captures innerText + post-links to disk):
+#   await browser_evaluate({
+#     filename: '.playwright-mcp/bravos-research-extract.json',
+#     function: '() => ({ full_text: document.body.innerText, post_links: ... })'
+#   })
+
+# Step 2 (parser turns it into canonical atoms):
+python cground/scripts/bravos_research_parse.py \
+  --extract-path .playwright-mcp/bravos-research-extract.json \
+  --snapshot-date-et 2026-05-24
+```
+
+The parser intentionally stays a **pure extractor** — it surfaces only what's on the page. Two derived/enriched fields the existing routine populates (`positions[].picked` per-position pick dates and the "ETF"-suffix on bare commodity ticker names like Aluminum) are **NOT** parser concerns; those are agent-inference enrichments that M2/M3 codification will decide where to land (post-hoc cross-ref from change-summary history, separate tooltip-hover extraction step, or accept null and reduce schema strictness). PBPM-M1's parallel-run validation confirms structural parity on all load-bearing fields against the 2026-05-24 Claude-in-Chrome truth-set: 7/7 tactical-signal fields, 8/8 ATI aggregate fields, 18/18 positions match on (symbol/weight/asset_class/action), 17/18 company names exact match, 16/16 latest-posts slugs covered.
+
+Full PBPM arc + per-milestone status lives at [`c-ground-code/runway/pm-bravos-playwright-migration.md`](../c-ground-code/runway/pm-bravos-playwright-migration.md).
+
 ## M1c depth-routing pattern (Layer 1, built-in)
 
 Cannon's question after M1b: "if you didn't even need to read the full YAML — if you knew where the content is and where the fluff is — could we skip even that 25k Read cap?" Same problem [bootup.md solves](../c-ground-code/references/bootup/bootup.md) for tier-2 walk dumps via chunk-with-manifest. Playwright MCP has two built-in flags that get us Layer 1 of the answer without any new tooling.
@@ -132,3 +155,5 @@ Cannon's question after M1b: "if you didn't even need to read the full YAML — 
 - **2026-05-24 — M1b**: Cannon restarted Claude Code; 23 `mcp__playwright__browser_*` tools surfaced as expected. Side-by-side vs Claude-in-Chrome on `github.com/microsoft/playwright-mcp` (appropriately recursive target): both produced usable a11y trees with stable refs. Playwright MCP snapshot landed as `1,384 lines / 99,420 bytes` (~25k tokens) but in a YAML file at `.playwright-mcp/page-2026-05-24T21-50-41-872Z.yml` (already gitignored via `/.playwright-mcp` in CG root). Tool response was ~200 tokens. Claude-in-Chrome's `read_page` at `depth=3 max_chars=15000` returned 12,500 chars inline. File-based-snapshot design is the major differentiator — full table in head-to-head section above.
 - **2026-05-24 — M1c**: Demo'd Layer 1 of the routing pattern Cannon proposed in reaction to M1b: use built-in `depth` + `target` flags to navigate-then-scope. Same URL, 4-tier ladder captured as evidence: skeleton (322 B) → article (40 KB) → main (93 KB) → full (99 KB). The article-scoped snapshot is the right hop for GitHub repo pages (40 KB / ~10k tokens, comfortably under Read cap). Main is over-broad because GitHub's main element is the whole app. Lesson: routing intelligence (which landmark to scope per-page-type) IS the load-bearing piece; Layer 1 only exposes the lever. Layer 2 (M1d) pre-encodes the routing decision per domain.
 - **2026-05-24 — M1d**: Shipped Layer 2 tooling. `cground/snapshot-routing.yml` holds the URL-pattern → target rules (10 routes: GitHub repo/PR/issue/gist/search, Medium, Substack, NYT, MDN, SO, plus default `main`). `cground/scripts/snapshot-route.py` is the CLI lookup. Bug surfaced during smoke testing: fnmatch's `*` matches across slashes, so broad rules shadowed specific ones — reordered + documented in config header. Smoke-tested against 5 URLs (GitHub repo→article ✓, PR→main ✓, issue→main ✓, example.com→main ✓, Medium→article ✓). Bootup-pattern parallel: routing decision moves from agent willpower to environment, same shape as `TARGET_MEMORY_MAP` in bootup.py.
+- **2026-05-24 — PBPM-M0 (downstream)**: pm-bravos-sync routine ratified Candidate A (Playwright MCP's persistent profile) as the auth bridge. Both A and the C alternative (`--cdp-endpoint` + dedicated Edge with `--user-data-dir`) verified empirically — both persisted Bravos auth across browser close + relaunch when the user-data-dir was stable. A wins on operational simplicity (zero launch ceremony for autonomous fires). C kept as ad-hoc debug tool (launch dedicated Edge + drive via Python `connect_over_cdp` from a scratch script, no MCP-config thrash). Full ratification + spike evidence: [`cground-skills#562`](https://github.com/CannonWest/cground-skills/pull/562). Persistent-profile auth-persistence finding is now in `project_playwright_connector` memory as a generic substrate fact.
+- **2026-05-24 — PBPM-M1 fire 1/3 (downstream)**: shipped `cground/scripts/bravos_research_parse.py` — the first downstream consumer script. Parses Bravos `/research/` (atoms 1+2+3 of `pm-bravos-sync`) from a Playwright MCP `browser_evaluate` extract; emits the canonical v1.6 `ati-snapshot` body + tactical-signal snapshot + latest-posts slug list. Parallel-run validation against 2026-05-24 Claude-in-Chrome truth-set: structural parity 100% on all load-bearing fields (signal/positions/weights/asset_class/slugs); 17/18 company-name exact match after tightening the `_company_titlecase` heuristic with explicit KEEP_UPPER + BRAND_CASE_MAP (ProShares/iShares/VanEck etc.). Two by-design divergences (`picked` date enrichment + ALUM "ETF" suffix) are agent-inference, not parser concerns — M2/M3 decides where they land. Used `browser_evaluate(filename=...)` to skip `browser_snapshot` entirely; no Bravos rule needed in `snapshot-routing.yml` yet (deferred to M2 when atom 11 `/ideas/` gets snapshot-scoping). Fires 2/3 and 3/3 happen on subsequent pm-bravos-sync runs; on 3/3 clean, M2 lifts the parser into the routine's daily flow.
