@@ -412,6 +412,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --image-responses <mode> | whether to send image responses to the client. Can be "allow" or "omit", Defaults to "allow".<br>*env* `PLAYWRIGHT_MCP_IMAGE_RESPONSES` |
 | --no-sandbox | disable the sandbox for all process types that are normally sandboxed.<br>*env* `PLAYWRIGHT_MCP_NO_SANDBOX` |
 | --output-dir <path> | path to the directory for output files.<br>*env* `PLAYWRIGHT_MCP_OUTPUT_DIR` |
+| --output-max-size <bytes> | Threshold for evicting old output files, in bytes.<br>*env* `PLAYWRIGHT_MCP_OUTPUT_MAX_SIZE` |
 | --output-mode <mode> | whether to save snapshots, console messages, network logs to a file or to the standard output. Can be "file" or "stdout". Default is "stdout".<br>*env* `PLAYWRIGHT_MCP_OUTPUT_MODE` |
 | --port <port> | port to listen on for SSE transport.<br>*env* `PLAYWRIGHT_MCP_PORT` |
 | --proxy-bypass <bypass> | comma-separated domains to bypass proxy, for example ".com,chromium.org,.domain.com"<br>*env* `PLAYWRIGHT_MCP_PROXY_BYPASS` |
@@ -578,9 +579,13 @@ npx @playwright/mcp@latest --config path/to/config.json
     cdpTimeout?: number;
 
     /**
-     * Remote endpoint to connect to an existing Playwright server.
+     * Remote endpoint to connect to an existing Playwright server. May be a
+     * WebSocket URL string, or a [ConnectOptions] object that mirrors the
+     * `connectOptions` shape used by the test runner. When passed as an object,
+     * `exposeNetwork`, `headers`, `slowMo`, and `timeout` are forwarded to the
+     * underlying connect call.
      */
-    remoteEndpoint?: string;
+    remoteEndpoint?: string | playwright.ConnectOptions & { endpoint: string };
 
     /**
      * Paths to TypeScript files to add as initialization scripts for Playwright page.
@@ -649,6 +654,11 @@ npx @playwright/mcp@latest --config path/to/config.json
    * The directory to save output files.
    */
   outputDir?: string;
+
+  /**
+   * Threshold for evicting old output files, in bytes.
+   */
+  outputMaxSize?: number;
 
   console?: {
     /**
@@ -1383,6 +1393,25 @@ http.createServer(async (req, res) => {
     - `title` (string): Chapter title
     - `description` (string, optional): Chapter description
     - `duration` (number, optional): Duration in milliseconds to show the chapter card
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_video_hide_actions**
+  - Title: Hide action overlays
+  - Description: Stop annotating actions performed on the page.
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_video_show_actions**
+  - Title: Show action overlays
+  - Description: Annotate subsequent actions performed on the page with a callout that names the action and highlights the target element. Useful while video recording or screencasting.
+  - Parameters:
+    - `duration` (number, optional): How long each action annotation stays on screen, in milliseconds. Defaults to 500.
+    - `position` (string, optional): Where to place the action title relative to the page. Defaults to top-right.
+    - `cursor` (string, optional): Cursor decoration for pointer actions. "pointer" (default) animates a mouse pointer from the previous action point to the next one; "none" disables the cursor decoration.
   - Read-only: **true**
 
 </details>
