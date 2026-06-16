@@ -1,0 +1,534 @@
+---
+apiVersion: "mcp.ypipe.com/v1"
+kind: "McpIntegrationBlueprint"
+metadata:
+  name: "browser"
+  namespace: "system"
+spec:
+  displayName: "Web Browser"
+  description: "A browser automation and web scraping server based on Playwright.\
+    \ It allows the AI to navigate websites, interact with UI elements, and extract\
+    \ content."
+  source: "https://github.com/microsoft/playwright-mcp"
+  configurationSchema: {}
+  mcpConfig:
+    type: "stdio"
+    command: "npx"
+    args:
+    - "@playwright/mcp@latest"
+    env: null
+    url: null
+    headers: null
+  disabledTools:
+  - "browser_install"
+  - "browser_run_code"
+  - "browser_console_messages"
+  - "browser_network_requests"
+  - "browser_resize"
+  - "browser_drag"
+  - "browser_file_upload"
+  - "browser_press_key"
+  - "browser_evaluate"
+  - "browser_drop"
+  - "browser_network_request"
+  - "browser_run_code_unsafe"
+  - "browser_take_screenshot"
+  - "browser_snapshot"
+  - "browser_hover"
+  - "browser_select_option"
+  suggestions:
+  - id: "browser-browser-web-search"
+    title: "Browser: Web Search"
+    label: "Search for specific info"
+    action: "Open the browser and search for 'latest iunera ypipe features' navigate\
+      \ to https://www.google.com/search?q=ypipe+ai+iunera  ."
+    actionType: null
+    target: null
+  tools:
+    browser_press_key:
+      description: "Press a specific key or key combination."
+      usageIntent: null
+      discoveryHint: null
+      properties: null
+      required: null
+    browser_snapshot:
+      description: "Capture an accessibility snapshot of the page."
+      usageIntent: null
+      discoveryHint: "Generate a comprehensive, structural, and semantic accessibility\
+        \ snapshot of the current web page's content and layout. This tool provides\
+        \ a high-level overview of the page as perceived by assistive technologies\
+        \ like screen readers (e.g., NVDA, JAWS, or VoiceOver). The snapshot includes\
+        \ critical information about the roles of elements (e.g., button, link, heading,\
+        \ navigation, main), their accessible names (labels), and their hierarchical\
+        \ relationship within the accessibility tree. This is an excellent way for\
+        \ the AI to understand the core purpose and structure of a page without having\
+        \ to parse thousands of lines of complex, often messy HTML or process heavy\
+        \ visual images. It is particularly useful for identifying the main navigation\
+        \ points, locating primary call-to-action buttons, and finding key content\
+        \ sections quickly on an unfamiliar site. Synonyms include accessibility tree,\
+        \ semantic overview, structural summary, UI blueprint, role-based snapshot,\
+        \ semantic map, and accessibility audit. Common use cases include understanding\
+        \ the layout of a complex dashboard to find the 'Settings' link, identifying\
+        \ all interactive buttons on a landing page for automated testing, finding\
+        \ the main heading of an article to extract its title, or verifying that a\
+        \ site is accessible to users with disabilities. Behavioral notes: the snapshot\
+        \ is returned in a structured format that is optimized for AI consumption,\
+        \ filtering out decorative elements (like spacer divs and background images)\
+        \ and focusing exclusively on content that is meaningful for interaction.\
+        \ Caveats: the quality and usefulness of the snapshot depend entirely on how\
+        \ well the website's developers have implemented standard accessibility features\
+        \ like ARIA roles and labels. On poorly designed sites with 'div-soup', the\
+        \ accessibility tree might be incomplete or confusing. Keywords: accessibility,\
+        \ ARIA roles, semantic web, UI structure, data discovery, semantic mapping,\
+        \ accessibility tree. The AI should use this tool as its primary 'reconnaissance'\
+        \ tool when visiting a new site. It provides a rapid and accurate understanding\
+        \ of the available interactions, significantly reducing the time needed to\
+        \ find specific information or perform complex tasks. It ensures the AI is\
+        \ navigating based on the intended meaning of the page rather than just the\
+        \ visual surface."
+      properties: null
+      required: null
+    browser_tabs:
+      description: "Manage browser tabs and windows."
+      usageIntent: null
+      discoveryHint: null
+      properties: null
+      required: null
+    browser_drag:
+      description: "Perform a drag-and-drop operation."
+      usageIntent: null
+      discoveryHint: null
+      properties: null
+      required: null
+    browser_run_code:
+      description: "Execute a Playwright script."
+      usageIntent: null
+      discoveryHint: null
+      properties: null
+      required: null
+    browser_handle_dialog:
+      description: "Handle browser dialogs like alerts and prompts."
+      usageIntent: null
+      discoveryHint: null
+      properties: null
+      required: null
+    browser_type:
+      description: "Type text into an editable element."
+      usageIntent: null
+      discoveryHint: "Simulate natural keyboard input by typing a string of text into\
+        \ a specific editable element, such as a text box, search field, content-editable\
+        \ area, or a terminal emulator on a web page. This tool mimics the process\
+        \ of a user pressing keys on a physical keyboard, sending individual 'keydown',\
+        \ 'keypress', and 'keyup' events for every character. This is crucial for\
+        \ triggering the sophisticated event listeners that modern web applications\
+        \ use for real-time validation, live search suggestions, auto-completion,\
+        \ and complex interactive features like rich text editors (e.g., Google Docs\
+        \ or Notion). You can control the typing speed (delay between characters)\
+        \ to simulate a more natural human interaction if the website has aggressive\
+        \ anti-bot detection. This is the primary tool for entering complex search\
+        \ queries, writing detailed messages, providing comments, or entering passwords.\
+        \ Synonyms include entering text, keying in data, writing input, simulating\
+        \ keyboard, inputting strings, textual input, and typing characters. Common\
+        \ use cases include typing a multi-word query into a search engine like Google\
+        \ or Bing, entering a username and password in a login form, drafting a lengthy\
+        \ comment on a blog post or social media thread, or entering code into an\
+        \ online IDE. Behavioral notes: the underlying Playwright engine first focuses\
+        \ the element to ensure it's ready for input and then sends the individual\
+        \ characters. It correctly handles special characters, emojis, and can be\
+        \ used to send sequences that include line breaks or other non-printable characters.\
+        \ Caveats: for very large amounts of text (thousands of words), this tool\
+        \ will be significantly slower than directly setting the element's value,\
+        \ but it is much more reliable for triggering complex JavaScript-based reactive\
+        \ behaviors. The AI must ensure the element is focused and not read-only before\
+        \ starting. Keywords: keyboard simulation, text input, event listeners, reactive\
+        \ UI, user interaction, keystroke logging. The AI should use this tool when\
+        \ it needs to be as 'human-like' as possible in its interactions or when the\
+        \ web application is highly dependent on real-time input events to function\
+        \ correctly. It provides a robust way to communicate with any text-based interface\
+        \ on the web."
+      properties: null
+      required: null
+    browser_file_upload:
+      description: "Upload one or multiple files."
+      usageIntent: null
+      discoveryHint: null
+      properties: null
+      required: null
+    browser_select_option:
+      description: "Select an option in a dropdown or combobox."
+      usageIntent: null
+      discoveryHint: "Choose one or more options from a standard HTML dropdown menu,\
+        \ select box, or combobox element. This tool is essential for interacting\
+        \ with form elements that offer a predefined set of choices, providing a direct\
+        \ way to set the selection state. You can select options by their visible\
+        \ text, their internal 'value' attribute, or their zero-based index in the\
+        \ list, providing maximum flexibility in how you target the desired items\
+        \ regardless of how they are labeled. It supports both single-select and multi-select\
+        \ elements, allowing you to pick multiple values simultaneously if the interface\
+        \ permits it. The Playwright engine handles the selection and ensures that\
+        \ the corresponding 'change' and 'input' events are fired so that the web\
+        \ application's JavaScript correctly recognizes the new state. Synonyms include\
+        \ picking an item, choosing from a list, setting a dropdown value, selecting\
+        \ from a menu, highlighting an option, choosing a preference, and list interaction.\
+        \ Common use cases include selecting a country or state from a long list for\
+        \ shipping, choosing a delivery method, filtering search results by a specific\
+        \ product attribute like size or color, or setting a user's language preference.\
+        \ Behavioral notes: the tool will wait for the select element to be interactive\
+        \ and will handle any complexity related to hidden select elements that are\
+        \ styled by custom CSS frameworks. Caveats: some modern web frameworks (like\
+        \ Ant Design or Material UI) use custom-built dropdowns made of 'div' and\
+        \ 'span' tags rather than standard HTML 'select' elements; for those, this\
+        \ specific tool will not work, and the AI must instead use a combination of\
+        \ 'browser_click' to open the menu and 'browser_click' again to select the\
+        \ item. Keywords: dropdown selection, form control, user preference, list\
+        \ interaction, state management, selection menu. The AI should think of this\
+        \ as the correct tool for any structured choice provided by the website. Selection\
+        \ is often more than just picking an item; it is about providing the correct\
+        \ input for a filtered search or a categorized record. It ensures that the\
+        \ agent can navigate complex configuration interfaces with the same precision\
+        \ as a human operator, choosing from hundreds of possible options with perfect\
+        \ accuracy and speed."
+      properties: null
+      required: null
+    browser_close:
+      description: "Close the browser page or window."
+      usageIntent: null
+      discoveryHint: "Terminate the current browser page, tab, or window and release\
+        \ all associated system resources including memory, CPU cycles, and network\
+        \ sockets. This tool is the essential 'cleanup' step used to end a browsing\
+        \ session responsibly, ensuring that the AI's environment remains efficient\
+        \ and that the host system is not bogged down by orphaned browser processes.\
+        \ Closing the page also immediately terminates any active network connections\
+        \ (like long-polling or WebSockets) and stops any running JavaScript within\
+        \ that page context (like timers or background observers). It is best practice\
+        \ to always close pages as soon as they are no longer needed, especially in\
+        \ long-running agents or when performing many independent tasks in a loop.\
+        \ Synonyms include exiting, quitting, terminating, cleaning up, shutting down\
+        \ the session, destroying the context, and resource release. Common use cases\
+        \ include finishing a web scraping task and releasing the data, ending a UI\
+        \ test run after the final assertion, closing a tab after a successful form\
+        \ submission, or simply tidying up the workspace after a research session\
+        \ is complete. Behavioral notes: once a page is closed, it can no longer be\
+        \ accessed or interacted with, and any unsaved state or local storage not\
+        \ persisted will be lost forever. The main browser instance might remain running\
+        \ if other pages or tabs are still open, but the specific resources for this\
+        \ page are reclaimed by the operating system. Caveats: the AI must ensure\
+        \ that all necessary data has been extracted, saved, or processed before calling\
+        \ this tool, as there is no way to undo a close action. If this is the only\
+        \ open page, the entire browser process may terminate depending on the platform\
+        \ and configuration. Keywords: resource management, session termination, process\
+        \ cleanup, memory optimization, finalization, cleanup procedure. The AI should\
+        \ think of this tool as the 'goodbye' to a web session. Performance-wise,\
+        \ it is very important for long-term stability and prevents 'memory leaks'\
+        \ in the automation environment. Security-wise, closing the page ensures that\
+        \ no session-sensitive information remains in memory longer than necessary.\
+        \ It is the final step of a professional and well-managed web automation lifecycle."
+      properties: null
+      required: null
+    browser_fill_form:
+      description: "Fill multiple form fields in a single operation."
+      usageIntent: null
+      discoveryHint: "Populate multiple form fields, input boxes, or text areas with\
+        \ provided values in a single, efficient, and atomic operation. This tool\
+        \ is specifically designed for high-performance form completion, allowing\
+        \ the AI to enter data into many fields at once rather than sending individual\
+        \ typing commands for each one. This is particularly useful for complex registration\
+        \ forms, data entry tasks, survey completion, and configuration screens where\
+        \ numerous inputs need to be set simultaneously to move forward. You provide\
+        \ a mapping of field locators (CSS, XPath) to their corresponding values,\
+        \ and the Playwright engine handles the interaction with each element sequentially\
+        \ but rapidly. Synonyms include entering data, completing a form, populating\
+        \ fields, mass input, bulk typing, automated data entry, and form submission\
+        \ preparation. Common use cases include filling out contact information (name,\
+        \ email, phone) on a checkout page, setting search parameters with multiple\
+        \ filters (price range, date, category), or completing a multi-step onboarding\
+        \ wizard for a new service. Behavioral notes: the tool ensures that each field\
+        \ is ready for input (visible and enabled) and correctly handles different\
+        \ types of input elements including text, password, email, and number fields.\
+        \ It is much faster and more reliable than sequential 'browser_type' calls\
+        \ for large forms. Caveats: ensure that the locators uniquely identify the\
+        \ intended fields to avoid entering data into the wrong inputs. Some forms\
+        \ might have complex validation logic or 'auto-submit' features that trigger\
+        \ on individual keypresses, in which case using 'browser_type' might be a\
+        \ safer approach to ensure all client-side scripts execute correctly. Keywords:\
+        \ form automation, bulk data entry, UI input, field population, efficiency,\
+        \ data submission. The AI should use this tool to streamline transactional\
+        \ workflows and minimize the number of tool calls needed to progress. From\
+        \ a security perspective, the AI must be extremely careful not to enter sensitive\
+        \ information into untrusted sites. This tool is a major productivity booster\
+        \ for tasks involving data migration or repetitive administrative entry. It\
+        \ transforms the AI into a highly efficient data processor that can handle\
+        \ complex web forms with ease and accuracy, reducing the risk of human error\
+        \ during manual entry."
+      properties: null
+      required: null
+    browser_console_messages:
+      description: "Retrieve console logs from the browser."
+      usageIntent: null
+      discoveryHint: null
+      properties: null
+      required: null
+    browser_wait_for:
+      description: "Wait for text or an element to appear or disappear."
+      usageIntent: null
+      discoveryHint: "Pause the execution of the automation flow until a specific,\
+        \ well-defined condition is met on the web page. This is a critical synchronization\
+        \ tool for handling the inherently asynchronous nature of modern web development,\
+        \ where content is often loaded lazily, elements appear after a network delay,\
+        \ or the UI changes in response to background events. Without proper waiting,\
+        \ an automation script will often fail by trying to interact with an element\
+        \ that hasn't rendered yet. This tool allows you to wait for a specific element\
+        \ to appear in the DOM, for an element to become visible to the user, for\
+        \ a particular piece of text to appear anywhere on the page, or for the page\
+        \ to reach a specific state like 'networkidle'. This ensures that all subsequent\
+        \ actions are performed only when the page is in the expected and stable state.\
+        \ Synonyms include pausing, syncing, delaying, ensuring readiness, synchronizing,\
+        \ waiting for state, and execution pause. Common use cases include waiting\
+        \ for a loading spinner to disappear after clicking 'Search', waiting for\
+        \ a confirmation message like 'Email Sent' to appear, ensuring a modal dialog\
+        \ has fully opened before attempting to click its 'Close' button, or waiting\
+        \ for a data chart to finish rendering after an API call. Behavioral notes:\
+        \ the underlying Playwright engine periodically polls the page state and resolves\
+        \ as soon as the condition is met. You can and should specify a maximum timeout\
+        \ to prevent the agent from hanging indefinitely if the condition is never\
+        \ met due to an error. Caveats: over-relying on long, fixed 'sleep' delays\
+        \ is considered bad practice in automation; it is always better to wait for\
+        \ a specific, meaningful state change. Ensure the selector or text you are\
+        \ waiting for is unique and accurately reflects the page's readiness for the\
+        \ next step. Keywords: synchronization, async handling, page stability, timeout\
+        \ management, reliability, wait condition. The AI should think of this as\
+        \ its 'patience' tool, ensuring it doesn't rush into actions that will fail\
+        \ due to timing issues. It is key for building robust and reliable web interactions\
+        \ that can handle varying network speeds and server response times."
+      properties: null
+      required: null
+    browser_hover:
+      description: "Hover the mouse over an element on the page."
+      usageIntent: null
+      discoveryHint: "Move the virtual mouse cursor over a specific element on the\
+        \ web page to trigger hover effects, reveal hidden information, or activate\
+        \ dynamic UI components. Many modern websites use hover actions to show tooltips,\
+        \ open sophisticated 'mega' drop-down menus, display additional product details,\
+        \ change the visual state of a button, or reveal 'Delete' or 'Edit' icons\
+        \ that are otherwise hidden to reduce visual clutter. This tool allows the\
+        \ AI to simulate this pointer movement using Playwright's mouse API, enabling\
+        \ it to discover and interact with UI components that are only accessible\
+        \ when the mouse is positioned over them. It is a critical tool for exploratory\
+        \ browsing and for interacting with complex, hover-dependent navigation systems\
+        \ that are common in enterprise dashboards and e-commerce sites. Synonyms\
+        \ include mouse-over, pointing at, hovering, triggering a tooltip, revealing\
+        \ hidden content, pointer positioning, and visual discovery. Common use cases\
+        \ include opening a 'Categories' menu that appears on hover in a header, seeing\
+        \ the detailed description of a feature when hovering over an icon, triggering\
+        \ an animation that provides visual feedback, or revealing a 'copy to clipboard'\
+        \ button on a code snippet. Behavioral notes: the tool precisely positions\
+        \ the mouse over the center of the target element and maintains that position\
+        \ until another mouse or keyboard action is performed. This can be used in\
+        \ conjunction with other tools to perform complex sequences like 'hover to\
+        \ reveal a menu, then click a sub-item'. Caveats: ensure the target element\
+        \ is actually capable of receiving hover events and is not obscured by other\
+        \ transparent layers or fixed-position elements. Some mobile-first designs\
+        \ might not have hover states at all (as there is no mouse on a phone), so\
+        \ this tool might have no effect on such sites. Keywords: mouse simulation,\
+        \ UI discovery, interactive states, tooltip trigger, menu navigation, pointer\
+        \ event. The AI should use this tool when it suspects there is more information\
+        \ hidden 'under' a UI element or when it needs to interact with a site that\
+        \ relies heavily on hover-based navigation. It is the digital equivalent of\
+        \ a careful exploration, ensuring that no interactive feature is missed simply\
+        \ because it wasn't immediately visible."
+      properties: null
+      required: null
+    browser_evaluate:
+      description: "Execute JavaScript code in the browser context."
+      usageIntent: null
+      discoveryHint: "Execute custom, arbitrary JavaScript code directly within the\
+        \ execution context of the currently loaded web page. This is an extremely\
+        \ powerful and versatile tool that allows for deep inspection and manipulation\
+        \ of the page's Document Object Model (DOM), internal JavaScript state, and\
+        \ global browser APIs. You can use it to extract complex, nested data structures\
+        \ that are not easily accessible through standard CSS selectors, trigger internal\
+        \ application functions, calculate values on the fly, or even modify the page's\
+        \ behavior for advanced testing purposes. The code runs with the same privileges\
+        \ as the site's own scripts, having full access to the page's global 'window'\
+        \ and 'document' objects. You can pass complex arguments into the script and\
+        \ receive a serialized return value back for the AI to process. Synonyms include\
+        \ running a script, executing JS, DOM manipulation, custom inspection, page-level\
+        \ scripting, internal state access, and script injection. Common use cases\
+        \ include calculating the total price of all items in a shopping cart by iterating\
+        \ through a JS object, extracting a list of all URLs on a page that match\
+        \ a specific regex, overriding a global function to prevent an annoying popup,\
+        \ or checking the value of a hidden variable in a Redux or Vuex store. Behavioral\
+        \ notes: the code is executed synchronously by default, but you can also run\
+        \ asynchronous code by returning a Promise. The result is serialized using\
+        \ JSON, so certain non-serializable objects like DOM nodes or circular structures\
+        \ cannot be returned directly; they must be mapped to simple objects first.\
+        \ Caveats: running arbitrary JavaScript can be dangerous; poorly written code\
+        \ can crash the browser tab or enter an infinite loop. It can also break the\
+        \ web application if it interferes with its internal state in an inconsistent\
+        \ way. Use this tool as a 'last resort' when high-level tools like 'browser_click'\
+        \ or 'browser_snapshot' are insufficient for the task. Keywords: custom scripting,\
+        \ advanced extraction, state inspection, JS execution, internal API access.\
+        \ This tool represents the 'ultimate control' over the browser environment,\
+        \ allowing for tasks that go far beyond standard user interaction. It ensures\
+        \ the AI can handle even the most complex and non-standard web applications\
+        \ with professional precision."
+      properties: null
+      required: null
+    browser_take_screenshot:
+      description: "Capture a screenshot of the current page or an element."
+      usageIntent: null
+      discoveryHint: "Capture a visual snapshot or screenshot of the current page or\
+        \ a specific element within the page. This tool is invaluable for visual verification,\
+        \ debugging UI issues, and documenting the state of a web application during\
+        \ an automated process. You can capture the entire visible viewport or target\
+        \ a specific DOM element to isolate a particular part of the interface, such\
+        \ as a chart, a form, or a specific piece of data. The resulting image provides\
+        \ a concrete record of what the user would see, which is essential for tasks\
+        \ that involve visual inspection or where textual data extraction is insufficient\
+        \ (e.g., verifying a complex layout or identifying CAPTCHAs). The Playwright\
+        \ engine handles the rendering and capture process, supporting high-resolution\
+        \ output and various image formats like PNG or JPEG. Synonyms include screen\
+        \ capture, taking a picture, grabbing a frame, visual recording, snapshotting,\
+        \ and image export. Common use cases involve verifying that a page rendered\
+        \ correctly after a CSS change, capturing evidence of a bug for developers,\
+        \ saving a visual representation of a data dashboard for a report, or documenting\
+        \ a successful transaction confirmation. Behavioral notes: the tool allows\
+        \ for full-page captures, which automatically scroll the page to capture all\
+        \ content, or element-specific captures that target a specific CSS selector.\
+        \ Caveats: dynamic content, CSS animations, or parallax scrolling effects\
+        \ might be captured in an intermediate state, so it is often wise to use a\
+        \ 'wait_for' command before taking the screenshot to ensure the page has reached\
+        \ a stable visual state. Additionally, extremely long pages might result in\
+        \ very large image files that consume significant memory and processing time.\
+        \ Keywords: visual verification, UI testing, rendering audit, screen grab,\
+        \ evidence collection, snapshot, visual record. The AI should use this tool\
+        \ when textual information is not enough to confirm a state or when it needs\
+        \ to communicate the 'look and feel' of a site to a human user. It is the\
+        \ primary way to bridge the gap between headless automation and human visual\
+        \ understanding, providing a 'source of truth' for the rendered UI state.\
+        \ Screenshots can also be used for historical auditing of website changes\
+        \ over time."
+      properties: null
+      required: null
+    browser_network_requests:
+      description: "List network requests made by the page."
+      usageIntent: null
+      discoveryHint: null
+      properties: null
+      required: null
+    browser_navigate:
+      description: "Navigate the browser to a URL."
+      usageIntent: null
+      discoveryHint: "Navigate the browser to a specific web address or URL. This tool\
+        \ is the primary gateway for the AI to interact with the vast landscape of\
+        \ the World Wide Web. By specifying a target URL, the agent initiates a complex\
+        \ sequence of events where the underlying Playwright engine fetches the remote\
+        \ HTML resources, parses the Document Object Model (DOM), and executes associated\
+        \ CSS and JavaScript to fully render the page in a headless browser environment.\
+        \ This is essential for a wide variety of tasks, including real-time research,\
+        \ competitive analysis, data scraping, and automated UI testing. The tool\
+        \ supports standard protocols such as HTTP and HTTPS, ensuring compatibility\
+        \ with almost all modern websites, from static blogs to complex single-page\
+        \ applications (SPAs) built with frameworks like React, Vue, or Angular. When\
+        \ the AI navigates to a site, it must be aware of the navigation lifecycle,\
+        \ including events like 'domcontentloaded' and 'networkidle', which indicate\
+        \ when a page is stable enough for further interaction. Use cases include\
+        \ visiting a search engine like Google to find information, opening a documentation\
+        \ portal to learn about a new library, or navigating to a client's dashboard\
+        \ to perform a routine health check. Synonyms for this action include browsing,\
+        \ visiting, loading a page, redirecting the browser, and opening a web portal.\
+        \ Keywords: web navigation, URL resolution, browser automation, headless browsing,\
+        \ remote resource fetching, URI handling, web access. Behavioral notes: The\
+        \ tool will wait for the page to reach a 'load' state by default, but the\
+        \ AI should consider using 'wait_for' if the page content is heavily dependent\
+        \ on asynchronous API calls or slow-loading assets. Caveats: Ensure the URL\
+        \ is correctly formatted and that the target server is responsive; failure\
+        \ to do so will result in a timeout or a 'Page not found' error. The AI should\
+        \ also respect 'robots.txt' and avoid aggressive navigation that could be\
+        \ perceived as a denial-of-service attack or lead to IP-based blocking. This\
+        \ tool is the 'eyes' and 'ears' of the agent on the internet, providing the\
+        \ foundational context for all subsequent browser-based operations. It ensures\
+        \ the AI has the most up-to-date and accurate information available on the\
+        \ web, directly from the source. Performance depends on network speed and\
+        \ the complexity of the target page's scripts and assets."
+      properties: null
+      required: null
+    browser_navigate_back:
+      description: "Go back to the previous page in history."
+      usageIntent: null
+      discoveryHint: "Return to the previous page in the browser's history stack. This\
+        \ tool simulates the user clicking the 'Back' button in a standard web browser\
+        \ interface. It is extremely useful for navigating through multi-step workflows,\
+        \ reversing a navigation action, or returning to a list of search results\
+        \ after viewing a specific item in detail. By moving back through the history\
+        \ stack, you can efficiently explore different branches of a website without\
+        \ having to re-enter or remember previous URLs. This action is essential for\
+        \ interactive browsing sessions where the AI needs to backtrack to find information\
+        \ it might have missed or to correct a navigation error. The underlying Playwright\
+        \ engine manages the session history, ensuring that the previous state of\
+        \ the page, including its URL and scroll position, is restored correctly.\
+        \ Synonyms include going back, returning to the previous site, reversing navigation,\
+        \ retreating to the prior page, undoing a navigation step, and history backtracking.\
+        \ Common use cases include returning to a main dashboard after viewing a subpage,\
+        \ going back to a search result list on a site like Wikipedia or Amazon, or\
+        \ undoing a misclick that led to an unwanted advertisement or secondary page.\
+        \ Behavioral notes: this tool relies on the browser's internal history state;\
+        \ if there is no previous page in the history (for example, on the first page\
+        \ loaded in a new session), the command may have no effect or return a warning.\
+        \ It is a non-destructive way to explore web content hierarchically and non-linearly.\
+        \ Caveats: frequent use of back navigation in complex single-page applications\
+        \ (SPAs) built with modern frameworks like React or Angular might lead to\
+        \ unexpected states if the application's client-side routing logic is not\
+        \ properly synchronized with the browser's pushState history. However, for\
+        \ most standard websites, it provides a reliable way to navigate backwards.\
+        \ Keywords: session history, browser state, backtracking, navigation stack,\
+        \ user flow, history management, state restoration. The AI should think of\
+        \ this as a way to maintain spatial awareness within a web domain, allowing\
+        \ for efficient exploration of multiple related pages without redundant loads.\
+        \ It preserves the session's continuity and reduces the cognitive load of\
+        \ navigation management."
+      properties: null
+      required: null
+    browser_resize:
+      description: "Resize the browser window or viewport."
+      usageIntent: null
+      discoveryHint: null
+      properties: null
+      required: null
+    browser_click:
+      description: "Click on an element on the current page."
+      usageIntent: null
+      discoveryHint: "Simulate a mouse click on a specific UI element on the current\
+        \ web page. This is a fundamental interaction tool used to trigger buttons,\
+        \ follow hyperlinks, toggle checkboxes, select radio buttons, and interact\
+        \ with various custom controls like sliders, tabs, or menus. You can specify\
+        \ the target element using CSS selectors, XPath, or other supported Playwright\
+        \ locators. The tool supports different types of clicks, including single\
+        \ clicks, double clicks, and right-clicks (context menu), and can also be\
+        \ used with modifier keys like Shift, Control, or Meta to trigger special\
+        \ browser behaviors. Clicking is the primary way to drive navigation and trigger\
+        \ state changes within a modern web application. Synonyms include pressing\
+        \ a button, hitting a link, toggling a switch, selecting a target, engaging\
+        \ a UI component, activating a control, and mouse interaction. Common use\
+        \ cases include submitting a login form, clicking a 'Search' button, navigating\
+        \ through a complex sidebar menu, expanding a truncated section of text, or\
+        \ interacting with an interactive map. Behavioral notes: the underlying Playwright\
+        \ engine is highly sophisticated; it typically waits for the element to become\
+        \ visible, enabled, and 'stable' (not moving due to layout shifts) before\
+        \ attempting the click, ensuring a much higher success rate for asynchronous\
+        \ and reactive interfaces. It also handles scrolling the element into view\
+        \ automatically if it is currently outside the viewport. Caveats: overlapping\
+        \ elements, transparent layers, or elements that disappear upon hover can\
+        \ sometimes interfere with the click action, requiring careful selection of\
+        \ the target locator or using 'force' clicks. If an element is dynamically\
+        \ updated or removed from the DOM just as the click is being executed, the\
+        \ action will fail with a 'Target closed' or 'Element not found' error. Keywords:\
+        \ UI interaction, event triggering, DOM manipulation, user simulation, link\
+        \ following, mouse events, state transition. The AI should think of this tool\
+        \ as its primary 'hand' for interacting with the digital world. Every click\
+        \ is a decision that moves the process forward, whether it's confirming an\
+        \ order or opening a new content pane. It's the most common tool for driving\
+        \ user flows through complex web applications."
+      properties: null
+      required: null
+  modelSemantics: null

@@ -377,6 +377,17 @@ Follow Windsurf MCP [documentation](https://docs.windsurf.com/windsurf/cascade/m
 
 </details>
 
+<details>
+<summary>ypipe</summary>
+
+Install and run **ypipe** with a single command using JBang:
+```bash
+jbang ypipe@iunera/ypipe
+```
+Or download the desktop app from [ypipe.com](https://ypipe.com). Once opened, simply import the pre-configured [browser.ypipe](./browser.ypipe) blueprint configuration file to install and register this MCP server with one click.
+
+</details>
+
 ### Configuration
 
 Playwright MCP server supports following arguments. They can be provided in the JSON configuration above, as a part of the `"args"` list:
