@@ -1,0 +1,22 @@
+{
+  "targetId": "mcp-server",
+  "adapter": "local-process",
+  "command": "npx",
+  "args": [
+    "-y",
+    "@playwright/mcp@latest"
+  ],
+  "securitySuppressions": [
+    "browser_close:permissive-schema",
+    "browser_evaluate:shell-injection",
+    "browser_evaluate:broad-filesystem",
+    "browser_navigate_back:permissive-schema",
+    "browser_run_code_unsafe:shell-injection",
+    "browser_run_code_unsafe:broad-filesystem"
+  ],
+  "skipInvoke": true,
+  "timeoutMs": 60000,
+  "metadata": {
+    "observatory": "certification-pr"
+  }
+}
