@@ -141,6 +141,18 @@ async function updateTools(content) {
 }
 
 /**
+ * @param {string} prefix
+ * @returns {string}
+ */
+function optionEnvName(prefix) {
+  if (prefix === 'secrets')
+    return 'PLAYWRIGHT_MCP_SECRETS_FILE';
+  if (prefix === 'cdp-header')
+    return 'PLAYWRIGHT_MCP_CDP_HEADERS';
+  return `PLAYWRIGHT_MCP_` + prefix.toUpperCase().replace(/-/g, '_');
+}
+
+/**
  * @param {string} content
  * @returns {Promise<string>}
  */
@@ -177,9 +189,7 @@ async function updateOptions(content) {
   table.push(`|--------|-------------|`);
   for (const option of options) {
     const prefix = option.name.split(' ')[0];
-    const envName = prefix === 'secrets'
-      ? 'PLAYWRIGHT_MCP_SECRETS_FILE'
-      : `PLAYWRIGHT_MCP_` + prefix.toUpperCase().replace(/-/g, '_');
+    const envName = optionEnvName(prefix);
     table.push(`| --${option.name} | ${option.value}<br>*env* \`${envName}\` |`);
   }
 
@@ -189,7 +199,7 @@ async function updateOptions(content) {
     envTable.push(`|-------------|`);
     for (const option of options) {
       const prefix = option.name.split(' ')[0];
-      const envName = `PLAYWRIGHT_MCP_` + prefix.toUpperCase().replace(/-/g, '_');
+      const envName = optionEnvName(prefix);
       envTable.push(`| \`${envName}\` ${option.value} |`);
     }
     console.log(envTable.join('\n'));
