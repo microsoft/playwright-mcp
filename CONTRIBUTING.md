@@ -36,11 +36,15 @@ npm run watch
 npx playwright install
 ```
 
-Source code for Playwright MCP is located at [packages/playwright/src/mcp](https://github.com/microsoft/playwright/blob/main/packages/playwright/src/mcp).
+Source code for Playwright MCP is located in the Playwright monorepo:
+
+- [packages/playwright-core/src/tools/mcp](https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/tools/mcp)
+- [packages/playwright-core/src/tools/backend](https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/tools/backend)
 
 ```bash
 # list source files
-ls -la packages/playwright/src/mcp
+ls -la packages/playwright-core/src/tools/mcp
+ls -la packages/playwright-core/src/tools/backend
 ```
 
 Coding style is fully defined in [eslint.config.mjs](https://github.com/microsoft/playwright/blob/main/eslint.config.mjs). Before creating a pull request, or at any moment during development, run linter to check all kinds of things:
@@ -66,12 +70,12 @@ To run the mcp tests, use
 
 ```bash
 # fast path runs all MCP tests in Chromium
-npm run mcp-ctest
+npm run ctest-mcp
 ```
 
 ```bash
 # slow path runs all tests in three browsers
-npm run mcp-test
+npm run test-mcp
 ```
 
 Since Playwright tests are using Playwright under the hood, everything from our documentation applies, for example [this guide on running and debugging tests](https://playwright.dev/docs/running-tests#running-tests).
