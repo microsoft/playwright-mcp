@@ -17,6 +17,10 @@
 
 const { program } = require('playwright-core/lib/utilsBundle');
 const { tools, libCli } = require('playwright-core/lib/coreBundle');
+const { injectBatchFillTool } = require('./batchFill');
+
+// Inject browser_fill_form_batch before CLI processes any command
+injectBatchFillTool();
 
 if (process.argv.includes('install-browser')) {
   const argv = process.argv.map(arg => arg === 'install-browser' ? 'install' : arg);

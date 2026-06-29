@@ -1,0 +1,28 @@
+# Playwright MCP Batch Fill Rules
+
+You have access to `browser_fill_form_batch`. When you see a form with 2+ static
+input fields, you MUST use this tool instead of filling fields individually.
+
+## Required behavior:
+- Analyze the form in a single snapshot
+- Collect all selectors and values
+- Call `browser_fill_form_batch` with a single `actions` array
+- Verify with one final snapshot
+
+## Exception — use sequential fill when:
+- Fields expand or create new inputs on change (e.g. "Add another" buttons)
+- Fields have real-time autocomplete or server-side validation on keystroke
+- The form is a multi-step wizard where each step loads new content
+- CAPTCHA or challenge elements are present
+
+## For partially dynamic forms:
+Use the `groups` parameter — batch the static fields, then handle dynamic ones:
+```json
+{
+  "groups": {
+    "batch1": [{"selector": "#country", "value": "US", "type": "select"}],
+    "batch2": [{"selector": "#state", "value": "NY", "type": "select"}, {"selector": "#city", "value": "NYC"}]
+  },
+  "delayBetweenGroups": 300
+}
+```

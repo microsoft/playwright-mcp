@@ -6,3 +6,4 @@ playwright-report/
 .DS_Store
 .env
 sessions/
+.playwright-mcp/

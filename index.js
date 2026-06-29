@@ -16,4 +16,11 @@
  */
 
 const { tools } = require('playwright-core/lib/coreBundle');
+const { injectBatchFillTool } = require('./batchFill');
+
+// Inject browser_fill_form_batch into the tool registry before any
+// connection is created. This pushes into the shared browserTools array
+// that filteredTools() reads from.
+injectBatchFillTool();
+
 module.exports = { createConnection: tools.createConnection };
