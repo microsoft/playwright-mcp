@@ -20,14 +20,14 @@
 /**
  * Batch Form Fill Tool for Playwright MCP
  *
- * Fills multiple form fields simultaneously in a single round-trip using
- * Promise.allSettled(), reducing 10+ network round-trips and LLM decisions
+ * Fills multiple form fields in a single tool call (single round-trip), reducing
+ * multiple network round-trips and LLM decisions to a single call.
  * to a single call.
  *
  * Two execution modes:
- *   1. Flat `actions` array — all fields filled in parallel
+ *   1. Flat `actions` array — actions are processed sequentially (in one tool call)
  *   2. Dependency `groups` — groups run sequentially with a configurable
- *      delay, but fields within each group run in parallel
+ *      delay; actions within each group are processed sequentially
  *
  * When NOT to use this tool (use browser_fill_form or browser_type instead):
  *   - Fields that expand or reveal additional inputs on change
@@ -46,6 +46,9 @@ function injectBatchFillTool() {
   const coreBundle = require('playwright-core/lib/coreBundle');
   const { z } = require('playwright-core/lib/utilsBundle');
 
+
+  if (coreBundle.tools.browserTools.some(t => t.schema?.name === 'browser_fill_form_batch'))
+     return;
   const actionItemSchema = z.object({
     selector: z.string().describe(
       'CSS selector, text selector, or Playwright-compatible locator string for the target input element.'
@@ -61,13 +64,13 @@ function injectBatchFillTool() {
 
   const batchFillInputSchema = z.object({
     actions: z.array(actionItemSchema).optional().describe(
-      'Flat list of form field actions to execute ALL in parallel via Promise.allSettled(). ' +
-      'Use this for simple, static forms where no field reveals or hides other fields.'
+      'Flat list of form field actions to execute in a single tool call (single round-trip). ' +
+       'Actions are processed sequentially; the speedup comes from reducing tool calls/LLM decisions.'
     ),
     groups: z.record(z.string(), z.array(actionItemSchema)).optional().describe(
       'Named dependency groups for dynamic forms. Groups execute sequentially in ' +
-      'alphabetical order (e.g. "batch1" runs before "batch2"), but fields within ' +
-      'each group execute in parallel. Use when selecting a value in one field ' +
+      'alphabetical order (e.g. "batch1" runs before "batch2"). Actions within ' +
+      'each group are processed sequentially. Use when selecting a value in one field ' +
       'reveals/populates other fields (e.g. Country → State → City).'
     ),
     delayBetweenGroups: z.number().optional().describe(
@@ -82,12 +85,12 @@ function injectBatchFillTool() {
       name: 'browser_fill_form_batch',
       title: 'Batch fill form fields',
       description:
-        'Fill multiple form input fields simultaneously in a single round-trip. ' +
-        'This is dramatically faster than filling fields one by one. ' +
+        'Fill multiple form input fields in a single tool call (single round-trip). ' +
+        'This avoids multiple network round-trips and reduces LLM decision overhead. ' +
         'Use the flat "actions" array for static forms, or "groups" for forms ' +
         'with dependent/dynamic fields. ' +
         'IMPORTANT: Do NOT use this tool for fields that expand or reveal ' +
-        'additional inputs on change use browser_fill_form or browser_type ' +
+        'additional inputs on change; use browser_fill_form or browser_type ' +
         'sequentially for those instead.',
       inputSchema: batchFillInputSchema,
       type: 'input',
@@ -109,6 +112,7 @@ function injectBatchFillTool() {
       }
 
       const delayMs = params.delayBetweenGroups ?? 200;
+      /** @type {string[]} */
       const errorMessages = [];
       let totalFilled = 0;
       let totalErrors = 0;
@@ -120,6 +124,9 @@ function injectBatchFillTool() {
        * existing browser_fill_form tool. The speed gain comes from batching
        * the LLM decision (1 tool call instead of N), not from parallel
        * browser execution.
+       *
+       * @param {Array<{selector: string, value: string, type?: 'fill' | 'check' | 'select'}>} actions
+       * @param {string} groupLabel
        */
       async function executeBatch(actions, groupLabel) {
         for (const action of actions) {
@@ -131,7 +138,11 @@ function injectBatchFillTool() {
               await locator.fill(action.value, { timeout: 5000 });
               response.addCode(`await page.locator(${JSON.stringify(action.selector)}).fill(${JSON.stringify(action.value)});`);
             } else if (actionType === 'check') {
-              const checked = action.value === 'true';
+              const normalized = action.value.trim().toLowerCase();
+              if (normalized !== 'true' && normalized !== 'false') {
+                throw new Error(`For type "check", value must be "true" or "false" (got "${action.value}").`);
+              }
+              const checked = normalized === 'true';
               await locator.setChecked(checked, { timeout: 5000 });
               response.addCode(`await page.locator(${JSON.stringify(action.selector)}).setChecked(${checked});`);
             } else if (actionType === 'select') {
