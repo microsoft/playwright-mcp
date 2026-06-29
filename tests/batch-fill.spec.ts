@@ -16,7 +16,7 @@
 
 import { test, expect } from './fixtures';
 
-test('browser_fill_form_batch - flat actions fill multiple fields in parallel', async ({ client, server }) => {
+test('browser_fill_form_batch - flat actions fill multiple fields in a single tool call', async ({ client, server }) => {
   server.setContent('/', `
     <title>Registration Form</title>
     <form>
@@ -225,4 +225,41 @@ test('browser_fill_form_batch - empty actions returns error message', async ({ c
   expect(result).toHaveResponse({
     result: expect.stringContaining('Provide either'),
   });
+});
+
+test('browser_fill_form_batch - overwrites pre-existing text in input field using select-all and delete', async ({ client, server }) => {
+  server.setContent('/', `
+    <title>Overwrite Test</title>
+    <form>
+      <input type="text" id="target" value="initial-content" />
+    </form>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  const result = await client.callTool({
+    name: 'browser_fill_form_batch',
+    arguments: {
+      actions: [
+        { selector: '#target', value: 'replaced-content' },
+      ],
+    },
+  });
+
+  expect(result).toHaveResponse({
+    result: expect.stringContaining('1 field(s) filled successfully'),
+  });
+
+  const verifyResult = await client.callTool({
+    name: 'browser_evaluate',
+    arguments: {
+      function: `() => document.getElementById('target').value`
+    }
+  });
+
+  const text = (verifyResult as any).content[0].text;
+  expect(text).toContain('replaced-content');
 });

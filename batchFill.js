@@ -122,6 +122,8 @@ function injectBatchFillTool() {
       let totalFilled = 0;
       let totalErrors = 0;
 
+      const sleep = (/** @type {number} */ ms) => new Promise(resolve => setTimeout(resolve, ms));
+
       /**
        * Fill a batch of form fields sequentially using Playwright locator APIs.
        *
@@ -139,21 +141,121 @@ function injectBatchFillTool() {
             const locator = page.locator(action.selector);
             const actionType = action.type || 'fill';
 
+            // Ensure the target element is visible and interactive on the page
+            await locator.waitFor({ state: 'visible', timeout: 3000 });
+
             if (actionType === 'fill') {
-              await locator.fill(action.value, { timeout: 5000 });
-              response.addCode(`await page.locator(${JSON.stringify(action.selector)}).fill(${JSON.stringify(action.value)});`);
+              // 1. Move mouse to the center of the field with 10 interpolated steps
+              const box = await locator.boundingBox();
+              if (box) {
+                const targetX = box.x + box.width / 2;
+                const targetY = box.y + box.height / 2;
+                await page.mouse.move(targetX, targetY, { steps: 10 });
+              }
+
+               // 2. Click to focus and trigger cursor events
+               await locator.click({ timeout: 3000 });
+               await sleep(100);
+
+               // Clear pre-existing text if present
+               const currentValue = await locator.inputValue();
+               if (currentValue) {
+                 const selectAllKey = process.platform === 'darwin' ? 'Meta+A' : 'Control+A';
+                 await locator.press(selectAllKey);
+                 await sleep(50);
+                 await locator.press('Backspace');
+                 await sleep(50);
+               }
+
+               // 3. Type character-by-character with a human-like delay
+               if (typeof locator.pressSequentially === 'function') {
+                 await locator.pressSequentially(action.value, { delay: 80 });
+               } else {
+                 // @ts-ignore
+                 await locator.type(action.value, { delay: 80 });
+               }
+
+               // 4. Force change event and blur so validations run
+               await locator.dispatchEvent('change');
+               await locator.blur();
+
+               const selectAllModifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+               response.addCode(`// Move mouse, select all, clear, and fill sequentially
+               const box = await page.locator(${JSON.stringify(action.selector)}).boundingBox();
+               if (box) {
+                 await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 });
+               }
+               await page.locator(${JSON.stringify(action.selector)}).click();
+               const currentValue = await page.locator(${JSON.stringify(action.selector)}).inputValue();
+               if (currentValue) {
+                 await page.locator(${JSON.stringify(action.selector)}).press('${selectAllModifier}+A');
+                 await page.locator(${JSON.stringify(action.selector)}).press('Backspace');
+               }
+               await page.locator(${JSON.stringify(action.selector)}).pressSequentially(${JSON.stringify(action.value)}, { delay: 80 });
+               await page.locator(${JSON.stringify(action.selector)}).dispatchEvent('change');
+               await page.locator(${JSON.stringify(action.selector)}).blur();`);
             } else if (actionType === 'check') {
               const normalized = action.value.trim().toLowerCase();
               if (normalized !== 'true' && normalized !== 'false') {
                 throw new Error(`For type "check", value must be "true" or "false" (got "${action.value}").`);
               }
               const checked = normalized === 'true';
+
+              // Move mouse
+              const box = await locator.boundingBox();
+              if (box) {
+                const targetX = box.x + box.width / 2;
+                const targetY = box.y + box.height / 2;
+                await page.mouse.move(targetX, targetY, { steps: 10 });
+              }
+
+              await locator.focus();
+              await sleep(100);
+
               await locator.setChecked(checked, { timeout: 5000 });
-              response.addCode(`await page.locator(${JSON.stringify(action.selector)}).setChecked(${checked});`);
+
+              await locator.dispatchEvent('change');
+              await locator.blur();
+
+              response.addCode(`// Move mouse and check
+              const box = await page.locator(${JSON.stringify(action.selector)}).boundingBox();
+              if (box) {
+                await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 });
+              }
+              await page.locator(${JSON.stringify(action.selector)}).focus();
+              await page.locator(${JSON.stringify(action.selector)}).setChecked(${checked});
+              await page.locator(${JSON.stringify(action.selector)}).dispatchEvent('change');
+              await page.locator(${JSON.stringify(action.selector)}).blur();`);
             } else if (actionType === 'select') {
+              // Move mouse
+              const box = await locator.boundingBox();
+              if (box) {
+                const targetX = box.x + box.width / 2;
+                const targetY = box.y + box.height / 2;
+                await page.mouse.move(targetX, targetY, { steps: 10 });
+              }
+
+              await locator.click({ timeout: 3000 });
+              await sleep(100);
+
               await locator.selectOption({ label: action.value }, { timeout: 5000 });
-              response.addCode(`await page.locator(${JSON.stringify(action.selector)}).selectOption({ label: ${JSON.stringify(action.value)} });`);
+
+              await locator.dispatchEvent('change');
+              await locator.blur();
+
+              response.addCode(`// Move mouse and select
+              const box = await page.locator(${JSON.stringify(action.selector)}).boundingBox();
+              if (box) {
+                await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 });
+              }
+              await page.locator(${JSON.stringify(action.selector)}).click();
+              await page.locator(${JSON.stringify(action.selector)}).selectOption({ label: ${JSON.stringify(action.value)} });
+              await page.locator(${JSON.stringify(action.selector)}).dispatchEvent('change');
+              await page.locator(${JSON.stringify(action.selector)}).blur();`);
             }
+
+            // Brief sleep before moving cursor/focus to the next field
+            await sleep(150);
 
             totalFilled++;
           } catch (e) {

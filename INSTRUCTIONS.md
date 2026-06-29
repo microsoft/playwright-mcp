@@ -3,8 +3,8 @@
 ## Tool: `browser_fill_form_batch`
 
 You have access to a specialized tool named `browser_fill_form_batch` that fills
-multiple form fields simultaneously in a single round-trip. This is **10x faster**
-than filling fields one by one.
+multiple form fields in a single round-trip (single tool call). This can be significantly
+faster than filling fields one by one.
 
 ---
 
@@ -22,7 +22,7 @@ Use this tool whenever you encounter a form with **static, non-expanding fields*
 **Procedure:**
 1. Take a snapshot of the page to identify all visible input fields
 2. Collect ALL selectors and values into a single `actions` array
-3. Execute `browser_fill_form_batch` once — all fields fill simultaneously
+3. Execute `browser_fill_form_batch` once — fields are filled in a single tool call
 4. Take one final snapshot to verify
 
 ---
@@ -47,7 +47,7 @@ reveal or change based on other field values:
 }
 ```
 
-Groups execute in alphabetical order. Fields within each group execute in parallel.
+Groups execute in alphabetical order. Actions within each group are processed sequentially.
 
 ---
 
