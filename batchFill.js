@@ -129,14 +129,14 @@ function injectBatchFillTool() {
 
             if (actionType === 'fill') {
               await locator.fill(action.value, { timeout: 5000 });
-              response.addCode(`await page.locator('${action.selector}').fill('${action.value}');`);
+              response.addCode(`await page.locator(${JSON.stringify(action.selector)}).fill(${JSON.stringify(action.value)});`);
             } else if (actionType === 'check') {
               const checked = action.value === 'true';
               await locator.setChecked(checked, { timeout: 5000 });
-              response.addCode(`await page.locator('${action.selector}').setChecked(${checked});`);
+              response.addCode(`await page.locator(${JSON.stringify(action.selector)}).setChecked(${checked});`);
             } else if (actionType === 'select') {
               await locator.selectOption({ label: action.value }, { timeout: 5000 });
-              response.addCode(`await page.locator('${action.selector}').selectOption({ label: '${action.value}' });`);
+              response.addCode(`await page.locator(${JSON.stringify(action.selector)}).selectOption({ label: ${JSON.stringify(action.value)} });`);
             }
 
             totalFilled++;
