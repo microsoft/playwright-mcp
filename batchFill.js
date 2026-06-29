@@ -96,6 +96,11 @@ function injectBatchFillTool() {
       type: 'input',
     },
 
+    /**
+     * @param {any} context
+     * @param {any} params
+     * @param {any} response
+     */
     handle: async (context, params, response) => {
       const tab = await context.ensureTab();
       const page = tab.page;
