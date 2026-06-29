@@ -58,12 +58,6 @@ Filter for `feat(mcp)`, `fix(mcp)`, `feat(extension)`, `fix(extension)`, and das
 
 Follow the format from the prior release: `## What's New` (with `### New Tools`, `### Tool Improvements`, optional `### Browser Extension`, `### Dashboard`, `### Other Changes`) and `## Bug Fixes`. Link each entry to its PR (`[#NNNNN](https://github.com/microsoft/playwright/pull/NNNNN)` or the playwright-mcp equivalent). **Do not mention features that are not yet enabled by default** — confirm with the user before listing experimental flags.
 
-## 6. Create the draft release
+## 6. Upload release PR
 
-```bash
-gh release create v0.0.<next> --repo microsoft/playwright-mcp \
-  --draft --title "v0.0.<next>" --target main \
-  --notes-file release-notes.md
-```
-
-Publish the draft once the mark PR is merged.
+Upload the release PR with the release-notes as description.
