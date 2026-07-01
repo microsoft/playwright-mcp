@@ -64,7 +64,7 @@ Add via the Amp VS Code extension settings screen or by updating your settings.j
 
 **Amp CLI Setup:**
 
-Add via the `amp mcp add`command below
+Add via the `amp mcp add` command below
 
 ```bash
 amp mcp add playwright -- npx @playwright/mcp@latest

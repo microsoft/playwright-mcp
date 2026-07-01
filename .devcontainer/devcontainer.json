@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
   "name": "Playwright",
-  "image": "mcr.microsoft.com/playwright:v1.58.2-noble",
+  "image": "mcr.microsoft.com/playwright:v1.61.0-noble",
   "privileged": true,
   "init": true,
   "remoteUser": "pwuser",
