@@ -18,7 +18,7 @@ This package provides MCP interface into Playwright. If you are using a **coding
 
 ### Requirements
 - Node.js 18 or newer
-- VS Code, Cursor, Windsurf, Claude Desktop, Goose, Junie or any other MCP client
+- VS Code, Cursor, Windsurf, Claude Desktop, Goose, Grok, Junie or any other MCP client
 
 <!--
 // Generate using:
@@ -235,6 +235,27 @@ Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/
 #### Or install manually:
 
 Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to your liking, use type `STDIO`, and set the `command` to `npx @playwright/mcp`. Click "Add Extension".
+</details>
+
+<details>
+<summary>Grok</summary>
+
+Use the Grok CLI to add the Playwright MCP server:
+
+```bash
+grok mcp add playwright -- npx @playwright/mcp@latest
+```
+
+Alternatively, create or edit the configuration file `~/.grok/config.toml` and add:
+
+```toml
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+```
+
+For more information, see the [Grok MCP documentation](https://docs.x.ai/build/features/mcp-servers).
+
 </details>
 
 <details>
