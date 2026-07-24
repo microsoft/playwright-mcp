@@ -1,5 +1,7 @@
 ## Playwright MCP
 
+[![MCP Toplist](https://mcptoplist.com/badge/io.github.microsoft%2Fplaywright-mcp.svg)](https://mcptoplist.com/server/io.github.microsoft%2Fplaywright-mcp)
+
 A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
 
 ### Playwright MCP vs Playwright CLI
