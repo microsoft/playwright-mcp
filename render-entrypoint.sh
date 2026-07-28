@@ -33,13 +33,25 @@ echo "[startup] Connect MCP clients to: https://${RENDER_EXTERNAL_HOSTNAME:-loca
 case "$(printf '%s' "${DEMO:-false}" | tr '[:upper:]' '[:lower:]')" in
   true | 1 | yes | on)
     echo "[startup] DEMO mode enabled — public, locked-down, per-connection isolated browser sessions"
+    # Internal origins to keep the demo browser away from. --blocked-origins
+    # matches a whole origin, so a bare "http://localhost" covers port 80 only —
+    # every entry needs an explicit ":*" twin or non-default ports slip through.
+    # Upstream's port wildcard rejects hosts containing ":", so bracketed IPv6
+    # is covered on default ports only. Best-effort hardening, not a boundary.
+    BLOCKED_ORIGINS="http://localhost;http://localhost:*;https://localhost;https://localhost:*"
+    BLOCKED_ORIGINS="$BLOCKED_ORIGINS;http://127.0.0.1;http://127.0.0.1:*;https://127.0.0.1;https://127.0.0.1:*"
+    BLOCKED_ORIGINS="$BLOCKED_ORIGINS;http://0.0.0.0;http://0.0.0.0:*"
+    BLOCKED_ORIGINS="$BLOCKED_ORIGINS;http://[::1];https://[::1]"
+    BLOCKED_ORIGINS="$BLOCKED_ORIGINS;http://169.254.169.254;http://169.254.169.254:*"
+    BLOCKED_ORIGINS="$BLOCKED_ORIGINS;http://metadata.google.internal;http://metadata.google.internal:*"
+    BLOCKED_ORIGINS="$BLOCKED_ORIGINS;http://metadata;http://metadata:*"
     exec node /app/cli.js \
       --headless --browser chromium --no-sandbox \
       --host 0.0.0.0 --port "$PORT" \
       --allowed-hosts "$ALLOWED_HOSTS" \
       --isolated \
       --block-service-workers \
-      --blocked-origins "http://localhost;https://localhost;http://127.0.0.1;https://127.0.0.1;http://[::1];https://[::1];http://169.254.169.254;http://metadata.google.internal;http://metadata" \
+      --blocked-origins "$BLOCKED_ORIGINS" \
       --timeout-navigation 30000 \
       --timeout-action 5000 \
       --image-responses omit

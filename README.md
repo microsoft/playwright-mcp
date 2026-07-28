@@ -159,12 +159,12 @@ When on, the entrypoint ([`render-entrypoint.sh`](./render-entrypoint.sh)) start
 |----------|------|-----|
 | Per-connection isolated sessions | `--isolated` | Profile kept in memory, never written to disk — nothing persists or leaks across visitors. |
 | No shared context | *(default)* | Each connected client gets its own browser context; sessions don't cross. |
-| Internal origins blocked | `--blocked-origins …` | Best-effort block of `localhost`, loopback, and cloud-metadata IPs. |
+| Internal origins blocked | `--blocked-origins …` | Best-effort block of `localhost`, loopback, `0.0.0.0`, and cloud-metadata IPs — on any port. |
 | Service workers off | `--block-service-workers` | Shrinks the abuse surface. |
 | Tight timeouts | `--timeout-navigation 30000 --timeout-action 5000` | Caps how long a single request can tie up the browser. |
 | No image payloads | `--image-responses omit` | Smaller, cheaper responses. |
 
-**Limitations to know:** Playwright MCP has **no built-in per-IP rate limiting**, and `--blocked-origins` is not a hard security boundary. If you host a genuinely public demo, you are responsible for the operational floor from Render's demo-mode guidance:
+**Limitations to know:** Playwright MCP has **no built-in per-IP rate limiting**, and `--blocked-origins` is not a hard security boundary — it is an origin blocklist, so it can't cover redirects, other hosts on Render's private network, or IPv6 loopback (`[::1]`) on a non-default port, which upstream's port wildcard doesn't support. If you host a genuinely public demo, you are responsible for the operational floor from Render's demo-mode guidance:
 
 - Put **bot defense** (Cloudflare / Turnstile / hCaptcha) in front of the URL.
 - Add a **global concurrency cap** and watch Render metrics for traffic spikes.
