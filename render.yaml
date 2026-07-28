@@ -7,7 +7,7 @@
 # does not answer a plain GET with 2xx, so Render's default open-port detection is
 # the correct liveness signal here.
 #
-# Playwright MCP version: v0.0.77 — keep in lockstep with the image tag in
+# Playwright MCP version: v0.0.78 — keep in lockstep with the image tag in
 # Dockerfile.render when rolling (see the README "Rolling Playwright MCP" section).
 previews:
   generation: off

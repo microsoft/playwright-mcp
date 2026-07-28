@@ -128,7 +128,7 @@ When on, the entrypoint ([`render-entrypoint.sh`](./render-entrypoint.sh)) start
 
 ## Rolling Playwright MCP
 
-Pinned to `v0.0.77` in **two** places — keep them in lockstep:
+Pinned to `v0.0.78` in **two** places — keep them in lockstep:
 
 - `image` tag in [`Dockerfile.render`](./Dockerfile.render)
 - the version comment in [`render.yaml`](./render.yaml)
