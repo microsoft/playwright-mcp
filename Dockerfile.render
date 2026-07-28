@@ -3,7 +3,7 @@
 # The base image already has headless Chromium + all system deps baked in, so
 # there is no browser download or source build here — just a DEMO-aware entrypoint.
 # Bump the tag in lockstep with render.yaml when rolling Playwright MCP.
-FROM mcr.microsoft.com/playwright/mcp:v0.0.77
+FROM mcr.microsoft.com/playwright/mcp:v0.0.78
 
 # --chmod guarantees the executable bit regardless of the host checkout's file
 # mode (e.g. Windows/CRLF clones); it requires BuildKit, enabled by the syntax
