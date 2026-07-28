@@ -51,9 +51,9 @@ One Render web service runs the official Playwright MCP image with a thin entryp
 
 ## Prerequisites
 
-To deploy, that's all you need:
+To deploy, you need:
 
-- A [Render account](https://dashboard.render.com/register) (the free tier can create the Blueprint; the service itself needs a paid `standard` instance — see [plan sizing](#deploy)).
+- A [Render account](https://dashboard.render.com/register) — free to create; the service itself runs on the paid `standard` instance type (see [Deploy](#deploy)).
 - A GitHub account, to fork this repo (the Deploy button reads `render.yaml` from a repo you own).
 
 **No API keys, secrets, or third-party accounts are required.**
@@ -70,8 +70,6 @@ You do **not** need Node.js, Playwright, or a local Chromium — the base image 
 1. Click **Deploy to Render** above (or fork this repo and create a new Blueprint from it).
 2. Render reads [`render.yaml`](./render.yaml) and provisions one Docker web service (`playwright-mcp`) on the `standard` plan.
 3. Wait for the deploy to go **live**. Your server is at `https://<your-service>.onrender.com/mcp`.
-
-No secrets or API keys are required.
 
 > **Plan sizing:** headless Chromium OOMs on the free/`starter` tier (512 MB), so the Blueprint defaults to `standard` (2 GB). Downgrade only if you've confirmed your workload fits in less.
 
@@ -99,8 +97,7 @@ Then ask your assistant to browse — e.g. *"Open example.com and give me the pa
 
 ## Run locally
 
-Optional — the deploy path above needs none of this. Useful if you want to change
-`render-entrypoint.sh` and see the effect before pushing.
+Optional — the deploy path above needs none of this. Useful if you want to change `render-entrypoint.sh` and see the effect before pushing.
 
 ```bash
 git clone https://github.com/render-examples/playwright-mcp-render.git
@@ -110,7 +107,7 @@ docker build -f Dockerfile.render -t playwright-mcp-render .
 docker run --rm --env-file .env -p 10000:10000 playwright-mcp-render
 ```
 
-The container prints `Listening on http://localhost:10000` once ready. Verify it with an MCP handshake:
+Once ready, the container prints `Listening on http://localhost:10000`. (The `[startup]` line above it prints an `https://` URL — that scheme is for the deployed service; locally, use `http`.) Verify the server with an MCP handshake:
 
 ```bash
 curl -sS -X POST http://localhost:10000/mcp \
@@ -123,9 +120,9 @@ You should get back a `serverInfo` block naming `Playwright`. Point a client at 
 
 To exercise the locked-down profile instead, override the one var: `docker run --rm --env-file .env -e DEMO=true -p 10000:10000 playwright-mcp-render`.
 
-> Running with `--env-file .env` keeps `PLAYWRIGHT_MCP_ALLOWED_HOSTS=*` from `.env.example`, which is what you want locally — there's no `RENDER_EXTERNAL_HOSTNAME` outside Render, so the host check would otherwise have nothing to scope to.
+> `--env-file .env` is a convenience, not a requirement: outside Render there's no `RENDER_EXTERNAL_HOSTNAME`, so the entrypoint already falls back to `PORT=10000` and `--allowed-hosts *`. The file just makes those defaults explicit and gives you one place to tweak them.
 
-Prefer to skip Docker entirely? Upstream runs the same server directly: `npx @playwright/mcp@latest --port 10000`. That path is not what Render deploys, so verify changes in the container before you push.
+Prefer to skip Docker entirely? Upstream runs the same server directly: `npx @playwright/mcp@latest --port 10000` — note that resolves to whatever npm publishes, not the image tag this template pins. That path is also not what Render deploys, so verify changes in the container before you push.
 
 ## Configuration
 
@@ -136,7 +133,7 @@ Everything is set in [`render.yaml`](./render.yaml); [`.env.example`](./.env.exa
 | `PORT` | `10000` | Port the MCP transport binds to; Render routes to it. |
 | `DEMO` | `false` | See [Demo mode](#demo-mode). Off = full server. Plain value, not a secret. |
 
-`.env.example` also lists `PLAYWRIGHT_MCP_HOST`, `PLAYWRIGHT_MCP_HEADLESS`, and `PLAYWRIGHT_MCP_NO_SANDBOX`. These matter only when you run the server **directly** (outside this image) — on Render, `render-entrypoint.sh` always passes the equivalent CLI flags, and CLI flags win, so setting them in the Render dashboard has no effect. The one exception is `PLAYWRIGHT_MCP_ALLOWED_HOSTS`, which the entrypoint does honor:
+`.env.example` also lists `PLAYWRIGHT_MCP_HOST`, `PLAYWRIGHT_MCP_HEADLESS`, and `PLAYWRIGHT_MCP_NO_SANDBOX`. These matter only when you run the server **directly** (outside this image) — on Render, `render-entrypoint.sh` always passes the equivalent CLI flags, and CLI flags win, so setting them in the Render dashboard has no effect. The one exception is `PLAYWRIGHT_MCP_ALLOWED_HOSTS`, which the entrypoint does honor.
 
 The entrypoint scopes the server's host check to your service's own `onrender.com` hostname automatically via Render's `RENDER_EXTERNAL_HOSTNAME`. **If you add a [custom domain](https://render.com/docs/custom-domains)**, requests to it will be rejected by the host check until you set `PLAYWRIGHT_MCP_ALLOWED_HOSTS` (comma-separated, e.g. `myapp.com,myapp.onrender.com`; `*` disables the check).
 
