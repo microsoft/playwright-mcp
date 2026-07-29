@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 # Thin Render wrapper over the official Playwright MCP image.
 # The base image already has headless Chromium + all system deps baked in, so
-# there is no browser download or source build here — just a DEMO-aware entrypoint.
-# Bump the tag in lockstep with render.yaml when rolling Playwright MCP.
+# there is no browser download or source build here — just a Render-aware entrypoint.
+# The tag below is the single pin for the Playwright MCP version — bump it here
+# and nowhere else (see the README "Rolling Playwright MCP" section).
 FROM mcr.microsoft.com/playwright/mcp:v0.0.78
 
 # --chmod guarantees the executable bit regardless of the host checkout's file

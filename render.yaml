@@ -7,8 +7,9 @@
 # does not answer a plain GET with 2xx, so Render's default open-port detection is
 # the correct liveness signal here.
 #
-# Playwright MCP version: v0.0.78 — keep in lockstep with the image tag in
-# Dockerfile.render when rolling (see the README "Rolling Playwright MCP" section).
+# The Playwright MCP version is pinned solely by the base-image tag in
+# Dockerfile.render. Deliberately not repeated here — one literal, one place to
+# change when rolling (see the README "Rolling Playwright MCP" section).
 previews:
   generation: off
 
@@ -25,9 +26,3 @@ services:
       # Render routes external traffic to this port; the entrypoint binds to it.
       - key: PORT
         value: 10000
-      # DEMO mode is OFF by default: a fork gets the full, all-capabilities server.
-      # Flip to "true" ONLY on a public demo you host yourself — it enables a
-      # locked-down, per-connection-isolated, SSRF-guarded browser session.
-      # Plain value (not a secret). See the README "Demo mode" and "Security" notes.
-      - key: DEMO
-        value: "false"
