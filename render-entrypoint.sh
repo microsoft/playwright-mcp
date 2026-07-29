@@ -1,12 +1,15 @@
 #!/bin/sh
 # Render entrypoint for Playwright MCP.
 #
-# Starts Playwright MCP with only the flags Render needs — no capability,
-# origin, or timeout limits are applied on top of upstream's defaults.
+# Playwright MCP ships no authentication in HTTP mode and exposes an
+# RCE-equivalent tool, so this entrypoint does not publish it directly. It binds
+# the server to loopback and puts render-auth-proxy.mjs on $PORT, which requires
+# `Authorization: Bearer $MCP_TOKEN` on every request. render.yaml generates that
+# token at deploy time; without it the container refuses to start. See the README
+# "Security" section.
 #
-# Playwright MCP ships no authentication in HTTP mode, so anyone who can reach
-# the URL can run code in this container. Restricting access is the operator's
-# job — see the README "Security" section.
+# Beyond that gate, no capability, origin, or timeout limits are applied on top
+# of upstream's defaults.
 #
 # The port comes from $PORT (Render sets it) and, by default, the server's host
 # check is scoped to this service's own hostname via $RENDER_EXTERNAL_HOSTNAME
@@ -16,14 +19,19 @@
 set -eu
 
 PORT="${PORT:-10000}"
+# Loopback port the real MCP server listens on; only the proxy can reach it.
+UPSTREAM_PORT="${UPSTREAM_PORT:-8931}"
 ALLOWED_HOSTS="${PLAYWRIGHT_MCP_ALLOWED_HOSTS:-${RENDER_EXTERNAL_HOSTNAME:-*}}"
+export PORT UPSTREAM_PORT
 
 # Upstream's own startup banner prints "http://localhost:$PORT/mcp", which is
 # misleading on Render. Print the real public URL first so anyone copy-pasting
 # from the logs gets the right endpoint.
 echo "[startup] Connect MCP clients to: https://${RENDER_EXTERNAL_HOSTNAME:-localhost:$PORT}/mcp"
 
-exec node /app/cli.js \
+# The proxy is PID 1 and supervises the server passed as its arguments.
+exec node /usr/local/bin/render-auth-proxy.mjs \
+  node /app/cli.js \
   --headless --browser chromium --no-sandbox \
-  --host 0.0.0.0 --port "$PORT" \
+  --host 127.0.0.1 --port "$UPSTREAM_PORT" \
   --allowed-hosts "$ALLOWED_HOSTS"

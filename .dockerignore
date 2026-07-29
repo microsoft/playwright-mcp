@@ -1,4 +1,5 @@
-# The Render wrapper (Dockerfile.render) only needs render-entrypoint.sh, so keep
+# The Render wrapper (Dockerfile.render) only needs render-entrypoint.sh and
+# render-auth-proxy.mjs, so keep
 # the build context tiny. This file applies to every build using this context,
 # including the upstream Dockerfile — but that build is unaffected in practice: it
 # reinstalls deps via `npm ci` and copies only root files (none of these paths).

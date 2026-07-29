@@ -10,24 +10,27 @@ https://github.com/user-attachments/assets/0f31c279-f2e0-431f-a854-50677bd800c5
 
 [Playwright MCP](https://github.com/microsoft/playwright-mcp) is a Model Context Protocol server that lets an LLM open a real browser, navigate, click, type, and read pages through structured accessibility snapshots (not screenshots). It normally runs locally via `npx @playwright/mcp`. This template runs it as a single Render web service instead, so any MCP client can connect to a shared HTTPS URL.
 
-It's a **thin wrapper** over the official `mcr.microsoft.com/playwright/mcp` image (headless Chromium already baked in) — no source changes. The wrapper adds only the flags Render needs (`--headless`, `--no-sandbox`, `--host 0.0.0.0`, plus `--port` and `--allowed-hosts` from the environment).
+It's a **thin wrapper** over the official `mcr.microsoft.com/playwright/mcp` image (headless Chromium already baked in) — no source changes. The wrapper adds the flags Render needs (`--headless`, `--no-sandbox`, plus `--port` and `--allowed-hosts` from the environment) and a small bearer-token gate in front of the server, because Playwright MCP has no authentication of its own.
 
-> **Restrict access before you deploy.** Playwright MCP has no authentication in HTTP mode, and it ships an RCE-equivalent tool. Anyone who learns the URL can run code in your container. See [Security](#security).
+> **Authenticated by default.** Playwright MCP has no auth in HTTP mode and ships an RCE-equivalent tool, so this template does not publish it directly: requests must carry `Authorization: Bearer $MCP_TOKEN`, and Render generates that token for you at deploy time. Read [Security](#security) to understand what that does and does not protect.
 
 For the full tool list, config options, and client setup, see the [upstream README](https://github.com/microsoft/playwright-mcp).
 
 ## Architecture
 
-One Render web service runs the official Playwright MCP image with a thin entrypoint wrapper. An MCP client speaks Streamable HTTP to `/mcp` over Render's TLS-terminating edge; the server drives a headless Chromium in the same container and returns accessibility snapshots.
+One Render web service runs the official Playwright MCP image behind a bearer-token gate. An MCP client speaks Streamable HTTP to `/mcp` over Render's TLS-terminating edge; the gate checks the token and forwards to the MCP server on loopback, which drives a headless Chromium in the same container and returns accessibility snapshots.
 
 ```
 ┌─────────────┐   HTTPS /mcp    ┌────────────────────────────────────────────────┐
 │  MCP client │ ──────────────► │ Render web service  (Docker, standard plan)    │
-│ (Claude,    │  Streamable     │                                                │
-│  Cursor, …) │ ◄────────────── │  render-entrypoint.sh                          │
-└─────────────┘   snapshots     │    │ reads PORT, RENDER_EXTERNAL_HOSTNAME      │
+│ (Claude,    │  + Bearer       │                                                │
+│  Cursor, …) │    token        │  render-entrypoint.sh                          │
+│             │                 │    │ reads PORT, MCP_TOKEN, allowed hosts      │
+│             │  Streamable     │    ▼                                           │
+│             │ ◄────────────── │  render-auth-proxy.mjs   :$PORT  (public)      │
+└─────────────┘   snapshots     │    │ 401 unless Authorization: Bearer $MCP_TOKEN│
                                 │    ▼                                           │
-                                │  node /app/cli.js  --headless --no-sandbox …   │
+                                │  node /app/cli.js  127.0.0.1:8931  (loopback)  │
                                 │    │                                           │
                                 │    ▼                                           │
                                 │  headless Chromium  (baked into base image)    │
@@ -38,16 +41,17 @@ One Render web service runs the official Playwright MCP image with a thin entryp
 
 | File | Role |
 |------|------|
-| [`render.yaml`](./render.yaml) | Blueprint. Declares the single Docker web service, its plan/region, and the `PORT` env var. This is what the Deploy button reads. |
-| [`Dockerfile.render`](./Dockerfile.render) | Thin wrapper over `mcr.microsoft.com/playwright/mcp` (headless Chromium pre-baked). Adds only the entrypoint — no browser download, no source build. |
-| [`render-entrypoint.sh`](./render-entrypoint.sh) | PID 1. Reads `PORT`, resolves the allowed-hosts value, then `exec`s `node /app/cli.js` with the flags Render needs. |
+| [`render.yaml`](./render.yaml) | Blueprint. Declares the single Docker web service, its plan/region, the `PORT` env var, and the generated `MCP_TOKEN`. This is what the Deploy button reads. |
+| [`Dockerfile.render`](./Dockerfile.render) | Thin wrapper over `mcr.microsoft.com/playwright/mcp` (headless Chromium pre-baked). Adds only the entrypoint and the auth gate — no browser download, no source build. |
+| [`render-entrypoint.sh`](./render-entrypoint.sh) | Reads `PORT`, resolves the allowed-hosts value, then `exec`s the auth gate with the MCP server (bound to loopback) as its argument. |
+| [`render-auth-proxy.mjs`](./render-auth-proxy.mjs) | PID 1. ~60 lines of stdlib Node: rejects any request without `Authorization: Bearer $MCP_TOKEN`, forwards the rest to `127.0.0.1:8931`, supervises the MCP server, and forwards `SIGTERM`. |
 | [`.env.example`](./.env.example) | Documents the same knobs for running the container locally. |
 
 **Key properties:**
 
 - **Thin wrapper, no fork of the tool.** The Playwright MCP version is pinned by the base-image tag in `Dockerfile.render`; upgrades are a one-line tag bump (see [Rolling Playwright MCP](#rolling-playwright-mcp)).
-- **No database, no disk, no secrets** to configure. The browser keeps upstream's default **persistent profile**, so logins carry across requests for the life of the instance — convenient for a server that's yours alone, which is what this template assumes (see [Configuration](#configuration)).
-- **No authentication.** Playwright MCP has no auth in HTTP mode, so restricting who can reach the service is on you (see [Security](#security)).
+- **No database, no disk, nothing to fill in.** The one secret, `MCP_TOKEN`, is generated by Render at deploy time. The browser keeps upstream's default **persistent profile**, so logins carry across requests for the life of the instance — convenient for a server that's yours alone, which is what this template assumes (see [Configuration](#configuration)).
+- **Authenticated, and fails closed.** The gate is added by this template, not upstream. If `MCP_TOKEN` is unset the container refuses to start, so there is no configuration in which the server is exposed anonymously (see [Security](#security)).
 
 ## Prerequisites
 
@@ -56,7 +60,7 @@ To deploy, you need:
 - A [Render account](https://dashboard.render.com/register) — free to create; the service itself runs on the paid `standard` instance type (see [Deploy](#deploy)).
 - A GitHub account, to fork this repo (the Deploy button reads `render.yaml` from a repo you own).
 
-**No API keys, secrets, or third-party accounts are required.**
+**No API keys or third-party accounts are required.** The one secret, `MCP_TOKEN`, is generated for you at deploy time — you only need to copy it into your MCP client (see [Deploy](#deploy)).
 
 To also run it locally (optional — see [Run locally](#run-locally)):
 
@@ -70,16 +74,18 @@ You do **not** need Node.js, Playwright, or a local Chromium — the base image 
 1. Click **Deploy to Render** above (or fork this repo and create a new Blueprint from it).
 2. Render reads [`render.yaml`](./render.yaml) and provisions one Docker web service (`playwright-mcp`) on the `standard` plan.
 3. Wait for the deploy to go **live**. Your server is at `https://<your-service>.onrender.com/mcp`.
-4. **Restrict access to it** — that URL is public and unauthenticated, and reaching it is enough to run code in your container. See [Security](#security) for how to lock it down.
+4. Copy **`MCP_TOKEN`** from the service's **Environment** page in the Render Dashboard — Render generated it for you. Your MCP client must send it as `Authorization: Bearer <token>` (see [Using the app](#using-the-app)); without it every request gets a `401`.
+5. Read [Security](#security) before pointing anything sensitive at it. The token is the only thing standing between the internet and code execution in this container, so treat it like a password — and tighten further if you can.
 
 > **Plan sizing:** headless Chromium OOMs on the free/`starter` tier (512 MB), so the Blueprint defaults to `standard` (2 GB). Downgrade only if you've confirmed your workload fits in less.
 
 ## Using the app
 
-Point any MCP client at your service's `/mcp` endpoint. For example, with Claude Code:
+Point any MCP client at your service's `/mcp` endpoint, sending `MCP_TOKEN` as a bearer token. For example, with Claude Code:
 
 ```bash
-claude mcp add --transport http playwright https://<your-service>.onrender.com/mcp
+claude mcp add --transport http playwright https://<your-service>.onrender.com/mcp \
+  --header "Authorization: Bearer <your-MCP_TOKEN>"
 ```
 
 Or add it to a client config directly:
@@ -88,11 +94,16 @@ Or add it to a client config directly:
 {
   "mcpServers": {
     "playwright": {
-      "url": "https://<your-service>.onrender.com/mcp"
+      "url": "https://<your-service>.onrender.com/mcp",
+      "headers": {
+        "Authorization": "Bearer <your-MCP_TOKEN>"
+      }
     }
   }
 }
 ```
+
+If the client reports a `401`, the header is missing or the token doesn't match the current value in the Dashboard.
 
 Then ask your assistant to browse — e.g. _"Open example.com and give me the page title and the main heading."_ It will call the Playwright MCP tools against your hosted browser and return the result.
 
@@ -103,25 +114,26 @@ Optional — the deploy path above needs none of this. Useful if you want to cha
 ```bash
 git clone https://github.com/render-examples/playwright-mcp-render.git
 cd playwright-mcp-render
-cp .env.example .env          # defaults work as-is; no secrets to fill in
+cp .env.example .env          # then set MCP_TOKEN, e.g. to `openssl rand -hex 32`
 docker build -f Dockerfile.render -t playwright-mcp-render .
 docker run --rm --env-file .env -p 10000:10000 playwright-mcp-render
 ```
 
-Once ready, the container prints `Listening on http://localhost:10000`. (The `[startup]` line above it prints an `https://` URL — that scheme is for the deployed service; locally, use `http`.) Verify the server with an MCP handshake:
+Once ready, the container prints the auth gate's `[auth] Bearer-token gate listening …` line followed by upstream's own `Listening on …`. (The `[startup]` line above it prints an `https://` URL — that scheme is for the deployed service; locally, use `http`.) Verify the server with an MCP handshake — export the same token you put in `.env` first, so the header below resolves:
 
 ```bash
 curl -sS -X POST http://localhost:10000/mcp \
+  -H "Authorization: Bearer $MCP_TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'
 ```
 
-You should get back a `serverInfo` block naming `Playwright`. Point a client at `http://localhost:10000/mcp` the same way you would the deployed URL.
+You should get back a `serverInfo` block naming `Playwright`; drop the `Authorization` header and you should get `401 Unauthorized`. Point a client at `http://localhost:10000/mcp` the same way you would the deployed URL.
 
-> `--env-file .env` is a convenience, not a requirement: outside Render there's no `RENDER_EXTERNAL_HOSTNAME`, so the entrypoint already falls back to `PORT=10000` and `--allowed-hosts *`. The file just gives you one place to tweak them.
+> `MCP_TOKEN` is the one variable you must supply — the container exits immediately without it. The rest of `.env` is convenience: outside Render there's no `RENDER_EXTERNAL_HOSTNAME`, so the entrypoint already falls back to `PORT=10000` and `--allowed-hosts *`.
 
-Prefer to skip Docker entirely? Upstream runs the same server directly: `npx @playwright/mcp@latest --port 10000` — note that resolves to whatever npm publishes, not the image tag this template pins. That path is also not what Render deploys, so verify changes in the container before you push.
+Prefer to skip Docker entirely? Upstream runs the same server directly: `npx @playwright/mcp@latest --port 10000` — note that resolves to whatever npm publishes, not the image tag this template pins, and it has **no auth gate** (that's this template's addition). That path is also not what Render deploys, so verify changes in the container before you push.
 
 ## Configuration
 
@@ -129,7 +141,9 @@ Everything is set in [`render.yaml`](./render.yaml); [`.env.example`](./.env.exa
 
 | Env var | Default | What it's for |
 |---------|---------|---------------|
-| `PORT` | `10000` | Port the MCP transport binds to; Render routes to it. |
+| `PORT` | `10000` | Port the auth gate binds to; Render routes to it. |
+| `MCP_TOKEN` | generated by Render | **Required.** Bearer token every request must present. The container refuses to start without it. Rotate by editing the value (or clicking **Generate** again) in the Dashboard and updating your clients. |
+| `UPSTREAM_PORT` | `8931` | Loopback port the MCP server listens on behind the gate. Change only if it collides with something inside the container. |
 
 `.env.example` also lists `PLAYWRIGHT_MCP_HOST`, `PLAYWRIGHT_MCP_HEADLESS`, and `PLAYWRIGHT_MCP_NO_SANDBOX`. These matter only when you run the server **directly** (outside this image) — on Render, `render-entrypoint.sh` always passes the equivalent CLI flags, and CLI flags win, so setting them in the Render dashboard has no effect. The one exception is `PLAYWRIGHT_MCP_ALLOWED_HOSTS`, which the entrypoint does honor.
 
@@ -151,18 +165,31 @@ To change either, edit `render-entrypoint.sh`:
 
 ## Security
 
-**Playwright MCP has no authentication in HTTP mode, and the Blueprint deploys a public web service. It's on you to restrict access.**
+### What you're actually running
 
-This is not just about someone spending your CPU. Playwright MCP exposes `browser_run_code_unsafe`, described upstream as: _"Run a Playwright code snippet. Unsafe: executes arbitrary JavaScript in the Playwright server process and is RCE-equivalent."_ On the pinned version it is listed under **Core automation**, not one of the opt-in capabilities, and [`--caps`](https://github.com/microsoft/playwright-mcp/blob/v0.0.78/README.md#configuration) only enables _additional_ capabilities (`vision`, `pdf`, `devtools`) — so it cannot drop this tool, and no flag excludes individual tools. **Anyone who can reach the URL can run code in your container as the container user.**
+Playwright MCP exposes `browser_run_code_unsafe`, described upstream as: _"Run a Playwright code snippet. Unsafe: executes arbitrary JavaScript in the Playwright server process and is RCE-equivalent."_ On the pinned version it is listed under **Core automation**, not one of the opt-in capabilities, and [`--caps`](https://github.com/microsoft/playwright-mcp/blob/v0.0.78/README.md#configuration) only enables _additional_ capabilities (`vision`, `pdf`, `devtools`) — so it cannot drop this tool, and no flag excludes individual tools. **Whoever can call this server can run code in your container as the container user, and reach your other Render services over the private network.**
 
-Pick the option that matches how you'll connect:
+Upstream ships no authentication in HTTP mode, which is defensible when the server is `npx` on your laptop's loopback. On Render it gets a public URL, so this template adds the missing door.
 
-- **Your MCP client runs on your own machine** (Claude Code, Cursor — the common case, and what [Using the app](#using-the-app) describes). You need the public URL, so shut the door on it: restrict the service's [inbound IP rules](https://render.com/docs/inbound-ip-rules) to your known addresses (Scale and Enterprise plans only) and/or put your own authenticating proxy in front.
-- **Your MCP client is another Render service.** Change `type: web` to `type: pserv` in [`render.yaml`](./render.yaml) to make it a [private service](https://render.com/docs/private-services) — it gets no public URL at all, which is strictly safer. Note that it also gets no `RENDER_EXTERNAL_HOSTNAME`, so the host check falls back to `*` and the startup banner prints a `localhost` URL; reach it over the private network instead.
+### What the template does about it
 
-**If you can do neither**, understand what you're running: the URL is the only thing standing between the internet and code execution in your container. Treat it as a credential, don't publish it, keep an eye on the service's metrics and logs, and suspend or delete the service when you're done with it. That is a weak control, not a good one.
+[`render-auth-proxy.mjs`](./render-auth-proxy.mjs) is the only thing listening on `$PORT`. It answers `401` to any request without `Authorization: Bearer $MCP_TOKEN` and forwards the rest to the MCP server, which binds to `127.0.0.1` and is never published. Specifically:
 
-The host check the entrypoint sets up (see [Configuration](#configuration)) is a Host-header check against DNS rebinding — **not** access control. It does nothing to stop a direct request to your URL.
+- **Fails closed.** No `MCP_TOKEN`, no start — there is deliberately no flag to disable the check, so no misconfiguration leaves the server anonymous.
+- **Generated secret, not a default.** `render.yaml` uses `generateValue: true`, so every deploy gets its own token and there is no shared credential in this repo to leak.
+- **Constant-time comparison** of SHA-256 digests, so the check doesn't leak the token a byte at a time, and a token prefix is not accepted.
+- **Never logs the token.** Rejections log method, path, and `401` — nothing presented by the client.
+
+### What it does not do
+
+This is one door, not defense in depth. It does not sandbox the RCE, rate-limit, or give you per-client identity — everyone who has the token is the same principal. If you can, layer something stronger on top:
+
+- **Restrict who can reach the service at all.** [Inbound IP rules](https://render.com/docs/inbound-ip-rules) scoped to your known addresses (Scale and Enterprise plans) mean a stolen token isn't usable from anywhere else.
+- **Don't expose it publicly at all.** If your MCP client is another Render service, change `type: web` to `type: pserv` in [`render.yaml`](./render.yaml) to make it a [private service](https://render.com/docs/private-services) — no public URL, strictly safer, and the token still applies. Note it gets no `RENDER_EXTERNAL_HOSTNAME`, so the host check falls back to `*` and the startup banner prints a `localhost` URL; reach it over the private network.
+- **Treat the token as a password.** Keep it out of shared configs and issue trackers, rotate it in the Dashboard if it may have leaked (a redeploy picks up the new value), and suspend or delete the service when you're done with it.
+- **Watch it.** The service's logs and metrics are how you'd notice use you didn't initiate; `401` lines mean someone is knocking.
+
+The host check the entrypoint sets up (see [Configuration](#configuration)) is a Host-header check against DNS rebinding — **not** access control. It does nothing to stop a direct request carrying a valid token.
 
 ## Rolling Playwright MCP
 
@@ -170,7 +197,9 @@ The version is pinned in exactly one place: the base-image tag in [`Dockerfile.r
 
 Then re-check the two claims in [Security](#security) against the new tag's upstream README: whether `browser_run_code_unsafe` is still a non-opt-in **Core automation** tool, and whether `--caps` still only _adds_ capabilities. Update that section's permalink to the new tag either way — it's the only other place a version literal appears, because a permalink has to carry one.
 
-> **Not** a version to keep in sync: the `version` field in `package.json`. This repo is a fork of [microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp), so that field is upstream's own npm release marker — and the deploy never uses it (`Dockerfile.render` copies only `render-entrypoint.sh`). Expect it to differ from the image tag; leave it alone.
+Also re-verify the gate after a bump, since it depends on upstream's HTTP surface: a `401` without the header, a `serverInfo` response with it, and a working tool call (which exercises the SSE stream through the proxy). If upstream ever ships real authentication, prefer it and delete `render-auth-proxy.mjs` — this file exists only to fill that gap.
+
+> **Not** a version to keep in sync: the `version` field in `package.json`. This repo is a fork of [microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp), so that field is upstream's own npm release marker — and the deploy never uses it (`Dockerfile.render` copies only `render-entrypoint.sh` and `render-auth-proxy.mjs`). Expect it to differ from the image tag; leave it alone.
 
 ---
 

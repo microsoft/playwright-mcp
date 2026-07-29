@@ -23,6 +23,13 @@ services:
     dockerfilePath: ./Dockerfile.render
     dockerContext: .
     envVars:
-      # Render routes external traffic to this port; the entrypoint binds to it.
+      # Render routes external traffic to this port; the auth gate binds to it.
       - key: PORT
         value: 10000
+      # Playwright MCP has no auth of its own and exposes an RCE-equivalent tool,
+      # so every request must carry `Authorization: Bearer $MCP_TOKEN`. Render
+      # generates the value at deploy time — copy it from the service's
+      # Environment page into your MCP client. The container refuses to start if
+      # this is unset, so there is no unauthenticated path.
+      - key: MCP_TOKEN
+        generateValue: true
