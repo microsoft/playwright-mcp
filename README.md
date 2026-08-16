@@ -1,5 +1,7 @@
 ## Playwright MCP
 
+[![context cost](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fathakur3%2Fmcp-context-cost%2Fmain%2Fbadges%2Fplaywright.json)](https://athakur3.github.io/mcp-context-cost/METHODOLOGY)
+
 A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
 
 ### Playwright MCP vs Playwright CLI
