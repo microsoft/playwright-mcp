@@ -16,6 +16,7 @@
   "license": "Apache-2.0",
   "mcpName": "io.github.microsoft/playwright-mcp",
   "scripts": {
+    "postinstall": "node patch-playwright.js",
     "lint": "node update-readme.js",
     "test": "playwright test",
     "ctest": "playwright test --project=chrome",
