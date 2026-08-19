@@ -14,8 +14,8 @@ jobs:
       contents: read
       id-token: write  # Required for OIDC npm publishing
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org/
@@ -50,8 +50,8 @@ jobs:
       contents: read
       id-token: write  # Required for OIDC npm publishing
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org/
@@ -76,7 +76,7 @@ jobs:
       contents: read
       id-token: write  # Required for GitHub OIDC auth to the MCP Registry
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Validate server.json version matches package.json
         run: |
@@ -116,13 +116,13 @@ jobs:
       id-token: write # Needed for OIDC login to Azure
     environment: allow-publishing-docker-to-acr
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Set up QEMU # Needed for multi-platform builds (e.g., arm64 on amd64 runner)
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       - name: Set up Docker Buildx # Needed for multi-platform builds
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Azure Login via OIDC
-        uses: azure/login@v3
+        uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca # v3.0.1
         with:
           client-id: ${{ secrets.AZURE_DOCKER_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_DOCKER_TENANT_ID }}
@@ -131,7 +131,7 @@ jobs:
         run: az acr login --name playwright
       - name: Build and push Docker image
         id: build-push
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
@@ -139,7 +139,7 @@ jobs:
           tags: |
             playwright.azurecr.io/public/playwright/mcp:${{ github.event.release.tag_name }}
             playwright.azurecr.io/public/playwright/mcp:latest
-      - uses: oras-project/setup-oras@v2
+      - uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
       - name: Set oras tags
         run: |
           attach_eol_manifest() {
