@@ -120,7 +120,7 @@ jobs:
       - name: Set up Docker Buildx # Needed for multi-platform builds
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Azure Login via OIDC
-        uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca # v3.0.1
+        uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c # v3.0.2
         with:
           client-id: ${{ secrets.AZURE_DOCKER_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_DOCKER_TENANT_ID }}
