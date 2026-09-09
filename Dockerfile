@@ -1,14 +1,9 @@
-ARG PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-
 # ------------------------------
 # Base
 # ------------------------------
 # Base stage: Contains only the minimal dependencies required for runtime
 # (node_modules and Playwright system dependencies)
 FROM node:22-bookworm-slim AS base
-
-ARG PLAYWRIGHT_BROWSERS_PATH
-ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
 
 # Set the working directory
 WORKDIR /app
@@ -37,18 +32,31 @@ COPY *.json *.js *.ts .
 # Browser
 # ------------------------------
 # Cache optimization:
-# - Browser is downloaded only when node_modules or Playwright system dependencies change
+# - Bump BRAVE_BROWSER_CACHEBUST roughly every two weeks to pick up a new Brave release.
 # - Cache is reused when only source code changes
 FROM base AS browser
 
-RUN npx -y playwright-core install --no-shell chromium
+ARG BRAVE_BROWSER_CACHEBUST=2026-09-09
+
+RUN echo "Installing Brave (browser cache key: ${BRAVE_BROWSER_CACHEBUST})" && \
+    apt-get -qq update && \
+    apt-get -qy install curl && \
+    curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
+      https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg && \
+    curl -fsSLo /etc/apt/sources.list.d/brave-browser-release.sources \
+      https://brave-browser-apt-release.s3.brave.com/brave-browser.sources && \
+    apt-get -qq update && \
+    apt-get -qy install --no-install-recommends \
+      brave-browser \
+      fonts-dejavu-core \
+      fonts-noto-color-emoji && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 # ------------------------------
 # Runtime
 # ------------------------------
-FROM base
+FROM browser
 
-ARG PLAYWRIGHT_BROWSERS_PATH
 ARG USERNAME=node
 ENV NODE_ENV=production
 
@@ -57,11 +65,10 @@ RUN chown -R ${USERNAME}:${USERNAME} node_modules
 
 USER ${USERNAME}
 
-COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
 COPY --chown=${USERNAME}:${USERNAME} cli.js package.json ./
 
 # Current working directory must be writable as MCP may need to create default output dir in it.
 WORKDIR /home/${USERNAME}
 
-# Run in headless and only with chromium (other browsers need more dependencies not included in this image)
-ENTRYPOINT ["node", "/app/cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]
+# Brave uses Playwright's Chromium engine with the system-installed Brave executable.
+ENTRYPOINT ["node", "/app/cli.js", "--headless", "--browser", "chromium", "--executable-path", "/usr/bin/brave-browser", "--no-sandbox"]
