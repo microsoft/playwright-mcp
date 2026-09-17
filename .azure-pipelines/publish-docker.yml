@@ -1,0 +1,122 @@
+# Publishes the @playwright/mcp docker image to ACR (mirrored to mcr.microsoft.com/playwright/mcp).
+# Trigger: any `v*` release tag (e.g. v0.0.81).
+# Can also be queued manually from the ADO UI, e.g. for a canary build from main.
+trigger:
+  tags:
+    include:
+      - v*
+    exclude:
+      - v*-*
+
+pr: none
+
+parameters:
+- name: releaseChannel
+  displayName: "IMPORTANT: set this to 'canary' when triggering manually"
+  type: string
+  default: stable
+  values:
+  - stable
+  - canary
+
+resources:
+  repositories:
+  - repository: 1esPipelines
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
+  parameters:
+    pool:
+      name: DevDivPlaywrightAzurePipelinesUbuntu2204
+      os: linux
+    sdl:
+      sourceAnalysisPool:
+        # SDL tools require windows, see https://aka.ms/AAo6v8e
+        name: DevDivPlaywrightAzurePipelinesWindows2022
+        os: windows
+    stages:
+    - stage: Publish
+      jobs:
+      - job: PublishDocker
+        displayName: "Publish Docker image to ACR"
+        # The arm64 image is cross-built under QEMU emulation, which is slow.
+        timeoutInMinutes: 360
+        steps:
+        - checkout: self
+          displayName: "Checkout code"
+
+        - task: UseNode@1
+          inputs:
+            version: '24.x'
+          displayName: "Install Node.js"
+
+        - task: Bash@3
+          displayName: "Check the ref matches the release channel"
+          inputs:
+            targetType: "inline"
+            script: |
+              set -e
+              VERSION=$(node -p "require('./package.json').version")
+              if [[ "$RELEASE_CHANNEL" == "stable" && "$BUILD_SOURCE_BRANCH" != "refs/tags/v$VERSION" ]]; then
+                echo "ERROR: stable images can only be published from the 'v$VERSION' tag."
+                echo "Unexpected ref: $BUILD_SOURCE_BRANCH"
+                exit 1
+              fi
+          env:
+            BUILD_SOURCE_BRANCH: $(Build.SourceBranch)
+            RELEASE_CHANNEL: ${{ parameters.releaseChannel }}
+
+        # Relocate the Docker data-root to the large /mnt volume: the default disk
+        # is too small for the browser-bearing image layers of both architectures.
+        - task: Bash@3
+          displayName: "Setup docker"
+          inputs:
+            targetType: "inline"
+            script: |
+              set -x
+              sudo service docker stop
+              sudo mkdir -p /etc/docker
+              echo '{ "data-root": "/mnt/docker" }' | sudo tee /etc/docker/daemon.json
+              sudo service docker start
+
+        # `npm ci` inside the image build reads this .npmrc (passed as a BuildKit
+        # secret by utils/docker/build.sh) to resolve packages through the DevDiv feed.
+        - task: Bash@3
+          displayName: "setup .npmrc"
+          inputs:
+            targetType: "inline"
+            script: |
+              echo "registry=https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/DevDiv_PublicPackages/npm/registry/" >> .npmrc
+
+        - task: npmAuthenticate@0
+          displayName: "authenticate the private npm registry"
+          inputs:
+            workingFile: .npmrc
+
+        - task: AzureCLI@2
+          displayName: "Login to ACR via OIDC"
+          inputs:
+            azureSubscription: "Playwright-CDN"
+            scriptType: "bash"
+            scriptLocation: "inlineScript"
+            inlineScript: "az acr login --name playwright"
+
+        - task: Bash@3
+          displayName: "Register QEMU (binfmt) for arm64 cross-build"
+          inputs:
+            targetType: "inline"
+            script: "docker run --rm --privileged ${ACR_CACHE_PREFIX}tonistiigi/binfmt --install arm64"
+          env:
+            ACR_CACHE_PREFIX: "playwright.azurecr.io/cached/"
+
+        - task: Bash@3
+          displayName: "Build & publish Docker image"
+          inputs:
+            targetType: "inline"
+            script: "./utils/docker/publish_docker.sh ${{ parameters.releaseChannel }}"
+          env:
+            ACR_CACHE_PREFIX: "playwright.azurecr.io/cached/"
+            NPMRC_SECRET: "$(Build.SourcesDirectory)/.npmrc"

@@ -1,11 +1,13 @@
 ARG PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+# Registry prefix for the base image, e.g. 'playwright.azurecr.io/cached/' in the publish pipeline.
+ARG ACR_CACHE_PREFIX
 
 # ------------------------------
 # Base
 # ------------------------------
 # Base stage: Contains only the minimal dependencies required for runtime
 # (node_modules and Playwright system dependencies)
-FROM node:22-bookworm-slim AS base
+FROM ${ACR_CACHE_PREFIX}node:22-bookworm-slim AS base
 
 ARG PLAYWRIGHT_BROWSERS_PATH
 ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
@@ -16,6 +18,7 @@ WORKDIR /app
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
+    --mount=type=secret,id=npmrc,target=/root/.npmrc,required=false \
   npm ci --omit=dev && \
   # Install system dependencies for playwright
   npx -y playwright-core install-deps chromium
@@ -28,6 +31,7 @@ FROM base AS builder
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
+    --mount=type=secret,id=npmrc,target=/root/.npmrc,required=false \
   npm ci
 
 # Copy the rest of the app
