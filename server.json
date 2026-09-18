@@ -6,12 +6,12 @@
     "url": "https://github.com/microsoft/playwright-mcp",
     "source": "github"
   },
-  "version": "0.0.81",
+  "version": "0.1.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@playwright/mcp",
-      "version": "0.0.81",
+      "version": "0.1.0",
       "transport": {
         "type": "stdio"
       }
