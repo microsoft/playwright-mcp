@@ -57,11 +57,35 @@ Filter for `feat(mcp)`, `fix(mcp)`, `feat(extension)`, `fix(extension)`, `feat(a
 
 ## 5. Write `release-notes.md`
 
-Follow the format from the prior release (`gh pr view <prev-PR> --repo microsoft/playwright-mcp --json body -q .body`). **No top-level `#` header** — the PR title is the heading. Sections: `## What's New` (with `### New Tools`, `### Tool Improvements`, optional `### Browser Extension`, `### Dashboard`, `### Other Changes`) then `## Bug Fixes`. Link each entry to its PR (`[#NNNNN](https://github.com/microsoft/playwright/pull/NNNNN)` or the playwright-mcp equivalent). Fold follow-up PRs into the feature they extend (e.g. a `browser_find` enhancement joins the `browser_find` bullet).
+Follow the format from the prior release (`gh pr view <prev-PR> --repo microsoft/playwright-mcp --json body -q .body`; v0.0.82, [#1764](https://github.com/microsoft/playwright-mcp/pull/1764), is the reference). **No top-level `#` header** — the PR title is the heading. Three sections:
+
+````markdown
+## ✨ Highlights
+
+- **<emoji> Short headline** ([microsoft/playwright#<issue>](https://github.com/microsoft/playwright/issues/<issue>)) — <what the user could not do before>. <What is new: the tool with its parameters, or `--option` (config `key`, env `PLAYWRIGHT_MCP_KEY`)>. ([microsoft/playwright#<pr>](https://github.com/microsoft/playwright/pull/<pr>))
+
+## 🐛 Fixes
+
+- `<commit subject>` — <user-visible effect, naming the tool> ([microsoft/playwright#<issue>](https://github.com/microsoft/playwright/issues/<issue>)). ([microsoft/playwright#<pr>](https://github.com/microsoft/playwright/pull/<pr>))
+
+## 📦 Upgrading
+
+Configs that use `@playwright/mcp@latest` pick this release up on the next client restart. To pin it:
+
+```bash
+npx @playwright/mcp@0.0.<next>
+```
+````
+
+- **Highlights** — one bullet per feature, most exciting first, each with its own emoji. Lead with the motivation (the linked issue, when there is one; omit the issue link otherwise), then what is new. New tools, tool improvements, options, extension and dashboard changes all go here. Fold follow-up PRs into the feature they extend (e.g. a `browser_find` enhancement joins the `browser_find` bullet).
+- **Fixes** — start with the commit subject in backticks, then say what changes for the user. Reword the subject when it does not match what landed.
+- Link PRs as `[microsoft/playwright#NNNNN](https://github.com/microsoft/playwright/pull/NNNNN)`, or `[#NNNN](https://github.com/microsoft/playwright-mcp/pull/NNNN)` for this repo.
 
 Wording rules:
 - Only list things that change user-visible behavior.
-- **Do not mention features that are not enabled by default** — confirm with the user before listing experimental flags.
+- **Describe what landed, not what the PR description says** — read the diff (`git show <sha>`). Descriptions go stale during review: parts get dropped, behavior changes (e.g. "ignores" became "returns an error").
+- **Do not mention features that are not enabled by default** — confirm with the user before listing experimental flags. A fix to an opt-in tool can be listed when annotated, e.g. `browser_route` (opt-in via `--caps=network`).
+- When a release removes or replaces something announced earlier, say so in the bullet of the feature that replaces it.
 
 ## 6. Commit, push, open the PR with the notes as its body
 
