@@ -149,6 +149,8 @@ function optionEnvName(prefix) {
     return 'PLAYWRIGHT_MCP_SECRETS_FILE';
   if (prefix === 'cdp-header')
     return 'PLAYWRIGHT_MCP_CDP_HEADERS';
+  if (prefix === 'no-webmcp')
+    return 'PLAYWRIGHT_MCP_WEBMCP=false';
   return `PLAYWRIGHT_MCP_` + prefix.toUpperCase().replace(/-/g, '_');
 }
 
