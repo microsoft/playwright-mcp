@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type * as playwright from '../../..';
+import type * as playwright from 'playwright';
 
 export type ToolCapability =
   'config' |
@@ -142,6 +142,12 @@ export type Config = {
   saveSession?: boolean;
 
   /**
+   * Whether to collect and expose the tools that a page registers through the
+   * experimental WebMCP API. Enabled by default.
+   */
+  webmcp?: boolean;
+
+  /**
    * Reuse the same browser context between all connected HTTP clients.
    */
   sharedBrowserContext?: boolean;
@@ -231,6 +237,11 @@ export type Config = {
    * With "only", a response that carries an image consists of the image parts alone, without the text part.
    */
   imageResponses?: 'allow' | 'omit' | 'only';
+
+  /**
+   * How file paths are rendered in tool results. Can be "relative" to the workspace root or "absolute". Defaults to "relative".
+   */
+  filePaths?: 'relative' | 'absolute';
 
   snapshot?: {
     /**

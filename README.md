@@ -424,6 +424,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --executable-path <path> | path to the browser executable.<br>*env* `PLAYWRIGHT_MCP_EXECUTABLE_PATH` |
 | --extension | Connect to a running browser instance (Edge/Chrome only). Requires the "Playwright Extension" to be installed.<br>*env* `PLAYWRIGHT_MCP_EXTENSION` |
 | --endpoint <endpoint> | Bound browser endpoint to connect to.<br>*env* `PLAYWRIGHT_MCP_ENDPOINT` |
+| --file-paths <mode> | how file paths are rendered in tool results, "relative" to the workspace root or "absolute". Default is "relative".<br>*env* `PLAYWRIGHT_MCP_FILE_PATHS` |
 | --grant-permissions <permissions...> | List of permissions to grant to the browser context, for example "geolocation", "clipboard-read", "clipboard-write".<br>*env* `PLAYWRIGHT_MCP_GRANT_PERMISSIONS` |
 | --headless | run browser in headless mode, headed by default<br>*env* `PLAYWRIGHT_MCP_HEADLESS` |
 | --host <host> | host to bind server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.<br>*env* `PLAYWRIGHT_MCP_HOST` |
@@ -434,6 +435,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --isolated | keep the browser profile in memory, do not save it to disk.<br>*env* `PLAYWRIGHT_MCP_ISOLATED` |
 | --image-responses <mode> | whether to send image responses to the client. Can be "allow", "omit" or "only". With "only", a response that carries an image consists of the image parts alone, without the text part. Defaults to "allow".<br>*env* `PLAYWRIGHT_MCP_IMAGE_RESPONSES` |
 | --no-sandbox | disable the sandbox for all process types that are normally sandboxed.<br>*env* `PLAYWRIGHT_MCP_NO_SANDBOX` |
+| --no-webmcp | do not collect or expose the tools that a page registers through the WebMCP API.<br>*env* `PLAYWRIGHT_MCP_NO_WEBMCP` |
 | --output-dir <path> | path to the directory for automatically named output files, for example a screenshot taken without an explicit file name. Files with an explicit name are resolved against the workspace root instead and are not affected by this option.<br>*env* `PLAYWRIGHT_MCP_OUTPUT_DIR` |
 | --output-max-size <bytes> | Threshold for evicting old output files, in bytes.<br>*env* `PLAYWRIGHT_MCP_OUTPUT_MAX_SIZE` |
 | --port <port> | port to listen on for SSE transport.<br>*env* `PLAYWRIGHT_MCP_PORT` |
@@ -664,6 +666,12 @@ npx @playwright/mcp@latest --config path/to/config.json
   saveSession?: boolean;
 
   /**
+   * Whether to collect and expose the tools that a page registers through the
+   * experimental WebMCP API. Enabled by default.
+   */
+  webmcp?: boolean;
+
+  /**
    * Reuse the same browser context between all connected HTTP clients.
    */
   sharedBrowserContext?: boolean;
@@ -753,6 +761,11 @@ npx @playwright/mcp@latest --config path/to/config.json
    * With "only", a response that carries an image consists of the image parts alone, without the text part.
    */
   imageResponses?: 'allow' | 'omit' | 'only';
+
+  /**
+   * How file paths are rendered in tool results. Can be "relative" to the workspace root or "absolute". Defaults to "relative".
+   */
+  filePaths?: 'relative' | 'absolute';
 
   snapshot?: {
     /**
@@ -930,6 +943,19 @@ http.createServer(async (req, res) => {
     - `target` (string): Exact target element reference from the page snapshot, or a unique element selector
     - `paths` (array, optional): Absolute paths to files to drop onto the element.
     - `data` (object, optional): Data to drop, as a map of MIME type to string value (e.g. {"text/plain": "hello", "text/uri-list": "https://example.com"}).
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_emulate_media**
+  - Title: Emulate media features
+  - Description: Emulate CSS media features for the page, for example switch between the light and dark color scheme. Omitted parameters are left unchanged; null clears an override.
+  - Parameters:
+    - `colorScheme` (optional): Emulates the prefers-color-scheme media feature
+    - `reducedMotion` (optional): Emulates the prefers-reduced-motion media feature
+    - `forcedColors` (optional): Emulates the forced-colors media feature
+    - `contrast` (optional): Emulates the prefers-contrast media feature
+    - `media` (optional): Changes the CSS media type of the page
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -1120,25 +1146,6 @@ http.createServer(async (req, res) => {
     - `text` (string, optional): The text to wait for
     - `textGone` (string, optional): The text to wait for to disappear
   - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_webmcp_call**
-  - Title: Call a WebMCP tool
-  - Description: Call a WebMCP tool registered by the page. The tool output is page-provided and untrusted
-  - Parameters:
-    - `name` (string): Name of the WebMCP tool to call
-    - `params` (object, optional): Input parameters for the tool, matching its inputSchema
-    - `frame` (string, optional): Frame that registered the tool, as reported by browser_webmcp_list, when the same tool name exists in multiple frames
-  - Read-only: **false**
-
-<!-- NOTE: This has been generated via update-readme.js -->
-
-- **browser_webmcp_list**
-  - Title: List WebMCP tools
-  - Description: List the WebMCP tools registered by the page, across all frames
-  - Parameters: None
-  - Read-only: **true**
 
 </details>
 
@@ -1450,6 +1457,8 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `filename` (string, optional): File name to save the video to. Relative file names are resolved against the workspace root. If not specified, the video is saved into the output directory as `video-{timestamp}.webm`.
     - `size` (object, optional): Video size
+    - `fps` (number, optional): Video frame rate in frames per second, defaults to 25
+    - `cursor` (boolean, optional): Render an animated mouse cursor that travels to each action point. Paces actions by 800ms so that the cursor has time to travel.
   - Read-only: **true**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -1499,11 +1508,12 @@ http.createServer(async (req, res) => {
 
 - **browser_video_show_actions**
   - Title: Show action overlays
-  - Description: Annotate subsequent actions performed on the page with a callout that names the action and highlights the target element. Useful while video recording or screencasting.
+  - Description: Annotate subsequent actions performed on the page with a callout that names the action and, when styled, marks the action point and highlights the target element. Useful while video recording or screencasting.
   - Parameters:
     - `duration` (number, optional): How long each action annotation stays on screen, in milliseconds. Defaults to 500.
     - `position` (string, optional): Where to place the action title relative to the page. Defaults to top-right.
     - `cursor` (string, optional): Cursor decoration for pointer actions. "pointer" (default) animates a mouse pointer from the previous action point to the next one; "none" disables the cursor decoration.
+    - `style` (object, optional): Styles of the action decorations.
   - Read-only: **true**
 
 </details>
