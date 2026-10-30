@@ -1,0 +1,224 @@
+# Prepares a release. Copilot CLI writes the release notes, as .claude/skills/release.md says,
+# without write credentials. Fresh jobs bump the version, open the "chore: mark v<version>" pull
+# request with the notes as its description using the app, so CI runs on it, and comment on the
+# issue. A maintainer copies the notes into the release draft.
+name: Prepare release
+
+on:
+  # Apply needs-release to an issue; re-apply it to write the notes again.
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue to report on; leave empty for none"
+        type: string
+        required: false
+        default: ""
+      version:
+        description: "Version to release; leave empty for the next patch version"
+        type: string
+        required: false
+        default: ""
+
+permissions: {}
+
+jobs:
+  start:
+    name: Find the version
+    if: >-
+      github.repository == 'microsoft/playwright-mcp' &&
+      (github.event_name == 'workflow_dispatch' || github.event.label.name == 'needs-release')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      comment: ${{ steps.post.outputs.id }}
+    env:
+      ISSUE: ${{ github.event.issue.number || inputs.issue }}
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Find the next version
+      id: version
+      run: |
+        current=$(node -p "require('./package.json').version")
+        version=${VERSION:-$(node -p 'const [major, minor, patch] = process.argv[1].split("."); `${major}.${minor}.${+patch + 1}`' "$current")}
+        [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "invalid version: $version" >&2; exit 1; }
+        echo "Releasing v$version; package.json has $current" >> "$GITHUB_STEP_SUMMARY"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+    - name: Post the run link
+      id: post
+      if: env.ISSUE != ''
+      env:
+        NEXT: ${{ steps.version.outputs.version }}
+      run: |
+        [[ "$ISSUE" =~ ^[1-9][0-9]*$ ]] || { echo "issue must be a positive integer" >&2; exit 1; }
+        body=$(printf "Hi, I'm the Playwright bot. I started to write the release notes of v%s: [agent run](%s)\n<!-- playwright-release-started -->" "$NEXT" "$RUN_URL")
+        id=$(gh api "repos/$GH_REPO/issues/$ISSUE/comments" -f body="$body" --jq .node_id)
+        echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  notes:
+    name: Write the release notes of v${{ needs.start.outputs.version }}
+    needs: start
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: read
+      copilot-requests: write
+    env:
+      VERSION: ${{ needs.start.outputs.version }}
+    outputs:
+      has_notes: ${{ steps.agent.outputs.has-result }}
+    steps:
+    # The full history, for the previous release. No credentials in the checkout.
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Record the directories
+      run: |
+        echo "OUTPUT_DIR=$RUNNER_TEMP/release" >> "$GITHUB_ENV"
+        echo "SCRATCH_DIR=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+        echo "REPO_DIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+        echo "PLAYWRIGHT_DIR=$(dirname "$GITHUB_WORKSPACE")/playwright" >> "$GITHUB_ENV"
+        mkdir -p "$RUNNER_TEMP/release" "$RUNNER_TEMP/scratch"
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '24'
+    - name: Clone microsoft/playwright and install the Copilot CLI
+      run: |
+        git clone --filter=blob:none https://github.com/microsoft/playwright.git "$PLAYWRIGHT_DIR"
+        npm install -g @github/copilot
+    - name: Write the notes with Copilot CLI
+      id: agent
+      uses: microsoft/playwright/.github/actions/run-agent@main
+      with:
+        prompt: |
+          Write the release notes of @playwright/mcp v${{ env.VERSION }}. Follow steps 3 to 5 of .claude/skills/release.md. Read the skill in full before you start.
+
+          The workflow does the other steps. Step 1 is done: the notes cover the Playwright version that package.json on main pins. A later job does step 2, the version bump, and step 6: it commits, pushes and opens the pull request with your notes as its description. Do not change, commit or push files in the checkout, and do not run gh.
+
+          `~/playwright` in the skill is $PLAYWRIGHT_DIR here: a clone of microsoft/playwright at the tip of main, with the full history. The checkout of this repo has the full history too. `gh` is not authenticated: read pull requests and issues, and the notes of the previous release, with the GitHub MCP tools.
+
+          Nobody watches the run: do not ask questions. The skill says to confirm experimental flags with the user. Leave them out of the notes, and list them in the summary.
+
+          Keep $OUTPUT_DIR/summary.md up to date as you work: the commit windows, what you kept, what you dropped and why. Draft the notes in $SCRATCH_DIR. When they are done, write them to $OUTPUT_DIR/release-notes.md, last, in one go.
+        output-dir: ${{ env.OUTPUT_DIR }}
+        result-file: release-notes.md
+        artifact-name: release
+        github-tools: true
+
+  publish:
+    name: Open the pull request
+    needs: [start, notes]
+    # release-notes.md is written last, so finished notes are published even when the job failed later.
+    if: ${{ !cancelled() && needs.notes.outputs.has_notes == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      pr: ${{ steps.pr.outputs.url }}
+    env:
+      VERSION: ${{ needs.start.outputs.version }}
+      TITLE: "chore: mark v${{ needs.start.outputs.version }}"
+      BRANCH: release/v${{ needs.start.outputs.version }}
+    steps:
+    - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      id: app-token
+      with:
+        app-id: ${{ vars.PLAYWRIGHT_APP_ID }}
+        private-key: ${{ secrets.PLAYWRIGHT_PRIVATE_KEY }}
+    # Pushes as the app, so CI runs on the pull request.
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '24'
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: release
+        path: ${{ runner.temp }}/release
+    # Step 2 of the skill. Only the notes come from the agent, as the description.
+    - name: Bump the version and push the branch
+      run: |
+        npm version "$VERSION" --no-git-tag-version --ignore-scripts --allow-same-version
+        node -e '
+          const fs = require("fs");
+          const [file, version] = process.argv.slice(1);
+          const server = JSON.parse(fs.readFileSync(file, "utf8"));
+          server.version = version;
+          for (const p of server.packages)
+            p.version = version;
+          fs.writeFileSync(file, JSON.stringify(server, null, 2) + "\n");
+        ' server.json "$VERSION"
+        git config user.name "microsoft-playwright-automation[bot]"
+        git config user.email "203992400+microsoft-playwright-automation[bot]@users.noreply.github.com"
+        git checkout -b "$BRANCH"
+        git commit -am "$TITLE"
+        git push --force origin "$BRANCH"
+    # The description is the notes verbatim, for a maintainer to copy into the release draft.
+    - name: Open the pull request
+      id: pr
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      env:
+        BASE: ${{ github.ref_name }}
+      with:
+        github-token: ${{ steps.app-token.outputs.token }}
+        script: |
+          const fs = require('fs');
+          const { BASE, BRANCH, TITLE, RUNNER_TEMP } = process.env;
+          const body = fs.readFileSync(`${RUNNER_TEMP}/release/release-notes.md`, 'utf8').trim();
+          if (!body)
+            throw new Error('release-notes.md is empty');
+          const { owner, repo } = context.repo;
+          const { data: open } = await github.rest.pulls.list({ owner, repo, head: `${owner}:${BRANCH}`, state: 'open' });
+          let pr = open[0];
+          if (pr)
+            await github.rest.pulls.update({ owner, repo, pull_number: pr.number, body });
+          else
+            ({ data: pr } = await github.rest.pulls.create({ owner, repo, head: BRANCH, base: BASE, title: TITLE, body }));
+          core.setOutput('url', pr.html_url);
+          await core.summary.addRaw(`Pull request: ${pr.html_url}\n`).write();
+
+  comment:
+    name: Comment on the issue
+    needs: [start, notes, publish]
+    if: ${{ !cancelled() && needs.start.result == 'success' && (github.event_name == 'issues' || inputs.issue != '') }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+    - name: Post the result
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        ISSUE: ${{ github.event.issue.number || inputs.issue }}
+        VERSION: ${{ needs.start.outputs.version }}
+        PR_URL: ${{ needs.publish.outputs.pr }}
+        START_COMMENT: ${{ needs.start.outputs.comment }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        if [[ -n "$PR_URL" ]]; then
+          text="I opened the release PR of v$VERSION. Its description has the release notes, ready to copy into the release draft: $PR_URL"
+        else
+          text="I couldn't prepare the release of v$VERSION. The agent run has the details."
+        fi
+        printf "Hi, I'm the Playwright bot. %s\n\n<sub>Prepared by the Playwright bot - [agent run](%s)</sub>\n" "$text" "$RUN_URL" > "$RUNNER_TEMP/comment.md"
+        gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/comment.md"
+        if [[ -n "$START_COMMENT" ]]; then
+          gh api graphql -f query='mutation($id: ID!) { minimizeComment(input: { subjectId: $id, classifier: OUTDATED }) { clientMutationId } }' -f id="$START_COMMENT" \
+            || echo "::warning::Could not hide the comment with the run link"
+        fi
