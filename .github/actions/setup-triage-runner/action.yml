@@ -1,0 +1,35 @@
+name: 'Set up the triage runner'
+description: >
+  Prepares the environment that the triage and revision agents work in: the checkout with its
+  dependencies and the browsers that CI tests with, the Copilot CLI, and next to the checkout a
+  clone of microsoft/playwright at the tip of main, built, where the source of the MCP server is.
+  Exports PLAYWRIGHT_DIR, the path of that clone, and CI_ENV_EXEC, the wrapper from
+  microsoft/playwright that runs a command under xvfb on Linux and at normal I/O priority on
+  Windows.
+runs:
+  using: composite
+  steps:
+  - uses: microsoft/playwright/.github/actions/ci-env@main
+  - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+    with:
+      node-version: '24'
+  - name: Install the dependencies and the browsers
+    shell: bash
+    run: |
+      npm ci
+      npx playwright install --with-deps
+  # Next to the checkout, where roll.js and the skills expect it.
+  - name: Clone and build microsoft/playwright
+    shell: bash
+    run: |
+      dir="$(dirname "${GITHUB_WORKSPACE//\\//}")/playwright"
+      rm -rf "$dir"
+      git clone --filter=blob:none https://github.com/microsoft/playwright.git "$dir"
+      cd "$dir"
+      npm ci
+      npm run build
+      npx playwright install --with-deps chromium firefox webkit
+      echo "PLAYWRIGHT_DIR=$dir" >> "$GITHUB_ENV"
+  - name: Install the Copilot CLI
+    shell: bash
+    run: npm install -g @github/copilot

@@ -1,0 +1,304 @@
+# Rolls Playwright to the latest alpha, playwright@next, and opens a pull request. The roll job runs
+# roll.js, then Copilot CLI runs the tests and fixes what the roll breaks, as "Rolling Playwright" in
+# CLAUDE.md says, without write credentials. Fresh jobs open the pull request using the app, so CI
+# runs on it, and comment on the issue.
+name: Roll Playwright
+
+on:
+  # Apply needs-roll to an issue; re-apply it to roll again.
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue to report on; leave empty for none"
+        type: string
+        required: false
+        default: ""
+      version:
+        description: "Playwright version to roll to; leave empty for playwright@next"
+        type: string
+        required: false
+        default: ""
+
+permissions: {}
+
+jobs:
+  start:
+    name: Find the version
+    if: >-
+      github.repository == 'microsoft/playwright-mcp' &&
+      (github.event_name == 'workflow_dispatch' || github.event.label.name == 'needs-roll')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      old: ${{ steps.versions.outputs.old }}
+      new: ${{ steps.versions.outputs.new }}
+      old_commit: ${{ steps.versions.outputs.old_commit }}
+      new_commit: ${{ steps.versions.outputs.new_commit }}
+      comment: ${{ steps.post.outputs.id }}
+    env:
+      ISSUE: ${{ github.event.issue.number || inputs.issue }}
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Read the pinned and the new version
+      id: versions
+      run: |
+        old=$(node -p "require('./package.json').dependencies['playwright-core']")
+        new=${VERSION:-$(npm view playwright@next version)}
+        [[ "$new" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo "invalid version: $new" >&2; exit 1; }
+        new_commit=$(npm view "playwright-core@$new" gitHead)
+        [[ "$new_commit" =~ ^[0-9a-f]{40}$ ]] || { echo "playwright-core@$new has no gitHead" >&2; exit 1; }
+        old_commit=$(npm view "playwright-core@$old" gitHead || true)
+        echo "Pinned $old ($old_commit), rolling to $new ($new_commit)" >> "$GITHUB_STEP_SUMMARY"
+        {
+          echo "old=$old"
+          echo "new=$new"
+          echo "old_commit=$old_commit"
+          echo "new_commit=$new_commit"
+        } >> "$GITHUB_OUTPUT"
+    - name: Post the run link
+      id: post
+      if: env.ISSUE != ''
+      env:
+        NEW: ${{ steps.versions.outputs.new }}
+      run: |
+        [[ "$ISSUE" =~ ^[1-9][0-9]*$ ]] || { echo "issue must be a positive integer" >&2; exit 1; }
+        body=$(printf "Hi, I'm the Playwright bot. I started to roll Playwright to %s: [agent run](%s)\n<!-- playwright-roll-started -->" "$NEW" "$RUN_URL")
+        id=$(gh api "repos/$GH_REPO/issues/$ISSUE/comments" -f body="$body" --jq .node_id)
+        echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  roll:
+    name: Roll to ${{ needs.start.outputs.new }}
+    needs: start
+    if: needs.start.outputs.new != needs.start.outputs.old
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    concurrency:
+      group: roll
+      cancel-in-progress: false
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: read
+      copilot-requests: write
+    env:
+      OLD: ${{ needs.start.outputs.old }}
+      NEW: ${{ needs.start.outputs.new }}
+      OLD_COMMIT: ${{ needs.start.outputs.old_commit }}
+      NEW_COMMIT: ${{ needs.start.outputs.new_commit }}
+    outputs:
+      has_changes: ${{ steps.save.outputs.has_changes }}
+      complete: ${{ steps.agent.outputs.outcome == 'success' && steps.check.outcome == 'success' && steps.save.outputs.passed == 'true' }}
+    steps:
+    # No credentials in the checkout: the agent must not push.
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Record the directories
+      run: |
+        echo "OUTPUT_DIR=$RUNNER_TEMP/roll" >> "$GITHUB_ENV"
+        echo "SCRATCH_DIR=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+        echo "REPO_DIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+        echo "PLAYWRIGHT_DIR=$(dirname "$GITHUB_WORKSPACE")/playwright" >> "$GITHUB_ENV"
+        mkdir -p "$RUNNER_TEMP/roll" "$RUNNER_TEMP/scratch"
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '24'
+    # roll.js copies config.d.ts from ../playwright.
+    - name: Clone microsoft/playwright at the new version
+      run: |
+        git clone --filter=blob:none --no-checkout https://github.com/microsoft/playwright.git "$PLAYWRIGHT_DIR"
+        git -C "$PLAYWRIGHT_DIR" checkout -q "$NEW_COMMIT"
+    # Step 1 of "Rolling Playwright" in CLAUDE.md.
+    - name: Run roll.js
+      run: node roll.js "$NEW"
+    - name: Install the browsers and the Copilot CLI
+      run: |
+        npx playwright install --with-deps
+        npm install -g @github/copilot
+    - name: Roll with Copilot CLI
+      id: agent
+      uses: microsoft/playwright/.github/actions/run-agent@main
+      with:
+        prompt: |
+          Roll Playwright in @playwright/mcp from ${{ env.OLD }} to ${{ env.NEW }}. Follow "Rolling Playwright" in CLAUDE.md, and read all of CLAUDE.md for how to test.
+
+          The workflow already did step 1: `node roll.js ${{ env.NEW }}` updated package.json, package-lock.json, config.d.ts and README.md, and the browsers of the new version are installed. $PLAYWRIGHT_DIR is a clone of microsoft/playwright at ${{ env.NEW_COMMIT }}, the commit that the new version was built from; the old version was built from ${{ env.OLD_COMMIT }}. Start with step 3: run `npm test`.
+
+          When a test fails, find out why before you change anything. `git -C $PLAYWRIGHT_DIR log ${{ env.OLD_COMMIT }}..${{ env.NEW_COMMIT }} -- packages/playwright-core/src/tools tests/mcp` lists the upstream changes. When an upstream change is intended, update the test in this repo to the new behavior. When it is a regression, do not hide it: leave the test as it is, and describe the regression and the upstream commit that caused it. Change only package.json, package-lock.json, config.d.ts, README.md and files in tests/: the workflow rejects other changes.
+
+          Steps 2 and 4 are for the workflow: do not create a branch, commit, push or run gh. A later job commits your changes and opens the pull request. Nobody watches the run: do not ask questions.
+
+          Keep $OUTPUT_DIR/summary.md up to date as you work. When you finish, write the pull request description to $OUTPUT_DIR/pr-body.md: the test results, and for each test that you changed, why, with the upstream commit. Then write $OUTPUT_DIR/roll.json last: {"passed": true} when `npm test` passes, {"passed": false} otherwise.
+        output-dir: ${{ env.OUTPUT_DIR }}
+        result-file: roll.json
+        artifact-name: roll
+    # The CI lint job fails when npm run lint changes a file.
+    - name: Check the roll
+      id: check
+      continue-on-error: true
+      run: |
+        node -e '
+          const pkg = require("./package.json");
+          const pins = [pkg.dependencies.playwright, pkg.dependencies["playwright-core"], pkg.devDependencies["@playwright/test"]];
+          if (pins.some(pin => pin !== process.argv[1]))
+            throw new Error(`package.json pins ${pins.join(", ")}`);
+        ' "$NEW"
+        git add -A
+        npm run lint
+        git diff --exit-code
+    - name: Save the changes
+      id: save
+      run: |
+        git add -A
+        # Against the checked-out commit, in case the agent committed anyway.
+        git diff --cached --binary "$GITHUB_SHA" > "$OUTPUT_DIR/roll.patch"
+        if [[ -s "$OUTPUT_DIR/roll.patch" ]]; then
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has_changes=false" >> "$GITHUB_OUTPUT"
+        fi
+        passed=false
+        if [[ -f "$OUTPUT_DIR/roll.json" ]]; then
+          passed=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).passed === true' "$OUTPUT_DIR/roll.json" || echo false)
+        fi
+        echo "passed=$passed" >> "$GITHUB_OUTPUT"
+        {
+          echo '```'
+          git diff --cached --stat "$GITHUB_SHA"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+    - name: Upload the roll
+      if: always()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: roll
+        path: ${{ env.OUTPUT_DIR }}
+        overwrite: true
+        if-no-files-found: warn
+
+  publish:
+    name: Open the pull request
+    needs: [start, roll]
+    if: ${{ !cancelled() && needs.roll.outputs.has_changes == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      pr: ${{ steps.pr.outputs.url }}
+    env:
+      TITLE: "chore: roll Playwright to ${{ needs.start.outputs.new }}"
+      BRANCH: roll/${{ needs.start.outputs.new }}
+    steps:
+    - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      id: app-token
+      with:
+        app-id: ${{ vars.PLAYWRIGHT_APP_ID }}
+        private-key: ${{ secrets.PLAYWRIGHT_PRIVATE_KEY }}
+    # Pushes as the app, so CI runs on the pull request.
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: roll
+        path: ${{ runner.temp }}/roll
+    # Never execute code or scripts from the roll in the app job.
+    - name: Push the branch
+      run: |
+        git apply --index "$RUNNER_TEMP/roll/roll.patch"
+        # A roll changes only what a roll changes. --no-renames lists a renamed file under its old
+        # name too.
+        git diff --cached --name-only --no-renames > "$RUNNER_TEMP/changed.txt"
+        if grep -v -E '^(package\.json|package-lock\.json|config\.d\.ts|README\.md)$|^tests/' "$RUNNER_TEMP/changed.txt"; then
+          echo "The roll changes files outside package.json, package-lock.json, config.d.ts, README.md and tests/." >&2
+          exit 1
+        fi
+        if grep -E '(^|/)(AGENTS|CLAUDE)\.md$' "$RUNNER_TEMP/changed.txt"; then
+          echo "The roll changes agent instructions." >&2
+          exit 1
+        fi
+        if git diff --cached --summary | grep ' mode 120000 '; then
+          echo "The roll adds a symbolic link." >&2
+          exit 1
+        fi
+        git config user.name "microsoft-playwright-automation[bot]"
+        git config user.email "203992400+microsoft-playwright-automation[bot]@users.noreply.github.com"
+        git checkout -b "$BRANCH"
+        git commit -m "$TITLE"
+        git push --force origin "$BRANCH"
+    - name: Open the pull request
+      id: pr
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      env:
+        BASE: ${{ github.ref_name }}
+        COMPLETE: ${{ needs.roll.outputs.complete }}
+        OLD_COMMIT: ${{ needs.start.outputs.old_commit }}
+        NEW_COMMIT: ${{ needs.start.outputs.new_commit }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      with:
+        github-token: ${{ steps.app-token.outputs.token }}
+        script: |
+          const fs = require('fs');
+          const { BASE, BRANCH, TITLE, COMPLETE, OLD_COMMIT, NEW_COMMIT, RUN_URL, RUNNER_TEMP } = process.env;
+          const file = `${RUNNER_TEMP}/roll/pr-body.md`;
+          const parts = [fs.existsSync(file) ? fs.readFileSync(file, 'utf8').trim() : 'The agent wrote no description.'];
+          if (COMPLETE !== 'true')
+            parts.push(`**The roll is not complete:** the tests, the agent or the checks failed. See the [roll run](${RUN_URL}).`);
+          if (OLD_COMMIT)
+            parts.push(`Upstream changes: https://github.com/microsoft/playwright/compare/${OLD_COMMIT}...${NEW_COMMIT}`);
+          parts.push(`<sub>Rolled by the [roll workflow](${RUN_URL}).</sub>`);
+          const body = parts.join('\n\n');
+          const { owner, repo } = context.repo;
+          const { data: open } = await github.rest.pulls.list({ owner, repo, head: `${owner}:${BRANCH}`, state: 'open' });
+          let pr = open[0];
+          if (pr)
+            await github.rest.pulls.update({ owner, repo, pull_number: pr.number, body });
+          else
+            ({ data: pr } = await github.rest.pulls.create({ owner, repo, head: BRANCH, base: BASE, title: TITLE, body, draft: COMPLETE !== 'true' }));
+          core.setOutput('url', pr.html_url);
+          await core.summary.addRaw(`Pull request: ${pr.html_url}\n`).write();
+
+  comment:
+    name: Comment on the issue
+    needs: [start, roll, publish]
+    if: ${{ !cancelled() && needs.start.result == 'success' && (github.event_name == 'issues' || inputs.issue != '') }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+    - name: Post the result
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        ISSUE: ${{ github.event.issue.number || inputs.issue }}
+        NEW: ${{ needs.start.outputs.new }}
+        ROLL_RESULT: ${{ needs.roll.result }}
+        COMPLETE: ${{ needs.roll.outputs.complete }}
+        PR_URL: ${{ needs.publish.outputs.pr }}
+        START_COMMENT: ${{ needs.start.outputs.comment }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        if [[ "$ROLL_RESULT" == "skipped" ]]; then
+          text="main already pins Playwright $NEW. There is nothing to roll."
+        elif [[ -n "$PR_URL" && "$COMPLETE" == "true" ]]; then
+          text="I rolled Playwright to $NEW, and the tests pass: $PR_URL"
+        elif [[ -n "$PR_URL" ]]; then
+          text="I rolled Playwright to $NEW, but the roll is not complete: the tests, the agent or the checks failed. The pull request says what is left: $PR_URL"
+        else
+          text="I couldn't roll Playwright to $NEW. The agent run has the details."
+        fi
+        printf "Hi, I'm the Playwright bot. %s\n\n<sub>Rolled by the Playwright bot - [agent run](%s)</sub>\n" "$text" "$RUN_URL" > "$RUNNER_TEMP/comment.md"
+        gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/comment.md"
+        if [[ -n "$START_COMMENT" ]]; then
+          gh api graphql -f query='mutation($id: ID!) { minimizeComment(input: { subjectId: $id, classifier: OUTDATED }) { clientMutationId } }' -f id="$START_COMMENT" \
+            || echo "::warning::Could not hide the comment with the run link"
+        fi
