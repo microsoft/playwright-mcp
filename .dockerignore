@@ -4,7 +4,6 @@
 # context. The image installs its own node_modules with npm ci.
 **/.git
 **/.npmrc
-**/.netrc
 **/.env*
 .github
 .azure-pipelines
