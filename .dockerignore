@@ -1,0 +1,6 @@
+# The repository root is the Docker build context (see utils/docker/build.sh).
+# Keep VCS metadata, registry credentials and local environment files out of
+# the build context.
+**/.git
+**/.npmrc
+**/.env*
