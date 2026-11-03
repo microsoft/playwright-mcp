@@ -1,0 +1,16 @@
+# The repository root is the Docker build context (see utils/docker/build.sh).
+# Keep VCS metadata, registry credentials, local environment files, CI and
+# editor configuration, and local build and test output out of the build
+# context. The image installs its own node_modules with npm ci.
+**/.git
+**/.npmrc
+**/.netrc
+**/.env*
+.github
+.azure-pipelines
+.devcontainer
+.claude
+**/node_modules
+test-results
+playwright-report
+sessions
