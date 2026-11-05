@@ -133,7 +133,7 @@ jobs:
         } >> "$GITHUB_OUTPUT"
     - name: Triage with Copilot CLI
       id: agent
-      uses: microsoft/playwright/.github/actions/run-agent@main
+      uses: microsoft/playwright/.github/actions/run-agent@d1518e3e3fca90352c4390814943cced496fd7e4 # main
       with:
         prompt: ${{ steps.prompt.outputs.prompt }}
         output-dir: ${{ env.OUTPUT_DIR }}
@@ -221,7 +221,7 @@ jobs:
     # Never execute code or scripts from the artifact in the app job. The calls are data.
     - name: Check and make the calls
       id: publish
-      uses: microsoft/playwright/.github/actions/publish-calls@main
+      uses: microsoft/playwright/.github/actions/publish-calls@d1518e3e3fca90352c4390814943cced496fd7e4 # main
       with:
         token: ${{ steps.app-token.outputs.token }}
         dir: ${{ runner.temp }}/triage
