@@ -9,7 +9,7 @@ description: >
 runs:
   using: composite
   steps:
-  - uses: microsoft/playwright/.github/actions/ci-env@main
+  - uses: microsoft/playwright/.github/actions/ci-env@d1518e3e3fca90352c4390814943cced496fd7e4 # main
   - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
     with:
       node-version: '24'

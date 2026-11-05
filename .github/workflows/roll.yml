@@ -128,7 +128,7 @@ jobs:
         npm install -g @github/copilot
     - name: Roll with Copilot CLI
       id: agent
-      uses: microsoft/playwright/.github/actions/run-agent@main
+      uses: microsoft/playwright/.github/actions/run-agent@d1518e3e3fca90352c4390814943cced496fd7e4 # main
       with:
         prompt: |
           Roll Playwright in @playwright/mcp from ${{ env.OLD }} to ${{ env.NEW }}. Follow "Rolling Playwright" in CLAUDE.md, and read all of CLAUDE.md for how to test.
