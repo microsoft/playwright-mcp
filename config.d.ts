@@ -109,6 +109,17 @@ export type Config = {
    */
   extension?: boolean;
 
+  /**
+   * Group controlled tabs when using the extension. Defaults to true.
+   */
+  tabGroup?: boolean;
+
+  /**
+   * Do not activate controlled tabs or focus the browser window when using the extension.
+   * Defaults to false.
+   */
+  background?: boolean;
+
   server?: {
     /**
      * The port to listen on for SSE or MCP transport.
