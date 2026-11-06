@@ -436,6 +436,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --isolated | keep the browser profile in memory, do not save it to disk.<br>*env* `PLAYWRIGHT_MCP_ISOLATED` |
 | --image-responses <mode> | whether to send image responses to the client. Can be "allow", "omit" or "only". With "only", a response that carries an image consists of the image parts alone, without the text part. Defaults to "allow".<br>*env* `PLAYWRIGHT_MCP_IMAGE_RESPONSES` |
 | --no-sandbox | disable the sandbox for all process types that are normally sandboxed.<br>*env* `PLAYWRIGHT_MCP_NO_SANDBOX` |
+| --background | do not activate controlled tabs or focus the browser window when using --extension.<br>*env* `PLAYWRIGHT_MCP_BACKGROUND` |
+| --no-tab-group | do not group controlled tabs when using --extension.<br>*env* `PLAYWRIGHT_MCP_NO_TAB_GROUP` |
 | --no-webmcp | do not collect or expose the tools that a page registers through the WebMCP API.<br>*env* `PLAYWRIGHT_MCP_WEBMCP=false` |
 | --output-dir <path> | path to the directory for automatically named output files, for example a screenshot taken without an explicit file name. Files with an explicit name are resolved against the workspace root instead and are not affected by this option.<br>*env* `PLAYWRIGHT_MCP_OUTPUT_DIR` |
 | --output-max-size <bytes> | Threshold for evicting old output files, in bytes.<br>*env* `PLAYWRIGHT_MCP_OUTPUT_MAX_SIZE` |
@@ -634,6 +636,17 @@ npx @playwright/mcp@latest --config path/to/config.json
    * Requires the "Playwright Extension" to be installed.
    */
   extension?: boolean;
+
+  /**
+   * Group controlled tabs when using the extension. Defaults to true.
+   */
+  tabGroup?: boolean;
+
+  /**
+   * Do not activate controlled tabs or focus the browser window when using the extension.
+   * Defaults to false.
+   */
+  background?: boolean;
 
   server?: {
     /**
@@ -1133,7 +1146,7 @@ http.createServer(async (req, res) => {
 
 - **browser_take_screenshot**
   - Title: Take a screenshot
-  - Description: Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.
+  - Description: Take a screenshot of the current page. Use browser_snapshot for actions by default. With the vision capability enabled, use screenshot coordinates with the coordinate-based mouse tools for elements not exposed in the accessibility snapshot.
   - Parameters:
     - `element` (string, optional): Human-readable element description used to obtain permission to interact with the element
     - `target` (string, optional): Exact target element reference from the page snapshot, or a unique element selector
