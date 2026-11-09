@@ -114,7 +114,7 @@ jobs:
 
           `~/playwright` in the skill is $PLAYWRIGHT_DIR here: a clone of microsoft/playwright at the tip of main, with the full history. The checkout of this repo has the full history too. `gh` is not authenticated: read pull requests and issues, and the notes of the previous release, with the GitHub MCP tools.
 
-          Nobody watches the run: do not ask questions. The skill says to confirm experimental flags with the user. Leave them out of the notes, and list them in the summary.
+          Nobody watches the run: do not ask questions. The skill says to confirm hidden, undocumented and experimental options with the user. Leave those out of the notes, and list them in the summary. Documented opt-in options go in the notes.
 
           Keep $OUTPUT_DIR/summary.md up to date as you work: the commit windows, what you kept, what you dropped and why. Draft the notes in $SCRATCH_DIR. When they are done, write them to $OUTPUT_DIR/release-notes.md, last, in one go.
         output-dir: ${{ env.OUTPUT_DIR }}
