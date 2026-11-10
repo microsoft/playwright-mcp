@@ -9,7 +9,7 @@ A release is a `chore: mark v0.0.<next>` commit whose **PR body is the release n
 
 ## 1. Roll Playwright
 
-Follow the "Rolling Playwright" steps in `CLAUDE.md`: run `node roll.js`, branch as `roll-pw-<version-suffix>`, run `npm test`, and open a `chore: roll Playwright to <version>` PR. **Wait for it to merge into `main`** before proceeding.
+Follow the "Rolling Playwright" steps in `AGENTS.md`: run `node roll.js`, branch as `roll-pw-<version-suffix>`, run `npm test`, and open a `chore: roll Playwright to <version>` PR. **Wait for it to merge into `main`** before proceeding.
 
 ## 2. Bump the version
 
