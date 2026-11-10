@@ -1,6 +1,5 @@
-# Hands the issue to the Playwright bot when a maintainer applies agent-triage, agent-implement or
-# agent-task. Nothing else of the bot lives in this repo. Apply the label again to start another
-# run.
+# Hands the issue to the Playwright bot when a maintainer applies agent-triage or agent-implement.
+# Nothing else of the bot lives in this repo. Apply the label again to start another run.
 name: "Agent: triage"
 
 on:
@@ -15,8 +14,7 @@ jobs:
     if: >-
       github.repository_owner == 'microsoft' && (
         github.event.label.name == 'agent-triage' ||
-        github.event.label.name == 'agent-implement' ||
-        github.event.label.name == 'agent-task')
+        github.event.label.name == 'agent-implement')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

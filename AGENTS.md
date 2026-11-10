@@ -14,10 +14,13 @@ and its command line options, and `backend/` has the tools.
   `npm view @playwright/mcp@<version> dependencies.playwright-core` prints the alpha of a release.
   The pin is older than the tip of upstream `main`.
 - **Where a fix goes:** most bugs and features are upstream. Work in a checkout of
-  `microsoft/playwright` next to this repo, `../playwright`, as its `AGENTS.md` says. The tests of
+  `microsoft/playwright`, `~/code/playwright`, as its `AGENTS.md` says. The tests of
   the server are its `tests/mcp/`. Fix here only what this repo owns.
 - **How a fix arrives:** with a roll, after `playwright@next` has the upstream commit. The upstream
   PR says `Refs <issue url>` for an issue of this repo, and the roll PR here says `Fixes`.
+
+Paths such as `~/code/playwright`
+in this file assume that you check the repos out in `~/code`.
 
 ## Build and test
 
@@ -81,14 +84,13 @@ See [.claude/skills/release.md](.claude/skills/release.md).
 ## Bots
 
 The Playwright bot does the work below. It opens pull requests as the
-`microsoft-playwright-automation` app. [triage.yml](.github/workflows/triage.yml) and
-[review.yml](.github/workflows/review.yml) hand it the labels:
+`microsoft-playwright-automation` app. [agent-triage.yml](.github/workflows/agent-triage.yml) and
+[agent-review.yml](.github/workflows/agent-review.yml) hand it the labels:
 
 - `agent-triage` on an issue: finds the cause and fixes the issue if it can. A fix in `microsoft/playwright` opens as a draft PR there.
 - `agent-implement` on an issue: implements what the issue and the maintainers' comments say.
-- `agent-task` on an issue: does what the issue asks, with the skills of this repo.
 - `agent-review` on a PR: revises the PR, as the maintainers' review comments say.
-- [roll.yml](.github/workflows/roll.yml) and [release.yml](.github/workflows/release.yml), from the Actions tab: they hand a task to the bot. Roll Playwright to `playwright@next`, as "Rolling Playwright" says. Or open the `chore: mark v<version>` PR with the release notes as its description, as the release skill says. Copy the notes into the release draft.
-- [task.yml](.github/workflows/task.yml), from the Actions tab: hands the bot the task that you type, with the skills of this repo.
+- [agent-roll.yml](.github/workflows/agent-roll.yml) and [agent-release.yml](.github/workflows/agent-release.yml), from the Actions tab: they hand a task to the bot. Roll Playwright to `playwright@next`, as "Rolling Playwright" says. Or open the `chore: mark v<version>` PR with the release notes as its description, as the release skill says. Copy the notes into the release draft.
+- [agent-task.yml](.github/workflows/agent-task.yml), from the Actions tab: hands the bot the task that you type, with the skills of this repo.
 
 Apply a label again to start another run.
