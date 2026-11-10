@@ -73,5 +73,6 @@ The Playwright bot does the work below. It opens pull requests as the
 - `agent-task` on an issue: does what the issue asks, with the skills of this repo.
 - `agent-review` on a PR: revises the PR, as the maintainers' review comments say.
 - [roll.yml](.github/workflows/roll.yml) and [release.yml](.github/workflows/release.yml), from the Actions tab: they hand a task to the bot. Roll Playwright to `playwright@next`, as "Rolling Playwright" says. Or open the `chore: mark v<version>` PR with the release notes as its description, as the release skill says. Copy the notes into the release draft.
+- [task.yml](.github/workflows/task.yml), from the Actions tab: hands the bot the task that you type, with the skills of this repo.
 
 Apply a label again to start another run.
