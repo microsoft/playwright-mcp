@@ -29,6 +29,8 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
   npx -y playwright-core install-deps chromium && \
   # tini reaps orphaned browser processes that would otherwise become zombies under node as PID 1.
   apt-get install -y --no-install-recommends tini && \
+  # Node.js links against libatomic (since Node.js 25).
+  apt-get install -y --no-install-recommends libatomic1 && \
   rm -rf /var/lib/apt/lists/* && \
   sed -i "s|${DEBIAN_MIRROR_HOST}|deb.debian.org|g" /etc/apt/sources.list.d/debian.sources
 
