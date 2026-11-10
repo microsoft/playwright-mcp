@@ -64,12 +64,14 @@ See [.claude/skills/release.md](.claude/skills/release.md).
 
 ## Bots
 
-Labels start GitHub Actions workflows that run the Copilot CLI and open pull requests as the
-`microsoft-playwright-automation` app:
+The Playwright bot does the work below. It opens pull requests as the
+`microsoft-playwright-automation` app. [triage.yml](.github/workflows/triage.yml) and
+[review.yml](.github/workflows/review.yml) hand it the labels:
 
-- `needs-triage`, `needs-triage-mac`, `needs-triage-win` on an issue: [triage.yml](.github/workflows/triage.yml) reproduces and fixes it, with the skill in [.claude/skills/playwright-triage/](.claude/skills/playwright-triage/SKILL.md). A fix in `microsoft/playwright` opens as a draft PR there.
-- `needs-revision`, `needs-revision-mac`, `needs-revision-win` on a PR that triage opened here: [revision.yml](.github/workflows/revision.yml) addresses the maintainers' review comments.
-- `needs-roll` on an issue: [roll.yml](.github/workflows/roll.yml) rolls Playwright to `playwright@next`, as "Rolling Playwright" says.
-- `needs-release` on an issue: [release.yml](.github/workflows/release.yml) opens the `chore: mark v<version>` PR with the release notes as its description, as the release skill says. Copy the notes into the release draft.
+- `agent-triage` on an issue: finds the cause and fixes the issue if it can, with the skill in [.claude/skills/playwright-triage/](.claude/skills/playwright-triage/SKILL.md). A fix in `microsoft/playwright` opens as a draft PR there.
+- `agent-implement` on an issue: implements what the issue and the maintainers' comments say.
+- `agent-task` on an issue: does what the issue asks, with the skills of this repo.
+- `agent-review` on a PR: revises the PR, as the maintainers' review comments say.
+- [roll.yml](.github/workflows/roll.yml) and [release.yml](.github/workflows/release.yml), from the Actions tab: they hand a task to the bot. Roll Playwright to `playwright@next`, as "Rolling Playwright" says. Or open the `chore: mark v<version>` PR with the release notes as its description, as the release skill says. Copy the notes into the release draft.
 
-Apply a label again to start another run. [bots.md](https://github.com/microsoft/playwright/blob/main/.github/workflows/bots.md) in `microsoft/playwright` describes triage and revision.
+Apply a label again to start another run.
