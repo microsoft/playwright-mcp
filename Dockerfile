@@ -26,6 +26,9 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
   # Install system dependencies for playwright. apt is pointed at the mirror only for
   # the duration of the install, so the published image keeps the default archive host.
   sed -i "s|deb.debian.org|${DEBIAN_MIRROR_HOST}|g" /etc/apt/sources.list.d/debian.sources && \
+  # Pick up security fixes that the base image does not have yet.
+  apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Acquire::Retries=0 && \
   npx -y playwright-core install-deps chromium && \
   # tini reaps orphaned browser processes that would otherwise become zombies under node as PID 1.
   apt-get install -y --no-install-recommends tini && \
