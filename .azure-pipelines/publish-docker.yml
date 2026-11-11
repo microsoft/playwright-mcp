@@ -91,7 +91,7 @@ extends:
           inputs:
             targetType: "inline"
             script: |
-              echo "registry=https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/DevDiv_PublicPackages/npm/registry/" >> .npmrc
+              echo "registry=https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Playwright_InternalPackages/npm/registry/" >> .npmrc
 
         - task: npmAuthenticate@0
           displayName: "authenticate the private npm registry"
