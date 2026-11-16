@@ -12,7 +12,7 @@ if [[ ($1 == '--help') || ($1 == '-h') || ($1 == '') || ($2 == '') ]]; then
   echo ""
   echo "Optional environment variables:"
   echo "  ACR_CACHE_PREFIX     registry prefix for the base image, e.g. 'playwright.azurecr.io/cached/'"
-  echo "  DEBIAN_MIRROR_HOST   apt archive host, e.g. 'debian-archive.trafficmanager.net'"
+  echo "  UBUNTU_MIRROR_PREFIX prefix of the apt archive hosts, e.g. 'azure.'"
   echo "  NPMRC_SECRET         path to an .npmrc to use for 'npm ci' inside the image (BuildKit secret)"
   echo ""
   exit 0
@@ -39,12 +39,6 @@ if [[ -n "${NPMRC_SECRET:-}" ]]; then
   SECRET_ARGS+=(--secret "id=npmrc,src=${NPMRC_SECRET}")
 fi
 
-# Only override the Dockerfile's default archive host when a mirror is requested.
-MIRROR_ARGS=()
-if [[ -n "${DEBIAN_MIRROR_HOST:-}" ]]; then
-  MIRROR_ARGS+=(--build-arg "DEBIAN_MIRROR_HOST=${DEBIAN_MIRROR_HOST}")
-fi
-
 # Keep each arch image a plain single-platform manifest without the unknown/unknown platform entry.
 export BUILDX_NO_DEFAULT_ATTESTATIONS=1
 
@@ -61,7 +55,7 @@ fi
 for ((attempt = 1; attempt <= MAX_ATTEMPTS; attempt++)); do
   if docker build --platform "${PLATFORM}" \
       --build-arg ACR_CACHE_PREFIX="${ACR_CACHE_PREFIX:-}" \
-      "${MIRROR_ARGS[@]}" \
+      --build-arg UBUNTU_MIRROR_PREFIX="${UBUNTU_MIRROR_PREFIX:-}" \
       "${SECRET_ARGS[@]}" \
       -t "$2" -f Dockerfile .; then
     exit 0
