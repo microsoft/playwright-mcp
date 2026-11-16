@@ -34,16 +34,49 @@ function updatePlaywrightVersion(version) {
   execSync('npm install', { cwd: __dirname, stdio: 'inherit' });
 }
 
-function doRoll(version) {
+// Sets NODE_VERSION in the Dockerfile to the latest Node.js release of the same major version.
+async function updateNodeVersion() {
+  const file = path.join(__dirname, 'Dockerfile');
+  const content = fs.readFileSync(file, 'utf-8');
+  const match = content.match(/^ARG NODE_VERSION=((\d+)\.\d+\.\d+)$/m);
+  if (!match)
+    throw new Error(`No exact NODE_VERSION in ${file}`);
+  const [line, oldVersion, major] = match;
+  const response = await fetch('https://nodejs.org/dist/index.json');
+  if (!response.ok)
+    throw new Error(`Failed to get the Node.js release index: ${response.status}`);
+  // The index is ordered newest-first.
+  const release = (await response.json()).find(r => r.version.startsWith(`v${major}.`));
+  if (!release)
+    throw new Error(`No Node.js ${major} release in the Node.js release index`);
+  const newVersion = release.version.slice(1);
+  fs.writeFileSync(file, content.replace(line, `ARG NODE_VERSION=${newVersion}`));
+  console.log(`Node.js in ${file}: ${oldVersion} -> ${newVersion}`);
+}
+
+async function doRoll(version) {
+  await updateNodeVersion();
   updatePlaywrightVersion(version);
   copyConfig();
   // update readme
   execSync('npm run lint', { cwd: __dirname, stdio: 'inherit' });
 }
 
-let version = process.argv[2];
-if (!version) {
-  version = execSync('npm info playwright@next version', { encoding: 'utf-8' }).trim();
-  console.log(`Using next playwright version: ${version}`);
+async function main() {
+  let version = process.argv[2];
+  // Updates only the Node.js version of the Docker image.
+  if (version === '--node') {
+    await updateNodeVersion();
+    return;
+  }
+  if (!version) {
+    version = execSync('npm info playwright@next version', { encoding: 'utf-8' }).trim();
+    console.log(`Using next playwright version: ${version}`);
+  }
+  await doRoll(version);
 }
-doRoll(version);
+
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+});
