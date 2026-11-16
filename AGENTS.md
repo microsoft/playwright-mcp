@@ -72,7 +72,7 @@ Branch naming for issue fixes: `fix-<issue-number>`
 
 ## Rolling Playwright
 
-1. Run `node roll.js` (or `npm run roll`) to bump `playwright`, `playwright-core`, and `@playwright/test`, refresh `config.d.ts`, and regenerate the README. The script prints the resolved version — use its suffix for the branch name. It copies `config.d.ts` from `../playwright`, a checkout of `microsoft/playwright`: check out the commit that the new version was built from (`npm view playwright-core@<version> gitHead`) first.
+1. Run `node roll.js` (or `npm run roll`) to bump `playwright`, `playwright-core`, and `@playwright/test`, refresh `config.d.ts`, and regenerate the README. It also sets `NODE_VERSION` in the `Dockerfile` to the latest Node.js release of the same major version; `node roll.js --node` does only that. The script prints the resolved version — use its suffix for the branch name. It copies `config.d.ts` from `../playwright`, a checkout of `microsoft/playwright`: check out the commit that the new version was built from (`npm view playwright-core@<version> gitHead`) first.
 2. Create a branch: `git checkout -b roll-pw-<version-suffix>`.
 3. Run `npm test`. Only proceed if all tests pass.
 4. Commit with `chore: roll Playwright to <version>`, push, and open a PR against `microsoft/playwright-mcp` with the same title.

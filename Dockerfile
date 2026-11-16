@@ -14,7 +14,8 @@ FROM ${ACR_CACHE_PREFIX}ubuntu:noble AS base
 ARG PLAYWRIGHT_BROWSERS_PATH
 ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
 ARG UBUNTU_MIRROR_PREFIX
-ARG NODE_VERSION=26
+# Exact Node.js version. roll.js updates it to the latest release of the same major version.
+ARG NODE_VERSION=26.13.1
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Set the working directory
@@ -30,13 +31,13 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
   # Pick up security fixes that the base image does not have yet.
   apt-get update && \
   apt-get upgrade -y && \
-  # Install Node.js from NodeSource.
-  apt-get install -y --no-install-recommends curl gpg ca-certificates && \
-  mkdir -p /etc/apt/keyrings && \
-  curl -sL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_VERSION}.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
-  apt-get update && \
-  apt-get install -y --no-install-recommends nodejs && \
+  # Install the exact Node.js version from nodejs.org.
+  apt-get install -y --no-install-recommends curl ca-certificates && \
+  NODE_ARCHIVE="node-v${NODE_VERSION}-linux-$(dpkg --print-architecture | sed 's/amd64/x64/').tar.gz" && \
+  curl -fsSL -o "/tmp/${NODE_ARCHIVE}" "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_ARCHIVE}" && \
+  curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt" | grep " ${NODE_ARCHIVE}\$" | (cd /tmp && sha256sum -c -) && \
+  tar -xzf "/tmp/${NODE_ARCHIVE}" -C /usr/local --strip-components=1 --no-same-owner --exclude='*.md' --exclude=LICENSE && \
+  rm "/tmp/${NODE_ARCHIVE}" && \
   # Node.js links against libatomic (since Node.js 25).
   apt-get install -y --no-install-recommends libatomic1 && \
   # tini reaps orphaned browser processes that would otherwise become zombies under node as PID 1.
@@ -44,8 +45,8 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
   npm ci --omit=dev && \
   # Install system dependencies for playwright.
   npx -y playwright-core install-deps chromium && \
-  # curl and gpg were only needed to set up the Node.js repository.
-  apt-get purge -y --auto-remove curl gpg && \
+  # curl was only needed to download Node.js.
+  apt-get purge -y --auto-remove curl && \
   rm -rf /var/lib/apt/lists/* && \
   sed -i "s|http://${UBUNTU_MIRROR_PREFIX}archive.ubuntu.com|http://archive.ubuntu.com|g; s|http://${UBUNTU_MIRROR_PREFIX}ports.ubuntu.com|http://ports.ubuntu.com|g" /etc/apt/sources.list.d/ubuntu.sources && \
   # Same runtime user as in the node images: 'node' with uid 1000, which is 'ubuntu' in the base image.
