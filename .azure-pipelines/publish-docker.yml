@@ -121,6 +121,6 @@ extends:
             script: "./utils/docker/publish_docker.sh ${{ parameters.releaseChannel }}"
           env:
             ACR_CACHE_PREFIX: "playwright.azurecr.io/cached/"
-            # The agents cannot reach deb.debian.org, so apt goes through the Azure mirror.
-            DEBIAN_MIRROR_HOST: "debian-archive.trafficmanager.net"
+            # The agents cannot reach archive.ubuntu.com, so apt goes through the Azure mirror.
+            UBUNTU_MIRROR_PREFIX: "azure."
             NPMRC_SECRET: "$(Build.SourcesDirectory)/.npmrc"

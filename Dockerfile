@@ -1,19 +1,21 @@
 ARG PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 # Registry prefix for the base image, e.g. 'playwright.azurecr.io/cached/' in the publish pipeline.
 ARG ACR_CACHE_PREFIX
-# Debian archive host used by apt, e.g. 'debian-archive.trafficmanager.net' in the publish pipeline.
-ARG DEBIAN_MIRROR_HOST=deb.debian.org
+# Prefix of the Ubuntu archive hosts used by apt, e.g. 'azure.' in the publish pipeline.
+ARG UBUNTU_MIRROR_PREFIX
 
 # ------------------------------
 # Base
 # ------------------------------
 # Base stage: Contains only the minimal dependencies required for runtime
-# (node_modules and Playwright system dependencies)
-FROM ${ACR_CACHE_PREFIX}node:lts-slim AS base
+# (Node.js, node_modules and Playwright system dependencies)
+FROM ${ACR_CACHE_PREFIX}ubuntu:noble AS base
 
 ARG PLAYWRIGHT_BROWSERS_PATH
 ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
-ARG DEBIAN_MIRROR_HOST
+ARG UBUNTU_MIRROR_PREFIX
+ARG NODE_VERSION=26
+ARG DEBIAN_FRONTEND=noninteractive
 
 # Set the working directory
 WORKDIR /app
@@ -22,20 +24,33 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
     --mount=type=secret,id=npmrc,target=/root/.npmrc,required=false \
-  npm ci --omit=dev && \
-  # Install system dependencies for playwright. apt is pointed at the mirror only for
-  # the duration of the install, so the published image keeps the default archive host.
-  sed -i "s|deb.debian.org|${DEBIAN_MIRROR_HOST}|g" /etc/apt/sources.list.d/debian.sources && \
+  # apt is pointed at the mirror only for the duration of the install, so the published
+  # image keeps the default archive hosts.
+  sed -i "s|http://archive.ubuntu.com|http://${UBUNTU_MIRROR_PREFIX}archive.ubuntu.com|g; s|http://ports.ubuntu.com|http://${UBUNTU_MIRROR_PREFIX}ports.ubuntu.com|g" /etc/apt/sources.list.d/ubuntu.sources && \
   # Pick up security fixes that the base image does not have yet.
   apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && \
-  npx -y playwright-core install-deps chromium && \
-  # tini reaps orphaned browser processes that would otherwise become zombies under node as PID 1.
-  apt-get install -y --no-install-recommends tini && \
+  apt-get upgrade -y && \
+  # Install Node.js from NodeSource.
+  apt-get install -y --no-install-recommends curl gpg ca-certificates && \
+  mkdir -p /etc/apt/keyrings && \
+  curl -sL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_VERSION}.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends nodejs && \
   # Node.js links against libatomic (since Node.js 25).
   apt-get install -y --no-install-recommends libatomic1 && \
+  # tini reaps orphaned browser processes that would otherwise become zombies under node as PID 1.
+  apt-get install -y --no-install-recommends tini && \
+  npm ci --omit=dev && \
+  # Install system dependencies for playwright.
+  npx -y playwright-core install-deps chromium && \
+  # curl and gpg were only needed to set up the Node.js repository.
+  apt-get purge -y --auto-remove curl gpg && \
   rm -rf /var/lib/apt/lists/* && \
-  sed -i "s|${DEBIAN_MIRROR_HOST}|deb.debian.org|g" /etc/apt/sources.list.d/debian.sources
+  sed -i "s|http://${UBUNTU_MIRROR_PREFIX}archive.ubuntu.com|http://archive.ubuntu.com|g; s|http://${UBUNTU_MIRROR_PREFIX}ports.ubuntu.com|http://ports.ubuntu.com|g" /etc/apt/sources.list.d/ubuntu.sources && \
+  # Same runtime user as in the node images: 'node' with uid 1000, which is 'ubuntu' in the base image.
+  usermod -l node -d /home/node -m ubuntu && \
+  groupmod -n node ubuntu
 
 # ------------------------------
 # Builder
