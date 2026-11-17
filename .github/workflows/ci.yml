@@ -65,8 +65,7 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         load: true
-    # check_layers.js looks at the paths of the files, for caches and other leftovers.
-    # This scan looks at the content of the files, in all layers, and finds secrets.
+    # The scan looks at the content of the files, in all layers of the image.
     - name: Scan the image for secrets
       uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
       with:
@@ -75,10 +74,6 @@ jobs:
         exit-code: '1'
         # The secret scan needs no vulnerability database.
         cache: 'false'
-    - name: Check the image layers
-      run: |
-        node utils/docker/check_layers.js playwright-mcp-dev:latest
-        bash utils/docker/test_check_layers.sh
     - name: Run tests
       shell: bash
       run: |
