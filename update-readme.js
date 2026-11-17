@@ -141,17 +141,33 @@ async function updateTools(content) {
 }
 
 /**
- * @param {string} prefix
- * @returns {string}
+ * @returns {Set<string>}
  */
-function optionEnvName(prefix) {
-  if (prefix === 'secrets')
-    return 'PLAYWRIGHT_MCP_SECRETS_FILE';
-  if (prefix === 'cdp-header')
-    return 'PLAYWRIGHT_MCP_CDP_HEADERS';
-  if (prefix === 'no-webmcp')
-    return 'PLAYWRIGHT_MCP_WEBMCP=false';
-  return `PLAYWRIGHT_MCP_` + prefix.toUpperCase().replace(/-/g, '_');
+function readSupportedEnvVars() {
+  const coreBundlePath = require.resolve('playwright-core/lib/coreBundle');
+  const coreBundleSource = fs.readFileSync(coreBundlePath, 'utf-8');
+  const envVars = new Set(coreBundleSource.match(/\bPLAYWRIGHT_MCP_[A-Z0-9_]+\b/g) || []);
+  if (!envVars.size)
+    throw new Error(`No PLAYWRIGHT_MCP_* environment variables found in ${coreBundlePath}`);
+  return envVars;
+}
+
+const ENV_NAME_OVERRIDES = {
+  'secrets': 'PLAYWRIGHT_MCP_SECRETS_FILE',
+  'cdp-header': 'PLAYWRIGHT_MCP_CDP_HEADERS',
+  'remote-header': 'PLAYWRIGHT_MCP_REMOTE_HEADERS',
+  'no-sandbox': 'PLAYWRIGHT_MCP_SANDBOX=false',
+  'no-webmcp': 'PLAYWRIGHT_MCP_WEBMCP=false',
+};
+
+/**
+ * @param {string} prefix
+ * @param {Set<string>} supportedEnvVars
+ * @returns {string | undefined}
+ */
+function optionEnvName(prefix, supportedEnvVars) {
+  const envName = ENV_NAME_OVERRIDES[prefix] ?? `PLAYWRIGHT_MCP_${prefix.toUpperCase().replace(/-/g, '_')}`;
+  return supportedEnvVars.has(envName.split('=')[0]) ? envName : undefined;
 }
 
 /**
@@ -186,23 +202,27 @@ async function updateOptions(content) {
     }
   }
 
+  const supportedEnvVars = readSupportedEnvVars();
+  const rows = options.map(option => ({
+    ...option,
+    envName: optionEnvName(option.name.split(' ')[0], supportedEnvVars),
+  }));
+
   const table = [];
   table.push(`| Option | Description |`);
   table.push(`|--------|-------------|`);
-  for (const option of options) {
-    const prefix = option.name.split(' ')[0];
-    const envName = optionEnvName(prefix);
-    table.push(`| --${option.name} | ${option.value}<br>*env* \`${envName}\` |`);
+  for (const row of rows) {
+    const envDoc = row.envName ? `<br>*env* \`${row.envName}\`` : '';
+    table.push(`| --${row.name} | ${row.value}${envDoc} |`);
   }
 
   if (process.env.PRINT_ENV) {
     const envTable = [];
     envTable.push(`| Environment |`);
     envTable.push(`|-------------|`);
-    for (const option of options) {
-      const prefix = option.name.split(' ')[0];
-      const envName = optionEnvName(prefix);
-      envTable.push(`| \`${envName}\` ${option.value} |`);
+    for (const row of rows) {
+      if (row.envName)
+        envTable.push(`| \`${row.envName}\` ${row.value} |`);
     }
     console.log(envTable.join('\n'));
   }
