@@ -17,7 +17,7 @@ This package provides MCP interface into Playwright. If you are using a **coding
 - **Deterministic tool application**. Avoids ambiguity common with screenshot-based approaches.
 
 ### Requirements
-- Node.js 18 or newer
+- Node.js 20 or newer
 - VS Code, Cursor, Windsurf, Claude Desktop, Goose, Grok, Junie or any other MCP client
 
 <!--
