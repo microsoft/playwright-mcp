@@ -17,6 +17,8 @@ ARG UBUNTU_MIRROR_PREFIX
 # Exact Node.js version. roll.js updates it to the latest release of the same major version.
 ARG NODE_VERSION=26.13.1
 ARG DEBIAN_FRONTEND=noninteractive
+# npm turns on the Node.js compile cache, which writes to /tmp. Turn it off during the build.
+ARG NODE_DISABLE_COMPILE_CACHE=1
 
 # Set the working directory
 WORKDIR /app
