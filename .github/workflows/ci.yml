@@ -58,13 +58,22 @@ jobs:
       run: npx playwright install --with-deps chromium
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-    - name: Build and push
+    - name: Build the image
       uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
       with:
         tags: playwright-mcp-dev:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
         load: true
+    # The scan looks at the content of the files, in all layers of the image.
+    - name: Scan the image for secrets
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+      with:
+        image-ref: playwright-mcp-dev:latest
+        scanners: secret
+        exit-code: '1'
+        # The secret scan needs no vulnerability database.
+        cache: 'false'
     - name: Run tests
       shell: bash
       run: |
