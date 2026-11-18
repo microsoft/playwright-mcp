@@ -438,6 +438,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --no-sandbox | disable the sandbox for all process types that are normally sandboxed.<br>*env* `PLAYWRIGHT_MCP_SANDBOX=false` |
 | --background | do not activate controlled tabs or focus the browser window when using --extension.<br>*env* `PLAYWRIGHT_MCP_BACKGROUND` |
 | --no-tab-group | do not group controlled tabs when using --extension.<br>*env* `PLAYWRIGHT_MCP_NO_TAB_GROUP` |
+| --session-name <name> | name of the session. With --extension, it is the title of the tab group for controlled tabs.<br>*env* `PLAYWRIGHT_MCP_SESSION_NAME` |
+| --session-color <color> | color of the session: blue, red, yellow, green, pink, purple, cyan or orange. With --extension, it is the color of the tab group for controlled tabs.<br>*env* `PLAYWRIGHT_MCP_SESSION_COLOR` |
 | --no-webmcp | do not collect or expose the tools that a page registers through the WebMCP API.<br>*env* `PLAYWRIGHT_MCP_WEBMCP=false` |
 | --output-dir <path> | path to the directory for automatically named output files, for example a screenshot taken without an explicit file name. Files with an explicit name are resolved against the workspace root instead and are not affected by this option.<br>*env* `PLAYWRIGHT_MCP_OUTPUT_DIR` |
 | --output-max-size <bytes> | Threshold for evicting old output files, in bytes.<br>*env* `PLAYWRIGHT_MCP_OUTPUT_MAX_SIZE` |
@@ -646,6 +648,18 @@ npx @playwright/mcp@latest --config path/to/config.json
    * Group controlled tabs when using the extension. Defaults to true.
    */
   tabGroup?: boolean;
+
+  /**
+   * Name of the session. With the extension, it is the title of the tab group for controlled tabs,
+   * which defaults to "Playwright · <client name>".
+   */
+  sessionName?: string;
+
+  /**
+   * Color of the session: blue, red, yellow, green, pink, purple, cyan or orange. With the extension,
+   * it is the color of the tab group for controlled tabs, which defaults to the first color that no other client uses.
+   */
+  sessionColor?: string;
 
   /**
    * Do not activate controlled tabs or focus the browser window when using the extension.
@@ -942,7 +956,7 @@ http.createServer(async (req, res) => {
 
 - **browser_close**
   - Title: Close browser
-  - Description: Close the page
+  - Description: Close the browser and all open tabs.
   - Parameters: None
   - Read-only: **false**
 
